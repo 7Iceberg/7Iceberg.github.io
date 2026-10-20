@@ -1,0 +1,151 @@
+/* ==========================================================================
+   Veylan : tokens de l'interface (charte d'identité visuelle 1.0)
+   --------------------------------------------------------------------------
+   Deux niveaux :
+   1. les couleurs de la charte, telles quelles (--vy-or, --vy-cristal...) ;
+   2. les rôles que l'interface utilise (--vy-surface-1, --vy-texte, --vy-focus...).
+   Les composants ne lisent que les rôles : changer un rôle suffit à rhabiller le jeu.
+
+   Règles de la charte reprises ici :
+   - la base est nuit profonde + or ancien ; le cyan et le violet sont des accents narratifs
+     (survol, focus, magie, objets rares) et n'habillent pas les zones de jeu ordinaires ;
+   - Cinzel pour les titres seulement, jamais pour l'inventaire, les stats ou les longs textes ;
+   - pas de contours trop fins (1,5 px minimum pour un cadre), pas d'abus de lueurs.
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+
+  /* ----- 1. Couleurs de la charte ----- */
+  --vy-or: #c9a66b;            /* Or ancien : cadres, titres, action principale */
+  --vy-or-clair: #e2c690;      /* reflet du métal, texte or sur fond sombre */
+  --vy-or-sombre: #8e7144;     /* ombre du métal, bas des dégradés */
+  --vy-ivoire: #f2e2c9;        /* Ivoire minéral : texte principal */
+  --vy-pierre: #3a3b40;        /* Pierre : cadres neutres, cases vides */
+  --vy-pierre-clair: #5b5c63;
+  --vy-cristal: #00c2ff;       /* Bleu cristal : survol, focus, magie */
+  --vy-cristal-voile: #3fc8e9; /* Cyan du Voile : objets rares */
+  --vy-profond: #0a2a4a;       /* Bleu profond : fond des jauges de magie, panneaux du Voile */
+  --vy-nuit: #111d2b;          /* Nuit profonde : surfaces */
+  --vy-ombre: #0f141d;         /* Ombre : fond du jeu */
+  --vy-eclat: #a66cff;         /* Éclat : violet des Voiles, objets épiques */
+  --vy-eclat-clair: #bf95ff;
+  --vy-cimes: #62865e;         /* Vert des Cimes : réussite, PM */
+  --vy-cimes-clair: #8db585;
+  /* Ajout à la charte, pris dans la palette de Kaldum (« fer et braises ») : la vie et le danger. */
+  --vy-braise: #c9472f;
+  --vy-braise-clair: #f07a5c;
+
+  /* ----- 2. Rôles ----- */
+  /* Surfaces, du fond vers l'avant */
+  --vy-fond: var(--vy-ombre);
+  --vy-surface-1: var(--vy-nuit);              /* panneaux, barres */
+  --vy-surface-2: #172334;                     /* éléments posés sur un panneau */
+  --vy-surface-3: #1f2d41;                     /* survol, relief des boutons */
+  --vy-voile-fond: rgba(5, 8, 13, 0.72);       /* derrière une modale */
+
+  /* Textes (contrastes mesurés sur --vy-surface-2 : 12,4 / 6,0 / 6,9) */
+  --vy-texte: var(--vy-ivoire);
+  --vy-texte-2: #a79f8f;
+  --vy-texte-or: var(--vy-or-clair);
+  --vy-encre: #14100a;                         /* texte sur fond or (8,3 sur --vy-or) */
+
+  /* Filets et cadres */
+  --vy-filet: rgba(201, 166, 107, 0.22);       /* séparateur discret */
+  --vy-filet-fort: rgba(201, 166, 107, 0.55);
+  --vy-cadre: linear-gradient(135deg, #f6e3b8 0%, var(--vy-or) 18%, #6e5530 36%, var(--vy-or-clair) 52%, var(--vy-or-sombre) 70%, #f0d9a6 86%, var(--vy-or) 100%);
+  --vy-cadre-cristal: linear-gradient(135deg, #8fe6ff 0%, var(--vy-cristal) 35%, var(--vy-profond) 60%, var(--vy-eclat) 100%);
+
+  /* Matières (charte : « pierre, cadres en métal gravé, filets or ») */
+  --vy-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .96 0 0 0 0 .9 0 0 0 0 .78 0 0 0 .085 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --vy-ardoise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1100' height='1100'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.006 .016' numOctaves='5' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .66 0 0 0 0 .82 0 0 0 .1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)'/%3E%3C/svg%3E");
+  --vy-or-cisele: linear-gradient(135deg, #f6e3b8 0%, #c9a66b 16%, #6e5530 33%, #e8cf98 50%, #8e7144 66%, #f2dcaa 82%, #a8864f 100%);
+  --vy-or-texte: linear-gradient(180deg, #fff3d2 0%, #e6c98f 38%, #c9a66b 55%, #8e7144 100%);
+  --vy-coin-hg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Cg transform=''%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%235c4628' stroke-width='6' stroke-linecap='square'/%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%23d9bb83' stroke-width='3.4' stroke-linecap='square'/%3E%3Cpath d='M3.4 28 V6.4 Q3.4 3.4 6.4 3.4 H28' fill='none' stroke='%23fbecc6' stroke-width='1' stroke-linecap='square'/%3E%3Cpath d='M8 13 L13 8' stroke='%23d9bb83' stroke-width='2'/%3E%3Cpath d='M6 0 L12 6 L6 12 L0 6 Z' transform='translate(1 1)' fill='%235c4628'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 10.5 L1.5 6 Z' transform='translate(1 1)' fill='%2300c2ff'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 6 Z' transform='translate(1 1)' fill='%23b8f0ff'/%3E%3C/g%3E%3C/svg%3E");
+  --vy-coin-hd: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Cg transform='translate(34 0) scale(-1 1)'%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%235c4628' stroke-width='6' stroke-linecap='square'/%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%23d9bb83' stroke-width='3.4' stroke-linecap='square'/%3E%3Cpath d='M3.4 28 V6.4 Q3.4 3.4 6.4 3.4 H28' fill='none' stroke='%23fbecc6' stroke-width='1' stroke-linecap='square'/%3E%3Cpath d='M8 13 L13 8' stroke='%23d9bb83' stroke-width='2'/%3E%3Cpath d='M6 0 L12 6 L6 12 L0 6 Z' transform='translate(1 1)' fill='%235c4628'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 10.5 L1.5 6 Z' transform='translate(1 1)' fill='%2300c2ff'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 6 Z' transform='translate(1 1)' fill='%23b8f0ff'/%3E%3C/g%3E%3C/svg%3E");
+  --vy-coin-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Cg transform='translate(0 34) scale(1 -1)'%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%235c4628' stroke-width='6' stroke-linecap='square'/%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%23d9bb83' stroke-width='3.4' stroke-linecap='square'/%3E%3Cpath d='M3.4 28 V6.4 Q3.4 3.4 6.4 3.4 H28' fill='none' stroke='%23fbecc6' stroke-width='1' stroke-linecap='square'/%3E%3Cpath d='M8 13 L13 8' stroke='%23d9bb83' stroke-width='2'/%3E%3Cpath d='M6 0 L12 6 L6 12 L0 6 Z' transform='translate(1 1)' fill='%235c4628'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 10.5 L1.5 6 Z' transform='translate(1 1)' fill='%2300c2ff'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 6 Z' transform='translate(1 1)' fill='%23b8f0ff'/%3E%3C/g%3E%3C/svg%3E");
+  --vy-coin-bd: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Cg transform='translate(34 34) scale(-1 -1)'%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%235c4628' stroke-width='6' stroke-linecap='square'/%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%23d9bb83' stroke-width='3.4' stroke-linecap='square'/%3E%3Cpath d='M3.4 28 V6.4 Q3.4 3.4 6.4 3.4 H28' fill='none' stroke='%23fbecc6' stroke-width='1' stroke-linecap='square'/%3E%3Cpath d='M8 13 L13 8' stroke='%23d9bb83' stroke-width='2'/%3E%3Cpath d='M6 0 L12 6 L6 12 L0 6 Z' transform='translate(1 1)' fill='%235c4628'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 10.5 L1.5 6 Z' transform='translate(1 1)' fill='%2300c2ff'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 6 Z' transform='translate(1 1)' fill='%23b8f0ff'/%3E%3C/g%3E%3C/svg%3E");
+  --vy-crete: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 22'%3E%3Cpath d='M0 11 H44' stroke='%23c9a66b' stroke-width='1.2'/%3E%3Cpath d='M76 11 H120' stroke='%23c9a66b' stroke-width='1.2'/%3E%3Cpath d='M44 11 L52 6 L56 11 L52 16 Z M76 11 L68 6 L64 11 L68 16 Z' fill='%23c9a66b'/%3E%3Cpath d='M60 0 L69 11 L60 22 L51 11 Z' fill='%235c4628'/%3E%3Cpath d='M60 2.5 L66.5 11 L60 19.5 L53.5 11 Z' fill='%2300a8e6'/%3E%3Cpath d='M60 2.5 L66.5 11 L60 11 Z' fill='%23aeeeff'/%3E%3Cpath d='M60 11 L53.5 11 L60 19.5 Z' fill='%23006aa6'/%3E%3C/svg%3E");
+
+  /* Interaction */
+  --vy-accent: var(--vy-or);
+  --vy-focus: var(--vy-cristal);
+  --vy-succes: var(--vy-cimes-clair);
+  --vy-danger: var(--vy-braise-clair);
+  --vy-attention: var(--vy-or-clair);
+
+  /* Lueurs : sobres, la charte demande d'éviter l'effet néon */
+  --vy-lueur-cristal: 0 0 0 1px rgba(0, 194, 255, 0.65), 0 0 14px rgba(0, 194, 255, 0.35);
+  --vy-lueur-cristal-in: inset 0 0 12px rgba(0, 194, 255, 0.14);
+  --vy-lueur-or: 0 0 0 1px rgba(226, 198, 144, 0.7), 0 0 12px rgba(201, 166, 107, 0.35);
+  --vy-ombre-portee: 0 18px 48px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.5);
+  --vy-relief: inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+
+  /* Raretés : bordure (couleur pleine) et texte (version lisible sur fond sombre) */
+  --vy-rarete-commun: #8a8478;
+  --vy-rarete-commun-texte: #b9b2a4;
+  --vy-rarete-peu-commun: var(--vy-cimes);
+  --vy-rarete-peu-commun-texte: var(--vy-cimes-clair);
+  --vy-rarete-rare: var(--vy-cristal-voile);
+  --vy-rarete-rare-texte: #7fdcf2;
+  --vy-rarete-epique: var(--vy-eclat);
+  --vy-rarete-epique-texte: var(--vy-eclat-clair);
+  --vy-rarete-legendaire: var(--vy-or);
+  --vy-rarete-legendaire-texte: var(--vy-or-clair);
+
+  /* Jauges */
+  --vy-jauge-fond: #080b11;
+  --vy-jauge-vie: linear-gradient(180deg, #f08a6c 0%, var(--vy-braise) 55%, #8f2c1c 100%);
+  --vy-jauge-mana: linear-gradient(180deg, #6fdcff 0%, var(--vy-cristal) 45%, #0571a6 100%);
+  --vy-jauge-xp: linear-gradient(180deg, var(--vy-or-clair) 0%, var(--vy-or) 60%, var(--vy-or-sombre) 100%);
+  --vy-jauge-pa: linear-gradient(180deg, var(--vy-or-clair) 0%, var(--vy-or) 100%);
+  --vy-jauge-pm: linear-gradient(180deg, #a9cc9f 0%, var(--vy-cimes) 100%);
+  --vy-jauge-bouclier: linear-gradient(180deg, #ffffff 0%, var(--vy-ivoire) 50%, #b8a98f 100%);
+
+  /* ----- Typographie ----- */
+  --vy-font-titre: "Cinzel", "Trajan Pro", Georgia, "Times New Roman", serif;
+  --vy-font-lecture: "Lora", Georgia, "Times New Roman", serif;
+  --vy-font-ui: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --vy-taille-xs: 11px;    /* badges, compteurs */
+  --vy-taille-s: 12px;     /* légendes, journal */
+  --vy-taille-m: 14px;     /* texte d'interface */
+  --vy-taille-l: 16px;     /* dialogues, lecture */
+  --vy-taille-xl: 20px;    /* titre de panneau */
+  --vy-taille-2xl: 28px;   /* titre d'écran */
+  --vy-taille-3xl: 40px;   /* écran titre, VICTOIRE */
+
+  --vy-graisse-ui: 500;
+  --vy-graisse-forte: 700;
+  --vy-chasse-titre: 0.06em;   /* espacement des capitales Cinzel */
+  --vy-chasse-label: 0.08em;   /* petites capitales d'étiquette */
+
+  /* ----- Espaces, rayons, tailles ----- */
+  --vy-espace-1: 4px;
+  --vy-espace-2: 8px;
+  --vy-espace-3: 12px;
+  --vy-espace-4: 16px;
+  --vy-espace-5: 24px;
+  --vy-espace-6: 32px;
+
+  --vy-rayon-s: 3px;      /* jauges, badges */
+  --vy-rayon-m: 5px;      /* boutons, cases */
+  --vy-rayon-l: 8px;      /* modales */
+
+  --vy-cible: 44px;       /* cible tactile minimale */
+  --vy-case: 56px;        /* case d'inventaire */
+
+  /* ----- Mouvement ----- */
+  --vy-duree-courte: 120ms;
+  --vy-duree: 220ms;
+  --vy-duree-jauge: 350ms;
+  --vy-courbe: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (max-width: 600px) {
+  :root { --vy-case: 52px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --vy-duree-courte: 0ms; --vy-duree: 0ms; --vy-duree-jauge: 0ms; }
+}

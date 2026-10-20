@@ -1,0 +1,95 @@
+/* ==========================================================================
+   Veylan : point d'entrée Tailwind (v4)
+   --------------------------------------------------------------------------
+   Pour l'interface de la version TypeScript + PixiJS + Capacitor. Le prototype actuel n'a pas
+   d'étape de build et charge directement css/tokens.css et css/components.css.
+
+   Installation : npm i -D tailwindcss @tailwindcss/vite (ou @tailwindcss/cli), puis importer
+   ce fichier comme feuille principale. Toutes les valeurs viennent de tokens.css : un token
+   modifié change à la fois les composants vy- et les utilitaires Tailwind.
+
+   Exemples d'utilitaires générés :
+     bg-nuit, bg-surface-2, text-ivoire, text-or-clair, border-or, ring-cristal,
+     font-titre, font-lecture, font-ui, text-vy-xl, rounded-vy-m, shadow-lueur-cristal,
+     border-rarete-epique, text-rarete-rare, h-cible, size-case
+   ========================================================================== */
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./components.css" layer(components);
+
+@theme inline {
+  /* Couleurs de la charte */
+  --color-or: var(--vy-or);
+  --color-or-clair: var(--vy-or-clair);
+  --color-or-sombre: var(--vy-or-sombre);
+  --color-ivoire: var(--vy-ivoire);
+  --color-pierre: var(--vy-pierre);
+  --color-pierre-clair: var(--vy-pierre-clair);
+  --color-cristal: var(--vy-cristal);
+  --color-cristal-voile: var(--vy-cristal-voile);
+  --color-profond: var(--vy-profond);
+  --color-nuit: var(--vy-nuit);
+  --color-ombre: var(--vy-ombre);
+  --color-eclat: var(--vy-eclat);
+  --color-eclat-clair: var(--vy-eclat-clair);
+  --color-cimes: var(--vy-cimes);
+  --color-cimes-clair: var(--vy-cimes-clair);
+  --color-braise: var(--vy-braise);
+  --color-braise-clair: var(--vy-braise-clair);
+
+  /* Rôles */
+  --color-fond: var(--vy-fond);
+  --color-surface-1: var(--vy-surface-1);
+  --color-surface-2: var(--vy-surface-2);
+  --color-surface-3: var(--vy-surface-3);
+  --color-texte: var(--vy-texte);
+  --color-texte-2: var(--vy-texte-2);
+  --color-texte-or: var(--vy-texte-or);
+  --color-encre: var(--vy-encre);
+  --color-filet: var(--vy-filet);
+  --color-filet-fort: var(--vy-filet-fort);
+  --color-focus: var(--vy-focus);
+  --color-succes: var(--vy-succes);
+  --color-danger: var(--vy-danger);
+
+  /* Raretés */
+  --color-rarete-commun: var(--vy-rarete-commun);
+  --color-rarete-commun-texte: var(--vy-rarete-commun-texte);
+  --color-rarete-peu-commun: var(--vy-rarete-peu-commun);
+  --color-rarete-peu-commun-texte: var(--vy-rarete-peu-commun-texte);
+  --color-rarete-rare: var(--vy-rarete-rare);
+  --color-rarete-rare-texte: var(--vy-rarete-rare-texte);
+  --color-rarete-epique: var(--vy-rarete-epique);
+  --color-rarete-epique-texte: var(--vy-rarete-epique-texte);
+  --color-rarete-legendaire: var(--vy-rarete-legendaire);
+  --color-rarete-legendaire-texte: var(--vy-rarete-legendaire-texte);
+
+  /* Typographie */
+  --font-titre: var(--vy-font-titre);
+  --font-lecture: var(--vy-font-lecture);
+  --font-ui: var(--vy-font-ui);
+  --text-vy-xs: var(--vy-taille-xs);
+  --text-vy-s: var(--vy-taille-s);
+  --text-vy-m: var(--vy-taille-m);
+  --text-vy-l: var(--vy-taille-l);
+  --text-vy-xl: var(--vy-taille-xl);
+  --text-vy-2xl: var(--vy-taille-2xl);
+  --text-vy-3xl: var(--vy-taille-3xl);
+  --tracking-titre: var(--vy-chasse-titre);
+  --tracking-etiquette: var(--vy-chasse-label);
+
+  /* Formes, ombres, tailles */
+  --radius-vy-s: var(--vy-rayon-s);
+  --radius-vy-m: var(--vy-rayon-m);
+  --radius-vy-l: var(--vy-rayon-l);
+  --shadow-lueur-cristal: var(--vy-lueur-cristal);
+  --shadow-lueur-or: var(--vy-lueur-or);
+  --shadow-portee: var(--vy-ombre-portee);
+  --spacing-cible: var(--vy-cible);
+  --spacing-case: var(--vy-case);
+  --ease-vy: var(--vy-courbe);
+}
+
+@layer base {
+  html { background: var(--vy-fond); color: var(--vy-texte); font-family: var(--vy-font-ui); }
+}

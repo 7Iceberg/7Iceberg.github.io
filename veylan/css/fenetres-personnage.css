@@ -1,0 +1,406 @@
+/* Fenêtres du personnage (charte 1.0) : Inventaire (js/hud-inventaire.js), Caractéristiques
+   (js/hud-caracteristiques.js), Récompenses en attente et leur coffre (js/hud-recompenses.js).
+   Les teintes des autres fenêtres (--fen-*) : ardoise de nuit, liseré d'or, cristal pour ce qui
+   est actif. Cinzel pour les titres seulement ; Inter pour les objets, les stats et les chiffres.
+   Trois tailles : ordinateur, téléphone en paysage (trois colonnes), téléphone en portrait. */
+
+/* ----- Commun : feuilles posées sur une fenêtre, pas à pas, « bientôt » ----- */
+.vy-visuel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.vy-bientot { display: inline-block; padding: 0 7px; border: 1px solid color-mix(in srgb, var(--vy-eclat) 60%, transparent); border-radius: 999px; color: var(--vy-eclat-clair); font: 700 9.5px/1.6 var(--vy-font-ui); letter-spacing: 0.08em; text-transform: uppercase; }
+.vy-fenetre--inventaire { height: min(640px, calc(100% - 72px)); }
+.vy-fenetre--caracs { height: min(690px, calc(100% - 72px)); }
+.vy-fenetre--inventaire.reduite, .vy-fenetre--caracs.reduite { height: auto; }
+.vy-fenetre--inventaire .vy-fenetre__corps, .vy-fenetre--caracs .vy-fenetre__corps, .vy-fenetre--recompenses .vy-fenetre__corps { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+.vy-feuille-fond { position: absolute; inset: 0; z-index: 4; background: rgba(5, 8, 13, 0.62); }
+.vy-feuille {
+  position: absolute; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(380px, calc(100% - 16px)); max-height: calc(100% - 16px); overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px;
+  color: var(--fen-texte);
+  background: var(--vy-grain) padding-box, linear-gradient(180deg, var(--fen-tete), var(--fen-fond)) padding-box, var(--vy-cadre) border-box;
+  border: 1.5px solid transparent; border-radius: 8px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.6);
+  animation: vy-feuille-entree var(--vy-duree) var(--vy-courbe);
+}
+@keyframes vy-feuille-entree { from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)); } }
+.vy-feuille__tete { display: flex; align-items: center; gap: 8px; }
+.vy-feuille__tete h3 { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; margin: 0; font: 700 14px/1.2 var(--vy-font-titre); letter-spacing: 0.06em; color: var(--fen-accent); }
+.vy-feuille__objet { display: flex; gap: 12px; align-items: center; }
+.vy-feuille__objet .vy-case { width: 52px; flex: none; cursor: default; }
+.vy-feuille__objet p { margin: 0; font-size: 13px; line-height: 1.45; }
+.vy-feuille__alerte { display: block; margin-top: 4px; color: var(--vy-attention); }
+.vy-feuille__pied { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.vy-pas { display: flex; align-items: center; gap: 4px; }
+.vy-pas__bouton { width: 38px; height: 38px; flex: none; display: grid; place-items: center; padding: 9px; border: 1.5px solid var(--fen-filet); border-radius: 6px; background: rgba(0, 0, 0, 0.25); color: var(--fen-texte); cursor: pointer; }
+.vy-pas__bouton svg { width: 100%; height: 100%; display: block; }
+.vy-pas__bouton:not(:disabled):hover { border-color: var(--fen-actif); color: var(--fen-actif); }
+.vy-pas__bouton:disabled { opacity: 0.32; cursor: default; }
+.vy-pas__valeur { width: 58px; height: 38px; flex: none; display: grid; place-items: center; padding: 0; text-align: center; border: 1.5px solid var(--fen-filet); border-radius: 6px; background: var(--vy-jauge-fond); color: var(--fen-texte); font: 700 16px var(--vy-font-ui); font-variant-numeric: tabular-nums; appearance: textfield; -moz-appearance: textfield; }
+.vy-pas__valeur::-webkit-inner-spin-button, .vy-pas__valeur::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outline-offset: 1px; }
+
+/* ==========================================================================
+   Inventaire : la poupée et la fiche à gauche, le sac à droite
+   ========================================================================== */
+.vy-fenetre--inventaire .vy-fenetre__corps { padding: 10px; }
+.vy-inv {
+  --inv-slot: 46px;
+  flex: 1; min-height: 0;
+  display: grid; gap: 10px;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "poupee sac" "fiche sac";
+}
+.vy-inv [data-glisse] { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+
+/* La poupée : les emplacements, le personnage peint, ses Nœuds et ses Écailles. */
+.vy-inv__poupee {
+  grid-area: poupee; min-width: 0;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 10px; padding: 10px;
+  border: 1px solid var(--fen-filet); border-radius: 7px;
+  background: radial-gradient(70% 60% at 50% 42%, rgba(0, 194, 255, 0.07), transparent 70%), linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
+}
+.vy-inv__col { display: grid; gap: 6px; align-content: center; }
+.vy-inv__slot { width: var(--inv-slot); height: var(--inv-slot); min-height: 0; aspect-ratio: auto; }
+.vy-inv__perso { position: relative; min-width: 0; min-height: calc(var(--inv-slot) * 4 + 18px); border-radius: 8px; }
+.vy-inv__cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.vy-inv__tourne { position: absolute; bottom: 38px; z-index: 1; width: 32px; height: 32px; padding: 6px; display: grid; place-items: center; border: 1px solid var(--fen-filet); border-radius: 50%; background: rgba(10, 16, 25, 0.72); color: var(--fen-accent); cursor: pointer; }
+.vy-inv__tourne svg { width: 100%; height: 100%; display: block; }
+.vy-inv__tourne:hover { border-color: var(--fen-actif); color: var(--fen-actif); }
+.vy-inv__tourne--g { left: 0; }
+.vy-inv__tourne--d { right: 0; }
+.vy-inv__nom { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font: 700 13px/1.2 var(--vy-font-titre); letter-spacing: 0.04em; color: var(--fen-texte); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.vy-inv__nom small { display: block; overflow: hidden; text-overflow: ellipsis; font: 400 11px var(--vy-font-ui); letter-spacing: 0; color: var(--fen-texte-2); }
+.vy-inv__rangee { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 8px 12px; padding-top: 8px; border-top: 1px solid var(--fen-filet); }
+.vy-inv__groupe { display: grid; gap: 4px; justify-items: center; }
+.vy-inv__groupe > small { font: 700 9.5px var(--vy-font-ui); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fen-texte-2); }
+.vy-inv__groupe .vy-bientot { font-size: 8.5px; padding: 0 5px; }
+.vy-inv__noeuds, .vy-inv__ecailles { display: flex; gap: 4px; }
+.vy-inv__noeud { --inv-slot: 36px; }
+.vy-inv__noeud .vy-case__icone { color: var(--vy-eclat-clair); }
+.vy-inv__ecaille { position: relative; width: 32px; height: 32px; aspect-ratio: auto; cursor: not-allowed; border-style: dashed; background: rgba(0, 0, 0, 0.3); box-shadow: none; opacity: 0.6; }
+.vy-inv__ecaille .vy-case__icone { color: var(--fen-texte-2); }
+.vy-inv__ecaille:hover { border-color: color-mix(in srgb, var(--vy-eclat) 60%, transparent) !important; box-shadow: none !important; }
+.vy-inv__cadenas { position: absolute; right: -4px; bottom: -4px; width: 15px; height: 15px; padding: 2px; border-radius: 50%; background: var(--fen-fond); color: var(--fen-texte-2); box-shadow: 0 0 0 1px var(--fen-filet); }
+.vy-inv__cadenas svg { width: 100%; height: 100%; display: block; }
+
+/* La fiche de l'objet : nom, rareté, onglets, lignes, actions. */
+.vy-inv__fiche {
+  grid-area: fiche; container: fiche / inline-size;
+  min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
+  border: 1.5px solid color-mix(in srgb, var(--_r, var(--vy-pierre-clair)) 55%, transparent); border-radius: 7px;
+  background: linear-gradient(180deg, var(--fen-fond-2), var(--fen-fond));
+}
+.vy-inv__fiche--vide { display: grid; place-content: center; gap: 6px; padding: 14px; text-align: center; border: 1.5px dashed var(--fen-filet); background: rgba(0, 0, 0, 0.14); }
+.vy-inv__invite { margin: 0; font: 600 14px var(--vy-font-ui); color: var(--fen-texte); }
+.vy-inv__astuce { margin: 0 auto; max-width: 36ch; font-size: 12px; color: var(--fen-texte-2); }
+.vy-inv__fiche--eclat { animation: vy-inv-eclat 0.8s var(--vy-courbe); }
+@keyframes vy-inv-eclat { from { box-shadow: 0 0 0 2px var(--fen-actif), 0 0 18px rgba(0, 194, 255, 0.5); } }
+.vy-inv__fiche-tete { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 7px 10px 6px; background: rgba(255, 255, 255, 0.035); border-bottom: 1px solid var(--fen-filet); }
+.vy-fenetre__corps .vy-inv__fiche-nom { flex: 1; margin: 0; min-width: 0; font: 700 14px/1.25 var(--vy-font-ui); letter-spacing: 0; color: var(--_rt, var(--fen-texte)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vy-inv__fiche-niv { flex: none; font: 600 12px var(--vy-font-ui); color: var(--fen-texte-2); font-variant-numeric: tabular-nums; }
+.vy-inv__fiche-fermer { display: none; align-self: center; margin: -4px -6px -4px 0; }
+.vy-inv__fiche-barre { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 10px 0; }
+.vy-inv__fiche-type { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 11.5px; color: var(--fen-texte-2); }
+.vy-inv__fiche-type .vy-badge-rarete { padding: 0 6px; font-size: 9.5px; }
+.vy-inv__fiche-onglets { display: flex; gap: 3px; margin-left: auto; }
+.vy-inv__fiche-onglet { min-height: 28px; padding: 3px 9px; border: 1px solid var(--fen-filet); border-radius: 4px; background: rgba(0, 0, 0, 0.2); color: var(--fen-texte-2); font: 600 11.5px var(--vy-font-ui); cursor: pointer; }
+.vy-inv__fiche-onglet .court { display: none; }
+.vy-inv__fiche-onglet:hover { color: var(--fen-texte); }
+.vy-inv__fiche-onglet.on { color: var(--fen-actif); border-color: var(--fen-actif); background: rgba(0, 194, 255, 0.08); }
+.vy-inv__fiche-corps { flex: 1; min-height: 0; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; padding: 8px 10px; }
+.vy-inv__fiche-icone { --vy-case: 64px; width: 64px; height: 64px; cursor: default; }
+.vy-inv__fiche-lignes { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+.vy-inv__liste { list-style: none; margin: 0; padding: 0; font-size: 12.5px; }
+.vy-inv__liste li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 6px; border-radius: 3px; }
+.vy-inv__liste li:nth-child(odd) { background: rgba(255, 255, 255, 0.035); }
+.vy-inv__liste li > span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.vy-inv__liste li > b { flex: none; max-width: 60%; text-align: right; font-variant-numeric: tabular-nums; }
+.vy-inv__liste li > small { flex: none; color: var(--fen-texte-2); }
+.vy-inv__liste li.neg > b { color: var(--vy-danger); }
+.vy-inv__degats > b { color: var(--vy-texte-or); }
+.vy-inv__conditions svg { width: 14px; height: 14px; flex: none; }
+.vy-inv__conditions li.ok svg { color: var(--vy-succes); }
+.vy-inv__conditions li.ko svg { color: var(--vy-danger); }
+.vy-inv__conditions li.ko > b { color: var(--vy-danger); }
+.vy-inv__recit { margin: 8px 0 0; font: italic 400 12.5px/1.5 var(--vy-font-lecture); color: var(--fen-texte-2); }
+.vy-inv__pano-titre { display: flex; justify-content: space-between; gap: 8px; margin: 0 0 4px; font-size: 12.5px; }
+.vy-inv__pano-titre > span { color: var(--fen-texte-2); }
+.vy-inv__losange { width: 7px; height: 7px; flex: none; transform: rotate(45deg); border: 1.5px solid currentColor; }
+.vy-inv__pieces li.porte > span { color: var(--vy-texte-or); }
+.vy-inv__pieces li.porte .vy-inv__losange { background: var(--vy-or-clair); border-color: var(--vy-or-clair); }
+.vy-inv__bonus { margin-top: 6px; }
+.vy-inv__bonus li.actif { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fen-actif) 55%, transparent); }
+.vy-inv__bonus li.actif > b { color: var(--vy-succes); }
+.vy-inv__fiche-actions { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-top: 1px solid var(--fen-filet); background: rgba(0, 0, 0, 0.16); }
+.vy-inv__action { min-width: 108px; }
+.vy-inv__raison { min-width: 0; font-size: 11.5px; color: var(--vy-danger); }
+.vy-inv__espace { flex: 1; }
+.vy-inv__fiche-actions .vy-bouton--icone svg { width: 17px; height: 17px; }
+@container fiche (max-width: 400px) {
+  .vy-inv__fiche-corps { grid-template-columns: minmax(0, 1fr); }
+  .vy-inv__fiche-icone { display: none; }
+  .vy-inv__fiche-onglet { padding: 3px 7px; }
+  .vy-inv__fiche-onglet .long { display: none; }
+  .vy-inv__fiche-onglet .court { display: inline; }
+  .vy-inv__action { min-width: 0; }
+}
+
+/* Le sac : onglets par sorte, outils, grille en pages, pied. */
+.vy-inv__sac {
+  grid-area: sac; container: sac / inline-size;
+  min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px;
+  border: 1px solid var(--fen-filet); border-radius: 7px; background: rgba(0, 0, 0, 0.16);
+}
+.vy-inv__onglets { display: flex; gap: 4px; }
+.vy-inv__onglet { flex: 0 1 38px; min-width: 24px; height: 38px; padding: 0; display: grid; place-items: center; border: 1px solid var(--fen-filet); border-radius: 6px; background: rgba(0, 0, 0, 0.22); color: var(--fen-texte-2); cursor: pointer; }
+.vy-inv__onglet svg { width: 20px; height: 20px; display: block; }
+.vy-inv__onglet:hover { color: var(--fen-texte); border-color: color-mix(in srgb, var(--fen-actif) 50%, transparent); }
+.vy-inv__onglet.on { color: var(--fen-actif); border-color: var(--fen-actif); background: rgba(0, 194, 255, 0.09); box-shadow: inset 0 -2px 0 var(--fen-actif); }
+.vy-inv__sep { flex: 1 1 0; min-width: 2px; }
+.vy-inv__outils { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 0.95fr); gap: 6px; }
+.vy-inv__outils select { width: 100%; min-width: 0; }
+.vy-inv__recherche input { height: 32px; }
+.vy-inv__grille { --inv-case: 50px; position: relative; flex: 1; min-height: 0; overflow: hidden; display: grid; grid-template-columns: repeat(var(--cols, 6), minmax(0, 1fr)); align-content: start; gap: 5px; }
+.vy-inv__grille .vy-case { min-height: 0; }
+.vy-inv__rien { position: absolute; inset: 0; margin: 0; display: grid; place-content: center; padding: 12px; text-align: center; font-size: 12.5px; color: var(--fen-texte-2); pointer-events: none; }
+.vy-inv__pied { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--fen-texte-2); }
+.vy-inv__pages { display: inline-flex; align-items: center; gap: 4px; }
+.vy-inv__pages b { min-width: 46px; text-align: center; color: var(--fen-texte); font-variant-numeric: tabular-nums; }
+.vy-inv__page { width: 32px; height: 32px; padding: 7px; display: grid; place-items: center; border: 1px solid var(--fen-filet); border-radius: 50%; background: rgba(0, 0, 0, 0.22); color: var(--fen-accent); cursor: pointer; }
+.vy-inv__page svg { width: 100%; height: 100%; display: block; }
+.vy-inv__page:disabled { opacity: 0.3; cursor: default; }
+.vy-inv__fils { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.vy-inv__fils svg { width: 16px; height: 16px; color: var(--vy-or); }
+.vy-inv__fils b { color: var(--vy-texte-or); font-size: 14px; font-variant-numeric: tabular-nums; }
+.vy-inv__vue { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+.vy-inv__vue > .vy-sous:first-child { margin-top: 2px; }
+.vy-inv__pano { margin-bottom: 6px; padding: 7px 9px; border: 1px solid var(--fen-filet); border-radius: 5px; background: rgba(0, 0, 0, 0.18); font-size: 12.5px; }
+.vy-inv__pano p { margin: 2px 0; color: var(--vy-succes); }
+.vy-inv__pano small { color: var(--fen-texte-2); }
+@container sac (max-width: 460px) {
+  .vy-inv__outils { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .vy-inv__recherche { grid-column: 1 / -1; order: -1; }
+}
+@container sac (max-width: 330px) {
+  .vy-inv__onglets { gap: 3px; }
+  .vy-inv__onglet { height: 32px; }
+  .vy-inv__onglet svg { width: 17px; height: 17px; }
+  .vy-inv__grille { --inv-case: 38px; gap: 4px; }
+  .vy-inv__compte { display: none; }
+}
+
+/* Glisser : l'objet suit le doigt ou la souris ; les places possibles se marquent. */
+.vy-inv-fantome { position: fixed; left: 0; top: 0; z-index: 60; pointer-events: none; will-change: transform; }
+.vy-inv-fantome .vy-case { width: 54px; height: 54px; transform: translate(-50%, -50%) scale(1.06); border-color: var(--vy-cristal); box-shadow: 0 12px 26px rgba(0, 0, 0, 0.55), var(--vy-lueur-cristal); }
+.vy-inv--glisse .vy-inv__depot--ok { outline: 2px dashed color-mix(in srgb, var(--fen-actif) 70%, transparent); outline-offset: 2px; }
+.vy-inv--glisse .vy-inv__depot--survol { outline: 2px solid var(--fen-actif); outline-offset: 2px; box-shadow: var(--vy-lueur-cristal); }
+.vy-inv--glisse .vy-inv__perso.vy-inv__depot--ok { background: rgba(0, 194, 255, 0.05); }
+.vy-inv--glisse .vy-inv__sac.vy-inv__depot--survol { background: rgba(0, 194, 255, 0.06); }
+.vy-inv__source { opacity: 0.35; }
+
+/* ==========================================================================
+   Caractéristiques : en-tête, onglets, Résumé, Détails, Éléments, feuille de répartition
+   ========================================================================== */
+.vy-fenetre--caracs .vy-fenetre__corps { padding: 10px 12px 0; }
+.vy-caracs { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.vy-caracs__tete { grid-template-columns: 42px minmax(0, 1fr) minmax(120px, 0.85fr); margin-bottom: 2px; }
+.vy-caracs__qui { min-width: 0; }
+.vy-caracs__qui .vy-fiche__classe { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vy-caracs__xp { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 4px 6px; font-size: 11px; color: var(--fen-texte-2); }
+.vy-caracs__xp > span { font: 700 9.5px var(--vy-font-ui); text-transform: uppercase; letter-spacing: 0.08em; }
+.vy-caracs__xp > small { text-align: right; font-variant-numeric: tabular-nums; color: var(--fen-texte); }
+.vy-caracs__xp .vy-jauge { grid-column: 1 / -1; }
+.vy-caracs__onglets { margin: 8px 0 0; }
+.vy-caracs__onglets .vy-onglet { flex: 1; }
+.vy-caracs__corps { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 10px 2px 10px 0; }
+.vy-caracs__resume { display: grid; gap: 8px 16px; }
+.vy-caracs__vitaux { display: grid; gap: 1px; align-content: start; }
+.vy-caracs__ligne { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 4px; font-size: 13px; }
+.vy-caracs__ligne:nth-child(odd) { background: rgba(255, 255, 255, 0.035); }
+.vy-caracs__ligne > span { color: var(--fen-texte-2); }
+.vy-caracs__ligne > b { font-variant-numeric: tabular-nums; }
+.vy-caracs__liste .vy-sous { margin-top: 4px; }
+.vy-caracs__reste { letter-spacing: 0.04em; }
+.vy-caracs__reste.on { color: var(--vy-succes); }
+.vy-caracs__stat { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto 34px; align-items: center; gap: 8px; padding: 3px 4px 3px 8px; border-radius: 5px; }
+.vy-caracs__stat:nth-child(even) { background: rgba(255, 255, 255, 0.035); }
+.vy-caracs__nom { display: flex; flex-direction: column; min-width: 0; font-weight: 600; font-size: 13px; }
+.vy-caracs__nom small { font: 500 10.5px var(--vy-font-ui); color: var(--fen-texte-2); white-space: nowrap; }
+.vy-caracs__stat > b { min-width: 36px; text-align: right; font: 700 15px var(--vy-font-ui); font-variant-numeric: tabular-nums; }
+.vy-caracs__plus { width: 34px; height: 34px; padding: 8px; display: grid; place-items: center; border: 1.5px solid color-mix(in srgb, var(--vy-or) 75%, transparent); border-radius: 7px; background: var(--vy-grain), linear-gradient(180deg, #2a3a50, #172334); color: var(--vy-or-clair); cursor: pointer; box-shadow: var(--vy-relief); }
+.vy-caracs__plus svg { width: 100%; height: 100%; display: block; }
+.vy-caracs__plus:not(:disabled):hover { border-color: var(--vy-cristal); color: #fff; box-shadow: var(--vy-lueur-cristal); }
+.vy-caracs__plus:disabled { opacity: 0.3; cursor: default; }
+.vy-caracs__pied { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0 -12px; padding: 8px 12px; border-top: 1px solid var(--fen-filet); background: rgba(0, 0, 0, 0.18); }
+.vy-caracs__pied-boutons { display: flex; gap: 4px; margin-left: auto; }
+.vy-caracs__pied .vy-bouton--petit { padding: 0 10px; }
+.vy-caracs__table th[scope="row"] { font-weight: 600; white-space: nowrap; }
+.vy-caracs__table th[scope="row"] .vy-pic, .vy-caracs__table th[scope="row"] .vy-pastille { margin-right: 7px; vertical-align: -3px; }
+.vy-caracs__table th[scope="row"] .vy-pastille { vertical-align: 0; }
+.vy-caracs__table td { width: 56px; }
+.vy-caracs__table td.pos { color: var(--vy-succes); }
+.vy-caracs__table td.neg { color: var(--vy-danger); }
+.vy-caracs__section th { padding: 12px 4px 4px; text-align: left; font: 700 10px var(--vy-font-ui); text-transform: uppercase; letter-spacing: 0.1em; color: var(--fen-accent); border-bottom: 1px solid var(--fen-filet); }
+.vy-zero { color: var(--fen-texte-2); opacity: 0.55; }
+.vy-caracs__elements { display: grid; gap: 0 14px; }
+
+/* La feuille de répartition : pas à pas, aperçu, paliers. */
+.vy-caracs-feuille { container: feuille / inline-size; width: min(420px, calc(100% - 16px)); }
+.vy-caracs__restants { margin: 0; font-size: 13px; color: var(--fen-texte-2); }
+.vy-caracs__restants b { color: var(--vy-succes); font-size: 15px; font-variant-numeric: tabular-nums; }
+.vy-caracs__reglage { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px 14px; padding: 10px; border: 1px solid var(--fen-filet); border-radius: 6px; background: rgba(0, 0, 0, 0.22); }
+.vy-caracs__apercu p { margin: 0; font-size: 12.5px; line-height: 1.45; }
+.vy-caracs__apercu small { color: var(--fen-texte-2); }
+.vy-caracs__gain { font: 700 17px/1.2 var(--vy-font-ui) !important; color: var(--fen-texte-2); font-variant-numeric: tabular-nums; }
+.vy-caracs__gain.on { color: var(--vy-succes); }
+.vy-caracs__gain.retire { color: var(--vy-danger); }
+.vy-caracs__paliers { width: 100%; border-collapse: separate; border-spacing: 3px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.vy-caracs__paliers th { padding: 4px 6px; text-align: left; font: 600 11px var(--vy-font-ui); color: var(--fen-texte-2); }
+.vy-caracs__paliers td { padding: 5px 4px; text-align: center; border-radius: 4px; background: rgba(255, 255, 255, 0.04); color: var(--fen-texte-2); }
+.vy-caracs__paliers td.actuel { background: rgba(0, 194, 255, 0.16); color: var(--fen-texte); font-weight: 700; box-shadow: inset 0 0 0 1px var(--fen-actif); }
+.vy-caracs__paliers td.vise { color: var(--vy-texte-or); box-shadow: inset 0 0 0 1px var(--vy-or-clair); }
+.vy-caracs__bonus { margin: 0; font-size: 11.5px; line-height: 1.45; }
+/* Feuille étroite (téléphone en portrait) : l'aperçu passe sous le pas à pas. */
+@container feuille (max-width: 400px) {
+  .vy-caracs__reglage { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+}
+
+/* ==========================================================================
+   Récompenses en attente
+   ========================================================================== */
+.vy-fenetre--recompenses .vy-fenetre__corps { padding: 10px 12px 0; }
+.vy-recompenses { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.vy-recompenses__liste { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 8px; margin: 0; padding: 0 2px 0 0; list-style: none; }
+.vy-recompense { padding: 8px 10px; border: 1px solid var(--fen-filet); border-radius: 6px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.18)); }
+.vy-recompense__tete { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.vy-recompense__nom { min-width: 0; font: 700 13.5px var(--vy-font-ui); color: var(--fen-texte); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vy-recompense__cat { flex: none; font: 700 10px var(--vy-font-ui); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fen-accent); }
+.vy-recompense__corps { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.vy-recompense__cases { display: grid; grid-template-columns: repeat(6, 36px); gap: 4px; }
+.vy-recompense__cases .vy-case { width: 36px; height: 36px; cursor: default; }
+.vy-recompense__gains { flex: 1; display: grid; justify-items: end; gap: 1px; font-size: 11.5px; color: var(--fen-texte-2); white-space: nowrap; }
+.vy-recompense__gains b { font-size: 14px; font-variant-numeric: tabular-nums; color: var(--fen-texte); }
+.vy-recompense__fils b { color: var(--vy-texte-or); }
+.vy-recompense__ok { flex: none; gap: 6px; }
+.vy-recompense__ok svg { width: 16px; height: 16px; }
+.vy-recompense__titre { margin: 6px 0 0; font-size: 11.5px; color: var(--fen-texte-2); }
+.vy-recompenses__vide { margin: 6px 0 12px; font-size: 13px; color: var(--fen-texte-2); }
+.vy-recompenses__pied { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 10px -12px 0; padding: 10px 12px; border-top: 1px solid var(--fen-filet); background: rgba(0, 0, 0, 0.18); }
+.vy-recompenses__reste { font-weight: 600; }
+
+/* ----- Le coffre des récompenses en attente (#recompenses-btn) -----
+   Au milieu de la vue, au-dessus du bloc vital : sa hauteur est mesurée par le code
+   (--coffre-bas), la valeur d'ici n'est qu'un repli. Seulement s'il reste une récompense ;
+   il bat doucement et porte leur nombre. Sa classe (vy-coffre) l'écarte de l'habillage des
+   boutons sans classe (css/components.css). */
+#recompenses-btn {
+  position: absolute; left: 50%; bottom: var(--coffre-bas, 108px); z-index: 3;
+  width: 58px; height: 52px; padding: 9px 11px; overflow: visible;
+  display: grid; place-items: center;
+  border: 2px solid var(--vy-or-clair); border-radius: 12px;
+  background: var(--vy-grain), radial-gradient(90% 85% at 50% 15%, rgba(242, 220, 170, 0.42), transparent 70%), linear-gradient(180deg, #3a4a62, #16222f);
+  color: #f6e3b8; cursor: pointer;
+  transform: translateX(-50%);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), var(--vy-relief), 0 0 16px rgba(201, 166, 107, 0.35);
+  animation: recompenses-pouls 1.8s ease-in-out infinite;
+  -webkit-tap-highlight-color: transparent;
+}
+#recompenses-btn[hidden] { display: none; }
+#recompenses-btn svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.6)); }
+#recompenses-btn:hover { border-color: var(--vy-cristal); color: #fff; }
+#recompenses-btn:active { transform: translateX(-50%) scale(0.96); }
+#recompenses-btn:focus-visible { outline: 2px solid var(--vy-focus); outline-offset: 3px; }
+#recompenses-btn .recompenses-btn__nombre { position: absolute; top: -9px; right: -9px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--vy-cristal); color: #03131d; font: 800 12px/22px var(--vy-font-ui); text-align: center; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2px #0b131d, 0 0 10px rgba(0, 194, 255, 0.6); }
+/* Le battement ne touche que la transformation et l'opacité : rien à repeindre à chaque image. */
+#recompenses-btn::after { content: ""; position: absolute; inset: -3px; border: 2px solid rgba(242, 220, 170, 0.75); border-radius: 14px; pointer-events: none; animation: recompenses-onde 1.8s ease-out infinite; }
+@keyframes recompenses-pouls { 50% { transform: translateX(-50%) scale(1.06); } }
+@keyframes recompenses-onde { from { transform: scale(1); opacity: 0.85; } to { transform: scale(1.32); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #recompenses-btn, #recompenses-btn::after { animation: none; } }
+
+/* ==========================================================================
+   Téléphone. Les fenêtres y sont en plein écran (css/fenetres.css) : on les laisse s'étirer.
+   ========================================================================== */
+@media (max-width: 720px) { .vy-fenetre--inventaire, .vy-fenetre--caracs { height: auto; } }
+@media (max-height: 480px) and (max-width: 1000px) { .vy-fenetre--inventaire, .vy-fenetre--caracs { height: auto; } }
+
+/* Paysage : trois colonnes (la poupée, la fiche, le sac) ; le Résumé et les Éléments sur deux. */
+@media (max-height: 480px) {
+  .vy-fenetre--inventaire .vy-fenetre__corps { padding: 8px; }
+  .vy-inv { --inv-slot: 40px; gap: 8px; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr) minmax(0, 1.12fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: "poupee fiche sac"; }
+  .vy-inv__poupee { grid-template-rows: minmax(0, 1fr) auto; gap: 6px; padding: 8px; }
+  .vy-inv__col { gap: 5px; }
+  .vy-inv__rangee { justify-content: center; gap: 6px 10px; padding-top: 6px; }
+  .vy-inv__noeud { --inv-slot: 30px; }
+  .vy-inv__ecaille { width: 26px; height: 26px; }
+  .vy-inv__tourne { width: 28px; height: 28px; padding: 5px; }
+  .vy-inv__sac { gap: 6px; padding: 6px; }
+  .vy-inv__fiche-actions { padding: 6px 8px; }
+  .vy-fenetre--caracs .vy-fenetre__corps { padding: 6px 10px 0; }
+  .vy-caracs__tete { grid-template-columns: 34px minmax(0, 1fr) minmax(150px, 1fr); }
+  .vy-caracs__tete .vy-fiche__portrait { width: 34px; height: 34px; font-size: 15px; }
+  .vy-caracs__onglets { margin-top: 4px; }
+  .vy-caracs__onglets .vy-onglet { padding: 5px 10px; }
+  .vy-caracs__corps { padding: 6px 2px 6px 0; }
+  .vy-caracs__resume { grid-template-columns: minmax(0, 0.85fr) minmax(0, 2fr); gap: 6px 12px; }
+  .vy-caracs__liste { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 8px; align-content: start; }
+  .vy-caracs__liste > .vy-sous { grid-column: 1 / -1; }
+  .vy-caracs__stat:nth-child(even) { background: none; }
+  .vy-caracs__stat { background: rgba(255, 255, 255, 0.035); }
+  .vy-caracs__elements { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .vy-caracs .vy-tableau th, .vy-caracs .vy-tableau td { padding: 4px; }
+  .vy-caracs__ligne { padding: 4px 8px; }
+  .vy-caracs__stat { padding: 2px 4px 2px 8px; }
+  .vy-caracs__plus { width: 34px; height: 34px; }
+  .vy-caracs__pied { padding: 6px 10px; margin: 0 -10px; }
+  .vy-feuille { gap: 7px; padding: 10px 12px 12px; }
+  .vy-caracs-feuille { width: min(560px, calc(100% - 16px)); }
+  .vy-caracs__reglage { padding: 8px; }
+  .vy-inv__outils select, .vy-inv__recherche input { height: 30px; }
+  .vy-inv__outils { gap: 5px; }
+  .vy-inv__pied { margin-top: -2px; }
+  .vy-inv__page { width: 30px; height: 30px; }
+  .vy-caracs__liste .vy-sous { margin: 0 0 2px; }
+  .vy-caracs__nom { flex-direction: row; align-items: baseline; gap: 6px; }
+  .vy-caracs__stat { grid-template-columns: 20px minmax(0, 1fr) auto 32px; }
+  .vy-caracs__plus { width: 32px; height: 32px; padding: 7px; }
+  .vy-caracs__elements .vy-radar { max-height: 160px; }
+  .vy-inv__tourne { top: 2px; bottom: auto; }
+}
+
+/* Paysage, dans la colonne de jeu du téléphone (le panneau reste à côté, css/jeu.css) : la fenêtre
+   n'a plus la largeur de l'écran. Deux colonnes comme sur Dofus Touch, la poupée et le sac ; la
+   fiche de l'objet choisi se pose sur la poupée (une croix la referme) et s'efface pendant un
+   glissement. */
+.vy-fenetre--inventaire .vy-fenetre__corps { container: inv / inline-size; }
+@media (max-height: 480px) {
+  @container inv (max-width: 640px) {
+    .vy-inv { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-areas: "poupee sac"; }
+    .vy-inv__fiche { grid-area: poupee; z-index: 2; contain: size; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6); }
+    .vy-inv__fiche--vide { display: none; }
+    .vy-inv__fiche-fermer { display: grid; }
+    .vy-inv--glisse .vy-inv__fiche { visibility: hidden; }
+  }
+}
+
+/* Portrait : la poupée en haut, le sac dessous. La fiche d'un objet choisi se pose sur la
+   poupée (une croix la referme) et s'efface pendant un glissement, pour qu'on voie où déposer. */
+@media (max-width: 720px) and (min-height: 481px) {
+  .vy-fenetre--inventaire .vy-fenetre__corps { padding: 8px; }
+  .vy-inv { --inv-slot: 44px; gap: 8px; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "poupee" "sac"; }
+  .vy-inv__perso { min-height: calc(var(--inv-slot) * 4 + 18px); }
+  .vy-inv__rangee { justify-content: center; flex-wrap: nowrap; gap: 10px; }
+  .vy-inv__noeud { --inv-slot: 32px; }
+  .vy-inv__ecaille { width: 28px; height: 28px; }
+  .vy-inv__fiche { grid-area: poupee; z-index: 2; contain: size; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6); }
+  .vy-inv__fiche--vide { display: none; }
+  .vy-inv__fiche-fermer { display: grid; }
+  .vy-inv--glisse .vy-inv__fiche { visibility: hidden; }
+  .vy-recompense__cases { grid-template-columns: repeat(6, 34px); }
+  .vy-recompense__cases .vy-case { width: 34px; height: 34px; }
+}
+@media (max-width: 380px) {
+  .vy-inv { --inv-slot: 40px; }
+  .vy-inv__noeud { --inv-slot: 32px; }
+  .vy-inv__ecaille { width: 28px; height: 28px; }
+}

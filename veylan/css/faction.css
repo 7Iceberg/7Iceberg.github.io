@@ -1,0 +1,127 @@
+/* Factions (js/hud-faction.js) : la fenêtre Faction, l'écran du serment et ses deux bannières,
+   la confirmation du reniement. Le Fil en blanc et or, la Déchirure en pourpre et noir
+   (docs/MONDE.md) ; les Francs-Marcheurs en vert de route. */
+#app { --fac-fil: #e2c690; --fac-fil-fort: #c9a66b; --fac-dechirure: #c9a8ff; --fac-dechirure-fort: #a66cff; --fac-marcheurs: #8db585; }
+#app[data-ui-theme="ardoise"] { --fac-fil: #7a5f35; --fac-fil-fort: #8e7144; --fac-dechirure: #5a2a80; --fac-dechirure-fort: #6b2fa0; --fac-marcheurs: #3f6e38; }
+.vy-faction--fil, .vy-faction-carte--fil, .vy-serment-fait--fil { --fac: var(--fac-fil); --fac-fort: var(--fac-fil-fort); }
+.vy-faction--dechirure, .vy-faction-carte--dechirure, .vy-serment-fait--dechirure { --fac: var(--fac-dechirure); --fac-fort: var(--fac-dechirure-fort); }
+.vy-embleme { display: block; flex: none; filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.45)); }
+
+/* ----- Fenêtre : sous serment ----- */
+.vy-faction__tete { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px; }
+.vy-faction__nom { font: 700 18px/1.15 var(--vy-font-titre); letter-spacing: 0.04em; color: var(--fac); }
+.vy-faction__rang { font-size: 14px; margin: 2px 0; } .vy-faction__rang b { color: var(--fac); }
+.vy-faction__tete small { display: block; font-size: 11.5px; line-height: 1.35; }
+.vy-faction__barre { margin: 12px 0 2px; display: grid; gap: 4px; }
+.vy-faction__barre small { font-size: 11.5px; }
+.vy-faction__ordre { margin: 4px 0; } .vy-faction__ordre b { color: var(--fac); }
+.vy-faction__pied { justify-content: space-between; }
+.vy-faction__pied .vy-note { margin: 0; flex: 1 1 200px; }
+.vy-faction__intro { margin-top: 0; }
+.vy-faction__etat { margin: 6px 0 0; padding: 6px 10px; border-left: 3px solid var(--fen-accent); background: rgba(0, 0, 0, 0.18); border-radius: 0 4px 4px 0; font-size: 12.5px; }
+
+.vy-jauge--faction { --_hauteur: 13px; }
+.vy-jauge--fil { --_remplissage: linear-gradient(180deg, #fff1c8, #c9a66b 60%, #8e7144); --_bord: rgba(226, 198, 144, 0.6); }
+.vy-jauge--dechirure { --_remplissage: linear-gradient(180deg, #e7d6ff, #8a4fd6 60%, #4a2370); --_bord: rgba(191, 149, 255, 0.55); }
+.vy-jauge--marcheurs { --_remplissage: linear-gradient(180deg, #d4ecc9, #6f9b63 60%, #3f5e37); --_bord: rgba(141, 181, 133, 0.55); --_hauteur: 10px; }
+
+.vy-ordres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+.vy-ordre { display: grid; gap: 2px; align-content: start; min-height: 58px; padding: 8px 9px; text-align: left; border: 1px solid var(--fen-filet); border-left: 3px solid var(--fac); border-radius: 5px; background: rgba(0, 0, 0, 0.2); color: var(--fen-texte); font: 600 12.5px var(--vy-font-ui); cursor: pointer; }
+.vy-ordre small { font-weight: 400; color: var(--fen-texte-2); font-size: 11.5px; }
+.vy-ordre__ok { font-size: 11px; color: var(--fen-actif); }
+.vy-ordre:hover, .vy-ordre--sur { border-color: var(--fac); background: color-mix(in srgb, var(--fac) 12%, transparent); }
+
+.vy-rangs { list-style: none; margin: 0; padding: 0 2px 0 0; display: grid; gap: 2px; max-height: 236px; overflow-y: auto; }
+.vy-rang { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 4px; }
+.vy-rang > span b { font-weight: 600; } .vy-rang small { display: block; font-size: 11.5px; color: var(--fen-texte-2); }
+.vy-rang__n { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; border: 1.5px solid var(--fac); font: 700 11px var(--vy-font-ui); color: var(--fac); }
+.vy-rang--fait .vy-rang__n { background: var(--fac); color: var(--fen-fond); }
+.vy-rang--ici { background: color-mix(in srgb, var(--fac) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fac) 55%, transparent); }
+.vy-rang--ici .vy-rang__n { background: var(--fac); color: var(--fen-fond); box-shadow: 0 0 10px color-mix(in srgb, var(--fac) 70%, transparent); }
+.vy-rang--loin { opacity: 0.62; }
+.vy-rang__venir { font-style: normal; font-size: 10px; padding: 1px 6px; border: 1px solid var(--fen-filet); border-radius: 999px; color: var(--fen-texte-2); white-space: nowrap; }
+
+.vy-ligne-quete { padding: 6px 0; border-bottom: 1px solid var(--fen-filet); }
+.vy-ligne-quete b { display: block; font-weight: 600; }
+.vy-ligne-quete small { color: var(--fen-texte-2); font-size: 12px; }
+.vy-ligne-quete--offre b::before { content: "! "; color: var(--vy-attention); }
+
+/* ----- Fenêtre : sans serment, les deux factions côte à côte ----- */
+.vy-faction-cartes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.vy-faction-carte { padding: 12px; border-radius: 6px; border: 1.5px solid color-mix(in srgb, var(--fac) 55%, transparent); }
+.vy-faction-carte--fil { background: linear-gradient(180deg, rgba(247, 240, 222, 0.1), rgba(201, 166, 107, 0.04)); }
+.vy-faction-carte--dechirure { background: linear-gradient(180deg, rgba(166, 108, 255, 0.14), rgba(20, 10, 28, 0.35)); }
+.vy-faction-carte .vy-embleme { margin: 0 auto 6px; }
+.vy-fenetre__corps .vy-faction-carte h3 { margin: 0; text-align: center; color: var(--fac); font-size: 16px; }
+.vy-faction-carte__cap { margin: 2px 0 6px; text-align: center; font-size: 11.5px; color: var(--fen-texte-2); }
+.vy-faction-carte dl { margin: 0; }
+.vy-faction-carte dt { margin-top: 6px; font: 700 10px var(--vy-font-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fac); }
+.vy-faction-carte dd { margin: 1px 0 0; font-size: 12.5px; line-height: 1.4; }
+.vy-faction-carte__rangs { margin: 8px 0 0; color: var(--fen-texte-2); }
+
+.vy-marcheurs { display: grid; gap: 6px; padding: 8px 10px; border: 1px solid var(--fen-filet); border-left: 3px solid var(--fac-marcheurs); border-radius: 5px; background: rgba(0, 0, 0, 0.16); }
+.vy-marcheurs > div b { color: var(--fac-marcheurs); }
+.vy-marcheurs .vy-note { margin: 0; }
+
+/* ----- Le reniement ----- */
+.vy-renier { display: grid; gap: 8px; justify-items: start; }
+.vy-renier .vy-embleme { justify-self: center; }
+.vy-renier p, .vy-renier ul { margin: 0; } .vy-renier ul { padding-left: 18px; color: var(--vy-texte-2); }
+.vy-renier .vy-coche { color: var(--vy-texte); }
+
+/* ----- Étapes de choix et serment (dans le panneau de dialogue) ----- */
+.vy-serment__voix { display: flex; gap: 12px; align-items: flex-start; }
+.vy-serment__voix p { margin: 4px 0 0; font: 400 15px/1.5 var(--vy-font-lecture); max-width: 70ch; }
+.vy-serment__bannieres { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 14px 0 10px; }
+#panel-body .vy-banniere {
+  display: flex; flex-direction: column; align-items: center; gap: 5px; min-height: 0; margin: 0;
+  padding: 14px 14px 30px; border: 2px solid; border-radius: 6px 6px 0 0; text-align: center; cursor: pointer;
+  font: 400 12.5px/1.4 var(--vy-font-ui); transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+#panel-body .vy-banniere--fil {
+  color: #2a2116; border-color: #c9a66b;
+  background: radial-gradient(120% 60% at 50% 0%, rgba(255, 231, 168, 0.55), transparent 70%), linear-gradient(180deg, #fbf6ea, #e9dcbf);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 18px), 0 100%);
+}
+#panel-body .vy-banniere--dechirure {
+  color: #efe3ff; border-color: #6b2fa0;
+  background: radial-gradient(60% 50% at 50% 55%, rgba(166, 108, 255, 0.32), transparent 75%), linear-gradient(180deg, #2b1638, #110a18);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 4px), 92% 100%, 84% calc(100% - 11px), 75% calc(100% - 2px), 66% calc(100% - 15px), 58% calc(100% - 3px), 50% calc(100% - 13px), 41% 100%, 33% calc(100% - 9px), 24% calc(100% - 1px), 16% calc(100% - 14px), 8% calc(100% - 4px), 0 100%);
+}
+#panel-body .vy-banniere:hover { transform: translateY(-2px); }
+#panel-body .vy-banniere--fil.on { box-shadow: inset 0 0 0 2px #e2c690, inset 0 0 30px rgba(226, 198, 144, 0.55); transform: translateY(-3px); }
+#panel-body .vy-banniere--dechirure.on { box-shadow: inset 0 0 0 2px #bf95ff, inset 0 0 30px rgba(166, 108, 255, 0.6); transform: translateY(-3px); }
+.vy-banniere__tete { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.vy-banniere__nom { font: 700 17px/1.1 var(--vy-font-titre); letter-spacing: 0.06em; }
+.vy-banniere--fil .vy-banniere__nom { color: #6e5530; }
+.vy-banniere--dechirure .vy-banniere__nom { color: #d6b8ff; }
+.vy-banniere__veut { font-weight: 600; }
+.vy-banniere__cote { font-size: 11.5px; opacity: 0.9; }
+.vy-banniere__cote--juste::before { content: "Juste : "; font-weight: 700; }
+.vy-banniere__cote--sombre::before { content: "Sombre : "; font-weight: 700; }
+.vy-banniere__ordres { margin-top: 2px; font: 600 10.5px var(--vy-font-ui); letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8; }
+.vy-serment__pied { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
+.vy-choix .dialogue-actions { margin-top: 14px; }
+.dialogue-actions .quest-btn.answer { border-color: var(--vy-eclat-clair); color: var(--vy-texte); background: rgba(166, 108, 255, 0.12); }
+
+.vy-serment-fait { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; padding: 10px 12px; border-radius: 6px; border: 1.5px solid color-mix(in srgb, var(--fac) 60%, transparent); background: color-mix(in srgb, var(--fac) 10%, transparent); }
+.vy-serment-fait b { display: block; font: 700 16px/1.2 var(--vy-font-titre); color: var(--fac); letter-spacing: 0.04em; }
+.vy-serment-fait small { color: var(--vy-texte-2); font-size: 12.5px; }
+
+/* Petits écrans : la fenêtre passe sur une colonne, l'écran du serment se resserre. */
+@media (max-width: 560px) {
+  .vy-faction-cartes, .vy-ordres { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-height: 480px) {
+  .vy-serment__voix .npc-face, .vy-serment__voix b { display: none; }
+  .vy-serment__voix p { margin: 0; font-size: 12.5px; line-height: 1.35; max-width: none; }
+  .vy-serment__bannieres { gap: 10px; margin: 8px 0 6px; }
+  #panel-body .vy-banniere { padding: 7px 10px 20px; gap: 3px; font-size: 11.5px; line-height: 1.3; }
+  .vy-banniere__tete { flex-direction: row; gap: 8px; }
+  #panel-body .vy-banniere .vy-embleme { width: 34px; height: 34px; }
+  .vy-banniere__nom { font-size: 15px; }
+  .vy-banniere__cote { font-size: 10.5px; }
+  .vy-banniere__ordres { display: none; }
+  .vy-serment-fait .vy-embleme { width: 52px; height: 52px; }
+}
+@media (prefers-reduced-motion: reduce) { #panel-body .vy-banniere { transition: none; } #panel-body .vy-banniere:hover, #panel-body .vy-banniere.on { transform: none; } }

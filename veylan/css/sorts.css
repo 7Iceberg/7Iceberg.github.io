@@ -1,0 +1,163 @@
+/* Fenêtre Sorts (js/hud-sorts.js) : la liste et ses rangs à gauche, la fiche du sort à droite, le
+   capital de points en pied. Mêmes teintes que les autres fenêtres (css/fenetres.css) : ardoise de
+   nuit, or ancien pour ce qui est acquis, cristal pour ce qui est prévu ou regardé.
+   Aussi : l'icône peinte des sorts dans la barre de combat (js/ui.js) et la pastille du menu. */
+
+.vy-fenetre--sorts { height: min(600px, calc(100% - 72px)); }
+.vy-fenetre--sorts.reduite { height: auto; }
+.vy-fenetre--sorts .vy-fenetre__corps { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 10px 12px 0; }
+.vy-sorts { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.04fr); gap: 14px; }
+
+/* ----- Liste ----- */
+.vy-sorts__gauche { min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.vy-sorts__outils { display: flex; align-items: center; gap: 8px; }
+.vy-sorts__outils select { flex: 1; min-width: 0; }
+.vy-sorts__compte { font: 600 11px var(--vy-font-ui); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vy-sorts__entete, .vy-sort { display: grid; grid-template-columns: minmax(0, 1fr) 116px 48px; align-items: center; }
+.vy-sorts__entete { padding: 2px 4px 0 10px; font: 700 10px var(--vy-font-ui); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fen-texte-2); }
+.vy-sorts__entete span:not(:first-child) { text-align: center; }
+.vy-sorts__liste { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; list-style: none; margin: 0; padding: 0 3px 8px 0; display: grid; gap: 4px; align-content: start; }
+.vy-sorts__vide { padding: 14px 10px; }
+.vy-sort { min-height: 50px; border: 1px solid transparent; border-radius: 6px; background: rgba(0, 0, 0, 0.22); transition: background var(--vy-duree-courte), border-color var(--vy-duree-courte); }
+.vy-sort:hover { background: rgba(255, 255, 255, 0.04); }
+.vy-sort.on { border-color: color-mix(in srgb, var(--fen-accent) 70%, transparent); background: linear-gradient(90deg, color-mix(in srgb, var(--fen-accent) 17%, transparent), rgba(0, 0, 0, 0.22) 75%); }
+.vy-sort.prevu:not(.on) { border-color: color-mix(in srgb, var(--fen-actif) 45%, transparent); }
+.vy-sort__choix { display: flex; align-items: center; gap: 10px; min-width: 0; height: 100%; padding: 6px 6px 6px 7px; border: 0; border-radius: 6px 0 0 6px; background: none; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.vy-sort__icone { width: 36px; height: 36px; flex: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45); }
+.vy-sort__nom { min-width: 0; display: grid; gap: 1px; }
+.vy-sort__nom > span { font: 600 13px/1.2 var(--vy-font-ui); color: var(--fen-texte); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vy-sort__nom small { font: 500 11px/1.2 var(--vy-font-ui); color: var(--fen-texte-2); }
+.vy-sort.on .vy-sort__nom > span { color: var(--vy-or-clair); }
+.vy-sort.bloque { background: rgba(0, 0, 0, 0.14); }
+.vy-sort.bloque .vy-sort__icone { filter: grayscale(1) brightness(0.62); box-shadow: none; }
+.vy-sort.bloque .vy-sort__nom > span, .vy-sort.bloque .vy-sort__nom small { color: color-mix(in srgb, var(--fen-texte-2) 75%, transparent); }
+.vy-sort__niveau { grid-column: 2; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font: 600 11px var(--vy-font-ui); color: var(--fen-texte-2); }
+.vy-sort__niveau svg { width: 12px; height: 12px; }
+
+.vy-sort__rang { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.vy-sort__rang button { position: relative; width: 30px; height: 30px; flex: none; display: grid; place-items: center; padding: 0; border-radius: 50%; border: 1px solid var(--fen-filet); background: var(--fen-fond-2); color: var(--fen-texte); cursor: pointer; }
+.vy-sort__rang button svg { width: 15px; height: 15px; }
+.vy-sort__rang button:disabled { cursor: default; color: color-mix(in srgb, var(--fen-texte-2) 70%, transparent); background: transparent; border-color: rgba(255, 255, 255, 0.06); }
+.vy-sort__rang button:disabled svg { width: 12px; height: 12px; }
+.vy-sort__plus:not(:disabled) { border-color: var(--fen-accent); color: var(--vy-or-clair); background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--fen-accent) 38%, transparent), color-mix(in srgb, var(--fen-accent) 10%, var(--fen-fond-2))); box-shadow: 0 0 10px color-mix(in srgb, var(--fen-accent) 30%, transparent); }
+.vy-sort__plus:not(:disabled):hover { border-color: var(--vy-or-clair); box-shadow: var(--vy-lueur-or); }
+.vy-sort__moins:not(:disabled) { border-color: var(--fen-actif); color: var(--fen-actif); }
+.vy-sort__cout { position: absolute; top: -6px; right: -7px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: var(--vy-or); color: var(--vy-encre); font: 800 10px/15px var(--vy-font-ui); text-align: center; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
+.vy-sort__plus:disabled .vy-sort__cout { background: var(--vy-pierre-clair); color: var(--fen-texte); opacity: 0.8; }
+.vy-sort__valeur { width: 36px; display: grid; justify-items: center; gap: 3px; }
+.vy-sort__valeur b { font: 700 15px/1 var(--vy-font-ui); font-variant-numeric: tabular-nums; color: var(--fen-texte); }
+.vy-sort.prevu .vy-sort__valeur b { color: var(--fen-actif); }
+.vy-pips { display: flex; gap: 2px; }
+.vy-pips i { width: 5px; height: 5px; border-radius: 50%; background: rgba(255, 255, 255, 0.14); }
+.vy-pips i.on { background: var(--fen-accent); }
+.vy-pips i.prevu { background: var(--fen-actif); box-shadow: 0 0 4px var(--fen-actif); }
+.vy-pips i.verrou { background: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22); }
+.vy-sort__points { justify-self: center; min-width: 34px; padding: 3px 6px; border-radius: 999px; background: rgba(0, 0, 0, 0.38); color: var(--fen-texte-2); font: 700 12px var(--vy-font-ui); font-variant-numeric: tabular-nums; text-align: center; }
+.vy-sort__points.on { color: var(--fen-actif); background: color-mix(in srgb, var(--fen-actif) 15%, rgba(0, 0, 0, 0.4)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fen-actif) 45%, transparent); }
+
+/* ----- Fiche ----- */
+.vy-sorts__fiche { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 4px 12px 0; }
+.vy-rangs { display: flex; gap: 4px; margin-bottom: 8px; }
+.vy-rang { position: relative; flex: 1; min-height: 34px; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 4px; border: 1px solid var(--fen-filet); border-radius: 5px; background: rgba(0, 0, 0, 0.22); color: var(--fen-texte-2); cursor: pointer; font: inherit; }
+.vy-rang b { font: 700 14px var(--vy-font-ui); }
+.vy-rang small { font: 600 9.5px var(--vy-font-ui); white-space: nowrap; }
+.vy-rang svg { width: 11px; height: 11px; flex: none; }
+.vy-rang.acquis { color: var(--vy-or-clair); }
+.vy-rang.acquis::after, .vy-rang.prevu::after { content: ""; position: absolute; left: 30%; right: 30%; bottom: 3px; height: 2px; border-radius: 1px; background: var(--fen-accent); }
+.vy-rang.prevu { color: var(--fen-actif); }
+.vy-rang.prevu::after { background: var(--fen-actif); }
+.vy-rang.actuel { border-color: var(--fen-accent); }
+.vy-rang.verrou { color: color-mix(in srgb, var(--fen-texte-2) 70%, transparent); }
+.vy-rang[aria-selected="true"] { background: color-mix(in srgb, var(--fen-actif) 15%, var(--fen-fond-2)); border-color: var(--fen-actif); color: var(--fen-texte); box-shadow: var(--vy-lueur-cristal-in); }
+.vy-fiche-sort { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 12px; padding: 9px 10px; border-radius: 8px; background: linear-gradient(90deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.12)); border: 1px solid var(--fen-filet); }
+.vy-fiche-sort__icone { width: 64px; height: 64px; border-radius: 13px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); }
+.vy-fiche-sort__icone.bloque { filter: grayscale(1) brightness(0.65); }
+.vy-fiche-sort__nom { margin: 0 0 2px; font: 700 17px/1.2 var(--vy-font-titre); letter-spacing: 0.03em; color: var(--vy-or-clair); }
+.vy-fiche-sort__meta { margin: 0; font-size: 12px; color: var(--fen-texte-2); }
+.vy-fiche-sort__meta b { color: var(--fen-texte); }
+.vy-carac-sort { display: flex; flex-wrap: wrap; gap: 4px 5px; margin: 9px 0 2px; }
+.vy-carac-sort span { padding: 3px 7px; border-radius: 4px; border: 1px solid var(--fen-filet); background: rgba(0, 0, 0, 0.24); font: 500 11.5px/1.35 var(--vy-font-ui); color: var(--fen-texte-2); }
+.vy-carac-sort b { color: var(--fen-texte); font-weight: 700; }
+.vy-carac-sort i { font-style: normal; color: var(--fen-actif); }
+.vy-effets { list-style: none; margin: 0; padding: 0; display: grid; }
+.vy-effets li { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 4px 2px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 12.5px; }
+.vy-effets li > span { color: var(--fen-texte-2); flex: none; }
+.vy-effets li > b { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.vy-effets li small { color: var(--fen-texte-2); font-weight: 500; }
+.vy-effets li.sous > span { position: relative; padding-left: 13px; }
+.vy-effets li.sous > span::before { content: ""; position: absolute; left: 3px; top: 0.5em; width: 5px; height: 5px; border-radius: 50%; background: color-mix(in srgb, var(--fen-accent) 70%, transparent); }
+.vy-sous--suivant { color: var(--fen-actif); }
+.vy-sous--suivant > :last-child:not(:first-child) { color: var(--fen-texte-2); text-transform: none; letter-spacing: 0; font-weight: 600; }
+.vy-effets--suivant li { border-bottom: 0; margin-bottom: 3px; padding: 5px 8px; border-radius: 4px; border-left: 2px solid var(--fen-actif); background: color-mix(in srgb, var(--fen-actif) 8%, transparent); }
+.vy-effets--suivant li > b { color: var(--vy-texte); }
+.vy-effets--suivant s { text-decoration: none; color: var(--fen-texte-2); font-weight: 500; }
+.vy-fiche-sort__recit { margin: 12px 0 0; padding: 8px 10px; border-left: 2px solid var(--fen-filet); font: italic 13px/1.5 var(--vy-font-lecture); color: var(--fen-texte-2); }
+
+/* ----- Pied : réinitialiser ou valider, répartition automatique, capital ----- */
+.vy-sorts__pied { margin: 0 -12px; padding: 8px 12px; flex: none; }
+.vy-sorts__capital { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; color: var(--fen-texte-2); white-space: nowrap; }
+.vy-sorts__capital b { min-width: 30px; padding: 3px 9px; border-radius: 999px; background: rgba(0, 0, 0, 0.45); color: var(--fen-texte); font: 700 14px var(--vy-font-ui); text-align: center; font-variant-numeric: tabular-nums; }
+.vy-sorts__capital.on b { color: var(--vy-succes); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vy-succes) 50%, transparent); }
+
+/* ----- Confirmation ----- */
+.vy-sorts__voile { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; padding: 16px; border-radius: 7px; background: rgba(5, 8, 13, 0.62); backdrop-filter: blur(1.5px); }
+.vy-sorts__modale { width: min(380px, 100%); max-height: 100%; overflow-y: auto; padding: 14px 18px 16px; border: 1.5px solid transparent; border-radius: 8px; text-align: center; background: var(--vy-grain) padding-box, linear-gradient(180deg, var(--fen-fond-2), var(--fen-fond)) padding-box, var(--vy-cadre) border-box; box-shadow: var(--vy-ombre-portee); animation: vy-entree var(--vy-duree) var(--vy-courbe); }
+.vy-sorts__modale h3 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--fen-filet); font: 700 15px var(--vy-font-titre); letter-spacing: 0.08em; color: var(--fen-accent); }
+.vy-sorts__question { margin: 0 0 8px; font: 600 15px var(--vy-font-ui); color: var(--fen-texte); }
+.vy-sorts__modale p { margin: 6px 0 0; }
+.vy-sorts__resume { list-style: none; margin: 0 auto; padding: 0; max-width: 300px; text-align: left; }
+.vy-sorts__resume li { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 12.5px; }
+.vy-sorts__resume b { color: var(--fen-actif); font-weight: 600; white-space: nowrap; }
+.vy-sorts__choix { display: flex; gap: 10px; margin-top: 14px; }
+.vy-sorts__choix .vy-bouton { flex: 1; }
+
+/* ----- Pastille du menu : des points de sort à placer ----- */
+.vy-menu.a-placer::after { content: ""; position: absolute; top: 4px; right: 4px; width: 7px; height: 7px; border-radius: 50%; background: var(--vy-cristal); box-shadow: 0 0 6px var(--vy-cristal); }
+
+/* ----- Barre de sorts du combat : l'icône peinte prend la place du losange de l'élément ----- */
+.spell.avec-icone .icon { width: 22px; height: 22px; left: 5px; bottom: 4px; transform: none; background: none; border-radius: 5px; }
+.spell.avec-icone .icon img { display: block; width: 100%; height: 100%; border-radius: 5px; }
+.spell.avec-icone .cost { padding-left: 27px; }
+#app.mode-combat .spell.avec-icone .icon { width: 20px; height: 20px; left: 4px; bottom: 3px; }
+#app.mode-combat .spell.avec-icone .cost { padding-left: 25px; }
+
+/* ----- Téléphone ----- */
+@media (max-width: 720px), (max-height: 480px) and (max-width: 1000px) {
+  .vy-fenetre--sorts { height: auto; }
+  .vy-fenetre--sorts .vy-fenetre__tete { padding-top: 3px; padding-bottom: 3px; }
+  .vy-fenetre--sorts .vy-fenetre__corps { padding: 6px 8px 0; }
+  .vy-sorts { gap: 8px; }
+  .vy-sorts__gauche { gap: 4px; }
+  .vy-sorts__outils select { height: 30px; }
+  .vy-sorts__entete, .vy-sort { grid-template-columns: minmax(0, 1fr) 108px 38px; }
+  .vy-sorts__entete { font-size: 9px; padding-top: 0; }
+  .vy-sorts__liste { gap: 3px; }
+  .vy-sort { min-height: 42px; }
+  .vy-sort__choix { gap: 7px; padding: 3px 4px 3px 5px; }
+  .vy-sort__icone { width: 30px; height: 30px; border-radius: 7px; }
+  .vy-sort__nom > span { font-size: 12.5px; }
+  .vy-sort__nom small { display: none; }
+  .vy-sort__rang { gap: 3px; }
+  .vy-sort__rang button { width: 32px; height: 32px; }
+  .vy-sort__valeur { width: 28px; }
+  .vy-sort__points { min-width: 28px; padding: 2px 4px; font-size: 11px; }
+  .vy-rangs { margin-bottom: 5px; gap: 3px; }
+  .vy-rang { min-height: 28px; gap: 3px; padding: 0 2px; }
+  .vy-rang small { font-size: 8.5px; }
+  .vy-fiche-sort { grid-template-columns: 40px minmax(0, 1fr); gap: 8px; padding: 5px 8px; }
+  .vy-fiche-sort__icone { width: 40px; height: 40px; border-radius: 9px; }
+  .vy-fiche-sort__nom { font-size: 14px; }
+  .vy-fiche-sort__meta { font-size: 11px; }
+  .vy-carac-sort { margin-top: 6px; }
+  .vy-carac-sort span { font-size: 11px; padding: 2px 6px; }
+  .vy-effets li { font-size: 12px; padding: 3px 2px; }
+  .vy-fiche-sort__recit { font-size: 12px; margin-top: 8px; padding: 6px 8px; }
+  .vy-sorts__pied { margin: 0 -8px; padding: 5px 8px; gap: 6px 10px; }
+  .vy-sorts__pied .vy-coche { font-size: 12px; }
+  .vy-sorts__capital b { font-size: 13px; padding: 2px 8px; }
+}
+/* Téléphone en largeur étroite : la liste au-dessus, la fiche dessous. */
+@media (max-width: 560px) {
+  .vy-sorts { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 46%) minmax(0, 1fr); }
+  .vy-sorts__fiche { border-top: 1px solid var(--fen-filet); padding-top: 6px; }
+}

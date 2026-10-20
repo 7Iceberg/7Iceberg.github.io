@@ -1,0 +1,306 @@
+/* Fenêtres, barre de menus, bloc vital, raccourcis, mini-carte (js/fenetres.js, js/hud-fenetres.js).
+   L'Inventaire, les Caractéristiques et les Récompenses en attente : css/fenetres-personnage.css.
+   Ardoise de nuit, liseré d'or, cristal pour ce qui est actif. Les thèmes d'interface ne changent
+   que trois teintes : le fond des fenêtres, leur bandeau, l'accent. */
+#app { position: relative; }
+/* La scène ne défile jamais : un focus ou un canvas trop haut la décalait sur téléphone. */
+#stage { overflow: hidden; overflow: clip; }
+#app { --fen-fond: #121c29; --fen-fond-2: #182536; --fen-tete: #1c2a3d; --fen-accent: var(--vy-or); --fen-actif: var(--vy-cristal); --fen-texte: var(--vy-texte); --fen-texte-2: var(--vy-texte-2); --fen-filet: rgba(201, 166, 107, 0.2); }
+#app[data-ui-theme="royal"] { --fen-fond: #0f1b33; --fen-fond-2: #142446; --fen-tete: #1a2f5c; --fen-accent: #9cc3ff; --fen-filet: rgba(156, 195, 255, 0.22); }
+#app[data-ui-theme="braise"] { --fen-fond: #1d1210; --fen-fond-2: #281816; --fen-tete: #3a1d17; --fen-accent: #f39a7e; --fen-filet: rgba(243, 154, 126, 0.22); }
+#app[data-ui-theme="cimes"] { --fen-fond: #101c15; --fen-fond-2: #16261c; --fen-tete: #1d3526; --fen-accent: #a9cf9f; --fen-filet: rgba(169, 207, 159, 0.22); }
+#app[data-ui-theme="ardoise"] { --fen-fond: #ece6d8; --fen-fond-2: #e0d8c6; --fen-tete: #cfc4ad; --fen-accent: #7a5f35; --fen-actif: #006f94; --fen-texte: #1d1a14; --fen-texte-2: #5d5547; --fen-filet: rgba(122, 95, 53, 0.28); }
+
+/* ----- Calque et fenêtre ----- */
+.vy-fenetres { position: absolute; inset: var(--zs-haut) var(--zs-droite) var(--zs-bas) var(--zs-gauche); pointer-events: none; z-index: 15; overflow: hidden; }
+.vy-fenetre {
+  position: absolute; pointer-events: auto;
+  width: min(var(--largeur, 420px), calc(100% - 16px));
+  max-height: calc(100% - 72px);
+  display: flex; flex-direction: column;
+  color: var(--fen-texte);
+  background: var(--vy-grain) padding-box, linear-gradient(180deg, var(--fen-fond-2), var(--fen-fond)) padding-box, var(--vy-cadre) border-box;
+  border: 1.5px solid transparent;
+  border-radius: 7px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 0, 0, 0.4);
+  font: 13px/1.4 var(--vy-font-ui);
+}
+.vy-fenetre.active { box-shadow: 0 16px 46px rgba(0, 0, 0, 0.6), 0 0 22px rgba(0, 194, 255, 0.12); }
+.vy-fenetre.deplacee { opacity: 0.94; }
+.vy-fenetre__tete {
+  display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 10px; cursor: grab; touch-action: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--fen-tete) 100%, white 6%), var(--fen-tete));
+  border-bottom: 1px solid var(--fen-filet); border-radius: 6px 6px 0 0;
+}
+.vy-fenetre.deplacee .vy-fenetre__tete { cursor: grabbing; }
+.vy-fenetre__icone { width: 18px; height: 18px; color: var(--fen-accent); flex: none; }
+.vy-fenetre__icone svg { width: 100%; height: 100%; }
+.vy-fenetre__titre { margin: 0; flex: 1; min-width: 0; font: 700 13px/1.2 var(--vy-font-titre); letter-spacing: 0.06em; color: var(--fen-accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vy-fenetre__touche { font: 600 10px/1 var(--vy-font-ui); color: var(--fen-texte-2); border: 1px solid var(--fen-filet); border-radius: 3px; padding: 3px 5px; }
+.vy-fenetre__boutons { display: flex; gap: 2px; }
+.vy-fenetre__bouton { width: 26px; height: 26px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--fen-texte-2); cursor: pointer; }
+.vy-fenetre__bouton svg { width: 15px; height: 15px; }
+.vy-fenetre__bouton:hover { background: rgba(255, 255, 255, 0.07); color: var(--fen-texte); }
+.vy-fenetre__bouton[data-act="fermer"]:hover { background: rgba(240, 122, 92, 0.18); color: var(--vy-braise-clair); }
+.vy-fenetre__corps { overflow-y: auto; padding: 12px 14px 14px; min-height: 0; overscroll-behavior: contain; }
+.vy-fenetre.reduite .vy-fenetre__corps { display: none; }
+.vy-fenetre :focus-visible { outline: 2px solid var(--fen-actif); outline-offset: 2px; }
+
+/* Les écrans d'avant (lignes, onglets, intertitres) gardent leur mise en page dans une fenêtre. */
+.vy-fenetre__corps h3 { margin: 0 0 6px; font: 700 15px var(--vy-font-titre); color: var(--fen-accent); }
+.vy-fenetre__corps h4 { margin: 14px 0 6px; font: 600 11px var(--vy-font-ui); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fen-texte-2); }
+.vy-fenetre__corps .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--fen-filet); }
+.vy-fenetre__corps .row > span:first-child { flex: 1; min-width: 0; }
+.vy-fenetre__corps .row.here { background: rgba(201, 166, 107, 0.1); }
+.vy-fenetre__corps .row.dim { opacity: 0.6; }
+.vy-fenetre__corps .row.got b { color: var(--vy-succes); }
+.vy-fenetre__corps .btns { display: flex; gap: 6px; flex-shrink: 0; }
+.vy-fenetre__corps button:not([class]), .vy-fenetre__corps .tab { min-height: 32px; padding: 5px 11px; border-radius: 4px; border: 1px solid var(--fen-filet); background: var(--fen-fond-2); color: var(--fen-texte); cursor: pointer; font: 600 12px var(--vy-font-ui); }
+.vy-fenetre__corps button.danger { border-color: var(--vy-danger); color: var(--vy-danger); min-height: 32px; padding: 5px 11px; border-radius: 4px; background: transparent; cursor: pointer; }
+.vy-fenetre__corps .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.vy-fenetre__corps .tab.on { border-color: var(--fen-actif); color: var(--fen-actif); }
+.vy-fenetre__corps .badge { font-size: 10px; padding: 1px 5px; border: 1px solid var(--fen-filet); border-radius: 3px; }
+.vy-fenetre__corps textarea { width: 100%; background: var(--vy-jauge-fond); color: var(--fen-texte); border: 1px solid var(--fen-filet); border-radius: 4px; font: 12px/1.4 ui-monospace, monospace; padding: 6px; }
+.vy-fenetre__corps .muted, .vy-fenetre .muted { color: var(--fen-texte-2); }
+.vy-note { margin: 10px 0 0; font-size: 12px; }
+
+/* Onglets et intertitres des nouvelles fenêtres */
+.vy-onglets { display: flex; gap: 4px; margin: -4px 0 10px; border-bottom: 1px solid var(--fen-filet); }
+.vy-onglet { padding: 7px 12px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--fen-texte-2); font: 700 11px var(--vy-font-ui); text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; }
+.vy-onglet.on { color: var(--fen-accent); border-bottom-color: var(--fen-accent); }
+.vy-sous { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 12px 0 6px; font: 700 10.5px var(--vy-font-ui); text-transform: uppercase; letter-spacing: 0.1em; color: var(--fen-texte-2); }
+.vy-sous::after { content: ""; flex: 1; height: 1px; background: var(--fen-filet); order: 1; }
+.vy-sous > :last-child:not(:first-child) { order: 2; }
+.vy-lignes { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 14px; }
+.vy-ligne { display: grid; grid-template-columns: 18px 1fr auto; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.04); min-width: 0; }
+.vy-ligne > span:nth-child(2) { color: var(--fen-texte-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vy-ligne b { font-variant-numeric: tabular-nums; text-align: right; }
+.vy-pic { display: inline-block; width: 16px; height: 16px; flex: none; }
+.vy-pastille { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--c); margin-right: 7px; vertical-align: 1px; box-shadow: 0 0 6px var(--c); }
+.vy-fen-pied { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 12px -14px -14px; padding: 9px 14px; border-top: 1px solid var(--fen-filet); background: rgba(0, 0, 0, 0.18); border-radius: 0 0 6px 6px; }
+.vy-coche { display: inline-flex; align-items: center; gap: 6px; color: var(--fen-texte-2); cursor: pointer; }
+
+/* ----- Caractéristiques (le reste dans css/fenetres-personnage.css) ----- */
+.vy-fiche { display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 10px; margin-bottom: 8px; }
+.vy-fiche__portrait { width: 42px; height: 42px; border-radius: 6px; display: grid; place-items: center; background: var(--c); color: #fff; font: 700 18px var(--vy-font-titre); box-shadow: 0 0 0 1.5px var(--vy-or), inset 0 -8px 12px rgba(0, 0, 0, 0.3); }
+.vy-fiche__nom { font: 700 15px var(--vy-font-titre); color: var(--fen-texte); }
+.vy-fiche__classe { font-size: 12px; color: var(--fen-texte-2); }
+.vy-fiche__niv { color: var(--fen-texte-2); font-size: 12px; } .vy-fiche__niv b { color: var(--fen-accent); font: 700 18px var(--vy-font-titre); }
+.vy-radar { display: block; width: 100%; max-width: 280px; margin: 0 auto; }
+.vy-radar .anneau { fill: none; stroke: var(--fen-filet); }
+.vy-radar .axe { stroke: var(--fen-filet); }
+.vy-radar .valeur { fill: color-mix(in srgb, var(--fen-accent) 30%, transparent); stroke: var(--fen-accent); stroke-width: 1.6; stroke-linejoin: round; }
+.vy-radar text { fill: var(--fen-texte); font: 600 10px var(--vy-font-ui); }
+.vy-tableau { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.vy-tableau th, .vy-tableau td { padding: 6px 4px; text-align: right; border-bottom: 1px solid var(--fen-filet); }
+.vy-tableau thead th { font: 700 10px var(--vy-font-ui); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fen-texte-2); }
+.vy-tableau th[scope="row"] { text-align: left; font-weight: 600; }
+.vy-tableau td.neg { color: var(--vy-braise-clair); }
+.vy-points { color: var(--fen-texte-2); } .vy-points b { color: var(--fen-texte); font-size: 15px; }
+.vy-points.on b { color: var(--vy-succes); }
+
+/* Voie élémentaire */
+.vy-voies { display: flex; flex-wrap: wrap; gap: 6px; }
+.vy-voie { flex: 1 1 70px; min-height: 32px; padding: 5px 8px; border: 1px solid var(--fen-filet); border-left: 3px solid var(--c); border-radius: 5px; background: rgba(0, 0, 0, 0.2); color: var(--fen-texte); font: 600 12px var(--vy-font-ui); cursor: pointer; }
+.vy-voie small, .voie-row small { font-weight: 400; opacity: 0.75; }
+.vy-voie.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 18%, transparent); }
+
+/* ----- Personnage : emplacements vides et ensembles (l'Inventaire, css/fenetres-personnage.css) ----- */
+.vy-case--emplacement { opacity: 0.5; background: rgba(0, 0, 0, 0.25); }
+.vy-case--emplacement .vy-case__icone { color: var(--fen-texte-2); }
+.vy-ensembles { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.vy-ensemble { position: relative; display: inline-flex; }
+.vy-ensembles .vy-bouton svg { width: 14px; height: 14px; }
+.vy-ensemble .vy-bouton { min-width: 36px; }
+.vy-ensemble__suppr { position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; padding: 2px; border-radius: 50%; border: 0; background: var(--fen-tete); color: var(--fen-texte-2); cursor: pointer; display: none; }
+.vy-ensemble:hover .vy-ensemble__suppr, .vy-ensemble:focus-within .vy-ensemble__suppr { display: block; }
+.vy-ensemble__suppr svg { width: 100%; height: 100%; }
+
+/* ----- Recherche et listes déroulantes ----- */
+.vy-recherche { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px solid var(--fen-filet); border-radius: 5px; background: rgba(0, 0, 0, 0.25); color: var(--fen-texte-2); }
+.vy-recherche svg { width: 15px; height: 15px; flex: none; }
+.vy-recherche input { flex: 1; min-width: 0; height: 32px; border: 0; background: transparent; color: var(--fen-texte); font: 13px var(--vy-font-ui); outline: none; }
+.vy-fenetre select { height: 34px; padding: 0 8px; border: 1px solid var(--fen-filet); border-radius: 5px; background: var(--fen-fond-2); color: var(--fen-texte); font: 12px var(--vy-font-ui); }
+
+/* ----- Journal ----- */
+.vy-journal { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
+.vy-journal__ligne { padding: 3px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.04); color: var(--fen-texte-2); }
+.vy-journal__ligne time { color: var(--fen-texte-2); opacity: 0.7; margin-right: 8px; font-variant-numeric: tabular-nums; }
+.vy-journal__ligne.player { color: #9fd3ea; } .vy-journal__ligne.monster { color: #f2a08c; } .vy-journal__ligne.turn { color: var(--vy-texte-or); }
+
+/* ----- Options : thèmes ----- */
+.vy-themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.vy-theme { display: grid; gap: 6px; padding: 8px; border: 1px solid var(--fen-filet); border-radius: 6px; background: rgba(0, 0, 0, 0.18); color: var(--fen-texte); font: 600 12px var(--vy-font-ui); cursor: pointer; text-align: left; }
+.vy-theme.on { border-color: var(--fen-actif); }
+.vy-theme__apercu { height: 26px; border-radius: 4px; background: linear-gradient(90deg, var(--f) 0 70%, var(--a) 70%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1); }
+
+/* ----- Barre de menus ----- */
+.vy-menus { position: absolute; top: calc(10px + var(--sc-haut)); right: calc(10px + var(--sc-droite)); z-index: 12; display: flex; gap: 3px; padding: 4px; border-radius: 7px; background: rgba(10, 16, 25, 0.86); border: 1px solid var(--fen-filet); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4); }
+/* En combat, le plateau remplit la scène : la barre descend au coin bas droit, sur la falaise et le
+   vide, plutôt que sur les cases du fond. */
+#app.mode-combat .vy-menus { top: auto; bottom: calc(10px + var(--sc-bas)); }
+.vy-menu { position: relative; width: 36px; height: 36px; padding: 7px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--fen-accent); cursor: pointer; }
+.vy-menu svg { width: 100%; height: 100%; }
+.vy-menu kbd { position: absolute; right: 1px; bottom: 0; font: 600 8px/1 var(--vy-font-ui); color: var(--fen-texte-2); }
+.vy-menu:hover { background: rgba(255, 255, 255, 0.06); }
+.vy-menu.on { border-color: var(--fen-actif); color: var(--fen-actif); background: rgba(0, 194, 255, 0.08); }
+#tracker { top: 64px !important; }
+
+/* ----- Vue du plateau : recentrer, plein écran (js/main.js, js/plein-ecran.js) ----- */
+.vy-camera { position: absolute; top: 50%; right: calc(10px + var(--sc-droite)); z-index: 12; display: flex; flex-direction: column; gap: 3px; padding: 4px; transform: translateY(-50%); border-radius: 7px; background: rgba(10, 16, 25, 0.86); border: 1px solid var(--fen-filet); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4); }
+.vy-camera:empty { display: none; }
+.vy-camera__bouton { width: 36px; height: 36px; padding: 7px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--fen-accent); cursor: pointer; }
+.vy-camera__bouton svg { width: 100%; height: 100%; display: block; }
+.vy-camera__bouton:hover { background: rgba(255, 255, 255, 0.06); }
+.vy-camera__bouton[aria-pressed="true"] { border-color: var(--fen-actif); color: var(--fen-actif); background: rgba(0, 194, 255, 0.08); }
+.vy-camera__bouton.au-cadre { opacity: 0.55; }
+.vy-camera__bouton:focus-visible { outline: 2px solid var(--fen-actif); outline-offset: 1px; }
+/* En combat sur grand écran, au-dessus de la barre de menus, dans le coin bas droit. */
+#app.mode-combat .vy-camera { top: auto; bottom: calc(64px + var(--sc-bas)); transform: none; }
+
+/* ----- Bloc vital et raccourcis ----- */
+#bas-centre { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 10px; pointer-events: auto; }
+.vy-vital { display: flex; align-items: center; gap: 6px; }
+.vy-vital__pv { position: relative; width: 74px; height: 86px; }
+.vy-vital__pv svg { width: 100%; height: 100%; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5)); }
+.vy-vital__coque { fill: #160b0a; }
+.vy-vital__niveau { transition: y 0.5s ease; }
+.vy-vital__bord { fill: none; stroke: var(--vy-or); stroke-width: 2.4; stroke-linejoin: round; }
+.vy-vital__facette { fill: none; stroke: rgba(255, 255, 255, 0.14); stroke-width: 1; }
+.vy-vital__valeur { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); font-variant-numeric: tabular-nums; line-height: 1.05; }
+.vy-vital__valeur b { font: 800 16px var(--vy-font-ui); border-bottom: 1px solid rgba(255, 255, 255, 0.5); padding-bottom: 1px; }
+.vy-vital__valeur span { font: 600 12px var(--vy-font-ui); opacity: 0.85; }
+.vy-vital.bas .vy-vital__bord { stroke: var(--vy-braise-clair); animation: vy-pouls 1.1s ease-in-out infinite; }
+@keyframes vy-pouls { 50% { stroke-width: 4; } }
+.vy-vital__pts { display: grid; gap: 5px; }
+.vy-vital__pa, .vy-vital__pm { width: 40px; height: 40px; display: grid; place-content: center; text-align: center; line-height: 1; font-variant-numeric: tabular-nums; }
+.vy-vital__pa b, .vy-vital__pm b { font: 800 16px var(--vy-font-ui); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
+.vy-vital__pa small, .vy-vital__pm small { font: 700 8px var(--vy-font-ui); letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.8); }
+/* PA : un sceau d'or rond ; PM : un chevron de marche vert. */
+.vy-vital__pa { border-radius: 50%; background: radial-gradient(circle at 35% 30%, #f6dc9a, #b0873f 60%, #6e5226); box-shadow: 0 0 0 2px #2a1e0c, 0 0 12px rgba(226, 198, 144, 0.35); }
+.vy-vital__pm { clip-path: polygon(0 0, 62% 0, 100% 50%, 62% 100%, 0 100%, 26% 50%); background: linear-gradient(135deg, #a9d79c, #4f8a4a 65%, #2d5530); padding-left: 6px; }
+.vy-raccourcis { display: grid; grid-template-columns: repeat(6, 44px); gap: 4px; padding: 5px; border-radius: 7px; background: rgba(10, 16, 25, 0.86); border: 1px solid var(--fen-filet); }
+.vy-raccourcis .vy-case { --vy-case: 44px; width: 44px; height: 44px; min-height: 0; }
+
+/* ----- Mini-carte ----- */
+.vy-minicarte { position: absolute; right: 10px; bottom: 10px; width: 210px; height: 120px; padding: 0; border-radius: 7px; overflow: hidden; border: 1.5px solid var(--vy-or); background: rgba(8, 12, 19, 0.9); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); cursor: pointer; }
+.vy-minicarte canvas { display: block; width: 100%; height: 100%; }
+.vy-minicarte span { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 6px; font: 600 10px var(--vy-font-ui); color: var(--vy-texte-or); background: linear-gradient(0deg, rgba(0, 0, 0, 0.75), transparent); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ----- Téléphone : une fenêtre à la fois, en feuille plein écran ----- */
+@media (max-width: 720px) {
+  .vy-fenetre { left: 6px !important; right: 6px; top: 6px !important; bottom: 6px; width: auto; max-height: none; }
+  .vy-fenetre__tete { cursor: default; }
+  .vy-fenetre__touche { display: none; }
+  /* La barre ne sort jamais de l'écran : s'il y a trop de menus, ses boutons rétrécissent. */
+  .vy-menus { top: auto; bottom: calc(8px + var(--sc-bas)); right: 50%; transform: translateX(50%); width: max-content; max-width: calc(100% - 12px - var(--sc-gauche) - var(--sc-droite)); }
+  .vy-menu { min-width: 0; }
+  #app.mode-combat .vy-menus { display: none; }
+  #bas-centre { bottom: 62px; }
+  .vy-raccourcis { grid-template-columns: repeat(6, 38px); }
+  .vy-raccourcis .vy-case { --vy-case: 38px; width: 38px; height: 38px; }
+  .vy-minicarte { width: 110px; height: 74px; top: 64px; bottom: auto; }
+  #tracker { display: none; }
+}
+/* La barre de sorts flotte sur le bas de la scène : la barre de menus passe au-dessus, les boutons
+   de la vue restent au milieu du bord droit. */
+@media (max-width: 900px), (max-height: 520px) {
+  #app.mode-combat .vy-menus { bottom: calc(84px + var(--zs-bas)); }
+  #app.mode-combat .vy-camera { top: 50%; bottom: auto; transform: translateY(-50%); }
+}
+/* En portrait, le plateau prend toute la largeur : les boutons de la vue passent sous la barre du
+   personnage, dans le ciel. */
+@media (max-aspect-ratio: 1/1) {
+  .vy-camera, #app.mode-combat .vy-camera { top: calc(84px + var(--sc-haut)); bottom: auto; left: calc(10px + var(--sc-gauche)); right: auto; transform: none; }
+}
+/* Téléphone en paysage : la barre de menus en haut à droite, au-dessus de la mini-carte (centrée,
+   elle couvrirait la barre du personnage, surtout avec l'encoche, et le coin du fond du plateau) ;
+   elle s'arrête avant la barre du personnage, ses boutons rétrécissent s'il le faut. */
+@media (max-height: 480px) and (max-width: 1000px) {
+  .vy-menus { top: calc(6px + var(--sc-haut)); bottom: auto; right: calc(6px + var(--sc-droite)); left: auto; transform: none; max-width: calc(100% - 250px - var(--sc-gauche) - var(--sc-droite)); }
+  #app.mode-combat .vy-menus { top: calc(6px + var(--sc-haut)); bottom: auto; left: calc(6px + var(--sc-gauche)); right: auto; transform: none; }
+  #map-name { display: none; }
+  .vy-menu { width: 32px; height: 32px; padding: 6px; min-width: 0; }
+  #bas-centre { bottom: 6px; }
+  .vy-vital__pv { width: 56px; height: 66px; }
+  .vy-minicarte { width: 120px; height: 78px; top: 50px; bottom: auto; }
+  /* Les boutons de la vue restent sous la mini-carte, même sur un écran très bas. */
+  .vy-camera { top: max(50%, 180px); }
+  /* Le suivi des quêtes passe à gauche, sous la barre du personnage, en bref : à droite, la
+     mini-carte le couvrait. */
+  #tracker { top: 86px !important; left: 6px; right: auto; width: 170px; }
+  #tracker .tq span { display: none; }
+  .vy-fenetre { left: 4px !important; right: 4px; top: 4px !important; bottom: 4px; width: auto; max-height: none; }
+}
+@media (prefers-reduced-motion: reduce) { .vy-vital__niveau { transition: none; } .vy-vital.bas .vy-vital__bord { animation: none; } }
+
+/* Sur le thème clair, l'argent de l'Aer reste lisible. */
+#app[data-ui-theme="ardoise"] .vy-pic, #app[data-ui-theme="ardoise"] .vy-pastille { filter: drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.75)); }
+
+/* ----- Carte du monde (js/hud-carte.js) : le canvas à gauche, la fiche de la case à droite ----- */
+.vy-fenetre--carte { height: min(640px, calc(100% - 72px)); }
+.vy-fenetre--carte .vy-fenetre__corps { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 8px 10px 10px; }
+.vy-fenetre--carte.reduite { height: auto; }
+.vy-carte { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.vy-carte__barre { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; border-bottom: 1px solid var(--fen-filet); }
+.vy-carte__onglets { margin: 0; border: 0; }
+.vy-carte__outils { display: flex; gap: 4px; padding-bottom: 5px; }
+.vy-carte__outils .vy-bouton svg { width: 16px; height: 16px; flex: none; }
+.vy-carte__corps { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 10px; }
+.vy-carte__vue { position: relative; min-height: 0; border-radius: 6px; overflow: hidden; border: 1px solid var(--fen-filet); background: var(--fen-fond); }
+.vy-carte__cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+.vy-carte__cv.glisse { cursor: grabbing; }
+.vy-carte__fiche { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+.vy-carte__fiche h3 { margin: 2px 0 2px; }
+.vy-carte__compte { margin: 0 0 8px; font-size: 11px; color: var(--fen-texte-2); text-transform: uppercase; letter-spacing: 0.08em; }
+.vy-carte__compte b { color: var(--fen-accent); font-size: 13px; }
+.vy-carte__coord { margin: 0 0 6px; color: var(--fen-texte-2); font-size: 12px; }
+.vy-carte__coord b { color: var(--fen-texte); font-variant-numeric: tabular-nums; margin-right: 4px; }
+.vy-carte__ici { margin: 4px 0; padding: 4px 8px; border-radius: 4px; border: 1px solid color-mix(in srgb, var(--fen-actif) 55%, transparent); color: var(--fen-actif); font-weight: 600; font-size: 12px; }
+.vy-carte__avenir { color: var(--vy-eclat-clair); font-weight: 700; }
+.vy-carte__liste { list-style: none; margin: 0; padding: 0; font-size: 12px; }
+.vy-carte__liste li { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--fen-filet); }
+.vy-carte__liste li > span { min-width: 0; }
+.vy-carte__liste li > b { flex: none; color: var(--fen-texte-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.vy-carte__liste .vy-pastille { width: 8px; height: 8px; margin-right: 6px; }
+.vy-carte__marque { width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; object-fit: contain; }
+.vy-carte__actions { display: flex; gap: 6px; margin: 8px 0 4px; }
+.vy-carte__legende { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--fen-filet); font-size: 11px; color: var(--fen-texte-2); }
+.vy-carte__legende span { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.vy-carte__legende img { width: 18px; height: 18px; flex: none; object-fit: contain; }
+.vy-carte__lien { padding: 0; border: 0; background: none; color: var(--fen-actif); font: inherit; text-decoration: underline; cursor: pointer; }
+/* Bulle à la manière de Dofus : un cartouche sombre, du texte clair, pas de cadre. */
+.vy-carte__bulle { position: absolute; z-index: 3; max-width: 260px; padding: 5px 8px 6px; border-radius: 3px; background: rgba(22, 19, 16, 0.9); color: #f1ebdf; font: 12px/1.35 var(--vy-font-ui); box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35); pointer-events: none; }
+.vy-carte__bulle[hidden] { display: none; }
+.vy-carte__bulle b { display: block; color: #ffffff; font-weight: 700; }
+.vy-carte__bulle span { display: block; }
+.vy-carte__bulle .q { color: #cfc5b1; font-size: 11px; }
+.vy-carte__bulle hr { margin: 4px 0; border: 0; border-top: 1px solid rgba(255, 255, 255, 0.14); }
+.vy-carte__charge { position: absolute; inset: 0; display: grid; place-content: center; gap: 4px; text-align: center; color: var(--fen-texte); font: 600 13px var(--vy-font-ui); background: radial-gradient(ellipse at 50% 40%, #2a3f66, #101a2e); }
+.vy-carte__charge small { color: var(--fen-texte-2); font-weight: 500; min-height: 1.2em; }
+.vy-carte__charge::before { content: ""; width: 28px; height: 28px; margin: 0 auto 8px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.18); border-top-color: var(--fen-actif); animation: vy-tourne 0.9s linear infinite; }
+@keyframes vy-tourne { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .vy-carte__charge::before { animation: none; } }
+.vy-carte__3d { position: absolute; inset: 0; touch-action: none; cursor: grab; background: linear-gradient(180deg, #2b4c86 0%, #6f93c8 42%, #e8c7a8 68%, #c3b3c6 82%, #7f88ad 100%); }
+.vy-carte__3d.glisse { cursor: grabbing; }
+.vy-carte__3d canvas { display: block; width: 100%; height: 100%; }
+.vy-carte__boussole { position: absolute; left: 10px; bottom: 10px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; background: rgba(22, 19, 16, 0.72); box-shadow: inset 0 0 0 1.5px rgba(226, 198, 144, 0.75); pointer-events: none; transition: transform 0.12s linear; }
+.vy-carte__boussole::before { content: ""; position: absolute; left: 50%; top: 13px; margin-left: -4px; border: 4px solid transparent; border-bottom: 9px solid #f07a5c; border-top: 0; }
+.vy-carte__boussole::after { content: ""; position: absolute; left: 50%; top: 22px; margin-left: -4px; border: 4px solid transparent; border-top: 8px solid rgba(242, 226, 201, 0.55); border-bottom: 0; }
+.vy-carte__boussole b { position: absolute; left: 0; right: 0; top: 2px; text-align: center; font: 700 9px/1 var(--vy-font-ui); color: #f2e2c9; }
+.vy-carte__regions { display: grid; gap: 4px; }
+.vy-carte__region { display: flex; align-items: center; flex-wrap: wrap; gap: 0 4px; min-height: 34px; padding: 4px 8px; border: 1px solid var(--fen-filet); border-radius: 5px; background: rgba(0, 0, 0, 0.16); color: var(--fen-texte); font: 600 12px var(--vy-font-ui); text-align: left; cursor: pointer; }
+.vy-carte__region small { margin-left: auto; font-weight: 500; color: var(--fen-texte-2); }
+.vy-carte__region.ferme { color: var(--fen-texte-2); }
+.vy-carte__region.on { border-color: var(--fen-actif); }
+@media (max-width: 720px) {
+  .vy-fenetre--carte { height: auto; }
+  .vy-carte__corps { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .vy-carte__fiche { max-height: 34vh; border-top: 1px solid var(--fen-filet); padding-top: 6px; }
+  .vy-carte__relief span { display: none; }
+}
+@media (max-height: 480px) and (max-width: 1000px) {
+  .vy-fenetre--carte { height: auto; }
+  .vy-carte__corps { grid-template-columns: minmax(0, 1fr) 230px; grid-template-rows: minmax(0, 1fr); }
+  .vy-carte__fiche { max-height: none; border-top: 0; padding-top: 0; }
+}

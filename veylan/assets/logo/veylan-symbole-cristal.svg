@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 160" width="120" height="160" role="img" aria-label="Veylan, symbole : le cristal fendu">
+<title>Veylan, symbole : le cristal fendu (charte 1.0, version plate)</title>
+<polygon points="60,6 84,38 84,98 60,132 36,98 36,38" fill="#1679b8"/>
+<polygon points="60,6 84,38 84,98 60,132" fill="#00c2ff"/>
+<polygon points="60,6 70,38 70,98 60,132 50,98 50,38" fill="#8fe6ff"/>
+<polygon points="36,38 50,38 50,98 36,98" fill="#0a5f95"/>
+<polyline points="60,10 55,36 65,56 54,78 64,100 59,128" fill="none" stroke="#0a2a4a" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="8,16 40,16 60,104 80,16 112,16 60,154" fill="#c9a66b" stroke="#5c4628" stroke-width="1.5" stroke-linejoin="miter"/>
+<polygon points="8,16 40,16 60,104 60,154" fill="#e2c690"/>
+<polyline points="16,22 60,142 104,22" fill="none" stroke="#8e7144" stroke-width="2" stroke-linejoin="miter"/>
+<polyline points="24,34 31,30 29,40 36,44" fill="none" stroke="#8e7144" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="96,52 90,58 93,66" fill="none" stroke="#8e7144" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

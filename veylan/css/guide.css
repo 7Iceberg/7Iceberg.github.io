@@ -1,0 +1,396 @@
+/* ==========================================================================
+   Veylan : le guide et les dialogues (js/guide.js, js/dialogues.js)
+   --------------------------------------------------------------------------
+   La boîte du guide (grand portrait debout sur une boîte claire, bandeau du nom), la bulle d'un
+   PNJ au-dessus de sa tête et la boîte de réponses, le projecteur et la main qui touche, le geste
+   de glisser, les rappels du mode court, les rubans (« Prépare-toi ! », « À toi de jouer ! »,
+   « Niveau supérieur ! »). Les bulles de dialogue sont le seul panneau clair de l'interface
+   (docs/DIRECTION-ARTISTIQUE.md) : calcaire d'Orsane, texte à l'encre, jamais de trait noir.
+   ========================================================================== */
+
+:root {
+  --vy-bulle: #efe6d4;
+  --vy-bulle-2: #e3d8c2;
+  --vy-bulle-encre: #3b4260;
+  --vy-bulle-bord: rgba(142, 113, 68, 0.85);
+}
+
+/* ----- Les mots mis en avant : gras, ou en couleur (PA, PM, PV, cristal, or, voile) ----- */
+.vy-mot { font-weight: 700; color: #262b45; }
+.vy-mot--pa, .vy-mot--or { color: #8a5f12; }
+.vy-mot--pm { color: #3f6e3a; }
+.vy-mot--pv, .vy-mot--braise { color: #b23a22; }
+.vy-mot--cristal { color: #00709e; }
+.vy-mot--voile { color: #7440c8; }
+.vy-parole__reste { visibility: hidden; }
+
+/* ----- La boîte du guide ----- */
+/* Sur ordinateur, en exploration, le bloc vital et les raccourcis tiennent le bas de la scène et
+   la discussion son coin : la boîte et les réponses se posent au-dessus (--guide-bas). */
+#app.mode-explore { --guide-bas: 104px; }
+.vy-guide {
+  --portrait-l: 132px;
+  --portrait-h: 152px;
+  position: absolute;
+  left: 10px;
+  bottom: var(--guide-bas, 10px);
+  z-index: 18;
+  width: min(440px, calc(100% - 20px));
+  pointer-events: none;
+  animation: vy-guide-entre 0.32s var(--vy-courbe);
+}
+.vy-guide[data-cote="droite"] { left: auto; right: 10px; }
+.vy-guide__portrait {
+  position: absolute;
+  left: 6px;
+  bottom: calc(100% - 22px);
+  width: var(--portrait-l);
+  height: var(--portrait-h);
+  pointer-events: none;
+  filter: drop-shadow(0 8px 10px rgba(5, 8, 13, 0.45));
+  animation: vy-portrait-respire 4.8s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+.vy-guide__boite {
+  position: relative;
+  pointer-events: auto;
+  cursor: pointer;
+  color: var(--vy-bulle-encre);
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, 0.55), transparent 55%),
+    linear-gradient(180deg, var(--vy-bulle) 0%, var(--vy-bulle-2) 100%);
+  border-radius: 10px;
+  box-shadow: 0 0 0 1.5px var(--vy-bulle-bord), inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 12px 30px rgba(5, 8, 13, 0.55);
+  padding-bottom: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+.vy-guide__nom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 3px 34px 3px 10px;
+  position: relative;
+  border-radius: 10px 10px 0 0;
+  background: linear-gradient(180deg, #1c2a3d 0%, #121c29 100%);
+  box-shadow: inset 0 -1.5px 0 rgba(201, 166, 107, 0.75);
+}
+.vy-guide__qui { font: 700 13px/1.1 var(--vy-font-titre); letter-spacing: 0.06em; color: var(--vy-or-clair); text-align: center; }
+.vy-guide__qui small { font: 500 11px var(--vy-font-ui); letter-spacing: 0; color: var(--vy-texte-2); margin-left: 4px; }
+.vy-guide__passer {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  min-height: 0; padding: 3px 8px; border: 1px solid rgba(201, 166, 107, 0.4); border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04); color: var(--vy-texte-2); font: 600 10.5px var(--vy-font-ui); cursor: pointer;
+}
+.vy-guide__passer:hover, .vy-guide__passer:focus-visible { color: var(--vy-or-clair); border-color: var(--vy-or-clair); }
+.vy-guide__passer[data-sure] { color: var(--vy-braise-clair); border-color: var(--vy-braise-clair); }
+.vy-guide__passer[hidden], .vy-guide__fermer[hidden] { display: none; }
+.vy-guide__fermer {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  width: 26px; height: 26px; padding: 5px; border: 0; border-radius: 50%; background: transparent; color: var(--vy-texte-2); cursor: pointer;
+}
+.vy-guide__fermer svg { width: 100%; height: 100%; }
+.vy-guide__fermer:hover { color: var(--vy-braise-clair); background: rgba(240, 122, 92, 0.12); }
+.vy-guide__texte {
+  margin: 0;
+  padding: 10px 16px 0;
+  min-height: calc(2 * 1.45em + 10px);
+  font: 400 15px/1.45 var(--vy-font-lecture);
+  text-wrap: pretty;
+}
+.vy-guide__note { margin: 6px 16px 0; font: 500 12px/1.35 var(--vy-font-ui); color: #6a6150; }
+.vy-guide__note[hidden], .vy-guide__choix[hidden] { display: none; }
+.vy-guide__choix { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding: 10px 14px 0; }
+.vy-guide__choix .vy-bouton:not(.vy-bouton--primaire) { --_fond: linear-gradient(180deg, #2a3a52, #172334); }
+.vy-guide__suite {
+  position: absolute; right: 12px; bottom: 7px; width: 12px; height: 8px; opacity: 0;
+  background: var(--vy-or-sombre); clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+.vy-guide.attend .vy-guide__suite { opacity: 1; animation: vy-suite 1s ease-in-out infinite; }
+/* Le dialogue de quête : la même boîte, plus large, et le nom de la quête dans le bandeau. */
+.vy-guide--dialogue { width: min(520px, calc(100% - 20px)); z-index: 17; }
+.vy-guide--dialogue .vy-guide__nom { justify-content: flex-start; padding-left: calc(var(--portrait-l) + 12px); }
+
+@keyframes vy-guide-entre { from { opacity: 0; transform: translateY(10px); } }
+@keyframes vy-portrait-respire { 50% { transform: translateY(-2px) scale(1.008); } }
+@keyframes vy-suite { 50% { transform: translateY(3px); } }
+
+/* ----- La bulle d'un PNJ, au-dessus de sa tête ----- */
+.vy-bulle-pnj {
+  --queue: 40px;
+  position: absolute;
+  left: 0; top: 0;
+  z-index: 12;
+  max-width: min(250px, 70%);
+  color: var(--vy-bulle-encre);
+  background: linear-gradient(180deg, #f4ecdc, var(--vy-bulle));
+  border-radius: 9px;
+  box-shadow: 0 0 0 1.5px var(--vy-bulle-bord), 0 8px 20px rgba(5, 8, 13, 0.45);
+  cursor: pointer;
+  animation: vy-bulle-entre 0.22s var(--vy-courbe);
+}
+.vy-bulle-pnj::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--queue) - 11px);
+  top: 100%;
+  width: 22px; height: 14px;
+  background: var(--vy-bulle);
+  clip-path: polygon(0 0, 100% 0, 30% 100%);
+  filter: drop-shadow(0 1.5px 0 var(--vy-bulle-bord));
+}
+.vy-bulle-pnj.dessous::after { top: auto; bottom: 100%; clip-path: polygon(30% 0, 100% 100%, 0 100%); background: #1a2638; filter: none; }
+.vy-bulle-pnj__nom {
+  padding: 3px 10px 2px;
+  border-radius: 9px 9px 0 0;
+  background: linear-gradient(180deg, #1c2a3d, #121c29);
+  font: 700 11.5px/1.3 var(--vy-font-titre);
+  letter-spacing: 0.06em;
+  color: var(--vy-or-clair);
+  text-align: center;
+}
+.vy-bulle-pnj__texte { margin: 0; padding: 6px 11px 8px; font: 500 13px/1.4 var(--vy-font-ui); }
+.vy-bulle-pnj__suite { position: absolute; right: 8px; bottom: 5px; width: 9px; height: 6px; background: var(--vy-or-sombre); clip-path: polygon(0 0, 100% 0, 50% 100%); opacity: 0; }
+.vy-bulle-pnj.attend .vy-bulle-pnj__suite { opacity: 1; animation: vy-suite 1s ease-in-out infinite; }
+@keyframes vy-bulle-entre { from { opacity: 0; } }
+
+/* ----- La boîte de réponses, en bas au centre de la scène ----- */
+.vy-repliques {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--guide-bas, 10px) + 2px);
+  z-index: 14;
+  transform: translateX(-50%);
+  width: min(420px, calc(100% - 24px));
+  padding: 8px 8px 8px;
+  color: var(--vy-bulle-encre);
+  background: linear-gradient(180deg, #f4ecdc, var(--vy-bulle-2));
+  border-radius: 10px;
+  box-shadow: 0 0 0 1.5px var(--vy-bulle-bord), 0 12px 28px rgba(5, 8, 13, 0.5);
+  animation: vy-guide-entre 0.25s var(--vy-courbe);
+}
+.vy-repliques__info { margin: 0 4px 6px; padding: 0 30px 6px 4px; font: 500 12px/1.35 var(--vy-font-ui); color: #5b5446; border-bottom: 1px solid rgba(142, 113, 68, 0.3); }
+.vy-repliques__info[hidden] { display: none; }
+.vy-repliques__info b { color: #262b45; }
+.vy-repliques__liste { display: grid; gap: 4px; }
+.vy-replique {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 12px 6px 16px;
+  border: 0;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(142, 113, 68, 0.28);
+  color: var(--vy-bulle-encre);
+  font: 600 13.5px/1.25 var(--vy-font-ui);
+  text-align: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--vy-duree-courte) ease, box-shadow var(--vy-duree-courte) ease;
+}
+.vy-replique__texte { flex: 1; }
+.vy-replique:hover, .vy-replique:focus-visible { background: #fff; box-shadow: inset 0 0 0 1.5px var(--vy-cristal), 0 0 10px rgba(0, 194, 255, 0.25); outline: none; }
+.vy-replique:active { transform: translateY(1px); }
+.vy-replique__marque {
+  flex: none;
+  width: 22px; height: 22px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font: 800 13px/1 var(--vy-font-titre);
+  color: #fff;
+  background: radial-gradient(circle at 35% 30%, #c9a8ff, var(--vy-eclat) 60%, #5d34a8);
+  box-shadow: 0 1px 3px rgba(59, 66, 96, 0.4);
+}
+.vy-replique__marque--offre, .vy-replique__marque--rendre { background: radial-gradient(circle at 35% 30%, #fff1c8, var(--vy-or) 58%, #8e7144); color: #2c2110; }
+.vy-repliques__fermer {
+  position: absolute; right: -8px; top: -10px;
+  width: 30px; height: 30px; padding: 6px;
+  border: 0; border-radius: 50%;
+  color: var(--vy-or-clair);
+  background: linear-gradient(180deg, #24344a, #121c29);
+  box-shadow: 0 0 0 1.5px rgba(201, 166, 107, 0.7), 0 4px 10px rgba(5, 8, 13, 0.5);
+  cursor: pointer;
+}
+.vy-repliques__fermer svg { width: 100%; height: 100%; }
+.vy-repliques__fermer:hover { color: #fff; box-shadow: 0 0 0 1.5px var(--vy-cristal), 0 0 12px rgba(0, 194, 255, 0.4); }
+
+/* ----- Le projecteur : le reste s'assombrit, la cible s'entoure de cristal ----- */
+.vy-projecteur { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
+.vy-projecteur__trou {
+  position: fixed;
+  border-radius: 8px;
+  box-shadow: 0 0 0 200vmax rgba(5, 9, 15, 0.55), 0 0 0 2px var(--vy-cristal), 0 0 16px 3px rgba(0, 194, 255, 0.5);
+  transition: left 0.2s var(--vy-courbe), top 0.2s var(--vy-courbe), width 0.2s var(--vy-courbe), height 0.2s var(--vy-courbe);
+  animation: vy-anneau 1.6s ease-in-out infinite;
+}
+.vy-projecteur.sans-voile .vy-projecteur__trou { box-shadow: 0 0 0 2px var(--vy-cristal), 0 0 14px 2px rgba(0, 194, 255, 0.45); }
+/* Sous le voile, la boîte du guide reste claire : c'est elle qui dit quoi toucher. */
+body.vy-voile .vy-guide--tuto { z-index: 41; }
+@keyframes vy-anneau { 50% { outline: 2px solid rgba(143, 233, 255, 0.55); outline-offset: 5px; } }
+
+/* La main qui touche : ivoire, trait à l'encre, une onde sous l'index. --sx et --sy la
+   retournent près du bord droit ou du bas (js/guide.js) ; le bout du doigt ne bouge pas. */
+.vy-main { position: fixed; width: 56px; height: 56px; overflow: visible; filter: drop-shadow(0 4px 6px rgba(5, 8, 13, 0.5)); animation: vy-toucher 1.3s ease-in-out infinite; transform-origin: 18px 12px; }
+.vy-main__doigt { fill: #f7efe0; stroke: #3b4260; stroke-width: 1.8; stroke-linejoin: round; }
+.vy-main__pli { fill: none; stroke: rgba(59, 66, 96, 0.55); stroke-width: 1.3; stroke-linecap: round; }
+.vy-main__onde { fill: none; stroke: var(--vy-cristal); stroke-width: 2.4; opacity: 0; animation: vy-onde 1.3s ease-out infinite; transform-origin: 18px 12px; }
+@keyframes vy-toucher {
+  0%, 100% { transform: scale(var(--sx, 1), var(--sy, 1)) translate(6px, 10px); }
+  45%, 55% { transform: scale(var(--sx, 1), var(--sy, 1)) translate(0, 0); }
+}
+@keyframes vy-onde { 0%, 44% { opacity: 0; transform: scale(0.4); } 50% { opacity: 1; } 100% { opacity: 0; transform: scale(1.9); } }
+
+/* Le geste de glisser pour changer de carte, au doigt : la main tire la carte. */
+.vy-geste { position: absolute; left: 50%; top: 46%; z-index: 9; width: 0; height: 0; pointer-events: none; }
+.vy-geste .vy-main { position: absolute; left: -18px; top: -12px; animation: vy-glisser 1.9s ease-in-out infinite; transform: none; }
+.vy-geste__trace {
+  position: absolute; left: 0; top: 0; width: 120px; height: 4px; border-radius: 2px;
+  transform-origin: 0 50%; transform: rotate(var(--ga));
+  background: linear-gradient(90deg, rgba(226, 198, 144, 0), rgba(226, 198, 144, 0.75));
+  opacity: 0; animation: vy-trace 1.9s ease-in-out infinite;
+}
+@keyframes vy-glisser { 0%, 10% { transform: translate(0, 0); opacity: 0; } 18% { opacity: 1; } 70% { transform: translate(var(--gx), var(--gy)); opacity: 1; } 85%, 100% { transform: translate(var(--gx), var(--gy)); opacity: 0; } }
+@keyframes vy-trace { 0%, 20% { opacity: 0; } 60% { opacity: 0.9; } 90%, 100% { opacity: 0; } }
+
+/* ----- Les rappels du mode court : une ligne en haut de la scène ----- */
+.vy-rappel {
+  position: absolute; left: 50%; top: 10px; z-index: 18;
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 9px;
+  max-width: min(520px, calc(100% - 24px));
+  padding: 7px 14px 7px 10px;
+  border: 0; border-radius: 999px;
+  background: rgba(12, 19, 29, 0.88);
+  box-shadow: 0 0 0 1px rgba(201, 166, 107, 0.55), 0 6px 16px rgba(5, 8, 13, 0.45);
+  color: var(--vy-texte);
+  font: 500 13px/1.3 var(--vy-font-ui);
+  text-align: left;
+  cursor: pointer;
+  animation: vy-guide-entre 0.3s var(--vy-courbe);
+}
+.vy-rappel .vy-mot { color: var(--vy-or-clair); }
+.vy-rappel__point { flex: none; width: 9px; height: 9px; transform: rotate(45deg); background: var(--vy-cristal); box-shadow: 0 0 8px rgba(0, 194, 255, 0.7); }
+
+/* ----- Les rubans : nuit et or ancien, ils passent sans arrêter le jeu ----- */
+.vy-ruban {
+  position: absolute; left: 50%; top: 24%; z-index: 11;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0;
+}
+.vy-ruban.entre { animation: vy-ruban-entre 0.45s var(--vy-courbe) forwards; }
+.vy-ruban.sort { animation: vy-ruban-sort 0.45s ease-in forwards; }
+.vy-ruban__bande {
+  position: relative;
+  display: block;
+  padding: 9px 46px 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 45%),
+    linear-gradient(90deg, #0c1420, #17263a 30%, #1b2c43 50%, #17263a 70%, #0c1420);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 50%, 100% 100%, 0 100%, 18px 50%);
+  box-shadow: inset 0 2px 0 var(--vy-or), inset 0 -2px 0 var(--vy-or-sombre);
+  overflow: hidden;
+}
+.vy-ruban__bande::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 243, 210, 0.35) 48%, rgba(143, 233, 255, 0.25) 52%, transparent 65%);
+  transform: translateX(-120%);
+  animation: vy-balayage-ruban 1.1s 0.25s ease-out forwards;
+}
+.vy-ruban__texte {
+  display: block;
+  /* À la largeur de la scène (--scene-l, js/hud-jeu.js), pas de la fenêtre : le panneau en prend une part. */
+  font: 800 clamp(18px, calc(var(--scene-l, 100vw) * 0.046), 30px)/1.1 var(--vy-font-titre);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: var(--vy-or-texte);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 10px rgba(201, 166, 107, 0.35));
+}
+.vy-ruban__sous {
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: rgba(12, 19, 29, 0.85);
+  box-shadow: 0 0 0 1px rgba(201, 166, 107, 0.45);
+  color: var(--vy-texte);
+  font: 600 12.5px/1.3 var(--vy-font-ui);
+  white-space: nowrap;
+}
+.vy-ruban--tour .vy-ruban__bande { padding: 7px 40px 8px; }
+.vy-ruban--tour .vy-ruban__texte { font-size: clamp(17px, calc(var(--scene-l, 100vw) * 0.04), 26px); }
+/* Niveau supérieur : plus grand, des rayons et des éclats derrière le ruban. */
+.vy-ruban--niveau { top: 30%; }
+.vy-ruban--niveau .vy-ruban__texte { font-size: clamp(20px, calc(var(--scene-l, 100vw) * 0.044), 40px); }
+.vy-ruban--niveau .vy-ruban__bande { padding: 12px 56px 13px; box-shadow: inset 0 2px 0 var(--vy-or-clair), inset 0 -2px 0 var(--vy-or-sombre), 0 0 30px rgba(0, 194, 255, 0.3); }
+.vy-ruban__rayons {
+  position: absolute; left: 50%; top: 40%; width: 360px; height: 360px; margin: -180px 0 0 -180px;
+  background: repeating-conic-gradient(from 0deg, rgba(242, 177, 52, 0.22) 0deg 6deg, transparent 6deg 22deg);
+  -webkit-mask: radial-gradient(circle, #000 18%, transparent 68%); mask: radial-gradient(circle, #000 18%, transparent 68%);
+  animation: vy-rayons 6s linear infinite;
+  z-index: -1;
+}
+.vy-ruban__eclats { position: absolute; inset: -40px -80px; z-index: -1; }
+.vy-ruban__eclats i {
+  position: absolute; width: 9px; height: 9px; transform: rotate(45deg);
+  background: var(--vy-cristal); box-shadow: 0 0 10px rgba(0, 194, 255, 0.8);
+  animation: vy-eclat 1.6s ease-out infinite;
+}
+.vy-ruban__eclats i:nth-child(1) { left: 6%; top: 20%; }
+.vy-ruban__eclats i:nth-child(2) { left: 92%; top: 30%; animation-delay: 0.3s; background: var(--vy-or-clair); }
+.vy-ruban__eclats i:nth-child(3) { left: 18%; top: 82%; animation-delay: 0.6s; background: var(--vy-eclat-clair); }
+.vy-ruban__eclats i:nth-child(4) { left: 80%; top: 86%; animation-delay: 0.15s; }
+.vy-ruban__eclats i:nth-child(5) { left: 50%; top: -6%; animation-delay: 0.45s; background: var(--vy-or-clair); }
+.vy-ruban__eclats i:nth-child(6) { left: 50%; top: 104%; animation-delay: 0.75s; background: var(--vy-eclat-clair); }
+@keyframes vy-ruban-entre { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6, 0.3); } 60% { opacity: 1; transform: translate(-50%, -50%) scale(1.06, 1.02); } 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+@keyframes vy-ruban-sort { to { opacity: 0; transform: translate(-50%, -62%) scale(0.96); } }
+@keyframes vy-balayage-ruban { to { transform: translateX(120%); } }
+@keyframes vy-rayons { to { transform: rotate(360deg); } }
+@keyframes vy-eclat { 0% { opacity: 0; transform: rotate(45deg) scale(0.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: rotate(45deg) scale(1.3) translateY(-10px); } }
+
+/* ----- Téléphone : la boîte du guide est plus petite, le portrait aussi ----- */
+@media (orientation: landscape) and (max-height: 500px) {
+  #app, #app.mode-explore { --guide-bas: 6px; }
+  .vy-guide { --portrait-l: 104px; --portrait-h: 120px; left: 6px; width: min(56%, 380px); }
+  .vy-guide[data-cote="droite"] { right: 6px; }
+  #app.mode-combat .vy-guide { width: min(calc(100% - var(--barre-tour-l, 240px) - 20px), 360px); }
+  /* Une scène étroite : la boîte du guide se pose au-dessus de la barre de tour (js/hud-jeu.js),
+     plus serrée, pour laisser voir le combat. */
+  #app.mode-combat.vy-guide-dessus .vy-guide { --portrait-l: 70px; --portrait-h: 82px; bottom: calc(var(--barre-tour-h, 70px) + 6px); width: min(calc(100% - 12px), 380px); }
+  #app.mode-combat.vy-guide-dessus .vy-guide[data-cote="droite"] { right: 6px; }
+  #app.mode-combat.vy-guide-dessus .vy-guide__nom { min-height: 24px; }
+  #app.mode-combat.vy-guide-dessus .vy-guide__boite { padding-bottom: 7px; }
+  #app.mode-combat.vy-guide-dessus .vy-guide__texte { padding: 5px 10px 0; min-height: 0; font-size: 13px; line-height: 1.35; }
+  .vy-guide--dialogue { width: min(64%, 440px); }
+  .vy-guide__texte { font-size: 14px; padding: 8px 12px 0; min-height: calc(2 * 1.4em + 8px); line-height: 1.4; }
+  .vy-guide__choix { padding: 8px 10px 0; }
+  .vy-guide__note { margin: 4px 12px 0; font-size: 11.5px; }
+  .vy-repliques { width: min(380px, calc(100% - 20px)); }
+  .vy-replique { min-height: 38px; font-size: 13px; }
+  .vy-ruban { top: 22%; }
+  .vy-ruban__bande { padding-left: 34px; padding-right: 34px; }
+  .vy-ruban--niveau .vy-ruban__bande { padding-left: 40px; padding-right: 40px; }
+}
+/* Téléphone en portrait (« Continuer en portrait ») : au-dessus de la barre des menus et des
+   raccourcis, en bas de l'écran. */
+@media (max-width: 600px) and (orientation: portrait) {
+  #app, #app.mode-explore { --guide-bas: 118px; }
+  .vy-guide { --portrait-l: 96px; --portrait-h: 112px; left: 6px; width: calc(100% - 12px); }
+  .vy-guide[data-cote="droite"] { right: 6px; }
+  .vy-guide__texte { font-size: 14.5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vy-guide, .vy-guide__portrait, .vy-bulle-pnj, .vy-repliques, .vy-rappel, .vy-projecteur__trou, .vy-main, .vy-main__onde,
+  .vy-geste .vy-main, .vy-geste__trace, .vy-guide.attend .vy-guide__suite, .vy-bulle-pnj.attend .vy-bulle-pnj__suite,
+  .vy-ruban__bande::after, .vy-ruban__rayons, .vy-ruban__eclats i { animation: none !important; }
+  .vy-ruban.entre { animation: none; opacity: 1; transform: translate(-50%, -50%); }
+  .vy-ruban.sort { animation: none; opacity: 0; }
+  .vy-projecteur__trou { transition: none; }
+}

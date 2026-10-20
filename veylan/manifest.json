@@ -1,0 +1,24 @@
+{
+  "name": "Veylan",
+  "short_name": "Veylan",
+  "description": "MMORPG tactique au tour par tour, en 2D isométrique.",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0f141d",
+  "theme_color": "#0f141d",
+  "icons": [
+    {
+      "src": "assets/ui/icone-apple.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/ui/icone-v.png",
+      "sizes": "256x272",
+      "type": "image/png"
+    }
+  ]
+}

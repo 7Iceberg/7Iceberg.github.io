@@ -1,0 +1,137 @@
+/* Veille du jour (js/hud-veille.js) : la carte du jour à gauche, le cycle et les paliers à droite ;
+   une seule colonne sur téléphone en portrait. L'or pour ce qui est fait, le cristal pour
+   aujourd'hui, la couleur de l'élément du jour en filet (--el). Les teintes des fenêtres suivent le
+   thème de l'interface (css/fenetres.css). */
+.vy-veille { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.vy-veille__jour, .vy-veille__suivi { min-width: 0; }
+
+/* ----- La carte du jour ----- */
+.vy-veille__jour {
+  display: grid; gap: 10px; align-content: start; padding: 12px;
+  border: 1px solid var(--fen-filet); border-top: 2px solid var(--el); border-radius: 6px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--el) 10%, transparent), transparent 140px), rgba(0, 0, 0, 0.16);
+}
+.vy-veille__tete { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 12px; align-items: center; }
+/* La page du calendrier : ivoire, cerclée d'or, le Voile en tête. */
+.vy-veille__page {
+  display: grid; justify-items: center; align-content: center; gap: 1px; height: 62px; padding-top: 10px; position: relative; line-height: 1;
+  border-radius: 5px; color: var(--vy-encre); background: linear-gradient(180deg, #f6ead4, #dcc9a6);
+  box-shadow: 0 0 0 1.5px var(--vy-or), inset 0 -6px 10px rgba(110, 85, 48, 0.22), 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+.vy-veille__page::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 13px; border-radius: 5px 5px 0 0; background: linear-gradient(180deg, var(--vy-or-clair), var(--vy-or-sombre)); }
+.vy-veille__page small:first-child { position: absolute; top: 2px; left: 0; right: 0; text-align: center; font: 800 9px/1 var(--vy-font-titre); color: var(--vy-encre); letter-spacing: 0.08em; }
+.vy-veille__page b { font: 800 24px/1 var(--vy-font-titre); }
+.vy-veille__page small:last-child { font: 700 8.5px/1 var(--vy-font-ui); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
+.vy-veille__sur { margin: 0 0 3px; font: 700 10.5px/1.3 var(--vy-font-ui); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fen-texte-2); }
+.vy-veille__sur .vy-pastille { margin-right: 6px; }
+.vy-veille__nom { margin: 0; font: 700 18px/1.2 var(--vy-font-titre); letter-spacing: 0.02em; color: var(--fen-accent); }
+.vy-fenetre__corps .vy-veille__nom { margin: 0; font: 700 18px/1.2 var(--vy-font-titre); }
+.vy-veille__recit { margin: 0; font: italic 400 13.5px/1.55 var(--vy-font-lecture); color: var(--fen-texte); opacity: 0.92; }
+.vy-veille__bloc { display: grid; gap: 2px; padding: 8px 10px; border-radius: 5px; border: 1px solid var(--fen-filet); background: rgba(0, 0, 0, 0.22); }
+.vy-veille__label { font: 700 10px/1.3 var(--vy-font-ui); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fen-texte-2); }
+.vy-veille__depot { grid-template-columns: 46px minmax(0, 1fr); gap: 10px; align-items: center; }
+.vy-veille__depot > div { display: grid; gap: 1px; min-width: 0; }
+.vy-veille__depot .vy-case { --vy-case: 46px; width: 46px; cursor: default; }
+.vy-veille__depot b { font: 600 14px/1.3 var(--vy-font-ui); }
+.vy-veille__compte { font-size: 12px; font-variant-numeric: tabular-nums; }
+.vy-veille__compte.ok { color: var(--vy-succes); }
+.vy-veille__compte.manque { color: var(--vy-danger); }
+.vy-veille__bonus b { font: 700 14px/1.3 var(--vy-font-ui); color: var(--vy-texte-or); }
+.vy-veille__bonus b span { color: var(--fen-texte); font-weight: 600; }
+.vy-veille__bonus small { font-size: 12px; color: var(--fen-texte-2); }
+.vy-veille__bonus.actif { border-color: color-mix(in srgb, var(--fen-actif) 60%, transparent); box-shadow: var(--vy-lueur-cristal-in); }
+.vy-veille__bonus.actif .vy-veille__label { color: var(--fen-actif); }
+.vy-veille__action { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.vy-veille__action .vy-bouton { min-width: 170px; }
+.vy-veille__note { margin: 0; flex: 1 1 180px; font-size: 12px; line-height: 1.45; color: var(--fen-texte-2); }
+.vy-veille__sceau { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1.5px solid var(--vy-or); border-radius: 5px; color: var(--vy-texte-or); background: rgba(201, 166, 107, 0.1); font: 700 13px var(--vy-font-ui); }
+.vy-veille__sceau::before { content: ""; width: 10px; height: 10px; transform: rotate(45deg); background: var(--vy-or-cisele); box-shadow: 0 0 8px rgba(201, 166, 107, 0.5); }
+
+/* ----- Le cycle : quatre semaines, sept Voiles ----- */
+.vy-veille__grille { display: grid; grid-template-columns: 44px repeat(7, minmax(0, 1fr)); gap: 4px; align-items: center; }
+.vy-veille__col { font: 700 10px var(--vy-font-titre); color: var(--fen-texte-2); text-align: center; letter-spacing: 0.04em; }
+.vy-veille__sem { display: flex; align-items: center; gap: 5px; min-width: 0; font: 700 10.5px var(--vy-font-ui); color: var(--fen-texte-2); }
+.vy-veille__sem::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); }
+.vy-veille__case {
+  display: grid; place-items: center; aspect-ratio: 1; min-height: 28px; max-height: 46px;
+  border: 1.5px solid transparent; border-radius: 4px; background: rgba(0, 0, 0, 0.24);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--c) 60%, transparent);
+  font: 700 12px var(--vy-font-ui); font-variant-numeric: tabular-nums; color: var(--fen-texte-2);
+}
+.vy-veille__case[data-etat="avenir"], .vy-veille__case[data-etat="avant"] { opacity: 0.5; }
+.vy-veille__case[data-etat="manque"] { border-style: dashed; border-color: color-mix(in srgb, var(--vy-pierre-clair) 85%, transparent); opacity: 0.85; }
+.vy-veille__case[data-etat="fait"] { color: var(--vy-encre); background: var(--vy-or-cisele); box-shadow: inset 0 0 0 1px rgba(92, 70, 40, 0.45), 0 0 8px rgba(201, 166, 107, 0.25); }
+.vy-veille__case.auj { border-color: var(--fen-actif); color: var(--fen-texte); box-shadow: var(--vy-lueur-cristal); }
+.vy-veille__case.auj[data-etat="fait"] { color: var(--vy-encre); box-shadow: 0 0 0 1.5px var(--fen-actif), 0 0 12px rgba(0, 194, 255, 0.35); }
+.vy-veille__legende { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; font-size: 11px; color: var(--fen-texte-2); }
+.vy-veille__legende span { display: inline-flex; align-items: center; gap: 6px; }
+.vy-veille__legende span::before { content: ""; width: 11px; height: 11px; border-radius: 3px; border: 1.5px solid transparent; }
+.vy-veille__legende [data-etat="fait"]::before { background: var(--vy-or-cisele); }
+.vy-veille__legende [data-etat="auj"]::before { border-color: var(--fen-actif); box-shadow: 0 0 6px rgba(0, 194, 255, 0.5); }
+.vy-veille__legende [data-etat="manque"]::before { border-style: dashed; border-color: var(--vy-pierre-clair); }
+
+/* ----- Réserve : sept losanges de cristal ----- */
+.vy-veille__reserve { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.vy-veille__pips { display: inline-flex; gap: 7px; padding: 0 3px; }
+.vy-veille__pip { width: 10px; height: 10px; transform: rotate(45deg); border-radius: 2px; border: 1.5px solid color-mix(in srgb, var(--fen-actif) 50%, transparent); }
+.vy-veille__pip.on { border-color: var(--fen-actif); background: var(--fen-actif); box-shadow: 0 0 8px rgba(0, 194, 255, 0.45); }
+.vy-veille__reserve small { flex: 1 1 160px; font-size: 11.5px; line-height: 1.4; color: var(--fen-texte-2); }
+
+/* ----- Marques et paliers ----- */
+.vy-veille__marques { font: 800 14px var(--vy-font-ui); color: var(--vy-texte-or); letter-spacing: 0; }
+.vy-veille__paliers { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.vy-veille__palier { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 8px; border: 1px solid var(--fen-filet); border-radius: 5px; background: rgba(0, 0, 0, 0.16); }
+.vy-veille__palier > div { min-width: 0; }
+.vy-veille__seuil { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--fen-filet); font: 800 11px var(--vy-font-ui); font-variant-numeric: tabular-nums; color: var(--fen-texte-2); }
+.vy-veille__palier b { display: block; font: 600 12.5px/1.3 var(--vy-font-ui); }
+.vy-veille__palier small { display: block; font-size: 11.5px; color: var(--fen-texte-2); }
+.vy-veille__palier .vy-jauge { margin-top: 4px; }
+.vy-veille__palier em { font: normal 600 11px var(--vy-font-ui); font-variant-numeric: tabular-nums; color: var(--fen-texte-2); white-space: nowrap; }
+.vy-veille__palier.got { border-color: color-mix(in srgb, var(--vy-or) 55%, transparent); }
+.vy-veille__palier.got .vy-veille__seuil { border-color: var(--vy-or-clair); background: var(--vy-or-cisele); color: var(--vy-encre); }
+.vy-veille__palier.got small { color: var(--vy-texte-or); }
+.vy-veille__palier.got em { color: var(--vy-succes); }
+
+/* ----- Panneau du Relais : le bouton « Veille du jour » et son point ----- */
+#panel-body .row.center { flex-wrap: wrap; }
+.vy-veille-point { display: inline-block; width: 8px; height: 8px; margin-left: 8px; border-radius: 50%; background: var(--vy-cristal); box-shadow: 0 0 8px rgba(0, 194, 255, 0.8); vertical-align: 1px; }
+
+/* ----- Thème clair : l'or reste lisible ----- */
+#app[data-ui-theme="ardoise"] .vy-veille__bonus b, #app[data-ui-theme="ardoise"] .vy-veille__sceau,
+#app[data-ui-theme="ardoise"] .vy-veille__marques, #app[data-ui-theme="ardoise"] .vy-veille__palier.got small { color: var(--fen-accent); }
+#app[data-ui-theme="ardoise"] .vy-veille__jour, #app[data-ui-theme="ardoise"] .vy-veille__bloc, #app[data-ui-theme="ardoise"] .vy-veille__case,
+#app[data-ui-theme="ardoise"] .vy-veille__palier { background-color: rgba(255, 255, 255, 0.35); }
+
+/* ----- Téléphone ----- */
+/* En portrait : une colonne, la carte du jour d'abord. */
+@media (max-width: 600px) {
+  .vy-veille { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .vy-veille__case { min-height: 0; }
+}
+/* En paysage : deux colonnes qui défilent chacune, la carte du jour reste sous les yeux. */
+@media (max-height: 480px) and (max-width: 1000px) {
+  .vy-fenetre--veille .vy-fenetre__corps { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 8px 10px 10px; }
+  .vy-fenetre--veille.reduite .vy-fenetre__corps { display: none; }
+  .vy-veille { flex: 1; min-height: 0; gap: 10px; align-items: stretch; }
+  .vy-veille__jour, .vy-veille__suivi { min-height: 0; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+  .vy-veille__jour { gap: 6px; padding: 8px 10px; }
+  .vy-veille__tete { grid-template-columns: 42px minmax(0, 1fr); gap: 10px; }
+  .vy-veille__page { height: 48px; padding-top: 9px; }
+  .vy-veille__page b { font-size: 18px; }
+  .vy-veille__page small:last-child { font-size: 7.5px; }
+  .vy-fenetre__corps .vy-veille__nom { font-size: 15.5px; }
+  .vy-veille__sur { font-size: 10px; margin-bottom: 1px; }
+  .vy-veille__recit { font-size: 12.5px; line-height: 1.4; }
+  .vy-veille__bloc { padding: 5px 8px; gap: 1px; }
+  .vy-veille__depot { grid-template-columns: 38px minmax(0, 1fr); gap: 8px; }
+  .vy-veille__depot .vy-case { --vy-case: 38px; width: 38px; }
+  .vy-veille__depot b, .vy-veille__bonus b { font-size: 13px; }
+  .vy-veille__bonus small, .vy-veille__compte { font-size: 11.5px; }
+  .vy-veille__action { gap: 6px 10px; }
+  .vy-veille__action .vy-bouton { min-height: 38px; min-width: 140px; }
+  .vy-veille__note { font-size: 11.5px; }
+  .vy-veille__suivi { padding-right: 4px; }
+  .vy-veille__suivi .vy-sous:first-child { margin-top: 2px; }
+  .vy-veille__case { max-height: 34px; }
+  .vy-veille__grille { grid-template-columns: 40px repeat(7, minmax(0, 34px)); justify-content: start; }
+}

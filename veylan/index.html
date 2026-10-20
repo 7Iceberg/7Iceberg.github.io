@@ -1,0 +1,129 @@
+<title>Veylan</title>
+<link rel="icon" href="assets/ui/icone-v.png" type="image/png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/ui/icone-apple.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preload" href="assets/ui/logo-veylan.webp" as="image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/fenetres.css">
+<link rel="stylesheet" href="css/faction.css">
+<link rel="stylesheet" href="css/sorts.css">
+<link rel="stylesheet" href="css/fenetres-personnage.css">
+<link rel="stylesheet" href="css/veille.css">
+<link rel="stylesheet" href="css/guide.css">
+<link rel="stylesheet" href="css/jeu.css">
+<link rel="stylesheet" href="css/accueil.css">
+  <div id="app" class="vy-ui mode-explore">
+    <header id="topbar">
+      <div id="brand"><img src="assets/ui/logo-veylan.webp" alt="Veylan" width="74" height="30"></div>
+      <div id="timeline"></div>
+      <div id="challenge" class="hidden"></div>
+      <div id="round"></div>
+    </header>
+
+    <main id="stage">
+      <canvas id="board"></canvas>
+      <div id="banner" class="hidden"></div>
+      <div id="explore-hud">
+        <div id="player-bar"></div>
+        <div id="map-name"></div>
+        <div id="carte-info" class="vy-carte-info"></div>
+        <div id="tracker"></div>
+        <div id="bas-centre"><div id="vital" class="vy-vital"></div><div id="raccourcis" class="vy-raccourcis" aria-label="Raccourcis d'objets"></div></div>
+        <button id="minicarte" class="vy-minicarte" aria-label="Ouvrir la carte"><canvas id="minicarte-cv"></canvas><span id="minicarte-nom"></span></button>
+      </div>
+      <nav id="menus" class="vy-menus" aria-label="Menus"></nav>
+      <div id="vue" class="vy-camera" role="group" aria-label="Vue"></div>
+      <div id="toasts"></div>
+    </main>
+
+    <aside id="panneau" class="vy-panneau" aria-label="Panneau de jeu"></aside>
+
+    <aside id="side">
+      <section id="inspect"></section>
+      <section id="log"></section>
+    </aside>
+
+    <footer id="hud">
+      <div id="stats"></div>
+      <div id="spells"></div>
+      <div id="actions">
+        <button id="ready" class="vy-bouton vy-bouton--primaire">Prêt</button>
+        <button id="end-turn" class="vy-bouton vy-bouton--primaire hidden">Fin de tour</button>
+      </div>
+    </footer>
+
+    <div id="fenetres" class="vy-fenetres"></div>
+    <div id="panel" class="hidden">
+      <section id="panel-box" class="vy-modale" role="dialog" aria-modal="true" aria-labelledby="panel-title">
+        <header class="vy-modale__tete"><h2 id="panel-title" class="vy-modale__titre"></h2><button id="panel-close" class="vy-bouton vy-bouton--icone vy-bouton--fantome" aria-label="Fermer">×</button></header>
+        <div id="panel-body" class="vy-modale__corps"></div>
+      </section>
+    </div>
+    <div id="title" class="vy-ui hidden"></div>
+  </div>
+  <div id="tooltip" class="vy-ui hidden"></div>
+
+  <script src="js/garde.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/logo.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/spell-names.js"></script>
+  <script src="js/data-bestiaire.js"></script>
+  <script src="js/data-donjons.js"></script>
+  <script src="js/content-init.js"></script>
+  <script src="content/items.js"></script>
+  <script src="content/orsane.js"></script>
+  <script src="content/kaldum.js"></script>
+  <script src="content/achievements.js"></script>
+  <script src="content/veille.js"></script>
+  <script src="content/tutoriel.js"></script>
+  <script src="js/noeuds.js"></script>
+  <script src="js/grid.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/items.js"></script>
+  <script src="js/factions.js"></script>
+  <script src="js/character.js"></script>
+  <script src="js/quests.js"></script>
+  <script src="js/achievements.js"></script>
+  <script src="js/veille.js"></script>
+  <script src="js/save.js"></script>
+  <script src="js/combat.js"></script>
+  <script src="js/challenges.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/atlas.js"></script>
+  <script src="js/camera.js"></script>
+  <script src="js/plein-ecran.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/entourage.js"></script>
+  <script src="vendor/pixi.min.js"></script>
+  <script src="vendor/pixi-filters.min.js"></script>
+  <script src="js/paint.js"></script>
+  <script src="js/render-gl.js"></script>
+  <script src="js/sort-icones.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/fenetres.js"></script>
+  <script src="js/hud.js"></script>
+  <script src="js/hud-fenetres.js"></script>
+  <script src="js/hud-faction.js"></script>
+  <script src="js/hud-sorts.js"></script>
+  <script src="js/hud-inventaire.js"></script>
+  <script src="js/hud-caracteristiques.js"></script>
+  <script src="js/hud-recompenses.js"></script>
+  <script src="js/carte-peinture.js"></script>
+  <script src="js/hud-carte.js"></script>
+  <script src="js/hud-veille.js"></script>
+  <script src="js/carte-3d.js"></script>
+  <script src="js/dialogues.js"></script>
+  <script src="js/guide.js"></script>
+  <script src="js/discussion.js"></script>
+  <script src="js/hud-jeu.js"></script>
+  <script src="js/titre-fx.js"></script>
+  <script src="content/actualites.js"></script>
+  <script src="js/noms.js"></script>
+  <script src="js/accueil-art.js"></script>
+  <script src="js/accueil.js"></script>
+  <script src="js/main.js"></script>

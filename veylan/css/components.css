@@ -1,0 +1,612 @@
+/* ==========================================================================
+   Veylan : composants d'interface (charte d'identité visuelle 1.0)
+   --------------------------------------------------------------------------
+   Lit uniquement les rôles de css/tokens.css. Préfixe vy-, noms en français :
+   .vy-modale, .vy-bouton, .vy-jauge, .vy-inventaire et .vy-case, .vy-objet, .vy-filet.
+   Les ornements restent en bordure (charte, section 9) : le contenu garde un fond calme.
+   ========================================================================== */
+
+/* ----- Zone d'interface : police et couleur par défaut ----- */
+.vy-ui {
+  font-family: var(--vy-font-ui);
+  color: var(--vy-texte);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ----- Typographie ----- */
+.vy-titre {
+  font-family: var(--vy-font-titre);
+  font-weight: 700;
+  letter-spacing: var(--vy-chasse-titre);
+  color: var(--vy-texte-or);
+  text-wrap: balance;
+}
+.vy-lecture { font-family: var(--vy-font-lecture); font-size: var(--vy-taille-l); line-height: 1.6; max-width: 65ch; }
+.vy-etiquette {
+  font: 600 var(--vy-taille-xs)/1.2 var(--vy-font-ui);
+  letter-spacing: var(--vy-chasse-label);
+  text-transform: uppercase;
+  color: var(--vy-texte-2);
+}
+.vy-chiffres { font-variant-numeric: tabular-nums; }
+
+/* ----- Filet : séparateur or avec un éclat de cristal au centre ----- */
+.vy-filet {
+  height: 9px;
+  margin: var(--vy-espace-3) 0;
+  border: 0;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 0 10 5 5 10 0 5z' fill='%23c9a66b'/%3E%3Cpath d='M5 2.6 7.4 5 5 7.4 2.6 5z' fill='%2300c2ff'/%3E%3C/svg%3E") center / 9px 9px no-repeat,
+    linear-gradient(90deg, transparent, var(--vy-filet-fort) 18%, var(--vy-filet-fort) 82%, transparent) center / 100% 1px no-repeat;
+}
+
+/* ==========================================================================
+   Modale : cadre d'or gravé, double filet, éclats aux quatre angles
+   ========================================================================== */
+.vy-modale-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: var(--vy-espace-4);
+  background: var(--vy-voile-fond);
+  backdrop-filter: blur(2px);
+}
+.vy-modale {
+  --_angle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M7 0 14 7 7 14 0 7z' fill='%23e2c690'/%3E%3Cpath d='M7 2.8 11.2 7 7 11.2 2.8 7z' fill='%230f141d'/%3E%3Cpath d='M7 4.6 9.4 7 7 9.4 4.6 7z' fill='%2300c2ff'/%3E%3C/svg%3E");
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(720px, 100%);
+  max-height: min(88vh, 100%);
+  min-height: 0;
+  color: var(--vy-texte);
+  font: var(--vy-graisse-ui) var(--vy-taille-m)/1.45 var(--vy-font-ui);
+  border: 2.5px solid transparent;
+  border-radius: var(--vy-rayon-l);
+  background:
+    var(--vy-grain) padding-box,
+    var(--vy-ardoise) padding-box,
+    radial-gradient(120% 70% at 50% 0%, rgba(0, 194, 255, 0.07) 0%, transparent 60%) padding-box,
+    linear-gradient(180deg, #13202f 0%, #0b131d 100%) padding-box,
+    var(--vy-cadre) border-box;
+  box-shadow: var(--vy-ombre-portee), 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 194, 255, 0.06);
+  animation: vy-entree var(--vy-duree) var(--vy-courbe);
+}
+/* Second filet, à 4 px du cadre */
+.vy-modale::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid var(--vy-filet);
+  border-radius: calc(var(--vy-rayon-l) - 3px);
+  pointer-events: none;
+}
+/* Coins d'or ciselé, sertis d'un cristal */
+.vy-modale::before {
+  content: "";
+  position: absolute;
+  inset: -9px;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    var(--vy-coin-hg) left top / 34px 34px no-repeat,
+    var(--vy-coin-hd) right top / 34px 34px no-repeat,
+    var(--vy-coin-bg) left bottom / 34px 34px no-repeat,
+    var(--vy-coin-bd) right bottom / 34px 34px no-repeat;
+}
+/* Crête au milieu du bord haut */
+.vy-modale__tete::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -14px;
+  width: 132px;
+  height: 24px;
+  transform: translateX(-50%);
+  background: var(--vy-crete) center / contain no-repeat;
+  filter: drop-shadow(0 0 6px rgba(0, 194, 255, 0.45));
+  pointer-events: none;
+}
+.vy-modale__tete {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--vy-espace-3);
+  padding: 14px 14px 12px 22px;
+}
+.vy-modale__tete::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: -4px;
+  height: 9px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 0 10 5 5 10 0 5z' fill='%23c9a66b'/%3E%3Cpath d='M5 2.6 7.4 5 5 7.4 2.6 5z' fill='%2300c2ff'/%3E%3C/svg%3E") center / 9px 9px no-repeat,
+    linear-gradient(90deg, transparent, var(--vy-filet-fort) 18%, var(--vy-filet-fort) 82%, transparent) center / 100% 1px no-repeat;
+}
+.vy-modale__titre {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font: 700 var(--vy-taille-xl)/1.2 var(--vy-font-titre);
+  letter-spacing: var(--vy-chasse-titre);
+  color: var(--vy-texte-or);
+  background: var(--vy-or-texte);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6));
+  text-wrap: balance;
+}
+.vy-modale__corps {
+  position: relative;
+  z-index: 2;
+  min-height: 0;
+  padding: 18px 22px 16px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--vy-pierre-clair) transparent;
+}
+.vy-modale__pied {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--vy-espace-2);
+  padding: 12px 22px 18px;
+  border-top: 1px solid var(--vy-filet);
+}
+/* Variante du Voile : événements narratifs, révélations. À garder rare (charte, section 4). */
+.vy-modale--cristal {
+  --_angle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M7 0 14 7 7 14 0 7z' fill='%237fdcf2'/%3E%3Cpath d='M7 2.8 11.2 7 7 11.2 2.8 7z' fill='%230a2a4a'/%3E%3Cpath d='M7 4.6 9.4 7 7 9.4 4.6 7z' fill='%23bf95ff'/%3E%3C/svg%3E");
+  background:
+    linear-gradient(180deg, #0d2238 0%, #0b1422 100%) padding-box,
+    var(--vy-cadre-cristal) border-box;
+  box-shadow: var(--vy-ombre-portee), 0 0 32px rgba(0, 194, 255, 0.16);
+}
+.vy-modale--cristal::after { border-color: rgba(0, 194, 255, 0.22); }
+.vy-modale--cristal .vy-modale__titre { color: #9be6ff; }
+
+@keyframes vy-entree {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+}
+
+@media (max-width: 600px) {
+  .vy-modale-fond { padding: 0; }
+  .vy-modale { width: 100%; height: 100%; max-height: none; border-radius: 0; }
+  .vy-modale::before { inset: -2px; }
+}
+
+/* ==========================================================================
+   Boutons : sombres à filet d'or, lueur bleu cristal au survol
+   --------------------------------------------------------------------------
+   .vy-bouton est la classe canonique. Dans une zone .vy-ui, les <button> sans classe vy-
+   reçoivent le même habillage, sans spécificité (:where) : toute règle locale l'emporte.
+   ========================================================================== */
+.vy-bouton,
+:where(.vy-ui) :where(button:not([class*="vy-"])) {
+  --_fond: var(--vy-grain), linear-gradient(180deg, #243449 0%, #172334 55%, #111b29 100%);
+  --_bord: var(--vy-filet-fort);
+  --_texte: var(--vy-texte);
+  --_lueur: var(--vy-lueur-cristal), var(--vy-lueur-cristal-in);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--vy-espace-2);
+  min-height: var(--vy-cible);
+  padding: 0 18px;
+  font: 600 var(--vy-taille-m)/1.15 var(--vy-font-ui);
+  letter-spacing: 0.01em;
+  color: var(--_texte);
+  background: var(--_fond);
+  border: 1.5px solid var(--_bord);
+  border-radius: var(--vy-rayon-m);
+  box-shadow: var(--vy-relief), 0 1px 2px rgba(0, 0, 0, 0.45), 0 3px 8px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+  transition:
+    border-color var(--vy-duree-courte) ease,
+    box-shadow var(--vy-duree) var(--vy-courbe),
+    color var(--vy-duree-courte) ease,
+    transform var(--vy-duree-courte) ease,
+    filter var(--vy-duree-courte) ease;
+}
+@media (hover: hover) {
+  .vy-bouton:hover:not(:disabled, [aria-disabled="true"]),
+  :where(.vy-ui) :where(button:not([class*="vy-"]):hover:not(:disabled)) {
+    border-color: var(--vy-cristal);
+    color: #fff;
+    box-shadow: var(--_lueur), var(--vy-relief);
+    animation: vy-crepite 0.42s steps(1, end);
+  }
+}
+/* Deux brèves impulsions, comme un arc électrique qui s'allume */
+@keyframes vy-crepite {
+  0% { box-shadow: 0 0 0 1px rgba(0, 194, 255, 0.9), 0 0 22px rgba(0, 194, 255, 0.6), var(--vy-relief); }
+  25% { box-shadow: 0 0 0 1px rgba(0, 194, 255, 0.4), 0 0 6px rgba(0, 194, 255, 0.2), var(--vy-relief); }
+  50% { box-shadow: 0 0 0 1px rgba(166, 108, 255, 0.8), 0 0 18px rgba(120, 200, 255, 0.55), var(--vy-relief); }
+  100% { box-shadow: var(--_lueur), var(--vy-relief); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vy-bouton, :where(.vy-ui) :where(button) { animation: none !important; }
+  .vy-bouton--primaire::after { display: none; }
+}
+/* Au doigt, la lueur apparaît à l'appui */
+.vy-bouton:active:not(:disabled, [aria-disabled="true"]),
+:where(.vy-ui) :where(button:not([class*="vy-"]):active:not(:disabled)) {
+  transform: translateY(1px);
+  border-color: var(--vy-cristal);
+  box-shadow: var(--_lueur), inset 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+.vy-bouton:focus-visible,
+:where(.vy-ui) :where(button:not([class*="vy-"]):focus-visible) {
+  outline: 2px solid var(--vy-focus);
+  outline-offset: 2px;
+}
+.vy-bouton:disabled,
+.vy-bouton[aria-disabled="true"],
+:where(.vy-ui) :where(button:not([class*="vy-"]):disabled) {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: saturate(0.4);
+  box-shadow: none;
+}
+/* Bouton enfoncé ou onglet choisi : l'or marque la sélection, le cristal l'interaction */
+.vy-bouton[aria-pressed="true"],
+.vy-bouton[aria-selected="true"],
+.vy-bouton.est-actif {
+  border-color: var(--vy-or-clair);
+  color: var(--vy-texte-or);
+  box-shadow: var(--vy-lueur-or), var(--vy-relief);
+}
+
+/* Action principale : or ciselé, une par écran */
+.vy-bouton--primaire,
+:where(.vy-ui) :where(button.primary) {
+  --_fond: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 45%), linear-gradient(180deg, #f3dca8 0%, var(--vy-or) 46%, #9b7a46 54%, #c9a66b 100%);
+  --_bord: #f3dca8;
+  --_texte: var(--vy-encre);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgba(255, 244, 214, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(92, 70, 40, 0.6), 0 2px 0 #5c4628, 0 4px 12px rgba(0, 0, 0, 0.45), 0 0 18px rgba(201, 166, 107, 0.18);
+}
+/* Balayage de lumière sur l'or au survol */
+.vy-bouton--primaire::after,
+:where(.vy-ui) :where(button.primary)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.55) 48%, rgba(180, 236, 255, 0.4) 52%, transparent 70%);
+  transform: translateX(-130%);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .vy-bouton--primaire:hover:not(:disabled)::after,
+  :where(.vy-ui) :where(button.primary:hover:not(:disabled))::after { animation: vy-balayage 0.75s ease-out; }
+}
+@keyframes vy-balayage { to { transform: translateX(130%); } }
+@media (hover: hover) {
+  .vy-bouton--primaire:hover:not(:disabled, [aria-disabled="true"]),
+  :where(.vy-ui) :where(button.primary:hover:not(:disabled)) { color: var(--vy-encre); filter: brightness(1.07); }
+}
+.vy-bouton--primaire:active:not(:disabled) { color: var(--vy-encre); }
+
+/* Discret : actions secondaires dans un texte ou une liste */
+.vy-bouton--fantome {
+  --_fond: transparent;
+  --_bord: transparent;
+  --_texte: var(--vy-texte-or);
+  box-shadow: none;
+}
+
+/* Danger : vendre, quitter, détruire. La lueur passe à la braise. */
+.vy-bouton--danger {
+  --_bord: rgba(240, 122, 92, 0.7);
+  --_texte: var(--vy-danger);
+  --_lueur: 0 0 0 1px rgba(240, 122, 92, 0.7), 0 0 14px rgba(201, 71, 47, 0.4);
+}
+@media (hover: hover) {
+  .vy-bouton--danger:hover:not(:disabled, [aria-disabled="true"]) { border-color: var(--vy-danger); color: #ffd9cf; }
+}
+.vy-bouton--danger:active:not(:disabled) { border-color: var(--vy-danger); }
+
+/* Tailles */
+.vy-bouton--petit { min-height: 34px; padding: 0 12px; font-size: var(--vy-taille-s); }
+.vy-bouton--grand { min-height: 52px; padding: 0 28px; font-size: var(--vy-taille-l); }
+.vy-bouton--icone { width: var(--vy-cible); padding: 0; font-size: 20px; line-height: 1; }
+.vy-bouton--icone.vy-bouton--petit { width: 34px; }
+.vy-bouton__touche {
+  min-width: 18px;
+  padding: 1px 5px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+/* ==========================================================================
+   Jauges : vie, magie, XP, PA, PM, bouclier
+   --------------------------------------------------------------------------
+   <div class="vy-jauge vy-jauge--vie" style="--v: 0.63" role="meter" ...>
+     <span class="vy-jauge__barre"></span><span class="vy-jauge__texte">81 / 128</span>
+   </div>
+   --v va de 0 à 1. La perte récente reste visible un instant en ivoire (traîne).
+   ========================================================================== */
+.vy-jauge {
+  --v: 1;
+  --_remplissage: var(--vy-jauge-vie);
+  --_bord: var(--vy-filet-fort);
+  --_hauteur: 14px;
+  position: relative;
+  isolation: isolate;
+  height: var(--_hauteur);
+  min-width: 48px;
+  overflow: hidden;
+  background: var(--vy-jauge-fond);
+  border: 1.5px solid var(--_bord);
+  border-radius: var(--vy-rayon-s);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.65);
+}
+.vy-jauge::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 0;
+  width: calc(var(--v) * 100%);
+  background: rgba(242, 226, 201, 0.55);
+  transition: width calc(var(--vy-duree-jauge) * 2) var(--vy-courbe) calc(var(--vy-duree-jauge) * 0.9);
+}
+.vy-jauge__barre {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 1;
+  width: calc(var(--v) * 100%);
+  background: var(--_remplissage);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 1px 0 0 rgba(0, 0, 0, 0.5);
+  transition: width var(--vy-duree-jauge) var(--vy-courbe);
+}
+/* Bouclier : s'ajoute au bout de la vie (--b, de 0 à 1) */
+.vy-jauge__bouclier {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--v) * 100%);
+  z-index: 1;
+  width: calc(var(--b, 0) * 100%);
+  background: var(--vy-jauge-bouclier);
+  opacity: 0.85;
+  transition: left var(--vy-duree-jauge) var(--vy-courbe), width var(--vy-duree-jauge) var(--vy-courbe);
+}
+.vy-jauge__texte {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 var(--vy-taille-xs)/1 var(--vy-font-ui);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-shadow: 0 1px 2px #000, 0 0 2px #000;
+  white-space: nowrap;
+}
+/* Graduations : une marque tous les dixièmes (ou --graduations) */
+.vy-jauge--graduee::after {
+  --_pas: calc(100% / var(--graduations, 10));
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 calc(var(--_pas) - 1px), rgba(0, 0, 0, 0.45) calc(var(--_pas) - 1px) var(--_pas));
+}
+
+.vy-jauge--vie { --_remplissage: var(--vy-jauge-vie); }
+.vy-jauge--mana { --_remplissage: var(--vy-jauge-mana); --_bord: rgba(0, 194, 255, 0.4); }
+.vy-jauge--xp { --_remplissage: var(--vy-jauge-xp); --_hauteur: 8px; }
+.vy-jauge--pa { --_remplissage: var(--vy-jauge-pa); }
+.vy-jauge--pm { --_remplissage: var(--vy-jauge-pm); }
+.vy-jauge--bouclier { --_remplissage: var(--vy-jauge-bouclier); }
+
+.vy-jauge--fine { --_hauteur: 6px; }
+.vy-jauge--fine .vy-jauge__texte { display: none; }
+.vy-jauge--grande { --_hauteur: 20px; }
+.vy-jauge--grande .vy-jauge__texte { font-size: var(--vy-taille-s); }
+
+/* Vie au plus bas : la barre bat, la bordure passe à la braise */
+.vy-jauge[data-etat="critique"] { --_bord: var(--vy-danger); }
+.vy-jauge[data-etat="critique"] .vy-jauge__barre { animation: vy-pouls 1.1s ease-in-out infinite; }
+@keyframes vy-pouls { 50% { filter: brightness(1.45) saturate(1.2); } }
+@media (prefers-reduced-motion: reduce) {
+  .vy-jauge[data-etat="critique"] .vy-jauge__barre { animation: none; }
+}
+
+/* Jauge avec son nom à gauche : « PV [=====] » */
+.vy-jauge-ligne {
+  display: grid;
+  grid-template-columns: 2.4em 1fr;
+  align-items: center;
+  gap: var(--vy-espace-2);
+}
+.vy-jauge-ligne > .vy-etiquette { text-align: right; }
+
+/* ==========================================================================
+   Inventaire : grille de cases, code couleur de rareté
+   --------------------------------------------------------------------------
+   <div class="vy-inventaire" role="listbox">
+     <button class="vy-case" data-rarete="rare" role="option" aria-selected="false">
+       <span class="vy-case__icone">…</span><span class="vy-case__niveau">18</span>
+       <span class="vy-case__nombre">3</span>
+     </button>
+   </div>
+   Raretés : commun, peu-commun, rare, epique, legendaire.
+   ========================================================================== */
+.vy-inventaire {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--vy-case), 1fr));
+  gap: 6px;
+}
+
+[data-rarete] { --_r: var(--vy-rarete-commun); --_rt: var(--vy-rarete-commun-texte); }
+[data-rarete="peu-commun"] { --_r: var(--vy-rarete-peu-commun); --_rt: var(--vy-rarete-peu-commun-texte); }
+[data-rarete="rare"] { --_r: var(--vy-rarete-rare); --_rt: var(--vy-rarete-rare-texte); }
+[data-rarete="epique"] { --_r: var(--vy-rarete-epique); --_rt: var(--vy-rarete-epique-texte); }
+[data-rarete="legendaire"] { --_r: var(--vy-rarete-legendaire); --_rt: var(--vy-rarete-legendaire-texte); }
+
+.vy-case {
+  --_r: var(--vy-rarete-commun);
+  --_rt: var(--vy-rarete-commun-texte);
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--_rt);
+  border: 1.5px solid color-mix(in srgb, var(--_r) 75%, transparent);
+  border-radius: var(--vy-rayon-m);
+  background:
+    radial-gradient(120% 90% at 50% 18%, color-mix(in srgb, var(--_r) 24%, transparent) 0%, transparent 62%),
+    linear-gradient(180deg, var(--vy-surface-2) 0%, #0c1420 100%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55), inset 0 -8px 14px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--vy-duree-courte) ease, box-shadow var(--vy-duree) var(--vy-courbe), transform var(--vy-duree-courte) ease;
+}
+/* Les attributs de rareté posés sur la case elle-même gardent la priorité sur le défaut */
+.vy-case[data-rarete="peu-commun"] { --_r: var(--vy-rarete-peu-commun); --_rt: var(--vy-rarete-peu-commun-texte); }
+.vy-case[data-rarete="rare"] { --_r: var(--vy-rarete-rare); --_rt: var(--vy-rarete-rare-texte); }
+.vy-case[data-rarete="epique"] { --_r: var(--vy-rarete-epique); --_rt: var(--vy-rarete-epique-texte); }
+.vy-case[data-rarete="legendaire"] {
+  --_r: var(--vy-rarete-legendaire);
+  --_rt: var(--vy-rarete-legendaire-texte);
+  border-color: transparent;
+  background:
+    radial-gradient(120% 90% at 50% 18%, rgba(201, 166, 107, 0.3) 0%, transparent 62%) padding-box,
+    linear-gradient(180deg, var(--vy-surface-2) 0%, #0c1420 100%) padding-box,
+    var(--vy-cadre) border-box;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55), inset 0 -8px 14px rgba(0, 0, 0, 0.35), 0 0 10px rgba(201, 166, 107, 0.25);
+}
+
+.vy-case__icone {
+  display: grid;
+  place-items: center;
+  width: 62%;
+  height: 62%;
+  font: 700 clamp(16px, calc(var(--vy-case) * 0.36), 24px)/1 var(--vy-font-titre);
+  color: var(--_rt);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+.vy-case__icone > svg, .vy-case__icone > img { width: 100%; height: 100%; }
+.vy-case__nombre {
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+  font: 700 var(--vy-taille-xs)/1 var(--vy-font-ui);
+  font-variant-numeric: tabular-nums;
+  color: var(--vy-texte);
+  text-shadow: 0 1px 2px #000, 0 0 2px #000;
+}
+.vy-case__niveau {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  font: 600 10px/1 var(--vy-font-ui);
+  font-variant-numeric: tabular-nums;
+  color: var(--vy-texte-2);
+}
+/* Losange d'or : l'objet est porté, ou le Nœud est noué */
+.vy-case__porte {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  width: 7px;
+  height: 7px;
+  transform: rotate(45deg);
+  background: var(--vy-or-clair);
+  box-shadow: 0 0 0 1.5px var(--vy-encre);
+}
+
+@media (hover: hover) {
+  .vy-case:hover:not(.vy-case--vide) {
+    border-color: var(--vy-cristal);
+    box-shadow: var(--vy-lueur-cristal), inset 0 0 0 1px rgba(0, 0, 0, 0.55);
+  }
+}
+.vy-case:active:not(.vy-case--vide) { transform: scale(0.97); }
+.vy-case:focus-visible { outline: 2px solid var(--vy-focus); outline-offset: 2px; }
+.vy-case[aria-selected="true"],
+.vy-case.est-choisie {
+  border-color: var(--vy-or-clair);
+  box-shadow: var(--vy-lueur-or), inset 0 0 0 1px rgba(0, 0, 0, 0.55), inset 0 -8px 14px rgba(0, 0, 0, 0.35);
+}
+.vy-case--vide {
+  border: 1.5px dashed color-mix(in srgb, var(--vy-pierre-clair) 70%, transparent);
+  background: rgba(8, 11, 17, 0.5);
+  box-shadow: none;
+  cursor: default;
+}
+/* Niveau trop haut pour l'équiper */
+.vy-case--bloquee { filter: grayscale(0.55) brightness(0.85); }
+.vy-case--bloquee .vy-case__niveau { color: var(--vy-danger); }
+
+/* Badge de rareté */
+.vy-badge-rarete {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  font: 600 var(--vy-taille-xs)/1.4 var(--vy-font-ui);
+  letter-spacing: var(--vy-chasse-label);
+  text-transform: uppercase;
+  color: var(--_rt, var(--vy-texte-2));
+  border: 1px solid color-mix(in srgb, var(--_r, var(--vy-pierre-clair)) 70%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--_r, var(--vy-pierre-clair)) 12%, transparent);
+  white-space: nowrap;
+}
+.vy-badge-rarete::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  transform: rotate(45deg);
+  background: var(--_r, var(--vy-pierre-clair));
+}
+
+/* Fiche d'objet : à côté ou sous la grille */
+.vy-objet {
+  display: grid;
+  gap: var(--vy-espace-3);
+  padding: var(--vy-espace-4);
+  background: linear-gradient(180deg, var(--vy-surface-2), var(--vy-surface-1));
+  border: 1.5px solid color-mix(in srgb, var(--_r, var(--vy-pierre-clair)) 55%, transparent);
+  border-radius: var(--vy-rayon-m);
+}
+.vy-objet__tete { display: flex; gap: var(--vy-espace-3); align-items: center; }
+.vy-objet__tete > .vy-case { width: 56px; flex-shrink: 0; cursor: default; }
+.vy-objet__nom { margin: 0 0 4px; font: 700 var(--vy-taille-l)/1.25 var(--vy-font-ui); color: var(--_rt); }
+.vy-objet__meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: 0; font-size: var(--vy-taille-s); color: var(--vy-texte-2); }
+.vy-objet__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+.vy-objet__stats li { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--vy-filet); }
+.vy-objet__stats b { color: var(--vy-succes); }
+.vy-objet__recit { margin: 0; font: italic 400 var(--vy-taille-m)/1.55 var(--vy-font-lecture); color: var(--vy-texte-2); }
+.vy-objet__actions { display: flex; flex-wrap: wrap; gap: var(--vy-espace-2); }
