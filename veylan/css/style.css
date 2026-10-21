@@ -86,6 +86,39 @@ html, body {
 #board.glisse { cursor: grabbing; }
 #stage > .board-repli { pointer-events: none; }
 
+/* L'île d'Ervane en 3D (js/ile-3d.js, docs/ILE-TECHNIQUE.md, 3.1) : la toile Three.js sous #board,
+   transparente, le ciel en dégradé derrière elle (posé par le rendu, il suit la brume de la région) ;
+   #board reste au-dessus, invisible, et reçoit les gestes et les clics. Les voiles de la peinture
+   (glacis, vignette, grain) se posent sur la 3D, sous l'interface. */
+#stage > .board-3d { transition: opacity 0.3s ease; background: linear-gradient(180deg, #c2d6e4 0%, #a9c3d6 45%, #6a7f92 100%); }
+.ile-voiles { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; }
+.ile-voiles.on { opacity: 1; }
+.ile-voiles > div { position: absolute; inset: 0; }
+.ile-voiles__glacis { background: linear-gradient(180deg, rgba(255, 236, 200, 0.10) 0%, rgba(255, 236, 200, 0) 40%, rgba(40, 60, 110, 0.10) 100%); mix-blend-mode: soft-light; }
+.ile-voiles__vignette { background: radial-gradient(ellipse 75% 70% at 50% 52%, rgba(0, 0, 0, 0) 58%, rgba(18, 26, 44, 0.28) 100%); }
+.ile-voiles__grain { background-size: 256px 256px; opacity: 0.07; mix-blend-mode: overlay; }
+
+/* Le voile de la bascule (js/scene.js) : pendant que la 3D se prépare, ou quand elle est tombée.
+   Les bulles et les fiches accrochées à la scène se cachent : elles n'ont plus de point d'ancrage. */
+.scene-voile-boite {
+  position: absolute; inset: 0; z-index: 30;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: 24px 16px; text-align: center;
+  background: radial-gradient(ellipse at center, #1a2a3c 0%, var(--vy-ombre) 100%);
+  color: var(--vy-texte);
+}
+.scene-voile__fil { width: min(220px, 60%); height: 2px; border-radius: 1px; background: linear-gradient(90deg, rgba(226, 198, 144, 0) 0%, var(--vy-or-clair) 50%, rgba(226, 198, 144, 0) 100%); background-size: 200% 100%; animation: scene-voile-fil 1.6s ease-in-out infinite; }
+@keyframes scene-voile-fil { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+.scene-voile__titre { margin: 0; font: 700 18px/1.3 var(--vy-font-titre); letter-spacing: 0.06em; color: var(--vy-or-clair); }
+.scene-voile__etape { margin: 0; max-width: 420px; font: 500 13px/1.45 var(--vy-font-ui); color: var(--vy-texte-2); min-height: 1.45em; }
+.scene-voile-boite.repli .scene-voile__fil { animation: none; opacity: 0.5; }
+.scene-voile__boutons { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; max-width: 460px; }
+.scene-voile__boutons .vy-bouton { min-height: 44px; }
+.scene-voile__question { flex-basis: 100%; margin: 0 0 4px; font: 500 13px/1.45 var(--vy-font-ui); color: var(--vy-texte); }
+#stage.scene-voile .vy-fiche-groupe, #stage.scene-voile .vy-bulle-pnj, #stage.scene-voile .vy-emote-bulle,
+#stage.scene-voile .vy-indice, #stage.scene-voile .vy-rappel, #stage.scene-voile .vy-geste { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .scene-voile__fil { animation: none; } #stage > .board-3d, .ile-voiles { transition: none; } }
+
 #banner {
   position: absolute;
   left: 50%; top: 18%;
@@ -233,6 +266,12 @@ select {
 #player-bar .pb-fils small { color: var(--muted); font-weight: 400; }
 #player-bar .pts { font-size: 11px; color: var(--vy-succes); }
 #map-name { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); padding: 6px 16px; background: rgba(11, 18, 27, 0.8); border: 1px solid var(--vy-filet-fort); border-radius: 999px; font: 700 13px/1.2 var(--font-title); letter-spacing: var(--vy-chasse-titre); color: var(--vy-texte-or); white-space: nowrap; }
+/* Fenêtre étroite (901 à 1180 px) : centré, le bandeau passait sous la barre des menus. Il se centre
+   entre la barre du personnage et les menus, ne garde que la sous-zone et se coupe s'il le faut. */
+@media (min-width: 901px) and (max-width: 1180px) {
+  #map-name { left: 290px; right: 460px; transform: none; width: fit-content; max-width: calc(100% - 750px); margin: 0 auto; overflow: hidden; text-overflow: ellipsis; }
+  #map-name .zone { display: none; }
+}
 #tracker { position: absolute; right: 10px; top: 10px; width: 240px; display: flex; flex-direction: column; gap: 4px; }
 #tracker .tq { padding: 6px 10px; background: rgba(11, 18, 27, 0.8); border-left: 3px solid var(--vy-pierre-clair); border-radius: var(--vy-rayon-m); font-size: 12px; }
 #tracker .tq.main { border-left-color: var(--vy-or); } #tracker .tq.done { border-left-color: var(--vy-succes); }

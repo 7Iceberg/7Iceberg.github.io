@@ -25,7 +25,7 @@ ACH.push({ id: 'emousseur_de_pioches', name: 'Émousseur de Pioches', desc: 'Vai
 ACH.push({ id: 'eteigneur_de_cendrous', name: 'Éteigneur de Cendrous', desc: 'Vaincre vingt-cinq Cendrous.', cond: { type: 'kills', monster: 'cendrou', count: 25 }, rewards: { xp: 1100, fils: 170 } });
 
 // --- Niveaux ---
-ACH.push({ id: 'niveau_5', name: 'Pied sur les Cimes', desc: 'Atteindre le niveau 5.', cond: { type: 'level', level: 5 }, rewards: { xp: 80, fils: 20 } });
+ACH.push({ id: 'niveau_5', name: 'Pied ferme', desc: 'Atteindre le niveau 5.', cond: { type: 'level', level: 5 }, rewards: { xp: 80, fils: 20 } });
 ACH.push({ id: 'niveau_10', name: 'Sur les Sentiers', desc: 'Atteindre le niveau 10.', cond: { type: 'level', level: 10 }, rewards: { xp: 200, fils: 50 } });
 ACH.push({ id: 'niveau_15', name: 'Entre les Toiles', desc: 'Atteindre le niveau 15.', cond: { type: 'level', level: 15 }, rewards: { xp: 400, fils: 80 } });
 ACH.push({ id: 'niveau_20', name: 'Veilleur des Cimes', desc: 'Atteindre le niveau 20. Orsane est derrière toi.', cond: { type: 'level', level: 20 }, rewards: { xp: 700, fils: 150, title: 'Veilleur des Cimes' } });

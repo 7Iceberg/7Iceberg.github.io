@@ -133,6 +133,13 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-fiche-groupe__nom { color: #b9e08f; }
 .vy-fiche-groupe__liste small { color: var(--vy-texte-2); font-weight: 500; }
 .vy-fiche-groupe__liste b { margin-left: auto; color: var(--vy-texte-or); font-variant-numeric: tabular-nums; }
+/* Sur l'île : résistances et faiblesses d'un monstre, sous son nom, aux couleurs des éléments. */
+.vy-fiche-groupe__liste .vy-fiche-groupe__resist { flex-wrap: wrap; gap: 2px 6px; margin: -1px 0 3px 16px; font: 600 11.5px/1.3 var(--vy-font-ui); }
+.vy-fiche-groupe__resist span { color: color-mix(in srgb, var(--c) 78%, #fff); }
+/* La leçon des Sources (js/guide.js, groupeFaible) : le Glym à viser, celui qui résiste. */
+.vy-fiche-groupe__liste li.vy-faible { background: color-mix(in srgb, var(--vy-or-clair) 22%, transparent); box-shadow: inset 3px 0 0 var(--vy-or-clair); border-radius: 4px; }
+.vy-fiche-groupe__liste li.vy-resiste { opacity: 0.55; }
+.vy-fiche-groupe__resist small + span, .vy-fiche-groupe__resist span + small { margin-left: 2px; }
 .vy-fiche-groupe__difficulte { margin: 6px 12px 0; padding: 3px 8px; border-radius: 999px; font: 700 10.5px/1.3 var(--vy-font-ui); letter-spacing: 0.08em; text-transform: uppercase; text-align: center; color: var(--_d); background: color-mix(in srgb, var(--_d) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--_d) 50%, transparent); }
 .vy-fiche-groupe__difficulte[data-niveau="facile"] { --_d: var(--vy-cimes-clair); }
 .vy-fiche-groupe__difficulte[data-niveau="mesure"] { --_d: var(--vy-or-clair); }
@@ -335,6 +342,21 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   .vy-carte-info__suivi small { font: 500 11px/1.25 var(--vy-font-ui); color: var(--vy-texte-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .vy-carte-info__suivi.fini > svg { color: var(--vy-cimes-clair); }
   #app.vy-sans-suivi .vy-carte-info__suivi, #app.vy-degage .vy-carte-info { display: none; }
+  /* Le repère du guide sous le bloc (js/guide.js, degagerInfo) : le bloc s'efface, le doigt passe. */
+  #app.vy-info-sous-repere .vy-carte-info { opacity: 0.2; transition: opacity 0.2s; }
+  #app.vy-info-sous-repere .vy-carte-info, #app.vy-info-sous-repere .vy-carte-info * { pointer-events: none; }
+  /* Le coffre des récompenses ne se cache pas sous la boîte du guide : il passe du côté libre. */
+  body.vy-guide-visible #app #recompenses-btn { left: auto; right: 12px; transform: none; animation-name: recompenses-pouls-cote; }
+  /* Le battement sans le translateX(-50%) du coffre centré (sinon il glisse de 29 px à chaque battement). */
+  @keyframes recompenses-pouls-cote { 50% { transform: scale(1.06); } }
+  body.vy-guide-visible #app #recompenses-btn:active { transform: scale(0.96); }
+  body.vy-guide-visible #stage:has(> .vy-guide--tuto[data-cote="droite"]) #recompenses-btn { right: auto; left: 12px; }
+  /* Les rappels du mode court, en exploration : en bas à droite de la scène, au-dessus du coffre
+     (en haut, ils couvraient le nom de la carte ; à gauche, les lignes de la discussion). */
+  #app.mode-explore .vy-rappel { left: auto; right: 10px; top: auto; bottom: 72px; transform: none; max-width: calc(58% - 20px); }
+  /* Une fenêtre ouverte : le rappel remonte en haut, sur sa barre de titre, et laisse passer le doigt
+     (en bas, il couvrait ses boutons, « Tout accepter » des récompenses par exemple). */
+  #app.mode-explore:has(#fenetres > .vy-fenetre) .vy-rappel { left: 50%; right: auto; top: 10px; bottom: auto; transform: translateX(-50%); }
 
   /* ----- La discussion et ses lignes flottantes ----- */
   .vy-discussion { left: calc(6px + var(--sc-gauche)); top: calc(6px + var(--sc-haut)); width: min(340px, calc(100% - 12px)); height: min(230px, 62%); }

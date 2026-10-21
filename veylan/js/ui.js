@@ -139,6 +139,10 @@ class UI {
 
   // Pixels à l'écran par pixel du plateau, mesurés entre deux cases voisines (zoom compris).
   static cellScale(renderer, x, y) {
+    // L'île en 3D (js/scene.js) donne elle-même l'échelle d'une figure à cet endroit, perspective
+    // comprise ; ailleurs, rien (undefined) et la mesure entre deux cases sert.
+    const e = renderer && typeof renderer.echelleFigure === 'function' ? renderer.echelleFigure(x, y) : undefined;
+    if (Number.isFinite(e) && e > 0) return e;
     const a = UI.cellClient(renderer, x, y), b = UI.cellClient(renderer, x + 1, y);
     return Math.hypot(b.x - a.x, b.y - a.y) / Math.hypot(Grid.TILE_W / 2, Grid.TILE_H / 2) || 1;
   }

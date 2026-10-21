@@ -1,21 +1,33 @@
-<title>Veylan</title>
-<link rel="icon" href="assets/ui/icone-v.png" type="image/png">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/ui/icone-apple.png">
-<link rel="manifest" href="manifest.json">
-<link rel="preload" href="assets/ui/logo-veylan.webp" as="image">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap">
-<link rel="stylesheet" href="css/tokens.css">
-<link rel="stylesheet" href="css/components.css">
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/fenetres.css">
-<link rel="stylesheet" href="css/faction.css">
-<link rel="stylesheet" href="css/sorts.css">
-<link rel="stylesheet" href="css/fenetres-personnage.css">
-<link rel="stylesheet" href="css/veille.css">
-<link rel="stylesheet" href="css/guide.css">
-<link rel="stylesheet" href="css/jeu.css">
-<link rel="stylesheet" href="css/accueil.css">
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0f141d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Veylan">
+  <title>Veylan</title>
+  <link rel="icon" href="assets/ui/icone-v.png" type="image/png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/ui/icone-apple.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preload" href="assets/ui/logo-veylan.webp" as="image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/fenetres.css">
+  <link rel="stylesheet" href="css/faction.css">
+  <link rel="stylesheet" href="css/sorts.css">
+  <link rel="stylesheet" href="css/fenetres-personnage.css">
+  <link rel="stylesheet" href="css/veille.css">
+  <link rel="stylesheet" href="css/guide.css">
+  <link rel="stylesheet" href="css/jeu.css">
+  <link rel="stylesheet" href="css/accueil.css">
+</head>
+<body>
   <div id="app" class="vy-ui mode-explore">
     <header id="topbar">
       <div id="brand"><img src="assets/ui/logo-veylan.webp" alt="Veylan" width="74" height="30"></div>
@@ -81,6 +93,8 @@
   <script src="content/achievements.js"></script>
   <script src="content/veille.js"></script>
   <script src="content/tutoriel.js"></script>
+  <script src="content/ervane-interrupteur.js"></script>
+  <script src="js/ile.js"></script>
   <script src="js/noeuds.js"></script>
   <script src="js/grid.js"></script>
   <script src="js/entities.js"></script>
@@ -103,6 +117,7 @@
   <script src="vendor/pixi-filters.min.js"></script>
   <script src="js/paint.js"></script>
   <script src="js/render-gl.js"></script>
+  <script src="js/ile-charge.js"></script>
   <script src="js/sort-icones.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/fenetres.js"></script>
@@ -127,3 +142,5 @@
   <script src="js/accueil-art.js"></script>
   <script src="js/accueil.js"></script>
   <script src="js/main.js"></script>
+</body>
+</html>

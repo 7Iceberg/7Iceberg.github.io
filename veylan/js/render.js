@@ -83,12 +83,35 @@ class Renderer {
     this.camera = (opts && opts.camera) || new Camera(canvas);
     this.camera.setBounds(this.cameraBounds());
     this.watchSize();
-    combat.on('animMove', d => this.animateMove(d));
-    combat.on('animCast', d => this.animateCast(d));
-    combat.on('animTrap', () => Util.delay(180));
-    combat.on('fx', d => { for (const c of d.cells) this.fx.push({ x: c.x, y: c.y, color: d.color, born: performance.now(), dur: 420 }); });
-    combat.on('float', d => this.floats.push({ x: d.x, y: d.y, text: d.text, color: d.color, born: performance.now() }));
+    // Endormi (l'île d'Ervane s'affiche en 3D, js/scene.js), ce rendu n'anime rien : un seul rendu
+    // anime les entités.
+    combat.on('animMove', d => (this.suspendu ? Promise.resolve() : this.animateMove(d)));
+    combat.on('animCast', d => (this.suspendu ? Promise.resolve() : this.animateCast(d)));
+    combat.on('animTrap', () => (this.suspendu ? Promise.resolve() : Util.delay(180)));
+    combat.on('fx', d => { if (!this.suspendu) for (const c of d.cells) this.fx.push({ x: c.x, y: c.y, color: d.color, born: performance.now(), dur: 420 }); });
+    combat.on('float', d => { if (!this.suspendu) this.floats.push({ x: d.x, y: d.y, text: d.text, color: d.color, born: performance.now() }); });
     requestAnimationFrame(() => this.frame());
+  }
+
+  // ----- Sommeil : l'île d'Ervane s'affiche en 3D (js/scene.js, docs/ILE-TECHNIQUE.md, 1.6) -----
+  // Endormi, ce rendu ne dessine plus, rend ses calques à la mémoire et sa caméra se tait ; sa toile
+  // reste en place, transparente.
+  suspendre() {
+    if (this.suspendu) return;
+    this.suspendu = true;
+    this.canvas.style.opacity = '0';
+    if (this.camera) this.camera.muette = true;
+    this.static = null; this.staticMap = null; this.staticBloom = null;
+    this.lointain = []; this.entourage = null; this.res = null; this.decor = [];
+  }
+
+  reprendre() {
+    if (!this.suspendu) return;
+    this.suspendu = false;
+    this.canvas.style.opacity = '';
+    if (this.camera) { this.camera.muette = false; this.camera.changed(); }
+    this.static = null; this.staticMap = null;
+    if (this.resize) this.resize();
   }
 
   static get CLIFF() { return 40; }
@@ -142,7 +165,8 @@ class Renderer {
     return (best && Grid.facing(best.x - e.x, best.y - e.y)) || 'se';
   }
 
-  get map() { return this.world ? this.world.map : this.combat.map; }
+  // Sur un plateau (Ervane), le monde n'a pas de carte à cases : la carte du combat la remplace.
+  get map() { return (this.world && this.world.map) || this.combat.map; }
   get inCombat() { return this.world ? this.world.showCombat : true; }
 
   // ----- Qualité -----
@@ -418,6 +442,8 @@ class Renderer {
       const sized = this.canvas.width !== bw || this.canvas.height !== bh;
       if (sized) { this.canvas.width = bw; this.canvas.height = bh; }
       this.camera.setViewport(w, h);
+      // Endormi, rien ne se repeint : il n'y a plus de carte à cases sous les yeux.
+      if (this.suspendu) return;
       this.suivreDensite(this.camera.fitZoom, this.dpr);
       this.suivreAlentours();
       if (sized && this.static) { this.lastDraw = performance.now(); this.draw(this.lastDraw); }
@@ -545,6 +571,8 @@ class Renderer {
   }
 
   frame() {
+    // Endormi (l'île en 3D) : pas d'image, pas de temps du monde ; on garde la boucle pour le réveil.
+    if (this.suspendu) { requestAnimationFrame(() => this.frame()); return; }
     const now = performance.now();
     this.watchRate(now);
     if (this.onTick) this.onTick(now);

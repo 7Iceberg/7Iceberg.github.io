@@ -40,8 +40,11 @@ class Camera {
       this.calme = mq.matches;
       if (mq.addEventListener) mq.addEventListener('change', e => { this.calme = e.matches; });
     } catch (e) { /* pas de matchMedia */ }
+    // Muette (le rendu des cases dort pendant que l'île d'Ervane s'affiche en 3D, js/scene.js) : elle
+    // suit encore la taille de la vue, mais n'émet plus « veylan:camera ».
+    this.muette = false;
     // Une rotation de l'écran recadre le plateau entier, même zoomé ; la nouvelle taille suit.
-    const turn = () => this.fit();
+    const turn = () => { if (!this.muette) this.fit(); };
     try {
       if (screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener('change', turn);
       else addEventListener('orientationchange', turn);
@@ -276,6 +279,7 @@ class Camera {
   flush() {
     if (!this.dirty) return;
     this.dirty = false;
+    if (this.muette) return;
     const d = this.state();
     for (const fn of this.listeners) { try { fn(d); } catch (e) { console.error(e); } }
     try { window.dispatchEvent(new CustomEvent('veylan:camera', { detail: d })); } catch (e) { /* pas de CustomEvent */ }

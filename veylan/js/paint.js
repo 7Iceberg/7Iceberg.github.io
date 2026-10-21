@@ -805,5 +805,24 @@ const Paint = (() => {
     return glow(P.crystal, 64, 1);
   }
 
-  return { OS, PALETTES, hash, fbm, rgb, hex, mix, rgba, light, dark, toInt, canvas, noiseTile, sky, ground, rock, tree, lantern, door, relay, crystal, body, npc, node, glow, shadow, ring, diamondTex, diamondRing, spark, star, bubble, shieldIcon, lanternIcon, mist, vignette, bolt, shard };
+  // Le noyau d'un Glym des Sources (docs/ILE-TECHNIQUE.md, 3.7) : la couleur vive de l'élément au
+  // creux de la crête, une gemme qui luit sur un corps teinté mais sourd. `p` : le pied de la figure
+  // (le repère des peintres de figures) ; `s.noyau` : la couleur ; `s.shape` place la gemme.
+  function noyau(c, p, s) {
+    if (!s || !s.noyau) return;
+    const top = p.y - 42, x = p.x, col = s.noyau;
+    const cy = s.shape === 'diamond' ? top + 12 : s.shape === 'square' ? top + 13 : p.y - 33;
+    c.save();
+    const g = c.createRadialGradient(x, cy, 0.5, x, cy, 11);
+    g.addColorStop(0, rgba(col, 0.85)); g.addColorStop(0.45, rgba(col, 0.3)); g.addColorStop(1, rgba(col, 0));
+    c.globalCompositeOperation = 'lighter';
+    c.fillStyle = g; c.beginPath(); c.arc(x, cy, 11, 0, Math.PI * 2); c.fill();
+    c.globalCompositeOperation = 'source-over';
+    c.lineJoin = 'round'; c.lineWidth = 1.4; c.strokeStyle = rgba(dark(col, 0.62), 0.9);
+    c.fillStyle = col; c.beginPath(); c.moveTo(x, cy - 5); c.lineTo(x + 3.6, cy); c.lineTo(x, cy + 5); c.lineTo(x - 3.6, cy); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = light(col, 0.65); c.beginPath(); c.moveTo(x, cy - 4); c.lineTo(x - 2.6, cy); c.lineTo(x, cy); c.closePath(); c.fill();
+    c.restore();
+  }
+
+  return { OS, PALETTES, hash, fbm, rgb, hex, mix, rgba, light, dark, toInt, canvas, noiseTile, sky, ground, rock, tree, lantern, door, relay, crystal, body, npc, node, glow, shadow, ring, diamondTex, diamondRing, spark, star, bubble, shieldIcon, lanternIcon, mist, vignette, bolt, shard, noyau };
 })();

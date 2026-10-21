@@ -13,6 +13,16 @@ const Util = {
     };
   },
 
+  // Le développement : un fichier local, localhost, 127.0.0.1, ou ?dev=1 dans l'adresse. La seule
+  // règle, pour js/main.js, js/accueil.js et js/ile.js (l'île d'Ervane). `loc` : une adresse
+  // (location par défaut) ; sans adresse (sous Node), faux.
+  dev(loc) {
+    const l = loc !== undefined ? loc : (typeof location !== 'undefined' ? location : null);
+    if (!l || typeof l !== 'object') return false;
+    const q = typeof l.search === 'string' ? l.search : '';
+    return l.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(l.hostname || '') || /(^|[?&])dev=1(&|$)/.test(q.replace(/^\?/, ''));
+  },
+
   // Échappe un texte avant de l'insérer en HTML (noms de personnage, de PNJ, saisies).
   esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));

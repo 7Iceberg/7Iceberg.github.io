@@ -33,7 +33,15 @@
 //   quest { type, id }              quête acceptée ou rendue ; questProgress, une étape avance
 //   gain { items, xp, fils }        objets, XP ou Fils gagnés (js/world.js)
 //   levelUp { level, levels }       un niveau de plus (js/world.js)
+//   zone { map, zone, nouveau }     l'entrée dans une sous-zone d'un plateau (js/world.js)
 //   suite                           le joueur touche la bulle du guide
+//
+// Sur l'île d'Ervane (content/tutoriel-ile.js, DATA.tutorielIle) : le jeu d'étapes se choisit selon
+// ch.tuto.jeu ('ile', 'descente', sinon celui d'Orsane) ; les repères `point`, `chemin`, `lieu` et
+// `groupeFaible` se dessinent dans la scène 3D (js/ile-3d.js, guideCue) ; `arrive` se compare aussi
+// en unités de l'île ({ u, v, rayon }) ; la condition `sortElement` et les mots {{element}},
+// {{faible}}, {{resiste}} portent la leçon des Sources. À la première carte à cases d'Orsane d'un
+// personnage né sur Ervane, DATA.tutorielDescente se joue une fois (descente).
 
 // ----- Le projecteur : un anneau sur un élément de l'interface, le reste assombri, une main -----
 class Projecteur {
@@ -140,7 +148,7 @@ class Guide {
     this.combat = hud.combat;
     this.ui = hud.ui;
     this.renderer = hud.renderer;
-    this.data = (typeof DATA === 'object' && DATA.tutoriel) || { etapes: [] };
+    this.data = Guide.donnees(this.world.ch);
     this.etapes = (this.data.etapes || []).filter(Boolean);
     if (Guide.actif) Guide.actif.detruire();
     Guide.actif = this;
@@ -170,15 +178,26 @@ class Guide {
     const vue = () => this.placerBoite();
     window.addEventListener('veylan:camera', vue);
     this.desabos.push(() => window.removeEventListener('veylan:camera', vue));
-    // Le tutoriel commence à l'entrée sur la première carte de la partie.
-    this.world.on('map', () => { if (!this.started) this.demarrer(); });
+    // Le tutoriel commence à l'entrée sur la première carte de la partie ; ensuite, un changement
+    // de carte peut être la descente d'Ervane à Orsane.
+    this.world.on('map', d => { if (!this.started) this.demarrer(); else this.descente(d); });
     this.minuterie = setInterval(() => this.tic(), 250);
     this.started = false;
     this.instantane = {};
   }
 
   static get EVENEMENTS() {
-    return ['arrive', 'dialogue', 'dialogueClose', 'map', 'groupPopup', 'fight', 'placed', 'battleStart', 'turnStart', 'turnEnd', 'spellSelect', 'spellCast', 'moved', 'hpLoss', 'fightEnd', 'equip', 'statsAllocated', 'spellUpgraded', 'quest', 'questProgress', 'gain', 'levelUp'];
+    return ['arrive', 'dialogue', 'dialogueClose', 'map', 'zone', 'groupPopup', 'fight', 'placed', 'battleStart', 'turnStart', 'turnEnd', 'spellSelect', 'spellCast', 'moved', 'hpLoss', 'fightEnd', 'equip', 'statsAllocated', 'spellUpgraded', 'quest', 'questProgress', 'gain', 'levelUp'];
+  }
+
+  // Le jeu d'étapes du personnage : celui que nomme ch.tuto.jeu ('ile', 'descente'), sinon selon son
+  // origine (l'île pour un personnage né sur Ervane), sinon celui d'Orsane. Sans le jeu demandé
+  // (interrupteur éteint), celui d'Orsane.
+  static donnees(ch) {
+    const D = typeof DATA === 'object' ? DATA : {};
+    const jeu = (ch && ch.tuto && ch.tuto.jeu) || (ch && ch.origine === 'ervane' ? 'ile' : 'orsane');
+    const d = jeu === 'ile' ? D.tutorielIle : jeu === 'descente' ? D.tutorielDescente : D.tutoriel;
+    return d || D.tutoriel || { etapes: [] };
   }
 
   detruire() {
@@ -221,7 +240,9 @@ class Guide {
     // Un Veilleur tout neuf commence au sud de la place pour marcher jusqu'au guide.
     const dep = this.data.depart;
     const neuf = !ch.quests.done.length && !Object.keys(ch.quests.active).length && ch.counters.maps.length <= 1;
-    if (this.mode === 'guide' && this.index === 0 && dep && this.world.mapId === dep.map && neuf) this.world.placeAt(dep.x, dep.y);
+    if (this.mode === 'guide' && this.index === 0 && dep && this.world.mapId === dep.map && neuf) this.world.placeAt(dep.u != null ? dep.u : dep.x, dep.v != null ? dep.v : dep.y);
+    // Un personnage d'Ervane rechargé sur une carte à cases d'Orsane : la descente, si elle n'a pas eu lieu.
+    this.descente({ mapId: this.world.mapId, def: this.world.mapDef });
     // Un combat du tutoriel laissé en cours (page fermée) : on reprend avant le combat.
     const st = this.etape();
     if (st && st.bloc === 'combat' && !this.enCombat()) {
@@ -229,6 +250,34 @@ class Guide {
       if ((ch.counters.wins || 0) < 1 && back >= 0) this.index = back;
     }
     this.entrer();
+  }
+
+  // La descente : à la première carte à cases d'Orsane d'un personnage né sur Ervane, le petit jeu
+  // d'étapes de la descente (DATA.tutorielDescente) remplace celui de l'île, une fois (ch.tuto.jeu
+  // passe à 'descente', fini ou non). Un tutoriel éteint reste éteint.
+  descente(d) {
+    const ch = this.ch, t = ch.tuto;
+    // Un personnage d'Ervane devenu personnage d'Orsane (« Recommencer à Orsane », Scene.versOrsane) :
+    // le guide relit son jeu d'étapes, celui d'Orsane.
+    if (ch.origine === 'orsane' && Guide.donnees(ch) !== this.data) {
+      this.data = Guide.donnees(ch);
+      this.etapes = (this.data.etapes || []).filter(Boolean);
+      this.reprise = null;
+      if (this.mode === 'off') this.toutCacher(); else this.entrer();
+      return true;
+    }
+    if (!t || t.jeu !== 'ile' || ch.origine !== 'ervane' || typeof DATA !== 'object' || !DATA.tutorielDescente) return false;
+    const mapId = d && (d.mapId || d.map);
+    if (!mapId || this.world.plateau || (d.def && d.def.room) || !String(mapId).startsWith('orsane_')) return false;
+    const mode = ['guide', 'court', 'off'].includes(t.mode) ? t.mode : 'guide';
+    ch.tuto = { mode, step: 0, done: mode === 'off', jeu: 'descente' };
+    this.data = Guide.donnees(ch);
+    this.etapes = (this.data.etapes || []).filter(Boolean);
+    this.reprise = null;
+    this.started = true;
+    if (mode === 'off') { this.sauver(); this.toutCacher(); return true; }
+    this.entrer();
+    return true;
   }
 
   // ----- Avancer -----
@@ -257,6 +306,8 @@ class Guide {
     }
     // Ce que l'étape compare à son début (des points placés depuis, par exemple).
     this.instantane = { points: this.ch.statPoints };
+    this.analyse = null;
+    this.trace = null;
     if (this.rappelT) { clearTimeout(this.rappelT); this.rappelT = null; }
     this.sauver();
     this.afficher();
@@ -397,10 +448,14 @@ class Guide {
     if (Array.isArray(u)) return u.some(x => this.correspond(x, evt, d));
     if (!u || u.cond || u.on !== evt) return false;
     for (const k of Object.keys(u)) {
-      if (k === 'on' || k === 'proche' || k === 'x' || k === 'y' || k === 'vers') continue;
+      if (['on', 'proche', 'x', 'y', 'vers', 'u', 'v', 'rayon', 'monstre'].includes(k)) continue;
       if (this.champ(d, k) !== u[k]) return false;
     }
     if (u.x != null && !(Math.abs((d.x | 0) - u.x) + Math.abs((d.y | 0) - u.y) <= (u.proche || 0))) return false;
+    // En unités de l'île : à moins de `rayon` (1 u par défaut) du point.
+    if (u.u != null && !(Math.hypot((d.x || 0) - u.u, (d.y || 0) - u.v) <= (u.rayon || 1))) return false;
+    // Un combat où ce monstre est présent.
+    if (u.monstre && !(d.group && Array.isArray(d.group.monsters) && d.group.monsters.some(m => m.id === u.monstre))) return false;
     return true;
   }
 
@@ -422,6 +477,21 @@ class Guide {
     const fait = !this.attente && this.realise(st.until);
     if (fait) { this.suivre(fait); return; }
     this.afficher(true);
+    this.degagerInfo();
+  }
+
+  // Le repère au sol (un groupe, un PNJ, un point) sous le bloc du haut à gauche (nom de la carte,
+  // quête suivie) : le bloc s'efface et laisse passer le doigt tant que le repère est dessous.
+  degagerInfo() {
+    const app = document.getElementById('app'), info = document.getElementById('carte-info');
+    const cue = this.renderer && this.renderer.guideCue, o = cue && (cue.group || cue.entity || cue.cell || cue.point);
+    let sous = false;
+    if (o && info && info.offsetParent && !this.world.showCombat) {
+      const q = UI.cellClient(this.renderer, o.rx != null ? o.rx : o.x, o.ry != null ? o.ry : o.y), r = info.getBoundingClientRect();
+      // La figure se dessine au-dessus de ses pieds : jusqu'à 70 px sous le bloc, elle y entre.
+      sous = q.x > r.left - 24 && q.x < r.right + 24 && q.y > r.top && q.y < r.bottom + 70;
+    }
+    if (app) app.classList.toggle('vy-info-sous-repere', sous);
   }
 
   // ----- Conditions -----
@@ -455,8 +525,46 @@ class Guide {
       case 'tourJoueur': return this.tourJoueur() === !!v;
       case 'peutFrapper': return !!(this.tourJoueur() && this.sortFrappe()) === !!v;
       case 'pmRestants': return !!(this.enCombat() && cb.phase === 'battle' && cb.player && cb.player.pm > 0 && cb.aliveMonsters().length) === !!v;
+      // La leçon des Sources : la classe a un sort de dégâts de cet élément (une chaîne), ou d'un
+      // élément qu'un Glym des Sources craint (true).
+      case 'sortElement': return typeof v === 'string' ? this.elementsDeClasse().includes(v) : !!this.analyseElement(this.ficheGroupe()) === !!v;
       default: return false;
     }
+  }
+
+  // Les éléments des sorts de dégâts connus de la classe, dans l'ordre de la barre, hors neutre.
+  elementsDeClasse() {
+    const out = [];
+    const ch = this.ch, ids = ch && ch.unlockedSpells ? ch.unlockedSpells() : [];
+    for (const id of ids) {
+      const s = DATA.spells[id];
+      if (s && s.element && s.element !== 'neutre' && (s.effects || []).some(e => e.type === 'damage') && !out.includes(s.element)) out.push(s.element);
+    }
+    return out;
+  }
+
+  // Le groupe dont la fiche est ouverte (js/hud-jeu.js, FicheGroupe), s'il y en a une.
+  ficheGroupe() {
+    const f = this.hud && this.hud.jeu && this.hud.jeu.fiche;
+    return f && f.d && !f.el.classList.contains('hidden') ? f.d.group : null;
+  }
+
+  // La leçon des Sources : un élément des sorts de la classe, un Glym qui le craint, un qui y
+  // résiste ; dans le groupe de la fiche d'abord, sinon parmi les Glyms d'Ervane. Null si aucun
+  // élément de la classe n'est craint par un Glym. `dansFiche` dit si le Glym qui craint est sur la
+  // fiche ouverte (sinon l'étape montre son texte `sayAilleurs` : la fiche ne contient pas ce que le
+  // guide désigne, le repère groupeFaible pointe le bon groupe).
+  analyseElement(group) {
+    const M = DATA.monsters || {};
+    const glyms = Object.keys(M).filter(id => /^glym_/.test(id) && M[id].region === 'ervane' && !M[id].boss).map(id => M[id]);
+    const dans = group && Array.isArray(group.monsters) ? group.monsters.map(m => M[m.id]).filter(Boolean) : [];
+    for (const e of this.elementsDeClasse()) {
+      const craint = d => !!(d.resist && d.resist[e] < 0), resiste = d => !!(d.resist && d.resist[e] > 0);
+      const faible = dans.find(craint) || glyms.find(craint);
+      if (!faible) continue;
+      return { element: e, faible, resiste: dans.find(resiste) || glyms.find(resiste) || null, dansFiche: dans.includes(faible) };
+    }
+    return null;
   }
 
   enCombat() { return !!(this.world.showCombat && this.world.state === 'combat'); }
@@ -496,9 +604,20 @@ class Guide {
 
   texte(st) {
     const tactile = UI.tactile();
-    if (!tactile && st.saySouris) return st.saySouris;
-    if (tactile && st.sayConfirme && UI.confirmerSorts(true)) return st.sayConfirme;
-    return st.say;
+    let t = st.say;
+    if (!tactile && st.saySouris) t = st.saySouris;
+    else if (tactile && st.sayConfirme && UI.confirmerSorts(true)) t = st.sayConfirme;
+    // La leçon des Sources devant une fiche qui ne montre pas le Glym qui craint l'élément.
+    if (st.sayAilleurs) { const a = this.analyse = this.analyseElement(this.ficheGroupe()); if (a && !a.dansFiche) t = st.sayAilleurs; }
+    return this.remplir(t);
+  }
+
+  // Les mots de la leçon des Sources : {{element}}, {{faible}}, {{resiste}}.
+  remplir(t) {
+    if (typeof t !== 'string' || t.indexOf('{{') < 0) return t;
+    const a = this.analyse || (this.analyse = this.analyseElement(this.ficheGroupe()));
+    const el = (a && DATA.elements && DATA.elements[a.element]) || {};
+    return t.replace(/\{\{(\w+)\}\}/g, (m, k) => (k === 'element' ? (el.label || '') : k === 'faible' ? (a && a.faible ? a.faible.name : '') : k === 'resiste' ? (a && a.resiste ? a.resiste.name : '') : m));
   }
 
   afficher(tic) {
@@ -534,8 +653,9 @@ class Guide {
     const suite = [].concat(st.until || []).some(u => u && u.on === 'suite');
     if (this.mode === 'court') {
       this.boite.cacher();
-      const html = Parole.html(st.court);
-      if (this.rappel.dataset.id !== st.id) { this.rappel.dataset.id = st.id; this.rappel.innerHTML = `<span class="vy-rappel__point" aria-hidden="true"></span><span>${html}</span>`; this.rappel.setAttribute('aria-label', Parole.brut(st.court)); }
+      const court = !UI.tactile() && st.courtSouris ? st.courtSouris : st.court;
+      const html = Parole.html(this.remplir(court));
+      if (this.rappel.dataset.id !== st.id) { this.rappel.dataset.id = st.id; this.rappel.innerHTML = `<span class="vy-rappel__point" aria-hidden="true"></span><span>${html}</span>`; this.rappel.setAttribute('aria-label', Parole.brut(court)); }
       this.rappel.classList.remove('hidden');
       // Un rappel qui n'attend qu'un toucher s'efface seul.
       if (suite && !this.rappelT) this.rappelT = setTimeout(() => { this.rappelT = null; if (this.etape() === st) this.avancer(); }, 7000);
@@ -554,6 +674,9 @@ class Guide {
 
   toutCacher() {
     this.boite.cacher();
+    // Plus de repère : le bloc du haut à gauche revient (degagerInfo).
+    const app = document.getElementById('app');
+    if (app) app.classList.remove('vy-info-sous-repere');
     this.rappel.classList.add('hidden');
     this.projecteur.cacher();
     this.montrerGeste(null);
@@ -568,10 +691,26 @@ class Guide {
     const R = this.renderer, w = this.world, cb = this.combat;
     let ground = null, sel = null, main = false, geste = null;
     const onMap = m => !m || m === w.mapId;
+    let fiche = null;
     const resolve = c => {
       if (!c || ground || sel) return;
       switch (c.type) {
         case 'case': if (onMap(c.map) && !w.showCombat) ground = { cell: { x: c.x, y: c.y } }; break;
+        // Sur un plateau : un point du sol (en u), un lieu nommé, le chemin jusqu'à un but.
+        case 'point': if (onMap(c.map) && !w.showCombat && w.plateau) ground = { point: { x: c.u, y: c.v } }; break;
+        case 'lieu': { const p = !w.showCombat && this.pointDe({ lieu: c.lieu }); if (p) ground = { point: p }; break; }
+        case 'chemin': { const p = !w.showCombat && w.plateau && this.pointDe(c.vers); if (p) ground = { point: p, chemin: this.traceVers(p) }; break; }
+        case 'groupeFaible': {
+          // La leçon des Sources : le groupe le plus proche dont un membre craint l'élément.
+          if (w.showCombat) break;
+          const a = this.analyse = this.analyseElement(this.ficheGroupe());
+          if (!a) break;
+          fiche = a;
+          const p = w.player, craint = g2 => g2.monsters.some(m => DATA.monsters[m.id] && DATA.monsters[m.id].resist && DATA.monsters[m.id].resist[a.element] < 0);
+          const g = w.groups.filter(craint).sort((g1, g2) => Grid.dist(g1, p) - Grid.dist(g2, p))[0];
+          if (g) ground = { group: g };
+          break;
+        }
         case 'pnj': { const n = !w.showCombat && w.npcs.find(x => x.id === c.npc); if (n) ground = { cell: { x: n.x, y: n.y } }; break; }
         case 'groupe': {
           // Le groupe le plus facile pour un premier combat : le moins de monstres, les plus bas
@@ -619,10 +758,49 @@ class Guide {
       if (c && c.type === 'ui' && c.sinon && !sel && !ground) resolve(c.sinon);
     }
     if (R) R.guideCue = ground;
+    this.marquerFiche(fiche);
     if (sel && this.mode === 'guide') this.projecteur.montrer(sel, main);
     else if (sel && this.mode === 'court') this.projecteur.montrer(sel, false, { voile: false });
     else this.projecteur.cacher();
     this.montrerGeste(geste && UI.tactile() && this.mode === 'guide' ? geste : null);
+  }
+
+  // Un but sur le plateau : { npc } (sa position), { lieu } (un lieu nommé du plateau), { u, v }.
+  pointDe(vers) {
+    const w = this.world;
+    if (!vers || !w.plateau) return null;
+    if (vers.npc) { const n = w.npcs.find(x => x.id === vers.npc); return n ? { x: n.x, y: n.y } : null; }
+    if (vers.lieu) { const def = typeof Ile === 'object' && Ile.plateau(w.plateau.id), p = def && def.lieux && def.lieux[vers.lieu]; return p ? { x: p[0], y: p[1] } : null; }
+    return vers.u != null ? { x: vers.u, y: vers.v } : null;
+  }
+
+  // Les marques du chemin jusqu'au but : des points tous les 2 u le long du chemin calculé depuis
+  // le Veilleur, refait quand il s'en est éloigné de 4 u (ou que le but change).
+  traceVers(but) {
+    const w = this.world, p = w.player, t = this.trace;
+    if (t && t.but.x === but.x && t.but.y === but.y && Math.hypot(p.x - t.de.x, p.y - t.de.y) < 4) return t.pts;
+    const pts = [];
+    const chemin = w.plateau.chemin({ x: p.x, y: p.y }, but);
+    if (chemin && chemin.length > 1) {
+      let s = 0, prochain = 2;
+      for (let i = 1; i < chemin.length && pts.length < 48; i++) {
+        const a = chemin[i - 1], b = chemin[i], l = Math.hypot(b.x - a.x, b.y - a.y);
+        while (s + l >= prochain && pts.length < 48) { const k = (prochain - s) / Math.max(1e-6, l); pts.push({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k }); prochain += 2; }
+        s += l;
+      }
+    }
+    this.trace = { but: { x: but.x, y: but.y }, de: { x: p.x, y: p.y }, pts };
+    return pts;
+  }
+
+  // Les deux lignes de la fiche du groupe (js/hud-jeu.js) : le Glym qui craint, celui qui résiste.
+  marquerFiche(a) {
+    const f = typeof document === 'object' ? document.querySelector('.vy-fiche-groupe:not(.hidden)') : null;
+    if (!f) return;
+    for (const li of f.querySelectorAll('[data-monstre]')) {
+      li.classList.toggle('vy-faible', !!(a && a.faible && li.dataset.monstre === a.faible.id));
+      li.classList.toggle('vy-resiste', !!(a && a.resiste && li.dataset.monstre === a.resiste.id));
+    }
   }
 
   // Le geste de glisser, montré au doigt : on tire la carte dans le sens opposé à la sortie, comme

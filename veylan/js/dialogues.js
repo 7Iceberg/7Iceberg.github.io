@@ -301,7 +301,7 @@ class BullePnj {
       const m = c.marque || '?';
       const data = Object.entries(c.data || {}).map(([k, v]) => ` data-${k}="${Util.esc(v)}"`).join('');
       return `<button type="button" class="vy-replique" role="listitem" data-i="${i}"${data}><span class="vy-replique__texte">${Util.esc(c.label)}</span>` +
-        `<span class="vy-replique__marque vy-replique__marque--${m === '!' ? 'offre' : c.rendre ? 'rendre' : 'question'}" aria-hidden="true">${m}</span></button>`;
+        `<span class="vy-replique__marque vy-replique__marque--${m === '!' ? 'offre' : c.rendre ? 'rendre' : c.passage ? 'passage' : 'question'}" aria-hidden="true">${m}</span></button>`;
     }).join('');
   }
 
@@ -406,6 +406,8 @@ class Conversation {
     for (const a of ctx.answers || []) out.push({ label: `${a.quest.name} : ${a.step.text}`, marque: '?', data: { repondre: a.quest.id }, action: () => this.ailleurs(() => hud.openAnswerPanel(ctx.npc, a.quest.id)) });
     for (const q of ctx.offers) out.push({ label: q.name, marque: '!', data: { quete: q.id }, action: () => this.offre(q) });
     for (const a of ctx.active) if (a.done && !this.enChoix(a)) out.push({ label: `Rendre : ${a.quest.name}`, marque: '?', rendre: true, data: { rendre: a.quest.id }, action: () => this.rendre(a.quest) });
+    // Un passage (la Nacelle, js/world.js) : le PNJ emmène ailleurs ; le monde ferme lui-même le dialogue.
+    if (ctx.passage) out.push({ label: ctx.passage.texte, marque: '>', passage: true, data: { passage: ctx.passage.vers }, action: () => this.ailleurs(() => { if (!hud.world.passage()) hud.world.endDialogue(); }) });
     if (ctx.shop) out.push({ label: 'Voir tes marchandises.', action: () => this.ailleurs(() => hud.openShop(ctx)) });
     if (ctx.workshop) out.push({ label: 'Utiliser ton atelier.', action: () => this.ailleurs(() => hud.openWorkshop(ctx)) });
     if (!out.length) out.push({ label: 'Au revoir.', action: () => this.fermer() });

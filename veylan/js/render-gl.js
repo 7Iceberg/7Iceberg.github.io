@@ -102,11 +102,13 @@ class RendererGL {
     this.tempLights = [];
     this.floatPool = [];
     this.lastNow = performance.now();
-    combat.on('animMove', d => this.animateMove(d));
-    combat.on('animCast', d => this.animateCast(d));
-    combat.on('animTrap', () => Util.delay(180));
-    combat.on('fx', d => this.burst(d.cells, d.color, 420));
-    combat.on('float', d => this.floats.push({ x: d.x, y: d.y, text: d.text, color: d.color, born: performance.now() }));
+    // Endormi (l'île d'Ervane s'affiche en 3D, js/scene.js), ce rendu n'anime rien : un seul rendu
+    // anime les entités.
+    combat.on('animMove', d => (this.suspendu ? Promise.resolve() : this.animateMove(d)));
+    combat.on('animCast', d => (this.suspendu ? Promise.resolve() : this.animateCast(d)));
+    combat.on('animTrap', () => (this.suspendu ? Promise.resolve() : Util.delay(180)));
+    combat.on('fx', d => { if (!this.suspendu) this.burst(d.cells, d.color, 420); });
+    combat.on('float', d => { if (!this.suspendu) this.floats.push({ x: d.x, y: d.y, text: d.text, color: d.color, born: performance.now() }); });
     this.watchSize();
     this.initGL().catch(e => { console.error('Rendu WebGL impossible :', e); this.degrade('démarrage : ' + (e && e.message)); });
     canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); this.degrade('contexte WebGL perdu'); });
@@ -122,6 +124,8 @@ class RendererGL {
       this.dpr = Math.min(2, Math.max(1, (typeof devicePixelRatio === 'number' && devicePixelRatio) || 1));
       this.painter.dpr = this.dpr;
       this.camera.setViewport(w, h);
+      // Endormi, le peintre ne repeint rien : il n'a plus de carte à cases sous les yeux.
+      if (this.suspendu) return;
       this.painter.suivreDensite(this.camera.fitZoom, this.dpr);
       this.painter.suivreAlentours();
       if (!this.app || (w === this.vw && h === this.vh && this.app.renderer.resolution === this.dpr)) return;
@@ -160,6 +164,17 @@ class RendererGL {
     this.degraded = true;
     this.ready = false;
     console.warn('Veylan : rendu WebGL abandonné (' + reason + '), rendu Canvas.');
+    // Endormi sur l'île (js/scene.js), le rendu Canvas de repli attend le réveil : son constructeur
+    // lit la carte à cases, qu'il n'y a pas sur un plateau.
+    if (this.suspendu) {
+      this.repliAttendu = reason;
+      try { if (this.app) { this.app.destroy(false, { children: true, texture: true }); this.app = null; } } catch (e) { /* rien */ }
+      return;
+    }
+    this.creerRepli(reason);
+  }
+
+  creerRepli(reason) {
     const stage = this.canvas.parentElement;
     const cv = document.createElement('canvas');
     cv.className = 'board-repli';
@@ -194,9 +209,47 @@ class RendererGL {
 
   get world() { return this._world; }
   set world(w) { this._world = w || null; if (this.painter) this.painter.world = this._world; if (this.fallback) { this.fallback.world = this._world; this.fallback.static = null; } }
-  get map() { return this.world ? this.world.map : this.combat.map; }
+  // Sur un plateau (Ervane), le monde n'a pas de carte à cases : la carte du combat la remplace.
+  get map() { return (this.world && this.world.map) || this.combat.map; }
   get inCombat() { return this.world ? this.world.showCombat : true; }
   get paletteId() { return this.world && this.world.zone ? this.world.zone.palette : 'lab'; }
+
+  // ----- Sommeil : l'île d'Ervane s'affiche en 3D (js/scene.js, docs/ILE-TECHNIQUE.md, 1.6) -----
+  // Endormi, ce rendu ne produit plus d'image, rend à la mémoire ses calques, ses textures et celles
+  // du peintre (qui reste prêt : l'interface et le rendu 3D peignent encore avec lui), et sa caméra
+  // se tait. La toile #board reste au-dessus, transparente : elle reçoit toujours les gestes.
+  suspendre() {
+    if (this.suspendu) return;
+    this.suspendu = true;
+    this.canvas.style.opacity = '0';
+    this.camera.muette = true;
+    if (this.fallback) this.fallback.suspendre();
+    this.viderCarte();
+    if (this.bloomTex) { this.bloomTex.destroy(true); this.bloomTex = null; }
+    for (const t of this.sprTex.values()) t.destroy(true);
+    this.sprTex.clear();
+    for (const t of this.textures.values()) t.texture.destroy(true);
+    this.textures.clear();
+    this.static = null; this.staticMap = null; this.staticCanvas = null; this.tactMap = null; this.cellSig = null;
+    const pt = this.painter;
+    pt.static = null; pt.staticMap = null; pt.staticBloom = null; pt.lointain = []; pt.entourage = null; pt.res = null; pt.decor = [];
+  }
+
+  // Le réveil : la prochaine image refait la carte. Un repli Canvas demandé pendant le sommeil
+  // (contexte de Pixi perdu) naît maintenant.
+  reprendre() {
+    if (!this.suspendu) return;
+    this.suspendu = false;
+    this.camera.muette = false;
+    this.static = null; this.staticMap = null;
+    this.prevFrame = 0; this.slowFrames = 0;
+    if (this.degraded) {
+      if (this.fallback) this.fallback.reprendre();
+      else this.creerRepli(this.repliAttendu || 'contexte WebGL perdu');
+    } else this.canvas.style.opacity = '';
+    if (this.resize) this.resize();
+    this.camera.changed();
+  }
   get palette() { return Paint.PALETTES[this.paletteId] || Paint.PALETTES.lab; }
 
   cellToScreen(x, y) { return Grid.toScreen(x, y, this.origin); }
@@ -261,6 +314,8 @@ class RendererGL {
 
   frame() {
     if (this.degraded) return;   // le rendu Canvas de repli a sa propre boucle
+    // Endormi (l'île en 3D) : pas d'image, pas de temps du monde ; on garde la boucle pour le réveil.
+    if (this.suspendu) { requestAnimationFrame(() => this.frame()); return; }
     const now = performance.now();
     this.watchRate(now);
     if (this.onTick) this.onTick(now);
@@ -455,14 +510,7 @@ class RendererGL {
     }
     this.staticMap = m; this.staticPalette = P; this.staticCanvas = pt.static;
     const L = this.layers;
-    for (const e of this.ents.values()) { e.ui.destroy({ children: true }); if (e.aura) e.aura.destroy(); if (e.lanternGlow) e.lanternGlow.destroy(); }
-    this.ents.clear();
-    this.dropLointain();
-    for (const layer of [L.ground, L.water, L.sorted, L.glow]) { for (const ch of layer.removeChildren()) ch.destroy({ children: true }); }
-    if (this.fxSprites) this.fxSprites = [];
-    if (this.tempRocks) this.tempRocks.clear();
-    this.decor = []; this.waterTiles = []; this.lights = []; this.particles = []; this.tempRocks = new Map();
-    if (this.groundTex) this.groundTex.destroy(true);
+    this.viderCarte();
     // Les calques fixes du peintre en textures : les bandes du lointain (les alentours jusqu'aux
     // bords de la vue), teintées de l'ambiance, puis le proche (le plateau et ses abords), et sa
     // couche lumineuse fixe en addition par-dessus.
@@ -514,6 +562,21 @@ class RendererGL {
       this.waterTiles.push(rec);
     }
     this.static = true;
+  }
+
+  // Vide les calques de la carte (figures, lointain, sol, eau, décor, lueurs) : au changement de
+  // carte, et quand le rendu s'endort.
+  viderCarte() {
+    const L = this.layers;
+    if (!L) return;
+    for (const e of this.ents.values()) { e.ui.destroy({ children: true }); if (e.aura) e.aura.destroy(); if (e.lanternGlow) e.lanternGlow.destroy(); }
+    this.ents.clear();
+    this.dropLointain();
+    for (const layer of [L.ground, L.water, L.sorted, L.glow]) { for (const ch of layer.removeChildren()) ch.destroy({ children: true }); }
+    if (this.fxSprites) this.fxSprites = [];
+    if (this.tempRocks) this.tempRocks.clear();
+    this.decor = []; this.waterTiles = []; this.lights = []; this.particles = []; this.tempRocks = new Map();
+    if (this.groundTex) { this.groundTex.destroy(true); this.groundTex = null; }
   }
 
   // Les bandes du lointain du peintre, sous le calque proche (au fond du calque du sol), teintées de

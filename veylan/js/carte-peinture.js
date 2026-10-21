@@ -648,8 +648,33 @@ const CartePeinture = (() => {
   const defOf = id => (typeof World === 'function' ? World.mapDef(id) : null);
   function carte(id) {
     let cv = cartes.get(id);
-    if (!cv) { const d = defOf(id); if (!d) return null; cv = peindre(d, zoneOf(id)); cartes.set(id, cv); }
+    if (!cv) { const d = defOf(id); if (!d) return null; cv = d.layout ? peindre(d, zoneOf(id)) : peindrePlateau(d, zoneOf(id)); cartes.set(id, cv); }
     return cv;
+  }
+
+  // Une carte de plateau (l'île d'Ervane) n'a pas de plan de cases : sa case est découpée dans la
+  // vue d'ensemble de l'île (js/ile-peinture.js), au rectangle de son contour, à la taille d'une
+  // carte peinte ; le vide reste transparent (le ciel de la carte du monde passe dessous).
+  const vues = new Map();
+  function peindrePlateau(def, zone) {
+    const S = 15 * T, out = canvas(S, S), c = out.getContext('2d');
+    const e = typeof Ile === 'object' && def.plateau ? Ile.terrain(def.plateau) : null;
+    const pts = def.contour || [];
+    if (!e || typeof IlePeinture !== 'object' || pts.length < 3) { c.fillStyle = couleurZone(zone); c.fillRect(0, 0, S, S); return out; }
+    // À 4 px par u (revue finale : à 2, les cases de l'onglet Cartes étaient pixelisées).
+    const k = 4;
+    let vue = vues.get(def.plateau);
+    if (!vue) { vue = IlePeinture.vueEnsemble(e.terrain, k); vues.set(def.plateau, vue); }
+    const T2 = e.terrain;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [u, v] of pts) { x0 = Math.min(x0, u); y0 = Math.min(y0, v); x1 = Math.max(x1, u); y1 = Math.max(y1, v); }
+    x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(T2.largeur, x1); y1 = Math.min(T2.hauteur, y1);
+    // Le carré qui couvre le rectangle, centré.
+    const cote = Math.max(1, Math.min(x1 - x0, y1 - y0)), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    c.imageSmoothingEnabled = true;
+    c.drawImage(vue, (cx - cote / 2) * k, (cy - cote / 2) * k, cote * k, cote * k, 0, 0, S, S);
+    grain(c, S, 0.12, 'overlay');
+    return out;
   }
   const estPeinte = id => cartes.has(id);
 
@@ -805,6 +830,12 @@ const CartePeinture = (() => {
   }
 
   function vider() { cartes.clear(); brumes.clear(); }
+  // Après la descente d'Ervane (js/scene.js, oublierIle) : les cartes de plateau peintes et leur vue
+  // d'ensemble sont rendues ; elles se repeignent à la prochaine ouverture de la carte.
+  function oublierPlateaux() {
+    vues.clear();
+    for (const id of [...cartes.keys()]) { const d = defOf(id); if (d && d.plateau) { cartes.delete(id); brumes.delete(id); } }
+  }
 
   // Une image (data URL) d'une pastille ou d'une épingle, pour la légende en HTML.
   const urls = new Map();
@@ -814,5 +845,5 @@ const CartePeinture = (() => {
     return urls.get(k);
   }
 
-  return { T, palette, hauteur, carte, estPeinte, brume, couleurZone, nuage, pastille, epingle, url, vider, PASTILLES };
+  return { T, palette, hauteur, carte, estPeinte, brume, couleurZone, nuage, pastille, epingle, url, vider, oublierPlateaux, PASTILLES };
 })();

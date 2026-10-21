@@ -44,7 +44,7 @@ class HudJeu {
     this.confirmQuitter = null;
 
     const w = this.world, cb = this.combat;
-    w.on('map', () => { this.page = 0; this.rafraichir(); });
+    w.on('map', d => { if (!(d && d.secteur)) this.page = 0; this.rafraichir(); });
     w.on('update', () => this.rafraichir());
     w.on('hp', () => this.rafraichirVie());
     w.on('questProgress', () => this.rafraichirCarte());
@@ -620,8 +620,19 @@ class FicheGroupe {
     // Toucher ailleurs (la carte, un autre groupe) referme la fiche ; pas la bulle du guide.
     jeu.stage.addEventListener('pointerdown', evt => { if (this.d && !this.el.contains(evt.target) && !evt.target.closest('.vy-guide, .vy-rappel')) this.cacher(true); }, true);
     window.addEventListener('keydown', evt => { if (evt.key === 'Escape' && this.d) this.cacher(true); });
-    jeu.world.on('map', () => this.cacher(false));
+    // Sur l'île, marcher d'une sous-zone à l'autre (`secteur`) ne referme pas la fiche.
+    jeu.world.on('map', d => { if (!(d && d.secteur)) this.cacher(false); });
     jeu.world.on('fight', () => this.cacher(false));
+  }
+
+  // « Résiste : Feu 30 % · Faible : Eau 50 % » (rien si le monstre n'a ni l'une ni l'autre).
+  static ligneResistances(def) {
+    const r = def.resist || {}, el = DATA.elements || {};
+    const nom = k => (el[k] && el[k].label) || k;
+    const fort = Object.keys(r).filter(k => r[k] > 0).map(k => `<span style="--c:${(el[k] && el[k].color) || '#ccc'}">${Util.esc(nom(k))} ${r[k]} %</span>`);
+    const faible = Object.keys(r).filter(k => r[k] < 0).map(k => `<span style="--c:${(el[k] && el[k].color) || '#ccc'}">${Util.esc(nom(k))} ${-r[k]} %</span>`);
+    if (!fort.length && !faible.length) return '';
+    return `<li class="vy-fiche-groupe__resist">${fort.length ? `<small>Résiste</small> ${fort.join(' ')}` : ''}${faible.length ? `<small>Faible</small> ${faible.join(' ')}` : ''}</li>`;
   }
 
   static get DIFFICULTE() {
@@ -638,9 +649,14 @@ class FicheGroupe {
       const l = lignes.find(x => x.id === m.id && x.level === m.level);
       if (l) l.n++; else lignes.push({ id: m.id, level: m.level, n: 1 });
     }
+    // Sur l'île d'Ervane, chaque monstre montre aussi ses résistances et ses faiblesses : c'est la
+    // leçon des Glyms (un élément contre l'autre).
+    const ile = !!this.jeu.world.plateau;
     const liste = lignes.map(l => {
       const def = DATA.monsters[l.id] || { name: l.id, color: '#aaa' };
-      return `<li><span class="vy-pastille" style="--c:${def.color}"></span><span class="vy-fiche-groupe__nom">${Util.esc(def.name)}</span><small>niv. ${l.level}</small>${l.n > 1 ? `<b>×${l.n}</b>` : ''}</li>`;
+      // `data-monstre` : le guide de l'île y met en avant le Glym qui craint et celui qui résiste.
+      return `<li data-monstre="${Util.esc(l.id)}"><span class="vy-pastille" style="--c:${def.color}"></span><span class="vy-fiche-groupe__nom">${Util.esc(def.name)}</span><small>niv. ${l.level}</small>${l.n > 1 ? `<b>×${l.n}</b>` : ''}</li>` +
+        (ile ? FicheGroupe.ligneResistances(def) : '');
     }).join('');
     this.el.innerHTML =
       `<header class="vy-fiche-groupe__tete"><div><h3>Groupe niveau ${somme}</h3><p class="vy-fiche-groupe__xp" title="XP estimée, avant le bonus d'un Défi réussi">${d.xp} XP</p></div>` +

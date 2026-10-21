@@ -56,6 +56,18 @@ const Save = (() => {
   for (const k of ['spellRanks', 'spellPoints', 'autoSpells']) ALLOWED.add(k);
   // Création de personnage (js/accueil.js) : l'apparence.
   ALLOWED.add('look');
+  // L'île de départ (docs/ILE-TECHNIQUE.md, 7.1) : où le personnage est né, 'orsane' ou 'ervane'.
+  // Dans la liste dès l'étape a1, avant que la naissance sur l'île l'écrive.
+  ALLOWED.add('origine');
+  const ORIGINES = ['orsane', 'ervane'];
+
+  // Le plateau d'une carte (Ervane), ou null pour une carte à cases.
+  const plateauDe = id => {
+    const m = typeof World === 'function' && World.mapDef(id);
+    return m && m.plateau ? ((DATA.content && DATA.content.plateaux) || []).find(p => p.id === m.plateau) || null : null;
+  };
+  // Une position continue sur un plateau : des nombres finis dans l'île, arrondis au centième.
+  const dansPlateau = (pl, x, y) => typeof x === 'number' && typeof y === 'number' && Number.isFinite(x) && Number.isFinite(y) && x >= 0 && y >= 0 && x <= pl.taille[0] && y <= pl.taille[1];
 
   // Rangs des sorts : des sorts de la classe seulement, des rangs entiers de 1 à 5, un rang 2 ou plus
   // sur un sort débloqué, chaque rang au niveau qu'il demande (le 5 au niveau 50), et l'invariant
@@ -192,6 +204,10 @@ const Save = (() => {
       const def = Quests.get(id), st = q.active[id];
       if (!def || (quests.done.includes(id) && !def.repeat) || !st || !isInt(st.step, 0, def.steps.length)) { bad(`quête ${id}`); continue; }
       quests.active[id] = { step: st.step, progress: isInt(st.progress, 0, 9999) ? st.progress : 0, given: !!st.given };
+      // Les compteurs d'une étape `kills` (docs/ILE-TECHNIQUE.md, 7.1) : des entiers de 0 à 99, autant
+      // que de lignes dans l'étape courante ; sinon ils repartent de zéro.
+      const sk = def.steps[st.step];
+      if (sk && sk.type === 'kills' && Array.isArray(st.counts)) quests.active[id].counts = st.counts.length === sk.kills.length && st.counts.every(n => isInt(n, 0, 99)) ? st.counts.slice() : sk.kills.map(() => 0);
       // Réponses des étapes de choix (le serment) : étapes passées, options existantes.
       if (st.choices != null) { const c = Quests.checkChoices(def, st.choices, st.step); if (c) quests.active[id].choices = c; else bad(`choix de la quête ${id}`); }
     }
@@ -204,7 +220,7 @@ const Save = (() => {
       o.faction = f.data;
     }
     // Succès et titres : seulement ceux qui existent et que les compteurs justifient.
-    const tmp = { counters, level: o.level, achievements: [], quests: { done: quests.done }, derived: () => ({ setCount: {} }) };
+    const tmp = { counters, level: o.level, origine: o.origine, achievements: [], quests: { done: quests.done }, derived: () => ({ setCount: {} }) };
     const achs = [];
     for (const id of Array.isArray(o.achievements) ? o.achievements : []) {
       const a = Achievements.defs().find(x => x.id === id);
@@ -232,12 +248,32 @@ const Save = (() => {
     if (o.title != null && !o.titles.includes(o.title)) { bad('titre affiché'); o.title = null; }
     // Lieux : tout doit encore exister (une mise à jour peut retirer une salle ou une carte).
     o.relays = (Array.isArray(o.relays) ? o.relays : []).filter(id => typeof id === 'string' && World.mapDef(id));
-    if (o.relay && !(o.relay.map && World.mapDef(o.relay.map) && isInt(o.relay.x, 0, 99) && isInt(o.relay.y, 0, 99))) o.relay = null;
+    // Le point de retour : sur une carte à cases, une case ; sur un plateau, exactement le relais de
+    // sa carte dans le contenu.
+    if (o.relay) {
+      const pr = o.relay.map && plateauDe(o.relay.map), rd = pr && World.mapDef(o.relay.map).relay;
+      const ok = pr ? !!(rd && o.relay.x === rd.u && o.relay.y === rd.v) : !!(o.relay.map && World.mapDef(o.relay.map) && isInt(o.relay.x, 0, 99) && isInt(o.relay.y, 0, 99));
+      if (!ok) o.relay = null;
+    }
     if (o.pos && !(o.pos.map && (World.mapDef(o.pos.map) || String(o.pos.map).includes('#')))) o.pos = null;
+    // Une position sur un plateau : continue, dans l'île, au centième ; sinon oubliée, sans marque
+    // (le personnage repart de son relais, comme après une carte disparue).
+    if (o.pos) {
+      const pp = plateauDe(o.pos.map);
+      if (pp) o.pos = dansPlateau(pp, o.pos.x, o.pos.y) ? { map: o.pos.map, x: Math.round(o.pos.x * 100) / 100, y: Math.round(o.pos.y * 100) / 100 } : null;
+    }
+    // L'origine : Orsane ou Ervane ; une autre valeur est retirée et marquée.
+    if (o.origine !== undefined && !ORIGINES.includes(o.origine)) { bad('origine'); delete o.origine; }
     if (o.dungeon) {
       const d = World.dungeonDef(o.dungeon.id);
       if (!d || !isInt(o.dungeon.room, 0, d.rooms.length - 1)) o.dungeon = null;
-      else o.dungeon = { id: o.dungeon.id, room: o.dungeon.room, turns: isInt(o.dungeon.turns, 0, 9999) ? o.dungeon.turns : 0 };
+      else {
+        // Le point de retour d'un donjon entré depuis un plateau (7.1) : une carte de plateau et une
+        // position continue dans l'île ; sinon retiré, sans marque.
+        const r = o.dungeon.retour, pr = r && r.map && plateauDe(r.map);
+        o.dungeon = { id: o.dungeon.id, room: o.dungeon.room, turns: isInt(o.dungeon.turns, 0, 9999) ? o.dungeon.turns : 0 };
+        if (pr && dansPlateau(pr, r.x, r.y)) o.dungeon.retour = { map: r.map, x: Math.round(r.x * 100) / 100, y: Math.round(r.y * 100) / 100 };
+      }
     }
     o.knots = (Array.isArray(o.knots) ? o.knots : []).filter(id => inv[id]);
     o.ensembles = (Array.isArray(o.ensembles) ? o.ensembles : []).slice(0, 6).filter(e => e && typeof e === 'object').map(e => { const r = {}; for (const s of Object.keys(eq)) if (typeof e[s] === 'string' && Items.get(e[s])) r[s] = e[s]; return r; });
@@ -263,6 +299,9 @@ const Save = (() => {
       const done = typeof t.done === 'boolean' ? t.done : null;
       if (mode === null || step === null || done === null) bad('tutoriel');
       o.tuto = { mode: mode || 'off', step: step === null ? 0 : step, done: done === null ? mode === null : done };
+      // Le jeu d'étapes en cours (js/guide.js) : celui d'Orsane, celui de l'île d'Ervane, ou la
+      // descente ; absent, le guide le choisit d'après l'origine du personnage.
+      if (['orsane', 'ile', 'descente'].includes(t.jeu)) o.tuto.jeu = t.jeu;
     }
     validateSpellRanks(o, bad, oldFormat);
     return { errors, data: o };
@@ -435,6 +474,17 @@ const Save = (() => {
     try { o = JSON.parse(decodeURIComponent(escape(atob(String(text).trim())))); } catch (e) { return { error: 'Code illisible.' }; }
     if (!o || !o.character || typeof o.character !== 'object') return { error: 'Code illisible.' };
     if (forged(o)) return { error: 'Ce code a été modifié.' };
+    // Un personnage qui porte une trace d'Ervane sur une page où l'île n'est pas chargée
+    // (docs/ILE-TECHNIQUE.md, 7.3) : le code attend dans sessionStorage et le résultat demande la
+    // recharge (`recharge: true`) ; c'est l'interface (js/accueil.js, js/hud.js) qui recharge la page,
+    // le moteur ne touche pas à `location`. Au rechargement, les modules s'appliquent (js/ile.js) et
+    // l'accueil reprend l'import tout seul.
+    if (typeof Ile === 'object' && !Ile.actif() && Ile.trace(o.character)) {
+      let garde = false;
+      try { sessionStorage.setItem('veylan.ile.import', String(text).trim()); garde = true; } catch (e) { garde = false; }
+      if (garde) return { error: 'Ce personnage vient d\'Ervane : la page se recharge pour l\'accueillir.', recharge: true };
+      return { error: 'Ce personnage vient d\'Ervane, que cette page ne peut pas charger.' };
+    }
     const v = validate(o.character);
     if (!v.data || v.errors.length) return { error: 'Ce code contient un personnage incohérent.' };
     const uid = v.data.uid, seq = Number(o.seq) || 0;

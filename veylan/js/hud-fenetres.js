@@ -56,6 +56,8 @@ const ALIAS = { perso: 'sac' };
 Object.assign(Hud.prototype, {
   initFenetres() {
     this.fen = new Fenetres(document.getElementById('fenetres'));
+    // Après la descente d'Ervane (js/scene.js, oublierIle), la vue d'ensemble de la mini-carte est rendue.
+    window.addEventListener('veylan:ile-oubliee', () => { this.miniVue = null; });
     this.journal = { combat: [], evenements: [] };
     this.journalTab = 'evenements';
     // Barre de menus : toujours visible, en exploration comme en combat.
@@ -162,7 +164,8 @@ Object.assign(Hud.prototype, {
   drawMinimap(force) {
     const cv = document.getElementById('minicarte-cv');
     const w = this.world;
-    if (!cv || !w.map || cv.offsetParent === null) return;
+    if (!cv || cv.offsetParent === null) return;
+    if (!w.map) { if (w.plateau) this.drawMinimapPlateau(cv, force); return; }
     const p = w.player;
     const sig = [w.mapId, p.x, p.y, w.groups.map(g => g.x + ',' + g.y).join(';')].join('|');
     if (!force && sig === this.miniSig) return;
@@ -195,6 +198,44 @@ Object.assign(Hud.prototype, {
     const pos = !w.mapId.includes('#') && typeof Atlas === 'object' && Atlas.coordsOf(w.mapId);
     const label = document.getElementById('minicarte-nom');
     if (label) label.textContent = w.mapDef ? w.mapDef.name + (pos ? ` [${pos[0]},${pos[1]}]` : '') : '';
+  },
+
+  // La mini-carte d'un plateau (l'île d'Ervane) : la vue d'ensemble peinte (IlePeinture.vueEnsemble,
+  // une fois par plateau), tournée comme la caméra (le nord-ouest en haut : un point (u, v) tombe en
+  // (u - v, u + v)), centrée sur le Veilleur, avec les relais, portes, PNJ et groupes de la sous-zone.
+  drawMinimapPlateau(cv, force) {
+    const w = this.world, P = w.plateau, p = w.player;
+    const sig = ['plateau', w.mapId, Math.round(p.x * 4), Math.round(p.y * 4), w.groups.length].join('|');
+    if (!force && sig === this.miniSig) return;
+    this.miniSig = sig;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = cv.clientWidth, H = cv.clientHeight;
+    if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    const c = cv.getContext('2d');
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // Le vide (le ravin de la Source de Braise, l'Échancrure, le large) dans le gris nuage de la carte
+    // peinte, pas en noir (revue finale).
+    c.fillStyle = '#9ba6ba'; c.fillRect(0, 0, W, H);
+    if (!this.miniVue || this.miniVue.id !== P.id) this.miniVue = { id: P.id, toile: IlePeinture.vueEnsemble(P.terrain, 2) };
+    const s = W / 56;   // pixels par u : 56 u de large dans la fenêtre
+    const iso = (u, v) => ({ x: W / 2 + ((u - p.x) - (v - p.y)) * s / 2, y: H / 2 + ((u - p.x) + (v - p.y)) * s / 4 });
+    c.save();
+    // La vue d'ensemble (2 px par u) posée par la transformation isométrique.
+    const o = iso(0, 0);
+    c.transform(s / 4, s / 8, -s / 4, s / 8, o.x, o.y);
+    c.imageSmoothingEnabled = true;
+    c.drawImage(this.miniVue.toile, 0, 0);
+    c.restore();
+    const dot = (x, y, color, r) => { const q = iso(x, y); if (q.x < -4 || q.y < -4 || q.x > W + 4 || q.y > H + 4) return; c.beginPath(); c.arc(q.x, q.y, r, 0, Math.PI * 2); c.fillStyle = color; c.fill(); c.lineWidth = 1; c.strokeStyle = 'rgba(0,0,0,0.6)'; c.stroke(); };
+    const def = w.mapDef || {};
+    if (def.relay) dot(def.relay.u, def.relay.v, '#3fc8e9', 3);
+    if (def.porte) dot(def.porte.u, def.porte.v, '#a66cff', 3);
+    for (const n of w.npcs) dot(n.x, n.y, '#f2e2c9', 2.4);
+    for (const g of w.groups) dot(g.rx != null ? g.rx : g.x, g.ry != null ? g.ry : g.y, '#f07a5c', 2.6);
+    dot(p.x, p.y, '#00c2ff', 3.4);
+    const pos = typeof Atlas === 'object' && Atlas.coordsOf(w.mapId);
+    const label = document.getElementById('minicarte-nom');
+    if (label) label.textContent = def.name ? def.name + (pos ? ` [${pos[0]},${pos[1]}]` : '') : '';
   },
 
   // ----- Journal : combat et événements -----

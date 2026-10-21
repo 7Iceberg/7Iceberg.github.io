@@ -41,7 +41,7 @@ function embleme(id, size) {
 // reniement (une réponse qui fait renier), trouvées dans le contenu plutôt que nommées ici.
 const answerWith = type => Quests.defs().find(q => q.steps.some(s => s.type === 'answer' && (s.options || []).some(o => (o.effects || []).some(e => e.type === type))));
 const npcPlace = id => {
-  for (const z of DATA.content.zones || []) for (const m of z.maps || []) if ((m.npcs || []).includes(id)) return m.name;
+  for (const z of DATA.content.zones || []) for (const m of z.maps || []) if ((m.npcs || []).some(n => (n && typeof n === 'object' ? n.id : n) === id)) return m.name;
   return '';
 };
 // « auprès d'Okrel », « auprès de Kethril » ; un PNJ et sa carte : « Ulkara (La Passe de Kaldum) ».

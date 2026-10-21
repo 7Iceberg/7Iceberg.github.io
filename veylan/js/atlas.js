@@ -96,6 +96,12 @@ const Atlas = (() => {
   const coordsOf = id => get().coords.get(id) || null;
   const at = (x, y) => get().cells.get(key(x, y)) || null;
 
+  // L'identifiant d'un PNJ d'une carte : une chaîne sur une carte à cases, un objet { id, u, v }
+  // sur une carte de plateau (l'île d'Ervane).
+  const idPnj = n => (n && typeof n === 'object' ? n.id : n);
+  // De même pour un nœud de récolte : sa ressource, ou { resource, u, v } sur un plateau.
+  const idRes = n => (n && typeof n === 'object' ? n.resource : n);
+
   // Index des cartes : zone, PNJ, donjons ; pour la fenêtre et les marques de quêtes.
   function index() {
     const a = get();
@@ -103,7 +109,7 @@ const Atlas = (() => {
     const ix = { map: new Map(), npcMap: new Map(), dungeonsAt: new Map() };
     for (const z of DATA.content.zones || []) for (const m of z.maps || []) {
       ix.map.set(m.id, { def: m, zone: z });
-      for (const n of m.npcs || []) if (!ix.npcMap.has(n)) ix.npcMap.set(n, m.id);
+      for (const n of (m.npcs || []).map(idPnj)) if (n && !ix.npcMap.has(n)) ix.npcMap.set(n, m.id);
     }
     for (const d of DATA.content.dungeons || []) if (ix.map.has(d.entryMap)) (ix.dungeonsAt.get(d.entryMap) || ix.dungeonsAt.set(d.entryMap, []).get(d.entryMap)).push(d);
     for (const [id, e] of ix.map) if (e.def.dungeon && !(ix.dungeonsAt.get(id) || []).some(d => d.id === e.def.dungeon)) {
@@ -121,8 +127,9 @@ const Atlas = (() => {
     ix.spots = ix.spots || new Map();
     if (ix.spots.has(id)) return ix.spots.get(id);
     const e = ix.map.get(id);
-    const out = { npcs: [], nodes: [], groups: [], door: null, relay: null, lanterns: [], size: e ? e.def.layout.length : 15 };
-    if (e) e.def.layout.forEach((row, y) => {
+    // Une carte de plateau (l'île d'Ervane) n'a pas de plan de cases : rien de marqué.
+    const out = { npcs: [], nodes: [], groups: [], door: null, relay: null, lanterns: [], size: e && e.def.layout ? e.def.layout.length : 15 };
+    if (e && e.def.layout) e.def.layout.forEach((row, y) => {
       for (let x = 0; x < row.length; x++) {
         const k = row[x];
         if (k === 'P') out.npcs.push({ id: (e.def.npcs || [])[out.npcs.length] || null, x, y });
@@ -168,10 +175,10 @@ const Atlas = (() => {
     return {
       def: m, zone: e.zone, coords: coordsOf(id),
       monsters: [...mons].map(([mid, level]) => ({ id: mid, def: DATA.monsters[mid] || null, level })),
-      resources: [...new Set(m.nodes || [])],
+      resources: [...new Set((m.nodes || []).map(idRes).filter(Boolean))],
       relay: !!m.relay,
       dungeons: index().dungeonsAt.get(id) || [],
-      npcs: (m.npcs || []).slice(),
+      npcs: (m.npcs || []).map(idPnj).filter(Boolean),
     };
   }
 
@@ -197,12 +204,33 @@ const Atlas = (() => {
       else if (s.type === 'answer') push(targets, ix.npcMap.get(Quests.answerNpc(q, s)), q);
       else if (s.type === 'dungeon') { const d = (DATA.content.dungeons || []).find(x => x.id === s.dungeon); if (d) push(targets, d.entryMap, q); }
       else if (s.type === 'kill') { for (const [mid, e] of ix.map) if ((e.def.groups || []).some(g => g.monsters.includes(s.monster))) push(targets, mid, q); }
-      else if (s.type === 'gather') { for (const [mid, e] of ix.map) if ((e.def.nodes || []).includes(s.resource)) push(targets, mid, q); }
+      // Une étape `kills` (plusieurs monstres, dans l'ordre qu'on veut) : les cartes de chacun
+      // d'eux tant que sa ligne n'est pas pleine.
+      else if (s.type === 'kills') { const c = Quests.compteurs(st, s); s.kills.forEach((k, i) => { if (c[i] >= k.count) return; for (const [mid, e] of ix.map) if ((e.def.groups || []).some(g => g.monsters.includes(k.monster))) push(targets, mid, q); }); }
+      else if (s.type === 'gather') { for (const [mid, e] of ix.map) if ((e.def.nodes || []).some(n => idRes(n) === s.resource)) push(targets, mid, q); }
     }
     // Épingles des quêtes suivies.
     const here = hereId && coordsOf(hereId);
     const near = list => list.sort((a, b) => here ? Math.hypot(coordsOf(a.map)[0] - here[0], coordsOf(a.map)[1] - here[1]) - Math.hypot(coordsOf(b.map)[0] - here[0], coordsOf(b.map)[1] - here[1]) : 0)[0] || null;
-    const npcSpot = npc => { const m = ix.npcMap.get(npc); const sp = m && spots(m).npcs.find(n => n.id === npc); return m && sp ? { map: m, x: sp.x, y: sp.y } : null; };
+    // Sur une carte de plateau (sans plan), un PNJ, un groupe ou un nœud épingle le milieu de la case.
+    const plateau = m => { const e = ix.map.get(m); return !!(e && e.def.plateau); };
+    const npcSpot = npc => { const m = ix.npcMap.get(npc); if (m && plateau(m)) return { map: m, x: 7, y: 7 }; const sp = m && spots(m).npcs.find(n => n.id === npc); return m && sp ? { map: m, x: sp.x, y: sp.y } : null; };
+    const groupeSpot = (mid, monster) => {
+      if (plateau(mid)) return (ix.map.get(mid).def.groups || []).some(g => g.monsters.includes(monster)) ? { map: mid, x: 7, y: 7 } : null;
+      const g = spots(mid).groups.find(x => x.tpl && x.tpl.monsters.includes(monster));
+      return g ? { map: mid, x: g.x, y: g.y } : null;
+    };
+    const noeudSpot = (mid, resource) => {
+      if (plateau(mid)) return (ix.map.get(mid).def.nodes || []).some(n => idRes(n) === resource) ? { map: mid, x: 7, y: 7 } : null;
+      const n = spots(mid).nodes.find(x => x.id === resource);
+      return n ? { map: mid, x: n.x, y: n.y } : null;
+    };
+    const porteSpot = d => {
+      if (!d || !ix.map.has(d.entryMap)) return null;
+      if (plateau(d.entryMap)) return { map: d.entryMap, x: 7, y: 7 };
+      const door = spots(d.entryMap).door;
+      return door ? { map: d.entryMap, x: door.x, y: door.y } : null;
+    };
     const pins = [];
     for (const t of Quests.tracker(ch).slice(0, 3)) {
       const q = t.quest, st = ch.quests.active[q.id];
@@ -213,9 +241,10 @@ const Atlas = (() => {
         if (s.type === 'visit' && ix.map.has(s.map)) at = { map: s.map, x: 7, y: 7 };
         else if (s.type === 'talk') at = npcSpot(s.npc);
         else if (s.type === 'answer') at = npcSpot(Quests.answerNpc(q, s));
-        else if (s.type === 'dungeon') { const d = (DATA.content.dungeons || []).find(x => x.id === s.dungeon); const door = d && ix.map.has(d.entryMap) && spots(d.entryMap).door; if (door) at = { map: d.entryMap, x: door.x, y: door.y }; }
-        else if (s.type === 'kill') at = near([...ix.map.keys()].map(mid => { const g = spots(mid).groups.find(x => x.tpl && x.tpl.monsters.includes(s.monster)); return g ? { map: mid, x: g.x, y: g.y } : null; }).filter(Boolean));
-        else if (s.type === 'gather') at = near([...ix.map.keys()].map(mid => { const n = spots(mid).nodes.find(x => x.id === s.resource); return n ? { map: mid, x: n.x, y: n.y } : null; }).filter(Boolean));
+        else if (s.type === 'dungeon') at = porteSpot((DATA.content.dungeons || []).find(x => x.id === s.dungeon));
+        else if (s.type === 'kill') at = near([...ix.map.keys()].map(mid => groupeSpot(mid, s.monster)).filter(Boolean));
+        else if (s.type === 'kills') { const c = Quests.compteurs(st, s), k = s.kills.find((x, i) => c[i] < x.count) || s.kills[0]; at = near([...ix.map.keys()].map(mid => groupeSpot(mid, k.monster)).filter(Boolean)); }
+        else if (s.type === 'gather') at = near([...ix.map.keys()].map(mid => noeudSpot(mid, s.resource)).filter(Boolean));
       }
       if (at) pins.push(Object.assign({ quest: q, text: t.text }, at));
     }
@@ -226,6 +255,11 @@ const Atlas = (() => {
   // Une région est ouverte dès que le contenu a des zones à elle ; ses niveaux viennent alors des
   // zones. `at` place l'île sur la carte du continent (unités libres, 100 de large).
   const REGIONS = [
+    // Ervane, l'île de l'Éveil (selon l'interrupteur : la région n'existe que si son module est
+    // appliqué, js/ile.js ; éteinte, la carte du monde ne la nomme pas).
+    // Écartée d'Orsane (son disque va de 27 à 53) : au-dessus et à gauche, dans la vue (x de -2 à 94,
+    // y de 0 à 80, js/hud-carte.js) ; l'onglet Monde dessine les petites îles après les grandes.
+    { id: 'ervane', name: 'Ervane, l\'île de l\'Éveil', level: [1, 8], at: [15, 10], r: 7, desc: 'L\'île où s\'éveillent les Veilleurs, au bout de l\'amarre, au-dessus des Cimes.' },
     { id: 'orsane', name: 'Orsane, les Cimes', level: [1, 20], at: [40, 15], r: 13, desc: 'La capitale, sur les Cimes, tout en hauteur et en lumière. Siège du Fil.' },
     { id: 'kaldum', name: 'Kaldum', level: [20, 40], at: [74, 27], r: 12, desc: 'Mines, forges, roche chaude. Terre des Kaldrin.' },
     { id: 'thessa', name: 'Thessa, les Marées', level: [30, 50], at: [15, 40], r: 12, desc: 'Côte, ports, marchés. Les Francs-Marcheurs y règnent.' },
@@ -235,7 +269,7 @@ const Atlas = (() => {
   ];
   function regions() {
     const zones = (DATA.content && DATA.content.zones) || [];
-    return REGIONS.map(r => {
+    return REGIONS.filter(r => r.id !== 'ervane' || (DATA.regions && DATA.regions.ervane)).map(r => {
       const zs = zones.filter(z => z.region === r.id);
       const open = zs.length > 0;
       const level = open ? [Math.min(...zs.map(z => z.level[0])), Math.max(...zs.map(z => z.level[1]))] : r.level;
@@ -243,5 +277,5 @@ const Atlas = (() => {
     });
   }
 
-  return { STEP, OPP, compute, get, coordsOf, at, index, spots, tileToWorld, hereOf, mapInfo, questMarks, regions, REGIONS, key };
+  return { STEP, OPP, compute, get, coordsOf, at, index, spots, tileToWorld, hereOf, mapInfo, questMarks, regions, REGIONS, key, idPnj, idRes };
 })();

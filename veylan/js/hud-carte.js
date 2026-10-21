@@ -14,6 +14,7 @@ const esc = s => Util.esc(s);
 // Roche, encre et lanterne de chaque région (docs/DIRECTION-ARTISTIQUE.md). « Sous le premier
 // Voile » prend une obsidienne plus profonde et le violet des Voiles.
 const REGION = {
+  ervane: { roche: '#e4e6da', sombre: '#8e9aa6', encre: '#34405a', lanterne: '#f2c14e' },
   orsane: { roche: '#e8e1d3', sombre: '#9fa7b8', encre: '#3b4260', lanterne: '#f2b134' },
   kaldum: { roche: '#7a6a5e', sombre: '#3e3230', encre: '#241a18', lanterne: '#ff6a2b' },
   thessa: { roche: '#b9c7b4', sombre: '#5f7a74', encre: '#22403d', lanterne: '#35d6c8' },
@@ -24,7 +25,8 @@ const REGION = {
 const BASE = 100;                // côté d'une case au zoom 1, en pixels
 const ZOOM = { cartes: [0.22, 2.6], monde: [0.7, 3] };
 // Routes du continent (les régions à venir en pointillé).
-const ROUTES = [['orsane', 'kaldum'], ['orsane', 'thessa'], ['orsane', 'lisiere'], ['kaldum', 'lisiere'], ['thessa', 'lisiere'], ['lisiere', 'basvoiles'], ['kaldum', 'basvoiles'], ['lisiere', 'voile'], ['basvoiles', 'voile']];
+// La première route est l'amarre d'Ervane (dessinée seulement quand l'île est sur la carte).
+const ROUTES = [['ervane', 'orsane'], ['orsane', 'kaldum'], ['orsane', 'thessa'], ['orsane', 'lisiere'], ['kaldum', 'lisiere'], ['thessa', 'lisiere'], ['lisiere', 'basvoiles'], ['kaldum', 'basvoiles'], ['lisiere', 'voile'], ['basvoiles', 'voile']];
 const ATELIERS = { tailleur: 'tailleur', cordonnier: 'cordonnier', bijoutier: 'bijoutier', forgeron: 'forgeron', alchimiste: 'alchimiste' };
 const DRAPEAU = 'veylan.carte.drapeau';
 // Ordre des pastilles quand elles se recouvrent : la quête d'abord.
@@ -111,6 +113,26 @@ Object.assign(Hud.prototype, {
       after: body => this.monterCarte(body),
       onClose: () => this.fermerCarte(),
     });
+    if (opening) this.suivreCouverture();
+  },
+
+  // Sur l'île (l'aiguillage tient la 3D), la scène ne se dessine plus tant que la fenêtre de la
+  // carte la couvre presque entière (au téléphone, en plein écran) : le monde avance, l'image dort.
+  // Suivi par un ResizeObserver (« Réduire », rotation de l'écran).
+  suivreCouverture() {
+    const sc = this.renderer;
+    if (!sc || typeof sc.pause3D !== 'function') return;
+    const w = this.fen.wins.get('carte'), stage = document.getElementById('stage');
+    const juger = () => {
+      if (!this.fen.isOpen('carte') || !stage) { sc.pause3D('carte', false); return; }
+      const a = w.box.getBoundingClientRect(), b = stage.getBoundingClientRect();
+      const ix = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)), iy = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+      sc.pause3D('carte', b.width * b.height > 0 && ix * iy >= 0.9 * b.width * b.height);
+    };
+    if (this.carteCouverture) this.carteCouverture.disconnect();
+    if (!w) return;
+    if (typeof ResizeObserver === 'function') { this.carteCouverture = new ResizeObserver(juger); this.carteCouverture.observe(w.box); this.carteCouverture.observe(stage); }
+    juger();
   },
 
   // Depuis le panneau d'un Relais du Fil : le panneau se ferme sans clore le relais, et la carte
@@ -132,6 +154,8 @@ Object.assign(Hud.prototype, {
     if (!c) return;
     c.survol = null; c.bulle = null;
     this.fermer3D();
+    if (this.carteCouverture) { this.carteCouverture.disconnect(); this.carteCouverture = null; }
+    if (this.renderer && typeof this.renderer.pause3D === 'function') this.renderer.pause3D('carte', false);
     if (c.depuisRelais) { c.depuisRelais = false; if (this.world.relayOpen && this.world.state === 'panel') this.world.closePanel(); }
   },
 
@@ -198,7 +222,7 @@ Object.assign(Hud.prototype, {
     for (const x of marks.turnIn.get(id) || []) q.push(ligne(`${marque('rendre')}${esc(x.name)}`, 'à rendre'));
     for (const x of marks.targets.get(id) || []) q.push(ligne(`${marque('quete')}${esc(x.name)}<br><small class="muted">${esc(Quests.stepText(ch, x.id))}</small>`));
     if (q.length) html += `<div class="vy-sous"><span>Quêtes</span></div><ul class="vy-carte__liste">${q.join('')}</ul>`;
-    if (known && info.npcs.length) html += `<div class="vy-sous"><span>Habitants</span></div><p class="vy-note">${info.npcs.map(n => { const d = World.npcDef(n); return d ? `${esc(d.name)} <small class="muted">${esc(d.title || '')}</small>` : esc(n); }).join(', ')}</p>`;
+    if (known && info.npcs.length) html += `<div class="vy-sous"><span>Habitants</span></div><p class="vy-note">${info.npcs.map(Atlas.idPnj).map(n => { const d = World.npcDef(n); return d ? `${esc(d.name)} <small class="muted">${esc(d.title || '')}</small>` : esc(n); }).join(', ')}</p>`;
     return compte + html + legende;
   },
 
@@ -648,7 +672,8 @@ Object.assign(Hud.prototype, {
     }
     g.setLineDash([]);
     // 4. La brume : des nuages peints sur ce qui n'est pas exploré.
-    this.brumeCarte(g, vis.filter(c => !seen.has(c.id)).map(c => [c.X, c.Y]), s, 1);
+    // (Les nuages restent dans les cases cachées : revue finale, ils débordaient sur les cases explorées.)
+    this.brumeCarte(g, vis.filter(c => !seen.has(c.id)).map(c => [c.X, c.Y, c.x0, c.y0, c.x1, c.y1]), s, 1);
     // 5. La zone survolée (ou celle de la case choisie), surlignée comme sur Dofus.
     this.zoneSurlignee(g, P, D, s);
     // 6. Les noms des zones, en grand, à travers leur étendue.
@@ -659,10 +684,17 @@ Object.assign(Hud.prototype, {
     this.dessinerReperes(g, P, D, s, () => 0);
   },
 
-  // Nuages de brume : deux par carte cachée, qui débordent un peu, pour un voile continu.
+  // Nuages de brume : deux par carte cachée, qui débordent un peu, pour un voile continu. Quand les
+  // entrées portent le rectangle de leur case (x0, y0, x1, y1), les nuages sont découpés à l'union
+  // de ces rectangles : ils ne couvrent jamais une case explorée.
   brumeCarte(g, centres, s, alpha) {
     if (!centres.length) return;
     g.save(); g.globalAlpha = 0.92 * alpha;
+    if (centres[0].length >= 6) {
+      g.beginPath();
+      for (const [, , x0, y0, x1, y1] of centres) g.rect(x0 - 0.5, y0 - 0.5, x1 - x0 + 1, y1 - y0 + 1);
+      g.clip();
+    }
     for (const [X, Y] of centres) {
       const k = Math.floor(hash(X.toFixed(0) + ':' + Y.toFixed(0)) * 3);
       for (let i = 0; i < 2; i++) {
@@ -816,9 +848,11 @@ Object.assign(Hud.prototype, {
 
   // ----- Vue 3D : Three.js chargé à la demande, rendu par js/carte-3d.js -----
 
-  // Charge vendor/three.min.js une seule fois, à côté de ce script (en local comme en ligne).
+  // Charge vendor/three.min.js une seule fois, à côté de ce script (en local comme en ligne). Le
+  // chargeur partagé avec l'île d'Ervane (js/ile-charge.js) le fait quand il est là.
   chargerThree() {
     if (window.THREE) return Promise.resolve(window.THREE);
+    if (typeof IleCharge === 'object') return IleCharge.three();
     if (this.promesseThree) return this.promesseThree;
     const ref = document.querySelector('script[src*="hud-carte.js"]');
     let src = 'vendor/three.min.js';
@@ -840,6 +874,9 @@ Object.assign(Hud.prototype, {
     this.carte3dPromesse = this.chargerThree().then(() => {
       if (typeof Carte3D !== 'function' || !Carte3D.disponible()) throw new Error('WebGL indisponible');
       if (!this.fen.isOpen('carte') || !c.vue3d || c.tab !== 'cartes') return null;
+      // Trois contextes WebGL ne vivent pas ensemble sans pause (3.12) : l'île cesse de dessiner
+      // tant que la vue 3D de la carte existe.
+      if (this.renderer && typeof this.renderer.pause3D === 'function') this.renderer.pause3D('carte3d', true);
       const vue = this.carte3d = new Carte3D(this);
       return vue.construire(etape => { this.carte3dEtape = etape; const el = document.querySelector('.vy-carte__charge small'); if (el) el.textContent = etape; }).then(() => vue);
     }).then(vue => {
@@ -858,6 +895,7 @@ Object.assign(Hud.prototype, {
 
   fermer3D() {
     if (this.carte3d) { const v = this.carte3d; this.carte3d = null; v.dispose(); }
+    if (this.renderer && typeof this.renderer.pause3D === 'function') this.renderer.pause3D('carte3d', false);
   },
 
   // Appelé par la vue 3D : une carte choisie (toucher ou clic), avec sa bulle sur téléphone.
@@ -887,6 +925,7 @@ Object.assign(Hud.prototype, {
     // Les routes, sous les îles.
     for (const [a, b] of ROUTES) {
       const A = by.get(a), B = by.get(b);
+      if (!A || !B) continue;
       const pa = P.to(A.at[0], A.at[1]), pb = P.to(B.at[0], B.at[1]);
       const open = A.open && B.open;
       g.setLineDash(open ? [] : [5, 6]);
@@ -895,7 +934,8 @@ Object.assign(Hud.prototype, {
       g.beginPath(); g.moveTo(pa[0], pa[1]); g.quadraticCurveTo(mx, my, pb[0], pb[1]); g.stroke();
     }
     g.setLineDash([]);
-    for (const r of regs) {
+    // Les grandes îles d'abord : une petite île (Ervane) et son cartouche passent au-dessus.
+    for (const r of regs.slice().sort((a, b) => b.r - a.r)) {
       const RC = REGION[r.id];
       const [X, Y] = P.to(r.at[0], r.at[1]);
       const R = r.r * k;

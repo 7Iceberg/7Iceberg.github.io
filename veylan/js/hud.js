@@ -30,7 +30,13 @@ class Hud {
       if (fn) fn(b.dataset, b);
     });
     const w = world;
-    w.on('map', d => { this.setMode('explore'); this.el.mapName.textContent = `${d.zone ? d.zone.name + ' · ' : ''}${d.def.name}`; this.refresh(); });
+    // Sur l'île, passer d'une sous-zone à l'autre en marchant (`secteur`) change seulement le nom.
+    w.on('map', d => {
+      if (!d.secteur) this.setMode('explore');
+      // La zone dans un span : une fenêtre étroite (901 à 1180 px) ne garde que la sous-zone (css/style.css).
+      this.el.mapName.innerHTML = `${d.zone ? `<span class="zone">${Util.esc(d.zone.name)} · </span>` : ''}${Util.esc(d.def.name)}`;
+      this.refresh();
+    });
     w.on('update', () => this.refresh());
     w.on('hp', () => this.refreshBar());
     // Délégation unique pour les champs des panneaux (titre, répartition auto).
@@ -42,8 +48,21 @@ class Hud {
       if (this.el.panel.dataset.open === 'fightEnd' && (evt.key === 'Enter' || evt.key === ' ')) { evt.preventDefault(); this.closePanel(); }
     });
     w.on('toast', t => this.toast(t));
+    // Sur l'île d'Ervane : le bandeau d'une sous-zone à l'entrée (et à l'arrivée sur le plateau), la
+    // sous-zone trop forte annoncée sur le chemin, le texte d'un panneau.
+    w.on('zone', d => this.annoncerZone(d));
+    w.on('map', d => {
+      // Une salle de donjon, ou la sortie du donjon : les toasts du combat précédent s'effacent.
+      if (d && !d.secteur && !d.apresCombat && ((w.ch && w.ch.dungeon) || this.enDonjon)) this.viderToasts();
+      this.enDonjon = !!(w.ch && w.ch.dungeon);
+      if (d && d.plateau && !d.secteur && !d.apresCombat) this.annoncerZone({ map: d.mapId, zone: d.zone, nouveau: false });
+    });
+    w.on('zoneProche', d => this.toast(`Attention : ${d.nom}, niveau ${d.niveau[0]}${d.niveau[1] !== d.niveau[0] ? ' à ' + d.niveau[1] : ''}. Plus fort que toi.`));
+    w.on('panneau', d => this.toast(d.texte));
     w.on('dialogue', ctx => this.openDialogue(ctx));
-    w.on('fight', () => { this.closePanel(); this.setMode('combat'); this.ui.refresh(); this.ui.updateHighlights(); });
+    // Un combat qui part ferme le panneau et toutes les fenêtres (Sorts, Sac...), sans demander : sur
+    // l'île, une figure visible à côté d'une fenêtre ouverte lançait le combat sous elle (revue finale).
+    w.on('fight', () => { this.closePanel(); this.fermerFenetres(); this.setMode('combat'); this.ui.refresh(); this.ui.updateHighlights(); });
     w.on('fightEnd', r => this.openFightEnd(r));
     w.on('reward', r => this.openReward(r));
     w.on('achievement', g => this.toast(`Succès : ${g.achievement.name}${g.title ? ' · titre « ' + g.title + ' »' : ''}`));
@@ -102,6 +121,13 @@ class Hud {
   }
 
 
+  // Vide la pile des toasts (les gains du combat précédent ne traînent pas d'une salle du donjon à
+  // l'autre, ni jusqu'à la sortie) ; le journal les garde.
+  viderToasts() {
+    if (!this.el.toasts) return;
+    for (const t of [...this.el.toasts.children]) t.remove();
+  }
+
   toast(text) {
     if (this.pushJournal) this.pushJournal('evenements', text);
     const t = document.createElement('div');
@@ -122,6 +148,12 @@ class Hud {
     this.setInert(true);
     this.panelRefresh = refresh || null;
     if (this.world.state === 'explore') this.world.state = 'panel';
+  }
+
+  // Toutes les fenêtres, fermées sans demander (un combat qui part).
+  fermerFenetres() {
+    if (!this.fen) return;
+    for (const id of [...this.fen.wins.keys()]) this.fen.close(id, true);
   }
 
   closePanel() {
@@ -293,11 +325,15 @@ class Hud {
   // ----- Carnet du Veilleur -----
 
   openCarnet() {
-    this.carnetTab = this.carnetTab || 'orsane';
+    // Le premier onglet : la région où l'on se trouve (Ervane pour un Veilleur qui s'y éveille).
+    const ici = this.world.zone && this.world.zone.region;
+    this.carnetTab = this.carnetTab || (ici && Object.values(DATA.monsters).some(m => m.region === ici && !m.summon) ? ici : 'orsane');
     const render = () => {
       const ch = this.world.ch;
       const kills = ch.counters.kills || {};
-      const regions = Object.keys(DATA.regions).filter(r => Object.values(DATA.monsters).some(m => m.region === r && !m.summon));
+      // L'onglet d'Ervane : pour qui y est né ou y a déjà vaincu une remontée (un personnage d'Orsane n'y monte pas).
+      const ileVue = ch.origine === 'ervane' || Object.keys(kills).some(id => DATA.monsters[id] && DATA.monsters[id].region === 'ervane');
+      const regions = Object.keys(DATA.regions).filter(r => Object.values(DATA.monsters).some(m => m.region === r && !m.summon) && (r !== 'ervane' || ileVue));
       const tabs = regions.map(r => {
         const all = Object.values(DATA.monsters).filter(m => m.region === r && !m.summon);
         const seen = all.filter(m => kills[m.id]).length;
@@ -341,13 +377,16 @@ class Hud {
     const render = () => {
       const ch = this.world.ch;
       const attente = Achievements.pending(ch).map(a => a.id);
-      const list = Achievements.defs().map(a => {
+      // Un personnage né à Orsane ne monte jamais sur Ervane : les succès de l'île ne lui sont pas montrés.
+      const ileSeule = a => /ervane|puits_de_l_amarre|krobb/.test(JSON.stringify(a.cond || {}));
+      const defs = Achievements.defs().filter(a => ch.origine === 'ervane' || ch.achievements.includes(a.id) || !ileSeule(a));
+      const list = defs.map(a => {
         const got = ch.achievements.includes(a.id);
         const r = a.rewards || {};
         return `<div class="row ach${got ? ' got' : ''}"><span><b>${esc(a.name)}</b><br><small>${esc(a.desc)}</small></span><span class="muted">${attente.includes(a.id) ? '<b>à réclamer</b>' : got ? 'obtenu' : Achievements.progress(ch, a)}<br><small>${[r.xp ? r.xp + ' XP' : '', r.fils ? r.fils + ' Fils' : '', r.title ? '« ' + esc(r.title) + ' »' : ''].filter(Boolean).join(' · ')}</small></span></div>`;
       }).join('');
       const n = attente.length;
-      return `<div class="row"><span class="muted">${ch.achievements.length} / ${Achievements.defs().length} succès</span>${n ? `<button data-act="recompenses">${n} récompense${n > 1 ? 's' : ''} en attente</button>` : ''}</div>${list}`;
+      return `<div class="row"><span class="muted">${ch.achievements.length} / ${defs.length} succès</span>${n ? `<button data-act="recompenses">${n} récompense${n > 1 ? 's' : ''} en attente</button>` : ''}</div>${list}`;
     };
     this.simpleWin('succes', 'Succès', render, { recompenses: () => this.openRecompenses() }, { width: 480 });
   }
@@ -384,7 +423,13 @@ class Hud {
       ${location.protocol === 'file:' || location.hostname === 'localhost' ? '<p class="muted">Laboratoire de combat : <a href="lab.html">lab.html</a></p>' : ''}`;
     this.actions.savenow = () => { this.toast(Save.write(ch) ? 'Sauvegardé.' : 'Sauvegarde impossible ici.'); };
     this.actions.copy = () => { const ta = document.getElementById('export-area'); ta.select(); const fallback = () => this.toast('Sélectionne et copie le code.'); try { navigator.clipboard.writeText(ta.value).then(() => this.toast('Code copié.'), fallback); } catch (e) { fallback(); } };
-    this.actions.import = () => { const r = Save.importText(document.getElementById('import-area').value); if (!r.ch) { this.toast(r.error || 'Code invalide.'); return; } this.importDraft = ''; Save.write(ch); Save.write(r.ch); Save.suspend(); location.reload(); };
+    this.actions.import = () => {
+      const r = Save.importText(document.getElementById('import-area').value);
+      // Un personnage d'Ervane sur une page sans l'île : le code attend, la page se recharge (js/save.js).
+      if (r.recharge) { this.toast(r.error); Save.write(ch); Save.suspend(); setTimeout(() => location.reload(), 50); return; }
+      if (!r.ch) { this.toast(r.error || 'Code invalide.'); return; }
+      this.importDraft = ''; Save.write(ch); Save.write(r.ch); Save.suspend(); location.reload();
+    };
     // Changer de personnage : on sauvegarde celui-ci et on revient à la liste des emplacements.
     this.actions.newgame = (d, b) => {
       if (invite && !b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Confirmer : quitter sans garder'; return; }
@@ -499,8 +544,39 @@ class Hud {
   openDungeonPrompt(d) {
     if (!d) return;
     const lvl = d.level ? `niveaux ${d.level[0]} à ${d.level[1]}` : '';
-    this.actions.enterd = () => { this.closePanel(); this.world.enterDungeon(d.id); };
-    this.openPanel('dungeon', d.name, `<p>${esc(d.description || '')}</p><p class="muted">${lvl} · ${d.rooms.length} salles${d.keyItem ? ' · clé : ' + esc(Items.get(d.keyItem).name) : ''}</p><div class="row"><button data-act="enterd" class="primary">Entrer</button></div>`);
+    // La condition d'entrée (`entree`, js/world.js, canEnterDungeon) : dite, et le bouton éteint tant
+    // qu'elle ne tient pas.
+    const peut = this.world.canEnterDungeon ? this.world.canEnterDungeon(d) : { ok: true };
+    const e = d.entree || {};
+    const q = e.quete && Quests.get(e.quete);
+    const entree = e.niveau || q ? `<p class="muted">Pour entrer : ${[e.niveau ? 'niveau ' + e.niveau : '', q ? 'la quête « ' + esc(q.name) + ' »' : ''].filter(Boolean).join(' et ')}${d.entreeEnCombat ? ' · le combat s\'engage à l\'entrée de chaque salle' : ''}.</p>` : '';
+    this.actions.enterd = () => { if (!peut.ok) { this.toast(peut.reason); return; } this.closePanel(); this.world.enterDungeon(d.id); };
+    this.openPanel('dungeon', d.name, `<p>${esc(d.description || '')}</p><p class="muted">${lvl} · ${d.rooms.length} salles${d.keyItem ? ' · clé : ' + esc(Items.get(d.keyItem).name) : ''}</p>${entree}${peut.ok ? '' : `<p class="missing">${esc(peut.reason)}</p>`}<div class="row"><button data-act="enterd" class="primary"${peut.ok ? '' : ' disabled'}>Entrer</button></div>`);
+  }
+
+  // Le bandeau d'une sous-zone de l'île (js/plateau.js, changerSecteur) : la zone, puis la sous-zone
+  // et son niveau, « lieu découvert » la première fois ; pas deux fois la même en vingt secondes.
+  annoncerZone(d) {
+    const w = this.world, def = d && d.map ? World.mapDef(d.map) : null;
+    if (!def || !this.ui || !this.ui.ruban) return;
+    this.zonesVues = this.zonesVues || new Map();
+    const t = w.time || 0, avant = this.zonesVues.get(d.map);
+    if (avant != null && t - avant < 20 && !d.nouveau) return;
+    this.zonesVues.set(d.map, t);
+    const l = def.level, niveau = Array.isArray(l) ? (l[0] === l[1] ? `niveau ${l[0]}` : `niveaux ${l[0]} à ${l[1]}`) : '';
+    const sous = [def.name, niveau].filter(Boolean).join(', ') + (d.nouveau ? ' · Lieu découvert' : '');
+    // Sous le voile d'une bascule (js/scene.js), le bandeau attend que la scène soit visible : vingt
+    // essais au plus (six secondes), une seule minuterie à la fois, oubliée si une autre annonce vient
+    // (un voile de repli qui reste ne garde donc pas de minuterie en vie).
+    if (this.rubanZone) { clearTimeout(this.rubanZone); this.rubanZone = null; }
+    let essais = 0;
+    const montrer = () => {
+      this.rubanZone = null;
+      if (this.renderer && this.renderer.voile) { if (++essais <= 20) this.rubanZone = setTimeout(montrer, 300); return; }
+      if (w.showCombat) return;
+      this.ui.ruban(d.zone ? d.zone.name : def.name, { sorte: 'zone', ms: 3200, sous });
+    };
+    montrer();
   }
 
   openDungeonLeave(d) {

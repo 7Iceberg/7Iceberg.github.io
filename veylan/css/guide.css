@@ -206,6 +206,8 @@
   box-shadow: 0 1px 3px rgba(59, 66, 96, 0.4);
 }
 .vy-replique__marque--offre, .vy-replique__marque--rendre { background: radial-gradient(circle at 35% 30%, #fff1c8, var(--vy-or) 58%, #8e7144); color: #2c2110; }
+/* Un passage (la Nacelle) : la marque bleue du voyage. */
+.vy-replique__marque--passage { background: radial-gradient(circle at 35% 30%, #d6f6ff, #35b7d8 58%, #1c5f74); color: #0b2a33; }
 .vy-repliques__fermer {
   position: absolute; right: -8px; top: -10px;
   width: 30px; height: 30px; padding: 6px;
@@ -272,6 +274,8 @@ body.vy-voile .vy-guide--tuto { z-index: 41; }
   cursor: pointer;
   animation: vy-guide-entre 0.3s var(--vy-courbe);
 }
+/* Une fenêtre ouverte : le rappel ne prend pas les touchers destinés à ses boutons (il s'efface seul). */
+#app:has(#fenetres > .vy-fenetre) .vy-rappel { pointer-events: none; }
 .vy-rappel .vy-mot { color: var(--vy-or-clair); }
 .vy-rappel__point { flex: none; width: 9px; height: 9px; transform: rotate(45deg); background: var(--vy-cristal); box-shadow: 0 0 8px rgba(0, 194, 255, 0.7); }
 
@@ -324,6 +328,10 @@ body.vy-voile .vy-guide--tuto { z-index: 41; }
   white-space: nowrap;
 }
 .vy-ruban--tour .vy-ruban__bande { padding: 7px 40px 8px; }
+/* Une sous-zone de l'île : plus haut, plus discret, la sous-zone et son niveau dessous. */
+.vy-ruban--zone { top: 16%; }
+.vy-ruban--zone .vy-ruban__bande { padding: 6px 38px 7px; }
+.vy-ruban--zone .vy-ruban__texte { font-size: clamp(15px, calc(var(--scene-l, 100vw) * 0.034), 24px); letter-spacing: 0.1em; }
 .vy-ruban--tour .vy-ruban__texte { font-size: clamp(17px, calc(var(--scene-l, 100vw) * 0.04), 26px); }
 /* Niveau supérieur : plus grand, des rayons et des éclats derrière le ruban. */
 .vy-ruban--niveau { top: 30%; }

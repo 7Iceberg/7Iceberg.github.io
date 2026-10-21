@@ -6,6 +6,8 @@
 DATA.version = 'Prototype 0.9';
 
 DATA.actualites = [
+  { id: 'ervane', date: '2026-10-20', art: 'carte', titre: 'Ervane, l\'île de l\'Éveil',
+    texte: 'Tout nouveau Veilleur s\'éveille désormais sur Ervane, une île en 3D amarrée au-dessus des Cimes. On y marche librement, on combat sur le terrain même, et Varek t\'apprend le jeu jusqu\'au Puits de l\'Amarre. La Nacelle te descend ensuite à Orsane, au niveau 8.' },
   { id: 'factions', date: '2026-10-15', art: 'factions', titre: 'Le Fil contre la Déchirure',
     texte: 'Au niveau 20, à la Passe de Kaldum, tu prêtes serment au Fil, qui veut recoudre les Voiles depuis Orsane, ou à la Déchirure, qui veut les ouvrir depuis Kessane, au bord du gouffre. Tu peux aussi refuser : les Francs-Marcheurs de Thessa restent neutres et commercent avec tout le monde. Dix rangs, trois ordres par faction, et jamais de puissance de combat : des titres, des apparences, des raccourcis.' },
   { id: 'carte_du_monde', date: '2026-10-15', art: 'carte', titre: 'La carte du monde, peinte et en 3D',
@@ -23,6 +25,11 @@ DATA.actualites = [
 ];
 
 DATA.journal = [
+  { date: '2026-10-20', titre: 'Ervane, l\'île de départ', points: [
+    'Un nouveau personnage naît sur Ervane, en 3D : cinq zones, onze quêtes principales, le Puits de l\'Amarre, puis la Nacelle vers Orsane.',
+    'Déplacement libre hors combat ; en combat, les cases et les règles ne changent pas.',
+    'Sans 3D sur l\'appareil, on naît à Orsane comme avant.',
+  ] },
   { date: '2026-10-15', titre: 'Nouvel accueil, cinq personnages', points: [
     'Accueil refait : actualités, journal des mises à jour, réglages, partie d\'invité sans sauvegarde.',
     'Jusqu\'à cinq personnages par appareil ; l\'ancienne sauvegarde passe dans le premier emplacement.',

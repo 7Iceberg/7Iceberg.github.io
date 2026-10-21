@@ -49,6 +49,43 @@ class Accueil {
     try { retour = sessionStorage.getItem('veylan.entree'); sessionStorage.removeItem('veylan.entree'); } catch (e) { /* rien */ }
     this.premier = true;
     this.aller(retour === 'personnages' && Save.list().length ? 'personnages' : 'accueil', { racine: true });
+    // L'île d'Ervane disponible (js/ile.js) : Three.js se charge pendant qu'on choisit, pour que la
+    // bascule vers la 3D n'attende pas le réseau (docs/ILE-TECHNIQUE.md, 1.5).
+    // Seulement si la 3D peut servir : WebGL, et un personnage de l'appareil déjà sur l'île ; une
+    // création le demande à son tour (commencerCreation).
+    // (Un personnage d'Orsane qui garde une trace d'Ervane, après « Recommencer à Orsane », n'y remonte pas.)
+    if (typeof Ile === 'object' && Ile.raisons.includes('personnage') && Save.list().some(p => Ile.origineDe(p.uid) === 'ervane')) Accueil.prechargerIle();
+    // Un import qui attendait que l'île soit chargée (js/save.js, docs/ILE-TECHNIQUE.md, 7.3) :
+    // le code reprend ici tout seul, une fois.
+    let attente = null;
+    try { attente = sessionStorage.getItem('veylan.ile.import'); if (attente) sessionStorage.removeItem('veylan.ile.import'); } catch (e) { attente = null; }
+    if (attente) setTimeout(() => this.reprendreImport(attente), 0);
+  }
+
+  reprendreImport(code) {
+    const r = Save.importText(code);
+    // La clé a été lue et effacée : l'île est disponible ici, le moteur ne redemande pas de recharge.
+    if (!r.ch) { this.toast(r.error || 'Code invalide.'); return; }
+    if (!Save.write(r.ch)) { this.toast('Impossible d\'enregistrer ce personnage ici.'); return; }
+    this.choix = r.ch.uid;
+    this.toast(`${r.ch.name} est arrivé sur cet appareil.`);
+    this.afficher('personnages', 1);
+  }
+
+  // En développement (fichier local, localhost, ?dev=1) : les réglages montrent les essais.
+  // La règle du développement est celle de Util.dev (js/util.js), la même partout.
+  static dev() {
+    try { return Util.dev(); } catch (e) { return false; }
+  }
+  // La case « Naître sur Ervane (essai) » : en développement, quand l'île est disponible, que
+  // l'adresse en parle (?ile=) ou que la case est déjà cochée. Ailleurs, les réglages ne changent
+  // pas de hauteur (ils tiennent dans l'écran du téléphone sans défiler).
+  static essaiIle() {
+    // Allumée par la source (DATA.ile.active, depuis le basculement), l'île n'a plus d'essai à offrir.
+    if (!Accueil.dev() || typeof Ile !== 'object' || (DATA.ile && DATA.ile.active)) return false;
+    let adresse = false;
+    try { adresse = new URLSearchParams(location.search).has('ile'); } catch (e) { /* rien */ }
+    return Ile.disponible || adresse || Accueil.lire('veylan.ile.essai') === '1';
   }
 
   // ----- Visibilité -----
@@ -193,10 +230,16 @@ class Accueil {
     return this.parcours || ['classe', 'apparence'];
   }
 
+  // Three.js se charge pendant qu'on choisit (docs/ILE-TECHNIQUE.md, 1.5), seulement là où l'île s'affiche.
+  static prechargerIle() {
+    if (typeof Ile === 'object' && Ile.actif() && typeof IleCharge === 'object' && IleCharge.webgl()) setTimeout(() => IleCharge.three().catch(() => { /* le voile de repli s'en chargera */ }), 1200);
+  }
+
   // Commence une création : le monde avant le tout premier personnage (s'il n'a pas déjà été choisi),
   // la question « As-tu déjà joué ? » quand aucun personnage n'existe encore ou pour un invité.
   commencerCreation(invite) {
     if (!invite && Save.free() <= 0) { this.toast('Plus d\'emplacement libre : supprime d\'abord un personnage.'); return; }
+    if (typeof Ile === 'object' && Ile.allumee) Accueil.prechargerIle();
     this.nouveauBrouillon(invite);
     const premier = !Save.list().length;
     const monde = premier && !invite && !Accueil.mondeChoisi();
@@ -825,6 +868,9 @@ class Accueil {
     const nom = (champ ? champ.value : b.name).replace(/\s+/g, ' ').trim().slice(0, 16);
     if (!nom) { this.erreur('Donne un nom à ton personnage.'); if (champ) champ.focus(); return; }
     const ch = Character.create(b.classId, nom, b.gender, b.voie, { look: b.look, tuto: b.tuto });
+    // L'île allumée (l'interrupteur, docs/ILE-TECHNIQUE.md, 1.4) et la 3D possible : le personnage
+    // naît au Métier d'Ervane, avec le tutoriel de l'île dans le mode choisi.
+    if (typeof Ile === 'object' && Ile.allumee && typeof Ile3D === 'function' && Ile3D.disponible() && Ile.fairenaitre(ch)) Ile.appliquerOrsane();
     if (b.invite) {
       // Une partie d'invité n'écrit jamais rien : ni à la création, ni en jeu.
       Object.defineProperty(ch, 'invite', { value: true });
@@ -898,12 +944,23 @@ class Accueil {
       <section class="reglages__bloc"><h3 class="reglages__titre">Langue</h3>
         <div class="reglages__seg" role="group" aria-label="Langue"><button class="e-nu reglages__seg-btn on" aria-pressed="true" data-act="rien">Français</button><button class="e-nu reglages__seg-btn" disabled>English <small>bientôt</small></button></div>
       </section>
+      ${Accueil.essaiIle() ? `<section class="reglages__bloc"><h3 class="reglages__titre">Essais (développement)</h3>
+        <div class="reglages__ligne"><span>Naître sur Ervane (essai)</span><button class="e-nu reglages__interrupteur" data-act="ile-essai" aria-pressed="${Accueil.lire('veylan.ile.essai') === '1'}" aria-label="Naître sur Ervane (essai)"><i></i></button></div>
+        <p class="reglages__note">Un nouveau personnage naît au Métier, sur l'île en 3D. Prend effet au prochain lancement.</p>
+        <button class="vy-bouton vy-bouton--petit reglages__relancer" data-act="relancer" data-ile-relancer hidden>Relancer maintenant</button>
+      </section>` : ''}
       <p class="reglages__version">${esc(DATA.version || '')} · le jeu est sauvegardé dans ce navigateur, sur cet appareil.</p>
     </div>`;
     this.ouvrirCalque('reglages', 'Réglages', corps, { classe: 'entree-modale--reglages' });
   }
 
   static lire(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  // Un personnage lu pour être joué : s'il est né sur Ervane, les changements d'Orsane s'appliquent
+  // avant sa lecture validée (content/ervane-orsane.js ; sa quête « Le Glym Ancestral » existe alors).
+  static lirePersonnage(uid) {
+    if (typeof Ile === 'object' && Ile.actif() && Ile.origineDe(uid) === 'ervane') Ile.appliquerOrsane();
+    return Save.read(uid);
+  }
   static ecrire(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* rien */ } }
 
   ouvrirJournal() {
@@ -991,6 +1048,12 @@ Accueil.prototype.actions = {
     const r = this.calqueEl.querySelector('.reglages__relancer'); if (r) r.hidden = Accueil.lire('veylan.rendu.vu') === v;
   },
   relancer() { location.reload(); },
+  'ile-essai'(b) {
+    const on = b.getAttribute('aria-pressed') !== 'true';
+    if (on) Accueil.ecrire('veylan.ile.essai', '1'); else { try { localStorage.removeItem('veylan.ile.essai'); } catch (e) { /* rien */ } }
+    b.setAttribute('aria-pressed', String(on));
+    const r = this.calqueEl.querySelector('[data-ile-relancer]'); if (r) r.hidden = false;
+  },
   journal() { this.ouvrirJournal(); },
   'actu-lire'() { if (!this.glisse) this.ouvrirActu(); },
   'actu-prec'() { this.changerActu(-1); },
@@ -1000,7 +1063,7 @@ Accueil.prototype.actions = {
   'actu-suiv-lire'() { this.changerActu(1); this.ouvrirActu(); },
   continuer() {
     const d = this.continuer;
-    const ch = d ? Save.read(d.uid) : null;
+    const ch = d ? Accueil.lirePersonnage(d.uid) : null;
     if (!ch) { this.toast('Cette sauvegarde est illisible.'); return; }
     this.demarrer(ch);
   },
@@ -1016,7 +1079,7 @@ Accueil.prototype.actions = {
     if (j && sel) { j.disabled = false; j.textContent = fines(`Jouer : ${sel.name}`); }
   },
   jouer() {
-    const ch = this.choix ? Save.read(this.choix) : null;
+    const ch = this.choix ? Accueil.lirePersonnage(this.choix) : null;
     if (!ch) { this.toast('Choisis un personnage.'); return; }
     this.demarrer(ch);
   },
@@ -1033,6 +1096,8 @@ Accueil.prototype.actions = {
     const zone = this.calqueEl.querySelector('.entree-zone');
     const r = Save.importText(zone.value);
     const err = this.calqueEl.querySelector('.entree-calque__erreur');
+    // Un personnage d'Ervane sur une page sans l'île : le code attend, la page se recharge (js/save.js).
+    if (r.recharge) { err.textContent = fines(r.error); setTimeout(() => location.reload(), 50); return; }
     if (!r.ch) { err.textContent = fines(r.error || 'Code invalide.'); return; }
     if (!Save.write(r.ch)) { err.textContent = 'Impossible d\'enregistrer ce personnage ici.'; return; }
     this.choix = r.ch.uid;

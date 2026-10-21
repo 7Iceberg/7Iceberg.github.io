@@ -1251,6 +1251,8 @@ class Combat {
   // un point = 25 % (40 % pour un joueur) × (sagesse de la cible + 40) / (sagesse du lanceur + 40) × (PA ou PM restants /
   // maximum), bornée de 5 à 75 %. Hors de son tour, la cible compte ce qu'elle aura à son prochain tour.
   removalDodgeChance(caster, t, kind, current) {
+    // Un sort `inesquivable` (la Gouttelette du Glym Aqua) : son retrait ne s'esquive jamais.
+    if (this.castCtx && this.castCtx.spell && this.castCtx.spell.inesquivable) return 0;
     const max = kind === 'pa' ? t.paMax : t.pmMax;
     if (!(max > 0)) return 1;
     if (current == null) current = t === this.actor ? t[kind] : Math.max(0, max + t.modifier(kind));
@@ -1540,6 +1542,9 @@ class Combat {
     if (c.armor === false && e.modifier('armor') > 0) return false;
     if (c.every && (e.turnsPlayed || 0) % c.every !== 0) return false;
     if (c.adjacentTo && !this.entities.some(o => o.alive && o !== e && o.def.id === c.adjacentTo && Grid.dist(o.pos, e.pos) === 1)) return false;
+    // `voitEnnemi` (la clé de Krobb, docs/ILE-TECHNIQUE.md, 5.7) : au moins un ennemi vivant, que le
+    // monstre peut voir (l'invisibilité compte), est en ligne de vue depuis sa case.
+    if (c.voitEnnemi != null && this.enemies(e).some(o => this.canSee(e, o) && this.hasLos(e, e.pos, o.pos)) !== !!c.voitEnnemi) return false;
     return true;
   }
 

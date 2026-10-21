@@ -1,7 +1,7 @@
 {
   "name": "Veylan",
   "short_name": "Veylan",
-  "description": "MMORPG tactique au tour par tour, en 2D isométrique.",
+  "description": "MMORPG tactique au tour par tour : une île de départ en 3D, puis un monde en 2D isométrique.",
   "lang": "fr",
   "start_url": "./index.html",
   "scope": "./",

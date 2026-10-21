@@ -677,8 +677,10 @@ Object.assign(Hud.prototype, {
     this.invGlisse = null;
     if (g.long) { this.invIgnorerClic(); return; }
     // Toucher deux fois : équiper, utiliser, nouer, retirer.
-    const t = performance.now(), cle = `${g.kind}:${g.slot || g.id}`, avant = this.invDernier;
-    if (evt.type === 'pointerup' && avant && avant.cle === cle && t - avant.t < 420 && Math.hypot(evt.clientX - avant.x, evt.clientY - avant.y) < 26) {
+    // Au doigt, deux touchers à 520 ms au plus (420 à la souris) : un téléphone lent ou un pouce
+    // hésitant restent dans la fenêtre (revue finale, l'étape « equiper » du tutoriel de l'île).
+    const t = performance.now(), cle = `${g.kind}:${g.slot || g.id}`, avant = this.invDernier, fenetre = evt.pointerType === 'touch' ? 520 : 420;
+    if (evt.type === 'pointerup' && avant && avant.cle === cle && t - avant.t < fenetre && Math.hypot(evt.clientX - avant.x, evt.clientY - avant.y) < 26) {
       this.invDernier = null;
       this.invIgnorerClic();
       this.invActiver(g);

@@ -114,7 +114,8 @@ class Carte3D {
   ile(regId, D) {
     const THREE = window.THREE, K = 15, M = 1;
     const A = D.A, ix = D.ix;
-    const cells = [...A.coords].map(([id, [x, y]]) => ({ id, x, y, e: ix.map.get(id) })).filter(c => c.e.zone.region === regId);
+    // Les cartes de plateau (l'île d'Ervane, sans plan de cases) ne sont pas dans la vue 3D.
+    const cells = [...A.coords].map(([id, [x, y]]) => ({ id, x, y, e: ix.map.get(id) })).filter(c => c.e.zone.region === regId && c.e.def.layout);
     if (!cells.length) return;
     const xs = cells.map(c => c.x), ys = cells.map(c => c.y);
     const cx0 = Math.min(...xs) - M, cy0 = Math.min(...ys) - M, CW = Math.max(...xs) - cx0 + 1 + M, CH = Math.max(...ys) - cy0 + 1 + M;
@@ -570,7 +571,17 @@ class Carte3D {
     if (!this.but) {
       // La région où l'on se trouve, cadrée en entier selon la forme de la fenêtre.
       const ici = this.hud.donneesCarte().here, zone = ici && World.zoneOf(ici);
-      const ids = zone ? DATA.content.zones.filter(z => z.region === zone.region).flatMap(z => z.maps.map(m => m.id)) : [];
+      // Seules les cartes à plan ont leur île dans cette vue : sur une carte de plateau (Ervane, sautée
+      // ici), on cadre la région dessinée la plus proche plutôt que des nuages.
+      const aPlan = z => z.maps.filter(m => m.layout).map(m => m.id);
+      let region = zone && zone.region;
+      if (zone && !DATA.content.zones.some(z => z.region === region && aPlan(z).length)) {
+        const p0 = ici && Atlas.coordsOf(ici);
+        let best = null, bd = Infinity;
+        if (p0) for (const z of DATA.content.zones) for (const id of aPlan(z)) { const p = Atlas.coordsOf(id); const d = p ? Math.hypot(p[0] - p0[0], p[1] - p0[1]) : Infinity; if (d < bd) { bd = d; best = z.region; } }
+        region = best;
+      }
+      const ids = region ? DATA.content.zones.filter(z => z.region === region).flatMap(aPlan) : [];
       const pts = ids.map(id => Atlas.coordsOf(id)).filter(Boolean);
       const b = pts.length ? { minX: Math.min(...pts.map(p => p[0])), maxX: Math.max(...pts.map(p => p[0])), minY: Math.min(...pts.map(p => p[1])), maxY: Math.max(...pts.map(p => p[1])) } : Atlas.get().bounds;
       const w = b.maxX - b.minX + 1, h = b.maxY - b.minY + 1, phi = 0.92;
@@ -905,4 +916,4 @@ Carte3D.STRATES = {
   kaldum: ['#ab998c', '#8f7d70', '#76655a', '#5d4d45', '#4a3c36', '#3e3230', '#241a18'],
 };
 Carte3D.ROCHE = { thessa: '#b9c7b4', lisiere: '#b5aeb4', basvoiles: '#4a3b5c', voile: '#3a3550' };
-Carte3D.LANTERNE = { thessa: '#9ff0e6', lisiere: '#f0d6ff', basvoiles: '#ff7db0', voile: '#d6c8ff' };
+Carte3D.LANTERNE = { ervane: '#ffe9a8', thessa: '#9ff0e6', lisiere: '#f0d6ff', basvoiles: '#ff7db0', voile: '#d6c8ff' };

@@ -73,6 +73,7 @@ DATA.tutoriel = {
       cueDialogue: ['.vy-replique[data-quete="orsane_arrivee"]', '.vy-guide--dialogue [data-act="accepter"]'],
       until: { on: 'quest', type: 'accept', id: 'orsane_arrivee' }, saute: { quete: 'orsane_arrivee' } },
     { id: 'lotha', say: '**Lotha** tient le Comptoir, juste au sud. Va te présenter à elle.',
+      court: 'Présente-toi à Lotha, au Comptoir, juste au sud.',
       cue: { type: 'pnj', npc: 'lotha' },
       until: { cond: { queteEtape: ['orsane_arrivee', 1] } }, saute: { queteEtape: ['orsane_arrivee', 1] } },
     { id: 'sortie', say: 'La **Porte des Clairières** est en bas. **Glisse l\'écran** vers la droite, ou **touche le bord** près de la flèche.',
@@ -83,6 +84,7 @@ DATA.tutoriel = {
 
     // ----- La Porte des Clairières -----
     { id: 'orvak', say: 'Voici la Porte. **Orvak** la garde : parle-lui, il connaît les Clairières.',
+      court: 'Parle à Orvak, le gardien de la Porte.',
       cue: { type: 'pnj', npc: 'orvak' },
       until: { cond: { queteEtape: ['orsane_arrivee', 3] } }, saute: { queteEtape: ['orsane_arrivee', 3] } },
     { id: 'groupe', say: 'Des **Glyms** rôdent près de la Porte. **Touche un groupe** pour voir sa fiche.',

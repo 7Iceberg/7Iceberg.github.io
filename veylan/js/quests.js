@@ -1,9 +1,29 @@
 // Quêtes : disponibilité, acceptation, avancement sur événements, remise des récompenses.
 // L'état vit dans character.quests = { active: { id: { step, progress } }, done: [ids] }.
 // Une étape de choix (`answer`) garde la réponse donnée : { step, progress, choices: { étape: option } }.
+// Une étape `kills` (plusieurs monstres, dans l'ordre qu'on veut ; docs/ILE-DE-DEPART.md, 6) garde
+// ses compteurs parallèles : { step, progress, counts: [n, ...] }, remis à zéro quand l'étape change
+// et, avec `unCombat`, à la fin d'un combat qui ne les a pas tous remplis.
 const Quests = (() => {
   const defs = () => (DATA.content && DATA.content.quests) || [];
   const get = id => defs().find(q => q.id === id) || null;
+
+  // Les compteurs d'une étape `kills`, créés à la demande (autant que de lignes dans l'étape).
+  function compteurs(st, s) {
+    if (!Array.isArray(st.counts) || st.counts.length !== s.kills.length) st.counts = s.kills.map(() => 0);
+    return st.counts;
+  }
+  const pleins = (st, s) => compteurs(st, s).every((n, i) => n >= s.kills[i].count);
+  // « Groukins 2/3, Grouk 1/1 » : le nom du monstre, au pluriel sur le premier mot quand il en faut
+  // plusieurs (« Glyms Aer »).
+  function texteKills(st, s) {
+    const c = compteurs(st, s);
+    return s.kills.map((k, i) => {
+      const def = DATA.monsters[k.monster], nom = def ? def.name : k.monster;
+      const pluriel = k.count > 1 ? nom.replace(/^(\S+)/, m => (/[sxz]$/.test(m) ? m : m + 's')) : nom;
+      return `${pluriel} ${Math.min(c[i], k.count)}/${k.count}`;
+    }).join(', ');
+  }
 
   function requirementsMet(ch, q) {
     const r = q.requires || {};
@@ -70,6 +90,7 @@ const Quests = (() => {
     if (st.step >= q.steps.length) return q.turnIn && q.turnIn !== q.giver ? `Rendre la quête à ${npcName(q.turnIn)}` : `Retourner voir ${npcName(q.giver)}`;
     const s = q.steps[st.step];
     if (s.type === 'kill' || s.type === 'gather') return `${s.text} (${st.progress}/${s.count})`;
+    if (s.type === 'kills') return `${s.text} (${texteKills(st, s)})`;
     if (s.type === 'collect') return `${s.text} (${Math.min(ch.count(s.item), s.count)}/${s.count})`;
     return s.text;
   }
@@ -111,12 +132,20 @@ const Quests = (() => {
       const s = q.steps[st.step];
       let advanced = false;
       if (s.type === 'kill' && ev.type === 'kill' && ev.monster === s.monster) { st.progress++; if (st.progress >= s.count) advanced = true; touched.push({ quest: q, finished: false }); }
+      else if (s.type === 'kills' && ev.type === 'kill') {
+        // Les compteurs avancent en parallèle : la première ligne de ce monstre qui n'est pas pleine.
+        const c = compteurs(st, s), i = s.kills.findIndex((k, j) => k.monster === ev.monster && c[j] < k.count);
+        if (i >= 0) { c[i]++; if (pleins(st, s)) advanced = true; touched.push({ quest: q, finished: false }); }
+      } else if (s.type === 'kills' && ev.type === 'fightEnd' && s.unCombat && !pleins(st, s)) {
+        // Tout en un seul combat : un combat fini sans les avoir tous remplis les remet à zéro.
+        if (compteurs(st, s).some(n => n > 0)) { st.counts = s.kills.map(() => 0); touched.push({ quest: q, finished: false }); }
+      }
       else if (s.type === 'gather' && ev.type === 'gather' && ev.resource === s.resource) { st.progress++; if (st.progress >= s.count) advanced = true; touched.push({ quest: q, finished: false }); }
       else if (s.type === 'talk' && ev.type === 'talk' && ev.npc === s.npc) advanced = true;
       else if (s.type === 'visit' && ev.type === 'visit' && ev.map === s.map) advanced = true;
       else if (s.type === 'dungeon' && ev.type === 'dungeon' && ev.dungeon === s.dungeon) advanced = true;
       else if (s.type === 'equip' && ev.type === 'equip' && equipMet(ch, s)) advanced = true;
-      if (advanced) { st.step++; st.progress = 0; }
+      if (advanced) { st.step++; st.progress = 0; delete st.counts; }
       if (settle(ch, q)) advanced = true;
       if (advanced || touched.some(t => t.quest === q)) {
         const done = st.step >= q.steps.length;
@@ -248,6 +277,6 @@ const Quests = (() => {
 
   return {
     defs, get, requirementsMet, canStart, available, turnInOf, activeFor, readyFor, canTurnIn, accept, giveStartItems, state, isDone, stepText,
-    onEvent, answerNpc, answersFor, answer, checkChoices, canAbandon, abandon, complete, tracker, npcName,
+    onEvent, answerNpc, answersFor, answer, checkChoices, canAbandon, abandon, complete, tracker, npcName, compteurs,
   };
 })();

@@ -567,6 +567,9 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .reglages__bientot { padding: 3px 8px; border-radius: 999px; border: 1px solid var(--vy-filet-fort); font: 600 10px/1 var(--vy-font-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--vy-texte-2); }
 .reglages__interrupteur { position: relative; margin-left: auto; width: 46px; height: 26px; border-radius: 999px; background: #222b3a; border: 1.5px solid var(--vy-filet); opacity: 0.6; }
 .reglages__interrupteur i { position: absolute; left: 3px; top: 3px; width: 17px; height: 17px; border-radius: 50%; background: #6c7386; }
+.reglages__interrupteur:not([disabled]) { opacity: 1; cursor: pointer; }
+.reglages__interrupteur[aria-pressed="true"] { background: #4a3c22; border-color: var(--vy-or); }
+.reglages__interrupteur[aria-pressed="true"] i { left: auto; right: 3px; background: var(--vy-or-clair); }
 .reglages__version { margin: 0; font: 400 12px/1.4 var(--vy-font-ui); color: var(--vy-texte-2); }
 .entree-modale--journal { width: min(660px, 100%); }
 .journal { display: grid; gap: 18px; }

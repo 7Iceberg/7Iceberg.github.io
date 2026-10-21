@@ -6,7 +6,10 @@ const Achievements = (() => {
   const defs = () => (DATA.content && DATA.content.achievements) || [];
   const get = id => defs().find(a => a.id === id) || null;
   // Nombre de remontées distinctes d'une région déjà vaincues (le Carnet du Veilleur).
-  const carnetCount = (ch, region) => Object.keys(ch.counters.kills || {}).filter(id => DATA.monsters[id] && DATA.monsters[id].region === region && !DATA.monsters[id].summon).length;
+  // Un personnage né sur Ervane ne croise jamais le Glymet à Orsane (content/ervane-orsane.js) : il
+  // compte pour inscrit, module appliqué ou non (une sauvegarde se valide partout de la même façon).
+  const carnetCount = (ch, region) => Object.keys(ch.counters.kills || {}).filter(id => DATA.monsters[id] && DATA.monsters[id].region === region && !DATA.monsters[id].summon).length
+    + (region === 'orsane' && ch.origine === 'ervane' && DATA.monsters.piouk && DATA.monsters.piouk.region === 'orsane' && !(ch.counters.kills || {}).piouk ? 1 : 0);
   // Cartes d'une zone, et combien sont déjà visitées.
   const zoneMaps = id => { const z = ((DATA.content && DATA.content.zones) || []).find(x => x.id === id); return z ? z.maps.map(m => m.id) : []; };
   const zoneSeen = (ch, id) => zoneMaps(id).filter(m => ch.counters.maps.includes(m)).length;
@@ -23,6 +26,8 @@ const Achievements = (() => {
       case 'feat': return ((k.feats || {})[c.key] || 0) >= c.count;
       case 'carnet': return carnetCount(ch, c.region) >= c.count;
       case 'quests': return k.questsDone >= c.count;
+      // Une quête précise rendue (le titre d'une quête passe par un succès : js/quests.js n'en remet pas).
+      case 'quest': return !!(ch.quests && Array.isArray(ch.quests.done) && ch.quests.done.includes(c.quest));
       // Une série de quêtes, toutes faites (les succès de quêtes d'Incarnam, docs/QUETES-INCARNAM.md).
       case 'questline': return (c.quests || []).every(id => ((ch.quests || {}).done || []).includes(id));
       case 'maps': return k.maps.length >= c.count;
@@ -82,7 +87,7 @@ const Achievements = (() => {
     const c = a.cond || {};
     switch (c.type) {
       case 'maps': case 'zone': return 'Exploration';
-      case 'quests': case 'questline': return 'Quêtes';
+      case 'quests': case 'quest': case 'questline': return 'Quêtes';
       case 'fights': return 'Combat';
       case 'kills': return 'Chasse';
       case 'carnet': return 'Carnet';
