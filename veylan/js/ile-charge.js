@@ -158,5 +158,20 @@ const IleCharge = (() => {
     ]);
   }
 
-  return { three, webgl, ambiance, vignette, script, nuit, cache: { lire, ecrire, vider }, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
+  // ----- Le style Lisière (docs/ILE-TECHNIQUE.md, 3.25) -----
+  // 'lisiere' si l'adresse porte ?style=lisiere, ou si DATA.ile.style = 'lisiere' ; ?style=0
+  // l'emporte sur la donnée. Sinon null : rien de plus ne se charge.
+  function style() {
+    let q = null;
+    try { q = new URLSearchParams(location.search).get('style'); } catch (e) { q = null; }
+    if (q === 'lisiere') return 'lisiere';
+    if (q === '0') return null;
+    return typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.style === 'lisiere' ? 'lisiere' : null;
+  }
+  // Ses fichiers : ceux de la nuit (le décor ajouté, les lucioles), puis js/ile-lisiere.js.
+  function lisiere() {
+    return nuit().then(() => (typeof IleLisiere === 'object' ? null : script('js/ile-lisiere.js')));
+  }
+
+  return { three, webgl, ambiance, vignette, style, lisiere, script, nuit, cache: { lire, ecrire, vider }, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
 })();

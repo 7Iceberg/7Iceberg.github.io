@@ -31,12 +31,15 @@ class CameraIle {
     const cdef = (opts.def && opts.def.camera) || {};
     this.taille = (opts.def && opts.def.taille) || [240, 180];
     this.terrain = opts.terrain || null;
-    const ex = cdef.exploration || {};
+    // Le style Lisière (3.25) remplace le réglage de l'exploration : plus bas, plus ouvert, le
+    // regard levé de `leve` u au-dessus du point visé, pour voir l'horizon et le ciel.
+    const ex = Object.assign({}, cdef.exploration || {}, opts.style || {});
     this.ouverture = ex.ouverture || 20;
     this.elevations = ex.elevation || [35, 45];
+    this.leve = ex.leve || 0;
     this.champs = cdef.champ || [18, 60];
     const telephone = CameraIle.telephone();
-    this.champDefaut = (cdef.champDefaut || [26, 32])[telephone ? 0 : 1];
+    this.champDefaut = ((opts.style && opts.style.champDefaut) || cdef.champDefaut || [26, 32])[telephone ? 0 : 1];
     this.azimut = (cdef.azimut != null ? cdef.azimut : 45) * Math.PI / 180;
     this.cam = new THREE.PerspectiveCamera(this.ouverture, 1, 1, 900);
     this.champ = this.champDefaut;
@@ -123,7 +126,7 @@ class CameraIle {
 
   // L'état de la perspective d'exploration : point visé, élévation, largeur vue au point visé,
   // ouverture. Un passage vers le combat ou depuis lui interpole entre deux de ces états.
-  etatExploration() { return { x: this.cible.x, y: this.cible.y, h: this.cible.h, el: this.elevation(), largeur: this.champ, fov: this.ouverture }; }
+  etatExploration() { return { x: this.cible.x, y: this.cible.y, h: this.cible.h, el: this.elevation(), largeur: this.champ, fov: this.ouverture, leve: this.leve }; }
 
   // Place la caméra perspective d'après un état (par défaut celui de l'exploration) : le point
   // visé tombe au milieu de la part de la scène que l'interface laisse libre.
@@ -132,8 +135,9 @@ class CameraIle {
     const cam = this.cam, az = this.azimut;
     const aspect = this.vw && this.vh ? this.vw / this.vh : 1.6;
     const d = e.largeur / (2 * Math.tan(e.fov * Math.PI / 360) * aspect);
+    const hv = e.h + (e.leve || 0);
     cam.fov = e.fov;
-    cam.position.set(e.x + Math.cos(e.el) * Math.sin(az) * d, e.h + Math.sin(e.el) * d, e.y + Math.cos(e.el) * Math.cos(az) * d);
+    cam.position.set(e.x + Math.cos(e.el) * Math.sin(az) * d, hv + Math.sin(e.el) * d, e.y + Math.cos(e.el) * Math.cos(az) * d);
     // Jamais à moins de 3 u au-dessus du terrain (3.3) : sans effet aux reliefs d'Ervane, mais la
     // règle tient si un jour une falaise se dresse entre le point visé et la caméra.
     const T = this.terrain;
@@ -143,7 +147,7 @@ class CameraIle {
       if (Number.isFinite(h) && cam.position.y < h + 3) cam.position.y = h + 3;
     }
     cam.up.set(0, 1, 0);
-    cam.lookAt(e.x, e.h, e.y);
+    cam.lookAt(e.x, hv, e.y);
     cam.near = Math.max(1, d * 0.25);
     cam.far = d * 6 + 200;
     cam.aspect = aspect;
@@ -585,11 +589,11 @@ class CameraIle {
   // même largeur, ouverture de 2°.
   etatOrtho() {
     const v = this.vue, p = this.depuisVue(v.px, v.py);
-    return { x: p.u, y: p.v, h: p.h, el: this.cadre.el, largeur: this.vw * v.s, fov: 2 };
+    return { x: p.u, y: p.v, h: p.h, el: this.cadre.el, largeur: this.vw * v.s, fov: 2, leve: 0 };
   }
   // Le retour : le Veilleur au milieu, au champ d'avant le combat.
   etatRetour() {
-    return { x: this.joueur.x, y: this.joueur.y, h: this.joueur.h, el: this.elevation(), largeur: this.champ, fov: this.ouverture };
+    return { x: this.joueur.x, y: this.joueur.y, h: this.joueur.h, el: this.elevation(), largeur: this.champ, fov: this.ouverture, leve: this.leve };
   }
 
   // L'acteur du tour, suivi quand la vue est zoomée (comme la caméra des cases) : `focus` change à
@@ -660,7 +664,7 @@ class CameraIle {
     if (tr.sens === 'aller' && (!this.cadre || !this.vue)) { this.trans = null; return false; }
     const A = tr.de, B = tr.sens === 'aller' ? this.etatOrtho() : this.etatRetour();
     const L = (a, b) => a + (b - a) * e, G = (a, b) => Math.exp(Math.log(a) + (Math.log(b) - Math.log(a)) * e);
-    const etat = { x: L(A.x, B.x), y: L(A.y, B.y), h: L(A.h, B.h), el: L(A.el, B.el), largeur: G(A.largeur, B.largeur), fov: G(A.fov, B.fov) };
+    const etat = { x: L(A.x, B.x), y: L(A.y, B.y), h: L(A.h, B.h), el: L(A.el, B.el), largeur: G(A.largeur, B.largeur), fov: G(A.fov, B.fov), leve: L(A.leve || 0, B.leve || 0) };
     this.dernierEtat = etat;
     this.fondu = tr.sens === 'aller' ? e : 1 - e;
     if (t >= 1) {

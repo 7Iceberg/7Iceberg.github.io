@@ -182,7 +182,13 @@ class Ile3D {
     // L'aperçu de nuit (3.24) : ?ambiance=nuit ou DATA.ile.ambiance ; ses fichiers se chargent à la
     // demande. Un échec laisse le jour : l'île se construit comme avant.
     this.nuit = null;
-    if (IleCharge.ambiance && IleCharge.ambiance() === 'nuit') {
+    // Le style Lisière (3.25) : ?style=lisiere ou DATA.ile.style ; il prend la place de la nuit (il
+    // en reprend le décor ajouté et les lucioles) et règle le ciel, la brume et les lumières à
+    // l'heure et au temps qu'il fait. Un échec laisse l'île comme avant.
+    if (IleCharge.style && IleCharge.style() === 'lisiere') {
+      try { await IleCharge.lisiere(); if (typeof IleLisiere === 'object') this.nuit = new IleLisiere.Lisiere(THREE, this); } catch (e) { console.warn('Ervane : style Lisière indisponible', e); this.nuit = null; }
+    }
+    if (!this.nuit && IleCharge.ambiance && IleCharge.ambiance() === 'nuit') {
       try { await IleCharge.nuit(); if (typeof IleNuit === 'object') this.nuit = new IleNuit.Nuit(THREE, this); } catch (e) { console.warn('Ervane : aperçu de nuit indisponible', e); this.nuit = null; }
     }
     if (this.voiles) this.voiles.classList.toggle('nuit', !!this.nuit);
@@ -342,7 +348,7 @@ class Ile3D {
     brume(mats.dessousAcc, -8, -40, '#7d8aa6');
     brume(mats.dessousLueur, -10, -60, '#7d8aa6');
     this.lumieres(scene);
-    scene.fog = new THREE.Fog(this.nuit ? this.nuit.brume('#a9c3d6') : new THREE.Color('#a9c3d6'), 60, 150);
+    scene.fog = this.nuit && this.nuit.brouillard ? this.nuit.brouillard() : new THREE.Fog(this.nuit ? this.nuit.brume('#a9c3d6') : new THREE.Color('#a9c3d6'), 60, 150);
     this.brumeVoulue = scene.fog.color.clone();
     fini('materiaux');
 
@@ -370,7 +376,7 @@ class Ile3D {
     // 5. Le décor, fusionné par tuile.
     etape('Le décor');
     await pause();
-    const D = this.decor = IleDecor.construire(THREE, { T, def, telephone: this.telephone, qualite: this.qualite, ajouts: this.nuit ? A => this.nuit.ajouts(A) : null });
+    const D = this.decor = IleDecor.construire(THREE, { T, def: this.nuit && this.nuit.defDecor ? this.nuit.defDecor(def) : def, telephone: this.telephone, qualite: this.qualite, ajouts: this.nuit ? A => this.nuit.ajouts(A) : null });
     const L = IleDecor.bibliotheque(this.telephone);
     this.tuilesDecor = D.tuiles.map(t => {
       const g = new THREE.Group();
@@ -427,8 +433,8 @@ class Ile3D {
     scene.add(this.arene.groupe);
     mats.uSol.etatCases.value = this.arene.texCases;
     this.marques3D(THREE, scene);
-    if (this.nuit) { this.nuit.materiaux(); this.nuit.lucioles(scene); }
-    const cam = this.camera = new CameraIle({ el: this.board, def, terrain: T });
+    if (this.nuit) { this.nuit.materiaux(); this.nuit.lucioles(scene); if (this.nuit.ciel3D) this.nuit.ciel3D(scene); }
+    const cam = this.camera = new CameraIle({ el: this.board, def, terrain: T, style: this.nuit && this.nuit.styleCamera ? this.nuit.styleCamera() : null });
     this.redimensionner();
     const p = world.player;
     cam.sauter(p.rx, p.ry, this.hauteur(p.rx, p.ry));
@@ -1511,16 +1517,20 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     // au rectangle de la tuile), la lointaine (un sommet pour 2 u) au-delà.
     const pres = cam.champ * (this.qualite === 'haute' ? 1.6 : this.qualite === 'basse' ? 0.9 : 1.15) + 6;
     const distTuile = t => Math.hypot(Math.max(0, Math.abs(t.centre[0] - c.x) - 15), Math.max(0, Math.abs(t.centre[1] - c.y) - 15));
+    // Le style Lisière (3.25) : sa caméra basse voit le sol jusqu'à l'horizon ; au-delà de `solMax`
+    // u, la brume l'a pris, la tuile ne se dessine plus (le ciel de la brume est derrière).
+    const solMax = this.nuit && this.nuit.solMax && !this.enArene ? this.nuit.solMax : Infinity;
     for (const t of this.tuilesSol) {
-      const proche = !t.loin || distTuile(t) < pres;
-      t.proche.visible = proche;
-      if (t.loin) t.loin.visible = !proche;
+      const d = distTuile(t), proche = !t.loin || d < pres;
+      t.proche.visible = proche && d < solMax;
+      if (t.loin) t.loin.visible = !proche && d < solMax;
     }
     // Le décor : complet jusqu'à 45 u (60 en qualité haute, 30 en basse), silhouettes jusqu'à 80 u.
     // La nuit (3.24), la brume plus proche cache le lointain : le décor détaillé et les silhouettes
     // s'arrêtent plus tôt (ce qu'on y gagne paie une part du décor ajouté).
-    const kNuit = this.nuit ? (this.telephone ? 0.8 : 0.85) : 1;
-    const rDet = (this.qualite === 'haute' ? 60 : this.qualite === 'basse' ? 30 : 45) * kNuit, rSil = (this.qualite === 'haute' ? 120 : 80) * (this.nuit ? 0.72 : 1);
+    // Le style Lisière (3.25) règle ses propres portées : sa caméra basse voit plus de morceaux.
+    const kNuit = this.nuit ? (this.nuit.kDetail || (this.telephone ? 0.8 : 0.85)) : 1;
+    const rDet = (this.qualite === 'haute' ? 60 : this.qualite === 'basse' ? 30 : 45) * kNuit, rSil = (this.qualite === 'haute' ? 120 : 80) * (this.nuit ? (this.nuit.kSil || 0.72) : 1);
     const demi = IleDecor.TUILE / 2;
     const distMorceau = t => Math.hypot(Math.max(0, Math.abs(t.centre[0] - c.x) - demi), Math.max(0, Math.abs(t.centre[1] - c.y) - demi));
     // La vue tactique cache le décor, l'herbe et l'eau : le damier d'ardoise du sol reste seul.
@@ -1676,7 +1686,10 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const d = this.camera.distance(), fc = this.camera.fondu || 0;
     // La nuit, la brume vient plus près : le lointain se perd dans le bleu.
     const kp = this.nuit ? 0.92 : 1.1, kl = this.nuit ? 2.0 : 2.7;
-    f.near = d * kp * (1 - fc) + (d + 30) * fc; f.far = d * kl * (1 - fc) + (d + 120) * fc;
+    // Le style Lisière (3.25) : une brume exponentielle, sa densité réglée par le temps qu'il fait,
+    // éclaircie en combat (la caméra du combat est loin derrière l'aire).
+    if (f.isFogExp2) f.density = (this.nuit.densite || 0.016) * (1 - fc) + 0.0035 * fc;
+    else { f.near = d * kp * (1 - fc) + (d + 30) * fc; f.far = d * kl * (1 - fc) + (d + 120) * fc; }
     // Le ciel (le dégradé CSS derrière la toile transparente) suit la brume.
     const tact = this.enArene && this.tactique;
     const hex = tact ? 'tactique' : '#' + f.color.getHexString();
