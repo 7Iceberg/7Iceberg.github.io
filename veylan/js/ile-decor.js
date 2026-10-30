@@ -258,6 +258,9 @@ const IleDecor = (() => {
     objets(ctx, L, seau, piece, sol, solPlat, palette, G);
     lignes(ctx, L, seau, piece, sol, palette, G);
     obstaclesAires(ctx, L, seau, piece, sol, palette);
+    // Ce qu'une ambiance ajoute (l'aperçu de nuit, js/ile-nuit.js, 3.24) : des pièces de plus dans
+    // les mêmes morceaux et les mêmes matières, donc sans appel de dessin de plus. Sans ambiance, rien.
+    if (typeof ctx.ajouts === 'function') ctx.ajouts({ L, seau, piece, sol, solPlat, palette, zone, G, matrice, entre, coul, melange, fois });
 
     const tuiles = [];
     for (const s of seaux.values()) {

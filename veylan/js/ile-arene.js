@@ -77,6 +77,40 @@ void main() {
   #include <encodings_fragment>
 }`;
 
+
+  // Les effets propres à certains sorts (spell.fx), en plus du trait et de l'éclat : la couleur du
+  // trait, puis des particules au départ (de : le lanceur, hde : la hauteur du départ, vers : le
+  // centre de la zone, points du monde) et sur chaque case touchée.
+  const hasard = (a, b) => a + Math.random() * (b - a);
+  const FX_SORTS = {
+    // La Bouffée de spores du Lampignon : un nuage cyan qui part de la coiffe et flotte, puis s'ouvre
+    // en boule sur la case.
+    spores: {
+      couleur: '#8ff6ff',
+      depart(A, de, hde, vers) {
+        const dx = vers.u - de.u, dz = vers.v - de.v, l = Math.hypot(dx, dz) || 1;
+        A.semer(16, () => ({ x: de.u + hasard(-0.15, 0.15), h: hde + hasard(0, 0.3), z: de.v + hasard(-0.15, 0.15), vx: dx / l * hasard(0.9, 2.1) + hasard(-0.4, 0.4), vy: hasard(0.2, 0.7), vz: dz / l * hasard(0.9, 2.1) + hasard(-0.4, 0.4), vie: hasard(0.7, 1.1), max: 1.1, g: -0.35, couleur: ['#8ff6ff', '#d2fff7', '#a6e8d6'][Math.floor(Math.random() * 3)], taille: hasard(0.22, 0.42) }));
+      },
+      impact(A, c) {
+        const p = A.versMonde(c.x, c.y), h = A.ile.hauteur(p.u, p.v);
+        A.semer(14, (i, n) => { const a = i / n * Math.PI * 2 + hasard(-0.3, 0.3), v = hasard(0.35, 1.0); return { x: p.u, h: h + hasard(0.25, 0.7), z: p.v, vx: Math.cos(a) * v, vy: hasard(0.15, 0.55), vz: Math.sin(a) * v, vie: hasard(0.9, 1.4), max: 1.4, g: -0.22, couleur: ['#8ff6ff', '#d2fff7', '#bdf3e6'][i % 3], taille: hasard(0.32, 0.6) }; });
+      },
+    },
+    // Le Bâton gluant du Lampignard : la bave verte jaillit de la crosse abattue et éclabousse la case
+    // (des gouttes lourdes qui retombent, une flaque).
+    bave: {
+      couleur: '#a6ea52',
+      depart(A, de, hde, vers) {
+        const dx = vers.u - de.u, dz = vers.v - de.v, l = Math.hypot(dx, dz) || 1;
+        A.semer(6, () => ({ x: de.u + dx / l * 0.5, h: hde + 0.4, z: de.v + dz / l * 0.5, vx: dx / l * hasard(0.5, 1.4), vy: hasard(0.6, 1.6), vz: dz / l * hasard(0.5, 1.4), vie: hasard(0.4, 0.7), max: 0.7, g: 6, couleur: '#9ee04a', taille: hasard(0.2, 0.32) }));
+      },
+      impact(A, c) {
+        const p = A.versMonde(c.x, c.y), h = A.ile.hauteur(p.u, p.v);
+        A.eclats.push({ x: c.x, y: c.y, couleur: '#9ee04a', ne: null, duree: 620 });
+        A.semer(16, (i, n) => { const a = i / n * Math.PI * 2 + hasard(-0.3, 0.3), v = hasard(0.6, 1.7); return { x: p.u, h: h + 0.3, z: p.v, vx: Math.cos(a) * v, vy: hasard(1.6, 3.0), vz: Math.sin(a) * v, vie: hasard(0.5, 0.85), max: 0.85, g: 7, couleur: ['#9ee04a', '#e4ff9c', '#6f9a32'][i % 3], taille: hasard(0.22, 0.38) }; });
+      },
+    },
+  };
   class Arene {
     constructor(THREE, ile) {
       this.THREE = THREE;
@@ -88,8 +122,9 @@ void main() {
       this.anims = [];
       this.eclats = [];           // { x, y, couleur, ne, duree } : des cases du combat
       this.projectiles = [];      // { de, a, couleur, ne, duree } : des points du monde
-      this.etincelles = [];       // { x, h, z, vx, vy, vz, vie, max, couleur }
+      this.etincelles = [];       // { x, h, z, vx, vy, vz, vie, max, couleur, g (la pesanteur, facultative) }
       this.chiffres = [];         // { x, y, texte, couleur, ne }
+      this.entrees = new Map();   // numéro du combattant -> l'instant de son arrivée (les modèles qui ont leurs gestes)
       this.rochers = new Map();   // clé de case -> numéro d'instance
       // La texture de l'état des cases (4 texels par case, 16 cases par ligne ; le troisième porte
       // le genre, les drapeaux et la hauteur de la case, lue aussi par la trame des obstacles).
@@ -140,6 +175,7 @@ void main() {
       this.etat = 'ouverte';
       this.sig = null;
       this.eclats = []; this.projectiles = []; this.etincelles = []; this.chiffres = [];
+      this.entrees = new Map();
       const H = (u, v) => this.ile.hauteur(u, v);
       let hMin = Infinity, hMax = -Infinity, s = 0, n = 0;
       for (let y = 0; y <= N; y++) for (let x = 0; x <= N; x++) {
@@ -296,10 +332,35 @@ void main() {
             lanterne: e.effects.some(f => f.type === 'state' && f.farDodge),
           },
         };
+        // Le modèle 3D d'un monstre qui en a un (derrière l'interrupteur du Glym modelé).
+        if (fig.modeles && e.team === 'monster' && fig.modeles.prend(e.def.id)) {
+          s.modele = e.def.id; s.modeleCle = 'combat|' + e.id;
+          const D = fig.modeles.durees(e.def.id);
+          if (D) this.gesteFigure(s, e, D, now, cb);
+        }
         s.cle = fig.cleFigure(s); s.peindre = fig.peindreFigure(s);
         out.push(s);
       }
       return out;
+    }
+
+    // Le geste d'un monstre modelé qui en a (js/modele-lampignon.js) : son arrivée la première fois
+    // qu'on le voit (il tombe à sa place ; au placement, les uns après les autres), puis le geste en
+    // cours que les animations lui ont donné (sort, saut, poussée), sinon le coup reçu quand il
+    // s'éclaire.
+    gesteFigure(s, e, D, now, cb) {
+      let a = this.entrees.get(e.id);
+      if (a == null) { a = now + (cb.phase === 'placement' ? Math.min(6, this.entrees.size) * 110 : 0); this.entrees.set(e.id, a); }
+      if (now < a) { s.alpha = 0; return; }
+      if (now < a + D.placement) { s.geste = { type: 'placement', t: (now - a) / D.placement }; return; }
+      const g = e.geste;
+      if (g && g.debut != null && now < g.debut + g.duree) { s.geste = { type: g.type, t: (now - g.debut) / g.duree }; if (g.vers) s.vers = g.vers; return; }
+      if (now < (e.flashUntil || 0)) s.geste = { type: 'coup', t: 1 - (e.flashUntil - now) / 250 };
+    }
+    // Les durées des gestes d'un combattant modelé qui en a, sinon null.
+    gestesDe(e) {
+      const P = this.ile.figures && this.ile.figures.modeles;
+      return e && P && e.team === 'monster' && P.prend(e.def.id) ? P.durees(e.def.id) : null;
     }
 
     // ----- Les animations du moteur de combat -----
@@ -317,10 +378,15 @@ void main() {
         }
         let debut = null;
         const finir = () => { entity.rx = to.x; entity.ry = to.y; entity.alpha = 1; entity.hop = 0; resolve(); };
+        // Un monstre modelé saute d'une case à l'autre (tourné vers elle), ou part en arrière, poussé.
+        const D = teleport ? null : this.gestesDe(entity);
         this.anims.push({
           finir,
           tick: now => {
-            if (debut == null) debut = now;
+            if (debut == null) {
+              debut = now;
+              if (D) entity.geste = fast ? { type: 'pousse', debut: now, duree: D.pousse } : { type: 'saut', debut: now, duree, vers: this.versMonde(to.x, to.y) };
+            }
             const t = Math.min(1, (now - debut) / duree);
             if (teleport) {
               entity.rx = t < 0.5 ? from.x : to.x;
@@ -339,32 +405,53 @@ void main() {
     }
 
     // Un sort : un trait de lumière de la couleur de l'élément va du lanceur aux cases touchées
-    // (180 ms), puis un éclat sur chaque case ; la promesse se résout à 240 ms, comme aujourd'hui.
+    // (180 ms), puis un éclat sur chaque case ; la promesse se résout à 240 ms. Un monstre modelé qui
+    // a ses gestes joue d'abord son sort (tourné vers sa cible) : le trait part à son lâcher (le coup
+    // de coiffe, le bâton abattu), et le reste suit d'autant ; l'effet propre au sort (spell.fx : des
+    // spores, de la bave) s'ajoute au départ et à l'impact.
     animCast({ entity, spell, cells }) {
-      const couleur = DATA.elements[spell.element] ? DATA.elements[spell.element].color : '#ffffff';
+      const fx = FX_SORTS[spell.fx] || null;
+      const couleur = fx ? fx.couleur : DATA.elements[spell.element] ? DATA.elements[spell.element].color : '#ffffff';
       const zone = cells || [];
-      if (entity && zone.length) {
+      const D = this.gestesDe(entity), lacher = D ? D.sort * D.lacher : 0;
+      const centre = zone.length ? { x: zone.reduce((s, c) => s + c.x, 0) / zone.length, y: zone.reduce((s, c) => s + c.y, 0) / zone.length } : null;
+      const lancer = () => {
+        if (!entity || !zone.length || this.etat !== 'ouverte') return;
         const de = this.versMonde(entity.rx, entity.ry), hde = this.ile.hauteur(de.u, de.v) + 0.95 * (entity.boss ? 1.3 : 1);
-        const cibles = zone.length <= 4 ? zone : [{ x: zone.reduce((s, c) => s + c.x, 0) / zone.length, y: zone.reduce((s, c) => s + c.y, 0) / zone.length }];
+        const cibles = zone.length <= 4 ? zone : [centre];
         for (const c of cibles) {
           if (Math.abs(c.x - entity.rx) + Math.abs(c.y - entity.ry) < 0.5) continue;
           const a = this.versMonde(c.x, c.y);
           this.projectiles.push({ de: { u: de.u, h: hde, v: de.v }, a: { u: a.u, h: this.ile.hauteur(a.u, a.v) + 0.45, v: a.v }, couleur, ne: null, duree: 180 });
         }
-      }
+        if (fx) fx.depart(this, de, hde, this.versMonde(centre.x, centre.y));
+      };
+      const eclat = () => { this.eclater(zone, couleur, 340); if (fx) for (const c of zone) fx.impact(this, c); };
       return new Promise(resolve => {
-        let debut = null, eclate = false;
-        const finir = () => { if (!eclate) { eclate = true; this.eclater(zone, couleur, 340); } resolve(); };
+        let debut = null, lance = false, eclate = false;
+        const finir = () => { if (!eclate) { eclate = true; eclat(); } resolve(); };
         this.anims.push({
           finir,
           tick: now => {
-            if (debut == null) debut = now;
-            if (!eclate && now - debut >= 180) { eclate = true; this.eclater(zone, couleur, 340); }
-            if (now - debut >= 240) { finir(); return true; }
+            if (debut == null) {
+              debut = now;
+              if (D && entity) entity.geste = { type: 'sort', debut: now, duree: D.sort, vers: centre ? this.versMonde(centre.x, centre.y) : null };
+            }
+            if (!lance && now - debut >= lacher) { lance = true; lancer(); }
+            if (!eclate && now - debut >= lacher + 180) { eclate = true; eclat(); }
+            if (now - debut >= lacher + 240) { finir(); return true; }
             return false;
           },
         });
       });
+    }
+
+    // Une poignée de particules (les étincelles) : n fois la fonction f(i) qui rend une particule.
+    semer(n, f) {
+      if (this.etat !== 'ouverte') return;
+      const k = this.ile.qualite === 'haute' ? 1 : 0.6;
+      for (let i = 0, m = Math.max(2, Math.round(n * k)); i < m; i++) this.etincelles.push(f(i, m));
+      if (this.etincelles.length > 160) this.etincelles.splice(0, this.etincelles.length - 160);
     }
 
     // Un piège qui se déclenche : 180 ms (l'éclat vient du moteur, par `fx`).
@@ -440,7 +527,7 @@ void main() {
       const g = 3.2;
       this.etincelles = this.etincelles.filter(e => (e.vie -= dt) > 0);
       for (const e of this.etincelles) {
-        e.vy -= g * dt; e.vx *= 0.96; e.vz *= 0.96;
+        e.vy -= (e.g == null ? g : e.g) * dt; e.vx *= 0.96; e.vz *= 0.96;
         e.x += e.vx * dt; e.h += e.vy * dt; e.z += e.vz * dt;
         lueurs.push({ x: e.x, h: e.h, z: e.z, couleur: e.couleur, a: Math.max(0, Math.min(1, e.vie / 0.6)), taille: e.taille });
       }

@@ -97,6 +97,10 @@ html, body {
 .ile-voiles__glacis { background: linear-gradient(180deg, rgba(255, 236, 200, 0.10) 0%, rgba(255, 236, 200, 0) 40%, rgba(40, 60, 110, 0.10) 100%); mix-blend-mode: soft-light; }
 .ile-voiles__vignette { background: radial-gradient(ellipse 75% 70% at 50% 52%, rgba(0, 0, 0, 0) 58%, rgba(18, 26, 44, 0.28) 100%); }
 .ile-voiles__grain { background-size: 256px 256px; opacity: 0.07; mix-blend-mode: overlay; }
+/* L'aperçu de nuit de l'île (js/ile-nuit.js) : un glacis bleu nuit, plus dense en haut, et une vignette
+   plus sombre ; le centre de la vue (le Veilleur et sa flaque dorée) reste clair. */
+.ile-voiles.nuit .ile-voiles__glacis { background: linear-gradient(180deg, rgba(8, 14, 44, 0.42) 0%, rgba(8, 14, 44, 0.12) 42%, rgba(6, 10, 32, 0.3) 100%); mix-blend-mode: multiply; }
+.ile-voiles.nuit .ile-voiles__vignette { background: radial-gradient(ellipse 70% 66% at 50% 54%, rgba(0, 0, 0, 0) 40%, rgba(4, 8, 26, 0.62) 100%); }
 
 /* Le voile de la bascule (js/scene.js) : pendant que la 3D se prépare, ou quand elle est tombée.
    Les bulles et les fiches accrochées à la scène se cachent : elles n'ont plus de point d'ancrage. */

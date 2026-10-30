@@ -209,10 +209,10 @@
         say: 'Maintenant, attaque avec ton **arme** !', court: 'Ton arme est le premier sort de ta barre.',
         cue: { type: 'sort', quel: 'arme' }, until: { on: 'spellCast', spell: 'arme' } },
 
-      // ----- Le Groukin, aux Murets -----
-      { id: 'poussee', attendre: { on: 'fight', monstre: 'groukin' }, humeur: 'grave',
-        say: 'Un **Groukin** ! Il charge et pousse de deux cases. Place-toi **sans muret dans le dos** : contre un mur, le choc fait mal.',
-        court: 'Le Groukin pousse : pas de muret dans ton dos.',
+      // ----- Le Lampignon, aux Murets -----
+      { id: 'poussee', attendre: { on: 'fight', monstre: 'lampignon' }, humeur: 'grave',
+        say: 'Un **Lampignon** ! Il charge et repousse de deux cases. Place-toi **sans muret dans le dos** : contre un mur, le choc fait mal.',
+        court: 'Le Lampignon repousse : pas de muret dans ton dos.',
         until: [{ on: 'suite' }, { on: 'battleStart' }], saute: { queteFinie: 'ervane_hameau_vide' } },
 
       // ----- La carte, au camp d'Ardek -----

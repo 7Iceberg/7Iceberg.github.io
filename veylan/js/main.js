@@ -181,4 +181,20 @@
   // (stats) et son pas d'horloge déterministe pour les tests (avancer).
   if (scene) Object.defineProperty(VEYLAN, 'ile', { get: () => scene.ile });
   if (DEV) window.VEYLAN = VEYLAN;
+
+  // La vignette de l'aperçu de nuit (docs/ILE-TECHNIQUE.md, 3.24 ; IleCharge.vignette) : une partie
+  // d'invité s'ouvre droit sur un lieu des Mailles, la nuit, sans tutoriel ni sauvegarde. Sans elle,
+  // l'accueil reste l'entrée et rien ne change.
+  const vignette = scene && typeof IleCharge === 'object' && IleCharge.vignette ? IleCharge.vignette() : null;
+  if (vignette && Ile.allumee && typeof Ile3D === 'function' && Ile3D.disponible()) {
+    const ch = Character.create('vaelith', 'Ivra', 'f', null, {});
+    if (Ile.fairenaitre(ch)) {
+      Ile.appliquerOrsane();
+      ch.pos = { map: vignette.map, x: vignette.x, y: vignette.y };
+      ch.tuto = { mode: 'off', step: 0, done: true, jeu: 'ile' };
+      Object.defineProperty(ch, 'invite', { value: true });
+      Save.suspend();
+      startGame(ch);
+    }
+  }
 })();

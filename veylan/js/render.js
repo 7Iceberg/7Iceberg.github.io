@@ -3139,7 +3139,7 @@ class Renderer {
   // Le motif qui distingue une famille de monstres, d'après son identifiant.
   static motifOf(id) {
     const M = { pilou: 'bird', piouk: 'bird', sivr: 'bird', harpide: 'bird', grouk: 'horn', groukin: 'horn', grand_grouk: 'horn', vulk: 'horn', korvath: 'horn',
-      tissefil: 'legs', tisseuse: 'legs', vrill: 'legs', veilloche: 'lamp', ferrel: 'lamp', tholou: 'lamp', brimbe: 'pebble', molh: 'pebble', thane: 'pebble',
+      tissefil: 'legs', tisseuse: 'legs', vrill: 'legs', veilloche: 'lamp', ferrel: 'lamp', lampignon: 'cap', lampignard: 'shaman', tholou: 'lamp', brimbe: 'pebble', molh: 'pebble', thane: 'pebble',
       kaldrik: 'ember', cendrou: 'ember', braise: 'ember', zhaal: 'ember', fumerolle: 'smoke', oubli: 'smoke', pioche_vive: 'pick', tourelle: 'pick', dorm: 'hammer',
       marnel: 'shell', brisant: 'wave', mere_des_brisants: 'wave', noye: 'drip', thelk: 'drip', glek: 'drip', mache_voile: 'teeth', glouton: 'teeth', craneux: 'bones', porte_fente: 'crack', fendu: 'crack', oreth: 'star' };
     if (M[id]) return M[id];

@@ -107,5 +107,56 @@ const IleCharge = (() => {
     return borne(new Promise(ok => { try { const tx = db.transaction(MAGASIN, 'readwrite'); tx.objectStore(MAGASIN).clear(); tx.oncomplete = () => ok(true); tx.onerror = tx.onabort = () => ok(false); } catch (e) { ok(false); } }), 3000);
   }
 
-  return { three, webgl, cache: { lire, ecrire, vider }, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
+  // ----- L'aperçu de nuit (docs/ILE-TECHNIQUE.md, 3.24) -----
+  // L'ambiance voulue : 'nuit' si l'adresse porte ?ambiance=nuit, ou si la copie de l'aperçu a posé
+  // DATA.ile.ambiance = 'nuit' (tools/make-online.sh --nuit) ; ?ambiance=jour l'emporte sur la donnée.
+  // Sinon null : le jeu ne charge rien de plus et rien ne change.
+  function ambiance() {
+    let q = null;
+    try { q = new URLSearchParams(location.search).get('ambiance'); } catch (e) { q = null; }
+    if (q === 'nuit' || vignette()) return 'nuit';
+    if (q === 'jour') return null;
+    return typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.ambiance === 'nuit' ? 'nuit' : null;
+  }
+  // La vignette de l'aperçu : ?vignette=nuit, ou DATA.ile.vignette posé par la copie
+  // (tools/make-online.sh --vignette). Elle ouvre droit une partie d'invité, la nuit, au bord est des
+  // Mailles, derrière la Place du Relais (une maison, son potager, la lèvre de l'île et le ciel) :
+  // js/main.js. Rend le lieu { map, x, y }, ou null.
+  const VIGNETTE = { map: 'ervane_mailles_place', x: 232.75, y: 85.75 };
+  function vignette() {
+    let q = null;
+    try { q = new URLSearchParams(location.search).get('vignette'); } catch (e) { q = null; }
+    if (q === '0') return null;
+    const d = typeof DATA === 'object' && DATA && DATA.ile ? DATA.ile.vignette : null;
+    if (q !== 'nuit' && !d) return null;
+    return d && typeof d === 'object' ? Object.assign({}, VIGNETTE, d) : Object.assign({}, VIGNETTE);
+  }
+  // Un script classique de plus, une seule fois (chemin relatif à la racine du jeu, comme Three).
+  const scripts = new Map();
+  function script(chemin, delai) {
+    if (scripts.has(chemin)) return scripts.get(chemin);
+    const p = new Promise((ok, ko) => {
+      const el = document.createElement('script');
+      let src = chemin;
+      try { src = new URL('../' + chemin, source()).href; } catch (e) { /* chemin relatif */ }
+      el.src = src;
+      el.async = true;
+      const minuterie = setTimeout(() => { scripts.delete(chemin); ko(new Error(chemin + ' met trop de temps à se charger')); }, delai || 20000);
+      el.onload = () => { clearTimeout(minuterie); ok(); };
+      el.onerror = () => { clearTimeout(minuterie); scripts.delete(chemin); el.remove(); ko(new Error('chargement refusé : ' + chemin)); };
+      document.head.appendChild(el);
+    });
+    scripts.set(chemin, p);
+    return p;
+  }
+  // Les fichiers de l'aperçu de nuit : le module (js/ile-nuit.js) et les modèles libres convertis
+  // (assets/libres/modeles-libres.js). Un échec n'empêche pas l'île : la nuit se passe des modèles.
+  function nuit() {
+    return Promise.all([
+      typeof IleNuit === 'object' ? Promise.resolve() : script('js/ile-nuit.js'),
+      typeof window !== 'undefined' && window.MODELES_LIBRES ? Promise.resolve() : script('assets/libres/modeles-libres.js').catch(e => { console.warn('Ervane : modèles libres absents', e); }),
+    ]);
+  }
+
+  return { three, webgl, ambiance, vignette, script, nuit, cache: { lire, ecrire, vider }, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
 })();

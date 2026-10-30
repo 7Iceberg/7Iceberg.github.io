@@ -623,6 +623,32 @@ const Paint = (() => {
         c.fillStyle = g; c.beginPath(); c.arc(p.x, cy, 22, 0, Math.PI * 2); c.fill();
         break;
       }
+      case 'cap': {
+        // Le Lampignon : une coiffe de champignon tachée de lueurs, l'œil de verre allumé au milieu.
+        const cg = c.createLinearGradient(p.x, cy - 34, p.x, cy - 10); cg.addColorStop(0, light(color, 0.25)); cg.addColorStop(1, dark(color, 0.15));
+        c.fillStyle = cg; c.beginPath(); c.moveTo(p.x - 26, cy - 10); c.bezierCurveTo(p.x - 24, cy - 40, p.x + 24, cy - 40, p.x + 26, cy - 10);
+        c.quadraticCurveTo(p.x, cy - 16, p.x - 26, cy - 10); c.closePath(); c.fill(); c.stroke();
+        c.fillStyle = '#5fe8ff'; for (const [dx, dy, r] of [[-11, -27, 3], [6, -31, 2.4], [15, -21, 2]]) { c.beginPath(); c.ellipse(p.x + dx, cy + dy, r * 1.3, r, 0, 0, Math.PI * 2); c.fill(); }
+        c.fillStyle = '#5c6766'; c.beginPath(); c.arc(p.x, cy + 2, 8, 0, Math.PI * 2); c.fill(); c.stroke();
+        c.fillStyle = '#0d1418'; c.beginPath(); c.arc(p.x, cy + 2, 5.6, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = '#5fe8ff'; c.lineWidth = 1.8; c.beginPath(); c.arc(p.x, cy + 2, 3.2, 0, Math.PI * 2); c.stroke();
+        break;
+      }
+      case 'shaman': {
+        // Le Lampignard : une coiffe rousse festonnée, deux yeux turquoise dessous, et le bâton à la
+        // crosse baveuse sur le côté.
+        c.strokeStyle = '#4f4232'; c.lineWidth = 3.2; c.beginPath(); c.moveTo(p.x + 22, cy + 16); c.quadraticCurveTo(p.x + 25, cy - 8, p.x + 21, cy - 34); c.stroke();
+        c.strokeStyle = '#9ee04a'; c.lineWidth = 3; c.beginPath(); c.arc(p.x + 25, cy - 34, 4.5, Math.PI, Math.PI * 2.6); c.stroke();
+        c.fillStyle = '#9ee04a'; c.beginPath(); c.ellipse(p.x + 29, cy - 26, 1.6, 3, 0, 0, Math.PI * 2); c.fill();
+        const cg = c.createLinearGradient(p.x, cy - 36, p.x, cy - 12); cg.addColorStop(0, light(color, 0.2)); cg.addColorStop(1, dark(color, 0.2));
+        c.strokeStyle = 'rgba(0,0,0,0.55)'; c.lineWidth = 1.5;
+        c.fillStyle = cg; c.beginPath(); c.moveTo(p.x - 25, cy - 12); c.bezierCurveTo(p.x - 20, cy - 42, p.x + 20, cy - 42, p.x + 25, cy - 14);
+        for (let k = 0; k <= 6; k++) c.quadraticCurveTo(p.x + 25 - (k + 0.5) * 50 / 7, cy - 9 - (k % 2) * 2, p.x + 25 - (k + 1) * 50 / 7, cy - 12);
+        c.closePath(); c.fill(); c.stroke();
+        c.fillStyle = 'rgba(70, 30, 12, 0.35)'; for (const [dx, dy, r] of [[-9, -26, 3.2], [7, -30, 2.4], [14, -20, 2]]) { c.beginPath(); c.ellipse(p.x + dx, cy + dy, r * 1.4, r, 0, 0, Math.PI * 2); c.fill(); }
+        for (const dx of [-5, 5]) { c.fillStyle = '#3e3424'; c.beginPath(); c.arc(p.x + dx, cy - 4, 3.6, 0, Math.PI * 2); c.fill(); c.fillStyle = '#7fe6cf'; c.beginPath(); c.arc(p.x + dx, cy - 4, 2.6, 0, Math.PI * 2); c.fill(); }
+        break;
+      }
       case 'pebble':
         c.strokeStyle = 'rgba(0,0,0,0.4)'; c.lineWidth = 1.5;
         c.beginPath(); c.moveTo(p.x - 10, cy - 6); c.lineTo(p.x - 3, cy); c.lineTo(p.x - 6, cy + 8); c.moveTo(p.x + 5, cy - 9); c.lineTo(p.x + 9, cy - 2); c.stroke();

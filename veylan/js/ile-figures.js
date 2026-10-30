@@ -105,6 +105,7 @@ void main() {
 uniform sampler2D atlas;
 uniform vec3 teinteX;
 uniform float modeX;
+uniform vec3 lumiereFig;
 varying vec2 vUv;
 varying float vAlpha;
 varying float vFlash;
@@ -113,7 +114,7 @@ varying float vFlash;
 void main() {
   vec4 c = texture2D(atlas, vUv);
   if (c.a < 0.03) discard;
-  c.rgb = mix(c.rgb, vec3(1.0), vFlash);
+  c.rgb = mix(c.rgb * lumiereFig, vec3(1.0), vFlash);
   if (modeX > 0.5) { c.rgb = teinteX; c.a *= 0.55; }
   gl_FragColor = vec4(c.rgb, c.a * vAlpha);
   #include <tonemapping_fragment>
@@ -199,7 +200,9 @@ void main() {
       for (const a of [this.aPied, this.aRect, this.aTaille, this.aEtat]) a.setUsage(THREE.DynamicDrawUsage);
       geo.setAttribute('pied', this.aPied); geo.setAttribute('rect', this.aRect); geo.setAttribute('taille', this.aTaille); geo.setAttribute('etat', this.aEtat);
       geo.instanceCount = 0;
-      const uniforms = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { atlas: { value: null }, biais: { value: 0.9 }, teinteX: { value: new THREE.Color('#9fe8ff') }, modeX: { value: 0 } }]);
+      // `lumiereFig` : la lumière posée sur les figures, qui ne voient pas celles de la scène (blanche le
+      // jour ; l'aperçu de nuit, js/ile-nuit.js, la refroidit un peu).
+      const uniforms = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { atlas: { value: null }, biais: { value: 0.9 }, teinteX: { value: new THREE.Color('#9fe8ff') }, modeX: { value: 0 }, lumiereFig: { value: new THREE.Color(1, 1, 1) } }]);
       this.mat = new THREE.ShaderMaterial({ uniforms, vertexShader: VS_FIGURE, fragmentShader: FS_FIGURE, transparent: true, depthWrite: false, fog: true });
       this.mat.uniforms.atlas.value = this.atlas.tex;
       this.mesh = new THREE.Mesh(geo, this.mat);
@@ -393,17 +396,24 @@ void main() {
       let joueur = -1;
       this.rects = [];
       const ppuCache = cam.pixelsParU(cam.cible.x, cam.cible.h, cam.cible.y);
+      // Les monstres qui ont un modèle 3D (le Glym modelé par le code, js/modele-glym.js, derrière
+      // son interrupteur : `this.modeles`) : leur panneau est vide (taille nulle), le modèle est posé
+      // à sa place ; l'ombre, la sélection, les étiquettes et le combat restent ceux du panneau.
+      const Mo = this.modeles;
+      if (Mo) Mo.debut(now, camera);
       for (let i = 0; i < n; i++) {
         const s = sprites[i];
-        const c = this.atlas.obtenir(s.cle, s.peindre);
+        const modele = !!(Mo && s.modele && Mo.poser(s));
+        const c = modele ? null : this.atlas.obtenir(s.cle, s.peindre);
         const k = s.scale || 1;
         const w = 88 * PX * k, h = 84 * PX * k;
         const lift = (s.bob || 0) * PX;
         this.aPied.setXYZ(i, s.x, s.h + lift, s.y);
         // La case de 192 × 176 contient la peinture de 176 × 168 en son milieu.
         const ox = (192 - 176) / 2 / this.atlas.w, oy = (176 - 168) / 2 / this.atlas.h;
-        this.aRect.setXYZW(i, c.u0 + ox, c.v0 + oy, 176 / this.atlas.w, 168 / this.atlas.h);
-        this.aTaille.setXYZW(i, w, h, 0.5, 76 / 84);
+        if (modele) this.aRect.setXYZW(i, 0, 0, 0, 0);
+        else this.aRect.setXYZW(i, c.u0 + ox, c.v0 + oy, 176 / this.atlas.w, 168 / this.atlas.h);
+        this.aTaille.setXYZW(i, modele ? 0 : w, modele ? 0 : h, 0.5, 76 / 84);
         this.aEtat.setXYZW(i, s.alpha == null ? 1 : s.alpha, s.flash ? 0.8 : 0, typeof s.facing === 'number' ? s.facing : 1, 0);
         if (s.joueur) joueur = i;
         // L'ombre au sol, couchée sur la pente.
@@ -411,7 +421,9 @@ void main() {
         this._n.set(nrm[0], nrm[1], nrm[2]);
         this._q.setFromUnitVectors(this._up, this._n);
         const r = (s.kind === 'node' ? 0.7 : 0.95) * k;
-        this._m.compose(this._v.set(s.x, s.h + 0.04, s.y), this._q, this._s.set(r * 1.25, 1, r));
+        // Sous un modèle : une tache de contact plus serrée, ronde (son emprise vue de dessus).
+        if (modele) { const rm = Mo.emprise(s) * 0.62; this._m.compose(this._v.set(s.x, s.h + 0.04, s.y), this._q, this._s.set(rm, 1, rm)); }
+        else this._m.compose(this._v.set(s.x, s.h + 0.04, s.y), this._q, this._s.set(r * 1.25, 1, r));
         this.ombres.setMatrixAt(i, this._m);
         // Le rectangle à l'écran, pour la sélection (agrandi à 44 px de côté au doigt).
         const p = cam.versEcran(s.x, s.h, s.y);
@@ -432,6 +444,7 @@ void main() {
         cp(this.aPied, this.xPied, 3); cp(this.aRect, this.xRect, 4); cp(this.aTaille, this.xTaille, 4); cp(this.aEtat, this.xEtat, 4);
         this.meshX.geometry.instanceCount = 1;
       } else this.meshX.geometry.instanceCount = 0;
+      if (Mo) Mo.fin();
       this.atlas.envoyer();
       this.majCombat(sprites.slice(0, n), cam, now);
       this.majTextes(sprites.slice(0, n), cam, now, extras);
@@ -565,9 +578,10 @@ void main() {
       this.textes.envoyer();
     }
 
-    octets() { return this.atlas.octets() + this.textes.octets(); }
+    octets() { return this.atlas.octets() + this.textes.octets() + (this.modeles ? this.modeles.octets() : 0); }
 
     liberer() {
+      if (this.modeles) { this.modeles.liberer(); this.modeles = null; }
       this.atlas.liberer(); this.textes.liberer(); this.texOmbre.dispose(); this.texAnneau.dispose();
       for (const m of [this.mesh, this.meshX, this.textesMesh, this.barres]) m.geometry.dispose();
       this.ombres.dispose(); this.anneaux.dispose(); this.anneauxL.dispose();

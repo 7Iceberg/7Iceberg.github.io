@@ -120,6 +120,49 @@ class Ile3D {
     if (this.actif && this.dessinEndormi && this.pret) this.image(performance.now());
   }
 
+  // ----- Le Glym modelé par le code (docs/ILE-TECHNIQUE.md, 3.13), derrière son interrupteur -----
+
+  // ?glym=modele (le Glym Aqua), ?glym=tous (les quatre Glyms), ?glym=0 (éteint), sinon
+  // DATA.ile.modeleGlym (true, 'modele' ou 'tous'), qu'une copie d'aperçu peut poser. Éteint (le
+  // défaut), js/modele-glym.js n'est pas chargé et rien ne change.
+  static modeleGlym() {
+    let q = null;
+    try { q = new URLSearchParams(location.search).get('glym'); } catch (e) { /* rien */ }
+    if (q === 'modele' || q === 'tous') return q;
+    if (q === '0') return null;
+    const d = typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.modeleGlym;
+    return d === 'tous' ? 'tous' : d ? 'modele' : null;
+  }
+
+  // Charge js/modele-glym.js (à côté de ce script) et donne aux figures leur parc de Glyms
+  // modelés. Un échec laisse les panneaux peints : le jeu continue comme interrupteur éteint.
+  async modelesGlym(THREE, scene) {
+    const mode = Ile3D.modeleGlym();
+    if (!mode) return;
+    try {
+      // Les générateurs (js/modele-glym.js, puis js/modele-lampignon.js et js/modele-lampignard.js), à côté de ce script.
+      // (Un `const` de script n'est pas une propriété de window : `present` le teste directement.)
+      const charger = (fichier, present) => present() ? Promise.resolve() : new Promise((ok, ko) => {
+        let src = 'js/' + fichier;
+        try { const ref = document.querySelector('script[src*="ile-3d.js"]'); if (ref && ref.src) src = new URL(fichier, ref.src).href; } catch (e) { /* chemin relatif */ }
+        const el = document.createElement('script');
+        el.src = src; el.async = true;
+        el.onload = () => ok();
+        el.onerror = () => ko(new Error('js/' + fichier + ' introuvable'));
+        document.head.appendChild(el);
+      });
+      await charger('modele-glym.js', () => typeof ModeleGlym === 'object');
+      if (typeof ModeleGlym !== 'object') throw new Error('ModeleGlym absent');
+      // Le Lampignon est un plus : sans lui, le Glym reste modelé et le Lampignon peint.
+      await charger('modele-lampignon.js', () => typeof ModeleLampignon === 'object').catch(e => console.warn('Lampignon modelé : ' + e.message));
+      // Le Lampignard, son grand frère, reprend ses outils : il vient après lui, et seulement avec lui.
+      if (typeof ModeleLampignon === 'object') await charger('modele-lampignard.js', () => typeof ModeleLampignard === 'object').catch(e => console.warn('Lampignard modelé : ' + e.message));
+      const parc = new ModeleGlym.Parc(THREE, { telephone: this.telephone, qualite: this.qualite, mode });
+      this.figures.modeles = parc;
+      scene.add(parc.groupe);
+    } catch (e) { console.warn('Glym modelé : ' + e.message); }
+  }
+
   // ----- La construction, par étapes, sous le voile -----
 
   async preparer(world, etape) {
@@ -136,6 +179,13 @@ class Ile3D {
     if (this.pret && this.plateauId === plateau.id) { this.sauter(); return; }
     if (this.pret) this.liberer();
     IleDecor.init(THREE);
+    // L'aperçu de nuit (3.24) : ?ambiance=nuit ou DATA.ile.ambiance ; ses fichiers se chargent à la
+    // demande. Un échec laisse le jour : l'île se construit comme avant.
+    this.nuit = null;
+    if (IleCharge.ambiance && IleCharge.ambiance() === 'nuit') {
+      try { await IleCharge.nuit(); if (typeof IleNuit === 'object') this.nuit = new IleNuit.Nuit(THREE, this); } catch (e) { console.warn('Ervane : aperçu de nuit indisponible', e); this.nuit = null; }
+    }
+    if (this.voiles) this.voiles.classList.toggle('nuit', !!this.nuit);
     const T = this.T = plateau.terrain, def = this.def = plateau.def;
     const temps = this.chargement = { debut: performance.now() };
     let t0 = performance.now();
@@ -292,8 +342,8 @@ class Ile3D {
     brume(mats.dessousAcc, -8, -40, '#7d8aa6');
     brume(mats.dessousLueur, -10, -60, '#7d8aa6');
     this.lumieres(scene);
-    scene.fog = new THREE.Fog(new THREE.Color('#a9c3d6'), 60, 150);
-    this.brumeVoulue = new THREE.Color('#a9c3d6');
+    scene.fog = new THREE.Fog(this.nuit ? this.nuit.brume('#a9c3d6') : new THREE.Color('#a9c3d6'), 60, 150);
+    this.brumeVoulue = scene.fog.color.clone();
     fini('materiaux');
 
     // 4. Le sol : les tuiles de relief.
@@ -320,7 +370,7 @@ class Ile3D {
     // 5. Le décor, fusionné par tuile.
     etape('Le décor');
     await pause();
-    const D = this.decor = IleDecor.construire(THREE, { T, def, telephone: this.telephone, qualite: this.qualite });
+    const D = this.decor = IleDecor.construire(THREE, { T, def, telephone: this.telephone, qualite: this.qualite, ajouts: this.nuit ? A => this.nuit.ajouts(A) : null });
     const L = IleDecor.bibliotheque(this.telephone);
     this.tuilesDecor = D.tuiles.map(t => {
       const g = new THREE.Group();
@@ -332,6 +382,8 @@ class Ile3D {
       return { tx: t.tx, ty: t.ty, centre: t.centre, groupe: g, sil };
     });
     this.preparerHerbe(THREE, D, cartes, L, rampe);
+    // La nuit : les touffes des modèles libres, refaites autour du point visé comme l'herbe.
+    this.touffesNuit = this.nuit ? this.nuit.preparerTouffes(rampe) : null;
     fini('decor');
 
     // 6. L'eau, la falaise du bord, le dessous, la chute, les fils, les nuages, les halos.
@@ -368,12 +420,14 @@ class Ile3D {
     await pause();
     this.figures = new IleFigures.Figures(THREE, { painter: this.painter, telephone: this.telephone, scene });
     scene.add(this.figures.groupe);
+    await this.modelesGlym(THREE, scene);
     // L'arène du combat (js/ile-arene.js) : la texture de ses cases va au shader du sol.
     this.arene = new IleArene.Arene(THREE, this);
     if (this.uFondu) this.uFondu.cases.value = this.arene.texCases;
     scene.add(this.arene.groupe);
     mats.uSol.etatCases.value = this.arene.texCases;
     this.marques3D(THREE, scene);
+    if (this.nuit) { this.nuit.materiaux(); this.nuit.lucioles(scene); }
     const cam = this.camera = new CameraIle({ el: this.board, def, terrain: T });
     this.redimensionner();
     const p = world.player;
@@ -669,6 +723,8 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     const contre = new THREE.DirectionalLight(new THREE.Color('#9fb4ff'), 0.14); contre.position.set(10, 30, -90);
     this.ponctuelle = new THREE.PointLight(new THREE.Color('#ffb347'), 0, 13, 2);
     scene.add(hemi, cle, chaud, contre, this.ponctuelle);
+    this.lum = { hemi, cle, chaud, contre, ponctuelle: this.ponctuelle };
+    if (this.nuit) this.nuit.lumieres(scene, this.lum);
   }
 
   // Les houppiers entre la caméra et le Veilleur s'effacent en trame (un cylindre de 3,2 u autour
@@ -901,7 +957,7 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
   majHerbe(x, y) {
     const r0 = Math.min(this.telephone ? 20 : 30, this.camera.champ * (this.telephone ? 0.72 : 0.85));
     const rayon = this.qualite === 'basse' ? r0 * 0.75 : r0;
-    for (const H of [this.herbe, this.fleurs]) if (H) this.majSemis(H, x, y, rayon);
+    for (const H of [this.herbe, this.fleurs, this.touffesNuit]) if (H) this.majSemis(H, x, y, rayon);
   }
 
   majSemis(H, x, y, rayon) {
@@ -1224,7 +1280,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (this.arene) { this.arene.liberer(); this.arene = null; }
     if (this.rampe) this.rampe.dispose();
     if (this.mats) for (const m of Object.values(this.mats)) if (m && m.isMaterial) m.dispose();
-    this._matHerbe = null; this.herbe = null; this.fleurs = null;
+    this._matHerbe = null; this.herbe = null; this.fleurs = null; this.touffesNuit = null; this.nuit = null; this.lum = null;
     this.scene = null; this.figures = null; this.tex = {}; this.pret = false; this.plateauId = null;
     this.tuilesSol = []; this.tuilesDecor = [];
     this.decor = null; this.prepSol = null; this.T = null; this.def = null; this.cibles = null; this.lanternes = null;
@@ -1433,7 +1489,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this.appliquerDensite();
     if (this.matEauRef) this.matEauRef.uniforms.anime.value = q === 'basse' ? 0 : 1;
     if (this.bouffees) this.bouffees.instanceCount = Math.min(this.bouffees.instanceCount, q === 'basse' ? 18 : this.telephone ? 34 : 56);
-    for (const H of [this.herbe, this.fleurs]) if (H) H.centre = null;
+    for (const H of [this.herbe, this.fleurs, this.touffesNuit]) if (H) H.centre = null;
   }
 
   // Une image : la caméra, les tuiles (niveaux de détail), les figures, les marques, l'eau, les
@@ -1461,7 +1517,10 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       if (t.loin) t.loin.visible = !proche;
     }
     // Le décor : complet jusqu'à 45 u (60 en qualité haute, 30 en basse), silhouettes jusqu'à 80 u.
-    const rDet = this.qualite === 'haute' ? 60 : this.qualite === 'basse' ? 30 : 45, rSil = this.qualite === 'haute' ? 120 : 80;
+    // La nuit (3.24), la brume plus proche cache le lointain : le décor détaillé et les silhouettes
+    // s'arrêtent plus tôt (ce qu'on y gagne paie une part du décor ajouté).
+    const kNuit = this.nuit ? (this.telephone ? 0.8 : 0.85) : 1;
+    const rDet = (this.qualite === 'haute' ? 60 : this.qualite === 'basse' ? 30 : 45) * kNuit, rSil = (this.qualite === 'haute' ? 120 : 80) * (this.nuit ? 0.72 : 1);
     const demi = IleDecor.TUILE / 2;
     const distMorceau = t => Math.hypot(Math.max(0, Math.abs(t.centre[0] - c.x) - demi), Math.max(0, Math.abs(t.centre[1] - c.y) - demi));
     // La vue tactique cache le décor, l'herbe et l'eau : le damier d'ardoise du sol reste seul.
@@ -1470,7 +1529,9 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       t.groupe.visible = d < rDet && !tact;
       if (t.sil) t.sil.visible = d >= rDet && d < rSil && !tact;
     }
-    for (const H of [this.herbe, this.fleurs]) if (H) H.mesh.visible = !tact;
+    for (const H of [this.herbe, this.fleurs, this.touffesNuit]) if (H) H.mesh.visible = !tact;
+    // Les touffes de la nuit se taisent pendant un combat : la grille reste nette, le budget aussi.
+    if (this.touffesNuit) this.touffesNuit.mesh.visible = !tact && !(A && A.etat);
     if (this.eau) this.eau.visible = !tact;
     for (const m of this.decorFixe || []) m.visible = !tact;
     // La chute du Ru (un voile de 40 u) ne se dessine pas pendant un combat : vue par la caméra
@@ -1512,6 +1573,12 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     for (const l of this.lanternes || []) { const d = (l.x - p.rx) ** 2 + (l.z - p.ry) ** 2; if (d < bd) { bd = d; best = l; } }
     if (best) { this.ponctuelle.position.set(best.x, best.y + 0.3, best.z); this.ponctuelle.intensity = 1.6 * (0.85 + 0.15 * Math.sin(this.temps * 9 + best.x)); }
     else this.ponctuelle.intensity = 0;
+    // La nuit (3.24) : la lumière ponctuelle devient la flaque dorée autour du Veilleur (en combat,
+    // autour de son combattant) ; les lucioles dérivent autour du point visé.
+    if (this.nuit) {
+      const e = this.enArene && this.combat && this.combat.player, q = e ? A.versMonde(e.rx, e.ry) : { u: p.rx, v: p.ry };
+      this.nuit.maj(now, this.temps, { x: q.u, y: q.v }, this.hauteur(q.u, q.v), cam, tact);
+    }
     const r = this.renderer;
     r.info.reset();
     r.render(this.scene, cam.courante);
@@ -1600,14 +1667,16 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const THREE = window.THREE, c = this.camera.vise;
     const k = this.T.regionA(c.x, c.y), reg = (this.def.regions || [])[k];
     const col = (reg && reg.palette && reg.palette.brume) || '#a9c3d6';
-    if (this.brumeCle !== col) { this.brumeCle = col; this.brumeVoulue = new THREE.Color(col); }
+    if (this.brumeCle !== col) { this.brumeCle = col; this.brumeVoulue = this.nuit ? this.nuit.brume(col) : new THREE.Color(col); }
     const f = this.scene.fog;
     const a = 1 - Math.exp(-dt * 2.2);
     f.color.lerp(this.brumeVoulue, a);
     // En combat, la brume se tient loin derrière l'aire (la caméra orthographique est à 120 u) ;
     // pendant le passage, elle glisse d'un réglage à l'autre.
     const d = this.camera.distance(), fc = this.camera.fondu || 0;
-    f.near = d * 1.1 * (1 - fc) + (d + 30) * fc; f.far = d * 2.7 * (1 - fc) + (d + 120) * fc;
+    // La nuit, la brume vient plus près : le lointain se perd dans le bleu.
+    const kp = this.nuit ? 0.92 : 1.1, kl = this.nuit ? 2.0 : 2.7;
+    f.near = d * kp * (1 - fc) + (d + 30) * fc; f.far = d * kl * (1 - fc) + (d + 120) * fc;
     // Le ciel (le dégradé CSS derrière la toile transparente) suit la brume.
     const tact = this.enArene && this.tactique;
     const hex = tact ? 'tactique' : '#' + f.color.getHexString();
@@ -1618,7 +1687,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       this.cielHex = hex;
       const cl = new THREE.Color().copy(f.color).convertLinearToSRGB();
       const haut = '#' + cl.clone().lerp(new THREE.Color(1, 1, 1), 0.12).getHexString(), bas = '#' + cl.clone().multiplyScalar(0.62).getHexString();
-      this.canvas.style.background = `linear-gradient(180deg, ${haut} 0%, #${cl.getHexString()} 45%, ${bas} 100%)`;
+      this.canvas.style.background = this.nuit ? this.nuit.ciel(cl) : `linear-gradient(180deg, ${haut} 0%, #${cl.getHexString()} 45%, ${bas} 100%)`;
       this.uBrumeBas.value.copy(f.color).multiplyScalar(0.85);
     }
   }
@@ -1677,6 +1746,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
         // En combat, les groupes du monde gardent leur figure, pas leur nom.
         // Un boss garde son prénom sur l'étiquette (« Krobb niv. 7 ») : le titre entier tient sur sa fiche.
         if (k === 0 && !enCombat) { s.label = `${def.boss ? def.name.split(',')[0] : def.name} niv. ${g.level}`; s.labelSorte = 'ennemi'; if (g.monsters.length > 1) s.badge = `×${g.monsters.length}`; }
+        if (fig.modeles && fig.modeles.prend(m.id)) { s.modele = m.id; s.modeleCle = `${g.nid || g.idx}|${k}`; }
         s.cle = fig.cleFigure(s); s.peindre = fig.peindreFigure(s);
         out.push(s);
       });
@@ -1789,6 +1859,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       octets: { textures: Math.round(tex), geometries: this.octetsGeo, pixi, toile, total: Math.round(tex + this.octetsGeo + pixi + toile) },
       chargement: Object.assign({}, this.chargement), msScript: this.msScript, images: this.compteur.images,
       champ: this.camera ? this.camera.champ : null,
+      glyms: this.figures && this.figures.modeles ? this.figures.modeles.stats() : null,
+      nuit: this.nuit ? Object.assign({ lucioles: this.nuit.lu ? this.nuit.lu.n : 0 }, this.nuit.compte) : null,
     };
   }
 }

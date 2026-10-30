@@ -6,10 +6,12 @@ const Achievements = (() => {
   const defs = () => (DATA.content && DATA.content.achievements) || [];
   const get = id => defs().find(a => a.id === id) || null;
   // Nombre de remontées distinctes d'une région déjà vaincues (le Carnet du Veilleur).
-  // Un personnage né sur Ervane ne croise jamais le Glymet à Orsane (content/ervane-orsane.js) : il
-  // compte pour inscrit, module appliqué ou non (une sauvegarde se valide partout de la même façon).
-  const carnetCount = (ch, region) => Object.keys(ch.counters.kills || {}).filter(id => DATA.monsters[id] && DATA.monsters[id].region === region && !DATA.monsters[id].summon).length
-    + (region === 'orsane' && ch.origine === 'ervane' && DATA.monsters.piouk && DATA.monsters.piouk.region === 'orsane' && !(ch.counters.kills || {}).piouk ? 1 : 0);
+  // Un personnage né sur Ervane ne croise jamais le Glymet ni le Groukin (content/ervane-orsane.js ;
+  // le Lampignon a pris la place du Groukin sur les Murets) : ils comptent pour inscrits, module
+  // appliqué ou non (une sauvegarde se valide partout de la même façon).
+  const JAMAIS_CROISES = ['piouk', 'groukin'];
+  const carnetCount = (ch, region) => { const k = ch.counters.kills || {}; return Object.keys(k).filter(id => DATA.monsters[id] && DATA.monsters[id].region === region && !DATA.monsters[id].summon).length
+    + (region === 'orsane' && ch.origine === 'ervane' ? JAMAIS_CROISES.filter(id => DATA.monsters[id] && DATA.monsters[id].region === 'orsane' && !k[id]).length : 0); };
   // Cartes d'une zone, et combien sont déjà visitées.
   const zoneMaps = id => { const z = ((DATA.content && DATA.content.zones) || []).find(x => x.id === id); return z ? z.maps.map(m => m.id) : []; };
   const zoneSeen = (ch, id) => zoneMaps(id).filter(m => ch.counters.maps.includes(m)).length;

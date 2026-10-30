@@ -42,6 +42,27 @@
     hp: 38, dmgMult: 0.85, pa: 3, pm: 2, initiative: 60, resist: { terre: 30, air: -50 }, spells: ['m_motte'], ai: 'melee',
     desc: 'Glym de la Source de Mousse. Frappe à la terre et se couvre d\'un petit bouclier. Résiste à la terre, craint l\'air.' });
 
+  // ===== Le Lampignon (Ervane, les Murets, 3 à 5) : la poussée =====
+  // Un champignon des enclos, à la coiffe tachée de lueurs et à l'œil de verre. Il remplace le
+  // Groukin sur les Murets avec le même rôle : il charge et pousse de deux cases (la leçon des
+  // murets). Mêmes valeurs que le Groukin, l'équilibrage des Murets ne change pas.
+  // (Son sort a son propre identifiant : `m_bouffee` est la Bouffée des Fumerolles de Kaldum.)
+  DATA.spells.m_spores = S('m_spores', { name: 'Bouffée de spores', element: 'terre', pa: 3, range: [1, 1], target: 'enemy',
+    effects: [dmg(3, 5), push(2)], fx: 'spores', desc: 'Un coup de coiffe et un nuage de spores : repousse de deux cases.' });
+  DATA.monsters.lampignon = M('lampignon', { name: 'Lampignon', region: 'ervane', level: '3 à 5', shape: 'triangle', color: '#b3a07c', noyau: '#5fe8ff',
+    hp: 42, dmgMult: 1.7, pa: 6, pm: 3, initiative: 55, spells: ['m_spores'], ai: 'melee',
+    desc: 'Champignon des Murets, l\'œil de verre allumé. Charge et repousse de deux cases.' });
+
+  // ===== Le Lampignard (Ervane, les Murets, 4 à 7) : le grand frère =====
+  // Le chaman des Lampignons, coiffe rousse et bâton gluant. Il remplace le Grouk sur les Murets
+  // avec les mêmes valeurs et le même coup (frappe et repousse d'une case) : l'équilibrage des
+  // Murets et du Cairn ne change pas. Le Grouk reste à Orsane.
+  DATA.spells.m_baton_gluant = S('m_baton_gluant', { name: 'Bâton gluant', element: 'terre', pa: 3, range: [1, 1], target: 'enemy',
+    effects: [dmg(8, 11), push(1)], fx: 'bave', desc: 'Un coup de bâton tordu, la bave avec : repousse d\'une case.' });
+  DATA.monsters.lampignard = M('lampignard', { name: 'Lampignard', region: 'ervane', level: '3 à 20', shape: 'triangle', color: '#9e5631', noyau: '#9ee04a',
+    hp: 36, dmgMult: 1.15, pa: 6, pm: 3, initiative: 60, resist: { terre: 10 }, spells: ['m_baton_gluant'], ai: 'melee',
+    desc: 'Le grand frère des Lampignons, chaman des Murets. Frappe du bâton et repousse d\'une case.' });
+
   // ===== La nichée de Krobb (Ervane, l'Amarre, 6 à 12) : l'ordre de mise à mort =====
   DATA.spells.m_grignote = S('m_grignote', { name: 'Grignote', element: 'terre', pa: 3, range: [1, 1], target: 'enemy', effects: [dmg(7, 10)],
     desc: 'Deux dents de meule qui se referment.' });
