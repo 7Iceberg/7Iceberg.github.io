@@ -152,7 +152,7 @@ Object.assign(Hud.prototype, {
 
   caracResume(ch, d) {
     const bonus = this.caracBonus(ch, d);
-    const ligne = (k, label, val, titre) => `<div class="vy-caracs__ligne"${titre ? ` title="${titre}"` : ''}>${Hud.pic(k, 18)}<span>${label}</span><b>${val}</b></div>`;
+    const ligne = (k, label, val, titre) => `<div class="vy-caracs__ligne" data-k="${k}"${titre ? ` title="${titre}"` : ''}>${Hud.pic(k, 18)}<span>${label}</span><b>${val}</b></div>`;
     const vitaux = [
       ligne('pv', 'Points de vie', `${ch.hp} / ${d.hpMax}`),
       ligne('pa', 'PA', d.pa, 'Points d\'action'),

@@ -1,0 +1,563 @@
+/* ==========================================================================
+   Veylan : le style « en verre » de l'interface de jeu (proposition B de docs/ANALYSE-HUD-DUALITY.md)
+   --------------------------------------------------------------------------
+   La construction des interfaces Duality (un verre sombre translucide, un liseré de 2 px en
+   dégradé, des en-têtes en pastilles, des tuiles d'icône, des tuiles de chiffres, des pastilles,
+   un anneau de vie, une annonce de succès), refaite dans la palette de Veylan : nuit, or ancien en
+   dégradé, cyan pour ce qui est actif, braise pour la vie, vert des Cimes pour les PM, violet pour
+   l'expérience ; Cinzel pour les titres, Inter pour le reste.
+
+   - Allumé par la classe .vy-verre de #app (index.html) ; ?hud=ancien l'éteint (js/hud-fenetres.js,
+     appliquerVerre) et rend les cadres de métal gravé d'avant.
+   - Les teintes suivent les thèmes d'interface du jeu (Options : Nuit, Bleu des Voiles, Braise,
+     Cimes, Ardoise claire) ; seules les variables --v-* changent d'un thème à l'autre.
+   - L'opacité des fonds (--v-alpha, de 0,4 à 1, 0,9 par défaut) se règle dans les Options.
+   - Rien ne bouge dans la mise en page : les tailles des éléments que les tests mesurent (la
+     languette de 46 px, le panneau, les fenêtres en feuille) restent celles de css/jeu.css et
+     css/fenetres.css. L'écran d'accueil garde son habillage (il n'est pas touché ici).
+   ========================================================================== */
+
+/* ----- 1. Les teintes, par thème ----- */
+#app.vy-verre {
+  --v-a: #e9cf98; --v-b: #b08c52; --v-a-rgb: 233, 207, 152;
+  --v-titre: #f2e2c9;                     /* texte des titres en capitales */
+  --v-accent-texte: #e9cf98;              /* texte de l'accent (lisible sur le verre) */
+  --v-ligne-rgb: 201, 166, 107;
+  --v-act: #3fd0ff; --v-act-rgb: 63, 208, 255;
+  --v-fen-rgb: 12, 19, 29; --v-pan-rgb: 16, 26, 39; --v-carte-rgb: 24, 37, 54; --v-champ-rgb: 8, 13, 21;
+  --v-texte: #f2e2c9; --v-texte-2: #a79f8f; --v-discret: #7c7568; --v-encre: #17110a;
+  --v-pv: #f07a5c; --v-pa: #e9cf98; --v-pm: #8db585; --v-xp: #bf95ff;
+  --v-ombre: 0 14px 34px rgba(0, 0, 0, 0.45);
+  --v-ombre-legere: 0 6px 16px rgba(0, 0, 0, 0.32);
+  --v-rayon: 14px;
+}
+#app.vy-verre[data-ui-theme="royal"] {
+  --v-a: #b4d3ff; --v-b: #4f86e0; --v-a-rgb: 180, 211, 255; --v-titre: #eaf1ff; --v-accent-texte: #b4d3ff;
+  --v-ligne-rgb: 127, 180, 255;
+  --v-fen-rgb: 9, 17, 35; --v-pan-rgb: 13, 25, 50; --v-carte-rgb: 21, 37, 70; --v-champ-rgb: 6, 12, 26;
+  --v-texte: #eaf1ff; --v-texte-2: #9aa9c4; --v-discret: #67748f; --v-encre: #0a1430;
+}
+#app.vy-verre[data-ui-theme="braise"] {
+  --v-a: #ffb491; --v-b: #c9472f; --v-a-rgb: 255, 180, 145; --v-titre: #f8e6dc; --v-accent-texte: #ffb491;
+  --v-ligne-rgb: 240, 122, 92;
+  --v-fen-rgb: 22, 12, 10; --v-pan-rgb: 31, 17, 14; --v-carte-rgb: 47, 26, 21; --v-champ-rgb: 14, 8, 7;
+  --v-texte: #f8e6dc; --v-texte-2: #b7a096; --v-discret: #7d6861; --v-encre: #200b06;
+  --v-pa: #ffd08a;
+}
+#app.vy-verre[data-ui-theme="cimes"] {
+  --v-a: #c6e4b8; --v-b: #62865e; --v-a-rgb: 198, 228, 184; --v-titre: #e9f1e2; --v-accent-texte: #c6e4b8;
+  --v-ligne-rgb: 141, 181, 133;
+  --v-fen-rgb: 10, 20, 14; --v-pan-rgb: 14, 28, 20; --v-carte-rgb: 22, 41, 30; --v-champ-rgb: 6, 13, 9;
+  --v-texte: #e9f1e2; --v-texte-2: #9dad99; --v-discret: #687661; --v-encre: #0c190c;
+  --v-pm: #b6dca8;
+}
+/* Ardoise claire : le verre devient du papier de pierre, l'encre sombre. */
+#app.vy-verre[data-ui-theme="ardoise"] {
+  --v-a: #c9a66b; --v-b: #7a5f35; --v-a-rgb: 176, 140, 82; --v-titre: #2a2219; --v-accent-texte: #6b5230;
+  --v-ligne-rgb: 110, 85, 48;
+  --v-act: #006f94; --v-act-rgb: 0, 111, 148;
+  --v-fen-rgb: 236, 230, 216; --v-pan-rgb: 232, 225, 210; --v-carte-rgb: 221, 212, 193; --v-champ-rgb: 246, 242, 233;
+  --v-texte: #1d1a14; --v-texte-2: #5d5547; --v-discret: #8a8170; --v-encre: #fffaf0;
+  --v-pv: #b8442c; --v-pa: #8e6a2f; --v-pm: #3f6b3b; --v-xp: #7a4fc4;
+  --v-ombre: 0 14px 34px rgba(0, 0, 0, 0.3);
+  --v-ombre-legere: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+/* Les fenêtres d'avant lisent --fen-* : on les branche sur le verre. */
+#app.vy-verre {
+  --v-degrade: linear-gradient(90deg, var(--v-a), var(--v-b));
+  --v-degrade-oblique: linear-gradient(135deg, var(--v-a), var(--v-b));
+  --v-verre: rgba(var(--v-pan-rgb), var(--v-alpha, 0.9));
+  --v-bord: 1px solid rgba(var(--v-ligne-rgb), 0.18);
+  --fen-fond: rgba(var(--v-champ-rgb), 0.6);
+  --fen-fond-2: rgba(var(--v-champ-rgb), 0.85);
+  --fen-tete: rgb(var(--v-carte-rgb));
+  --fen-accent: var(--v-accent-texte);
+  --fen-actif: var(--v-act);
+  --fen-texte: var(--v-texte);
+  --fen-texte-2: var(--v-texte-2);
+  --fen-filet: rgba(var(--v-ligne-rgb), 0.16);
+}
+
+/* ----- 2. Les fenêtres : un en-tête en pastille, un corps en verre au liseré dégradé ----- */
+#app.vy-verre .vy-fenetre {
+  gap: 6px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--v-texte);
+  animation: vy-verre-pop 0.18s var(--vy-courbe);
+}
+#app.vy-verre .vy-fenetre.active, #app.vy-verre .vy-fenetre.deplacee { box-shadow: none; }
+#app.vy-verre .vy-fenetre__tete {
+  flex: none;
+  min-height: 40px;
+  gap: 8px;
+  padding: 4px 5px 4px 12px;
+  background: var(--v-degrade) bottom / 100% 2px no-repeat, var(--v-verre);
+  border: var(--v-bord);
+  border-radius: 12px;
+  box-shadow: var(--v-ombre-legere);
+}
+#app.vy-verre .vy-fenetre.active .vy-fenetre__tete { border-color: rgba(var(--v-a-rgb), 0.34); }
+#app.vy-verre .vy-fenetre__icone { width: 26px; height: 26px; padding: 4px; border-radius: 8px; color: var(--v-accent-texte); background: rgba(var(--v-a-rgb), 0.12); }
+#app.vy-verre .vy-fenetre__titre { font: 700 13.5px/1.2 var(--vy-font-titre); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-titre); text-align: center; }
+#app.vy-verre .vy-fenetre__touche { display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 6px; border: 1px solid rgba(var(--v-ligne-rgb), 0.22); background: rgba(var(--v-champ-rgb), 0.7); color: var(--v-texte-2); font: 700 10px/1 var(--vy-font-ui); }
+#app.vy-verre .vy-fenetre__boutons { gap: 4px; }
+#app.vy-verre .vy-fenetre__bouton { width: 30px; height: 30px; border-radius: 9px; border: 1px solid rgba(var(--v-ligne-rgb), 0.16); background: rgba(var(--v-champ-rgb), 0.7); color: var(--v-texte-2); }
+#app.vy-verre .vy-fenetre__bouton:hover { border-color: rgba(var(--v-ligne-rgb), 0.4); background: rgba(var(--v-carte-rgb), 0.9); color: var(--v-texte); }
+#app.vy-verre .vy-fenetre__bouton[data-act="fermer"]:hover { border-color: rgba(240, 122, 92, 0.55); background: rgba(240, 122, 92, 0.14); color: #ff9b82; }
+#app.vy-verre .vy-fenetre__corps {
+  flex: 1 1 auto;
+  background: var(--v-degrade) top / 100% 2px no-repeat, var(--v-verre);
+  border: var(--v-bord);
+  border-radius: var(--v-rayon);
+  box-shadow: var(--v-ombre);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--v-ligne-rgb), 0.35) transparent;
+}
+#app.vy-verre .vy-fenetre.reduite { gap: 0; }
+#app.vy-verre .vy-fen-pied, #app.vy-verre .vy-caracs__pied {
+  border-top: 1px solid rgba(var(--v-ligne-rgb), 0.14);
+  background: rgba(var(--v-champ-rgb), 0.35);
+  border-radius: 0 0 calc(var(--v-rayon) - 1px) calc(var(--v-rayon) - 1px);
+}
+@keyframes vy-verre-pop { from { opacity: 0; transform: scale(0.97); } }
+@keyframes vy-verre-monte { from { opacity: 0; transform: translateY(10px); } }
+
+/* Les titres de section : petites capitales espacées, un filet qui file à droite. */
+#app.vy-verre .vy-fenetre__corps h3 { font: 700 14px/1.25 var(--vy-font-titre); letter-spacing: 0.06em; color: var(--v-titre); }
+#app.vy-verre .vy-fenetre__corps h4 { display: flex; align-items: center; gap: 8px; margin: 14px 0 7px; font: 700 10px/1.2 var(--vy-font-ui); letter-spacing: 0.13em; color: var(--v-texte-2); }
+#app.vy-verre .vy-fenetre__corps h4::after { content: ""; flex: 1; height: 1px; background: rgba(var(--v-ligne-rgb), 0.16); }
+#app.vy-verre .vy-sous { font: 700 10px/1.2 var(--vy-font-ui); letter-spacing: 0.13em; color: var(--v-texte-2); }
+#app.vy-verre .vy-sous::after { background: rgba(var(--v-ligne-rgb), 0.16); }
+
+/* Les lignes des fenêtres simples (Quêtes, Succès, Options) : des cartes posées sur le verre. */
+#app.vy-verre .vy-fenetre__corps .row {
+  margin-bottom: 4px;
+  padding: 8px 10px;
+  border: 1px solid rgba(var(--v-ligne-rgb), 0.1);
+  border-radius: 10px;
+  background: rgba(var(--v-carte-rgb), 0.55);
+}
+#app.vy-verre .vy-fenetre__corps .row.here { border-color: rgba(var(--v-a-rgb), 0.5); background: rgba(var(--v-a-rgb), 0.1); }
+#app.vy-verre .vy-fenetre__corps .row.got { border-color: rgba(141, 181, 133, 0.35); }
+
+/* Boutons, onglets, champs des fenêtres simples */
+#app.vy-verre .vy-fenetre__corps button:not([class]), #app.vy-verre .vy-fenetre__corps .tab {
+  min-height: 32px; padding: 5px 13px;
+  border: 1px solid rgba(var(--v-ligne-rgb), 0.22);
+  border-radius: 10px;
+  background: rgba(var(--v-champ-rgb), 0.85);
+  color: var(--v-texte);
+  font: 700 12px var(--vy-font-ui);
+}
+#app.vy-verre .vy-fenetre__corps button:not([class]):hover, #app.vy-verre .vy-fenetre__corps .tab:hover { border-color: rgba(var(--v-ligne-rgb), 0.45); }
+#app.vy-verre .vy-fenetre__corps .tab.on { border-color: transparent; background: var(--v-degrade); color: var(--v-encre); }
+#app.vy-verre .vy-fenetre__corps button.danger { border-radius: 10px; border-color: rgba(240, 122, 92, 0.55); color: #ff9b82; }
+#app.vy-verre .vy-fenetre__corps .badge { border-radius: 6px; border-color: rgba(var(--v-ligne-rgb), 0.22); background: rgba(var(--v-champ-rgb), 0.8); }
+#app.vy-verre .vy-fenetre__corps textarea, #app.vy-verre .vy-fenetre select, #app.vy-verre .vy-recherche {
+  border: 1px solid rgba(var(--v-ligne-rgb), 0.2);
+  border-radius: 10px;
+  background: rgba(var(--v-champ-rgb), 0.85);
+  color: var(--v-texte);
+}
+#app.vy-verre .vy-fenetre__corps textarea { padding: 8px; }
+
+/* Les onglets : une barre segmentée, l'onglet choisi rempli du dégradé. */
+#app.vy-verre .vy-onglets {
+  gap: 3px; margin: 0 0 10px; padding: 3px;
+  border: 1px solid rgba(var(--v-ligne-rgb), 0.14);
+  border-radius: 11px;
+  background: rgba(var(--v-champ-rgb), 0.6);
+}
+#app.vy-verre .vy-onglet { padding: 6px 12px; border: 0; border-radius: 8px; color: var(--v-texte-2); font: 700 10.5px/1.2 var(--vy-font-ui); letter-spacing: 0.1em; transition: background 0.15s, color 0.15s; }
+#app.vy-verre .vy-onglet:hover { color: var(--v-texte); background: rgba(var(--v-ligne-rgb), 0.08); }
+#app.vy-verre .vy-onglet.on { color: var(--v-encre); background: var(--v-degrade); box-shadow: 0 3px 10px rgba(var(--v-a-rgb), 0.22); }
+#app.vy-verre .vy-carte__onglets { padding: 3px; }
+
+/* Les boutons du jeu (pas ceux de l'accueil) : plus plats, rayon de 10, le principal en dégradé. */
+#app.vy-verre :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton {
+  --_fond: rgba(var(--v-champ-rgb), 0.85);
+  --_bord: rgba(var(--v-ligne-rgb), 0.24);
+  --_texte: var(--v-texte);
+  border-width: 1px;
+  border-radius: 10px;
+  font-weight: 700;
+  box-shadow: none;
+}
+#app.vy-verre :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton:hover:not(:disabled, [aria-disabled="true"]) { border-color: rgba(var(--v-act-rgb), 0.75); color: var(--v-texte); }
+#app.vy-verre :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton--primaire {
+  --_fond: var(--v-degrade);
+  --_bord: transparent;
+  --_texte: var(--v-encre);
+  text-shadow: none;
+  box-shadow: 0 6px 18px rgba(var(--v-a-rgb), 0.26);
+}
+#app.vy-verre :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton--primaire:hover:not(:disabled, [aria-disabled="true"]) { color: var(--v-encre); border-color: transparent; filter: brightness(1.06); }
+#app.vy-verre :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton--fantome { --_fond: transparent; --_bord: transparent; --_texte: var(--v-accent-texte); }
+#app.vy-verre :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton--danger { --_bord: rgba(240, 122, 92, 0.55); --_texte: #ff9b82; }
+#app.vy-verre :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton[aria-pressed="true"],
+#app.vy-verre :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton.est-actif { border-color: rgba(var(--v-a-rgb), 0.6); color: var(--v-accent-texte); background: rgba(var(--v-a-rgb), 0.12); }
+
+/* L'interrupteur : les cases à cocher des fenêtres (Options, Auto, Confirmer les sorts). */
+#app.vy-verre .vy-fenetre input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  flex: none; position: relative; width: 32px; height: 18px; margin: 0;
+  border-radius: 9px; border: 1px solid rgba(var(--v-ligne-rgb), 0.3);
+  background: rgba(var(--v-champ-rgb), 0.9);
+  cursor: pointer; transition: background 0.18s;
+}
+#app.vy-verre .vy-fenetre input[type="checkbox"]::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--v-texte-2); transition: transform 0.18s var(--vy-courbe), background 0.18s; }
+#app.vy-verre .vy-fenetre input[type="checkbox"]:checked { border-color: transparent; background: var(--v-degrade); }
+#app.vy-verre .vy-fenetre input[type="checkbox"]:checked::after { transform: translateX(14px); background: #fff; }
+#app.vy-verre .vy-fenetre input[type="checkbox"]:focus-visible { outline: 2px solid var(--v-act); outline-offset: 2px; }
+
+/* Le curseur de l'opacité des fonds (Options) */
+#app.vy-verre .vy-opacite { gap: 12px; }
+#app.vy-verre .vy-opacite label { flex: none; }
+#app.vy-verre .vy-opacite output { flex: none; min-width: 42px; text-align: right; font: 700 12px var(--vy-font-ui); color: var(--v-accent-texte); font-variant-numeric: tabular-nums; }
+.vy-opacite input[type="range"] { flex: 1; min-width: 80px; }
+/* Sans le verre (?hud=ancien), le réglage n'a rien à régler. */
+#app:not(.vy-verre) .vy-opacite { display: none !important; }
+#app.vy-verre .vy-opacite input[type="range"] {
+  appearance: none; -webkit-appearance: none; height: 22px; margin: 0; background: none; cursor: pointer;
+  --pc: calc((var(--v, 90) - 40) / 60 * 100%);
+}
+#app.vy-verre .vy-opacite input[type="range"]::-webkit-slider-runnable-track { height: 5px; border-radius: 4px; background: linear-gradient(90deg, var(--v-a), var(--v-b)) 0 0 / var(--pc) 100% no-repeat, rgba(var(--v-ligne-rgb), 0.18); }
+#app.vy-verre .vy-opacite input[type="range"]::-moz-range-track { height: 5px; border-radius: 4px; background: rgba(var(--v-ligne-rgb), 0.18); }
+#app.vy-verre .vy-opacite input[type="range"]::-moz-range-progress { height: 5px; border-radius: 4px; background: var(--v-degrade); }
+#app.vy-verre .vy-opacite input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; margin-top: -5px; border-radius: 50%; background: #fff; border: 3px solid var(--v-b); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
+#app.vy-verre .vy-opacite input[type="range"]::-moz-range-thumb { width: 9px; height: 9px; border-radius: 50%; background: #fff; border: 3px solid var(--v-b); }
+
+/* Les thèmes (Options) : des pastilles, celle choisie au contour de l'accent. */
+#app.vy-verre .vy-theme { border-radius: 10px; border-color: rgba(var(--v-ligne-rgb), 0.16); background: rgba(var(--v-champ-rgb), 0.7); }
+#app.vy-verre .vy-theme.on { border-color: var(--v-a); background: rgba(var(--v-a-rgb), 0.1); }
+#app.vy-verre .vy-theme__apercu { border-radius: 7px; }
+
+/* ----- 3. Caractéristiques : la fiche du héros, les tuiles de chiffres, les lignes à tuile d'icône ----- */
+#app.vy-verre .vy-caracs__tete {
+  padding: 8px 10px; margin-bottom: 6px;
+  border: 1px solid rgba(var(--v-a-rgb), 0.28);
+  border-radius: 11px;
+  background: linear-gradient(90deg, rgba(var(--v-a-rgb), 0.13), rgba(var(--v-carte-rgb), 0.55) 62%);
+}
+#app.vy-verre .vy-fiche__portrait { border-radius: 10px; color: var(--v-encre); background: var(--v-degrade-oblique); box-shadow: 0 4px 12px rgba(var(--v-a-rgb), 0.25); }
+#app.vy-verre .vy-fiche__nom { font: 700 14px/1.2 var(--vy-font-titre); letter-spacing: 0.06em; text-transform: uppercase; color: var(--v-titre); }
+#app.vy-verre .vy-caracs__xp > small { color: var(--v-xp); font-weight: 700; }
+#app.vy-verre .vy-caracs__xp .vy-jauge, #app.vy-verre .vy-panneau__xp-jauge .vy-jauge, #app.vy-verre #player-bar .vy-jauge--xp { --_remplissage: linear-gradient(90deg, var(--v-xp), #7c5cff); --_bord: transparent; }
+/* Les jauges fines : une barre de 5 px sur une piste claire, sans cadre. */
+#app.vy-verre .vy-jauge--fine { --_hauteur: 5px; border: 0; border-radius: 4px; background: rgba(var(--v-ligne-rgb), 0.14); box-shadow: none; }
+#app.vy-verre .vy-jauge--fine .vy-jauge__barre { border-radius: 4px; box-shadow: none; }
+#app.vy-verre .vy-caracs__vitaux { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+#app.vy-verre .vy-caracs__ligne {
+  grid-template-columns: 14px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 1px 5px;
+  padding: 5px 8px 6px;
+  border: 1px solid rgba(var(--v-ligne-rgb), 0.14);
+  border-radius: 9px;
+  background: rgba(var(--v-champ-rgb), 0.8);
+}
+#app.vy-verre .vy-caracs__ligne:nth-child(odd) { background: rgba(var(--v-champ-rgb), 0.8); }
+#app.vy-verre .vy-caracs__ligne > .vy-pic { width: 13px; height: 13px; }
+#app.vy-verre .vy-caracs__ligne > span { font: 700 8.5px/1.2 var(--vy-font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--v-texte-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.vy-verre .vy-caracs__ligne > b { grid-column: 1 / -1; font: 800 16px/1.15 var(--vy-font-ui); color: var(--v-texte); }
+#app.vy-verre .vy-caracs__ligne[data-k="pv"] > b { color: var(--v-pv); }
+#app.vy-verre .vy-caracs__ligne[data-k="pa"] > b { color: var(--v-pa); }
+#app.vy-verre .vy-caracs__ligne[data-k="pm"] > b { color: var(--v-pm); }
+#app.vy-verre .vy-caracs__stat {
+  grid-template-columns: 30px minmax(0, 1fr) auto 28px;
+  gap: 8px;
+  min-height: 42px;
+  margin-bottom: 4px;
+  padding: 4px 6px 4px 5px;
+  border: 1px solid rgba(var(--v-ligne-rgb), 0.12);
+  border-radius: 10px;
+  background: rgba(var(--v-carte-rgb), 0.62);
+}
+#app.vy-verre .vy-caracs__stat:nth-child(even) { background: rgba(var(--v-carte-rgb), 0.62); }
+#app.vy-verre .vy-caracs__stat > .vy-pic { box-sizing: border-box; width: 30px; height: 30px; padding: 6px; border-radius: 8px; background: color-mix(in srgb, var(--c, var(--v-a)) 14%, transparent); }
+#app.vy-verre .vy-caracs__nom { flex-direction: column; align-items: flex-start; gap: 0; overflow: hidden; line-height: 1.2; }
+#app.vy-verre .vy-caracs__nom small { color: var(--v-discret); }
+#app.vy-verre .vy-caracs__plus { width: 28px; height: 28px; padding: 6px; border: 0; border-radius: 8px; background: var(--v-degrade-oblique); color: var(--v-encre); box-shadow: 0 3px 10px rgba(var(--v-a-rgb), 0.25); }
+#app.vy-verre .vy-caracs__plus:not(:disabled):hover { color: var(--v-encre); box-shadow: 0 0 0 2px rgba(var(--v-act-rgb), 0.7); }
+#app.vy-verre .vy-caracs__plus:disabled { opacity: 1; background: rgba(var(--v-champ-rgb), 0.9); color: var(--v-discret); box-shadow: inset 0 0 0 1px rgba(var(--v-ligne-rgb), 0.16); }
+#app.vy-verre .vy-caracs__reglage { border-radius: 11px; border-color: rgba(var(--v-ligne-rgb), 0.16); background: rgba(var(--v-champ-rgb), 0.5); }
+#app.vy-verre .vy-caracs__paliers td { border-radius: 7px; }
+
+/* ----- 4. Le téléphone en paysage : fenêtres étroites, languette, panneau, cartes ----- */
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Une fenêtre étroite (Caractéristiques, Quêtes, Options, Succès...) garde sa largeur, contre le
+     bord gauche : le jeu reste visible à côté, à travers le verre. Les grandes (Inventaire, Sorts,
+     Carte) prennent toujours toute la place. */
+  #app.vy-verre .vy-fenetre--etroite { right: auto; bottom: auto; max-height: calc(100% - 8px); width: min(var(--largeur, 420px) + 24px, calc(100% - 8px)); }
+  /* Une fenêtre ouverte passe sur la carte de la zone : à travers le verre, on n'en verrait que
+     des fantômes de texte. */
+  #app.vy-verre:has(#fenetres > .vy-fenetre:not(.reduite)) .vy-carte-info { visibility: hidden; }
+  /* Caractéristiques, étroite : les six tuiles en trois colonnes au-dessus, les caractéristiques
+     en deux colonnes, le nom et le coût l'un sous l'autre. */
+  #app.vy-verre .vy-fenetre--etroite .vy-caracs__resume { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  #app.vy-verre .vy-fenetre--etroite .vy-caracs__vitaux { gap: 4px; }
+  #app.vy-verre .vy-fenetre--etroite .vy-caracs__ligne { padding: 3px 8px 4px; }
+  #app.vy-verre .vy-fenetre--etroite .vy-caracs__ligne > b { font-size: 14px; }
+  #app.vy-verre .vy-fenetre--etroite .vy-caracs__stat { min-height: 38px; margin-bottom: 0; grid-template-columns: 28px minmax(0, 1fr) auto 26px; gap: 6px; }
+  #app.vy-verre .vy-fenetre--etroite .vy-caracs__stat > .vy-pic { width: 28px; height: 28px; }
+  #app.vy-verre .vy-fenetre--etroite .vy-caracs__plus { width: 26px; height: 26px; padding: 6px; }
+  #app.vy-verre .vy-fenetre--etroite .vy-caracs__tete { padding: 5px 8px; margin-bottom: 4px; }
+  #app.vy-verre .vy-fenetre--etroite .vy-caracs__onglets { margin: 2px 0 0; }
+}
+
+#app.vy-verre.vy-replie .vy-languette, #app.vy-verre.vy-replie.vy-gaucher .vy-languette { gap: 7px; padding: 10px 0; background: none; }
+/* La colonne de verre, à 4 px des bords : la languette garde ses 46 px (la caméra et le panneau
+   s'en écartent d'autant). */
+#app.vy-verre.vy-replie .vy-languette::before {
+  content: ""; position: absolute; inset: 5px 3px 5px 3px; z-index: -1;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--v-ligne-rgb), 0.16);
+  background: rgba(var(--v-fen-rgb), calc(var(--v-alpha, 0.9) * 0.78));
+  box-shadow: var(--v-ombre-legere);
+}
+#app.vy-verre.vy-replie .vy-languette { isolation: isolate; }
+#app.vy-verre .vy-languette__bouton {
+  width: 34px; height: 34px; padding: 8px;
+  border-radius: 11px;
+  color: var(--v-accent-texte);
+  background: rgba(var(--v-champ-rgb), 0.85);
+  box-shadow: inset 0 0 0 1px rgba(var(--v-ligne-rgb), 0.16);
+}
+#app.vy-verre .vy-languette__bouton[aria-expanded="true"] { color: var(--v-encre); background: var(--v-degrade-oblique); box-shadow: 0 0 16px rgba(var(--v-a-rgb), 0.4); }
+#app.vy-verre .vy-languette__nonlu, #app.vy-verre .vy-languette__bouton .vy-badge:not(.vy-badge--point) { background: var(--v-pv); box-shadow: 0 0 0 1.5px rgb(var(--v-fen-rgb)); }
+/* L'anneau de vie : la piste, la part pleine en braise, le chiffre au milieu. */
+#app.vy-verre .vy-languette__pv { width: 38px; height: 38px; }
+.vy-anneau { transform: rotate(-90deg); overflow: visible; }
+.vy-anneau circle { fill: none; stroke-width: 3.6; }
+.vy-anneau__piste { stroke: rgba(255, 255, 255, 0.1); }
+.vy-anneau__vie { stroke: var(--v-pv, #f07a5c); stroke-linecap: round; transition: stroke-dashoffset 0.5s var(--vy-courbe); }
+#app.vy-verre .vy-languette__pv svg { filter: none; }
+#app.vy-verre .vy-languette__pv-val { color: var(--v-texte); font: 800 11.5px var(--vy-font-ui); text-shadow: none; font-variant-numeric: tabular-nums; }
+#app.vy-verre .vy-languette__pv.bas .vy-anneau__vie { animation: vy-verre-pouls 1.1s ease-in-out infinite; }
+@keyframes vy-verre-pouls { 50% { stroke-width: 5.2; opacity: 0.75; } }
+/* Sans le style en verre, l'anneau garde la couleur de la vie sur fond sombre. */
+#app:not(.vy-verre) .vy-languette__pv-val { color: #fff; }
+/* PA et PM : des pastilles au contour coloré. */
+#app.vy-verre .vy-languette__pts { gap: 4px; }
+#app.vy-verre .vy-pt { width: 30px; height: 22px; border-radius: 7px; clip-path: none; padding-left: 0; }
+#app.vy-verre .vy-pt b { font: 800 11.5px var(--vy-font-ui); text-shadow: none; }
+#app.vy-verre .vy-pt--pa { background: rgba(var(--v-a-rgb), 0.14); box-shadow: inset 0 0 0 1px rgba(var(--v-a-rgb), 0.45); }
+#app.vy-verre .vy-pt--pa b { color: var(--v-pa); }
+#app.vy-verre .vy-pt--pm { background: rgba(141, 181, 133, 0.14); box-shadow: inset 0 0 0 1px rgba(141, 181, 133, 0.45); }
+#app.vy-verre .vy-pt--pm b { color: var(--v-pm); }
+
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Le panneau de jeu : du verre plutôt que l'ardoise. */
+  #app.vy-verre .vy-panneau, #app.vy-verre.vy-replie .vy-panneau, #app.vy-verre.vy-replie.vy-gaucher .vy-panneau {
+    color: var(--v-texte);
+    background: var(--v-degrade) top / 100% 2px no-repeat, rgba(var(--v-fen-rgb), var(--v-alpha, 0.9));
+    box-shadow: inset 1px 0 0 rgba(var(--v-ligne-rgb), 0.2), -8px 0 22px rgba(0, 0, 0, 0.32);
+  }
+  #app.vy-verre.vy-replie.vy-gaucher .vy-panneau { box-shadow: inset -1px 0 0 rgba(var(--v-ligne-rgb), 0.2), 8px 0 22px rgba(0, 0, 0, 0.32); }
+
+  /* La carte de la zone : le nom en capitales, le liseré en haut ; la quête suivie avec sa tuile
+     d'icône et sa barre d'avancement. */
+  #app.vy-verre .vy-carte-info { gap: 6px; }
+  #app.vy-verre .vy-carte-info__carte, #app.vy-verre .vy-carte-info__suivi {
+    min-width: 176px;
+    border: var(--v-bord);
+    border-radius: 12px;
+    background: var(--v-verre);
+    box-shadow: var(--v-ombre-legere);
+    color: var(--v-texte);
+  }
+  #app.vy-verre .vy-carte-info__carte { padding: 7px 12px 7px; background: var(--v-degrade) top / 100% 2px no-repeat, var(--v-verre); }
+  #app.vy-verre .vy-carte-info__titre { font: 600 11px/1.3 var(--vy-font-ui); }
+  #app.vy-verre .vy-carte-info__titre b { display: block; font: 700 12.5px/1.25 var(--vy-font-titre); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-titre); }
+  #app.vy-verre .vy-carte-info__titre span { color: var(--v-texte-2); }
+  #app.vy-verre .vy-carte-info__ligne { font: 500 11px/1.3 var(--vy-font-ui); color: var(--v-texte-2); }
+  #app.vy-verre .vy-carte-info__titre > span { display: none; }
+  #app.vy-verre .vy-carte-info__lieu { display: inline; }
+  #app.vy-verre .vy-carte-info__suivi { gap: 9px; padding: 7px 11px 7px 7px; }
+  #app.vy-verre .vy-carte-info__suivi > svg { box-sizing: border-box; width: 30px; height: 30px; padding: 6px; border-radius: 9px; color: var(--v-accent-texte); background: rgba(var(--v-a-rgb), 0.12); }
+  #app.vy-verre .vy-carte-info__suivi > span { flex: 1; }
+  #app.vy-verre .vy-carte-info__suivi b { font: 700 11.5px/1.25 var(--vy-font-ui); color: var(--v-texte); }
+  #app.vy-verre .vy-carte-info__suivi small { margin: 1px 0 4px; font-size: 10.5px; color: var(--v-texte-2); }
+  #app.vy-verre .vy-carte-info__suivi.fini > svg { color: var(--v-pm); background: rgba(141, 181, 133, 0.14); }
+  .vy-carte-info__avance { display: block; height: 4px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; font-style: normal; }
+  .vy-carte-info__avance > i { display: block; height: 100%; border-radius: 3px; background: var(--v-degrade, linear-gradient(90deg, #e9cf98, #b08c52)); transition: width 0.4s var(--vy-courbe); }
+  #app:not(.vy-verre) .vy-carte-info__avance, #app:not(.vy-verre) .vy-carte-info__lieu { display: none; }
+
+  /* La barre de tour, en bas à droite de la scène */
+  #app.vy-verre.mode-combat .vy-barre-tour {
+    border: var(--v-bord);
+    border-radius: 13px;
+    background: var(--v-degrade) top / 100% 2px no-repeat, var(--v-verre);
+    box-shadow: var(--v-ombre-legere);
+  }
+  #app.vy-verre .vy-barre-tour .vy-combattant { border-radius: 9px; }
+  #app.vy-verre.mode-combat .vy-indice:not(.hidden) { border: 1px solid rgba(var(--v-act-rgb), 0.45); background: var(--v-verre); box-shadow: var(--v-ombre-legere); }
+  #app.vy-verre.vy-fiches.mode-combat #side { border: var(--v-bord); border-radius: 12px; box-shadow: var(--v-ombre-legere); }
+  #app.vy-verre .vy-discussion__flottant .vy-chat { border-radius: 9px; }
+}
+
+/* Le contenu du panneau : cases, boutons ronds devenus tuiles, onglets. */
+#app.vy-verre .vy-rapide, #app.vy-verre .vy-rond, #app.vy-verre .vy-panneau__emote, #app.vy-verre .vy-panneau__discussion {
+  color: var(--v-accent-texte);
+  background: rgba(var(--v-champ-rgb), 0.85);
+  box-shadow: inset 0 0 0 1px rgba(var(--v-ligne-rgb), 0.18);
+}
+#app.vy-verre .vy-rapide { border-radius: 10px; }
+#app.vy-verre .vy-rond { border-radius: 10px; }
+#app.vy-verre .vy-panneau__emote, #app.vy-verre .vy-panneau__discussion { border-radius: 11px; }
+#app.vy-verre .vy-rapide[aria-pressed="true"], #app.vy-verre .vy-rond.on, #app.vy-verre .vy-panneau__emote[aria-expanded="true"], #app.vy-verre.vy-discussion-ouverte .vy-panneau__discussion,
+body.vy-discussion-ouverte #app.vy-verre .vy-panneau__discussion { color: var(--v-encre); background: var(--v-degrade-oblique); box-shadow: 0 0 14px rgba(var(--v-a-rgb), 0.35); }
+#app.vy-verre .vy-rapide--danger { color: #ff9b82; }
+#app.vy-verre .vy-rond--bientot { color: var(--v-discret); }
+#app.vy-verre .vy-slot { border-radius: 10px; background: rgba(var(--v-carte-rgb), 0.7); box-shadow: inset 0 0 0 1px rgba(var(--v-ligne-rgb), 0.14); }
+#app.vy-verre .vy-slot--vide { background: rgba(var(--v-champ-rgb), 0.45); box-shadow: inset 0 0 0 1px rgba(var(--v-ligne-rgb), 0.08); }
+#app.vy-verre .vy-slot__losange { border-radius: 5px; }
+#app.vy-verre .vy-slot__pa { border-radius: 5px; color: var(--v-encre); background: var(--v-pa); }
+#app.vy-verre .vy-slot__cd { border-radius: 10px; }
+#app.vy-verre .vy-slot.choisi, #app.vy-verre .vy-slot--sort:not(.indispo):hover, #app.vy-verre .vy-slot.cible { box-shadow: 0 0 0 1px var(--v-act), 0 0 14px rgba(var(--v-act-rgb), 0.45); }
+#app.vy-verre .vy-panneau__onglets { border-bottom: 1px solid rgba(var(--v-ligne-rgb), 0.16); }
+#app.vy-verre .vy-panneau__onglet { border-radius: 8px; color: var(--v-texte-2); }
+#app.vy-verre .vy-panneau__onglet.on { color: var(--v-encre); background: var(--v-degrade); box-shadow: none; }
+#app.vy-verre .vy-panneau__niv { color: var(--v-accent-texte); }
+#app.vy-verre .vy-panneau__page { color: var(--v-accent-texte); }
+#app.vy-verre .vy-emotes { border-radius: 14px; border: var(--v-bord); background: rgba(var(--v-fen-rgb), 0.96); box-shadow: var(--v-ombre); }
+
+/* ----- 5. Les fiches posées sur la scène : groupe de monstres, sort à confirmer, coût, quitter ----- */
+#app.vy-verre .vy-fiche-groupe, #app.vy-verre .vy-confirm-sort, #app.vy-verre .vy-confirmer {
+  color: var(--v-texte);
+  background: var(--v-degrade) top / 100% 2px no-repeat, rgba(var(--v-pan-rgb), max(var(--v-alpha, 0.9), 0.9));
+  border: var(--v-bord);
+  border-radius: var(--v-rayon);
+  box-shadow: var(--v-ombre);
+}
+#app.vy-verre .vy-confirmer { box-shadow: 0 0 0 200vmax rgba(5, 9, 15, 0.35), var(--v-ombre); }
+#app.vy-verre .vy-fiche-groupe__tete { border-bottom-color: rgba(var(--v-ligne-rgb), 0.14); }
+#app.vy-verre .vy-fiche-groupe h3 { font-size: 13.5px; letter-spacing: 0.08em; color: var(--v-titre); }
+#app.vy-verre .vy-fiche-groupe__xp { color: var(--v-xp); font-style: normal; font-weight: 700; }
+#app.vy-verre .vy-fiche-groupe__liste li { padding: 2px 0; }
+#app.vy-verre .vy-fiche-groupe__liste b { color: var(--v-accent-texte); }
+#app.vy-verre .vy-fiche-groupe__difficulte { border-radius: 7px; }
+#app.vy-verre .vy-fiche-groupe__fermer { border-radius: 9px; }
+#app.vy-verre .vy-confirm-sort__nom, #app.vy-verre .vy-confirmer p b { color: var(--v-titre); }
+#app.vy-verre .vy-confirm-sort__non { border-radius: 10px; color: var(--v-texte-2); background: rgba(var(--v-champ-rgb), 0.85); box-shadow: inset 0 0 0 1px rgba(var(--v-ligne-rgb), 0.2); }
+#app.vy-verre .vy-confirm-sort__oui { border-radius: 10px; color: var(--v-encre); background: var(--v-degrade-oblique); box-shadow: 0 4px 14px rgba(var(--v-a-rgb), 0.3); }
+#app.vy-verre .vy-cout-pm { border-radius: 8px; background: var(--v-verre); box-shadow: inset 0 0 0 1px rgba(141, 181, 133, 0.55), var(--v-ombre-legere); }
+#app.vy-verre .vy-cout-pm b { color: var(--v-pm); }
+
+/* ----- 6. La discussion ----- */
+#app.vy-verre .vy-discussion {
+  border: var(--v-bord);
+  border-radius: var(--v-rayon);
+  background: var(--v-degrade) top / 100% 2px no-repeat, rgba(var(--v-fen-rgb), var(--v-alpha, 0.9));
+  box-shadow: var(--v-ombre);
+}
+#app.vy-verre .vy-discussion__tete { border-bottom-color: rgba(var(--v-ligne-rgb), 0.14); }
+#app.vy-verre .vy-discussion__onglet { border-radius: 7px; }
+#app.vy-verre .vy-discussion__fermer { border-radius: 9px; }
+#app.vy-verre .vy-discussion__flottant .vy-chat { background: rgba(var(--v-fen-rgb), calc(var(--v-alpha, 0.9) * 0.8)); box-shadow: inset 0 0 0 1px rgba(var(--v-ligne-rgb), 0.14); }
+#app.vy-verre .vy-discussion__bouton { border-radius: 13px; color: var(--v-accent-texte); background: var(--v-verre); box-shadow: inset 0 0 0 1px rgba(var(--v-ligne-rgb), 0.2), var(--v-ombre-legere); }
+
+/* ----- 7. Les annonces : toasts, « Succès débloqué », rubans ----- */
+#app.vy-verre .toast {
+  padding: 8px 14px;
+  border: 1px solid rgba(var(--v-ligne-rgb), 0.24);
+  border-radius: 11px;
+  background: rgba(var(--v-fen-rgb), 0.94);
+  color: var(--v-texte);
+  box-shadow: var(--v-ombre-legere);
+  animation: vy-verre-monte 0.22s var(--vy-courbe);
+}
+.toast--succes { display: flex; align-items: center; gap: 10px; padding: 7px 12px 7px 7px; border: 1px solid rgba(233, 207, 152, 0.55); border-radius: 12px; background: rgba(12, 19, 29, 0.95); text-align: left; }
+#app.vy-verre .toast--succes { padding: 7px 12px 7px 7px; border-color: rgba(var(--v-a-rgb), 0.55); box-shadow: var(--v-ombre), 0 0 24px rgba(var(--v-a-rgb), 0.16); }
+.toast__tuile { flex: none; display: grid; place-items: center; width: 36px; height: 36px; padding: 8px; border-radius: 10px; color: var(--v-encre, #17110a); background: var(--v-degrade-oblique, linear-gradient(135deg, #e9cf98, #b08c52)); }
+.toast__tuile svg { width: 100%; height: 100%; display: block; }
+.toast__texte { display: grid; min-width: 0; }
+.toast__texte small { font: 800 9px/1.3 var(--vy-font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--v-accent-texte, #e9cf98); }
+.toast__texte b { font: 700 13.5px/1.25 var(--vy-font-titre); letter-spacing: 0.06em; text-transform: uppercase; color: var(--v-titre, #f2e2c9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toast__gain { flex: none; padding: 3px 8px; border-radius: 7px; border: 1px solid rgba(var(--v-a-rgb, 233, 207, 152), 0.45); background: rgba(var(--v-a-rgb, 233, 207, 152), 0.1); color: var(--v-accent-texte, #e9cf98); font: 700 11px var(--vy-font-ui); white-space: nowrap; }
+/* Les rubans (tour, zone, niveau) : une bande de verre au liseré dégradé, le texte en or ciselé. */
+#app.vy-verre .vy-ruban__bande {
+  padding: 8px 34px 9px;
+  clip-path: none;
+  border: 1px solid rgba(var(--v-a-rgb), 0.4);
+  border-radius: 14px;
+  background: var(--v-degrade) top / 100% 2px no-repeat, rgba(var(--v-fen-rgb), 0.9);
+  box-shadow: var(--v-ombre), 0 0 26px rgba(var(--v-a-rgb), 0.14);
+}
+#app.vy-verre .vy-ruban--niveau .vy-ruban__bande { padding: 11px 44px 12px; box-shadow: var(--v-ombre), 0 0 34px rgba(var(--v-act-rgb), 0.28); }
+#app.vy-verre .vy-ruban__sous { border-radius: 8px; background: var(--v-verre); box-shadow: inset 0 0 0 1px rgba(var(--v-ligne-rgb), 0.24); color: var(--v-texte); }
+
+/* ----- 8. La boîte du guide : le bandeau du nom en verre, la page de parchemin reste ----- */
+#app.vy-verre .vy-guide__boite { border-radius: 13px; }
+#app.vy-verre .vy-guide__nom { border-radius: 13px 13px 0 0; background: var(--v-degrade) bottom / 100% 2px no-repeat, rgba(var(--v-fen-rgb), 0.96); box-shadow: none; }
+#app.vy-verre .vy-guide__qui { color: var(--v-titre); text-transform: uppercase; font-size: 12.5px; letter-spacing: 0.08em; }
+#app.vy-verre .vy-guide__passer { border-radius: 7px; }
+#app.vy-verre[data-ui-theme="ardoise"] .vy-guide__qui { color: #f2e2c9; }
+
+/* ----- 9. La modale du jeu (fin de combat, relais, boutique...) ----- */
+#app.vy-verre #panel .vy-modale {
+  border: var(--v-bord);
+  border-radius: 16px;
+  background: var(--v-degrade) top / 100% 2px no-repeat, rgba(var(--v-pan-rgb), max(var(--v-alpha, 0.9), 0.94));
+  box-shadow: var(--v-ombre);
+  color: var(--v-texte);
+  animation: vy-verre-pop 0.18s var(--vy-courbe);
+}
+#app.vy-verre #panel .vy-modale::before, #app.vy-verre #panel .vy-modale::after, #app.vy-verre #panel .vy-modale__tete::before { display: none; }
+#app.vy-verre #panel .vy-modale__tete { padding: 12px 12px 10px 18px; }
+#app.vy-verre #panel .vy-modale__tete::after { left: 14px; right: 14px; bottom: 0; height: 1px; background: rgba(var(--v-ligne-rgb), 0.16); }
+#app.vy-verre #panel .vy-modale__titre { font-size: 17px; text-transform: uppercase; letter-spacing: 0.08em; background: none; -webkit-text-fill-color: currentColor; color: var(--v-titre); filter: none; }
+#app.vy-verre #panel .vy-modale__pied { border-top-color: rgba(var(--v-ligne-rgb), 0.14); }
+
+/* ----- 10. L'ordinateur : barre de menus, vue, barre du personnage, suivi, raccourcis, mini-carte ----- */
+#app.vy-verre .vy-menus, #app.vy-verre .vy-camera, #app.vy-verre .vy-raccourcis {
+  gap: 4px; padding: 5px;
+  border: var(--v-bord);
+  border-radius: 14px;
+  background: rgba(var(--v-fen-rgb), calc(var(--v-alpha, 0.9) * 0.86));
+  box-shadow: var(--v-ombre-legere);
+}
+#app.vy-verre .vy-menu, #app.vy-verre .vy-camera__bouton { border-radius: 10px; color: var(--v-accent-texte); background: rgba(var(--v-champ-rgb), 0.7); border: 1px solid rgba(var(--v-ligne-rgb), 0.12); }
+#app.vy-verre .vy-menu:hover, #app.vy-verre .vy-camera__bouton:hover { border-color: rgba(var(--v-ligne-rgb), 0.38); background: rgba(var(--v-carte-rgb), 0.9); }
+#app.vy-verre .vy-menu.on, #app.vy-verre .vy-camera__bouton[aria-pressed="true"] { color: var(--v-encre); background: var(--v-degrade-oblique); border-color: transparent; box-shadow: 0 0 14px rgba(var(--v-a-rgb), 0.35); }
+#app.vy-verre .vy-menu.on kbd { color: var(--v-encre); }
+#app.vy-verre .vy-raccourcis .vy-case { border-radius: 10px; }
+#app.vy-verre #player-bar {
+  border: var(--v-bord);
+  border-radius: var(--v-rayon);
+  background: var(--v-degrade) top / 100% 2px no-repeat, var(--v-verre);
+  box-shadow: var(--v-ombre-legere);
+  color: var(--v-texte);
+}
+#app.vy-verre #player-bar .portrait { border-radius: 10px; color: var(--v-encre); background: var(--v-degrade-oblique); box-shadow: 0 4px 12px rgba(var(--v-a-rgb), 0.25); }
+#app.vy-verre #player-bar .pb-name { text-transform: uppercase; letter-spacing: 0.06em; color: var(--v-titre); }
+#app.vy-verre #player-bar .pb-fils { color: var(--v-accent-texte); }
+#app.vy-verre #map-name { border: var(--v-bord); border-radius: 11px; background: var(--v-degrade) bottom / 100% 2px no-repeat, var(--v-verre); color: var(--v-titre); text-transform: uppercase; letter-spacing: 0.08em; }
+#app.vy-verre #tracker .tq { border: var(--v-bord); border-left: 3px solid rgba(var(--v-ligne-rgb), 0.35); border-radius: 10px; background: var(--v-verre); color: var(--v-texte); }
+#app.vy-verre #tracker .tq.main { border-left-color: var(--v-a); }
+#app.vy-verre #tracker .tq.done { border-left-color: var(--v-pm); }
+#app.vy-verre #tracker .tq span { color: var(--v-texte-2); }
+#app.vy-verre .vy-minicarte { border: 1px solid rgba(var(--v-a-rgb), 0.45); border-radius: var(--v-rayon); box-shadow: var(--v-ombre-legere); }
+#app.vy-verre .vy-minicarte span { color: var(--v-titre); }
+
+/* Le combat sur ordinateur : la barre du haut, la colonne de droite, la barre des sorts. */
+#app.vy-verre #topbar { background: var(--v-degrade) bottom / 100% 2px no-repeat, rgba(var(--v-fen-rgb), 0.97); border-bottom: 0; }
+#app.vy-verre #side { background: rgba(var(--v-fen-rgb), 0.97); border-left: 1px solid rgba(var(--v-ligne-rgb), 0.16); color: var(--v-texte); }
+#app.vy-verre #inspect { border-bottom-color: rgba(var(--v-ligne-rgb), 0.14); }
+#app.vy-verre #inspect h3 { text-transform: uppercase; letter-spacing: 0.06em; color: var(--v-titre); }
+#app.vy-verre #hud { background: var(--v-degrade) top / 100% 2px no-repeat, rgba(var(--v-fen-rgb), 0.97); border-top: 0; }
+#app.vy-verre #challenge { border-radius: 9px; }
+#app.vy-verre .stat { border-radius: 10px; border-color: rgba(var(--v-ligne-rgb), 0.16); background: rgba(var(--v-champ-rgb), 0.85); }
+#app.vy-verre .stat.hp b { color: var(--v-pv); } #app.vy-verre .stat.pa b { color: var(--v-pa); } #app.vy-verre .stat.pm b { color: var(--v-pm); }
+#app.vy-verre .spell { border: 1px solid rgba(var(--v-ligne-rgb), 0.18); border-top: 3px solid var(--el, #888); border-radius: 10px; background: rgba(var(--v-carte-rgb), 0.85); color: var(--v-texte); }
+#app.vy-verre .spell:hover { background: rgba(var(--v-carte-rgb), 1); border-color: rgba(var(--v-act-rgb), 0.6); }
+#app.vy-verre .spell.selected { outline: 0; border-color: var(--v-act); background: rgba(var(--v-act-rgb), 0.12); box-shadow: 0 0 0 1px var(--v-act), 0 0 14px rgba(var(--v-act-rgb), 0.4); }
+#app.vy-verre .spell .cost { color: var(--v-pa); }
+#app.vy-verre .vy-combattant { border-radius: 7px; }
+
+@media (prefers-reduced-motion: reduce) {
+  #app.vy-verre .vy-fenetre, #app.vy-verre .toast, #app.vy-verre #panel .vy-modale, #app.vy-verre .vy-languette__pv.bas .vy-anneau__vie { animation: none !important; }
+}

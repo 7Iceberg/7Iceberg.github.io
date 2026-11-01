@@ -34,7 +34,7 @@ const VAL = {
   retrait: { couleur: 'var(--vy-eclat-clair)', svg: '<circle cx="12" cy="12" r="8"/><path d="M8 12h8M14 9l3 3-3 3"/>' },
   soins: { couleur: '#ff5a36', svg: '<path d="M9.5 4h5v5.5H20v5h-5.5V20h-5v-5.5H4v-5h5.5z"/>' },
 };
-const pic = (k, size) => { const p = STAT[k] || VAL[k]; return p ? `<svg class="vy-pic" viewBox="0 0 24 24" width="${size || 16}" height="${size || 16}" fill="none" stroke="${p.couleur}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p.svg}</svg>` : '<span class="vy-pic"></span>'; };
+const pic = (k, size) => { const p = STAT[k] || VAL[k]; return p ? `<svg class="vy-pic" style="--c:${p.couleur}" viewBox="0 0 24 24" width="${size || 16}" height="${size || 16}" fill="none" stroke="${p.couleur}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p.svg}</svg>` : '<span class="vy-pic"></span>'; };
 
 // Les fenêtres et leur raccourci clavier. L'Inventaire réunit l'ancien Sac et l'ancienne fenêtre
 // Personnage : le bouton Personnage et la touche P l'ouvrent aussi (ALIAS).
@@ -85,6 +85,7 @@ Object.assign(Hud.prototype, {
     this.combat.on('log', d => this.pushJournal('combat', d.msg, d.kind));
     setInterval(() => this.drawMinimap(false), 350);
     this.applyTheme(this.loadTheme());
+    this.appliquerVerre(this.loadOpacite());
     this.initInventaire();
     this.initRecompenses();
   },
@@ -256,7 +257,26 @@ Object.assign(Hud.prototype, {
     document.getElementById('app').dataset.uiTheme = t;
     try { localStorage.setItem('veylan.theme', t); } catch (e) { /* rien */ }
   },
+
+  // Le style en verre (css/verre.css) : allumé par défaut, ?hud=ancien rend les cadres de métal.
+  // L'opacité des fonds se règle dans les Options, de 40 à 100 %, gardée sur l'appareil.
+  loadOpacite() {
+    let v = NaN;
+    try { v = parseInt(localStorage.getItem('veylan.opacite'), 10); } catch (e) { /* rien */ }
+    return Number.isFinite(v) ? Math.max(40, Math.min(100, v)) : Hud.OPACITE;
+  },
+  appliquerVerre(opacite, garder) {
+    const app = document.getElementById('app');
+    if (/[?&]hud=ancien\b/.test(location.search)) app.classList.remove('vy-verre');
+    const v = Math.max(40, Math.min(100, Math.round(opacite)));
+    app.style.setProperty('--v-alpha', String(v / 100));
+    this.opacite = v;
+    if (garder) { try { localStorage.setItem('veylan.opacite', String(v)); } catch (e) { /* rien */ } }
+    return v;
+  },
 });
+
+Hud.OPACITE = 90;
 
 Hud.THEMES = [['nuit', 'Nuit d\'Orsane', '#172334', '#c9a66b'], ['royal', 'Bleu des Voiles', '#13264a', '#7fb4ff'], ['braise', 'Braise de Kaldum', '#2a1714', '#f07a5c'], ['cimes', 'Vert des Cimes', '#15261c', '#8db585'], ['ardoise', 'Ardoise claire', '#d9d2c3', '#8e7144']];
 Hud.MENUS = MENUS;

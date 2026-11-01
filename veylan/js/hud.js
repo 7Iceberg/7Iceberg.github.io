@@ -65,7 +65,7 @@ class Hud {
     w.on('fight', () => { this.closePanel(); this.fermerFenetres(); this.setMode('combat'); this.ui.refresh(); this.ui.updateHighlights(); });
     w.on('fightEnd', r => this.openFightEnd(r));
     w.on('reward', r => this.openReward(r));
-    w.on('achievement', g => this.toast(`Succès : ${g.achievement.name}${g.title ? ' · titre « ' + g.title + ' »' : ''}`));
+    w.on('achievement', g => this.annoncerSucces(g));
     w.on('relay', d => this.openRelay(d));
     w.on('dungeonPrompt', d => this.openDungeonPrompt(d));
     w.on('dungeonLeavePrompt', d => this.openDungeonLeave(d));
@@ -136,6 +136,22 @@ class Hud {
     this.el.toasts.appendChild(t);
     while (this.el.toasts.children.length > 4) this.el.toasts.firstChild.remove();
     setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 400); }, 2800);
+  }
+
+  // « Succès débloqué » : une carte au contour d'or, la coupe dans une tuile, ce qu'il rapporte.
+  // Le texte passe aussi au journal, comme un toast.
+  annoncerSucces(g) {
+    const a = g.achievement, texte = `Succès : ${a.name}${g.title ? ' · titre « ' + g.title + ' »' : ''}`;
+    if (this.pushJournal) this.pushJournal('evenements', texte);
+    const gains = [g.xp ? `+${g.xp} XP` : '', g.fils ? `+${g.fils} Fils` : '', g.title ? `« ${g.title} »` : ''].filter(Boolean);
+    const t = document.createElement('div');
+    t.className = 'toast toast--succes';
+    t.setAttribute('role', 'status');
+    t.innerHTML = `<span class="toast__tuile" aria-hidden="true">${Fenetres.ICON.succes}</span><span class="toast__texte"><small>Succès débloqué</small><b>${esc(a.name)}</b></span>${gains.length ? `<span class="toast__gain">${esc(gains[0])}</span>` : ''}`;
+    t.setAttribute('aria-label', texte);
+    this.el.toasts.appendChild(t);
+    while (this.el.toasts.children.length > 4) this.el.toasts.firstChild.remove();
+    setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 400); }, 4200);
   }
 
   // ----- Panneaux génériques -----
@@ -409,7 +425,10 @@ class Hud {
       <div class="row"><label class="vy-coche"><input type="checkbox" id="opt-confirmer" ${UI.confirmerSorts(null) ? 'checked' : ''}> Confirmer les sorts</label><span class="muted">un toucher sur la cible, puis la coche</span></div>
       <div class="row"><label class="vy-coche"><input type="checkbox" id="opt-gaucher" ${this.jeu && this.jeu.gaucher ? 'checked' : ''}> Mode gaucher</label><span class="muted">le panneau de jeu passe à gauche</span></div>
       ${PleinEcran.disponible() ? `<div class="row"><label class="vy-coche"><input type="checkbox" id="opt-plein-ecran"${PleinEcran.actif() ? ' checked' : ''}> Plein écran</label><span class="muted">sans la barre du navigateur</span></div>` : ''}`;
+    // L'opacité des fonds : la valeur posée (le curseur suit, même si la fenêtre se redessine en cours de route).
+    const opacite = () => { const v = this.opacite || this.loadOpacite(); return `<div class="row vy-opacite"><label for="opt-opacite">Opacité des fonds</label><input type="range" id="opt-opacite" min="40" max="100" step="5" value="${v}" style="--v:${v}" aria-valuetext="${v} %"><output for="opt-opacite">${v} %</output></div>`; };
     const html = () => `${tuto()}${jeu()}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div>
+      ${opacite()}
       <div class="row"><span class="muted">Fenêtres déplacées trop loin ?</span><button data-act="replacer">Replacer les fenêtres</button></div>
       ${invite ? '<div class="row"><span>Partie d\'invité : rien n\'est enregistré sur cet appareil. Pour garder ce personnage, copie son code et importe-le depuis l\'accueil.</span></div>'
     : '<div class="row"><span>Partie sauvegardée automatiquement dans ce navigateur.</span><button data-act="savenow">Sauvegarder</button></div>'}
@@ -447,6 +466,12 @@ class Hud {
     };
     const onField = (el, kind) => {
       if (el.id === 'import-area') this.importDraft = el.value;
+      if (el.id === 'opt-opacite') {
+        const v = this.appliquerVerre(Number(el.value), kind === 'change');
+        el.style.setProperty('--v', v); el.setAttribute('aria-valuetext', `${v} %`);
+        const o = el.parentNode.querySelector('output'); if (o) o.textContent = `${v} %`;
+        return;
+      }
       if (kind !== 'change') return;
       if (el.id === 'opt-tuto') { this.guide.choisirMode(el.value); this.fen.render('options'); }
       if (el.id === 'opt-confirmer') { try { localStorage.setItem('veylan.confirmerSorts', el.checked ? '1' : '0'); } catch (e) { /* stockage indisponible */ } }

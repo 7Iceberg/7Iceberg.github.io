@@ -131,11 +131,10 @@ class HudJeu {
     l.setAttribute('role', 'toolbar');
     l.setAttribute('aria-label', 'Jeu');
     l.innerHTML =
-      '<button type="button" class="vy-languette__pv" data-languette="panneau" aria-label="Points de vie"><svg viewBox="0 0 80 92" aria-hidden="true">' +
-      '<defs><clipPath id="clip-pv-languette"><path d="M40 3 76 26 70 70 40 89 10 70 4 26z"/></clipPath></defs>' +
-      '<path d="M40 3 76 26 70 70 40 89 10 70 4 26z" class="vy-panneau__pv-coque"/>' +
-      '<rect class="vy-panneau__pv-niveau" clip-path="url(#clip-pv-languette)" x="0" width="80" y="0" height="92" fill="url(#grad-pv-panneau)"/>' +
-      '<path d="M40 3 76 26 70 70 40 89 10 70 4 26z" class="vy-panneau__pv-bord"/></svg><b class="vy-languette__pv-val"></b></button>' +
+      // La vie en anneau (style en verre, css/verre.css) : la part pleine suit les PV.
+      '<button type="button" class="vy-languette__pv" data-languette="panneau" aria-label="Points de vie"><svg class="vy-anneau" viewBox="0 0 40 40" aria-hidden="true">' +
+      '<circle class="vy-anneau__piste" cx="20" cy="20" r="16.5"/><circle class="vy-anneau__vie" cx="20" cy="20" r="16.5" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="0"/>' +
+      '</svg><b class="vy-languette__pv-val"></b></button>' +
       '<div class="vy-languette__pts" hidden><span class="vy-pt vy-pt--pa" title="Points d\'action"><b></b><small>PA</small></span><span class="vy-pt vy-pt--pm" title="Points de mouvement"><b></b><small>PM</small></span></div>' +
       `<button type="button" class="vy-languette__bouton" data-languette="panneau" aria-label="Sorts et objets" aria-expanded="false">${J.sorts}</button>` +
       `<button type="button" class="vy-languette__bouton" data-languette="menus" aria-label="Menus">${J.menus}<span class="vy-badge vy-badge--point" hidden>•</span></button>` +
@@ -276,7 +275,7 @@ class HudJeu {
     // La languette : le même cristal en petit, PA et PM en combat.
     const L = this.languette;
     if (L) {
-      L.querySelector('.vy-panneau__pv-niveau').setAttribute('y', String(92 * (1 - pct)));
+      L.querySelector('.vy-anneau__vie').setAttribute('stroke-dashoffset', (100 * (1 - pct)).toFixed(1));
       L.querySelector('.vy-languette__pv-val').textContent = hp;
       const lpv = L.querySelector('.vy-languette__pv');
       lpv.setAttribute('aria-label', `Points de vie : ${hp} sur ${max}`);
@@ -521,8 +520,9 @@ class HudJeu {
     const t = Quests.tracker(this.ch)[0];
     const html = `<button type="button" class="vy-carte-info__carte" data-act="carte" aria-label="${Util.esc(zone)}, ${Util.esc(def.name)} : ouvrir la carte du monde">` +
       `<span class="vy-carte-info__titre"><b>${Util.esc(zone || def.name)}</b>${zone ? ` <span>(${Util.esc(def.name)})</span>` : ''}</span>` +
-      `<span class="vy-carte-info__ligne">${pos ? `${pos[0]},${pos[1]}, ` : ''}${niveau}</span></button>` +
-      (t ? `<button type="button" class="vy-carte-info__suivi${t.done ? ' fini' : ''}" data-act="quetes" aria-label="Quête suivie : ${Util.esc(t.quest.name)}, ${Util.esc(t.text)}">${HudJeu.ICON.epingle}<span><b>${Util.esc(t.quest.name)}</b><small>${Util.esc(t.text)}</small></span></button>` : '');
+      `<span class="vy-carte-info__ligne">${zone ? `<span class="vy-carte-info__lieu">${Util.esc(def.name)} · </span>` : ''}${pos ? `${pos[0]},${pos[1]}, ` : ''}${niveau}</span></button>` +
+      (t ? `<button type="button" class="vy-carte-info__suivi${t.done ? ' fini' : ''}" data-act="quetes" aria-label="Quête suivie : ${Util.esc(t.quest.name)}, ${Util.esc(t.text)}">${HudJeu.ICON.epingle}<span><b>${Util.esc(t.quest.name)}</b><small>${Util.esc(t.text)}</small>` +
+        `<i class="vy-carte-info__avance" aria-hidden="true"><i style="width:${Math.round(100 * HudJeu.avancement(this.ch, t))}%"></i></i></span></button>` : '');
     if (this.carteInfo.dataset.html !== html) { this.carteInfo.dataset.html = html; this.carteInfo.innerHTML = html; }
   }
 
@@ -659,6 +659,19 @@ class HudJeu {
 // Les fonctions prévues, grisées dans les menus.
 HudJeu.BIENTOT = [['metiers', 'Métiers'], ['familiers', 'Familiers'], ['montures', 'Montures'], ['guilde', 'Guilde'], ['boutique', 'Boutique cosmétique']];
 HudJeu.EMOTES = [['salut', 'Saluer'], ['joie', 'Se réjouir'], ['merci', 'Remercier'], ['doute', 'S\'interroger'], ['repos', 'Se reposer']];
+
+// L'avancement d'une quête suivie, de 0 à 1 : les étapes faites, plus la part de l'étape en cours
+// (monstres, récoltes, objets réunis). Rendue, elle est pleine.
+HudJeu.avancement = (ch, t) => {
+  if (t.done) return 1;
+  const q = t.quest, st = Quests.state(ch, q.id), n = (q.steps || []).length;
+  if (!st || !n) return 0;
+  const s = q.steps[st.step];
+  let part = 0;
+  if (s && (s.type === 'kill' || s.type === 'gather') && s.count) part = Math.min(1, (st.progress || 0) / s.count);
+  else if (s && s.type === 'collect' && s.count) part = Math.min(1, ch.count(s.item) / s.count);
+  return Math.max(0, Math.min(1, (st.step + part) / n));
+};
 
 // Pictogrammes du panneau : un trait, lisibles en 18 pixels, comme ceux des fenêtres.
 HudJeu.ICON = (() => {

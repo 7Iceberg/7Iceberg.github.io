@@ -69,6 +69,8 @@ class Fenetres {
         `<button class="vy-fenetre__bouton" data-act="fermer" aria-label="Fermer">${Fenetres.ICON.fermer}</button></span></header>` +
         `<div class="vy-fenetre__corps"></div>`;
       if (spec.width) box.style.setProperty('--largeur', spec.width + 'px');
+      // Au téléphone en paysage, une fenêtre étroite garde sa largeur, le jeu reste visible à côté (css/verre.css).
+      if ((spec.width || 420) <= 520) box.classList.add('vy-fenetre--etroite');
       if (spec.cls) box.classList.add(spec.cls);
       this.layer.appendChild(box);
       w = { id, box, body: box.querySelector('.vy-fenetre__corps'), title: box.querySelector('.vy-fenetre__titre'), spec };
