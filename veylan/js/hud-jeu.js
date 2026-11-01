@@ -31,6 +31,7 @@ class HudJeu {
     this.app.classList.toggle('vy-gaucher', this.gaucher);
     this.construirePanneau();
     this.construireLanguette();
+    this.construireBarreSorts();
     this.carteInfo = document.getElementById('carte-info');
     this.carteInfo.addEventListener('click', evt => {
       const b = evt.target.closest('[data-act]');
@@ -55,7 +56,9 @@ class HudJeu {
     w.on('fight', () => {
       this.page = 0;
       this.onglet = null;
-      this.basculerPanneau(true);
+      // Le panneau reste replié : la barre de sorts du bas suffit au combat (il s'ouvre toujours
+      // depuis la languette, pour les objets ou l'ordre des sorts).
+      this.basculerPanneau(false);
       // Le placement a son compte à rebours : à zéro, le combat commence seul (le tutoriel
       // peut l'éteindre pour son premier combat, js/guide.js).
       this.ui.armerPlacement(UI.PLACEMENT_SECONDES);
@@ -228,6 +231,7 @@ class HudJeu {
     this.rafraichirVie();
     this.rafraichirRapides();
     this.rafraichirGrille();
+    this.rafraichirBarreSorts();
     this.rafraichirCarte();
     this.rafraichirBadges();
     this.mesurerScene();
@@ -238,6 +242,7 @@ class HudJeu {
     if (!this.enCombat) return;
     this.rafraichirVie();
     this.rafraichirGrille();
+    this.rafraichirBarreSorts();
     this.rafraichirIndice();
     this.mesurerScene();
   }
@@ -343,6 +348,146 @@ class HudJeu {
     if (this.confirmQuitter) { this.confirmQuitter.remove(); this.confirmQuitter = null; }
   }
 
+  // ----- La barre de combat, à la manière de Dofus -----
+  // En bas de la scène, au téléphone en paysage comme sur ordinateur (style verre) : le cœur des PV
+  // (il se vide), l'étoile des PA et le losange des PM ; les sorts dans l'ordre de la grille (la
+  // tuile du sort, son coût, sa touche, sa relance ; le sort armé en cyan), sur deux lignes sur
+  // ordinateur ; puis le temps du tour en anneau et « Prêt » ou « Fin du tour ». Au-dessus, les
+  // effets en cours (l'Affût, la Fureur...). La barre de tour devient la frise des combattants :
+  // en haut au téléphone, juste au-dessus de la barre sur ordinateur (css/jeu.css).
+  construireBarreSorts() {
+    const b = this.barreSorts = document.createElement('div');
+    b.className = 'vy-barre-sorts';
+    b.setAttribute('role', 'toolbar');
+    b.setAttribute('aria-label', 'Sorts du combat');
+    const coeur = 'M24 42C9.5 31.5 2 24 2 14A11.4 11.4 0 0 1 24 7.8A11.4 11.4 0 0 1 46 14C46 24 38.5 31.5 24 42Z';
+    b.innerHTML = '<div class="vy-barre-sorts__boite"><span class="vy-barre-sorts__etats" hidden></span>' +
+      '<div class="vy-barre-sorts__vie">' +
+      `<span class="vy-coeur" title="Points de vie"><svg viewBox="0 0 48 44" aria-hidden="true"><defs><clipPath id="vy-coeur-clip"><rect class="vy-coeur__niveau" x="0" y="0" width="48" height="44"/></clipPath></defs><path class="vy-coeur__fond" d="${coeur}"/><path class="vy-coeur__vie" d="${coeur}" clip-path="url(#vy-coeur-clip)"/><path class="vy-coeur__reflet" d="M9 13.5A7 7 0 0 1 19.5 9.6"/></svg><b></b></span>` +
+      '<span class="vy-barre-sorts__pts">' +
+      '<span class="vy-res vy-res--pa" title="Points d\'action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1.8l4.3 9.1 10 1.2-7.4 6.8 2 9.9L16 23.8 7.1 28.8l2-9.9-7.4-6.8 10-1.2z"/></svg><b></b></span>' +
+      '<span class="vy-res vy-res--pm" title="Points de mouvement"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.5L29.5 16L16 29.5L2.5 16Z"/></svg><b></b></span>' +
+      '</span></div>' +
+      '<div class="vy-barre-sorts__sorts"><span class="vy-barre-sorts__titre">Sorts</span><div class="vy-barre-sorts__liste"></div></div>' +
+      '<div class="vy-barre-sorts__fin"><span class="vy-barre-sorts__chrono" role="timer" aria-label="Temps du tour"><svg viewBox="0 0 40 40" aria-hidden="true"><circle class="vy-chrono__piste" cx="20" cy="20" r="17"/><circle class="vy-chrono__reste" cx="20" cy="20" r="17" pathLength="100"/></svg><b></b></span>' +
+      '<button type="button" class="vy-bouton vy-bouton--primaire vy-barre-sorts__action" data-ui="pret">Prêt</button></div>' +
+      '</div>';
+    this.stage.appendChild(b);
+    b.addEventListener('click', evt => {
+      const s = evt.target.closest('[data-slot]');
+      if (s) { this.toucherSlot(s); return; }
+      if (evt.target.closest('.vy-barre-sorts__action')) { if (this.combat.phase === 'placement') this.ui.ready(); else this.ui.endTurn(); }
+    });
+    // Hors de son tour : un appui long montre la fiche du sort (comme la grille).
+    b.addEventListener('contextmenu', evt => { const s = evt.target.closest('[data-spell]'); if (s) { evt.preventDefault(); this.infoSort(s, s.dataset.spell); } });
+    // À la souris : la fiche du sort au survol, tant que la souris reste sur sa tuile (comme Dofus).
+    b.addEventListener('pointerover', evt => {
+      if (evt.pointerType !== 'mouse') return;
+      const s = evt.target.closest('[data-spell]');
+      if (s && s !== this.sortSurvole) { this.sortSurvole = s; this.infoSort(s, s.dataset.spell, true); }
+    });
+    b.addEventListener('pointerout', evt => {
+      const s = evt.target.closest('[data-spell]');
+      if (!s || (evt.relatedTarget && s.contains(evt.relatedTarget))) return;
+      this.sortSurvole = null;
+      this.ui.el.tooltip.classList.add('hidden');
+    });
+    // Le temps du tour, à chaque battement du compte à rebours (js/ui.js, updateTimer).
+    this.ui.apresChrono = (reste, total) => this.majChrono(reste, total);
+  }
+
+  rafraichirBarreSorts(force) {
+    const b = this.barreSorts, cb = this.combat;
+    if (!b) return;
+    const on = this.enCombat && !!cb.player;
+    if (on !== this.barreOn) { this.barreOn = on; this.app.classList.toggle('vy-barre-sorts-on', on); if (!on) this.app.classList.remove('vy-etats-on'); }
+    // Les marges de la caméra suivent la frise et la barre (mesurées une fois posées : au premier
+    // passage, la frise n'est pas encore à sa place).
+    const boite = b.querySelector('.vy-barre-sorts__boite');
+    if (on && boite.offsetHeight) this.app.style.setProperty('--barre-sorts-h', boite.offsetHeight + 'px');
+    const marges = on ? `${this.insetHaut()}|${this.insetBas()}` : '';
+    if (marges !== this.margesCombat) { this.margesCombat = marges; try { window.dispatchEvent(new Event('resize')); } catch (e) { /* rien */ } }
+    if (!on) return;
+    const p = cb.player, tour = this.ui.isPlayerTurn() && !cb.busy;
+    const ids = this.contenu('sorts');
+    const cases = ids.map((id, i) => this.caseBarre(id, p, tour, i)).join('');
+    const act = this.ui.el.turnBar && this.ui.el.turnBar.querySelector('.vy-barre-tour__action');
+    const etat = act ? [act.textContent, act.disabled ? 1 : 0, act.dataset.ui, act.classList.contains('hidden') ? 1 : 0].join('|') : '';
+    const fx = this.ui.effetsTexte || '';
+    const sig = [cases, p.pa, p.pm, p.hp, p.hpMax, etat, fx].join('§');
+    if (!force && sig === this.barreSig2) return;
+    this.barreSig2 = sig;
+    const liste = b.querySelector('.vy-barre-sorts__liste');
+    liste.innerHTML = cases;
+    liste.style.setProperty('--colonnes', Math.max(1, Math.ceil(ids.length / 2)));
+    b.querySelector('.vy-res--pa b').textContent = p.pa;
+    b.querySelector('.vy-res--pm b').textContent = p.pm;
+    const pct = Math.max(0, Math.min(1, p.hp / Math.max(1, p.hpMax)));
+    const niveau = b.querySelector('.vy-coeur__niveau');
+    niveau.setAttribute('y', (44 * (1 - pct)).toFixed(2));
+    niveau.setAttribute('height', (44 * pct).toFixed(2));
+    const coeur = b.querySelector('.vy-coeur');
+    coeur.querySelector('b').textContent = p.hp;
+    coeur.title = `${p.hp} / ${p.hpMax} PV`;
+    coeur.classList.toggle('bas', pct <= 0.3);
+    const etats = b.querySelector('.vy-barre-sorts__etats');
+    etats.hidden = !fx;
+    etats.innerHTML = fx;
+    this.app.classList.toggle('vy-etats-on', !!fx);
+    const a = b.querySelector('.vy-barre-sorts__action');
+    if (act) { a.textContent = act.textContent; a.disabled = act.disabled; a.dataset.ui = act.dataset.ui || 'pret'; a.hidden = act.classList.contains('hidden'); }
+  }
+
+  // Le temps du tour (ou du placement) : l'anneau se vide, les secondes au milieu, en braise à la
+  // fin. Rien à compter : l'anneau s'efface.
+  majChrono(reste, total) {
+    const c = this.barreSorts && this.barreSorts.querySelector('.vy-barre-sorts__chrono');
+    if (!c) return;
+    const vide = reste == null || !total;
+    c.classList.toggle('vide', vide);
+    if (vide) return;
+    const s = Math.max(0, Math.ceil(reste));
+    const t = c.querySelector('b');
+    if (t.textContent !== String(s)) t.textContent = s;
+    c.querySelector('.vy-chrono__reste').style.strokeDashoffset = (100 * (1 - Math.max(0, Math.min(1, reste / total)))).toFixed(1);
+    c.classList.toggle('urgent', reste <= 5);
+  }
+
+  // Une case de la barre : l'icône du sort, son coût, sa touche, sa relance.
+  caseBarre(id, p, tour, rang) {
+    const ch = this.ch, cb = this.combat;
+    const s = cb.spellOf(id, p);
+    if (!s) return '';
+    const st = cb.spellState(p, id), cd = p.cooldowns[id] || 0;
+    const off = !tour || !st.ok, choisi = this.ui.selectedSpell === id;
+    const nom = id === 'arme' ? (Items.get(ch.equipment.arme) || {}).name || s.name : s.name;
+    const el = DATA.elements[s.element] || DATA.elements.neutre;
+    const icone = typeof SortIcones === 'object' && id !== 'arme' ? SortIcones.url(id, s, 72) : '';
+    const tuile = typeof SortTuiles === 'object' && SortTuiles.a(id);
+    const fond = icone ? `<img class="vy-sort__icone" src="${icone}" alt="">` : `<span class="vy-sort__icone vy-sort__icone--arme">${id === 'arme' ? Hud.picto({ kind: 'weapon' }) : Util.esc(nom.charAt(0))}</span>`;
+    return `<button type="button" class="vy-sort${tuile ? ' vy-sort--tuile' : ''}${off ? ' indispo' : ''}${choisi ? ' choisi' : ''}" data-slot data-spell="${id}" style="--el:${el.color}" aria-label="${Util.esc(nom)}, ${s.pa} PA${st.ok ? '' : ' : ' + Util.esc(st.reason || 'indisponible')}" title="${Util.esc(nom)} · ${s.pa} PA">` +
+      `${fond}<em class="vy-sort__pa">${s.pa}</em>${rang < 9 ? `<i class="vy-sort__touche">${rang + 1}</i>` : ''}${cd ? `<span class="vy-sort__cd">${cd}</span>` : ''}</button>`;
+  }
+
+  // Les marges du haut et du bas de la scène en combat (la frise des tours, la barre de sorts) :
+  // la caméra cadre l'aire entre les deux (main.js, coverHud).
+  insetHaut() {
+    const t = this.ui.el.turnBar;
+    if (!this.barreOn || !t || !t.offsetWidth) return 0;
+    const r = t.getBoundingClientRect(), s = this.stage.getBoundingClientRect();
+    return r.top < s.top + s.height * 0.4 ? Math.max(0, Math.round(r.bottom - s.top + 4)) : 0;
+  }
+  insetBas() {
+    const b = this.barreSorts && this.barreSorts.querySelector('.vy-barre-sorts__boite');
+    if (!this.barreOn || !b || !b.offsetWidth) return 0;
+    const s = this.stage.getBoundingClientRect();
+    let haut = b.getBoundingClientRect().top;
+    // Sur ordinateur, la frise des combattants se pose juste au-dessus de la barre.
+    const t = this.ui.el.turnBar;
+    if (t && t.offsetWidth) { const r = t.getBoundingClientRect(); if (r.top > s.top + s.height * 0.4) haut = Math.min(haut, r.top); }
+    return Math.max(0, Math.round(s.bottom - haut + 4));
+  }
+
   // ----- La grille : sorts ou objets, en pages, réordonnable -----
 
   // Les sorts : l'arme d'abord (première case), puis ceux de la classe ; en exploration, les sorts
@@ -431,6 +576,7 @@ class HudJeu {
         if (!this.ui.isPlayerTurn()) { this.infoSort(b, id); return; }
         await this.ui.selectSpell(id);
         this.rafraichirGrille(true);
+        this.rafraichirBarreSorts(true);
       } else this.infoSort(b, id);
       return;
     }
@@ -442,7 +588,7 @@ class HudJeu {
   }
 
   // Hors de son tour ou hors combat : la fiche du sort dans l'infobulle, un instant.
-  infoSort(b, id) {
+  infoSort(b, id, garder) {
     const ch = this.ch, t = this.ui.el.tooltip;
     let html;
     if (this.enCombat && this.combat.player) html = this.ui.spellTooltip(id, this.combat.player);
@@ -459,7 +605,7 @@ class HudJeu {
     t.style.left = Math.max(8, Math.min(innerWidth - t.offsetWidth - 8, r.left + r.width / 2 - t.offsetWidth / 2)) + 'px';
     t.style.top = Math.max(8, r.top - t.offsetHeight - 8) + 'px';
     clearTimeout(this.infoT);
-    this.infoT = setTimeout(() => t.classList.add('hidden'), 2600);
+    if (!garder) this.infoT = setTimeout(() => t.classList.add('hidden'), 2600);
   }
 
   // Glisser une case sur une autre les échange (grille déverrouillée seulement).
@@ -517,7 +663,9 @@ class HudJeu {
     const pos = !room && typeof Atlas === 'object' ? Atlas.coordsOf(w.mapId) : null;
     const lv = room ? ((World.dungeonDef(def.dungeonId) || {}).level || (w.zone && w.zone.level)) : def.level;
     const niveau = Array.isArray(lv) ? (lv[0] === lv[1] ? `Niveau ${lv[0]}` : `Niveau ${lv[0]} à ${lv[1]}`) : '';
-    const t = Quests.tracker(this.ch)[0];
+    // La quête suivie (le journal, js/hud-quetes.js), sinon la première du suivi.
+    const tous = Quests.tracker(this.ch), suivie = this.hud && this.hud.quetesSuivie ? this.hud.quetesSuivie() : null;
+    const t = (suivie && tous.find(x => x.quest.id === suivie)) || tous[0];
     const html = `<button type="button" class="vy-carte-info__carte" data-act="carte" aria-label="${Util.esc(zone)}, ${Util.esc(def.name)} : ouvrir la carte du monde">` +
       `<span class="vy-carte-info__titre"><b>${Util.esc(zone || def.name)}</b>${zone ? ` <span>(${Util.esc(def.name)})</span>` : ''}</span>` +
       `<span class="vy-carte-info__ligne">${zone ? `<span class="vy-carte-info__lieu">${Util.esc(def.name)} · </span>` : ''}${pos ? `${pos[0]},${pos[1]}, ` : ''}${niveau}</span></button>` +

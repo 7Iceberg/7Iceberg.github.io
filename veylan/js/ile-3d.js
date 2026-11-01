@@ -1266,8 +1266,9 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this.repere = new THREE.Mesh(new THREE.RingGeometry(0.7, 1.0, 40).rotateX(-Math.PI / 2), mk('#00c2ff', 0.8)); this.repere.visible = false; this.repere.renderOrder = 6;
     const pt = new THREE.CircleGeometry(0.09, 8).rotateX(-Math.PI / 2);
     this.points = new THREE.InstancedMesh(pt, mk('#ffffff', 0.75), 48); this.points.count = 0; this.points.frustumCulled = false; this.points.renderOrder = 6;
-    // Les marques du guide le long d'un chemin (js/guide.js, repère `chemin`).
-    this.traces = new THREE.InstancedMesh(new THREE.RingGeometry(0.14, 0.26, 12).rotateX(-Math.PI / 2), mk('#00c2ff', 0.8), 48); this.traces.count = 0; this.traces.frustumCulled = false; this.traces.renderOrder = 6;
+    // Les marques du guide le long d'un chemin (js/guide.js, repère `chemin` ; « Montrer le chemin »
+    // du journal des quêtes, js/hud-quetes.js) : assez larges pour se voir sur les pavés clairs.
+    this.traces = new THREE.InstancedMesh(new THREE.RingGeometry(0.2, 0.36, 16).rotateX(-Math.PI / 2), mk('#00c2ff', 0.92), 48); this.traces.count = 0; this.traces.frustumCulled = false; this.traces.renderOrder = 6;
     scene.add(this.marque, this.survol, this.repere, this.points, this.traces);
   }
 

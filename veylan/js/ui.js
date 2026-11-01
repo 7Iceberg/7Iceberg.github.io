@@ -112,6 +112,7 @@ class UI {
   // Le placement a son compte à rebours dans le monde : à zéro, le combat commence seul.
   armerPlacement(seconds) {
     this.placementEndsAt = seconds > 0 && this.combat.phase === 'placement' ? Date.now() + seconds * 1000 : 0;
+    this.placementSeconds = seconds > 0 ? seconds : 0;
     this.updateTimer();
   }
 
@@ -646,6 +647,7 @@ class UI {
     if (p.kit && p.kit.blood) kit.push(`Sang Versé ${c.bloodOf(p)} %`);
     if (c.isArmed(p)) kit.push(`armé (−${p.kit.armed.reduction} % subis)`);
     const effects = kit.concat(p.effects.map(f => this.describeEffect(f))).join(', ');
+    this.effetsTexte = effects;   // la barre de combat les montre aussi (js/hud-jeu.js)
     // Les cases de stats sont construites une fois, puis mises à jour : la jauge de vie glisse
     // et garde un instant la trace des PV perdus.
     if (!this.statEls || !this.el.stats.contains(this.statEls.hp)) {
@@ -720,6 +722,11 @@ class UI {
       if (ch.textContent !== txt) ch.textContent = txt;
       ch.classList.toggle('urgent', left != null && left <= 5);
     }
+    // L'anneau du temps dans la barre de combat (js/hud-jeu.js) : le reste et le total du tour.
+    if (this.apresChrono) {
+      const total = c.phase === 'placement' ? (this.placementEndsAt && this.placementSeconds) || null : c.phase === 'battle' ? c.turnSeconds : null;
+      this.apresChrono(left, total);
+    }
     if (c.phase === 'placement' && this.el.round) this.el.round.textContent = this.placementEndsAt ? `Placement · ${txt}` : 'Placement';
   }
 
@@ -758,13 +765,13 @@ class UI {
     const c = this.combat, p = c.player;
     const order = (c.phase === 'placement' ? c.entities.slice().sort((a, b) => b.initiative - a.initiative) : c.order).filter(e => e.alive);
     const painter = this.renderer && (this.renderer.painter || this.renderer);
-    const html = order.map(e => {
+    const html = order.map((e, k) => {
       const hidden = !c.canSee(p, e);
       const hp = Math.max(0, Math.min(1, e.hp / e.hpMax));
       const team = e.team === 'player' ? 'allie' : 'ennemi';
       const img = hidden ? '' : `<img src="${UI.buste(painter, e)}" alt="" draggable="false">`;
       const title = hidden ? 'Quelque chose d\'invisible' : `${e.name}, niveau ${e.level} · ${e.hp} / ${e.hpMax} PV`;
-      return `<div class="vy-combattant vy-combattant--${team}${e === c.actor ? ' actuel' : ''}${e.isSummon && !e.ally ? ' invoc' : ''}${hidden ? ' cache' : ''}" title="${Util.esc(title)}" data-id="${e.id}" style="--v:${hp.toFixed(3)}">${img}<span class="vy-combattant__pv" aria-hidden="true"></span></div>`;
+      return `<div class="vy-combattant vy-combattant--${team}${e === c.actor ? ' actuel' : ''}${e.isSummon && !e.ally ? ' invoc' : ''}${hidden ? ' cache' : ''}" title="${Util.esc(title)}" data-id="${e.id}" style="--v:${hp.toFixed(3)}">${img}<span class="vy-combattant__pv" aria-hidden="true"></span><i class="vy-combattant__n" aria-hidden="true">${k + 1}</i></div>`;
     }).join('');
     if (this.timelineHtml === html) return;
     this.timelineHtml = html;

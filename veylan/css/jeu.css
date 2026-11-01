@@ -277,7 +277,7 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 /* ===== Le téléphone en paysage ===== */
 @media (orientation: landscape) and (max-height: 500px) {
   #app, #app.mode-explore, #app.mode-combat {
-    --panneau-l: clamp(214px, 30vw, 300px);
+    --panneau-l: calc(clamp(214px, 30vw, 300px) * var(--ui-z, 1));
     grid-template-columns: minmax(0, 1fr) var(--panneau-l);
     grid-template-rows: minmax(0, 1fr);
   }
@@ -430,8 +430,8 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
      languette (sous la couche des fenêtres, comme avant). L'interface de la scène s'écarte de ce
      qui la couvre (--sc-droite), la caméra aussi (main.js, HudJeu.insetDroite). ----- */
   #app.vy-replie, #app.vy-replie.mode-explore, #app.vy-replie.mode-combat, #app.vy-replie.vy-gaucher, #app.vy-replie.vy-gaucher.mode-explore, #app.vy-replie.vy-gaucher.mode-combat {
-    --panneau-l: clamp(206px, 27vw, 280px);
-    --languette-l: 46px;
+    --panneau-l: calc(clamp(206px, 27vw, 280px) * var(--ui-z, 1));
+    --languette-l: calc(46px * var(--ui-z, 1));
     grid-template-columns: minmax(0, 1fr);
   }
   #app.vy-replie #stage, #app.vy-replie.mode-explore #stage, #app.vy-replie.mode-combat #stage, #app.vy-replie.vy-gaucher #stage, #app.vy-replie.vy-gaucher.mode-explore #stage, #app.vy-replie.vy-gaucher.mode-combat #stage { grid-column: 1; }
@@ -647,4 +647,173 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 @media (prefers-reduced-motion: reduce) {
   .vy-discussion, .vy-discussion__flottant .vy-chat, .vy-fiche-groupe, .vy-confirm-sort, .vy-emote-bulle.entre, .vy-tourne__tel,
   .vy-panneau__grille.libre .vy-slot, .vy-panneau__pv.bas .vy-panneau__pv-bord { animation: none !important; }
+}
+
+/* ===== La barre de combat, à la manière de Dofus (js/hud-jeu.js) : le cœur des PV, l'étoile des
+   PA, le losange des PM ; les sorts ; l'anneau du temps et « Prêt » ou « Fin du tour ». Au
+   téléphone en paysage, elle tient le bas de la scène et la barre de tour devient la frise des
+   combattants en haut ; sur ordinateur (style verre), elle remplace la barre du bas, et la frise
+   se pose juste au-dessus d'elle. La caméra cadre l'aire entre les deux (HudJeu.insetHaut,
+   insetBas). ===== */
+.vy-barre-sorts { display: none; }
+.vy-barre-sorts__boite {
+  position: relative; pointer-events: auto; zoom: var(--ui-z, 1);
+  display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%;
+  padding: 5px 8px 5px 6px;
+  border: 1px solid rgba(var(--v-ligne-rgb, 201, 166, 107), 0.2);
+  border-radius: 16px;
+  background: var(--v-degrade, linear-gradient(90deg, #e9cf98, #b08c52)) top / 100% 2px no-repeat, rgba(var(--v-fen-rgb, 12, 19, 29), var(--v-alpha, 0.9));
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+/* Les effets en cours (l'Affût, la Fureur, les bonus) : une pastille au-dessus du coin droit. */
+.vy-barre-sorts__etats {
+  position: absolute; right: 10px; bottom: calc(100% + 5px); max-width: calc(100% - 20px);
+  padding: 3px 10px; border-radius: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font: 700 10.5px var(--vy-font-ui); color: var(--v-accent-texte, #e9cf98);
+  background: rgba(var(--v-fen-rgb, 12, 19, 29), 0.92); border: 1px solid rgba(var(--v-a-rgb, 233, 207, 152), 0.35);
+}
+.vy-barre-sorts__etats[hidden] { display: none; }
+/* Le cœur, l'étoile, le losange */
+.vy-barre-sorts__vie { flex: none; display: flex; align-items: center; gap: 3px; }
+.vy-coeur { position: relative; flex: none; width: 46px; height: 42px; display: grid; place-items: center; }
+.vy-coeur svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.55)); }
+.vy-coeur__fond { fill: #4a1712; stroke: rgba(240, 122, 92, 0.6); stroke-width: 1.8; }
+.vy-coeur__vie { fill: var(--v-pv, #f07a5c); }
+.vy-coeur__niveau { transition: y 0.35s var(--vy-courbe), height 0.35s var(--vy-courbe); }
+.vy-coeur__reflet { fill: none; stroke: #fff; stroke-opacity: 0.5; stroke-width: 2.4; stroke-linecap: round; }
+.vy-coeur b { position: relative; margin-top: -3px; font: 800 14px/1 var(--vy-font-ui); color: #fff; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 6px rgba(0, 0, 0, 0.6); }
+.vy-coeur.bas .vy-coeur__vie { animation: vy-coeur-bat 1.1s ease-in-out infinite; }
+@keyframes vy-coeur-bat { 50% { fill: #ff4a2e; } }
+.vy-barre-sorts__pts { flex: none; display: flex; flex-direction: column; gap: 1px; }
+.vy-res { position: relative; width: 24px; height: 24px; display: grid; place-items: center; }
+.vy-res svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5)); }
+.vy-res path { stroke: rgba(0, 0, 0, 0.5); stroke-width: 1.3; stroke-linejoin: round; }
+.vy-res--pa path { fill: var(--v-pa, #e9cf98); }
+.vy-res--pm path { fill: var(--v-pm, #8db585); }
+.vy-res b { position: relative; margin-top: 1px; font: 800 11px/1 var(--vy-font-ui); color: #17110a; font-variant-numeric: tabular-nums; }
+/* Les sorts */
+.vy-barre-sorts__sorts { min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 3px; padding: 0 8px; border-left: 1px solid rgba(var(--v-ligne-rgb, 201, 166, 107), 0.16); border-right: 1px solid rgba(var(--v-ligne-rgb, 201, 166, 107), 0.16); }
+.vy-barre-sorts__titre { display: none; font: 700 9px var(--vy-font-ui); letter-spacing: 0.18em; text-transform: uppercase; color: var(--v-texte-2, #a79f8f); text-align: center; }
+.vy-barre-sorts__liste { min-width: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 7px 4px 2px; margin-top: -5px; }
+.vy-barre-sorts__liste::-webkit-scrollbar { display: none; }
+.vy-barre-sorts .vy-sort {
+  position: relative; display: block; flex: none; width: 40px; height: 40px; min-height: 0; padding: 0;
+  border: 1px solid rgba(var(--v-ligne-rgb, 201, 166, 107), 0.22); border-radius: 10px;
+  background: rgba(var(--v-carte-rgb, 24, 37, 54), 0.9);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.vy-barre-sorts .vy-sort__icone { position: absolute; inset: 3px; width: calc(100% - 6px); height: calc(100% - 6px); border-radius: 7px; object-fit: cover; display: block; box-shadow: none; }
+.vy-barre-sorts .vy-sort__icone--arme { display: grid; place-items: center; padding: 6px; color: #fff3d6; background: linear-gradient(135deg, color-mix(in srgb, var(--el) 70%, #fff 10%), color-mix(in srgb, var(--el) 55%, #0a111b 45%)); font: 800 15px var(--vy-font-titre); }
+.vy-barre-sorts .vy-sort__icone--arme svg { width: 100%; height: 100%; }
+.vy-barre-sorts .vy-sort__pa { position: absolute; right: -5px; top: -7px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 5px; font: 800 9.5px/16px var(--vy-font-ui); font-style: normal; text-align: center; color: #17110a; background: var(--v-pa, #e9cf98); box-shadow: 0 0 0 1.5px rgb(var(--v-fen-rgb, 12, 19, 29)); }
+.vy-barre-sorts .vy-sort__touche { position: absolute; left: 3px; bottom: 1px; font: 700 8.5px var(--vy-font-ui); font-style: normal; color: rgba(255, 255, 255, 0.9); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9); pointer-events: none; }
+.vy-barre-sorts .vy-sort__cd { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 9px; background: rgba(10, 17, 27, 0.66); color: #ff9b82; font: 800 15px var(--vy-font-ui); }
+/* Une tuile dessinée (js/sort-tuiles.js) porte déjà son cadre : elle prend toute la case. */
+.vy-barre-sorts .vy-sort--tuile { border-color: transparent; background: none; }
+.vy-barre-sorts .vy-sort--tuile .vy-sort__icone { inset: 0; width: 100%; height: 100%; border-radius: 0; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45)); }
+.vy-barre-sorts .vy-sort--tuile .vy-sort__touche { left: 5px; bottom: 3px; }
+.vy-barre-sorts .vy-sort.indispo .vy-sort__icone { filter: grayscale(0.85) brightness(0.55); }
+.vy-barre-sorts .vy-sort.indispo .vy-sort__pa { opacity: 0.6; }
+.vy-barre-sorts .vy-sort.choisi { border-color: var(--v-act, #3fd0ff); box-shadow: 0 0 0 1px var(--v-act, #3fd0ff), 0 0 14px rgba(var(--v-act-rgb, 63, 208, 255), 0.5); }
+.vy-barre-sorts .vy-sort:hover:not(.indispo) { border-color: rgba(var(--v-a-rgb, 233, 207, 152), 0.7); }
+.vy-barre-sorts .vy-sort:active { transform: translateY(1px); }
+/* Le temps du tour, « Fin du tour » */
+.vy-barre-sorts__fin { flex: none; display: flex; align-items: center; gap: 7px; }
+.vy-barre-sorts__chrono { position: relative; flex: none; width: 36px; height: 36px; display: grid; place-items: center; }
+.vy-barre-sorts__chrono svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.vy-chrono__piste { fill: rgba(var(--v-champ-rgb, 8, 13, 21), 0.9); stroke: rgba(255, 255, 255, 0.1); stroke-width: 3.6; }
+.vy-chrono__reste { fill: none; stroke: var(--v-act, #3fd0ff); stroke-width: 3.6; stroke-linecap: round; stroke-dasharray: 100 100; transition: stroke-dashoffset 0.3s linear; }
+.vy-barre-sorts__chrono b { position: relative; font: 800 12px var(--vy-font-ui); color: var(--v-texte, #f2e2c9); font-variant-numeric: tabular-nums; }
+.vy-barre-sorts__chrono.urgent .vy-chrono__reste { stroke: var(--v-pv, #f07a5c); }
+.vy-barre-sorts__chrono.urgent b { color: #ff9b82; }
+.vy-barre-sorts__chrono.vide { visibility: hidden; }
+.vy-barre-sorts__action { flex: none; min-height: 40px; padding: 0 14px; white-space: nowrap; }
+.vy-barre-sorts__action[hidden] { display: none; }
+/* La frise : chaque combattant porte son rang dans l'ordre du tour (comme Dofus). */
+.vy-combattant__n { position: absolute; left: 1px; top: 1px; min-width: 12px; height: 12px; padding: 0 2px; border-radius: 4px; font: 800 8.5px/12px var(--vy-font-ui); font-style: normal; text-align: center; color: #fff; background: rgba(5, 8, 13, 0.72); pointer-events: none; }
+.vy-combattant.actuel .vy-combattant__n { color: #17110a; background: var(--v-pa, #e9cf98); }
+
+/* ----- Au téléphone en paysage ----- */
+@media (orientation: landscape) and (max-height: 500px) {
+  #app.vy-barre-sorts-on .vy-barre-sorts {
+    display: flex; justify-content: center;
+    position: absolute; left: calc(6px + var(--sc-gauche)); right: calc(6px + var(--sc-droite)); bottom: calc(6px + var(--sc-bas)); z-index: 8;
+    pointer-events: none;
+  }
+  /* La frise des tours : la barre de tour, en haut, au milieu de la part libre de la scène (son
+     temps est dans la barre, son bouton aussi). */
+  #app.mode-combat.vy-barre-sorts-on .vy-barre-tour {
+    top: calc(6px + var(--sc-haut)); bottom: auto; right: auto;
+    left: calc(var(--sc-gauche) + (100% - var(--sc-gauche) - var(--sc-droite)) / 2);
+    transform: translateX(-50%);
+    display: flex; align-items: center; gap: 8px;
+    max-width: calc(100% - var(--sc-gauche) - var(--sc-droite) - 12px);
+    padding: 5px 8px 5px 10px;
+  }
+  #app.mode-combat.vy-barre-sorts-on .vy-barre-tour > * { zoom: 1; }
+  #app.mode-combat.vy-barre-sorts-on .vy-barre-tour { zoom: var(--ui-z, 1); }
+  #app.vy-barre-sorts-on .vy-barre-tour__tete { display: none; }
+  #app.vy-barre-sorts-on .vy-barre-tour__corps { display: contents; }
+  #app.vy-barre-sorts-on .vy-barre-tour__cote { order: 0; flex: none; padding: 0 8px 0 0; border-right: 1px solid rgba(var(--v-ligne-rgb, 201, 166, 107), 0.2); }
+  #app.vy-barre-sorts-on .vy-barre-tour__tour { font: 700 9px var(--vy-font-ui); letter-spacing: 0.12em; text-transform: uppercase; color: var(--v-texte-2, #a79f8f); }
+  #app.vy-barre-sorts-on .vy-barre-tour__action { display: none; }
+  #app.vy-barre-sorts-on .vy-barre-tour .vy-combattants { order: 1; padding: 2px; align-items: center; }
+  #app.vy-barre-sorts-on .vy-barre-tour .vy-combattant { width: 30px; height: 35px; }
+  #app.vy-barre-sorts-on .vy-barre-tour .vy-combattant.actuel::after { display: none; }
+  /* Ce qui se posait en haut descend sous la frise ; la boîte du guide monte au-dessus de la barre. */
+  #app.vy-barre-sorts-on.mode-combat .vy-indice:not(.hidden) { top: calc(var(--sc-haut) + 62px); }
+  #app.vy-barre-sorts-on { --guide-bas: 70px; }
+  #app.vy-barre-sorts-on .vy-discussion { top: calc(var(--sc-haut) + 62px); }
+}
+
+/* ----- Sur ordinateur (style verre) : la barre au bas de la scène, à la place de la barre du
+   bas ; les sorts sur deux lignes ; la frise juste au-dessus ; les menus remontent en haut. ----- */
+@media (min-width: 901px) and (min-height: 521px) {
+  #app.vy-verre.mode-combat.vy-barre-sorts-on #hud { display: none; }
+  #app.vy-verre.mode-combat.vy-barre-sorts-on #timeline { visibility: hidden; }
+  #app.vy-verre.mode-combat.vy-barre-sorts-on .vy-menus { top: calc(10px + var(--sc-haut, 0px)); bottom: auto; }
+  #app.vy-verre.vy-barre-sorts-on .vy-barre-sorts {
+    display: flex; justify-content: center;
+    position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 8;
+    pointer-events: none;
+  }
+  #app.vy-verre .vy-barre-sorts__boite { gap: 12px; padding: 7px 10px 7px 8px; border-radius: 18px; }
+  #app.vy-verre .vy-coeur { width: 62px; height: 57px; }
+  #app.vy-verre .vy-coeur b { font-size: 18px; margin-top: -4px; }
+  #app.vy-verre .vy-res { width: 30px; height: 30px; }
+  #app.vy-verre .vy-res b { font-size: 13px; }
+  #app.vy-verre .vy-barre-sorts__sorts { padding: 0 12px; }
+  #app.vy-verre .vy-barre-sorts__titre { display: block; }
+  #app.vy-verre .vy-barre-sorts__liste { display: grid; grid-template-columns: repeat(var(--colonnes, 6), 44px); grid-auto-rows: 44px; gap: 6px; overflow: visible; padding: 6px 4px 0; margin-top: -2px; }
+  #app.vy-verre .vy-barre-sorts .vy-sort { width: 44px; height: 44px; }
+  #app.vy-verre .vy-barre-sorts__fin { flex-direction: column; gap: 6px; }
+  #app.vy-verre .vy-barre-sorts__chrono { width: 42px; height: 42px; }
+  #app.vy-verre .vy-barre-sorts__chrono b { font-size: 14px; }
+  #app.vy-verre .vy-barre-sorts__action { min-height: 40px; min-width: 128px; font-size: 14px; }
+  /* La frise des combattants, juste au-dessus de la barre */
+  #app.vy-verre.mode-combat.vy-barre-sorts-on .vy-barre-tour {
+    display: flex; align-items: center; gap: 10px;
+    position: absolute; left: 50%; right: auto; top: auto; z-index: 8;
+    bottom: calc(18px + var(--barre-sorts-h, 110px) * var(--ui-z, 1));
+    transition: bottom 0.2s var(--vy-courbe);
+    transform: translateX(-50%); zoom: var(--ui-z, 1);
+    max-width: calc(100% - 40px);
+    padding: 5px 10px 5px 12px; border-radius: 14px;
+    border: 1px solid rgba(var(--v-ligne-rgb, 201, 166, 107), 0.2);
+    background: rgba(var(--v-fen-rgb, 12, 19, 29), var(--v-alpha, 0.9));
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  }
+  #app.vy-verre.vy-barre-sorts-on .vy-barre-tour__tete { display: none; }
+  #app.vy-verre.vy-barre-sorts-on .vy-barre-tour__corps { display: contents; }
+  #app.vy-verre.vy-barre-sorts-on .vy-barre-tour__cote { order: 0; flex: none; padding: 0 10px 0 0; border-right: 1px solid rgba(var(--v-ligne-rgb, 201, 166, 107), 0.2); }
+  #app.vy-verre.vy-barre-sorts-on .vy-barre-tour__tour { font: 700 10px var(--vy-font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--v-texte-2, #a79f8f); }
+  #app.vy-verre.vy-barre-sorts-on .vy-barre-tour__action { display: none; }
+  #app.vy-verre.vy-barre-sorts-on .vy-barre-tour .vy-combattants { order: 1; display: flex; gap: 5px; padding: 2px; align-items: center; }
+  #app.vy-verre.vy-barre-sorts-on .vy-barre-tour .vy-combattant { width: 38px; height: 46px; border-radius: 6px; }
+  #app.vy-verre.vy-barre-sorts-on .vy-barre-tour .vy-combattant.actuel { width: 44px; height: 52px; }
+  #app.vy-verre.vy-barre-sorts-on .vy-barre-tour .vy-combattant.actuel::after { display: none; }
+  /* Les effets en cours au-dessus du coin droit de la barre : la frise monte d'autant. */
+  #app.vy-verre.mode-combat.vy-barre-sorts-on.vy-etats-on .vy-barre-tour { bottom: calc(44px + var(--barre-sorts-h, 110px) * var(--ui-z, 1)); }
+  /* La boîte du guide monte au-dessus de la frise ; la discussion aussi. */
+  #app.vy-verre.mode-combat.vy-barre-sorts-on { --guide-bas: calc(var(--barre-sorts-h, 110px) * var(--ui-z, 1) + 86px); }
 }

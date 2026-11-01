@@ -15,7 +15,7 @@
 .vy-fenetres { position: absolute; inset: var(--zs-haut) var(--zs-droite) var(--zs-bas) var(--zs-gauche); pointer-events: none; z-index: 15; overflow: hidden; }
 .vy-fenetre {
   position: absolute; pointer-events: auto;
-  width: min(var(--largeur, 420px), calc(100% - 16px));
+  width: min(calc(var(--largeur, 420px) * var(--ui-z, 1)), calc(100% - 16px));
   max-height: calc(100% - 72px);
   display: flex; flex-direction: column;
   color: var(--fen-texte);
@@ -303,4 +303,90 @@
   .vy-fenetre--carte { height: auto; }
   .vy-carte__corps { grid-template-columns: minmax(0, 1fr) 230px; grid-template-rows: minmax(0, 1fr); }
   .vy-carte__fiche { max-height: none; border-top: 0; padding-top: 0; }
+}
+
+/* ----- Le journal des quêtes (js/hud-quetes.js), à la manière de Dofus : la liste rangée par
+   catégorie, la fiche de la quête choisie ----- */
+.vy-fenetre--quetes { height: min(620px, calc(100% - 72px)); }
+.vy-fenetre--quetes.reduite { height: auto; }
+.vy-fenetre--quetes .vy-fenetre__corps { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 10px 12px 12px; }
+.vy-quetes { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(210px, 0.42fr) minmax(0, 1fr); gap: 10px; }
+.vy-quetes__liste { min-height: 0; display: flex; flex-direction: column; gap: 7px; }
+.vy-quetes__onglets { margin: 0; }
+.vy-quetes__onglets .vy-onglet { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.vy-quetes__onglets .vy-onglet small { font: 700 9.5px var(--vy-font-ui); letter-spacing: 0; opacity: 0.75; }
+.vy-quetes__recherche { flex: none; }
+.vy-quetes__recherche input { height: 30px; font-size: 12px; }
+.vy-quetes__items { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 4px; padding-right: 2px; }
+.vy-q-cat { display: flex; align-items: center; gap: 6px; margin: 6px 2px 1px; font: 700 9.5px var(--vy-font-ui); letter-spacing: 0.13em; text-transform: uppercase; color: var(--fen-texte-2); }
+.vy-q-cat::after { content: ""; flex: 1; height: 1px; background: var(--fen-filet); }
+.vy-q-cat small { order: 2; font-size: 9.5px; letter-spacing: 0; opacity: 0.8; }
+.vy-q-cat:first-child { margin-top: 0; }
+.vy-q-item { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 46px; padding: 6px 8px 6px 6px; border: 1px solid var(--fen-filet); border-radius: 10px; background: var(--fen-fond); color: var(--fen-texte); text-align: left; cursor: pointer; font: inherit; }
+.vy-q-item:hover { border-color: color-mix(in srgb, var(--fen-accent) 45%, transparent); }
+.vy-q-item.on { border-color: color-mix(in srgb, var(--fen-accent) 60%, transparent); background: color-mix(in srgb, var(--fen-accent) 11%, transparent); }
+.vy-q-item.pret .vy-q-item__t small { color: var(--vy-succes); }
+.vy-q-item__t { flex: 1; min-width: 0; display: grid; }
+.vy-q-item__t b { font: 700 12px/1.25 var(--vy-font-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vy-q-item__t small { font: 500 10.5px/1.3 var(--vy-font-ui); color: var(--fen-texte-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vy-q-item__niv { flex: none; font: 700 9.5px var(--vy-font-ui); color: var(--fen-texte-2); }
+.vy-q-item__suivie { flex: none; width: 16px; height: 16px; color: var(--fen-accent); }
+.vy-q-item__suivie svg { width: 100%; height: 100%; display: block; }
+.vy-q-anneau { position: relative; flex: none; width: 34px; height: 34px; }
+.vy-q-anneau svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
+.vy-q-anneau circle { fill: none; stroke-width: 3.2; }
+.vy-q-anneau .piste { stroke: rgba(255, 255, 255, 0.09); }
+.vy-q-anneau .part { stroke: var(--fen-accent); stroke-linecap: round; }
+.vy-q-anneau.fini .part { stroke: var(--vy-succes); }
+.vy-q-anneau b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 800 9.5px var(--vy-font-ui); color: var(--fen-texte); font-variant-numeric: tabular-nums; }
+.vy-q-anneau b i { font-style: normal; font-size: 7.5px; opacity: 0.7; margin-left: 0.5px; }
+.vy-q-anneau b svg { width: 14px; height: 14px; transform: none; color: var(--vy-succes); stroke-width: 2.6; }
+.vy-q-vide { margin: 10px 4px; font-size: 12px; color: var(--fen-texte-2); }
+
+.vy-quetes__fiche { min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 9px; padding: 11px 12px 12px; border: 1px solid var(--fen-filet); border-radius: 12px; background: color-mix(in srgb, var(--fen-fond-2) 70%, transparent); }
+.vy-q-retour { display: none; }
+.vy-q-tete { display: flex; align-items: center; gap: 10px; }
+.vy-q-tuile { flex: none; width: 40px; height: 40px; padding: 9px; border-radius: 11px; color: var(--fen-accent); background: color-mix(in srgb, var(--fen-accent) 13%, transparent); }
+.vy-q-tuile svg { width: 100%; height: 100%; display: block; }
+.vy-q-titre { flex: 1; min-width: 0; }
+.vy-fenetre__corps .vy-q-titre h3 { margin: 0; font: 700 15px/1.2 var(--vy-font-titre); letter-spacing: 0.06em; text-transform: uppercase; }
+.vy-q-titre small { display: block; margin-top: 2px; font-size: 11px; color: var(--fen-texte-2); }
+.vy-q-suivre { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--fen-filet); background: var(--fen-fond); color: var(--fen-texte-2); font: 700 11px var(--vy-font-ui); cursor: pointer; }
+.vy-q-suivre svg { width: 14px; height: 14px; }
+.vy-q-suivre.on { color: var(--fen-actif); border-color: color-mix(in srgb, var(--fen-actif) 60%, transparent); background: color-mix(in srgb, var(--fen-actif) 10%, transparent); }
+.vy-q-suivre.fini { color: var(--vy-succes); border-color: color-mix(in srgb, var(--vy-succes) 50%, transparent); cursor: default; }
+.vy-q-recit { margin: 0; font: 400 12.5px/1.5 var(--vy-font-ui); color: var(--fen-texte-2); }
+.vy-q-etapes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.vy-q-etape { display: flex; align-items: flex-start; gap: 9px; font-size: 12.5px; line-height: 1.35; }
+.vy-q-case { flex: none; width: 18px; height: 18px; margin-top: -0.5px; display: grid; place-items: center; border-radius: 6px; border: 1.5px solid color-mix(in srgb, var(--fen-texte-2) 55%, transparent); }
+.vy-q-case svg { width: 12px; height: 12px; stroke-width: 3; }
+.vy-q-etape.fait { color: var(--fen-texte-2); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--fen-texte-2) 60%, transparent); }
+.vy-q-etape.fait .vy-q-case { border-color: transparent; background: var(--vy-cimes-clair); color: #0d1a0d; }
+.vy-q-etape.cours { color: var(--fen-texte); font-weight: 600; }
+.vy-q-etape.cours .vy-q-case { border-color: var(--fen-actif); box-shadow: 0 0 8px color-mix(in srgb, var(--fen-actif) 55%, transparent); }
+.vy-q-etape.remise:not(.fait):not(.cours) { opacity: 0.7; }
+.vy-q-conseil { margin: 0; padding: 7px 10px; border-left: 2px solid color-mix(in srgb, var(--fen-accent) 60%, transparent); border-radius: 0 8px 8px 0; background: color-mix(in srgb, var(--fen-accent) 7%, transparent); font: italic 400 12px/1.45 var(--vy-font-lecture); color: var(--fen-texte-2); }
+.vy-q-gains { display: flex; flex-wrap: wrap; gap: 5px; }
+.vy-q-gain { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 8px; border: 1px solid var(--fen-filet); background: var(--fen-fond); font: 700 11px var(--vy-font-ui); color: var(--fen-texte); }
+.vy-q-gain.xp { color: var(--vy-eclat-clair); border-color: rgba(191, 149, 255, 0.45); background: rgba(191, 149, 255, 0.1); }
+.vy-q-gain.fils { color: var(--fen-accent); border-color: color-mix(in srgb, var(--fen-accent) 50%, transparent); background: color-mix(in srgb, var(--fen-accent) 10%, transparent); }
+.vy-q-gain.faction { color: var(--fen-actif); }
+.vy-q-pied { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 6px; }
+.vy-q-pied__ressort { flex: 1; }
+.vy-q-pied .vy-bouton svg { width: 15px; height: 15px; }
+#app[data-ui-theme="ardoise"] .vy-q-etape.fait .vy-q-case { color: #fff; background: #3f6b3b; }
+/* Téléphone en portrait : la liste, puis la fiche avec un retour. */
+@media (max-width: 600px) {
+  .vy-quetes { grid-template-columns: minmax(0, 1fr); }
+  .vy-quetes.vue-fiche .vy-quetes__liste { display: none; }
+  .vy-quetes:not(.vue-fiche) .vy-quetes__fiche { display: none; }
+  .vy-q-retour { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; padding: 2px 6px 2px 0; border: 0; background: none; color: var(--fen-accent); font: 700 11px var(--vy-font-ui); cursor: pointer; }
+  .vy-q-retour svg { width: 15px; height: 15px; }
+}
+/* Téléphone en paysage : la fenêtre prend la scène, plus serrée. */
+@media (max-height: 480px) and (max-width: 1000px) {
+  .vy-fenetre--quetes { height: auto; }
+  .vy-quetes { grid-template-columns: minmax(200px, 0.4fr) minmax(0, 1fr); gap: 8px; }
+  .vy-quetes__fiche { gap: 7px; padding: 9px 10px 10px; }
+  .vy-q-recit { font-size: 12px; }
 }

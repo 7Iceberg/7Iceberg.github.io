@@ -214,21 +214,21 @@
 #app.vy-verre .vy-fenetre input[type="checkbox"]:focus-visible { outline: 2px solid var(--v-act); outline-offset: 2px; }
 
 /* Le curseur de l'opacité des fonds (Options) */
-#app.vy-verre .vy-opacite { gap: 12px; }
-#app.vy-verre .vy-opacite label { flex: none; }
-#app.vy-verre .vy-opacite output { flex: none; min-width: 42px; text-align: right; font: 700 12px var(--vy-font-ui); color: var(--v-accent-texte); font-variant-numeric: tabular-nums; }
-.vy-opacite input[type="range"] { flex: 1; min-width: 80px; }
+#app.vy-verre .vy-reglage { gap: 12px; }
+#app.vy-verre .vy-reglage label { flex: none; }
+#app.vy-verre .vy-reglage output { flex: none; min-width: 42px; text-align: right; font: 700 12px var(--vy-font-ui); color: var(--v-accent-texte); font-variant-numeric: tabular-nums; }
+.vy-reglage input[type="range"] { flex: 1; min-width: 80px; }
 /* Sans le verre (?hud=ancien), le réglage n'a rien à régler. */
 #app:not(.vy-verre) .vy-opacite { display: none !important; }
-#app.vy-verre .vy-opacite input[type="range"] {
+#app.vy-verre .vy-reglage input[type="range"] {
   appearance: none; -webkit-appearance: none; height: 22px; margin: 0; background: none; cursor: pointer;
-  --pc: calc((var(--v, 90) - 40) / 60 * 100%);
+  --pc: calc((var(--v, 90) - var(--min, 40)) / (var(--max, 100) - var(--min, 40)) * 100%);
 }
-#app.vy-verre .vy-opacite input[type="range"]::-webkit-slider-runnable-track { height: 5px; border-radius: 4px; background: linear-gradient(90deg, var(--v-a), var(--v-b)) 0 0 / var(--pc) 100% no-repeat, rgba(var(--v-ligne-rgb), 0.18); }
-#app.vy-verre .vy-opacite input[type="range"]::-moz-range-track { height: 5px; border-radius: 4px; background: rgba(var(--v-ligne-rgb), 0.18); }
-#app.vy-verre .vy-opacite input[type="range"]::-moz-range-progress { height: 5px; border-radius: 4px; background: var(--v-degrade); }
-#app.vy-verre .vy-opacite input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; margin-top: -5px; border-radius: 50%; background: #fff; border: 3px solid var(--v-b); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
-#app.vy-verre .vy-opacite input[type="range"]::-moz-range-thumb { width: 9px; height: 9px; border-radius: 50%; background: #fff; border: 3px solid var(--v-b); }
+#app.vy-verre .vy-reglage input[type="range"]::-webkit-slider-runnable-track { height: 5px; border-radius: 4px; background: linear-gradient(90deg, var(--v-a), var(--v-b)) 0 0 / var(--pc) 100% no-repeat, rgba(var(--v-ligne-rgb), 0.18); }
+#app.vy-verre .vy-reglage input[type="range"]::-moz-range-track { height: 5px; border-radius: 4px; background: rgba(var(--v-ligne-rgb), 0.18); }
+#app.vy-verre .vy-reglage input[type="range"]::-moz-range-progress { height: 5px; border-radius: 4px; background: var(--v-degrade); }
+#app.vy-verre .vy-reglage input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; margin-top: -5px; border-radius: 50%; background: #fff; border: 3px solid var(--v-b); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
+#app.vy-verre .vy-reglage input[type="range"]::-moz-range-thumb { width: 9px; height: 9px; border-radius: 50%; background: #fff; border: 3px solid var(--v-b); }
 
 /* Les thèmes (Options) : des pastilles, celle choisie au contour de l'accent. */
 #app.vy-verre .vy-theme { border-radius: 10px; border-color: rgba(var(--v-ligne-rgb), 0.16); background: rgba(var(--v-champ-rgb), 0.7); }
@@ -291,7 +291,7 @@
   /* Une fenêtre étroite (Caractéristiques, Quêtes, Options, Succès...) garde sa largeur, contre le
      bord gauche : le jeu reste visible à côté, à travers le verre. Les grandes (Inventaire, Sorts,
      Carte) prennent toujours toute la place. */
-  #app.vy-verre .vy-fenetre--etroite { right: auto; bottom: auto; max-height: calc(100% - 8px); width: min(var(--largeur, 420px) + 24px, calc(100% - 8px)); }
+  #app.vy-verre .vy-fenetre--etroite { right: auto; bottom: auto; max-height: calc(100% - 8px); width: min(calc((var(--largeur, 420px) + 24px) * var(--ui-z, 1)), calc(100% - 8px)); }
   /* Une fenêtre ouverte passe sur la carte de la zone : à travers le verre, on n'en verrait que
      des fantômes de texte. */
   #app.vy-verre:has(#fenetres > .vy-fenetre:not(.reduite)) .vy-carte-info { visibility: hidden; }
@@ -557,6 +557,21 @@ body.vy-discussion-ouverte #app.vy-verre .vy-panneau__discussion { color: var(--
 #app.vy-verre .spell.selected { outline: 0; border-color: var(--v-act); background: rgba(var(--v-act-rgb), 0.12); box-shadow: 0 0 0 1px var(--v-act), 0 0 14px rgba(var(--v-act-rgb), 0.4); }
 #app.vy-verre .spell .cost { color: var(--v-pa); }
 #app.vy-verre .vy-combattant { border-radius: 7px; }
+
+/* ----- 11. La taille de l'interface (Options, de 80 à 130 %), pour les deux styles -----
+   Comme l'échelle de l'interface de Dofus. --ui-z est posée sur #app (js/hud-fenetres.js,
+   appliquerTaille). Ce que le CSS pose près d'un bord grandit en entier ; ce que le code place
+   lui-même (fenêtres déplaçables, languette, panneau, barre de tour, fiches, boutons de la vue,
+   annonces) grandit par son contenu, sa largeur suivant la taille : sa position et ses mesures
+   restent justes. */
+#app .vy-fenetre > *, #app .vy-languette > *, #app .vy-panneau > *, #app #toasts > *, #app .vy-barre-tour > *,
+#app .vy-camera > *, #app .vy-menus > *, #app .vy-fiche-groupe > *, #app .vy-confirm-sort > *, #app .vy-confirmer > *,
+#app .vy-guide__boite { zoom: var(--ui-z, 1); }
+#app .vy-carte-info, #app .vy-discussion, #app .vy-discussion__flottant, #app .vy-discussion__bouton, #app .vy-indice,
+#app .vy-ruban, #app .vy-rappel, #app #player-bar, #app #map-name, #app #tracker, #app #bas-centre, #app .vy-minicarte,
+#app #recompenses-btn { zoom: var(--ui-z, 1); }
+#app .vy-fiche-groupe { width: calc(232px * var(--ui-z, 1)); }
+#app .vy-confirmer { width: min(calc(300px * var(--ui-z, 1)), calc(100% - 24px)); }
 
 @media (prefers-reduced-motion: reduce) {
   #app.vy-verre .vy-fenetre, #app.vy-verre .toast, #app.vy-verre #panel .vy-modale, #app.vy-verre .vy-languette__pv.bas .vy-anneau__vie { animation: none !important; }

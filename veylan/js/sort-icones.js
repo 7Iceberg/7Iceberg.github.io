@@ -274,6 +274,8 @@ const SortIcones = (() => {
   function url(id, spell, px) {
     const s = spell || DATA.spells[id];
     if (!s || typeof document === 'undefined') return '';
+    // Un sort qui a sa tuile dessinée (js/sort-tuiles.js) la prend, avec les étoiles de son rang.
+    if (typeof SortTuiles === 'object' && SortTuiles.a(id)) return SortTuiles.url(id, s.rank || 0);
     px = Math.round(px || 64);
     const key = `${id}|${s.element}|${px}`;
     if (!cache.has(key)) {

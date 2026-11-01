@@ -370,23 +370,7 @@ class Hud {
 
   // ----- Quêtes et succès -----
 
-  openQuests() {
-    const render = () => {
-      const ch = this.world.ch;
-      // Abandonner : l'avancement est perdu, la quête redevient disponible (deux appuis).
-      const quit = q => Quests.canAbandon(ch, q.id).ok ? `<button class="vy-bouton vy-bouton--petit vy-bouton--fantome" data-act="abandon" data-id="${q.id}" title="L'avancement sera perdu ; la quête redeviendra disponible.">Abandonner</button>` : '';
-      const active = Quests.tracker(ch).map(t => `<div class="row quest${t.quest.main ? ' main' : ''}"><span><b>${esc(t.quest.name)}</b> <small class="muted">niv. ${t.quest.level}${t.quest.main ? ' · principale' : ''}${t.quest.category === 'faction' ? ' · faction' : ''}</small><br><small>${esc(t.text)}</small></span>${quit(t.quest)}</div>`).join('') || '<p class="muted">Aucune quête en cours. Les PNJ marqués « ! » en proposent.</p>';
-      const done = ch.quests.done.map(id => Quests.get(id)).filter(Boolean).map(q => `<div class="row done"><span>${esc(q.name)}</span><small class="muted">terminée</small></div>`).join('');
-      return `<h4>En cours</h4>${active}${done ? `<h4>Terminées (${ch.quests.done.length})</h4>${done}` : ''}`;
-    };
-    const actions = {
-      abandon: (d, b) => {
-        if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Confirmer l\'abandon'; b.classList.add('vy-bouton--danger'); return; }
-        this.world.abandonQuest(d.id);
-      },
-    };
-    this.simpleWin('quetes', 'Quêtes', render, actions, { width: 440 });
-  }
+  // Le journal des quêtes (touche Q) : js/hud-quetes.js.
 
   // Un succès débloqué dont la récompense attend est « à réclamer » (js/hud-recompenses.js).
   openAchievements() {
@@ -426,7 +410,9 @@ class Hud {
       <div class="row"><label class="vy-coche"><input type="checkbox" id="opt-gaucher" ${this.jeu && this.jeu.gaucher ? 'checked' : ''}> Mode gaucher</label><span class="muted">le panneau de jeu passe à gauche</span></div>
       ${PleinEcran.disponible() ? `<div class="row"><label class="vy-coche"><input type="checkbox" id="opt-plein-ecran"${PleinEcran.actif() ? ' checked' : ''}> Plein écran</label><span class="muted">sans la barre du navigateur</span></div>` : ''}`;
     // L'opacité des fonds : la valeur posée (le curseur suit, même si la fenêtre se redessine en cours de route).
-    const opacite = () => { const v = this.opacite || this.loadOpacite(); return `<div class="row vy-opacite"><label for="opt-opacite">Opacité des fonds</label><input type="range" id="opt-opacite" min="40" max="100" step="5" value="${v}" style="--v:${v}" aria-valuetext="${v} %"><output for="opt-opacite">${v} %</output></div>`; };
+    const curseur = (id, cls, label, v, min, max) => `<div class="row vy-reglage ${cls}"><label for="${id}">${label}</label><input type="range" id="${id}" min="${min}" max="${max}" step="5" value="${v}" style="--v:${v};--min:${min};--max:${max}" aria-valuetext="${v} %"><output for="${id}">${v} %</output></div>`;
+    const opacite = () => curseur('opt-opacite', 'vy-opacite', 'Opacité des fonds', this.opacite || this.loadOpacite(), 40, 100) +
+      curseur('opt-taille', 'vy-taille', 'Taille de l\'interface', this.taille || this.loadTaille(), 80, 130);
     const html = () => `${tuto()}${jeu()}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div>
       ${opacite()}
       <div class="row"><span class="muted">Fenêtres déplacées trop loin ?</span><button data-act="replacer">Replacer les fenêtres</button></div>
@@ -466,8 +452,8 @@ class Hud {
     };
     const onField = (el, kind) => {
       if (el.id === 'import-area') this.importDraft = el.value;
-      if (el.id === 'opt-opacite') {
-        const v = this.appliquerVerre(Number(el.value), kind === 'change');
+      if (el.id === 'opt-opacite' || el.id === 'opt-taille') {
+        const v = el.id === 'opt-taille' ? this.appliquerTaille(Number(el.value), kind === 'change') : this.appliquerVerre(Number(el.value), kind === 'change');
         el.style.setProperty('--v', v); el.setAttribute('aria-valuetext', `${v} %`);
         const o = el.parentNode.querySelector('output'); if (o) o.textContent = `${v} %`;
         return;

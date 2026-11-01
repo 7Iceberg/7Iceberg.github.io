@@ -86,6 +86,7 @@ Object.assign(Hud.prototype, {
     setInterval(() => this.drawMinimap(false), 350);
     this.applyTheme(this.loadTheme());
     this.appliquerVerre(this.loadOpacite());
+    this.appliquerTaille(this.loadTaille());
     this.initInventaire();
     this.initRecompenses();
   },
@@ -272,6 +273,25 @@ Object.assign(Hud.prototype, {
     app.style.setProperty('--v-alpha', String(v / 100));
     this.opacite = v;
     if (garder) { try { localStorage.setItem('veylan.opacite', String(v)); } catch (e) { /* rien */ } }
+    return v;
+  },
+
+  // La taille de l'interface (Options, de 80 à 130 %, comme l'échelle de l'interface de Dofus) :
+  // --ui-z sur #app (css/verre.css, section 11). La languette et le panneau changent de largeur :
+  // un « resize » rend ses marges à la caméra et ses mesures au panneau.
+  loadTaille() {
+    let v = NaN;
+    try { v = parseInt(localStorage.getItem('veylan.taille'), 10); } catch (e) { /* rien */ }
+    return Number.isFinite(v) ? Math.max(80, Math.min(130, v)) : 100;
+  },
+  appliquerTaille(taille, garder) {
+    const v = Math.max(80, Math.min(130, Math.round(taille)));
+    const app = document.getElementById('app');
+    if (v === 100) app.style.removeProperty('--ui-z'); else app.style.setProperty('--ui-z', String(v / 100));
+    const change = this.taille != null && this.taille !== v;
+    this.taille = v;
+    if (garder) { try { localStorage.setItem('veylan.taille', String(v)); } catch (e) { /* rien */ } }
+    if (change) { try { window.dispatchEvent(new Event('resize')); } catch (e) { /* rien */ } }
     return v;
   },
 });

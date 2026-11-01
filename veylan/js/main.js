@@ -166,7 +166,7 @@
     const s = stageEl.getBoundingClientRect(), h = hudEl.getBoundingClientRect();
     const over = h.height > 0 && h.top > s.top && h.top < s.bottom - 1;
     const jeu = hud && hud.jeu;
-    const ins = { bottom: over ? s.bottom - h.top : 0, right: jeu && jeu.insetDroite ? jeu.insetDroite() : 0, left: jeu && jeu.insetGauche ? jeu.insetGauche() : 0 };
+    const ins = { bottom: Math.max(over ? s.bottom - h.top : 0, jeu && jeu.insetBas ? jeu.insetBas() : 0), top: jeu && jeu.insetHaut ? jeu.insetHaut() : 0, right: jeu && jeu.insetDroite ? jeu.insetDroite() : 0, left: jeu && jeu.insetGauche ? jeu.insetGauche() : 0 };
     R.camera.setInsets(ins);
     // La caméra des cases garde les mêmes marges pendant que l'île s'affiche (pour le retour).
     if (scene && R.camera !== renderer.camera) renderer.camera.setInsets(ins);
