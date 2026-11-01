@@ -465,7 +465,9 @@ class CameraControls {
     const zoom = k => { e.preventDefault(); const r = cam.rect(), f = cam.focusRect(); cam.zoomAt(r.left + f.cx, r.top + f.cy, k, { smooth: true }); };
     if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') zoom(1.25);
     else if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract') zoom(0.8);
-    else if ((e.code === 'KeyQ' || e.code === 'KeyE') && typeof cam.tournerVers === 'function') { e.preventDefault(); cam.tournerVers((cam.animAz != null ? cam.animAz : cam.azimut) + (e.code === 'KeyQ' ? -1 : 1) * Math.PI / 4); }
+    // Une lettre déjà prise par un menu (la touche Q des Quêtes en qwerty, saisie avant nous, en
+    // capture, par js/hud-fenetres.js) ne tourne pas la vue.
+    else if ((e.code === 'KeyQ' || e.code === 'KeyE') && !e.defaultPrevented && typeof cam.tournerVers === 'function') { e.preventDefault(); cam.tournerVers((cam.animAz != null ? cam.animAz : cam.azimut) + (e.code === 'KeyQ' ? -1 : 1) * Math.PI / 4); }
     else if ((e.key === '0' || e.code === 'Numpad0') && !(this.opts.zeroTaken && this.opts.zeroTaken(e))) { e.preventDefault(); cam.fit(true); }
   }
 }
