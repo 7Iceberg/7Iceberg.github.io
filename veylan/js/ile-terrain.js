@@ -541,6 +541,56 @@ const IleTerrain = (() => {
       for (let i = 0; i < N; i++) if (!vide[i] && dv[i] < 2.5) h[i] += levre * doux(1 - dv[i] / 2.5);
     }
 
+    // ----- 8b. Les aires de combat : des plateaux -----
+    // Revue du fondateur (« le terrain n'est pas droit, il y a des vagues ») : chaque aire de combat
+    // (le carré de 15 × 15 u de `g.aire` des groupes du plateau) est aplanie à la hauteur moyenne de
+    // son sol sec, le raccord fondu sur 2 u autour ; l'eau garde sa cuvette et son niveau (les berges
+    // d'un ru restent des berges). Les aires qui se touchent (à 10 u de centre à centre, deux carrés
+    // se chevauchent) forment un seul plateau, à une seule hauteur : sinon le second recouvrait une
+    // part du premier d'une marche. En combat, la grille est plane ; en exploration, un replat que la
+    // pente douce du bord rend discret. Le monde modelé (Blender) lit la même grille : il est plat
+    // aux mêmes endroits.
+    const RACCORD = 2;
+    const carres = [];
+    for (const c of cartes) for (const g of c.groups || []) {
+      const a = g.aire;
+      if (a && Number.isFinite(a.x) && Number.isFinite(a.y)) carres.push({ x0: a.x, y0: a.y, x1: a.x + 15, y1: a.y + 15, groupe: -1 });
+    }
+    // Les composantes : deux carrés dont les raccords se touchent vont ensemble.
+    const touche = (a, b) => a.x0 - RACCORD < b.x1 + RACCORD && b.x0 - RACCORD < a.x1 + RACCORD && a.y0 - RACCORD < b.y1 + RACCORD && b.y0 - RACCORD < a.y1 + RACCORD;
+    let nGroupes = 0;
+    for (let k = 0; k < carres.length; k++) {
+      if (carres[k].groupe >= 0) continue;
+      const pile = [carres[k]];
+      carres[k].groupe = nGroupes;
+      while (pile.length) { const a = pile.pop(); for (const b of carres) if (b.groupe < 0 && touche(a, b)) { b.groupe = nGroupes; pile.push(b); } }
+      nGroupes++;
+    }
+    const distCarre = (c, u, v) => { const dx = max(c.x0 - u, 0, u - c.x1), dy = max(c.y0 - v, 0, v - c.y1); return sqrt(dx * dx + dy * dy); };
+    for (let gr = 0; gr < nGroupes; gr++) {
+      const cs = carres.filter(c => c.groupe === gr);
+      const X0 = min(...cs.map(c => c.x0)), Y0 = min(...cs.map(c => c.y0)), X1 = max(...cs.map(c => c.x1)), Y1 = max(...cs.map(c => c.y1));
+      let somme = 0, n = 0;
+      for (let v = max(0, ceil(Y0)); v <= min(H - 1, floor(Y1)); v++) for (let u = max(0, ceil(X0)); u <= min(W - 1, floor(X1)); u++) {
+        const i = idx(u, v);
+        if (vide[i] || eau[i] === eau[i]) continue;
+        if (!cs.some(c => u >= c.x0 && u <= c.x1 && v >= c.y0 && v <= c.y1)) continue;
+        somme += h[i]; n++;
+      }
+      if (!n) continue;
+      const hm = somme / n;
+      // Les noeuds du vide dans le carré suivent aussi (le bord du plateau tombe net dans le ravin :
+      // sans cela, la case du bord plongeait vers le fond du vide par l'interpolation).
+      for (let v = max(0, ceil(Y0 - RACCORD)); v <= min(H - 1, floor(Y1 + RACCORD)); v++) for (let u = max(0, ceil(X0 - RACCORD)); u <= min(W - 1, floor(X1 + RACCORD)); u++) {
+        const i = idx(u, v);
+        if (eau[i] === eau[i]) continue;
+        const d = min(...cs.map(c => distCarre(c, u, v)));
+        if (vide[i] && d > 0) continue;
+        const w = 1 - fondu(d, 0, RACCORD);
+        if (w > 0) h[i] += (hm - h[i]) * w;
+      }
+    }
+
     // ----- 9. Quantification au 1/256 u -----
     const haut = new Float32Array(N), eauQ = new Float32Array(N);
     for (let i = 0; i < N; i++) { haut[i] = quantifier(h[i]); eauQ[i] = eau[i] === eau[i] ? quantifier(eau[i]) : NaN; }
