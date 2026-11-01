@@ -187,16 +187,18 @@ const IleCharge = (() => {
     if (q === '0') return null;
     return typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.monde === 'glb' && !faible() ? 'glb' : null;
   }
-  // Un appareil faible (3.28) : ?quality=basse, ou deux coeurs ou moins, ou 2 Go de mémoire ou
-  // moins. Le monde modelé et le style Lisière que la donnée allume par défaut n'y viennent pas (le
-  // jeu dessiné par le code reste, moins lourd) ; l'adresse peut toujours les demander.
+  // Un appareil faible (3.28) : ?quality=basse, ou 2 Go de mémoire ou moins (navigator.deviceMemory,
+  // que Chrome donne et que Safari tait). Le monde modelé et le style Lisière que la donnée allume
+  // par défaut n'y viennent pas (le jeu dessiné par le code reste, moins lourd) ; l'adresse peut
+  // toujours les demander. Le nombre de coeurs n'est pas un signe : Safari le plafonne contre le
+  // pistage (à 2 sur certains iPhone), un bon téléphone passerait pour faible.
   function faible() {
     let q = null;
     try { q = new URLSearchParams(location.search).get('quality'); } catch (e) { q = null; }
     if (q === 'basse') return true;
     if (q === 'haute' || q === 'moyenne') return false;
     const n = typeof navigator !== 'undefined' && navigator ? navigator : {};
-    return (n.hardwareConcurrency || 4) <= 2 || (n.deviceMemory || 4) <= 2;
+    return (n.deviceMemory || 4) <= 2;
   }
   function glb() {
     return typeof IleGlb === 'object' ? Promise.resolve() : script('js/ile-glb.js');

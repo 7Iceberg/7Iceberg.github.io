@@ -730,7 +730,7 @@ class Accueil {
     const b = this.b;
     this.ecranEl.querySelectorAll('.app-tete__toile').forEach(cv => {
       const look = { tete: Number(cv.dataset.i), couleurs: b.look.couleurs };
-      AccueilArt.buste(cv, this.figureBrouillon({ look, facing: 'se' }), { fond: 'neutre', zoom: 0.58, haut: 0.57 });
+      AccueilArt.buste(cv, this.figureBrouillon({ look, facing: 'se' }), { fond: 'neutre', zoom: 0.58, haut: 0.57, peint: true });
     });
   }
 

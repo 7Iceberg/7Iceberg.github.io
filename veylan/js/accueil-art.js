@@ -59,7 +59,44 @@ const AccueilArt = (() => {
   // L'apparence à peindre pour une classe (couleur, glyphe) et un brouillon de personnage.
   function figure(classId, o) {
     const cl = DATA.classes[classId] || DATA.futureClasses && DATA.futureClasses[classId] || DATA.classes[DATA.defaultClass];
-    return Object.assign({ color: cl.color || '#8a93a6', glyph: cl.glyph || (cl.name ? cl.name[0] : 'V'), facing: 'se' }, o || {});
+    return Object.assign({ classId, color: cl.color || '#8a93a6', glyph: cl.glyph || (cl.name ? cl.name[0] : 'V'), facing: 'se' }, o || {});
+  }
+
+  // Les vues du socle tournant d'une classe modelée dans Blender (assets/classes/<id>_tour.webp :
+  // quatre vues côte à côte, se, sw, nw, ne, 512 × 768 chacune, fond transparent ; le modèle de
+  // 1,75 m dans un cadre de 2,02 m : les pieds à 734 px du haut, le visage à 125 px, les épaules
+  // larges de 160 px ; docs/PIPELINE-IMAGES.md). Seules les classes listées sont demandées, une fois.
+  const TOURNANTES = ['lyssar'];
+  const tours = new Map();
+  const VUE_L = 512, VUE_H = 768, VUES = ['se', 'sw', 'nw', 'ne'], PIEDS = 734, VISAGE = 125, EPAULES = 160;
+  function imageTour(id, quand) {
+    if (!TOURNANTES.includes(id)) { quand({ etat: 'absente' }); return null; }
+    let e = tours.get(id);
+    if (!e) {
+      e = { etat: 'attente', img: new Image(), suite: [] };
+      tours.set(id, e);
+      e.img.decoding = 'async';
+      e.img.onload = () => { e.etat = 'ok'; for (const f of e.suite.splice(0)) f(e); };
+      e.img.onerror = () => { e.etat = 'absente'; for (const f of e.suite.splice(0)) f(e); };
+      e.img.src = `assets/classes/${id}_tour.webp`;
+    }
+    if (e.etat === 'attente') e.suite.push(quand); else quand(e);
+    return e;
+  }
+  // La feuille des vues si elle est prête, sinon null ; `fn` est rappelé quand elle arrive (pour
+  // redessiner). Sans classe modelée, la figure peinte reste.
+  function vueTour(s, fn) {
+    const id = s && s.classId;
+    if (!id || !TOURNANTES.includes(id)) return null;
+    const e = tours.get(id);
+    if (e && e.etat === 'ok') return e.img;
+    if (!e || e.etat === 'attente') imageTour(id, r => { if (r.etat === 'ok' && fn) fn(); });
+    return null;
+  }
+  // Une vue de la feuille, les pieds en (x, y), le cadre haut de `hauteur` px.
+  function dessinerVue(c, img, facing, x, y, hauteur) {
+    const i = Math.max(0, VUES.indexOf(facing)), sc = hauteur / VUE_H;
+    c.drawImage(img, i * VUE_L, 0, VUE_L, VUE_H, x - VUE_L * sc / 2, y - PIEDS * sc, VUE_L * sc, VUE_H * sc);
   }
 
   // Lueur douce, en mode additif.
@@ -99,7 +136,13 @@ const AccueilArt = (() => {
     } else fondClasse(c, w, h, s.color);
     const k = Math.min(w, h * 1.05) * (o.zoom || 0.5) / 19;
     const hx = w * 0.5, hy = h * (o.haut || 0.44);
-    veilleur(c, hx - (s.facing === 'sw' ? -0.9 : 0.9) * k, hy + 40 * k, k, s);
+    // o.peint : la figure peinte quoi qu'il arrive (les têtes à choisir de l'écran d'apparence).
+    const img = o.peint ? null : vueTour(s, () => buste(cv, s, o));
+    if (img) {
+      // Le modèle : le visage en (hx, hy), les épaules sur la moitié de la largeur.
+      const sc = w * 0.52 / EPAULES;
+      c.drawImage(img, 0, 0, VUE_L, VUE_H, hx - VUE_L * sc / 2, hy - VISAGE * sc, VUE_L * sc, VUE_H * sc);
+    } else veilleur(c, hx - (s.facing === 'sw' ? -0.9 : 0.9) * k, hy + 40 * k, k, s);
     if (o.verrou) {
       c.fillStyle = 'rgba(6,9,16,0.62)'; c.fillRect(0, 0, w, h);
     }
@@ -163,7 +206,9 @@ const AccueilArt = (() => {
     const souffle = o.t != null && !o.calme ? Math.sin(o.t / 700) : 0;
     lueur(c, cx, cy - 24 * k, 36 * k, s.color, 0.16 + 0.05 * souffle);
     c.save(); c.translate(cx, cy); c.scale(1, 1 + 0.012 * souffle); c.translate(-cx, -cy);
-    veilleur(c, cx, cy, k, s);
+    const img = vueTour(s, o.redessiner);
+    if (img) dessinerVue(c, img, s.facing, cx, cy + 2 * k, 80 * k);
+    else veilleur(c, cx, cy, k, s);
     c.restore();
     return { k, cx, cy };
   }
@@ -181,7 +226,9 @@ const AccueilArt = (() => {
     fondClasse(c, w, h, s.color);
     c.restore();
     lueur(c, cx, cy - 24 * k, 32 * k, s.color, 0.16);
-    veilleur(c, cx, cy, k, s);
+    const img = vueTour(s, () => enPied(cv, s));
+    if (img) dessinerVue(c, img, 'se', cx, cy + 2 * k, 78 * k);
+    else veilleur(c, cx, cy, k, s);
   }
 
   // L'emblème d'une classe : un losange d'or serti, la couleur de la classe dedans, le glyphe au
@@ -838,7 +885,7 @@ const AccueilArt = (() => {
   // Les illustrations d'artiste des classes (assets/classes/<id>.webp, docs/PIPELINE-IMAGES.md) :
   // seules les classes listées ici sont demandées, une fois chacune. Un fichier absent coûterait
   // une erreur dans la console à chaque classe ; on ajoute l'id quand l'image arrive.
-  const ILLUSTREES = [];
+  const ILLUSTREES = ['lyssar'];
   const images = new Map();
   function imageClasse(id, quand) {
     if (!ILLUSTREES.includes(id)) { quand({ etat: 'absente' }); return null; }
@@ -857,6 +904,6 @@ const AccueilArt = (() => {
 
   return {
     set painter(p) { painter = p; }, get painter() { return painter; },
-    prepare, veilleur, figure, buste, enPied, socle, tournant, embleme, illustration, particules, dessinerParticules, monde, moitie, actu, imageClasse, lueur, eclat, rgba,
+    prepare, veilleur, figure, buste, enPied, socle, tournant, embleme, illustration, particules, dessinerParticules, monde, moitie, actu, imageClasse, imageTour, lueur, eclat, rgba,
   };
 })();
