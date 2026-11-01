@@ -207,8 +207,8 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
 
   // ----- Le réglage : l'heure et le temps qu'il fait -----
   // ?heure=21 (de 0 à 24), ?heure=cycle (une journée en douze minutes) ; ?meteo= une clé de METEOS.
-  // DATA.ile.heure et DATA.ile.meteo, qu'une copie peut poser. Par défaut : 21 h, temps clair (la nuit
-  // de la maquette).
+  // DATA.ile.heure, DATA.ile.heureDepart et DATA.ile.meteo, qu'une copie peut poser. Sans rien : 21 h,
+  // temps clair (la nuit de la maquette).
   function reglage() {
     let qh = null, qm = null;
     try { const q = new URLSearchParams(location.search); qh = q.get('heure'); qm = q.get('meteo'); } catch (e) { /* rien */ }
@@ -217,7 +217,9 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
     const cycle = h === 'cycle';
     const n = parseFloat(h);
     const meteo = METEOS[qm] ? qm : METEOS[d.meteo] ? d.meteo : 'clair';
-    return { cycle, heure: cycle ? 18.5 : Number.isFinite(n) ? ((n % 24) + 24) % 24 : 21, meteo };
+    // Le cycle part de DATA.ile.heureDepart (le matin de la copie), sinon de 18 h 30 (la maquette).
+    const depart = d.heureDepart != null && Number.isFinite(+d.heureDepart) ? ((+d.heureDepart % 24) + 24) % 24 : 18.5;
+    return { cycle, heure: cycle ? depart : Number.isFinite(n) ? ((n % 24) + 24) % 24 : 21, meteo };
   }
 
   // Le feuillage d'automne des Mailles : rouge, orange, rouille, un vert olive passé.
@@ -258,6 +260,25 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       this.palettesJeu = (def.regions || []).map(r => r.palette || {});
       const regions = (def.regions || []).map(r => (r.zone === 'ervane_mailles' ? Object.assign({}, r, { palette: Object.assign({}, r.palette, { feuillages: AUTOMNE }) }) : r));
       return Object.assign({}, def, { regions });
+    }
+
+    // Le monde modelé (3.26) : ses arbres des Mailles prennent le feuillage d'automne (la teinte de
+    // l'instance remplacée avant la cuisson des couleurs, IleGlb.construire) ; les pins et les arbres
+    // morts, et les autres zones, gardent la leur.
+    teinteGlb(u, v, nom, teinte) {
+      if (!/arbre/.test(nom) || /mort|pin/.test(nom)) return null;
+      const T = this.ile.T, def = this.ile.def;
+      if (!T || !def || !T.regionA) return null;
+      const reg = (def.regions || [])[T.regionA(u, v)];
+      if (!reg || reg.zone !== 'ervane_mailles') return null;
+      const h = Math.abs(Math.sin(u * 12.9898 + v * 78.233) * 43758.5453) % 1;
+      // Surtout l'orange et la rouille, un peu de rouge, un peu d'olive.
+      const a = AUTOMNE[h < 0.4 ? 1 : h < 0.72 ? 2 : h < 0.9 ? 0 : 3], b = AUTOMNE[Math.floor(h * 7) % AUTOMNE.length];
+      // Éclairci vers le jaune paille, comme les lobes hauts des arbres d'automne du décor du code.
+      const c = this.c0.set(a).lerp(this.c1.set(b), ((h * 13) % 1) * 0.5).lerp(this.c1.set('#f2d27a'), 0.28).convertSRGBToLinear();
+      this.compte.automne++;
+      void teinte;
+      return [c.r, c.g, c.b];
     }
 
     // Le décor de la nuit garde les verts du jeu (ses jeunes sapins, ses buissons). Puis les grands
@@ -411,6 +432,21 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       this.meteo = { pluie, neige, uCam };
     }
 
+    // Le sol mouillé (METEOS.mouille : la pluie, l'orage, un peu la brume) : le sol plus sombre d'un
+    // tiers au plus, le sol dessiné par le code (ses matières) comme le sol et les lignes du monde
+    // modelé (IleGlb.mouiller) ; la couleur sèche est gardée pour revenir.
+    mouiller(k) {
+      if (Math.abs(k - (this.kMouille || 0)) < 0.005 && this.kMouille !== undefined) return;
+      this.kMouille = k;
+      const ile = this.ile, f = 1 - 0.32 * k;
+      if (ile.mats) for (const m of [ile.mats.sol, ile.mats.solBord]) {
+        if (!m || !m.color) continue;
+        if (!m.userData.couleurSeche) m.userData.couleurSeche = m.color.clone();
+        m.color.copy(m.userData.couleurSeche).multiplyScalar(f);
+      }
+      if (ile.monde && typeof IleGlb === 'object' && IleGlb.mouiller) IleGlb.mouiller(ile.monde, f);
+    }
+
     // ----- Chaque image -----
     maj(now, temps, joueur, hj, cam, tact) {
       const THREE = this.THREE, ile = this.ile;
@@ -425,6 +461,7 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       this.appliquer(A.nuit);
       if (ile.brumeVoulue && ile.brumeCle) ile.brumeVoulue.copy(this.brume(ile.brumeCle));
       super.maj(now, temps, joueur, hj, cam, tact);
+      this.mouiller(A.mouille);
       // La part de nuit : la flaque dorée, la lanterne proche et les lucioles s'éteignent au jour,
       // et sous la pluie ou la neige pour les lucioles.
       const f = A.nuit;

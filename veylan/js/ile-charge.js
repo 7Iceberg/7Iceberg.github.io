@@ -166,12 +166,57 @@ const IleCharge = (() => {
     try { q = new URLSearchParams(location.search).get('style'); } catch (e) { q = null; }
     if (q === 'lisiere') return 'lisiere';
     if (q === '0') return null;
-    return typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.style === 'lisiere' ? 'lisiere' : null;
+    // La copie « vignette » (make-online.sh --vignette) et ?ambiance=nuit montrent l'aperçu de nuit
+    // (3.24) tel quel, sans le style que la donnée allume (l'adresse peut demander les deux).
+    let amb = null;
+    try { amb = new URLSearchParams(location.search).get('ambiance'); } catch (e) { amb = null; }
+    if (vignette() || amb === 'nuit') return null;
+    return typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.style === 'lisiere' && !faible() ? 'lisiere' : null;
   }
   // Ses fichiers : ceux de la nuit (le décor ajouté, les lucioles), puis js/ile-lisiere.js.
   function lisiere() {
     return nuit().then(() => (typeof IleLisiere === 'object' ? null : script('js/ile-lisiere.js')));
   }
 
-  return { three, webgl, ambiance, vignette, style, lisiere, script, nuit, cache: { lire, ecrire, vider }, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
+  // ----- Le monde modelé dans Blender (tools/blender/monde, js/ile-glb.js) -----
+  // 'glb' si l'adresse porte ?monde=glb, ou si DATA.ile.monde = 'glb' ; ?monde=0 l'éteint.
+  function monde() {
+    let q;
+    try { q = new URLSearchParams(location.search).get('monde'); } catch (e) { q = null; }
+    if (q === 'glb') return 'glb';
+    if (q === '0') return null;
+    return typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.monde === 'glb' && !faible() ? 'glb' : null;
+  }
+  // Un appareil faible (3.28) : ?quality=basse, ou deux coeurs ou moins, ou 2 Go de mémoire ou
+  // moins. Le monde modelé et le style Lisière que la donnée allume par défaut n'y viennent pas (le
+  // jeu dessiné par le code reste, moins lourd) ; l'adresse peut toujours les demander.
+  function faible() {
+    let q = null;
+    try { q = new URLSearchParams(location.search).get('quality'); } catch (e) { q = null; }
+    if (q === 'basse') return true;
+    if (q === 'haute' || q === 'moyenne') return false;
+    const n = typeof navigator !== 'undefined' && navigator ? navigator : {};
+    return (n.hardwareConcurrency || 4) <= 2 || (n.deviceMemory || 4) <= 2;
+  }
+  function glb() {
+    return typeof IleGlb === 'object' ? Promise.resolve() : script('js/ile-glb.js');
+  }
+
+  // ----- Les héros modelés (js/ile-heros.js, assets/heros/) -----
+  // La classe dont le modèle remplace le panneau du Veilleur : ?heros=<classe> la force (même sans
+  // le monde modelé), ?heros=0 l'éteint ; sinon, avec le monde modelé, la classe du personnage si
+  // elle a son fichier (IleHeros.FICHIERS), ce que dit 'auto'.
+  function heros() {
+    let q;
+    try { q = new URLSearchParams(location.search).get('heros'); } catch (e) { q = null; }
+    if (q === '0') return null;
+    if (q) return q;
+    if (monde() !== 'glb') return null;
+    return typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.heros === false ? null : 'auto';
+  }
+  function herosScript() {
+    return glb().then(() => (typeof IleHeros === 'object' ? null : script('js/ile-heros.js')));
+  }
+
+  return { three, webgl, ambiance, vignette, style, lisiere, script, nuit, monde, glb, heros, herosScript, faible, cache: { lire, ecrire, vider }, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
 })();

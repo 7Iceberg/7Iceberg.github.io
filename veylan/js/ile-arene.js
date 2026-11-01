@@ -337,6 +337,10 @@ void main() {
           s.modele = e.def.id; s.modeleCle = 'combat|' + e.id;
           const D = fig.modeles.durees(e.def.id);
           if (D) this.gesteFigure(s, e, D, now, cb);
+        } else if (fig.heros && e === cb.player) {
+          // Le héros modelé (3.27) : les figures le posent à la place du panneau du joueur.
+          s.heros = true;
+          this.gesteHeros(s, e, now, cb);
         }
         s.cle = fig.cleFigure(s); s.peindre = fig.peindreFigure(s);
         out.push(s);
@@ -357,10 +361,30 @@ void main() {
       if (g && g.debut != null && now < g.debut + g.duree) { s.geste = { type: g.type, t: (now - g.debut) / g.duree }; if (g.vers) s.vers = g.vers; return; }
       if (now < (e.flashUntil || 0)) s.geste = { type: 'coup', t: 1 - (e.flashUntil - now) / 250 };
     }
-    // Les durées des gestes d'un combattant modelé qui en a, sinon null.
+    // Le geste du héros modelé (js/ile-heros.js) : celui que les animations lui ont donné (le tir,
+    // tourné vers sa cible ; le pas ; la poussée), sinon le coup reçu quand il s'éclaire ; au repos,
+    // il fait face au monstre vivant le plus proche.
+    gesteHeros(s, e, now, cb) {
+      const g = e.geste;
+      if (g && g.debut != null && now < g.debut + g.duree) { s.geste = { type: g.type, t: (now - g.debut) / g.duree }; if (g.vers) s.vers = g.vers; return; }
+      if (now < (e.flashUntil || 0)) s.geste = { type: 'coup', t: 1 - (e.flashUntil - now) / 250 };
+      let proche = null, d = Infinity;
+      for (const o of cb.entities) {
+        if (!o.alive || o.team !== 'monster') continue;
+        const q = Math.hypot(o.rx - e.rx, o.ry - e.ry);
+        if (q < d) { d = q; proche = o; }
+      }
+      if (proche) s.vers = this.versMonde(proche.rx, proche.ry);
+    }
+    // Les durées des gestes d'un combattant modelé qui en a (un monstre modelé, le héros modelé
+    // quand les figures le portent), sinon null.
     gestesDe(e) {
-      const P = this.ile.figures && this.ile.figures.modeles;
-      return e && P && e.team === 'monster' && P.prend(e.def.id) ? P.durees(e.def.id) : null;
+      const F = this.ile.figures;
+      if (!e || !F) return null;
+      const cb = this.ile.combat;
+      if (F.heros && typeof IleHeros === 'object' && (cb ? e === cb.player : e.shape === 'player' && e.team === 'player')) return IleHeros.DUREES;
+      const P = F.modeles;
+      return P && e.team === 'monster' && P.prend(e.def.id) ? P.durees(e.def.id) : null;
     }
 
     // ----- Les animations du moteur de combat -----

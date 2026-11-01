@@ -26,6 +26,8 @@ class Ile3D {
     if (q === 'haute' || q === 'moyenne' || q === 'basse') return { q, force: true };
     const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     const coeurs = (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) || 4;
+    // Un appareil faible (IleCharge.faible, 3.28) : la qualité basse d'office.
+    if (typeof IleCharge === 'object' && IleCharge.faible && IleCharge.faible()) return { q: 'basse', force: false };
     return { q: coarse ? 'moyenne' : coeurs >= 4 ? 'haute' : 'moyenne', force: false };
   }
 
@@ -161,6 +163,29 @@ class Ile3D {
       this.figures.modeles = parc;
       scene.add(parc.groupe);
     } catch (e) { console.warn('Glym modelé : ' + e.message); }
+  }
+
+  // Le héros modelé (3.27, js/ile-heros.js) à la place du panneau du Veilleur : la classe du
+  // personnage si elle a son modèle, ou celle que l'adresse force (IleCharge.heros). Le GLB est lu
+  // une fois, le modèle reconstruit pour chaque scène (l'île, une salle). Un échec garde le
+  // panneau. Rend vrai si un héros était demandé.
+  async chargerHeros(THREE, etape) {
+    this.heros = null;
+    const classeHeros = IleCharge.heros ? IleCharge.heros() : null;
+    if (!classeHeros) return false;
+    const classe = classeHeros === 'auto' ? (this.world && this.world.ch && this.world.ch.classId) : classeHeros;
+    if (!classe) return false;
+    etape('Le héros modelé');
+    try {
+      await IleCharge.herosScript();
+      if (typeof IleHeros === 'object' && IleHeros.FICHIERS[classe]) this.heros = await IleHeros.charger(THREE, null, classe);
+    } catch (e) { console.warn('Ervane : héros modelé indisponible', e); this.heros = null; }
+    return true;
+  }
+  // Les figures portent le héros (IleHeros.porteur) : posé à la place du panneau de la figure
+  // marquée `heros`, dans le groupe des figures (il suit leur scène).
+  porterHeros(THREE) {
+    if (this.heros && this.figures && typeof IleHeros === 'object') this.figures.heros = IleHeros.porteur(THREE, this.heros, this.figures.groupe);
   }
 
   // ----- La construction, par étapes, sous le voile -----
@@ -420,12 +445,23 @@ class Ile3D {
     this.lanternes = D.lanternes;
     this.cibles = D.cibles;
     fini('eaux');
+    // Le monde modelé dans Blender (tools/blender/monde, assets/monde/ervane.glb) à la place du sol
+    // et du décor dessinés par le code : ?monde=glb ou DATA.ile.monde. Un échec laisse l'île comme
+    // avant.
+    if (IleCharge.monde && IleCharge.monde() === 'glb') {
+      etape('Le monde modelé');
+      await pause();
+      try { await IleCharge.glb(); if (typeof IleGlb === 'object') await IleGlb.poser(THREE, this, scene); } catch (e) { console.warn('Ervane : monde modelé indisponible', e); }
+    }
+    // Le héros modelé (js/ile-heros.js) à la place du panneau du Veilleur.
+    if (await this.chargerHeros(THREE, etape)) fini('heros');
 
     // 7. Les figures et les marques.
     etape('Les Veilleurs et les monstres');
     await pause();
     this.figures = new IleFigures.Figures(THREE, { painter: this.painter, telephone: this.telephone, scene });
     scene.add(this.figures.groupe);
+    this.porterHeros(THREE);
     await this.modelesGlym(THREE, scene);
     // L'arène du combat (js/ile-arene.js) : la texture de ses cases va au shader du sol.
     this.arene = new IleArene.Arene(THREE, this);
@@ -544,6 +580,9 @@ class Ile3D {
     await pause();
     this.figures = new IleFigures.Figures(THREE, { painter: this.painter, telephone: this.telephone, scene });
     scene.add(this.figures.groupe);
+    // Le héros modelé descend dans la salle (3.27) : le GLB lu une fois, reconstruit pour sa scène.
+    await this.chargerHeros(THREE, etape);
+    this.porterHeros(THREE);
     this.arene = new IleArene.Arene(THREE, this);
     if (this.uFondu) this.uFondu.cases.value = this.arene.texCases;
     scene.add(this.arene.groupe);
@@ -1283,6 +1322,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     }
     for (const t of Object.values(this.tex || {})) { if (Array.isArray(t)) t.forEach(rendre); else rendre(t); }
     if (this.figures) this.figures.liberer();
+    this.heros = null;
     if (this.arene) { this.arene.liberer(); this.arene = null; }
     if (this.rampe) this.rampe.dispose();
     if (this.mats) for (const m of Object.values(this.mats)) if (m && m.isMaterial) m.dispose();
@@ -1525,6 +1565,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       t.proche.visible = proche && d < solMax;
       if (t.loin) t.loin.visible = !proche && d < solMax;
     }
+    // Le monde modelé (3.26) : ses tuiles suivent les mêmes portées (le sol sous la brume, le semis
+    // et le reste à la portée des silhouettes), posées plus bas, une fois les portées connues.
     // Le décor : complet jusqu'à 45 u (60 en qualité haute, 30 en basse), silhouettes jusqu'à 80 u.
     // La nuit (3.24), la brume plus proche cache le lointain : le décor détaillé et les silhouettes
     // s'arrêtent plus tôt (ce qu'on y gagne paie une part du décor ajouté).
@@ -1533,6 +1575,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const rDet = (this.qualite === 'haute' ? 60 : this.qualite === 'basse' ? 30 : 45) * kNuit, rSil = (this.qualite === 'haute' ? 120 : 80) * (this.nuit ? (this.nuit.kSil || 0.72) : 1);
     const demi = IleDecor.TUILE / 2;
     const distMorceau = t => Math.hypot(Math.max(0, Math.abs(t.centre[0] - c.x) - demi), Math.max(0, Math.abs(t.centre[1] - c.y) - demi));
+    if (this.monde && typeof IleGlb === 'object' && IleGlb.portee && !tact) IleGlb.portee(this.monde, c, { sol: solMax, semis: rSil, reste: Math.max(rSil, 60) });
     // La vue tactique cache le décor, l'herbe et l'eau : le damier d'ardoise du sol reste seul.
     for (const t of this.tuilesDecor) {
       const d = distMorceau(t);
@@ -1544,6 +1587,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (this.touffesNuit) this.touffesNuit.mesh.visible = !tact && !(A && A.etat);
     if (this.eau) this.eau.visible = !tact;
     for (const m of this.decorFixe || []) m.visible = !tact;
+    // Le monde modelé (3.26) : son semis, son eau et ses objets se cachent de même en vue tactique.
+    if (this.monde && typeof IleGlb === 'object' && IleGlb.tactique && this.mondeTactique !== tact) { IleGlb.tactique(this.monde, tact); this.mondeTactique = tact; }
     // La chute du Ru (un voile de 40 u) ne se dessine pas pendant un combat : vue par la caméra
     // orthographique, elle barrait le bord de l'écran au Hameau Vide.
     if (this.meshChute) this.meshChute.visible = !tact && !(A && A.etat);
@@ -1727,6 +1772,9 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const [px, py] = pos(p.rx, p.ry);
     const veilleur = { kind: 'entity', shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, team: 'player', facing: p.facing, look: ch.look, gender: ch.gender, scale: 1, x: px, y: py, h: H(px, py), normale: N(px, py), bob: p.moving ? Math.abs(Math.sin(now / 70)) * 3 : Math.sin(now / 900) * 0.8, joueur: true };
     veilleur.cle = fig.cleFigure(veilleur); veilleur.peindre = fig.peindreFigure(veilleur);
+    // Le héros modelé (3.27) : les figures le posent à la place du panneau du Veilleur, sur l'île
+    // comme dans une salle (en combat, l'arène marque la figure du joueur) ; sa marche suit `moving`.
+    if (fig.heros && !enCombat) { veilleur.heros = true; veilleur.bouge = !!p.moving; }
     if (!enCombat) out.push(veilleur);
     else for (const s of A.sprites(this.combat, now, fig, this.telephone)) out.push(s);
     for (const g of w.groups) {
