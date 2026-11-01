@@ -340,7 +340,7 @@ const IleHeros = (() => {
   // Les os par rôle (MakeHuman : upperleg01.L, lowerleg01.L, upperarm01.L, lowerarm01.L, spine02,
   // head ; à défaut, le premier os dont le nom commence ainsi).
   const ROLES = { cuisseG: 'upperleg01.L', cuisseD: 'upperleg01.R', jambeG: 'lowerleg01.L', jambeD: 'lowerleg01.R',
-                  brasG: 'upperarm01.L', brasD: 'upperarm01.R', avantG: 'lowerarm01.L', avantD: 'lowerarm01.R', buste: 'spine02', tete: 'head' };
+                  brasG: 'upperarm01.L', brasD: 'upperarm01.R', avantG: 'lowerarm01.L', avantD: 'lowerarm01.R', buste: 'spine02', bassin: 'spine05', tete: 'head' };
 
   // Les repères des os, au repos (le modèle droit, tourné vers +Z) : la rotation du monde de l'os et
   // de son parent (le repère du modèle), la direction de l'os (son Y), et l'axe local de sa flexion :
@@ -375,6 +375,10 @@ const IleHeros = (() => {
 
   // La rotation locale d'un os plié de `angle` autour de son axe de flexion (positif : vers l'avant).
   function qFlex(h, o, angle) { const R = h.reperes.get(o); return qMul(R.repos, qAxe(R.axe, angle)); }
+  // La rotation locale d'un os plié de `angle` et tordu de `torsion` autour de son propre axe (son Y :
+  // la direction de l'os ; positif : le côté gauche du modèle part vers l'arrière).
+  const AXE_OS = { x: 0, y: 1, z: 0 };
+  function qFlexTord(h, o, angle, torsion) { const R = h.reperes.get(o); return qMul(qMul(R.repos, qAxe(R.axe, angle)), qAxe(AXE_OS, torsion)); }
   // La rotation locale d'un os pour une rotation `qd` du monde appliquée à sa pose de repos, son
   // parent tourné `parent` dans le monde (sa rotation de repos si rien n'est donné) ; et la rotation
   // du monde qui en résulte (pour les enfants).
@@ -451,30 +455,38 @@ const IleHeros = (() => {
     return 0;
   }
 
-  // La pose du moment : la marche (t en secondes, le pas d'une seconde et quart pour deux foulées)
-  // quand le héros bouge, la respiration à l'arrêt, le passage de l'une à l'autre en douceur ; puis
-  // le geste du combat s'il y en a un. Chaque os tourne autour de son axe de flexion (positif : vers
-  // l'avant) à partir de sa rotation de repos.
+  // La pose du moment : la marche quand le héros bouge, la respiration à l'arrêt, le passage de
+  // l'une à l'autre en douceur ; puis le geste du combat s'il y en a un. La phase de la marche suit
+  // la distance parcourue (`h.phase`, avancée par `poser`), pas le temps : les pieds ne glissent
+  // pas, l'arrêt fige la foulée avant le retour au repos. La part de course (`kc`, au-delà de
+  // 4,8 u/s) allonge la foulée, plie les genoux et les coudes, penche le buste. Les hanches
+  // suivent la jambe avancée, les épaules la contrarient, la tête garde le cap. Chaque os tourne
+  // autour de son axe de flexion (positif : vers l'avant) à partir de sa rotation de repos.
   function animer(THREE, h, t, bouge, geste) {
     h.kMarche = h.kMarche === undefined ? (bouge ? 1 : 0) : h.kMarche + ((bouge ? 1 : 0) - h.kMarche) * 0.15;
-    const k = h.kMarche, w = t * 2 * Math.PI / 1.1;
-    const A = 0.55 * k, B = 0.4 * k, C = 0.35 * k;
+    const k = h.kMarche, w = h.phase || 0;
+    const kc = k * Math.max(0, Math.min(1, ((h.vitesse || 0) - 4.8) / 2.2));
+    const A = (0.55 + 0.25 * kc) * k, B = (0.4 + 0.5 * kc) * k, C = (0.35 + 0.3 * kc) * k;
     const s = Math.sin(w), c = Math.cos(w);
     const resp = (1 - k) * Math.sin(t * 2 * Math.PI / 4) * 0.025;
+    const coude = 0.08 + 0.42 * k + 0.5 * kc;
     const pose = new Map();
-    const flex = (nom, a) => { const o = osDe(h, nom); if (o) pose.set(o, qFlex(h, o, a)); };
+    const flex = (nom, a, tord) => { const o = osDe(h, nom); if (o) pose.set(o, tord ? qFlexTord(h, o, a, tord) : qFlex(h, o, a)); };
     flex(ROLES.cuisseG, A * s);
     flex(ROLES.cuisseD, -A * s);
-    // Le genou plie vers l'arrière.
-    flex(ROLES.jambeG, -Math.max(0, -B * c) - 0.05 * k);
-    flex(ROLES.jambeD, -Math.max(0, B * c) - 0.05 * k);
+    // Le genou plie vers l'arrière, plus en course.
+    flex(ROLES.jambeG, -Math.max(0, -B * c) - 0.05 * k - 0.25 * kc);
+    flex(ROLES.jambeD, -Math.max(0, B * c) - 0.05 * k - 0.25 * kc);
     flex(ROLES.brasG, -C * s + resp);
     flex(ROLES.brasD, C * s + resp);
-    flex(ROLES.avantG, 0.15 * k + Math.max(0, -0.2 * k * s));
-    flex(ROLES.avantD, 0.15 * k + Math.max(0, 0.2 * k * s));
-    flex(ROLES.buste, 0.04 * k * Math.sin(2 * w) + resp * 0.5);
-    flex(ROLES.tete, -0.03 * k * Math.sin(2 * w));
-    let hausse = Math.abs(s) * 0.03 * k;
+    flex(ROLES.avantG, coude + Math.max(0, -0.2 * k * s));
+    flex(ROLES.avantD, coude + Math.max(0, 0.2 * k * s));
+    // Les hanches tournent avec la jambe avancée (le côté gauche vers l'avant : torsion négative),
+    // les épaules à l'inverse, la tête compense pour regarder devant.
+    flex(ROLES.bassin, 0, -0.07 * k * s);
+    flex(ROLES.buste, 0.04 * k * Math.sin(2 * w) + resp * 0.5 + 0.12 * kc, 0.14 * k * s);
+    flex(ROLES.tete, -0.03 * k * Math.sin(2 * w) - 0.06 * kc, -0.07 * k * s);
+    let hausse = Math.abs(s) * (0.03 + 0.03 * kc) * k;
     if (geste) hausse += gesteSur(h, pose, geste);
     for (const [o, q] of pose) { o.quaternion.x = q.x; o.quaternion.y = q.y; o.quaternion.z = q.z; o.quaternion.w = q.w; }
     h.racine.position.y = h.sol + hausse;
@@ -492,15 +504,28 @@ const IleHeros = (() => {
   }
 
   // Pose le héros au sol en (x, h, z) (le repère de la scène), le cap (radians, 0 : vers +Z) suivi
-  // en douceur ; sa marche s'il bouge, son geste s'il en a un, l'éclair du coup reçu.
+  // en douceur (une constante de temps de 70 ms, quel que soit le rythme des images) ; sa marche
+  // s'il bouge (la phase avancée de la distance parcourue depuis la pose précédente : une foulée
+  // complète, deux pas, vaut 1,4 u plus 0,2 u par u/s de vitesse, à l'échelle du modèle), son geste
+  // s'il en a un, l'éclair du coup reçu.
   function poser(THREE, h, x, y, z, cap, t, bouge, geste, flash) {
     const r = h.racine;
+    const dt = h.tPrec == null ? 0 : Math.min(0.1, Math.max(0, t - h.tPrec));
+    h.tPrec = t;
+    const dist = r.visible && h.sol != null ? Math.hypot(x - r.position.x, z - r.position.z) : 0;
     r.visible = true;
     r.position.x = x; r.position.z = z; h.sol = y;
+    // Un saut de 3 u ou plus n'est pas une marche (le modèle replacé, le combat qui commence).
+    const v = dt > 0 && dist > 0 && dist < 3 ? dist / dt : 0;
+    h.vitesse = h.vitesse == null ? v : h.vitesse + (v - h.vitesse) * (dt > 0 ? Math.min(1, dt / 0.12) : 0);
+    if (bouge && dist > 0 && dist < 3) {
+      const foulee = (1.4 + 0.2 * Math.min(h.vitesse, 8)) * (r.scale.x || 1);
+      h.phase = ((h.phase || 0) + 2 * Math.PI * dist / foulee) % (2 * Math.PI);
+    }
     if (cap !== null && cap !== undefined) {
       let d = cap - r.rotation.y;
       d = Math.atan2(Math.sin(d), Math.cos(d));
-      r.rotation.y += d * 0.25;
+      r.rotation.y += d * (dt > 0 ? 1 - Math.exp(-dt / 0.07) : 1);
     }
     animer(THREE, h, t, bouge, geste || null);
     eclairer(h, flash);
@@ -543,12 +568,17 @@ const IleHeros = (() => {
   // déplacement de la figure, sinon sa cible (`s.vers`, le repère de la scène) ; `s.bouge` dit la
   // marche (sinon le déplacement la dit) ; `s.geste` ({ type, t }) et `s.flash` viennent du combat ;
   // `force` ({ type, t, cap }) impose un geste et un cap (les captures d'atelier).
+  // L'échelle du héros dans le monde (ECHELLE : 1 serait le modèle à sa taille de 1,75 u ; 1,15 le
+  // porte à 2 u, la hauteur des panneaux peints des PNJ et de l'ancienne figure du Veilleur, pour
+  // qu'il tienne sa place devant les portes et les bannières) ; ?heros_echelle=1.3 en essaie une autre.
+  let ECHELLE = 1.15;
+  try { const q = parseFloat(new URLSearchParams(location.search).get('heros_echelle')); if (Number.isFinite(q) && q > 0.3 && q < 3) ECHELLE = q; } catch (e) { /* rien */ }
   function porteur(THREE, h, parent) {
     if (parent) parent.add(h.racine);
     const P = { h, prec: null, cap: null, now: 0, pose: false, force: null };
     P.debut = now => { P.now = now; P.pose = false; };
     P.poser = s => {
-      const alpha = s.alpha == null ? 1 : s.alpha, k = s.scale || 1;
+      const alpha = s.alpha == null ? 1 : s.alpha, k = (s.scale || 1) * ECHELLE;
       if (h.racine.scale.x !== k) h.racine.scale.set(k, k, k);
       const prec = P.prec || (P.prec = { x: s.x, y: s.y });
       const dx = s.x - prec.x, dy = s.y - prec.y, deplace = Math.hypot(dx, dy) > 0.004;
@@ -561,13 +591,13 @@ const IleHeros = (() => {
       poser(THREE, h, s.x, s.h, s.y, F && F.cap != null ? F.cap : P.cap, P.now / 1000, s.bouge != null ? !!s.bouge : deplace, F || s.geste || null, !!s.flash);
       return true;
     };
-    P.emprise = s => 1.35 * (s.scale || 1);
+    P.emprise = s => 1.35 * (s.scale || 1) * ECHELLE;
     P.fin = () => { if (!P.pose) cacher(h); };
     P.octets = () => h.octets || 0;
     P.liberer = () => liberer(h);
     return P;
   }
 
-  return { FICHIERS, ARMES, VISEE, DUREES, ROLES, source, lire, construire, charger, poser, cacher, animer, liberer, porteur, viser, orienter, qFlex };
+  return { FICHIERS, ARMES, VISEE, DUREES, ROLES, source, lire, construire, charger, poser, cacher, animer, liberer, porteur, viser, orienter, qFlex, get ECHELLE() { return ECHELLE; }, set ECHELLE(v) { ECHELLE = v; } };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = IleHeros;

@@ -3,10 +3,13 @@
 // pages, menus ronds, discussion et émotes), la carte d'infos en haut à gauche avec la quête
 // suivie, la fiche d'un groupe de monstres, le glissé pour changer de carte, le compte à rebours
 // du placement, les badges des menus, « Niveau supérieur ! », et l'invitation à tourner le
-// téléphone. Le panneau est une colonne à part de la grille de #app, à côté de #stage, jamais
-// posée dessus : la caméra (js/camera.js) remplit #stage. css/jeu.css décide quand il se
-// montre (téléphone en paysage, 500 pixels de haut ou moins) ; sur ordinateur et tablette, la
-// disposition en fenêtres reste.
+// téléphone. Le panneau est replié (3.29) : la scène prend toute la largeur, une languette d'icônes
+// sur son bord droit (cristal de vie, PA et PM en combat, sorts et objets, menus, discussion,
+// émotes) l'ouvre par-dessus la scène ; il s'ouvre seul au début d'un combat et se replie à la
+// fin ; un toucher sur la scène le replie hors combat. La caméra (js/camera.js) remplit #stage et
+// garde le panneau ouvert ou la languette hors de sa part libre (`insetDroite`). css/jeu.css
+// décide quand le panneau et la languette se montrent (téléphone en paysage, 500 pixels de haut ou
+// moins) ; sur ordinateur et tablette, la disposition en fenêtres reste.
 class HudJeu {
   constructor(hud) {
     this.hud = hud;
@@ -27,6 +30,7 @@ class HudJeu {
     this.gaucher = HudJeu.lire('veylan.gaucher') === '1';
     this.app.classList.toggle('vy-gaucher', this.gaucher);
     this.construirePanneau();
+    this.construireLanguette();
     this.carteInfo = document.getElementById('carte-info');
     this.carteInfo.addEventListener('click', evt => {
       const b = evt.target.closest('[data-act]');
@@ -51,12 +55,13 @@ class HudJeu {
     w.on('fight', () => {
       this.page = 0;
       this.onglet = null;
+      this.basculerPanneau(true);
       // Le placement a son compte à rebours : à zéro, le combat commence seul (le tutoriel
       // peut l'éteindre pour son premier combat, js/guide.js).
       this.ui.armerPlacement(UI.PLACEMENT_SECONDES);
       this.rafraichir();
     });
-    w.on('fightEnd', () => { this.fermerQuitter(); this.rafraichir(); });
+    w.on('fightEnd', () => { this.fermerQuitter(); this.basculerPanneau(false); this.rafraichir(); });
     w.on('groupPopup', d => this.fiche.montrer(d));
     for (const e of ['setup', 'start', 'turn', 'end']) cb.on(e, () => this.rafraichir());
     Bus.on('levelUp', d => { this.niveauEnAttente = d.level; this.annoncerNiveau(); });
@@ -117,6 +122,78 @@ class HudJeu {
     this.verrou = HudJeu.lire('veylan.grille.libre') !== '1';
   }
 
+  // ----- La languette (3.29) : le panneau replié derrière des icônes, sur le bord droit de la scène -----
+
+  construireLanguette() {
+    const J = HudJeu.ICON;
+    const l = this.languette = document.createElement('div');
+    l.className = 'vy-languette';
+    l.setAttribute('role', 'toolbar');
+    l.setAttribute('aria-label', 'Jeu');
+    l.innerHTML =
+      '<button type="button" class="vy-languette__pv" data-languette="panneau" aria-label="Points de vie"><svg viewBox="0 0 80 92" aria-hidden="true">' +
+      '<defs><clipPath id="clip-pv-languette"><path d="M40 3 76 26 70 70 40 89 10 70 4 26z"/></clipPath></defs>' +
+      '<path d="M40 3 76 26 70 70 40 89 10 70 4 26z" class="vy-panneau__pv-coque"/>' +
+      '<rect class="vy-panneau__pv-niveau" clip-path="url(#clip-pv-languette)" x="0" width="80" y="0" height="92" fill="url(#grad-pv-panneau)"/>' +
+      '<path d="M40 3 76 26 70 70 40 89 10 70 4 26z" class="vy-panneau__pv-bord"/></svg><b class="vy-languette__pv-val"></b></button>' +
+      '<div class="vy-languette__pts" hidden><span class="vy-pt vy-pt--pa" title="Points d\'action"><b></b><small>PA</small></span><span class="vy-pt vy-pt--pm" title="Points de mouvement"><b></b><small>PM</small></span></div>' +
+      `<button type="button" class="vy-languette__bouton" data-languette="panneau" aria-label="Sorts et objets" aria-expanded="false">${J.sorts}</button>` +
+      `<button type="button" class="vy-languette__bouton" data-languette="menus" aria-label="Menus">${J.menus}<span class="vy-badge vy-badge--point" hidden>•</span></button>` +
+      '<span class="vy-languette__ressort"></span>' +
+      `<button type="button" class="vy-languette__bouton" data-languette="discussion" aria-label="Discussion">${Discussion.ICONE}<span class="vy-languette__nonlu" hidden></span></button>` +
+      `<button type="button" class="vy-languette__bouton" data-languette="emote" aria-label="Émotes">${J.emote}</button>`;
+    this.stage.appendChild(l);
+    this.app.classList.add('vy-replie');
+    this.panneauOuvert = false;
+    l.addEventListener('click', evt => {
+      const b = evt.target.closest('[data-languette]');
+      if (!b) return;
+      const id = b.dataset.languette;
+      if (id === 'panneau' || id === 'menus') this.basculerPanneau();
+      else if (id === 'discussion') this.hud.discussion.basculer();
+      else if (id === 'emote') { this.basculerPanneau(true); this.basculerEmotes(true); }
+      b.blur();
+    });
+    // Un toucher sur la scène replie le panneau hors combat (en combat, on y touche les cases).
+    this.stage.addEventListener('pointerdown', evt => {
+      if (this.panneauOuvert && !this.enCombat && !evt.target.closest('.vy-languette')) this.basculerPanneau(false);
+    }, { capture: true });
+  }
+
+  // Ouvre ou replie le panneau par-dessus la scène ; la caméra reprend sa part libre (main.js
+  // écoute « resize » pour les marges de la caméra).
+  basculerPanneau(on) {
+    const ouvert = on != null ? !!on : !this.panneauOuvert;
+    if (ouvert === this.panneauOuvert) return;
+    this.panneauOuvert = ouvert;
+    this.app.classList.toggle('vy-panneau-ouvert', ouvert);
+    for (const b of this.languette.querySelectorAll('[data-languette="panneau"], [data-languette="menus"]')) b.setAttribute('aria-expanded', String(ouvert));
+    if (!ouvert) this.basculerEmotes(false);
+    this.mesurer();
+    this.rafraichirGrille();
+    this.publierCouverture();
+    try { window.dispatchEvent(new Event('resize')); } catch (e) { /* rien */ }
+  }
+
+  // Ce qui couvre les bords de la scène, en variables sur le corps de la page (--vy-couvert-droite,
+  // --vy-couvert-gauche) : les éléments posés hors de #stage (la boîte du guide) s'en écartent.
+  publierCouverture() {
+    const d = this.insetDroite(), g = this.insetGauche();
+    if (this.couvertSig === `${d}|${g}`) return;
+    this.couvertSig = `${d}|${g}`;
+    document.body.style.setProperty('--vy-couvert-droite', d + 'px');
+    document.body.style.setProperty('--vy-couvert-gauche', g + 'px');
+  }
+
+  // La part de la scène que le panneau ouvert ou la languette couvre à droite (0 hors du téléphone
+  // en paysage, ou à gauche pour un gaucher : `insetGauche`).
+  insetDroite() { return this.gaucher ? 0 : this.couverture(); }
+  insetGauche() { return this.gaucher ? this.couverture() : 0; }
+  couverture() {
+    if (!this.languette || !this.languette.offsetWidth || getComputedStyle(this.languette).display === 'none') return 0;
+    return this.languette.offsetWidth + (this.panneauOuvert ? this.panneau.offsetWidth : 0);
+  }
+
   clic(evt) {
     const t = evt.target;
     if (this.glisserFini && Date.now() < this.glisserFini) return;
@@ -169,6 +246,7 @@ class HudJeu {
   // La largeur de la scène règle la taille des rubans ; celle de la barre de tour (en bas à
   // droite, en combat) dit où se pose la boîte du guide : à côté, ou au-dessus si la place manque.
   mesurerScene() {
+    this.publierCouverture();
     const app = this.app, b = this.ui.el.turnBar, sl = this.stage.clientWidth;
     const on = this.enCombat && !!b && b.offsetWidth > 0;
     const l = on ? b.offsetWidth : 0, h = on ? b.offsetHeight + 22 : 0;
@@ -194,6 +272,18 @@ class HudJeu {
     if (p) {
       this.q('.vy-pt--pa b').textContent = p.pa;
       this.q('.vy-pt--pm b').textContent = p.pm;
+    }
+    // La languette : le même cristal en petit, PA et PM en combat.
+    const L = this.languette;
+    if (L) {
+      L.querySelector('.vy-panneau__pv-niveau').setAttribute('y', String(92 * (1 - pct)));
+      L.querySelector('.vy-languette__pv-val').textContent = hp;
+      const lpv = L.querySelector('.vy-languette__pv');
+      lpv.setAttribute('aria-label', `Points de vie : ${hp} sur ${max}`);
+      lpv.classList.toggle('bas', pct < 0.3);
+      const pts = L.querySelector('.vy-languette__pts');
+      pts.hidden = !p;
+      if (p) { pts.querySelector('.vy-pt--pa b').textContent = p.pa; pts.querySelector('.vy-pt--pm b').textContent = p.pm; }
     }
     const xp = Math.round(ch.xpProgress() * 100);
     this.q('.vy-panneau__niv').textContent = `Niv. ${ch.level}`;
@@ -460,6 +550,9 @@ class HudJeu {
     // Le menu d'une fenêtre ouverte s'allume, comme dans la barre des menus (Hud.syncMenus).
     const fen = this.hud.fen;
     for (const b of this.panneau.querySelectorAll('.vy-rond[data-win]')) b.classList.toggle('on', !!(fen && fen.isOpen(b.dataset.win)));
+    // La languette : un point sur « Menus » dès qu'un menu a quelque chose à dire.
+    const pt = this.languette && this.languette.querySelector('[data-languette="menus"] .vy-badge');
+    if (pt) pt.hidden = !Object.values(marks).some(Boolean);
   }
 
   // « Bientôt » : une fonction prévue, montrée grisée, qui ne prétend pas marcher.
@@ -475,10 +568,11 @@ class HudJeu {
   }
 
   compterDiscussion(n) {
-    const s = this.q('.vy-panneau__nonlu');
-    if (!s) return;
-    s.hidden = !n;
-    s.textContent = n > 9 ? '9+' : String(n || '');
+    for (const s of [this.q('.vy-panneau__nonlu'), this.languette && this.languette.querySelector('.vy-languette__nonlu')]) {
+      if (!s) continue;
+      s.hidden = !n;
+      s.textContent = n > 9 ? '9+' : String(n || '');
+    }
   }
 
   // ----- Émotes : une bulle au-dessus du personnage, rien n'est envoyé -----
@@ -579,6 +673,7 @@ HudJeu.ICON = (() => {
     oeil: s('<path d="M2 12s4-6.5 10-6.5S22 12 22 12s-4 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/>'),
     epingle: s('<path d="M12 21s-6-5.6-6-10.5A6 6 0 0 1 18 10.5C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/>'),
     quitter: s('<path d="M6 6l12 12M18 6L6 18"/>'),
+    menus: s('<path d="M4 7h16M4 12h16M4 17h16"/>'),
     tactique: s('<path d="M12 4l8 4.5-8 4.5-8-4.5z"/><path d="M4 13l8 4.5 8-4.5"/>'),
     fiches: s('<rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="11" r="2.4"/><path d="M5.8 16.5c.6-1.8 1.8-2.6 3.2-2.6s2.6.8 3.2 2.6M14.5 10h3.5M14.5 13.5h3.5"/>'),
     veille: s('<path d="M15.5 3.5A8.5 8.5 0 1 0 20.5 15a7 7 0 0 1-5-11.5z"/><path d="M18 3v3M16.5 4.5h3"/>'),

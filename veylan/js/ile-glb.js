@@ -345,6 +345,23 @@ const IleGlb = (() => {
     retirer(ile.meshEscarpement); retirer(ile.meshFalaise); retirer(ile.meshChute);
     scene.add(groupe);
     ile.monde = groupe;
+    // La grille du combat (5.4) sur le sol, les pavés et les lignes (sentiers, murets, haies) du
+    // monde modelé : les cases de l'aire se dessinent dans la matière, avec les uniformes du sol de
+    // l'île (IleSol.grille). Les lignes partagent la matière cuite des objets : elles en reçoivent
+    // une copie, les objets restent sans grille (revue : un sentier couvrait les cases de départ).
+    if (typeof IleSol === 'object' && IleSol.grille && ile.mats && ile.mats.uSol) {
+      const vues = new Map();
+      for (const o of groupe.children) {
+        if (!o.material || !/^mo_(sol|lignes)/.test(o.name)) continue;
+        const lignes = /^mo_lignes/.test(o.name);
+        if (!vues.has(o.material)) {
+          const m = lignes ? o.material.clone() : o.material;
+          if (lignes) m.name = o.material.name + '_lignes';
+          vues.set(o.material, IleSol.grille(m, ile.mats.uSol));
+        }
+        o.material = vues.get(o.material);
+      }
+    }
     console.log(`Ervane : monde modelé posé, ${groupe.userData.appels} appels, ${groupe.userData.triangles} triangles`);
     return groupe;
   }

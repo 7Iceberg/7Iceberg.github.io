@@ -365,5 +365,26 @@ ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
     return { sol: m, uniforms };
   }
 
-  return { TUILE, falaises, hauteurs, preparer, tuiles, materiaux, materiauSalle };
+  // La grille du combat posée sur une matière qui existe déjà (le sol du monde modelé, js/ile-glb.js,
+  // 3.26) : les mêmes uniformes que le sol de l'île (Ile3D.mats.uSol : l'aire, l'état des cases, le
+  // passage, la vue tactique), le même dessin (GRILLE) après le brouillard. Sans elle, le monde
+  // modelé cachait les cases du combat (le shader des cases était celui du sol dessiné par le code).
+  function grille(materiau, uniforms) {
+    const prec = materiau.onBeforeCompile, cle = Object.prototype.hasOwnProperty.call(materiau, 'customProgramCacheKey') ? materiau.customProgramCacheKey : null;
+    materiau.onBeforeCompile = (sh, r) => {
+      if (prec) prec(sh, r);
+      Object.assign(sh.uniforms, uniforms);
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;')
+        .replace('#include <project_vertex>', '#include <project_vertex>\nvMonde = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;\nuniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol;')
+        .replace('#include <fog_fragment>', '#include <fog_fragment>\n' + GRILLE);
+    };
+    materiau.customProgramCacheKey = () => 'ile-sol-grille-' + (materiau.vertexColors ? 'c' : 'u') + (materiau.map ? 't' : '') + (cle ? '/' + cle.call(materiau) : '');
+    materiau.needsUpdate = true;
+    return materiau;
+  }
+
+  return { TUILE, falaises, hauteurs, preparer, tuiles, materiaux, materiauSalle, grille };
 })();

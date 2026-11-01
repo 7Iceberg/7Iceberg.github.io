@@ -63,7 +63,9 @@ class Camera {
   // Le zoom le plus large qui ne montre que du peint.
   minPainted() {
     const P = this.painted;
-    return P ? Math.max(this.vw / P.w, this.vh / P.h) : 0;
+    if (!P) return 0;
+    const r = this.focusRect();
+    return Math.max(r.w / P.w, r.h / P.h);
   }
 
   // L'ajustement : le cœur aussi grand que possible dans la part libre, au milieu ; puis la vue
@@ -76,14 +78,22 @@ class Camera {
   }
 
   // Une vue (zoom, x, y) ramenée dans les alentours peints ; centrée sur eux s'ils sont plus petits.
+  // La part de la vue à couvrir est la part libre de la scène (focusRect) : ce que l'interface couvre
+  // (le panneau de jeu ouvert au téléphone, 3.29) peut rester sans peinture dessous.
   inside(s) {
     const P = this.painted;
     if (!P) return s;
-    const z = s.zoom;
+    const z = s.zoom, r = this.focusRect();
     const fit = (v, lo, hi) => (lo > hi ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, v)));
-    s.x = fit(s.x, this.vw - (P.x + P.w) * z, -P.x * z);
-    s.y = fit(s.y, this.vh - (P.y + P.h) * z, -P.y * z);
+    s.x = fit(s.x, r.x + r.w - (P.x + P.w) * z, r.x - P.x * z);
+    s.y = fit(s.y, r.y + r.h - (P.y + P.h) * z, r.y - P.y * z);
     return s;
+  }
+
+  // La part libre de la scène (focusRect) en coordonnées du monde.
+  visibleFocus() {
+    const z = this.zoom, r = this.focusRect();
+    return { x0: (r.x - this.x) / z, y0: (r.y - this.y) / z, x1: (r.x + r.w - this.x) / z, y1: (r.y + r.h - this.y) / z };
   }
 
   // Nouvelle taille de la vue : ajustée si elle l'était ; sinon même point au centre, même zoom
@@ -287,8 +297,10 @@ class Camera {
 }
 
 // Les gestes de la caméra sur la toile : molette (zoom autour du curseur), glisser avec le bouton du
-// milieu ou le droit (déplacer), deux doigts (pincer pour zoomer, glisser pour déplacer), touches
-// + et - (zoom) et 0 (ajuster). Le clic gauche et le toucher à un doigt gardent leur sens. Un
+// milieu (déplacer) ou le droit (tourner la vue si la caméra sait tourner, `tourner` ; déplacer
+// sinon), deux doigts (pincer pour zoomer, glisser pour déplacer, pivoter pour tourner la vue, dès
+// 7° d'écart), touches + et - (zoom), A et E (tourner d'un huitième de tour, touches physiques Q et
+// E) et 0 (ajuster). Le clic gauche et le toucher à un doigt gardent leur sens. Un
 // glissement à un doigt déplace la vue quand elle est zoomée au-delà de l'ajustement
 // (oneFingerPan) ; sinon il reste libre (il change de carte, js/hud-jeu.js) et annule seulement
 // le toucher. Les autres gestes du plateau demandent gesturing() (deux doigts posés, vue qu'on
@@ -368,7 +380,7 @@ class CameraControls {
       return;
     }
     if (e.button === 1 || e.button === 2) {
-      this.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, button: e.button, moved: false };
+      this.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, button: e.button, moved: false, tourne: e.button === 2 && typeof this.camera.tourner === 'function' };
       try { this.el.setPointerCapture(e.pointerId); } catch (err) { /* rien */ }
     }
   }
@@ -389,7 +401,8 @@ class CameraControls {
     if (!d.moved && Math.hypot(dx, dy) < 4) return;
     if (!d.moved) { d.moved = true; this.el.classList.add('glisse'); }
     d.x = e.clientX; d.y = e.clientY;
-    this.camera.panBy(dx, dy);
+    // Le bouton droit tourne la vue : un tiers de tour pour 300 px.
+    if (d.tourne) this.camera.tourner(dx * 0.007); else this.camera.panBy(dx, dy);
   }
 
   up(e, cancel) {
@@ -424,15 +437,22 @@ class CameraControls {
     this.camera.panBy(dx, dy);
   }
 
-  // Deux doigts : le point du monde sous leur milieu suit le milieu, l'écart règle le zoom.
+  // Deux doigts : le point du monde sous leur milieu suit le milieu, l'écart règle le zoom, et
+  // l'angle entre les doigts tourne la vue (quand la caméra sait tourner), une fois passés 7°
+  // d'écart depuis la pose : en deçà, un pincement un peu tordu ne fait que zoomer.
   startPinch() {
     const [a, b] = this.touches.values();
     const cam = this.camera, w = cam.clientToWorld((a.x + b.x) / 2, (a.y + b.y) / 2);
-    this.pinch = { d0: Math.max(10, Math.hypot(a.x - b.x, a.y - b.y)), z0: cam.zoom, wx: w.x, wy: w.y };
+    this.pinch = { d0: Math.max(10, Math.hypot(a.x - b.x, a.y - b.y)), z0: cam.zoom, wx: w.x, wy: w.y, a0: Math.atan2(b.y - a.y, b.x - a.x), az0: cam.azimut, tourne: false };
   }
 
   updatePinch() {
     const [a, b] = this.touches.values(), p = this.pinch, cam = this.camera;
+    if (typeof cam.tournerA === 'function' && typeof p.az0 === 'number') {
+      const ang = Math.atan2(b.y - a.y, b.x - a.x), da = Math.atan2(Math.sin(ang - p.a0), Math.cos(ang - p.a0));
+      if (!p.tourne && Math.abs(da) > 0.12) { p.tourne = true; p.a0 = ang; p.az0 = cam.azimut; }
+      else if (p.tourne) cam.tournerA(p.az0 + da);
+    }
     const s = cam.clientToScreen((a.x + b.x) / 2, (a.y + b.y) / 2);
     cam.pinchTo(p.z0 * Math.max(10, Math.hypot(a.x - b.x, a.y - b.y)) / p.d0, p.wx, p.wy, s.x, s.y);
   }
@@ -445,6 +465,7 @@ class CameraControls {
     const zoom = k => { e.preventDefault(); const r = cam.rect(), f = cam.focusRect(); cam.zoomAt(r.left + f.cx, r.top + f.cy, k, { smooth: true }); };
     if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') zoom(1.25);
     else if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract') zoom(0.8);
+    else if ((e.code === 'KeyQ' || e.code === 'KeyE') && typeof cam.tournerVers === 'function') { e.preventDefault(); cam.tournerVers((cam.animAz != null ? cam.animAz : cam.azimut) + (e.code === 'KeyQ' ? -1 : 1) * Math.PI / 4); }
     else if ((e.key === '0' || e.code === 'Numpad0') && !(this.opts.zeroTaken && this.opts.zeroTaken(e))) { e.preventDefault(); cam.fit(true); }
   }
 }

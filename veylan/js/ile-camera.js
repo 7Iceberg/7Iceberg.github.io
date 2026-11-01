@@ -1,11 +1,16 @@
-// La caméra de l'île d'Ervane (docs/ILE-TECHNIQUE.md, 3.3, 3.11 et 4.7) : azimut fixe de 45° (le
-// haut de l'écran regarde le nord-ouest : +u descend vers la droite, +v vers la gauche, comme les
-// cases d'Orsane), perspective d'exploration à 20° d'ouverture, champ de 18 à 60 u (la largeur de
-// sol vue au point visé), élévation liée au champ (35° au plus près, 45° au plus loin).
+// La caméra de l'île d'Ervane (docs/ILE-TECHNIQUE.md, 3.3, 3.11 et 4.7) : azimut de 45° par défaut
+// (le haut de l'écran regarde le nord-ouest : +u descend vers la droite, +v vers la gauche, comme
+// les cases d'Orsane), que le joueur tourne (deux doigts qui pivotent, le bouton droit, les touches
+// A et E) autour du point visé ; perspective d'exploration à 20° d'ouverture, champ de 18 à 60 u
+// (la largeur de sol vue au point visé), élévation liée au champ (35° au plus près, 45° au plus loin).
 //
-// Le point visé suit le Veilleur par un ressort amorti (0,25 s). Un glissement déplace la vue de
-// 15 u au plus ; elle revient en une seconde dès que le Veilleur marche, ou après quatre secondes
-// sans geste. Le point visé reste dans le rectangle de l'île.
+// Le point visé suit le Veilleur par un ressort à amortissement critique (posé en 0,6 s, sans
+// dépasser), avec une avance du regard dans le sens de sa marche (0,3 s de marche, 2 u au plus). Un
+// glissement déplace la vue de 15 u au plus ; elle revient en une seconde dès que le Veilleur
+// marche, ou après quatre secondes sans geste. Le point visé reste dans le rectangle de l'île.
+//
+// En combat, l'azimut est la diagonale la plus proche (45°, 135°, 225° ou 315°) : les cases restent
+// des losanges 2:1 ; le passage vers le combat y glisse, et le retour revient à l'azimut du joueur.
 //
 // Elle présente à CameraControls (js/camera.js) l'interface de Camera : zoomAt, panBy, pinchTo,
 // fit, setInsets, setViewport, clientToWorld, clientToScreen, rect, focusRect, update, flush,
@@ -41,6 +46,12 @@ class CameraIle {
     const telephone = CameraIle.telephone();
     this.champDefaut = ((opts.style && opts.style.champDefaut) || cdef.champDefaut || [26, 32])[telephone ? 0 : 1];
     this.azimut = (cdef.azimut != null ? cdef.azimut : 45) * Math.PI / 180;
+    this.azimutDefaut = this.azimut;
+    this.azimutCombat = this.azimut;          // en combat : la diagonale la plus proche (3.3)
+    this.animAz = null;                       // l'azimut rejoint en douceur (recentrage, touches)
+    this.vitCible = { x: 0, y: 0 };           // la vitesse du point visé (le ressort du suivi)
+    this.vitJoueur = { x: 0, y: 0 };          // la vitesse du Veilleur, lissée : l'avance du regard
+    this.joueurPrec = null;
     this.cam = new THREE.PerspectiveCamera(this.ouverture, 1, 1, 900);
     this.champ = this.champDefaut;
     this.cible = { x: 0, y: 0, h: 0 };        // le point visé (u, v) et sa hauteur
@@ -126,13 +137,13 @@ class CameraIle {
 
   // L'état de la perspective d'exploration : point visé, élévation, largeur vue au point visé,
   // ouverture. Un passage vers le combat ou depuis lui interpole entre deux de ces états.
-  etatExploration() { return { x: this.cible.x, y: this.cible.y, h: this.cible.h, el: this.elevation(), largeur: this.champ, fov: this.ouverture, leve: this.leve }; }
+  etatExploration() { return { x: this.cible.x, y: this.cible.y, h: this.cible.h, el: this.elevation(), largeur: this.champ, fov: this.ouverture, leve: this.leve, az: this.azimut }; }
 
   // Place la caméra perspective d'après un état (par défaut celui de l'exploration) : le point
   // visé tombe au milieu de la part de la scène que l'interface laisse libre.
   placer(etat) {
     const e = etat || this.etatExploration();
-    const cam = this.cam, az = this.azimut;
+    const cam = this.cam, az = e.az != null ? e.az : this.azimut;
     const aspect = this.vw && this.vh ? this.vw / this.vh : 1.6;
     const d = e.largeur / (2 * Math.tan(e.fov * Math.PI / 360) * aspect);
     const hv = e.h + (e.leve || 0);
@@ -326,8 +337,42 @@ class CameraIle {
     this.changed();
   }
 
-  // Recentrer (bouton, touche 0) : le Veilleur au milieu, au champ par défaut ; en combat, l'aire
-  // entière cadrée.
+  // ----- La rotation (3.3) -----
+
+  // Un écart d'angle ramené dans ]-π, π].
+  static arc(d) { return Math.atan2(Math.sin(d), Math.cos(d)); }
+  // Un ressort à amortissement critique de pulsation `w`, avancé de `dt` : la position `x` et la
+  // vitesse `v` vers `cible`, par la solution exacte (x(t) = (d + (v + w d) t) e^(-w t)).
+  static ressort(x, v, cible, w, dt) {
+    const d = x - cible, e = Math.exp(-w * dt), t = (v + w * d) * dt;
+    return { x: cible + (d + t) * e, v: (v - t * w) * e };
+  }
+  // La diagonale (45° + k × 90°) la plus proche d'un azimut : celle du combat, où les cases restent
+  // des losanges 2:1.
+  static diagonale(az) { return CameraIle.arc(Math.round((az - Math.PI / 4) / (Math.PI / 2)) * (Math.PI / 2) + Math.PI / 4); }
+
+  // Tourne la vue de `da` radians autour du point visé (en exploration seulement : en combat, les
+  // cases gardent leur losange) ; `tournerA(az)` pose l'azimut, `tournerVers(az)` le rejoint en
+  // douceur (0,15 s de constante de temps). Positif : le monde tourne dans le sens des aiguilles
+  // d'une montre à l'écran.
+  tourner(da) { if (da) this.tournerA(this.azimut + da); }
+  tournerA(az) {
+    if (this.mode === 'combat' || this.trans || !Number.isFinite(az)) return;
+    this.animAz = null;
+    const a = CameraIle.arc(az);
+    if (a === this.azimut) return;
+    this.azimut = a;
+    this.placer();
+    this.changed();
+  }
+  tournerVers(az) {
+    if (this.mode === 'combat' || this.trans || !Number.isFinite(az)) return;
+    if (CameraIle.calme()) { this.tournerA(az); return; }
+    this.animAz = CameraIle.arc(az);
+  }
+
+  // Recentrer (bouton, touche 0) : le Veilleur au milieu, au champ et à l'azimut par défaut ; en
+  // combat, l'aire entière cadrée.
   fit(animate) {
     if (this.trans) return;
     this.userUntil = 0;
@@ -343,11 +388,14 @@ class CameraIle {
     this.revient = true;
     if (animate && !CameraIle.calme()) {
       this.anim = { champ: this.champDefaut, zoom: 1, recentre: true };
+      this.animAz = this.azimut === this.azimutDefaut ? null : this.azimutDefaut;
     } else {
-      this.anim = null;
+      this.anim = null; this.animAz = null;
       this.champ = this.champDefaut;
+      this.azimut = this.azimutDefaut;
       this.decalage.x = 0; this.decalage.y = 0;
       this.cible.x = this.joueur.x; this.cible.y = this.joueur.y;
+      this.vitCible.x = 0; this.vitCible.y = 0;
       this.placer();
     }
     this.changed();
@@ -366,6 +414,7 @@ class CameraIle {
     this.anim = null;
     this.decalage.x = 0; this.decalage.y = 0;
     this.cible.x = this.joueur.x; this.cible.y = this.joueur.y; this.cible.h = this.joueur.h;
+    this.vitCible.x = 0; this.vitCible.y = 0; this.vitJoueur.x = 0; this.vitJoueur.y = 0; this.joueurPrec = null;
     this.userUntil = 0;
     this.borner();
     this.placer();
@@ -399,7 +448,7 @@ class CameraIle {
   // réduit. Rien ne bouge pendant le passage (gestes ignorés).
   entrerCombat(aire, immediat) {
     const premier = this.mode !== 'combat';
-    if (premier) this.avantCombat = { champ: this.champ };
+    if (premier) { this.avantCombat = { champ: this.champ }; this.azimutCombat = CameraIle.diagonale(this.azimut); this.animAz = null; }
     const de = this.trans && this.dernierEtat ? this.dernierEtat : (premier ? this.etatExploration() : null);
     this.mode = 'combat';
     this.aire = aire;
@@ -430,6 +479,7 @@ class CameraIle {
   finirRetour() {
     this.quitterCombat();
     this.cible.x = this.joueur.x; this.cible.y = this.joueur.y; this.cible.h = this.joueur.h;
+    this.vitCible.x = 0; this.vitCible.y = 0;
     this.decalage.x = 0; this.decalage.y = 0;
     this.atFit = true;
     this.borner();
@@ -450,14 +500,14 @@ class CameraIle {
     if (this.mode === 'combat') { this.recadrer(); this.changed(); }
   }
 
-  // Le cadrage de l'aire : la caméra orthographique regarde le centre de l'aire depuis l'azimut de
-  // l'exploration, à l'élévation du combat ; l'échelle fait tenir les quatre coins du carré (et la
+  // Le cadrage de l'aire : la caméra orthographique regarde le centre de l'aire depuis l'azimut du
+  // combat (la diagonale la plus proche de celui de l'exploration), à l'élévation du combat ; l'échelle fait tenir les quatre coins du carré (et la
   // tête d'une figure posée sur chacun) dans la part libre de la scène, avec la marge de
   // l'ajustement des cartes à cases (3 % du petit côté).
   cadrerCombat() {
     const a = this.aire;
     if (!a || !this.vw || !this.vh) return null;
-    const el = this.tactique ? this.elevationTactique : this.elevationCombat, az = this.azimut;
+    const el = this.tactique ? this.elevationTactique : this.elevationCombat, az = this.azimutCombat;
     const dir = [Math.cos(el) * Math.sin(az), Math.sin(el), Math.cos(el) * Math.cos(az)];
     // Les axes de la vue : la droite (horizontale) et le haut, comme les pose lookAt.
     const right = [Math.cos(az), 0, -Math.sin(az)];
@@ -589,11 +639,11 @@ class CameraIle {
   // même largeur, ouverture de 2°.
   etatOrtho() {
     const v = this.vue, p = this.depuisVue(v.px, v.py);
-    return { x: p.u, y: p.v, h: p.h, el: this.cadre.el, largeur: this.vw * v.s, fov: 2, leve: 0 };
+    return { x: p.u, y: p.v, h: p.h, el: this.cadre.el, largeur: this.vw * v.s, fov: 2, leve: 0, az: this.azimutCombat };
   }
   // Le retour : le Veilleur au milieu, au champ d'avant le combat.
   etatRetour() {
-    return { x: this.joueur.x, y: this.joueur.y, h: this.joueur.h, el: this.elevation(), largeur: this.champ, fov: this.ouverture, leve: this.leve };
+    return { x: this.joueur.x, y: this.joueur.y, h: this.joueur.h, el: this.elevation(), largeur: this.champ, fov: this.ouverture, leve: this.leve, az: this.azimut };
   }
 
   // L'acteur du tour, suivi quand la vue est zoomée (comme la caméra des cases) : `focus` change à
@@ -608,10 +658,19 @@ class CameraIle {
   update(now, joueur, marche) {
     const dt = this.lastStep ? Math.min(0.1, Math.max(0, (now - this.lastStep) / 1000)) : 0.016;
     this.lastStep = now;
-    if (joueur) { this.joueur.x = joueur.x; this.joueur.y = joueur.y; this.joueur.h = joueur.h; }
+    if (joueur) {
+      // La vitesse du Veilleur, lissée (0,15 s) ; un saut de 20 u/s ou plus n'est pas une marche.
+      const jp = this.joueurPrec, jv = this.vitJoueur;
+      if (jp && dt > 0) {
+        const vx = (joueur.x - jp.x) / dt, vy = (joueur.y - jp.y) / dt, k = 1 - Math.exp(-dt / 0.15);
+        if (Math.hypot(vx, vy) < 20) { jv.x += (vx - jv.x) * k; jv.y += (vy - jv.y) * k; } else { jv.x = 0; jv.y = 0; }
+      }
+      this.joueurPrec = { x: joueur.x, y: joueur.y };
+      this.joueur.x = joueur.x; this.joueur.y = joueur.y; this.joueur.h = joueur.h;
+    }
     if (this.trans) return this.majPassage(now);
     if (this.mode === 'combat') return this.majCombat(dt, now);
-    const avant = { x: this.cible.x, y: this.cible.y, h: this.cible.h, c: this.champ };
+    const avant = { x: this.cible.x, y: this.cible.y, h: this.cible.h, c: this.champ, az: this.azimut };
     // Le Veilleur se met en marche : le glissement revient (en une seconde) ; de même après quatre
     // secondes sans geste.
     if (marche && !this.focusMarche) this.revient = true;
@@ -640,17 +699,28 @@ class CameraIle {
       if (Math.abs(Math.log(a.champ / champ)) < 0.002) { this.champ = a.champ; if (a.recentre) { d.x = 0; d.y = 0; } this.anim = null; }
       this.changed();
     }
-    // Le ressort du suivi : le point visé rejoint le Veilleur (et son glissement) en 0,25 s.
-    const k = 1 - Math.exp(-dt * 12);
-    const cx = this.joueur.x + d.x, cy = this.joueur.y + d.y;
-    this.cible.x += (cx - this.cible.x) * k;
-    this.cible.y += (cy - this.cible.y) * k;
+    // L'azimut rejoint en douceur celui qu'on vise (recentrage, touches).
+    if (this.animAz != null) {
+      const da = CameraIle.arc(this.animAz - this.azimut);
+      if (Math.abs(da) < 0.003) { this.azimut = this.animAz; this.animAz = null; } else this.azimut = CameraIle.arc(this.azimut + da * (1 - Math.exp(-dt / 0.15)));
+      this.changed();
+    }
+    // Le ressort du suivi, à amortissement critique (posé en 0,6 s, sans dépasser) : le point visé
+    // rejoint le Veilleur, son glissement, et l'avance du regard (0,3 s de sa marche, 2 u au plus).
+    const jv = this.vitJoueur, nv = Math.hypot(jv.x, jv.y), av = Math.min(2, nv * 0.3);
+    const cx = this.joueur.x + d.x + (nv > 1e-3 ? jv.x / nv * av : 0), cy = this.joueur.y + d.y + (nv > 1e-3 ? jv.y / nv * av : 0);
+    // La solution exacte du ressort sur le pas de temps (stable à dix images par seconde, où un pas
+    // d'Euler inverserait la vitesse à chaque image).
+    const vc = this.vitCible, rx = CameraIle.ressort(this.cible.x, vc.x, cx, 6.5, dt), ry = CameraIle.ressort(this.cible.y, vc.y, cy, 6.5, dt);
+    this.cible.x = rx.x; vc.x = rx.v;
+    this.cible.y = ry.x; vc.y = ry.v;
     this.cible.h += (this.joueur.h - this.cible.h) * (1 - Math.exp(-dt * 5));
     this.borner();
     this.placer();
-    const fit = Math.hypot(this.cible.x - this.joueur.x, this.cible.y - this.joueur.y) < 0.5 && Math.abs(this.champ / this.champDefaut - 1) < 0.02;
+    // Au cadre : sans glissement, au champ et à l'azimut par défaut (l'avance du regard n'y change rien).
+    const fit = Math.hypot(d.x, d.y) < 0.5 && Math.abs(this.champ / this.champDefaut - 1) < 0.02 && Math.abs(CameraIle.arc(this.azimut - this.azimutDefaut)) < 0.01;
     if (fit !== this.atFit) { this.atFit = fit; this.changed(); }
-    return Math.abs(avant.x - this.cible.x) + Math.abs(avant.y - this.cible.y) + Math.abs(avant.h - this.cible.h) > 1e-4 || avant.c !== this.champ;
+    return Math.abs(avant.x - this.cible.x) + Math.abs(avant.y - this.cible.y) + Math.abs(avant.h - this.cible.h) > 1e-4 || avant.c !== this.champ || avant.az !== this.azimut;
   }
 
   // Le passage d'une caméra à l'autre (0,6 s) : le point visé, l'élévation et la largeur vue
@@ -665,6 +735,8 @@ class CameraIle {
     const A = tr.de, B = tr.sens === 'aller' ? this.etatOrtho() : this.etatRetour();
     const L = (a, b) => a + (b - a) * e, G = (a, b) => Math.exp(Math.log(a) + (Math.log(b) - Math.log(a)) * e);
     const etat = { x: L(A.x, B.x), y: L(A.y, B.y), h: L(A.h, B.h), el: L(A.el, B.el), largeur: G(A.largeur, B.largeur), fov: G(A.fov, B.fov), leve: L(A.leve || 0, B.leve || 0) };
+    // L'azimut glisse au plus court vers la diagonale du combat, ou revient à celui du joueur.
+    if (A.az != null && B.az != null) etat.az = A.az + CameraIle.arc(B.az - A.az) * e;
     this.dernierEtat = etat;
     this.fondu = tr.sens === 'aller' ? e : 1 - e;
     if (t >= 1) {

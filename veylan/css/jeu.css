@@ -207,8 +207,9 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-barre-tour__tour { text-align: center; color: var(--vy-texte); font: 600 12.5px var(--vy-font-ui); white-space: nowrap; }
 .vy-barre-tour__action { min-height: 36px; padding: 0 12px; font-size: 13px; white-space: nowrap; }
 
-/* ----- Le panneau de jeu : caché hors du téléphone en paysage ----- */
+/* ----- Le panneau de jeu et sa languette : cachés hors du téléphone en paysage ----- */
 .vy-panneau { display: none; }
+.vy-languette { display: none; }
 .vy-carte-info { display: none; }
 .vy-indice { display: none; }
 .vy-badge { position: absolute; right: -3px; top: -3px; z-index: 1; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 999px; background: var(--vy-braise); color: #fff; font: 800 10.5px/15px var(--vy-font-ui); text-align: center; box-shadow: 0 0 0 1.5px #111b29, 0 0 8px rgba(201, 71, 47, 0.6); pointer-events: none; }
@@ -423,6 +424,62 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
     box-shadow: inset 1.5px 0 0 var(--vy-filet-fort), -6px 0 18px rgba(5, 8, 13, 0.35);
   }
   #app.vy-gaucher .vy-panneau { grid-column: 1; padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: 6px; box-shadow: inset -1.5px 0 0 var(--vy-filet-fort), 6px 0 18px rgba(5, 8, 13, 0.35); }
+
+  /* ----- Le panneau replié (3.29) : la scène prend toute la largeur ; une languette d'icônes sur
+     le bord droit de la scène ouvre le panneau, qui glisse par-dessus la scène, à gauche de la
+     languette (sous la couche des fenêtres, comme avant). L'interface de la scène s'écarte de ce
+     qui la couvre (--sc-droite), la caméra aussi (main.js, HudJeu.insetDroite). ----- */
+  #app.vy-replie, #app.vy-replie.mode-explore, #app.vy-replie.mode-combat, #app.vy-replie.vy-gaucher, #app.vy-replie.vy-gaucher.mode-explore, #app.vy-replie.vy-gaucher.mode-combat {
+    --panneau-l: clamp(206px, 27vw, 280px);
+    --languette-l: 46px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #app.vy-replie #stage, #app.vy-replie.mode-explore #stage, #app.vy-replie.mode-combat #stage, #app.vy-replie.vy-gaucher #stage, #app.vy-replie.vy-gaucher.mode-explore #stage, #app.vy-replie.vy-gaucher.mode-combat #stage { grid-column: 1; }
+  /* Les fenêtres gardent la part libre de la scène : jamais sur la languette ni sur le panneau
+     ouvert (la carte du monde, en position fixe, prend tout l'écran comme avant). */
+  #app.vy-replie .vy-fenetres, #app.vy-replie.vy-gaucher .vy-fenetres { grid-column: 1 / 2; inset: var(--zs-haut) calc(var(--languette-l) + var(--zs-droite)) var(--zs-bas) 0; }
+  #app.vy-replie.vy-panneau-ouvert .vy-fenetres { right: calc(var(--languette-l) + var(--panneau-l) + var(--zs-droite)); }
+  #app.vy-replie.vy-gaucher .vy-fenetres { inset: var(--zs-haut) 0 var(--zs-bas) calc(var(--languette-l) + var(--zs-gauche)); }
+  #app.vy-replie.vy-gaucher.vy-panneau-ouvert .vy-fenetres { left: calc(var(--languette-l) + var(--panneau-l) + var(--zs-gauche)); }
+  #app.vy-replie .vy-panneau, #app.vy-replie.vy-gaucher .vy-panneau {
+    position: fixed; top: 0; bottom: 0; grid-area: auto; width: var(--panneau-l); z-index: 14;
+    transition: transform 0.28s var(--vy-courbe), visibility 0s linear 0.28s;
+    visibility: hidden;
+  }
+  #app.vy-replie .vy-panneau { left: auto; right: calc(var(--languette-l) + var(--zs-droite)); padding-right: 6px; transform: translateX(calc(100% + var(--languette-l) + 40px)); box-shadow: inset 1.5px 0 0 var(--vy-filet-fort), -6px 0 18px rgba(5, 8, 13, 0.35); }
+  #app.vy-replie.vy-gaucher .vy-panneau { right: auto; left: calc(var(--languette-l) + var(--zs-gauche)); padding-left: 6px; transform: translateX(calc(-100% - var(--languette-l) - 40px)); box-shadow: inset -1.5px 0 0 var(--vy-filet-fort), 6px 0 18px rgba(5, 8, 13, 0.35); }
+  #app.vy-replie.vy-panneau-ouvert .vy-panneau, #app.vy-replie.vy-panneau-ouvert.vy-gaucher .vy-panneau { transform: none; visibility: visible; transition: transform 0.28s var(--vy-courbe); }
+  #app.vy-replie #stage, #app.vy-replie.mode-combat #stage { --sc-droite: calc(var(--languette-l) + var(--zs-droite)); --sc-gauche: var(--zs-gauche); }
+  #app.vy-replie.vy-panneau-ouvert #stage, #app.vy-replie.vy-panneau-ouvert.mode-combat #stage { --sc-droite: calc(var(--languette-l) + var(--panneau-l) + var(--zs-droite)); }
+  #app.vy-replie.vy-gaucher #stage, #app.vy-replie.vy-gaucher.mode-combat #stage { --sc-droite: var(--zs-droite); --sc-gauche: calc(var(--languette-l) + var(--zs-gauche)); }
+  #app.vy-replie.vy-gaucher.vy-panneau-ouvert #stage, #app.vy-replie.vy-gaucher.vy-panneau-ouvert.mode-combat #stage { --sc-gauche: calc(var(--languette-l) + var(--panneau-l) + var(--zs-gauche)); }
+  #app.vy-replie .vy-languette {
+    position: absolute; top: var(--zs-haut); right: var(--zs-droite); bottom: var(--zs-bas); z-index: 14;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    width: var(--languette-l); padding: 6px 0;
+    background: linear-gradient(90deg, rgba(10, 16, 25, 0) 0%, rgba(10, 16, 25, 0.5) 55%, rgba(10, 16, 25, 0.75) 100%);
+  }
+  #app.vy-replie.vy-gaucher .vy-languette { right: auto; left: var(--zs-gauche); background: linear-gradient(270deg, rgba(10, 16, 25, 0) 0%, rgba(10, 16, 25, 0.5) 55%, rgba(10, 16, 25, 0.75) 100%); }
+  .vy-languette__bouton {
+    position: relative; width: 36px; height: 36px; padding: 7px;
+    border: 0; border-radius: 50%;
+    color: var(--vy-or-clair);
+    background: radial-gradient(circle at 35% 30%, #2a3a50, #121c2a 70%);
+    box-shadow: inset 0 0 0 1px rgba(201, 166, 107, 0.45), 0 3px 8px rgba(5, 8, 13, 0.5);
+    cursor: pointer;
+  }
+  .vy-languette__bouton svg { width: 100%; height: 100%; display: block; }
+  .vy-languette__bouton:active { transform: translateY(1px); }
+  .vy-languette__bouton[aria-expanded="true"] { color: var(--vy-cristal); box-shadow: inset 0 0 0 1.5px var(--vy-cristal), 0 0 10px rgba(0, 194, 255, 0.35); }
+  .vy-languette__bouton .vy-badge { position: absolute; top: -3px; right: -3px; }
+  .vy-languette__nonlu { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--vy-braise); color: #fff; font: 700 10px/16px var(--vy-font-ui); }
+  .vy-languette__pv { position: relative; flex: none; width: 36px; height: 41px; padding: 0; border: 0; background: none; cursor: pointer; }
+  .vy-languette__pv svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 2px 4px rgba(5, 8, 13, 0.5)); }
+  .vy-languette__pv-val { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font: 800 11px var(--vy-font-ui); text-shadow: 0 1px 2px rgba(20, 12, 4, 0.9); pointer-events: none; }
+  .vy-languette__pv.bas .vy-panneau__pv-bord { stroke: var(--vy-braise-clair); animation: vy-pouls 1.1s ease-in-out infinite; }
+  .vy-languette__pts { display: flex; flex-direction: column; gap: 3px; align-items: center; }
+  .vy-languette__pts[hidden] { display: none; }
+  .vy-languette__ressort { flex: 1; }
 
   .vy-panneau__haut { display: flex; align-items: center; gap: 5px; flex: none; }
   .vy-panneau__pv { position: relative; flex: none; width: 44px; height: 51px; }

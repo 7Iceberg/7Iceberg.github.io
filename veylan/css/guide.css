@@ -366,12 +366,12 @@ body.vy-voile .vy-guide--tuto { z-index: 41; }
 @media (orientation: landscape) and (max-height: 500px) {
   #app, #app.mode-explore { --guide-bas: 6px; }
   .vy-guide { --portrait-l: 104px; --portrait-h: 120px; left: 6px; width: min(56%, 380px); }
-  .vy-guide[data-cote="droite"] { right: 6px; }
+  .vy-guide[data-cote="droite"] { right: calc(6px + var(--vy-couvert-droite, 0px)); }
   #app.mode-combat .vy-guide { width: min(calc(100% - var(--barre-tour-l, 240px) - 20px), 360px); }
   /* Une scène étroite : la boîte du guide se pose au-dessus de la barre de tour (js/hud-jeu.js),
      plus serrée, pour laisser voir le combat. */
   #app.mode-combat.vy-guide-dessus .vy-guide { --portrait-l: 70px; --portrait-h: 82px; bottom: calc(var(--barre-tour-h, 70px) + 6px); width: min(calc(100% - 12px), 380px); }
-  #app.mode-combat.vy-guide-dessus .vy-guide[data-cote="droite"] { right: 6px; }
+  #app.mode-combat.vy-guide-dessus .vy-guide[data-cote="droite"] { right: calc(6px + var(--vy-couvert-droite, 0px)); }
   #app.mode-combat.vy-guide-dessus .vy-guide__nom { min-height: 24px; }
   #app.mode-combat.vy-guide-dessus .vy-guide__boite { padding-bottom: 7px; }
   #app.mode-combat.vy-guide-dessus .vy-guide__texte { padding: 5px 10px 0; min-height: 0; font-size: 13px; line-height: 1.35; }

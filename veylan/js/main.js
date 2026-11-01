@@ -160,12 +160,16 @@
   // Sur téléphone, la barre de sorts flotte sur le bas de la carte : la caméra garde le plateau
   // au-dessus. Sur grand écran, elle est sous la scène et ne couvre rien.
   const stageEl = document.getElementById('stage'), hudEl = document.getElementById('hud');
+  // Au téléphone, le panneau de jeu ouvert ou sa languette couvrent un côté de la scène
+  // (js/hud-jeu.js, 3.29) : la caméra cadre dans la part restante.
   const coverHud = () => {
     const s = stageEl.getBoundingClientRect(), h = hudEl.getBoundingClientRect();
     const over = h.height > 0 && h.top > s.top && h.top < s.bottom - 1;
-    R.camera.setInsets({ bottom: over ? s.bottom - h.top : 0 });
+    const jeu = hud && hud.jeu;
+    const ins = { bottom: over ? s.bottom - h.top : 0, right: jeu && jeu.insetDroite ? jeu.insetDroite() : 0, left: jeu && jeu.insetGauche ? jeu.insetGauche() : 0 };
+    R.camera.setInsets(ins);
     // La caméra des cases garde les mêmes marges pendant que l'île s'affiche (pour le retour).
-    if (scene && R.camera !== renderer.camera) renderer.camera.setInsets({ bottom: over ? s.bottom - h.top : 0 });
+    if (scene && R.camera !== renderer.camera) renderer.camera.setInsets(ins);
   };
   if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(coverHud); ro.observe(stageEl); ro.observe(hudEl); }
   addEventListener('resize', coverHud);

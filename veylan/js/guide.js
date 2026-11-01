@@ -110,6 +110,19 @@ class Projecteur {
     return null;
   }
 
+  // La cible est dans le panneau de jeu replié du téléphone (3.29) : le panneau s'ouvre pour la
+  // montrer, une fois par sélecteur (si le joueur le replie, on ne le rouvre pas sous son doigt).
+  static deplier(sel) {
+    const jeu = typeof VEYLAN === 'object' && VEYLAN.hud && VEYLAN.hud.jeu;
+    if (!jeu || !jeu.basculerPanneau || jeu.panneauOuvert) return false;
+    for (const s of [].concat(sel || [])) {
+      let list;
+      try { list = jeu.panneau.querySelectorAll(s); } catch (e) { continue; }
+      if (list.length) { jeu.basculerPanneau(true); return true; }
+    }
+    return false;
+  }
+
   boucle() {
     this.raf = null;
     if (!this.sel) return;
@@ -119,6 +132,7 @@ class Projecteur {
     if (!el) {
       this.el.classList.add('hidden');
       this.rect = null;
+      if (this.deplie !== this.sel) { this.deplie = this.sel; Projecteur.deplier(this.sel); }
     } else {
       const r = el.getBoundingClientRect(), pad = 5;
       this.el.classList.remove('hidden');
@@ -750,7 +764,8 @@ class Guide {
           if (ids.length) { sel = ids.map(id => `.vy-fenetre[data-id="sac"] [data-id="${id}"]`); main = true; }
           break;
         }
-        case 'ui': if (Projecteur.trouver(c.cible)) { sel = c.cible; main = !!c.main; } break;
+        // Une cible du panneau de jeu replié du téléphone (3.29) : le panneau s'ouvre pour elle.
+        case 'ui': if (Projecteur.trouver(c.cible) || Projecteur.deplier(c.cible)) { sel = c.cible; main = !!c.main; } break;
       }
     };
     for (const c of [].concat(st.cue || [])) {
@@ -829,7 +844,8 @@ class Guide {
         const A = Renderer.arrowGeometry(this.renderer.map, this.renderer.origin, cue.edge, 0);
         if (A) pt = UI.boardClient(this.renderer, A.mid.x, A.mid.y);
       } else {
-        const o = cue.group || cue.entity || cue.cell;
+        // Le point au sol du tutoriel de l'île (cue.point, en u) se projette comme un groupe.
+        const o = cue.group || cue.entity || cue.cell || cue.point;
         if (o) pt = UI.cellClient(this.renderer, o.rx != null ? o.rx : o.x, o.ry != null ? o.ry : o.y);
       }
       if (pt) r = { left: pt.x - 40, right: pt.x + 40, top: pt.y - 50, bottom: pt.y + 20 };
@@ -837,12 +853,16 @@ class Guide {
     if (!r) { this.boite.cote('gauche'); return; }
     const cur = this.boite.el.dataset.cote || 'gauche';
     // La place de la boîte d'un côté ou de l'autre : sa hauteur réelle (portrait compris), là où
-    // la feuille de style la pose (au-dessus de la barre de tour, des menus en portrait...).
+    // la feuille de style la pose (au-dessus de la barre de tour, des menus en portrait...), en
+    // retrait de ce qui couvre les bords de la scène au téléphone (la languette, le panneau :
+    // --vy-couvert-droite et --vy-couvert-gauche, posés par js/hud-jeu.js).
     const box = this.boite.el.getBoundingClientRect();
     const haut = box.top - Math.max(0, this.boite.q('.vy-guide__portrait').offsetHeight - 22);
+    const couvert = c => parseFloat(getComputedStyle(document.body).getPropertyValue(c)) || 0;
+    const cd = couvert('--vy-couvert-droite'), cg = couvert('--vy-couvert-gauche');
     const zone = side => {
       const w = this.boite.el.offsetWidth;
-      return side === 'gauche' ? { left: stage.left, right: stage.left + w + 12, top: haut, bottom: box.bottom } : { left: stage.right - w - 12, right: stage.right, top: haut, bottom: box.bottom };
+      return side === 'gauche' ? { left: stage.left + cg, right: stage.left + cg + w + 12, top: haut, bottom: box.bottom } : { left: stage.right - cd - w - 12, right: stage.right - cd, top: haut, bottom: box.bottom };
     };
     const hit = z => r.left < z.right && r.right > z.left && r.top < z.bottom && r.bottom > z.top;
     if (hit(zone(cur))) { const other = cur === 'gauche' ? 'droite' : 'gauche'; if (!hit(zone(other))) this.boite.cote(other); }
