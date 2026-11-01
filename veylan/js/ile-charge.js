@@ -14,7 +14,7 @@ const IleCharge = (() => {
     let src = 'vendor/three.min.js';
     try {
       const ref = document.querySelector('script[src*="ile-charge.js"]') || document.querySelector('script[src*="hud-carte.js"]');
-      if (ref && ref.src) src = new URL('../vendor/three.min.js', ref.src).href;
+      if (ref && ref.src) { const u = new URL(ref.src); src = new URL('../vendor/three.min.js', u).href + u.search; }
     } catch (e) { /* chemin relatif */ }
     return src;
   }

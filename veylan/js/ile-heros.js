@@ -35,7 +35,7 @@ const IleHeros = (() => {
     if (!src) return null;
     try {
       const ref = document.querySelector('script[src*="ile-charge.js"]') || document.querySelector('script[src*="ile-3d.js"]');
-      if (ref && ref.src) src = new URL('../' + src, ref.src).href;
+      if (ref && ref.src) { const u = new URL(ref.src); src = new URL('../' + src, u).href + u.search; }
     } catch (e) { /* chemin relatif */ }
     return src;
   }

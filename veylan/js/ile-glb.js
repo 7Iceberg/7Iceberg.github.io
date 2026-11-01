@@ -10,12 +10,13 @@
 // forme. Le terrain, la navigation, les combats, les figures ne changent pas : le GLB vient du même
 // terrain que le jeu, à la même place.
 const IleGlb = (() => {
-  // assets/monde/ervane.glb à côté des scripts, en local comme en ligne.
+  // assets/monde/ervane.glb à côté des scripts, en local comme en ligne ; l'empreinte de version du
+  // script (?v=..., posée par tools/make-online.sh) suit le fichier : un cache ne sert plus un vieux monde.
   function source() {
     let src = 'assets/monde/ervane.glb';
     try {
       const ref = document.querySelector('script[src*="ile-charge.js"]') || document.querySelector('script[src*="ile-3d.js"]');
-      if (ref && ref.src) src = new URL('../assets/monde/ervane.glb', ref.src).href;
+      if (ref && ref.src) { const u = new URL(ref.src); src = new URL('../assets/monde/ervane.glb', u).href + u.search; }
     } catch (e) { /* chemin relatif */ }
     return src;
   }
