@@ -254,8 +254,10 @@ const IleTerrain = (() => {
     arche_brisee: o => [{ x: -1.6, y: 0, r: 0.6 }, { x: 1.6, y: 0, r: 0.6 }],
     arche: o => [{ x: -2.0, y: 0, r: 0.55 }, { x: 2.0, y: 0, r: 0.55 }],
     cairn: o => [{ x: 0, y: 0, r: 0.4 + 0.3 * (o.hauteur || 2) }],
-    // Une source des Quatre Sources marquée par un objet (la Braise : un tas de roches).
-    source: o => [{ x: 0, y: 0, r: 1.2 }],
+    // Une source des Quatre Sources marquée par un objet (la Braise : un tas de roches ; la Claire : sa
+    // vasque ; la Mousse : son tertre). Le ponton du bassin ne bloque rien.
+    source: o => [{ x: 0, y: 0, r: o.element === 'eau' ? 2.0 : o.element === 'terre' ? 1.3 : 1.2 }],
+    ponton: () => [],
     arbre_bobine: o => [{ x: 0, y: 0, r: 2.4 }],
     margelle: o => [{ anneau: true, r1: o.rayon || 8, r2: (o.rayon || 8) + (o.largeur || 1.2) }],
     treuil: o => [{ x: 0, y: 0, r: 0.8 }],

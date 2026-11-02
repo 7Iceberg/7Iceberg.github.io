@@ -732,6 +732,18 @@ const IleDecor = (() => {
           break;
         }
         case 'source': {
+          if (o.element === 'eau') {
+            // La Source Claire : un cercle de pierres plates autour de l'eau qui jaillit.
+            for (let q = 0; q < 8; q++) { const a = q * 0.785 + (o.rot || 0); ajouter(o, 'roche', L.cailloux[(o.index + q) % 8], matrice(o.u + Math.cos(a) * 1.7, y + 0.1, o.v + Math.sin(a) * 1.7, 0, a, 0, 0.5, 0.25, 0.4), { c: fois(C.pierre, 0.95), bas: 0.8, haut: 1.05 }); }
+            ajouter(o, 'lueur', L.octa, matrice(o.u, y + 0.3, o.v, 0, 0, 0, 0.16, 0.1, 0.16), { c: coul('#a6f0e4') });
+            G.halos.push({ x: o.u, y: y + 0.4, z: o.v, couleur: '#a6f0e4', taille: 2.4, opacite: 0.45 });
+            break;
+          }
+          if (o.element === 'terre') {
+            // La Source de Mousse : un tertre rond couvert de mousse.
+            ajouter(o, 'roche', L.blocs[o.index % 8], matrice(o.u, y + 0.3, o.v, 0, o.rot || 0, 0, 1.2, 0.8, 1.0), { c: coul('#4f7a3f'), bas: 0.8, haut: 1.1, mousse: coul('#6f9a4c') });
+            break;
+          }
           // La Source de Braise : un tas de roches sombres, fendues d'une lueur de braise.
           for (let q = 0; q < 5; q++) {
             const a = q * 1.26 + (o.rot || 0), d = q ? 0.75 : 0, rr = q ? 0.5 : 0.85;
@@ -739,6 +751,13 @@ const IleDecor = (() => {
           }
           ajouter(o, 'lueur', L.octa, matrice(o.u, y + 0.9, o.v, 0, 0, 0, 0.18, 0.12, 0.18), { c: coul('#ff8a3c') });
           G.halos.push({ x: o.u, y: y + 0.9, z: o.v, couleur: '#ff9a4a', taille: 2.6, opacite: 0.55 });
+          break;
+        }
+        case 'ponton': {
+          // Le ponton de planches du bassin de la Source Claire, sur quatre pieux.
+          const [ax, az] = local(o, -2, 0), [bx, bz] = local(o, 2, 0);
+          ajouter(o, 'acc', L.cyl(4), entre(ax, y + 0.45, az, bx, y + 0.45, bz, 0.5), { c: C.boisClair });
+          for (const [lx, lz] of [[-1.6, -0.4], [-1.6, 0.4], [1.6, -0.4], [1.6, 0.4]]) { const [px, pz] = local(o, lx, lz); ajouter(o, 'acc', L.cyl(4), matrice(px, y - 0.4, pz, 0, 0, 0, 0.08, 0.85, 0.08), { c: C.bois }); }
           break;
         }
         case 'arbre_bobine': {

@@ -177,13 +177,13 @@ const IleModeles = (() => {
     base_arbre_large_0: 'feuillu', base_arbre_large_1: 'feuillu', base_arbre_rond_0: 'feuillu', base_arbre_rond_1: 'feuillu',
     base_arbre_haut_0: 'conifere', base_arbre_haut_1: 'conifere', base_arbre_pin_0: 'conifere', base_arbre_pin_1: 'conifere',
     base_arbre_tordu_0: 'tordu', base_arbre_mort_0: 'mort', base_rocher_0: 'rocher', base_buisson_0: 'buisson', base_buisson_1: 'buisson',
-    base_fougere_0: 'fougere',
+    base_fougere_0: 'fougere', base_fleurs_0: 'fleurs', base_galet_0: 'galet',
   };
   // Les modèles, leur atlas et leur case dans l'atlas : [x, y, côté] en pixels. Atlas 0 (2048 x 1024) :
   // le kit de décor de toute l'île ; atlas 1 (1024 x 1024) : les objets des Mailles (le biome du
-  // village, tools/meshy/biomes), fichiers `m-*-semis.glb` ; atlas 2 (1024 x 512) : ceux des Quatre
-  // Sources, `s-*-semis.glb` (les quatre pierres levées des éléments, la Braise, le cairn percé ; deux
-  // cases libres pour la suite du biome).
+  // village, tools/meshy/biomes), fichiers `m-*-semis.glb` ; atlas 2 (1024 x 1024) : ceux des Quatre
+  // Sources, `s-*-semis.glb` (les quatre pierres levées des éléments, la Braise, le cairn percé, la
+  // source claire, le tertre de mousse, le ponton, la barrière, la dalle, les fleurs des quatre couleurs).
   const SEMIS = {
     arbre: { case: [0, 0, 512] }, arbre3: { case: [512, 0, 512] }, arbre2: { case: [0, 512, 512] },
     rocher2: { case: [512, 512, 256] }, buisson: { case: [768, 512, 256] }, roc: { case: [512, 768, 256] }, cristal: { case: [768, 768, 256] },
@@ -195,12 +195,27 @@ const IleModeles = (() => {
     's-braise': { atlas: 2, case: [0, 0, 256] }, 's-cairn': { atlas: 2, case: [256, 0, 256] },
     's-pierre-eau': { atlas: 2, case: [512, 0, 256] }, 's-pierre-feu': { atlas: 2, case: [768, 0, 256] },
     's-pierre-terre': { atlas: 2, case: [0, 256, 256] }, 's-pierre-air': { atlas: 2, case: [256, 256, 256] },
+    's-claire': { atlas: 2, case: [512, 256, 256] }, 's-mousse': { atlas: 2, case: [768, 256, 256] },
+    's-passerelle': { atlas: 2, case: [0, 512, 256] }, 's-barriere': { atlas: 2, case: [256, 512, 256] },
+    's-dalle': { atlas: 2, case: [512, 512, 256] }, 's-fleurs-eau': { atlas: 2, case: [768, 512, 256] },
+    's-fleurs-feu': { atlas: 2, case: [0, 768, 256] }, 's-fleurs-terre': { atlas: 2, case: [256, 768, 256] },
+    's-fleurs-air': { atlas: 2, case: [512, 768, 256] },
   };
-  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 512]];
+  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024]];
   // Le modèle d'une instance : `teinte` (linéaire, celle du GLB ou du style) et un hasard fixe (0 à 1)
   // ; null garde l'instance telle qu'exportée. Un feuillage chaud (l'automne des Mailles au style
   // Lisière, les jaunes de l'export) prend l'arbre d'automne. `absolu` : la hauteur en u (sinon celle
   // de la forme remplacée, fois `facteur`).
+  // `x`, `z` : la place de l'instance. Les fleurs et les galets ne changent que dans les Quatre Sources :
+  // une fleur prend la couleur de la source la plus proche (au Rond des Quatre, l'une des quatre), un
+  // galet devient une dalle.
+  const SOURCES = [['eau', 160, 148], ['feu', 130, 125], ['terre', 140, 166], ['air', 105, 120], [null, 92, 164]];
+  const dansSources = (x, z) => x >= 70 && x <= 170 && z >= 92 && z <= 190;
+  const elementA = (x, z, h) => {
+    let m = null, d = 1e9;
+    for (const s of SOURCES) { const e = Math.hypot(x - s[1], z - s[2]); if (e < d) { d = e; m = s[0]; } }
+    return m || ['eau', 'feu', 'terre', 'air'][Math.floor(h * 4) % 4];
+  };
   const chaud = t => !!t && t[0] > t[1] * 0.8;
   const sombre = t => !!t && t[1] < 0.2 && t[0] < 0.1;   // le vert profond des sous-bois
   const GENRES = {
@@ -211,6 +226,8 @@ const IleModeles = (() => {
     rocher: { modele: (t, h) => (h < 0.12 ? 'roc' : h < 0.26 ? 'cristal' : 'rocher2'), facteur: 1.25, absolu: { roc: 2.6, cristal: 1.3 } },
     buisson: { modele: (t, h) => (sombre(t) && h < 0.22 ? 'champignons' : 'buisson'), facteur: 1.15, absolu: { champignons: 1.1 } },
     fougere: { modele: (t, h) => (h < 0.18 ? 'fougeres' : null), absolu: { fougeres: 1.1 } },
+    fleurs: { modele: (t, h, x, z) => (dansSources(x, z) ? 's-fleurs-' + elementA(x, z, h) : null), absolu: { 's-fleurs-eau': 0.75, 's-fleurs-feu': 0.75, 's-fleurs-terre': 0.65, 's-fleurs-air': 0.75 } },
+    galet: { modele: (t, h, x, z) => (dansSources(x, z) ? 's-dalle' : null), absolu: { 's-dalle': 0.22 } },
   };
   // Les objets posés (T.objets) remplacés par un modèle : le modèle (ou la fonction qui le choisit
   // d'après l'objet), sa taille (largeur au sol ou hauteur, en u, au plus) et le quart de tour qui
@@ -222,7 +239,16 @@ const IleModeles = (() => {
     // Une pierre levée des Mailles, ou l'une des quatre du Rond des Quatre, teintée par son élément.
     pierre_levee: { modele: o => (o.element ? 's-pierre-' + o.element : 'm-pierre'), taille: o => ({ l: 9, p: 9, h: o.element ? 2.6 : 2.4 }) },
     cairn: { modele: 's-cairn', taille: o => ({ l: 9, p: 9, h: (o.hauteur || 2) * 1.05 }) },
-    source: { modele: o => ({ feu: 's-braise' })[o.element], taille: () => ({ l: 3.2, p: 3.2, h: 2.2 }) },
+    // Les sources marquées d'un objet : la Braise (ses roches), la Claire (la vasque où l'eau jaillit),
+    // la Mousse (le tertre, sa jupe enfoncée dans le sol).
+    source: { modele: o => ({ feu: 's-braise', eau: 's-claire', terre: 's-mousse' })[o.element],
+      taille: o => (o.element === 'eau' ? { l: 4.6, p: 4.6, h: 9 } : o.element === 'terre' ? { l: 3.2, p: 3.2, h: 2.4 } : { l: 3.2, p: 3.2, h: 2.2 }),
+      enfonce: o => (o.element === 'terre' ? 0.14 : o.element === 'eau' ? 0.12 : 0) },
+    ponton: { modele: 's-passerelle', taille: () => ({ l: 4.2, p: 4.2, h: 9 }) },
+    // La rambarde du Rond des Quatre (celle du belvédère vient avec son modèle) : deux barrières de
+    // bois bout à bout, le long de son axe.
+    rambarde: { modele: (o, T) => (T.objets.some(x => x.sorte === 'longue_vue' && Math.hypot(x.u - o.u, x.v - o.v) < 2) ? null : 's-barriere'),
+      taille: () => ({ l: 3, p: 3, h: 1.35 }), copies: [-1.5, 1.5] },
     ratelier: { modele: 'm-armes', taille: () => ({ l: 4, p: 2.2, h: 1.9 }) },
     tour: { modele: 'm-tour', taille: o => ({ l: (o.taille || [6, 6])[0], p: (o.taille || [6, 6])[1], h: 7 }) },
     longue_vue: { modele: 'm-belvedere', taille: () => ({ l: 3, p: 2.2, h: 2.4 }) },
@@ -235,13 +261,18 @@ const IleModeles = (() => {
   function poses(S, T, hauteur) {
     const out = [];
     for (const o of (T && T.objets) || []) {
-      const d = OBJETS[o.sorte], nom = d && (typeof d.modele === 'function' ? d.modele(o) : d.modele), M = nom && S.modeles[nom];
+      const d = OBJETS[o.sorte], nom = d && (typeof d.modele === 'function' ? d.modele(o, T) : d.modele), M = nom && S.modeles[nom];
       if (!M) continue;
-      const t = d.taille(o), y = hauteur(o.u, o.v);
+      const t = d.taille(o);
       const k = Math.min(t.l / M.largeur, t.p / M.profondeur, t.h / M.hauteur);
+      const enf = d.enfonce ? d.enfonce(o) * M.hauteur * k : 0;
       let a = o.rot || 0;
       if (o.sorte === 'longue_vue') { const r = T.objets.find(x => x.sorte === 'rambarde' && Math.hypot(x.u - o.u, x.v - o.v) < 2); if (r) a = r.rot || 0; }
-      out.push({ nom, x: o.u, y: Number.isFinite(y) ? y - 0.05 : 0, z: o.v, a, k });
+      // Des copies le long de l'axe de l'objet (celui du monde du code, js/ile-decor.js : cos, sin).
+      for (const dx of d.copies || [0]) {
+        const u = o.u + dx * Math.cos(o.rot || 0), v = o.v + dx * Math.sin(o.rot || 0), y = hauteur(u, v);
+        out.push({ nom, x: u, y: (Number.isFinite(y) ? y - 0.05 : 0) - enf, z: v, a: d.copies ? -(o.rot || 0) : a, k });
+      }
     }
     return out;
   }

@@ -245,6 +245,11 @@
       // La Source de Braise : ses roches fendues de braise, à la tête du ruisselet (le modèle Meshy des
       // Sources, js/ile-modeles.js), entre les aires de la Braise.
       { sorte: 'source', u: 131, v: 131.5, rot: 0.4, element: 'feu' },
+      // La Source Claire : la vasque où l'eau jaillit, à l'est du bassin ; un ponton de planches sur sa
+      // rive ouest. La Source de Mousse : son tertre, au bord de son sol de mousse.
+      { sorte: 'source', u: 172.5, v: 146, rot: 2.6, element: 'eau' },
+      { sorte: 'ponton', u: 155, v: 148, rot: 0 },
+      { sorte: 'source', u: 147.5, v: 163.5, rot: 1.1, element: 'terre' },
     ],
     lieux: {
       // `eveil` : où naît un nouveau Veilleur, à l'écart du cadre du Métier (vu de la caméra, le

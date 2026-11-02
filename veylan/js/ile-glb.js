@@ -316,7 +316,7 @@ const IleGlb = (() => {
     let tri = 0;
     for (const m of mats) {
       const e = m.elements, x = e[12], z = e[14];
-      const nom = g.modele(m.teinte, hache(x, z, 1)), M = nom && S.modeles[nom];
+      const nom = g.modele(m.teinte, hache(x, z, 1), x, z), M = nom && S.modeles[nom];
       if (!M) { restes.push(m); continue; }
       // La hauteur voulue : en u (`absolu`, l'échelle de l'instance défaite) ou celle de la forme.
       const sy = Math.hypot(e[4], e[5], e[6]) || 1, abs = g.absolu && g.absolu[nom];
