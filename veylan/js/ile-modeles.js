@@ -12,9 +12,9 @@
 // 150 à 1 500 triangles). Les arbres, rochers, buissons, arbres morts et une part des fougères
 // remplacent les formes de base du monde modelé à la même place ; des champignons, des cristaux, des
 // flèches de roche, des souches et des troncs couchés en prennent une part. Les maisons, l'étal, le
-// puits sec, les arches brisées et les lanternes remplacent les objets posés (poses). IleGlb.construire
-// cuit le tout par tuile dans un seul maillage, avec une seule texture (un atlas de seize modèles) :
-// un appel de dessin par tuile.
+// puits sec, les arches brisées, les lanternes, les pierres levées, la tour, le râtelier, le belvédère
+// et les tonneaux remplacent les objets posés (poses) ; ceux des Mailles viennent de leur biome. IleGlb
+// cuit le tout par tuile et par atlas (deux atlas : le kit, les Mailles) : un ou deux appels par tuile.
 //
 // Repère : X = u, Y = h, Z = v ; le modèle est posé sur le sol, centré, 1,9 de haut.
 const IleModeles = (() => {
@@ -179,15 +179,19 @@ const IleModeles = (() => {
     base_arbre_tordu_0: 'tordu', base_arbre_mort_0: 'mort', base_rocher_0: 'rocher', base_buisson_0: 'buisson', base_buisson_1: 'buisson',
     base_fougere_0: 'fougere',
   };
-  // Les modèles et leur case dans l'atlas (2048 x 1024) : [x, y, côté] en pixels.
+  // Les modèles, leur atlas et leur case dans l'atlas : [x, y, côté] en pixels. Atlas 0 (2048 x 1024) :
+  // le kit de décor de toute l'île ; atlas 1 (1024 x 1024) : les objets des Mailles (le biome du
+  // village, tools/meshy/biomes), fichiers `m-*-semis.glb`.
   const SEMIS = {
     arbre: { case: [0, 0, 512] }, arbre3: { case: [512, 0, 512] }, arbre2: { case: [0, 512, 512] },
     rocher2: { case: [512, 512, 256] }, buisson: { case: [768, 512, 256] }, roc: { case: [512, 768, 256] }, cristal: { case: [768, 768, 256] },
-    maison: { case: [1024, 0, 512] }, etal: { case: [1536, 0, 512] },
-    puits: { case: [1024, 512, 256] }, ruine: { case: [1280, 512, 256] }, lanterne: { case: [1536, 512, 256] }, champignons: { case: [1792, 512, 256] },
+    puits: { case: [1024, 512, 256] }, ruine: { case: [1280, 512, 256] }, champignons: { case: [1792, 512, 256] },
     souche: { case: [1024, 768, 256] }, tronc: { case: [1280, 768, 256] }, fougeres: { case: [1536, 768, 256] },
+    'm-maison': { atlas: 1, case: [0, 0, 512] }, 'm-etal': { atlas: 1, case: [512, 0, 512] },
+    'm-tour': { atlas: 1, case: [0, 512, 256] }, 'm-armes': { atlas: 1, case: [256, 512, 256] }, 'm-belvedere': { atlas: 1, case: [512, 512, 256] },
+    'm-tonneaux': { atlas: 1, case: [768, 512, 256] }, 'm-lanterne': { atlas: 1, case: [0, 768, 256] }, 'm-pierre': { atlas: 1, case: [256, 768, 256] },
   };
-  const ATLAS_L = 2048, ATLAS_H = 1024;
+  const ATLAS = [[2048, 1024], [1024, 1024]];
   // Le modèle d'une instance : `teinte` (linéaire, celle du GLB ou du style) et un hasard fixe (0 à 1)
   // ; null garde l'instance telle qu'exportée. Un feuillage chaud (l'automne des Mailles au style
   // Lisière, les jaunes de l'export) prend l'arbre d'automne. `absolu` : la hauteur en u (sinon celle
@@ -207,22 +211,29 @@ const IleModeles = (() => {
   // hauteur, en u, au plus) et le quart de tour qui aligne son grand côté. tools/meshy/retirer-objets.py
   // a retiré leur forme de l'export.
   const OBJETS = {
-    maison: { modele: 'maison', taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 6 }) },
-    comptoir: { modele: 'etal', taille: o => ({ l: (o.taille || [5, 2])[0], p: (o.taille || [5, 2])[1], h: 3.6 }) },
+    maison: { modele: 'm-maison', taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 6 }) },
+    comptoir: { modele: 'm-etal', taille: o => ({ l: (o.taille || [5, 2])[0], p: (o.taille || [5, 2])[1], h: 3.6 }) },
+    lanterne: { modele: 'm-lanterne', taille: () => ({ l: 9, p: 9, h: 2.6 }) },
+    pierre_levee: { modele: 'm-pierre', si: o => !o.element, taille: () => ({ l: 9, p: 9, h: 2.4 }) },
+    ratelier: { modele: 'm-armes', taille: () => ({ l: 4, p: 2.2, h: 1.9 }) },
+    tour: { modele: 'm-tour', taille: o => ({ l: (o.taille || [6, 6])[0], p: (o.taille || [6, 6])[1], h: 7 }) },
+    longue_vue: { modele: 'm-belvedere', taille: () => ({ l: 3, p: 2.2, h: 2.4 }) },
+    tonneau: { modele: 'm-tonneaux', taille: () => ({ l: 2.2, p: 2.2, h: 1.6 }) },
     puits_sec: { modele: 'puits', taille: () => ({ l: 2.8, p: 2.8, h: 3.2 }) },
     arche_brisee: { modele: 'ruine', taille: () => ({ l: 4, p: 4, h: 3.2 }) },
-    lanterne: { modele: 'lanterne', taille: () => ({ l: 9, p: 9, h: 2.6 }) },
   };
   // Les poses des objets d'un plateau : { nom, x, y, z, a (angle autour de Y), k (échelle) }, pour la
   // cuisson du semis (IleGlb.construire). `S.modeles` donne la taille de chaque modèle.
   function poses(S, T, hauteur) {
     const out = [];
     for (const o of (T && T.objets) || []) {
-      const d = OBJETS[o.sorte], M = d && S.modeles[d.modele];
+      const d = OBJETS[o.sorte], M = d && (!d.si || d.si(o)) && S.modeles[d.modele];
       if (!M) continue;
       const t = d.taille(o), y = hauteur(o.u, o.v);
       const k = Math.min(t.l / M.largeur, t.p / M.profondeur, t.h / M.hauteur);
-      out.push({ nom: d.modele, x: o.u, y: Number.isFinite(y) ? y - 0.05 : 0, z: o.v, a: o.rot || 0, k });
+      let a = o.rot || 0;
+      if (o.sorte === 'longue_vue') { const r = T.objets.find(x => x.sorte === 'rambarde' && Math.hypot(x.u - o.u, x.v - o.v) < 2); if (r) a = r.rot || 0; }
+      out.push({ nom: d.modele, x: o.u, y: Number.isFinite(y) ? y - 0.05 : 0, z: o.v, a, k });
     }
     return out;
   }
@@ -240,10 +251,7 @@ const IleModeles = (() => {
   // Les modèles du semis : leur géométrie (tableaux bruts, UV ramenées dans leur case de l'atlas,
   // hauteur) et une matière partagée (l'atlas). Rend { modeles, mat, formes, genres, octets }.
   async function chargerSemis(THREE) {
-    const toile = document.createElement('canvas');
-    toile.width = ATLAS_L; toile.height = ATLAS_H;
-    const cx = toile.getContext('2d');
-    cx.fillStyle = '#3a4a3a'; cx.fillRect(0, 0, ATLAS_L, ATLAS_H);
+    const toiles = ATLAS.map(([l, h]) => { const c = document.createElement('canvas'); c.width = l; c.height = h; const x = c.getContext('2d'); x.fillStyle = '#3a4a3a'; x.fillRect(0, 0, l, h); return { c, x, l, h }; });
     const modeles = {};
     let geo = 0;
     await Promise.all(Object.entries(SEMIS).map(async ([nom, d]) => {
@@ -251,27 +259,30 @@ const IleModeles = (() => {
       const prim = G.meshes[0].primitives[0], at = prim.attributes;
       const pos = accesseur(G, bin, at.POSITION).array, nrm = accesseur(G, bin, at.NORMAL).array, uv0 = accesseur(G, bin, at.TEXCOORD_0).array;
       const idx = accesseur(G, bin, prim.indices).array;
-      const [x0, y0, c] = d.case, uv = new Float32Array(uv0.length);
+      const t = toiles[d.atlas || 0], [x0, y0, c] = d.case, uv = new Float32Array(uv0.length);
       // Un pixel de marge dans la case : les voisines ne bavent pas au bord des îlots d'UV.
       for (let i = 0; i < uv0.length; i += 2) {
-        uv[i] = (x0 + 1 + Math.min(1, Math.max(0, uv0[i])) * (c - 2)) / ATLAS_L;
-        uv[i + 1] = (y0 + 1 + Math.min(1, Math.max(0, uv0[i + 1])) * (c - 2)) / ATLAS_H;
+        uv[i] = (x0 + 1 + Math.min(1, Math.max(0, uv0[i])) * (c - 2)) / t.l;
+        uv[i + 1] = (y0 + 1 + Math.min(1, Math.max(0, uv0[i + 1])) * (c - 2)) / t.h;
       }
       let h = 0, lx = 0, lz = 0;
       for (let i = 0; i < pos.length; i += 3) { h = Math.max(h, pos[i + 1]); lx = Math.max(lx, Math.abs(pos[i])); lz = Math.max(lz, Math.abs(pos[i + 2])); }
       const m = (G.materials || [])[0] || {}, pbr = m.pbrMetallicRoughness || {};
       const img = pbr.baseColorTexture ? await imageDe(G, bin, pbr.baseColorTexture.index) : null;
-      if (img) cx.drawImage(img, x0, y0, c, c);
-      modeles[nom] = { pos, nrm, uv, idx, hauteur: h || 1, largeur: 2 * lx || 1, profondeur: 2 * lz || 1, n: pos.length / 3 };
+      if (img) t.x.drawImage(img, x0, y0, c, c);
+      modeles[nom] = { pos, nrm, uv, idx, atlas: d.atlas || 0, hauteur: h || 1, largeur: 2 * lx || 1, profondeur: 2 * lz || 1, n: pos.length / 3 };
       geo += pos.byteLength + nrm.byteLength + uv.byteLength + idx.byteLength;
     }));
-    const tex = new THREE.CanvasTexture(toile);
-    tex.flipY = false;
-    tex.encoding = THREE.sRGBEncoding;
-    tex.anisotropy = 2;
-    const mat = new THREE.MeshLambertMaterial({ map: tex, side: THREE.DoubleSide, fog: true });
-    mat.name = 'semis_meshy';
-    return { modeles, mat, formes: FORMES, genres: GENRES, octets: { tex: ATLAS_L * ATLAS_H * 4 * 4 / 3, geo } };
+    const mats = toiles.map((t, k) => {
+      const tex = new THREE.CanvasTexture(t.c);
+      tex.flipY = false;
+      tex.encoding = THREE.sRGBEncoding;
+      tex.anisotropy = 2;
+      const mat = new THREE.MeshLambertMaterial({ map: tex, side: THREE.DoubleSide, fog: true });
+      mat.name = 'semis_meshy_' + k;
+      return mat;
+    });
+    return { modeles, mat: mats[0], mats, formes: FORMES, genres: GENRES, octets: { tex: toiles.reduce((a, t) => a + t.l * t.h * 4 * 4 / 3, 0), geo } };
   }
 
   // ----- Les sols (assets/decor/sols/jeu-*.jpg, 3.32) -----

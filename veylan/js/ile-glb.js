@@ -285,9 +285,9 @@ const IleGlb = (() => {
   // Cuit un modèle dans le maillage de sa tuile : ses sommets tournés de `a` autour de Y, mis à
   // l'échelle `k`, enfoncés de `enf`, puis portés par la matrice `e` (colonnes, comme Matrix4).
   function cuire(fusionS, M, e, a, k, enf) {
-    const ca = Math.cos(a), sa = Math.sin(a), cle = tuileDe(e[12], e[14]);
+    const ca = Math.cos(a), sa = Math.sin(a), cle = tuileDe(e[12], e[14]) + '|' + (M.atlas || 0);
     let f = fusionS.get(cle);
-    if (!f) { f = { pos: [], nrm: [], uv: [], idx: [], n: 0, bornes: [] }; fusionS.set(cle, f); }
+    if (!f) { f = { pos: [], nrm: [], uv: [], idx: [], n: 0, bornes: [], atlas: M.atlas || 0 }; fusionS.set(cle, f); }
     const P = M.pos, N = M.nrm, U = M.uv, d = f.n;
     f.bornes.push([d, f.idx.length]);
     for (let i = 0; i < M.n; i++) {
@@ -327,7 +327,7 @@ const IleGlb = (() => {
   }
 
   // Les objets posés (IleModeles.poses) : { nom, x, y, z, a, k }.
-  function poserMeshy(S, fusionS) {
+  function poserMeshy(S, fusionS, compte) {
     let tri = 0;
     const e = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
     for (const p of S.poses || []) {
@@ -335,6 +335,7 @@ const IleGlb = (() => {
       if (!M) continue;
       e[12] = p.x; e[13] = p.y; e[14] = p.z;
       tri += cuire(fusionS, M, e, p.a, p.k, 0);
+      if (compte) compte[p.nom] = (compte[p.nom] || 0) + 1;
     }
     return tri;
   }
@@ -343,7 +344,7 @@ const IleGlb = (() => {
   // 16 bits), avec la matière de l'atlas ; nommés « semis » (la portée du semis, la carte de l'île qui
   // les réunit d'en haut, la vue tactique qui les cache). Les normales tiennent sur un octet par
   // composante (normalisées) : 23 octets par sommet au lieu de 32.
-  function maillagesMeshy(THREE, fusionS, mat) {
+  function maillagesMeshy(THREE, fusionS, mats) {
     const out = [];
     for (const [k, f] of fusionS) {
       // Un morceau réunit des instances entières (leurs triangles ne touchent que leurs sommets).
@@ -364,7 +365,7 @@ const IleGlb = (() => {
         for (let i = i0; i < i1; i++) I[i - i0] = f.idx[i] - v0;
         geo.setIndex(new THREE.BufferAttribute(I, 1));
         geo.computeBoundingSphere();
-        const o = new THREE.Mesh(geo, mat);
+        const o = new THREE.Mesh(geo, mats[f.atlas] || mats[0]);
         o.matrixAutoUpdate = false;
         o.name = 'semis meshy ' + k + (q ? ' ' + q : '');
         out.push(o);
@@ -434,14 +435,15 @@ const IleGlb = (() => {
     }
     for (const o of maillagesFusionnes(THREE, fusion)) { groupe.add(o); appels++; }
     if (opts && opts.semis) {
-      triangles += poserMeshy(opts.semis, fusionS);
+      const poses = {};
+      triangles += poserMeshy(opts.semis, fusionS, poses);
       let octets = 0;
-      for (const o of maillagesMeshy(THREE, fusionS, opts.semis.mat)) {
+      for (const o of maillagesMeshy(THREE, fusionS, opts.semis.mats || [opts.semis.mat])) {
         groupe.add(o); appels++;
         for (const a of Object.values(o.geometry.attributes)) octets += a.array.byteLength;
         octets += o.geometry.index.array.byteLength;
       }
-      groupe.userData.semisMeshy = { tuiles: fusionS.size, octets };
+      groupe.userData.semisMeshy = { tuiles: new Set([...fusionS.keys()].map(k => k.split('|')[0])).size, maillages: fusionS.size, octets, poses };
     }
     groupe.userData.appels = appels;
     groupe.userData.triangles = Math.round(triangles);
