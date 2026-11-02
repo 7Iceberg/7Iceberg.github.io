@@ -190,7 +190,9 @@ const IleModeles = (() => {
   // Bobine, la cabane, le rocher à racines, les champignons lumineux ; les fougères, le tronc couché et
   // les pieux de la Tête du Pont dans les cases libres de l'atlas du kit) ; atlas 4 (1024 x 512) : ceux de
   // l'Amarre, `a-*-semis.glb` (l'arcade brisée, le mur d'avant-poste, la borne à runes, le pin tordu, la
-  // tente du Fil, le feu de camp, l'anneau du fil d'or).
+  // tente du Fil, le feu de camp, l'anneau du fil d'or). Les bords de l'île (`br-*-semis.glb` : le bloc de
+  // falaise à racines, les cristaux pendus, l'îlot flottant, le pont de cordes) dans les cases restées
+  // libres des atlas 0, 2 et 4.
   const SEMIS = {
     arbre: { case: [0, 0, 512] }, arbre3: { case: [512, 0, 512] }, arbre2: { case: [0, 512, 512] },
     rocher2: { case: [512, 512, 256] }, buisson: { case: [768, 512, 256] }, roc: { case: [512, 768, 256] }, cristal: { case: [768, 768, 256] },
@@ -216,6 +218,8 @@ const IleModeles = (() => {
     'a-arcade': { atlas: 4, case: [0, 0, 256] }, 'a-mur': { atlas: 4, case: [256, 0, 256] }, 'a-borne': { atlas: 4, case: [512, 0, 256] },
     'a-pin': { atlas: 4, case: [768, 0, 256] }, 'a-tente': { atlas: 4, case: [0, 256, 256] }, 'a-feu': { atlas: 4, case: [256, 256, 256] },
     'a-ancre': { atlas: 4, case: [512, 256, 256] },
+    'br-racines': { case: [1280, 512, 256] }, 'br-cristaux': { case: [1792, 768, 256] },
+    'br-ilot': { atlas: 2, case: [768, 768, 256] }, 'br-pont': { atlas: 4, case: [768, 256, 256] },
   };
   const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512]];
   // Le modèle d'une instance : `teinte` (linéaire, celle du GLB ou du style) et un hasard fixe (0 à 1)
@@ -334,8 +338,73 @@ const IleModeles = (() => {
       }
     }
     posesLignes(S, T, hauteur, out);
+    posesBords(S, T, hauteur, out);
     return out;
   }
+
+  // Les bords de l'île : le long du contour et des lèvres de l'Échancrure, un pas sur deux un bloc de
+  // falaise à racines (sa face vers le vide, son dessus au ras du sol), l'autre des cristaux pendus tête
+  // en bas sous le rebord ; rien près des ponts, de la Nacelle, de la chute ni des belvédères. Autour,
+  // dans le vide, des îlots flottants. Le Pont de cordes : des segments du pont à lanternes le long de
+  // son tablier qui ploie (le dessus des planches à la hauteur où l'on marche).
+  const BORDS = {
+    pas: 13, racines: 6.5, cristaux: 2.4,
+    loin: [[20, 77], [20, 107], [134, 18.5], [118, 21.5], [12, 158], [8, 150], [121, 2], [92, 172], [167.5, 93.5]],
+    // Les îlots : à 20-30 u du bord, à peu près à hauteur de l'île (dans la brume au-delà).
+    ilots: [[60, -20, 2, 8], [150, -24, 6, 9], [215, -16, -2, 7], [-22, 58, 4, 8], [-20, 140, -4, 7], [258, 70, 3, 8], [258, 150, -5, 9], [120, 194, -3, 8], [40, 192, 4, 7]],
+    pont: { hauteur: 1.4, tablier: 0.2 },
+  };
+  function posesBords(S, T, hauteur, out) {
+    const R = S.modeles['br-racines'], C = S.modeles['br-cristaux'], I = S.modeles['br-ilot'], P = S.modeles['br-pont'];
+    if (!T || typeof T.videA !== 'function') return;
+    let pair = 0;
+    for (const c of [T.contour, T.echancrure]) {
+      if (!R || !C || !c || c.length < 3) continue;
+      const n = c.length;
+      let reste = 0;
+      for (let i = 0; i < n; i++) {
+        const a = c[i], b = c[(i + 1) % n], dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz);
+        if (!(L > 0)) continue;
+        for (let s = reste; s < L; s += BORDS.pas) {
+          const x = a[0] + dx * s / L, z = a[1] + dz * s / L;
+          let nx = -dz / L, nz = dx / L;
+          if (!T.videA(x + nx * 3, z + nz * 3)) { nx = -nx; nz = -nz; }
+          if (!T.videA(x + nx * 3, z + nz * 3) || T.videA(x - nx * 3, z - nz * 3)) continue;
+          if (BORDS.loin.some(([u, v]) => Math.hypot(u - x, v - z) < 8)) continue;
+          const y = hauteur(x - nx * 1.5, z - nz * 1.5);
+          if (!Number.isFinite(y)) continue;
+          if (pair++ % 2 === 0) {
+            const k = BORDS.racines / R.hauteur;
+            out.push({ nom: 'br-racines', x: x + nx * R.profondeur * k * 0.2, y: y - R.hauteur * k + 0.15, z: z + nz * R.profondeur * k * 0.2, a: Math.atan2(nx, nz), k });
+          } else {
+            const k = BORDS.cristaux / C.hauteur;
+            out.push({ nom: 'br-cristaux', x: x + nx * 0.8, y: y - 0.35, z: z + nz * 0.8, a: hacheSimple(x, z) * Math.PI * 2, k, ky: -1 });
+          }
+        }
+        reste = ((reste - L) % BORDS.pas + BORDS.pas) % BORDS.pas;
+      }
+    }
+    if (I) for (const [x, z, y, h] of BORDS.ilots) out.push({ nom: 'br-ilot', x, y, z, a: hacheSimple(x, z) * Math.PI * 2, k: h / I.hauteur });
+    // Le Pont de cordes (au-dessus du vide) ; la passerelle de planches du ravin garde sa forme.
+    if (P) for (const p of (T.ponts || []).filter(q => q.matiere === 'corde')) {
+      const cum = [0];
+      for (let i = 1; i < p.pts.length; i++) cum.push(cum[i - 1] + Math.hypot(p.pts[i][0] - p.pts[i - 1][0], p.pts[i][1] - p.pts[i - 1][1]));
+      const L = cum[cum.length - 1], k = BORDS.pont.hauteur / P.hauteur, nb = Math.max(1, Math.round(L / (P.largeur * k))), e = L / nb;
+      const point = s => {
+        let i = 1;
+        while (i < cum.length - 1 && cum[i] < s) i++;
+        const t = (s - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1), a = p.pts[i - 1], b = p.pts[i];
+        return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+      };
+      const tablier = s => { const t = s / L; return p.ha + (p.hb - p.ha) * t - p.fleche * 4 * t * (1 - t); };
+      for (let q = 0; q < nb; q++) {
+        const [x0, z0] = point(q * e), [x1, z1] = point((q + 1) * e), [x, z] = point((q + 0.5) * e);
+        out.push({ nom: 'br-pont', x, y: tablier((q + 0.5) * e) - BORDS.pont.tablier * P.hauteur * k, z, a: Math.atan2(-(z1 - z0), x1 - x0), k, kx: Math.hypot(x1 - x0, z1 - z0) * 1.02 / (P.largeur * k) });
+      }
+    }
+  }
+  // Un hasard fixe de 0 à 1 d'après la place.
+  function hacheSimple(x, z) { const s = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453; return s - Math.floor(s); }
 
   // Les murets et les haies (T.lignes) : des segments du modèle bout à bout le long du tracé, sauf dans
   // les brèches et les barrières. Le muret du village (pierre blanche) garde sa forme de l'export.
