@@ -14,7 +14,9 @@
 // flèches de roche, des souches et des troncs couchés en prennent une part. Les maisons, l'étal, le
 // puits sec, les arches brisées, les lanternes, les pierres levées, la tour, le râtelier, le belvédère
 // et les tonneaux remplacent les objets posés (poses) ; ceux des Mailles viennent de leur biome. IleGlb
-// cuit le tout par tuile et par atlas (deux atlas : le kit, les Mailles) : un ou deux appels par tuile.
+// cuit le tout par tuile et par atlas (cinq atlas : le kit et les Murets, les Mailles, les Sources, le
+// Bois Cousu, l'Amarre ; les bords dans leurs cases libres). Les atlas et les sols sont précuits en
+// ETC2 (tools/meshy/atlas-etc.py) : le GPU qui les lit (les téléphones) les reçoit compressés.
 //
 // Repère : X = u, Y = h, Z = v ; le modèle est posé sur le sol, centré, 1,9 de haut.
 const IleModeles = (() => {
@@ -348,7 +350,7 @@ const IleModeles = (() => {
   // dans le vide, des îlots flottants. Le Pont de cordes : des segments du pont à lanternes le long de
   // son tablier qui ploie (le dessus des planches à la hauteur où l'on marche).
   const BORDS = {
-    pas: 13, racines: 6.5, cristaux: 2.4,
+    pas: 20, racines: 6.5, cristaux: 2.4,
     loin: [[20, 77], [20, 107], [134, 18.5], [118, 21.5], [12, 158], [8, 150], [121, 2], [92, 172], [167.5, 93.5]],
     // Les îlots : à 20-30 u du bord, à peu près à hauteur de l'île (dans la brume au-delà).
     ilots: [[60, -20, 2, 8], [150, -24, 6, 9], [215, -16, -2, 7], [-22, 58, 4, 8], [-20, 140, -4, 7], [258, 70, 3, 8], [258, 150, -5, 9], [120, 194, -3, 8], [40, 192, 4, 7]],
@@ -457,10 +459,58 @@ const IleModeles = (() => {
     return new Promise((ok, ko) => { const i = new Image(), u = URL.createObjectURL(blob); i.onload = () => { URL.revokeObjectURL(u); ok(i); }; i.onerror = ko; i.src = u; });
   }
 
+  // ----- Les textures précuites en ETC2 (tools/meshy/atlas-etc.py, 3.32) -----
+  // Les cinq atlas du semis et les sols, compressés une fois pour toutes (4 bits par pixel au lieu de
+  // 32, mipmaps comprises) : le GPU les lit tels quels quand il connaît ETC2 (les téléphones :
+  // WEBGL_compressed_texture_etc). Sinon, les atlas sont peints dans des toiles comme avant.
+  function etcLu(renderer) {
+    try { return !!(renderer && renderer.extensions && renderer.extensions.has('WEBGL_compressed_texture_etc')); } catch (e) { return false; }
+  }
+  // Un fichier KTX 1.1 en ETC2 RGB : une CompressedTexture avec toute sa chaîne de mipmaps, et ses
+  // octets sur le GPU. `srgb` : le GPU la ramène en lumière linéaire (les atlas) ; sans, le shader le
+  // fait lui-même (les sols, comme leurs JPEG).
+  async function lireKtx(THREE, url, srgb = true) {
+    const buf = await IleGlb.octets(url), dv = new DataView(buf), u8 = new Uint8Array(buf, 0, Math.min(12, buf.byteLength));
+    const id = [0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A];
+    if (buf.byteLength < 64 || id.some((v, i) => u8[i] !== v) || dv.getUint32(12, true) !== 0x04030201) throw new Error(url + ' : pas un KTX 1.1');
+    const l = dv.getUint32(36, true), h = dv.getUint32(40, true), n = Math.max(1, dv.getUint32(56, true));
+    const mipmaps = [];
+    let o = 64 + dv.getUint32(60, true), octets = 0;
+    for (let i = 0, ml = l, mh = h; i < n; i++, ml = Math.max(1, ml >> 1), mh = Math.max(1, mh >> 1)) {
+      const t = dv.getUint32(o, true);
+      if (o + 4 + t > buf.byteLength || t !== Math.ceil(ml / 4) * Math.ceil(mh / 4) * 8) throw new Error(url + ' : niveau ' + i + ' tronqué');
+      mipmaps.push({ data: new Uint8Array(buf, o + 4, t), width: ml, height: mh });
+      octets += t;
+      o += 4 + t + ((4 - t % 4) % 4);
+    }
+    const tex = new THREE.CompressedTexture(mipmaps, l, h, THREE.RGB_ETC2_Format, THREE.UnsignedByteType);
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    tex.encoding = srgb ? THREE.sRGBEncoding : THREE.LinearEncoding;
+    tex.needsUpdate = true;
+    return { tex, octets };
+  }
+  // Les atlas précuits, si leur disposition (assets/decor/atlas/semis.json) est celle de SEMIS et
+  // ATLAS ; sinon null (une cuisson oubliée retombe sur les toiles, sans erreur). Les fichiers sont lus
+  // comme les GLB (IleGlb.octets : fetch, ou XMLHttpRequest en local).
+  async function atlasEtc(THREE) {
+    const d = JSON.parse(new TextDecoder().decode(await IleGlb.octets(source('assets/decor/atlas/semis.json')))), cases = d.cases || {};
+    const memes = JSON.stringify(d.atlas) === JSON.stringify(ATLAS) && Object.keys(cases).length === Object.keys(SEMIS).length
+      && Object.entries(SEMIS).every(([nom, s]) => { const c = cases[nom]; return c && c[0] === (s.atlas || 0) && c.slice(1, 4).join() === s.case.join(); });
+    if (!memes) { console.warn('Ervane : atlas ETC2 périmés (tools/meshy/atlas-etc.py), toiles peintes'); return null; }
+    const tx = await Promise.all(ATLAS.map((_, k) => lireKtx(THREE, source('assets/decor/atlas/semis-' + k + '.ktx'))));
+    if (tx.some((t, k) => t.tex.image.width !== ATLAS[k][0] || t.tex.image.height !== ATLAS[k][1])) return null;
+    return tx;
+  }
+
   // Les modèles du semis : leur géométrie (tableaux bruts, UV ramenées dans leur case de l'atlas,
-  // hauteur) et une matière partagée (l'atlas). Rend { modeles, mat, formes, genres, octets }.
-  async function chargerSemis(THREE) {
-    const toiles = ATLAS.map(([l, h]) => { const c = document.createElement('canvas'); c.width = l; c.height = h; const x = c.getContext('2d'); x.fillStyle = '#3a4a3a'; x.fillRect(0, 0, l, h); return { c, x, l, h }; });
+  // hauteur) et une matière partagée (l'atlas). Rend { modeles, mat, formes, genres, octets, etc }.
+  // `renderer` : pour savoir si le GPU lit les atlas précuits en ETC2.
+  async function chargerSemis(THREE, renderer) {
+    let etc = null;
+    if (etcLu(renderer)) { try { etc = await atlasEtc(THREE); } catch (e) { console.warn('Ervane : atlas ETC2 illisibles, toiles peintes', e); etc = null; } }
+    const toiles = etc ? null : ATLAS.map(([l, h]) => { const c = document.createElement('canvas'); c.width = l; c.height = h; const x = c.getContext('2d'); x.fillStyle = '#3a4a3a'; x.fillRect(0, 0, l, h); return { c, x, l, h }; });
     const modeles = {};
     let geo = 0;
     await Promise.all(Object.entries(SEMIS).map(async ([nom, d]) => {
@@ -468,22 +518,25 @@ const IleModeles = (() => {
       const prim = G.meshes[0].primitives[0], at = prim.attributes;
       const pos = accesseur(G, bin, at.POSITION).array, nrm = accesseur(G, bin, at.NORMAL).array, uv0 = accesseur(G, bin, at.TEXCOORD_0).array;
       const idx = accesseur(G, bin, prim.indices).array;
-      const t = toiles[d.atlas || 0], [x0, y0, c] = d.case, uv = new Float32Array(uv0.length);
+      const [al, ah] = ATLAS[d.atlas || 0], [x0, y0, c] = d.case, uv = new Float32Array(uv0.length);
       // Un pixel de marge dans la case : les voisines ne bavent pas au bord des îlots d'UV.
       for (let i = 0; i < uv0.length; i += 2) {
-        uv[i] = (x0 + 1 + Math.min(1, Math.max(0, uv0[i])) * (c - 2)) / t.l;
-        uv[i + 1] = (y0 + 1 + Math.min(1, Math.max(0, uv0[i + 1])) * (c - 2)) / t.h;
+        uv[i] = (x0 + 1 + Math.min(1, Math.max(0, uv0[i])) * (c - 2)) / al;
+        uv[i + 1] = (y0 + 1 + Math.min(1, Math.max(0, uv0[i + 1])) * (c - 2)) / ah;
       }
       let h = 0, lx = 0, lz = 0;
       for (let i = 0; i < pos.length; i += 3) { h = Math.max(h, pos[i + 1]); lx = Math.max(lx, Math.abs(pos[i])); lz = Math.max(lz, Math.abs(pos[i + 2])); }
-      const m = (G.materials || [])[0] || {}, pbr = m.pbrMetallicRoughness || {};
-      const img = pbr.baseColorTexture ? await imageDe(G, bin, pbr.baseColorTexture.index) : null;
-      if (img) t.x.drawImage(img, x0, y0, c, c);
+      // Sans atlas précuits : l'image du modèle peinte dans sa case (puis rendue à la mémoire).
+      if (toiles) {
+        const m = (G.materials || [])[0] || {}, pbr = m.pbrMetallicRoughness || {};
+        const img = pbr.baseColorTexture ? await imageDe(G, bin, pbr.baseColorTexture.index) : null;
+        if (img) { toiles[d.atlas || 0].x.drawImage(img, x0, y0, c, c); if (typeof img.close === 'function') img.close(); }
+      }
       modeles[nom] = { pos, nrm, uv, idx, atlas: d.atlas || 0, hauteur: h || 1, largeur: 2 * lx || 1, profondeur: 2 * lz || 1, n: pos.length / 3 };
       geo += pos.byteLength + nrm.byteLength + uv.byteLength + idx.byteLength;
     }));
-    const mats = toiles.map((t, k) => {
-      const tex = new THREE.CanvasTexture(t.c);
+    const mats = ATLAS.map((_, k) => {
+      const tex = etc ? etc[k].tex : new THREE.CanvasTexture(toiles[k].c);
       tex.flipY = false;
       tex.encoding = THREE.sRGBEncoding;
       tex.anisotropy = 2;
@@ -491,7 +544,8 @@ const IleModeles = (() => {
       mat.name = 'semis_meshy_' + k;
       return mat;
     });
-    return { modeles, mat: mats[0], mats, formes: FORMES, genres: GENRES, octets: { tex: toiles.reduce((a, t) => a + t.l * t.h * 4 * 4 / 3, 0), geo } };
+    const tex = etc ? etc.reduce((a, t) => a + t.octets, 0) : ATLAS.reduce((a, [l, h]) => a + l * h * 4 * 4 / 3, 0);
+    return { modeles, mat: mats[0], mats, formes: FORMES, genres: GENRES, etc: !!etc, octets: { tex, geo } };
   }
 
   // ----- Les sols (assets/decor/sols/jeu-*.jpg, 3.32) -----
@@ -507,13 +561,22 @@ const IleModeles = (() => {
     paves: { pas: 3.2, moyenne: [0.0276, 0.0539, 0.0765] },
   };
   const FORCE_SOL = 0.7;
-  function texSol(THREE, nom) {
+  // `etc` : le GPU lit ETC2, le sol précuit (jeu-<nom>.ktx, retourné comme flipY) d'abord.
+  async function texSol(THREE, nom, etc) {
+    const m = SOLS[nom].moyenne, moyenne = new THREE.Vector3(m[0], m[1], m[2]);
+    if (etc) {
+      try {
+        const { tex: t, octets } = await lireKtx(THREE, source('assets/decor/sols/jeu-' + nom + '.ktx'), false);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.anisotropy = 4;
+        return { t, moyenne, octets };
+      } catch (e) { console.warn('Ervane : sol ETC2 ' + nom + ' illisible', e); }
+    }
     return new Promise((ok, ko) => {
       new THREE.TextureLoader().load(source('assets/decor/sols/jeu-' + nom + '.jpg'), t => {
         t.wrapS = t.wrapT = THREE.RepeatWrapping;
         t.anisotropy = 4;
-        const m = SOLS[nom].moyenne;
-        ok({ t, moyenne: new THREE.Vector3(m[0], m[1], m[2]), octets: t.image.width * t.image.height * 4 * 4 / 3 });
+        ok({ t, moyenne, octets: t.image.width * t.image.height * 4 * 4 / 3 });
       }, undefined, ko);
     });
   }
@@ -548,7 +611,9 @@ const IleModeles = (() => {
     for (const o of ile.monde.children) if (/^mo_sol/.test(o.name) && o.material && o.material.vertexColors) mats.add(o.material);
     if (!mats.size) return 0;
     const noms = ['herbe', 'foret', 'chemin', 'roche', 'paves'], tx = {};
-    await Promise.all(noms.map(async n => { tx[n] = await texSol(THREE, n); }));
+    const etc = etcLu(ile.renderer);
+    await Promise.all(noms.map(async n => { tx[n] = await texSol(THREE, n, etc); }));
+    ile.solsEtc = noms.filter(n => tx[n].t.isCompressedTexture).length;
     const uniforms = {}, cap = n => n[0].toUpperCase() + n.slice(1);
     for (const n of noms) { uniforms['sol' + cap(n)] = { value: tx[n].t }; uniforms['moy' + cap(n)] = { value: tx[n].moyenne }; }
     const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n');
@@ -573,6 +638,6 @@ const IleModeles = (() => {
     return noms.reduce((a, n) => a + tx[n].octets, 0);
   }
 
-  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, OBJETS, SOLS, charger, chargerSemis, poses, places, poser, animer, habillerSol };
+  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, ATLAS, OBJETS, SOLS, charger, chargerSemis, poses, places, poser, animer, habillerSol };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = IleModeles;

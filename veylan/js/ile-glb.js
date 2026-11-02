@@ -21,7 +21,8 @@ const IleGlb = (() => {
     return src;
   }
 
-  // Le fichier, par fetch ; en local (file:), par XMLHttpRequest, que fetch refuse.
+  // Le fichier, par fetch ; en local (file:), par XMLHttpRequest, que fetch refuse. Aussi pour les
+  // textures précuites (IleModeles.lireKtx).
   function octets(url) {
     if (!/^file:/.test(url)) return fetch(url).then(r => { if (!r.ok) throw new Error('GLB introuvable : ' + r.status); return r.arrayBuffer(); });
     return new Promise((ok, ko) => {
@@ -72,6 +73,36 @@ const IleGlb = (() => {
     return { array: out, n, normalized: !!a.normalized };
   }
 
+  // Les attributs compacts (la passe de mémoire, 3.32) : les normales sur un octet par composante,
+  // les couleurs sur deux (sans palier visible dans les ombres, en lumière linéaire), tous normalisés
+  // (Three les ramène à leurs valeurs, getX compris) et sur quatre composantes : un pas de 4 ou 8
+  // octets, que Metal (Safari) prend tel quel. 4 octets par sommet au lieu de 12 pour une normale,
+  // 8 au lieu de 12 pour une couleur.
+  function normalesCompactes(THREE, a, k = 3) {
+    const n = Math.floor(a.length / k), N = new Int8Array(n * 4);
+    for (let i = 0; i < n; i++) {
+      const x = a[i * k], y = a[i * k + 1], z = a[i * k + 2], l = Math.hypot(x, y, z) || 1;
+      N[i * 4] = Math.round(x / l * 127); N[i * 4 + 1] = Math.round(y / l * 127); N[i * 4 + 2] = Math.round(z / l * 127);
+    }
+    return new THREE.BufferAttribute(N, 4, true);
+  }
+  // Les couleurs entre 0 et 1 seulement (sinon null : l'attribut reste tel quel).
+  function couleursCompactes(THREE, a, k = 3) {
+    const n = Math.floor(a.length / k), C = new Uint16Array(n * 4);
+    for (let i = 0; i < n * k; i++) if (!(a[i] >= 0 && a[i] <= 1.0001)) return null;
+    for (let i = 0; i < n; i++) {
+      for (let c = 0; c < 3; c++) C[i * 4 + c] = Math.round(Math.min(1, a[i * k + c]) * 65535);
+      C[i * 4 + 3] = k === 4 ? Math.round(Math.min(1, a[i * k + 3]) * 65535) : 65535;
+    }
+    return new THREE.BufferAttribute(C, 4, true);
+  }
+  function compacter(THREE, geo) {
+    const nrm = geo.getAttribute('normal'), col = geo.getAttribute('color');
+    if (nrm && nrm.array instanceof Float32Array && (nrm.itemSize === 3 || nrm.itemSize === 4)) geo.setAttribute('normal', normalesCompactes(THREE, nrm.array, nrm.itemSize));
+    if (col && col.array instanceof Float32Array && (col.itemSize === 3 || col.itemSize === 4)) { const c = couleursCompactes(THREE, col.array, col.itemSize); if (c) geo.setAttribute('color', c); }
+    return geo;
+  }
+
   function geometrie(THREE, G, bin, prim) {
     const geo = new THREE.BufferGeometry();
     const at = prim.attributes || {};
@@ -83,7 +114,7 @@ const IleGlb = (() => {
     if (prim.indices != null) { const a = accesseur(G, bin, prim.indices); geo.setIndex(new THREE.BufferAttribute(a.array, 1)); }
     if (at.NORMAL == null) geo.computeVertexNormals();
     geo.computeBoundingSphere();
-    return geo;
+    return compacter(THREE, geo);
   }
 
   // Une matière de Three pour une matière du GLB : Lambert (la lumière du jeu), la couleur de base
@@ -263,8 +294,8 @@ const IleGlb = (() => {
     for (const [k, f] of fusion) {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(f.pos), 3));
-      g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(f.nrm), 3));
-      g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(f.col), 3));
+      g.setAttribute('normal', normalesCompactes(THREE, f.nrm));
+      g.setAttribute('color', couleursCompactes(THREE, f.col) || new THREE.BufferAttribute(new Float32Array(f.col), 3));
       g.setIndex(new THREE.BufferAttribute(f.nVert > 65535 ? new Uint32Array(f.idx) : new Uint16Array(f.idx), 1));
       g.computeBoundingSphere();
       const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(1, 1, 1), vertexColors: true, side: f.genre === 'double' ? THREE.DoubleSide : THREE.FrontSide, fog: true });
@@ -344,8 +375,10 @@ const IleGlb = (() => {
 
   // Les maillages du semis Meshy, un ou plusieurs par tuile (65 535 sommets au plus : des index sur
   // 16 bits), avec la matière de l'atlas ; nommés « semis » (la portée du semis, la carte de l'île qui
-  // les réunit d'en haut, la vue tactique qui les cache). Les normales tiennent sur un octet par
-  // composante (normalisées) : 23 octets par sommet au lieu de 32.
+  // les réunit d'en haut, la vue tactique qui les cache). Les sommets sont compacts : les positions
+  // sur deux octets par composante autour du centre du morceau (sa matrice les remet à l'échelle :
+  // un millième d'unité près), les normales sur un octet, les UV de l'atlas sur deux (un trentième de
+  // pixel), 16 octets par sommet au lieu de 32.
   function maillagesMeshy(THREE, fusionS, mats) {
     const out = [];
     for (const [k, f] of fusionS) {
@@ -358,17 +391,30 @@ const IleGlb = (() => {
       morceaux.push([v0, f.n, i0, f.idx.length]);
       morceaux.forEach(([v0, v1, i0, i1], q) => {
         const geo = new THREE.BufferGeometry(), n = v1 - v0;
-        geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(f.pos.slice(v0 * 3, v1 * 3)), 3));
-        const N = new Int8Array(n * 3);
-        for (let i = 0; i < n * 3; i++) N[i] = Math.round(f.nrm[v0 * 3 + i] * 127);
-        geo.setAttribute('normal', new THREE.BufferAttribute(N, 3, true));
-        geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(f.uv.slice(v0 * 2, v1 * 2)), 2));
+        let x0 = Infinity, y0 = Infinity, z0 = Infinity, x1 = -Infinity, y1 = -Infinity, z1 = -Infinity;
+        for (let i = v0 * 3; i < v1 * 3; i += 3) {
+          const x = f.pos[i], y = f.pos[i + 1], z = f.pos[i + 2];
+          if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; if (z < z0) z0 = z; if (z > z1) z1 = z;
+        }
+        const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, cz = (z0 + z1) / 2, ech = Math.max(1e-3, (x1 - x0) / 2, (y1 - y0) / 2, (z1 - z0) / 2);
+        const P = new Int16Array(n * 4);
+        for (let i = 0; i < n; i++) {
+          const j = (v0 + i) * 3;
+          P[i * 4] = Math.round((f.pos[j] - cx) / ech * 32767); P[i * 4 + 1] = Math.round((f.pos[j + 1] - cy) / ech * 32767); P[i * 4 + 2] = Math.round((f.pos[j + 2] - cz) / ech * 32767);
+        }
+        geo.setAttribute('position', new THREE.BufferAttribute(P, 4, true));
+        geo.setAttribute('normal', normalesCompactes(THREE, f.nrm.slice(v0 * 3, v1 * 3)));
+        const U = new Uint16Array(n * 2);
+        for (let i = 0; i < n * 2; i++) U[i] = Math.round(Math.min(1, Math.max(0, f.uv[v0 * 2 + i])) * 65535);
+        geo.setAttribute('uv', new THREE.BufferAttribute(U, 2, true));
         const I = new Uint16Array(i1 - i0);
         for (let i = i0; i < i1; i++) I[i - i0] = f.idx[i] - v0;
         geo.setIndex(new THREE.BufferAttribute(I, 1));
         geo.computeBoundingSphere();
         const o = new THREE.Mesh(geo, mats[f.atlas] || mats[0]);
         o.matrixAutoUpdate = false;
+        o.matrix.makeScale(ech, ech, ech).setPosition(cx, cy, cz);
+        o.matrixWorldNeedsUpdate = true;
         o.name = 'semis meshy ' + k + (q ? ' ' + q : '');
         out.push(o);
       });
@@ -462,6 +508,22 @@ const IleGlb = (() => {
     const groupe = construire(THREE, glb, { semis, teinte: ile.nuit && typeof ile.nuit.teinteGlb === 'function' ? (u, v, nom, t) => ile.nuit.teinteGlb(u, v, nom, t) : null });
     // La mémoire de la scène (Ile3D.stats) : le semis Meshy cuit et son atlas.
     if (semis && groupe.userData.semisMeshy) { ile.octetsGeo = (ile.octetsGeo || 0) + groupe.userData.semisMeshy.octets; ile.octetsTex = (ile.octetsTex || 0) + semis.octets.tex; }
+    // Et le reste du monde modelé (le sol, les objets, les lignes, les agrafes, les fils, le semis de
+    // l'export), compté depuis la passe de mémoire (3.32) : une fois par tampon, les tuiles d'un même
+    // maillage partageant leurs attributs.
+    {
+      const vus = new Set();
+      let n = 0;
+      const compter = a => { if (a && a.array && !vus.has(a.array)) { vus.add(a.array); n += a.array.byteLength; } };
+      groupe.traverse(o => {
+        if (!o.geometry || /^semis meshy /.test(o.name)) return;
+        for (const a of Object.values(o.geometry.attributes)) compter(a);
+        compter(o.geometry.index);
+        if (o.isInstancedMesh) { compter(o.instanceMatrix); compter(o.instanceColor); }
+      });
+      groupe.userData.octetsMonde = n;
+      ile.octetsGeo = (ile.octetsGeo || 0) + n;
+    }
     const retirer = o => { if (o && o.parent) o.parent.remove(o); };
     for (const t of ile.tuilesSol || []) { retirer(t.proche); retirer(t.loin); }
     for (const t of ile.tuilesDecor || []) { retirer(t.groupe); retirer(t.sil); }
@@ -483,6 +545,34 @@ const IleGlb = (() => {
       for (const g of geos) { libere += Ile3D.octetsGeo(g); g.dispose(); }
       ile.octetsGeo = Math.max(0, (ile.octetsGeo || 0) - libere);
       groupe.userData.libere = libere;
+      // Leurs textures aussi (la passe de mémoire, 3.32) : celles du sol peint (les matières, les
+      // cartes de poids, la teinte, le grain), de l'eau, de la falaise, des rochers et des feuillages du
+      // code. Aucune matière de la scène ne s'en sert plus ; les salles du Puits font les leurs, la
+      // lueur (les combats), les nuages, les bancs et le halo restent. Les uniformes qui les tenaient
+      // sont vidés, pour que la mémoire du navigateur les rende aussi.
+      // Le poids, compté comme à leur création (Ile3D.construire) : les toiles avec leurs mipmaps, les
+      // cartes de données selon les leurs.
+      const tex = ile.tex || {}, toiles = ['eau', 'touchesLin', 'falaise', 'touches', 'feuilles'], libres = new Set();
+      let libereTex = 0;
+      for (const k of ['matieres', 'poids1', 'poids2', 'teinte', 'grain', ...toiles]) {
+        const t = tex[k];
+        if (!t || !t.isTexture) continue;
+        const im = t.image || {};
+        libereTex += (im.width || 0) * (im.height || 0) * (im.depth || 1) * 4 * (toiles.includes(k) || t.generateMipmaps ? 1.33 : 1);
+        t.dispose();
+        libres.add(t);
+        tex[k] = null;
+      }
+      const vider = m => {
+        if (!m) return;
+        for (const c of ['map', 'emissiveMap', 'alphaMap']) if (libres.has(m[c])) m[c] = null;
+        if (m.uniforms) for (const u of Object.values(m.uniforms)) if (u && libres.has(u.value)) u.value = null;
+      };
+      for (const m of Object.values(ile.mats || {})) if (m && m.isMaterial) vider(m);
+      if (ile.mats && ile.mats.uSol) for (const u of Object.values(ile.mats.uSol)) if (u && libres.has(u.value)) u.value = null;
+      if (ile.eau) ile.eau.traverse(o => { if (o.material) [].concat(o.material).forEach(vider); });
+      ile.octetsTex = Math.max(0, (ile.octetsTex || 0) - libereTex);
+      groupe.userData.libereTex = libereTex;
     }
     scene.add(groupe);
     ile.monde = groupe;
@@ -539,14 +629,18 @@ const IleGlb = (() => {
   function portee(groupe, c, p) {
     if (!groupe) return;
     for (const o of groupe.children) {
-      const s = o.geometry && o.geometry.boundingSphere;
-      if (!s) continue;
+      const s0 = o.geometry && o.geometry.boundingSphere;
+      if (!s0) continue;
+      // La sphère dans le repère du monde (le semis Meshy est mis à l'échelle par sa matrice),
+      // calculée une fois : ces maillages ne bougent pas.
+      let s = o.userData.sphereMonde;
+      if (!s) { s = o.userData.sphereMonde = s0.clone().applyMatrix4(o.matrix); }
       // La falaise : une fois et demie la portée du sol (la brume l'a prise bien avant).
       const max = /^mo_sol/.test(o.name) ? p.sol : /^semis /.test(o.name) ? p.semis : /^mo_falaise/.test(o.name) ? (Number.isFinite(p.sol) ? p.sol * 1.5 : Infinity) : p.reste;
       o.visible = !Number.isFinite(max) || Math.hypot(s.center.x - c.x, s.center.z - c.y) - s.radius < max;
     }
   }
 
-  return { source, lire, analyser, construire, poser, parTuiles, tactique, mouiller, portee, TUILE };
+  return { source, octets, lire, analyser, construire, poser, parTuiles, tactique, mouiller, portee, TUILE };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = IleGlb;

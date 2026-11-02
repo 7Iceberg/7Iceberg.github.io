@@ -186,7 +186,9 @@ void main() {
       this.scene = opts.scene;
       // L'atlas des figures : 1 024 × 2 048 au téléphone, 2 048 × 2 048 ailleurs ; des cases de
       // 192 × 176 (la peinture de 176 × 168, une marge contre les débordements des niveaux de mip).
-      this.atlas = new Atlas(THREE, this.telephone ? 1024 : 2048, 2048, 192, 176);
+      // Au téléphone, 1024 x 1024 (25 cases) : le tour de l'île n'en occupe jamais plus de 17 à la
+      // fois (passe de mémoire, 3.32) ; au-delà, la case la moins récemment vue est repeinte.
+      this.atlas = new Atlas(THREE, this.telephone ? 1024 : 2048, this.telephone ? 1024 : 2048, 192, 176);
       // Les textes : 1 024 × 512 au téléphone (32 étiquettes à la fois), 2 048 × 512 ailleurs.
       this.textes = new Atlas(THREE, this.telephone ? 1024 : 2048, 512, 256, 64, { sansMip: true });
       const quad = new THREE.PlaneGeometry(1, 1).translate(0.5, 0.5, 0);

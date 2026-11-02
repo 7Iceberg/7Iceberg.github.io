@@ -232,9 +232,10 @@ void main() {
           remap[i] = nv++;
           for (const n of noms) {
             const A = g.attributes[n], o = outs[n];
-            if (!A) { for (let c = 0; c < g0.attributes[n].itemSize; c++) o.push(0); continue; }
+            if (!A) { const k = n === 'position' || n === 'normal' ? 3 : g0.attributes[n].itemSize; for (let c = 0; c < k; c++) o.push(0); continue; }
             if (n === 'position') o.push(wp[i * 3], wp[i * 3 + 1], wp[i * 3 + 2]);
             else if (n === 'normal') { v.fromBufferAttribute(A, i).applyMatrix3(nm).normalize(); o.push(v.x, v.y, v.z); }
+            // Les autres tels quels (même type et même normalisation dans tout le seau, voir `ajoute`).
             else for (let c = 0; c < A.itemSize; c++) o.push(A.array[i * A.itemSize + c]);
           }
           return remap[i];
@@ -248,7 +249,20 @@ void main() {
           }
         }
       }
-      for (const n of noms) { const arr = new Float32Array(outs[n]); geo.setAttribute(n, new THREE.BufferAttribute(arr, g0.attributes[n].itemSize)); octets += arr.byteLength; }
+      // Les positions en flottants, les normales sur un octet par composante (comme le monde modelé,
+      // IleGlb), les autres dans le type de leur source (couleurs et UV normalisées).
+      for (const n of noms) {
+        const A0 = g0.attributes[n];
+        let at;
+        if (n === 'position') at = new THREE.BufferAttribute(new Float32Array(outs[n]), 3);
+        else if (n === 'normal') {
+          const src = outs[n], N = new Int8Array(src.length / 3 * 4);
+          for (let i = 0, j = 0; i < src.length; i += 3, j += 4) { N[j] = Math.round(src[i] * 127); N[j + 1] = Math.round(src[i + 1] * 127); N[j + 2] = Math.round(src[i + 2] * 127); }
+          at = new THREE.BufferAttribute(N, 4, true);
+        } else at = new THREE.BufferAttribute(new A0.array.constructor(outs[n]), A0.itemSize, A0.normalized);
+        geo.setAttribute(n, at);
+        octets += at.array.byteLength;
+      }
     }
     const ni = ranger(parMat);
     if (!ni) return null;
@@ -397,7 +411,7 @@ void main() {
         o.updateWorldMatrix(true, false);
         const mats = Array.isArray(o.material) ? o.material : [o.material];
         const P = geo.attributes.position, part = !garder && (usages.get(P) || 0) > 1 ? '|p' + idDe(P) : '';
-        const k = cle + '|' + mats.map(m => m.uuid).join(',') + '|' + Object.keys(geo.attributes).sort().join(',') + '|' + (o.renderOrder || 0) + part;
+        const k = cle + '|' + mats.map(m => m.uuid).join(',') + '|' + Object.keys(geo.attributes).sort().map(n => { const A = geo.attributes[n]; return n + ':' + A.array.constructor.name + A.itemSize + (A.normalized ? 'n' : ''); }).join(',') + '|' + (o.renderOrder || 0) + part;
         let s = seaux.get(k);
         if (!s) { s = { materiel: o.material, renderOrder: o.renderOrder || 0, liste: [], garder, nom: cle }; seaux.set(k, s); }
         s.liste.push({ geo, m: o.matrixWorld.clone() });
