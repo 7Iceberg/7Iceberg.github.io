@@ -66,7 +66,8 @@ const AccueilArt = (() => {
   // quatre vues côte à côte, se, sw, nw, ne, 512 × 768 chacune, fond transparent ; le modèle de
   // 1,75 m dans un cadre de 2,02 m : les pieds à 734 px du haut, le visage à 125 px, les épaules
   // larges de 160 px ; docs/PIPELINE-IMAGES.md). Seules les classes listées sont demandées, une fois.
-  const TOURNANTES = ['lyssar'];
+  // Aucune pour l'instant : les vues de Lyssar, rendues depuis son modèle, sont retirées avec lui.
+  const TOURNANTES = [];
   const tours = new Map();
   const VUE_L = 512, VUE_H = 768, VUES = ['se', 'sw', 'nw', 'ne'], PIEDS = 734, VISAGE = 125, EPAULES = 160;
   function imageTour(id, quand) {
@@ -885,7 +886,8 @@ const AccueilArt = (() => {
   // Les illustrations d'artiste des classes (assets/classes/<id>.webp, docs/PIPELINE-IMAGES.md) :
   // seules les classes listées ici sont demandées, une fois chacune. Un fichier absent coûterait
   // une erreur dans la console à chaque classe ; on ajoute l'id quand l'image arrive.
-  const ILLUSTREES = ['lyssar'];
+  // Aucune pour l'instant : celle de Lyssar, rendue depuis son modèle, est retirée avec lui.
+  const ILLUSTREES = [];
   const images = new Map();
   function imageClasse(id, quand) {
     if (!ILLUSTREES.includes(id)) { quand({ etat: 'absente' }); return null; }

@@ -16,12 +16,16 @@
 // place du panneau, son cap suit la marche ou la cible, ses gestes suivent le combat ; l'ombre, la
 // sélection, les anneaux et la barre de vie restent ceux du panneau.
 const IleHeros = (() => {
-  const FICHIERS = { lyssar: 'assets/heros/lyssar.glb' };
+  // Aucun héros modelé pour l'instant : le modèle de Lyssar est retiré (3.27). Le lecteur reste pour
+  // les prochains ; une classe entre ici avec son fichier (`classe: 'assets/heros/<classe>.glb'`).
+  const FICHIERS = {};
   // L'arme tenue : le noeud du GLB qui la porte (un enfant du poignet droit), son avant et son
   // travers dans son propre repère (mesurés sur le GLB par les axes principaux de ses sommets :
   // l'arbalète est bâtie le long de +Z, ses arcs en X ; au repos elle pend le long de l'avant-bras,
   // l'arc passé la main). `dessus` : +1 ou -1, le côté de l'arme qui est en haut quand elle vise.
-  const ARMES = { lyssar: { noeud: 'av_arbalete', avant: { x: -0.136, y: 0.011, z: 0.991 }, travers: { x: 0.991, y: 0.001, z: 0.131 }, dessus: 1 } };
+  // (L'arbalète de Lyssar : { noeud: 'av_arbalete', avant: { x: -0.136, y: 0.011, z: 0.991 },
+  // travers: { x: 0.991, y: 0.001, z: 0.131 }, dessus: 1 }.)
+  const ARMES = {};
   // La visée : la direction du bras droit (le repère du modèle, +Z devant), celles du bras et de
   // l'avant-bras gauches (l'orbe levé devant).
   const VISEE = { bras: { x: -0.18, y: -0.4, z: 0.9 }, brasG: { x: 0.4, y: -0.55, z: 0.73 }, avantG: { x: 0.1, y: 0.3, z: 0.95 } };
