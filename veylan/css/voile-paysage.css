@@ -7,11 +7,49 @@
    ========================================================================== */
 
 .scene-voile__fond[data-anime] { background: #0a0910; container-type: size; }
-/* Un assombrissement léger (le texte reste lisible), par-dessus l'image et ce qui bouge. */
+/* Le paysage en pleine lumière, comme une image de cinéma : seul le bas s'assombrit, pour la
+   phrase en sous-titre et la ligne de chargement. Le repli et la 3D perdue gardent un voile plus
+   sombre (leur texte est au milieu). */
 .scene-voile__fond[data-fond="paysage"][data-anime]::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 75% 65% at 50% 46%, rgba(10, 9, 16, 0.12) 0%, rgba(10, 9, 16, 0.66) 100%),
-    linear-gradient(180deg, rgba(10, 9, 16, 0.38) 0%, rgba(10, 9, 16, 0.06) 38%, rgba(10, 9, 16, 0.2) 62%, rgba(10, 9, 16, 0.88) 100%);
+  background: linear-gradient(180deg, rgba(8, 7, 14, 0.18) 0%, rgba(8, 7, 14, 0) 18%, rgba(8, 7, 14, 0) 62%, rgba(8, 7, 14, 0.55) 84%, rgba(8, 7, 14, 0.82) 100%);
+}
+.scene-voile-boite.repli .scene-voile__fond[data-anime]::after, .scene-voile-boite.sans-barre .scene-voile__fond[data-anime]::after {
+  background: radial-gradient(ellipse 75% 65% at 50% 46%, rgba(10, 9, 16, 0.35) 0%, rgba(10, 9, 16, 0.8) 100%);
+}
+
+/* La mise en page du chargement : la phrase en sous-titre, le titre en petit à gauche, l'étape et
+   le pourcentage en petit à droite, une barre fine tout en bas. */
+.scene-voile-boite.paysage:not(.repli):not(.sans-barre) { justify-content: flex-end; gap: 0; padding: 0 0 calc(44px + var(--sc-bas, 0px)); }
+.scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__fil { display: none; }
+.scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__titre {
+  position: absolute !important; left: max(18px, 3%); bottom: calc(14px + var(--sc-bas, 0px));
+  font-size: 12.5px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255, 255, 255, 0.82);
+}
+.scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__ligne {
+  position: absolute !important; right: max(18px, 3%); bottom: calc(14px + var(--sc-bas, 0px)); width: auto; gap: 10px; align-items: baseline;
+}
+.scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__etape { font-size: 12px; color: rgba(255, 255, 255, 0.72); text-align: right; }
+.scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__pct { font-size: 12px; }
+.scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__barre {
+  position: absolute !important; left: 0; right: 0; bottom: var(--sc-bas, 0px); width: 100%; height: 3px; border-radius: 0;
+  background: rgba(255, 255, 255, 0.08); box-shadow: none;
+}
+.scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__barre i { border-radius: 0 2px 2px 0; }
+.scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__phrase {
+  position: relative !important; left: auto; bottom: auto; transform: none; width: min(900px, calc(100% - 32px));
+  padding: 0; border: 0; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; text-align: center;
+}
+.scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__phrase small { display: none; }
+.scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__phrase p {
+  font-size: 16px; line-height: 1.45; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 2px 14px rgba(0, 0, 0, 0.75);
+}
+@media (max-height: 520px) {
+  .scene-voile-boite.paysage:not(.repli):not(.sans-barre) { padding-bottom: calc(36px + var(--sc-bas, 0px)); }
+  .scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__phrase p { font-size: 13px; }
+  .scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__titre { font-size: 10.5px; bottom: calc(11px + var(--sc-bas, 0px)); }
+  .scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__ligne { bottom: calc(11px + var(--sc-bas, 0px)); }
+  .scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__etape, .scene-voile-boite.paysage:not(.repli):not(.sans-barre) .scene-voile__pct { font-size: 10.5px; }
 }
 
 /* La boîte de l'image : couvre l'écran comme le fond d'avant (centrée, calée à 40 % en hauteur). */

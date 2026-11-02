@@ -331,6 +331,7 @@ class Scene {
     if (!anime) fond = 'paysage';
     this.fondAnime = anime;
     el.classList.toggle('medaille', fond === 'medaille');
+    el.classList.toggle('paysage', fond === 'paysage' && !!anime);
     el.innerHTML = `<div class="scene-voile__fond" data-fond="${fond}"${anime ? ' data-anime' : ''} aria-hidden="true">${anime ? anime.html() : ''}</div>` +
       '<div class="scene-voile__fil" aria-hidden="true"></div>' +
       `<p class="scene-voile__titre">${Util.esc(titre)}</p>` +
