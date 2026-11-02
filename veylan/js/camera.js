@@ -462,7 +462,8 @@ class CameraControls {
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
     const cam = this.camera;
-    const zoom = k => { e.preventDefault(); const r = cam.rect(), f = cam.focusRect(); cam.zoomAt(r.left + f.cx, r.top + f.cy, k, { smooth: true }); };
+    // (Le centre de la part libre, en pixels de la page : la vue peut être sous un zoom CSS.)
+    const zoom = k => { e.preventDefault(); const r = cam.rect(), f = cam.focusRect(), z = cam.vw && r.width ? r.width / cam.vw : 1; cam.zoomAt(r.left + f.cx * z, r.top + f.cy * z, k, { smooth: true }); };
     if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') zoom(1.25);
     else if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract') zoom(0.8);
     // Une lettre déjà prise par un menu (la touche Q des Quêtes en qwerty, saisie avant nous, en

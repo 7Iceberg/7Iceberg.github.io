@@ -85,6 +85,8 @@ html, body {
 #board { cursor: crosshair; touch-action: none; -webkit-tap-highlight-color: transparent; }
 #board.glisse { cursor: grabbing; }
 #stage > .board-repli { pointer-events: none; }
+/* La photo de la vue du jeu, laissée dans la scène pendant la carte 3D de l'île (js/ile-3d.js). */
+#stage > .ile-photo { filter: saturate(0.85) brightness(0.92); }
 
 /* L'île d'Ervane en 3D (js/ile-3d.js, docs/ILE-TECHNIQUE.md, 3.1) : la toile Three.js sous #board,
    transparente, le ciel en dégradé derrière elle (posé par le rendu, il suit la brume de la région) ;

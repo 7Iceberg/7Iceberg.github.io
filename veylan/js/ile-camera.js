@@ -27,6 +27,11 @@
 // pendant que l'élévation rejoint celle du combat ; l'orthographique prend alors le relais, à cadrage
 // égal. L'inverse au retour.
 //
+// La carte de l'île (3.30, docs/ANALYSE-MAP-DUALITY.md, 4.2) est un troisième mode : la caméra du jeu
+// décolle au-dessus de l'île entière, le nord en haut, et la survole (glisser avec inertie, zoom vers
+// le curseur et sous les doigts, rotation) ; à la fermeture, elle redescend en douceur vers la vue du
+// jeu. Pendant la carte, la vue du jeu est figée pour le DOM posé sur le monde (worldToClient).
+//
 // Repère de la scène Three.js : X = u, Y = h, Z = v. Three.js est chargé avant sa construction.
 class CameraIle {
   constructor(opts) {
@@ -93,6 +98,13 @@ class CameraIle {
     this.distCourante = 0;          // la distance de la caméra au point visé (la brume s'y règle)
     this.coin = null;               // la barre de tour du téléphone, dans le coin bas droit : { w, h }
     this.vise = { x: 0, y: 0, h: 0 }; // le point du monde au milieu de la part libre, quel que soit le mode
+    // La carte (3.30) : son état, le retour vers la vue du jeu, la vue du jeu figée, l'élément du jeu.
+    this.carte = null;
+    this.retourCarte = null;
+    this.gel = null;
+    this.elJeu = null;
+    this.etatAffiche = null;        // le dernier état posé (point visé, distance, élévation, cap, ouverture)
+    this._camC = new THREE.PerspectiveCamera(30, 1, 1, 4000);   // une caméra de calcul (cadrage, sol sous un point)
     this.placer();
   }
 
@@ -109,7 +121,10 @@ class CameraIle {
   // ----- Le cadre -----
 
   // Exploration : le champ par défaut sur le champ courant. Combat : les pixels par u.
-  get zoom() { return this.mode === 'combat' && this.vue ? 1 / this.vue.s : this.champDefaut / this.champ; }
+  get zoom() {
+    if (this.mode === 'carte' && this.carte) return this.carte.D0 / this.carte.cur.dist;
+    return this.mode === 'combat' && this.vue ? 1 / this.vue.s : this.champDefaut / this.champ;
+  }
   // L'élévation suit le champ : 35° au plus près, 45° au plus loin.
   elevation(champ) {
     const c = champ == null ? this.champ : champ;
@@ -123,14 +138,15 @@ class CameraIle {
   // champ (largeur de la vue entière).
   distance(champ) {
     // En combat et pendant un passage : la distance réelle de la caméra au point visé.
-    if (champ == null && (this.mode === 'combat' || this.trans) && this.distCourante) return this.distCourante;
+    if (champ == null && (this.mode === 'combat' || this.mode === 'carte' || this.trans || this.retourCarte) && this.distCourante) return this.distCourante;
     const aspect = this.vw && this.vh ? this.vw / this.vh : 1.6;
     const t = Math.tan(this.ouverture * Math.PI / 360) * aspect;
     return (champ == null ? this.champ : champ) / (2 * t);
   }
 
   focusRect() {
-    const i = this.insets;
+    // La vue de la carte n'a pas de marges : l'interface du jeu ne la couvre pas.
+    const i = this.mode === 'carte' ? { top: 0, right: 0, bottom: 0, left: 0 } : this.insets;
     const w = Math.max(1, this.vw - i.left - i.right), h = Math.max(1, this.vh - i.top - i.bottom);
     return { x: i.left, y: i.top, w, h, cx: i.left + w / 2, cy: i.top + h / 2 };
   }
@@ -142,10 +158,11 @@ class CameraIle {
   // Place la caméra perspective d'après un état (par défaut celui de l'exploration) : le point
   // visé tombe au milieu de la part de la scène que l'interface laisse libre.
   placer(etat) {
-    const e = etat || this.etatExploration();
+    const e = etat || (this.mode === 'carte' && this.carte ? this.etatCarte() : this.etatExploration());
     const cam = this.cam, az = e.az != null ? e.az : this.azimut;
     const aspect = this.vw && this.vh ? this.vw / this.vh : 1.6;
-    const d = e.largeur / (2 * Math.tan(e.fov * Math.PI / 360) * aspect);
+    // La carte parle en distance ; le jeu, en largeur de sol vue au point visé.
+    const d = e.dist != null ? e.dist : e.largeur / (2 * Math.tan(e.fov * Math.PI / 360) * aspect);
     const hv = e.h + (e.leve || 0);
     cam.fov = e.fov;
     cam.position.set(e.x + Math.cos(e.el) * Math.sin(az) * d, hv + Math.sin(e.el) * d, e.y + Math.cos(e.el) * Math.cos(az) * d);
@@ -159,7 +176,8 @@ class CameraIle {
     }
     cam.up.set(0, 1, 0);
     cam.lookAt(e.x, hv, e.y);
-    cam.near = Math.max(1, d * 0.25);
+    // (Le plan proche reste en deçà du dôme du ciel, 100 u autour de la caméra, quand la carte s'éloigne.)
+    cam.near = Math.max(1, Math.min(d * 0.25, 60));
     cam.far = d * 6 + 200;
     cam.aspect = aspect;
     if (this.vw && this.vh) {
@@ -172,12 +190,15 @@ class CameraIle {
     cam.updateMatrixWorld(true);
     this.distCourante = d;
     this.vise.x = e.x; this.vise.y = e.y; this.vise.h = e.h;
+    this.etatAffiche = { x: e.x, y: e.y, h: e.h, dist: d, el: e.el, az, fov: e.fov, leve: e.leve || 0 };
   }
 
   // ----- Conversions -----
 
   rect() { return this.el ? this.el.getBoundingClientRect() : { left: 0, top: 0, width: this.vw, height: this.vh }; }
-  clientToScreen(cx, cy) { const r = this.rect(); return { x: cx - r.left, y: cy - r.top }; }
+  // La vue de la carte peut être sous un `zoom` CSS (le corps d'une fenêtre, réduit au téléphone) :
+  // ses pixels de mise en page ne sont pas ceux de la page ; `k` les convertit.
+  clientToScreen(cx, cy) { const r = this.rect(), k = this.mode === 'carte' && this.vw && r.width ? r.width / this.vw : 1; return { x: (cx - r.left) / k, y: (cy - r.top) / k }; }
 
   // Le rayon de la caméra sous un point de l'écran (coordonnées de la toile).
   rayon(sx, sy) {
@@ -202,26 +223,33 @@ class CameraIle {
     const p = this._v.set(u, h, v).project(this.courante);
     return { x: (p.x + 1) / 2 * this.vw, y: (1 - p.y) / 2 * this.vh, z: p.z, devant: p.z < 1 && p.z > -1 };
   }
+  // Pendant la carte, le DOM posé sur le monde (UI.ancrer, la fiche d'un groupe, le guide) garde la
+  // vue du jeu figée à l'ouverture : il reste à sa place sur la photo de la scène.
   worldToClient(u, h, v) {
+    const g = this.gel;
+    if (g) { const q = this._v.set(u, h, v).project(g.cam); return { x: g.rect.left + (q.x + 1) / 2 * g.vw, y: g.rect.top + (1 - q.y) / 2 * g.vh }; }
     const r = this.rect(), p = this.versEcran(u, h, v);
     return { x: r.left + p.x, y: r.top + p.y };
   }
 
   // Les pixels d'écran par unité du monde, au point (u, h, v) : ce qu'une figure ou une bulle doit
   // savoir pour se mettre à l'échelle de la perspective.
-  pixelsParU(u, h, v) {
+  // `jeu` : pour le DOM posé sur le monde, la vue du jeu figée pendant la carte.
+  pixelsParU(u, h, v, jeu) {
     if (this.courante === this.ortho) return 1 / this.ortho.userData.s;
-    const cam = this.cam;
+    const cam = jeu && this.gel ? this.gel.cam : this.cam;
+    const vh = jeu && this.gel ? this.gel.vh : this.vh;
     const dx = u - cam.position.x, dy = h - cam.position.y, dz = v - cam.position.z;
     const fwd = this._v.set(0, 0, -1).applyQuaternion(cam.quaternion);
     const prof = Math.max(0.5, dx * fwd.x + dy * fwd.y + dz * fwd.z);
-    return this.vh / (2 * Math.tan(cam.fov * Math.PI / 360) * prof);
+    return vh / (2 * Math.tan(cam.fov * Math.PI / 360) * prof);
   }
 
   // Le trapèze du sol vu (au niveau du point visé), agrandi de `marge` u : la réapparition des
   // groupes attend qu'il n'y soit pas (4.5).
   dansChamp(x, y, marge) {
-    if (!this.vw || !this.vh) return false;
+    // Pendant la carte, l'île entière est en vue : la règle ne vaut que pour la vue du jeu.
+    if (!this.vw || !this.vh || this.mode === 'carte') return false;
     const m = marge || 0;
     const pts = [[0, 0], [this.vw, 0], [this.vw, this.vh], [0, this.vh]].map(([sx, sy]) => this.ecranVersPlan(sx, sy));
     // Un coin du haut peut tomber au-delà de l'horizon : le trapèze est borné à 200 u.
@@ -274,6 +302,8 @@ class CameraIle {
   // Zoom d'un facteur autour d'un point de l'écran (coordonnées client) : le point du plan sous ce
   // point y reste. `opts.smooth` : glissement doux (molette, clavier).
   zoomAt(clientX, clientY, factor, opts) {
+    // Pendant la carte, les touches + et - (CameraControls du jeu) zooment la carte.
+    if (this.mode === 'carte') { this.carteZoomAt(clientX, clientY, factor, opts); return; }
     if (!(factor > 0) || factor === 1 || !this.vw || this.trans) return;
     const s = this.clientToScreen(clientX, clientY);
     const smooth = !!(opts && opts.smooth) && !CameraIle.calme();
@@ -301,7 +331,7 @@ class CameraIle {
 
   // Déplace la vue de (dx, dy) pixels : le sol suit le doigt.
   panBy(dx, dy) {
-    if ((!dx && !dy) || this.trans) return;
+    if ((!dx && !dy) || this.trans || this.mode === 'carte') return;
     this.anim = null;
     this.atFit = false;
     this.user();
@@ -323,7 +353,7 @@ class CameraIle {
 
   // Pincement : le zoom `z`, et le point (wx, wy) du plan sous les doigts en (sx, sy).
   pinchTo(z, wx, wy, sx, sy) {
-    if (this.trans) return;
+    if (this.trans || this.mode === 'carte') return;
     this.anim = null;
     this.atFit = false;
     this.user();
@@ -357,7 +387,7 @@ class CameraIle {
   // d'une montre à l'écran.
   tourner(da) { if (da) this.tournerA(this.azimut + da); }
   tournerA(az) {
-    if (this.mode === 'combat' || this.trans || !Number.isFinite(az)) return;
+    if (this.mode === 'combat' || this.mode === 'carte' || this.trans || !Number.isFinite(az)) return;
     this.animAz = null;
     const a = CameraIle.arc(az);
     if (a === this.azimut) return;
@@ -366,6 +396,7 @@ class CameraIle {
     this.changed();
   }
   tournerVers(az) {
+    if (this.mode === 'carte') { this.carteTournerVers(az); return; }
     if (this.mode === 'combat' || this.trans || !Number.isFinite(az)) return;
     if (CameraIle.calme()) { this.tournerA(az); return; }
     this.animAz = CameraIle.arc(az);
@@ -374,6 +405,7 @@ class CameraIle {
   // Recentrer (bouton, touche 0) : le Veilleur au milieu, au champ et à l'azimut par défaut ; en
   // combat, l'aire entière cadrée.
   fit(animate) {
+    if (this.mode === 'carte') { this.carteRecentrer(); return; }
     if (this.trans) return;
     this.userUntil = 0;
     if (this.mode === 'combat') {
@@ -405,6 +437,8 @@ class CameraIle {
   // Veilleur, en exploration.
   sauter(x, y, h) {
     if (x != null) { this.joueur.x = x; this.joueur.y = y; this.joueur.h = h || 0; }
+    // Pendant la carte, la vue du jeu (rendue au retour) se pose sur le Veilleur ; la carte reste.
+    if (this.mode === 'carte') { this.decalage.x = 0; this.decalage.y = 0; this.cible.x = this.joueur.x; this.cible.y = this.joueur.y; this.cible.h = this.joueur.h; this.vitCible.x = 0; this.vitCible.y = 0; return; }
     if (this.mode === 'combat' || this.trans) {
       this.mode = 'exploration';
       this.trans = null;
@@ -425,6 +459,14 @@ class CameraIle {
     if (!(w > 0 && h > 0)) return;
     if (w === this.vw && h === this.vh) return;
     this.vw = w; this.vh = h;
+    // La carte : D0 suit la taille de sa vue, le zoom (rapporté à D0) reste.
+    if (this.mode === 'carte' && this.carte) {
+      const k = this.carte, zc = k.cur.dist / k.D0, zd = k.des.dist / k.D0;
+      k.D0 = this.carteD0();
+      k.cur.dist = zc * k.D0; k.des.dist = zd * k.D0;
+      this.placer(k.vol ? (k.vol.dernier || k.vol.de) : null);
+      return;
+    }
     this.placer(this.trans ? this.dernierEtat : null);
     if (this.mode === 'combat') this.recadrer();
     this.changed();
@@ -447,6 +489,8 @@ class CameraIle {
   // extrêmes et moyenne de son sol). Le passage de 0,6 s commence, sauf `immediat` ou mouvement
   // réduit. Rien ne bouge pendant le passage (gestes ignorés).
   entrerCombat(aire, immediat) {
+    if (this.mode === 'carte') this.sortirCarte(true);
+    this.retourCarte = null;
     const premier = this.mode !== 'combat';
     if (premier) { this.avantCombat = { champ: this.champ }; this.azimutCombat = CameraIle.diagonale(this.azimut); this.animAz = null; }
     const de = this.trans && this.dernierEtat ? this.dernierEtat : (premier ? this.etatExploration() : null);
@@ -670,6 +714,7 @@ class CameraIle {
     }
     if (this.trans) return this.majPassage(now);
     if (this.mode === 'combat') return this.majCombat(dt, now);
+    if (this.mode === 'carte') return this.majCarte(dt, now);
     const avant = { x: this.cible.x, y: this.cible.y, h: this.cible.h, c: this.champ, az: this.azimut };
     // Le Veilleur se met en marche : le glissement revient (en une seconde) ; de même après quatre
     // secondes sans geste.
@@ -720,6 +765,8 @@ class CameraIle {
     // Au cadre : sans glissement, au champ et à l'azimut par défaut (l'avance du regard n'y change rien).
     const fit = Math.hypot(d.x, d.y) < 0.5 && Math.abs(this.champ / this.champDefaut - 1) < 0.02 && Math.abs(CameraIle.arc(this.azimut - this.azimutDefaut)) < 0.01;
     if (fit !== this.atFit) { this.atFit = fit; this.changed(); }
+    // Le retour de la carte : de la vue de la carte à celle du jeu (qui suit déjà le Veilleur).
+    if (this.retourCarte) { this.majRetourCarte(now); return true; }
     return Math.abs(avant.x - this.cible.x) + Math.abs(avant.y - this.cible.y) + Math.abs(avant.h - this.cible.h) > 1e-4 || avant.c !== this.champ || avant.az !== this.azimut;
   }
 
@@ -791,11 +838,323 @@ class CameraIle {
     return Math.abs(avant[0] - v.s) + Math.abs(avant[1] - v.px) + Math.abs(avant[2] - v.py) > 1e-7;
   }
 
+  // ----- La carte de l'île (3.30 ; docs/ANALYSE-MAP-DUALITY.md, 4.2) -----
+  //
+  // L'état de la carte : le point visé (x, y), la distance de la caméra au point visé (dist) et le
+  // cap (az), en deux copies : `des` (voulu) et `cur` (affiché), lissées par une exponentielle
+  // indépendante du rythme des images (8 par seconde pour la translation et le cap, 11 pour le zoom :
+  // voler vers un lieu, c'est poser `des`). L'élévation suit le zoom : 74° à D0 et au-delà (une vue
+  // de haut où se lisent encore le relief et la falaise du bord), 50° au plus près. D0 : la distance
+  // qui montre l'île entière dans la vue de la carte ; tous les réglages en sont des rapports.
+
+  // Entre dans la carte : la vue du jeu est figée (worldToClient), l'état d'exploration est gardé
+  // pour le retour ; puis le décollage depuis la vue du jeu vers l'île entière, le nord en haut, en
+  // 0,9 s (sans vol si le mouvement est réduit ou `opts.immediat`). `opts.el` : l'élément de la vue
+  // de la carte (ses coordonnées client) ; `opts.contour` : le contour de l'île (le cadrage de D0) ;
+  // `opts.bornes` : le rectangle où le point visé reste.
+  entrerCarte(opts) {
+    if (this.mode !== 'exploration' || this.trans) return false;
+    opts = opts || {};
+    const C = CameraIle.CARTE;
+    const depart = Object.assign({}, this.etatAffiche || this.etatExploration());
+    this.retourCarte = null;
+    this.gel = { cam: this.cam.clone(), rect: this.rect(), vw: this.vw, vh: this.vh };
+    this.elJeu = this.el;
+    if (opts.el) this.el = opts.el;
+    this.mode = 'carte';
+    this.anim = null; this.animAz = null; this.userUntil = 0; this.revient = false;
+    const [L, H] = this.taille;
+    const b = opts.bornes || { x0: 0, y0: 0, x1: L, y1: H };
+    const contour = opts.contour && opts.contour.length >= 3 ? opts.contour : [[b.x0, b.y0], [b.x1, b.y0], [b.x1, b.y1], [b.x0, b.y1]];
+    const cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
+    const k = this.carte = { bornes: b, contour, centre: [cx, cy], D0: 1, h: 0, des: { x: cx, y: cy, dist: 1, az: 0 }, cur: null, vol: null, progres: 1, arrivee: 0, inertie: null, vx: 0, vy: 0, panT: 0 };
+    k.D0 = this.carteD0();
+    k.des.dist = k.D0;
+    k.cur = Object.assign({}, k.des);
+    if (opts.immediat || CameraIle.calme()) { k.arrivee = performance.now(); this.placer(); }
+    else { k.vol = { t0: null, duree: C.depart * 1000, de: depart, dernier: null }; k.progres = 0; this.placer(depart); }
+    return true;
+  }
+
+  // Sort de la carte : la vue du jeu reprend sur le Veilleur, au champ et au cap d'avant, après une
+  // descente de 0,7 s depuis la vue de la carte (sans elle si le mouvement est réduit, `immediat`).
+  sortirCarte(immediat) {
+    const k = this.carte;
+    if (!k) return;
+    const de = Object.assign({}, this.etatAffiche || this.etatCarte());
+    this.carte = null;
+    if (this.elJeu) this.el = this.elJeu;
+    this.elJeu = null; this.gel = null;
+    this.mode = 'exploration';
+    this.anim = null; this.animAz = null; this.userUntil = 0; this.revient = false;
+    this.decalage.x = 0; this.decalage.y = 0;
+    this.cible.x = this.joueur.x; this.cible.y = this.joueur.y; this.cible.h = this.joueur.h;
+    this.vitCible.x = 0; this.vitCible.y = 0;
+    this.borner();
+    this.retourCarte = immediat || CameraIle.calme() ? null : { t0: null, duree: CameraIle.CARTE.retour * 1000, de, D0: k.D0, progres: 1 };
+    this.placer(this.retourCarte ? de : null);
+    this.changed();
+  }
+
+  // La descente vers la vue du jeu : de l'état de la carte à celui de l'exploration, qui vient
+  // d'être posé (il suit le Veilleur, qui marche peut-être déjà vers le lieu choisi).
+  majRetourCarte(now) {
+    const r = this.retourCarte, B = this.etatAffiche;
+    if (r.t0 == null) r.t0 = now;
+    const t = Math.min(1, Math.max(0, (now - r.t0) / r.duree)), e = t * t * (3 - 2 * t);
+    r.progres = 1 - e;
+    if (t >= 1) { this.retourCarte = null; this.changed(); return; }
+    this.placer(CameraIle.melange(r.de, B, e));
+  }
+
+  // Deux états posés (point visé, distance, élévation, cap, ouverture, regard levé) mêlés à `e`.
+  static melange(A, B, e) {
+    const L = (a, b) => a + (b - a) * e, G = (a, b) => Math.exp(Math.log(a) + (Math.log(b) - Math.log(a)) * e);
+    return { x: L(A.x, B.x), y: L(A.y, B.y), h: L(A.h, B.h), dist: G(A.dist, B.dist), el: L(A.el, B.el), az: A.az + CameraIle.arc(B.az - A.az) * e, fov: G(A.fov, B.fov), leve: L(A.leve || 0, B.leve || 0) };
+  }
+
+  elevationCarte(dist) {
+    const k = this.carte, C = CameraIle.CARTE, [e0, e1] = C.elevation;
+    const t = k ? Math.max(0, Math.min(1, Math.log(dist / (C.min * k.D0)) / Math.log(1 / C.min))) : 1;
+    return (e0 + (e1 - e0) * t) * Math.PI / 180;
+  }
+  // Un état (des ou cur) en état posé.
+  etatDe(s) { return { x: s.x, y: s.y, h: this.carte ? this.carte.h : 0, dist: s.dist, el: this.elevationCarte(s.dist), az: s.az, fov: CameraIle.CARTE.ouverture, leve: 0 }; }
+  etatCarte() { return this.etatDe(this.carte.cur); }
+
+  // Une caméra de calcul posée d'après un état, sans marges.
+  poserCam(cam, e) {
+    const aspect = this.vw && this.vh ? this.vw / this.vh : 1.6, d = e.dist, hv = e.h + (e.leve || 0);
+    cam.fov = e.fov; cam.aspect = aspect;
+    cam.position.set(e.x + Math.cos(e.el) * Math.sin(e.az) * d, hv + Math.sin(e.el) * d, e.y + Math.cos(e.el) * Math.cos(e.az) * d);
+    cam.up.set(0, 1, 0);
+    cam.lookAt(e.x, hv, e.y);
+    cam.near = Math.max(1, Math.min(d * 0.25, 60)); cam.far = d * 6 + 200;
+    cam.clearViewOffset();
+    cam.updateProjectionMatrix();
+    cam.updateMatrixWorld(true);
+  }
+
+  // D0 : la plus petite distance où tout le contour de l'île (à hauteur 0) tient dans la vue de la
+  // carte, nord en haut, à l'élévation de D0, avec une marge (plus large en haut, pour les noms).
+  carteD0() {
+    const k = this.carte, C = CameraIle.CARTE;
+    if (!k || !this.vw || !this.vh) return 300;
+    const m = Math.min(this.vw, this.vh) * C.marge, cam = this._camC, v = this._v;
+    const el = C.elevation[1] * Math.PI / 180;
+    let lo = 5, hi = 6000;
+    for (let i = 0; i < 36; i++) {
+      const d = Math.sqrt(lo * hi);
+      this.poserCam(cam, { x: k.centre[0], y: k.centre[1], h: 0, dist: d, el, az: 0, fov: C.ouverture });
+      let ok = true;
+      for (const [u, w] of k.contour) {
+        const p = v.set(u, 0, w).project(cam);
+        const sx = (p.x + 1) / 2 * this.vw, sy = (1 - p.y) / 2 * this.vh;
+        if (p.z > 1 || sx < m || sx > this.vw - m || sy < m * 1.8 || sy > this.vh - m) { ok = false; break; }
+      }
+      if (ok) hi = d; else lo = d;
+    }
+    return hi;
+  }
+
+  // Le point du plan horizontal (à la hauteur du point visé) sous un point de la vue (sx, sy), pour
+  // un état donné ; null au-dessus de l'horizon.
+  solSous(sx, sy, etat) {
+    const cam = this._camC;
+    this.poserCam(cam, etat);
+    this._ndc.set(sx / Math.max(1, this.vw) * 2 - 1, -(sy / Math.max(1, this.vh) * 2 - 1));
+    this._r.setFromCamera(this._ndc, cam);
+    const ray = this._r.ray, dy = ray.direction.y;
+    if (dy > -1e-4) return null;
+    const t = (etat.h - ray.origin.y) / dy;
+    return { x: ray.origin.x + ray.direction.x * t, y: ray.origin.z + ray.direction.z * t };
+  }
+
+  // Le point visé reste dans le rectangle de l'île, la distance entre ses bornes (rapports de D0).
+  bornerCarte() {
+    const k = this.carte, b = k.bornes, C = CameraIle.CARTE;
+    for (const s of [k.cur, k.des]) {
+      s.x = Math.max(b.x0, Math.min(b.x1, s.x)); s.y = Math.max(b.y0, Math.min(b.y1, s.y));
+      s.dist = Math.max(C.min * k.D0, Math.min(C.max * k.D0, s.dist));
+    }
+  }
+
+  // Glisser (pixels) : le point attrapé reste exactement sous le doigt (sans lissage) ; la vitesse est
+  // une moyenne 50/50 par mouvement, pour l'inertie au relâchement (carteRelacher).
+  cartePan(dx, dy, lance) {
+    const k = this.carte;
+    if (!k || k.vol || (!dx && !dy)) return;
+    const f = this.focusRect(), E = this.etatDe(k.cur);
+    const a = this.solSous(f.cx, f.cy, E), b = this.solSous(f.cx + dx, f.cy + dy, E);
+    if (!a || !b) return;
+    const mx = a.x - b.x, my = a.y - b.y;
+    k.cur.x += mx; k.cur.y += my; k.des.x += mx; k.des.y += my;
+    this.bornerCarte();
+    if (!lance) {
+      const t = performance.now(), dt = (t - k.panT) / 1000;
+      if (dt > 0.001 && dt < 0.12) { k.vx = 0.5 * k.vx + 0.5 * dx / dt; k.vy = 0.5 * k.vy + 0.5 * dy / dt; } else { k.vx = 0; k.vy = 0; }
+      k.panT = t;
+      k.inertie = null;
+    }
+    this.placer();
+  }
+  // Le doigt (ou la souris) se lève : l'inertie, si le glisser bougeait encore (v *= exp(-5 dt) par la
+  // suite, arrêt sous 12 px/s).
+  carteRelacher() {
+    const k = this.carte;
+    if (!k) return;
+    if (performance.now() - k.panT < 90 && Math.hypot(k.vx, k.vy) > 60 && !CameraIle.calme()) k.inertie = { vx: k.vx, vy: k.vy };
+    k.vx = 0; k.vy = 0;
+  }
+
+  // Zoom vers un point (coordonnées client) : dist' = dist / f, le sol sous le point y reste ; calculé
+  // sur l'état voulu, pour que des crans rapides se cumulent. `opts.smooth` : lissé (la molette).
+  carteZoomAt(clientX, clientY, f, opts) {
+    const k = this.carte;
+    if (!k || k.vol || !(f > 0) || f === 1) return;
+    const s = this.clientToScreen(clientX, clientY);
+    if (s.x < -1 || s.y < -1 || s.x > this.vw + 1 || s.y > this.vh + 1) return;
+    const C = CameraIle.CARTE;
+    k.inertie = null;
+    const a = this.solSous(s.x, s.y, this.etatDe(k.des));
+    k.des.dist = Math.max(C.min * k.D0, Math.min(C.max * k.D0, k.des.dist / f));
+    const b = this.solSous(s.x, s.y, this.etatDe(k.des));
+    if (a && b) { k.des.x += a.x - b.x; k.des.y += a.y - b.y; }
+    this.bornerCarte();
+    if (!(opts && opts.smooth) || CameraIle.calme()) { Object.assign(k.cur, k.des); this.placer(); }
+  }
+
+  // Le pincement : le zoom `z` (rapporté à D0) et le point (wx, wy) du sol sous les doigts en (sx, sy).
+  cartePinch(z, wx, wy, sx, sy) {
+    const k = this.carte;
+    if (!k || k.vol) return;
+    const C = CameraIle.CARTE;
+    k.inertie = null;
+    k.cur.dist = k.des.dist = Math.max(C.min * k.D0, Math.min(C.max * k.D0, k.D0 / Math.max(1e-3, z)));
+    k.des.az = k.cur.az;
+    const q = this.solSous(sx, sy, this.etatDe(k.cur));
+    if (q) { k.cur.x += wx - q.x; k.cur.y += wy - q.y; }
+    k.des.x = k.cur.x; k.des.y = k.cur.y;
+    this.bornerCarte();
+    this.placer();
+  }
+
+  // Le sol sous un point client (CameraControls garde ce point sous les doigts).
+  carteSol(cx, cy) {
+    const k = this.carte;
+    if (!k) return { x: 0, y: 0 };
+    const s = this.clientToScreen(cx, cy);
+    return this.solSous(s.x, s.y, this.etatDe(k.cur)) || { x: k.cur.x, y: k.cur.y };
+  }
+
+  // La rotation : directe au geste (bouton droit, deux doigts), lissée aux touches et aux boutons.
+  carteTournerA(az) {
+    const k = this.carte;
+    if (!k || k.vol || !Number.isFinite(az)) return;
+    k.inertie = null;
+    k.cur.az = k.des.az = CameraIle.arc(az);
+    this.placer();
+  }
+  carteTourner(da) { if (da && this.carte) this.carteTournerA(this.carte.cur.az + da); }
+  carteTournerVers(az) {
+    const k = this.carte;
+    if (!k || k.vol || !Number.isFinite(az)) return;
+    if (CameraIle.calme()) { this.carteTournerA(az); return; }
+    k.des.az = CameraIle.arc(az);
+  }
+
+  // Voler vers un point (« Centrer ») : poser l'état voulu ; `dist` en u (par défaut l'approche d'un
+  // lieu, 0,41 × D0).
+  carteVoler(x, y, dist) {
+    const k = this.carte;
+    if (!k || k.vol) return;
+    k.inertie = null;
+    k.des.x = x; k.des.y = y;
+    k.des.dist = dist || CameraIle.CARTE.approche * k.D0;
+    this.bornerCarte();
+    if (CameraIle.calme()) { Object.assign(k.cur, k.des); this.placer(); }
+  }
+  // L'île entière, le nord en haut.
+  carteRecentrer() {
+    const k = this.carte;
+    if (!k || k.vol) return;
+    this.carteVoler(k.centre[0], k.centre[1], k.D0);
+    this.carteTournerVers(0);
+  }
+
+  // Chaque image, en carte : le décollage, ou l'inertie puis le lissage de l'état affiché vers
+  // l'état voulu ; la hauteur du point visé suit le relief (bornée, lissée).
+  majCarte(dt, now) {
+    const k = this.carte;
+    const T = this.terrain;
+    let hT = null;
+    if (T && typeof T.marcheA === 'function') { hT = T.marcheA(k.cur.x, k.cur.y); if (!Number.isFinite(hT) && typeof T.solBrutA === 'function') hT = T.solBrutA(k.cur.x, k.cur.y); }
+    if (Number.isFinite(hT)) k.h += (Math.max(-4, Math.min(14, hT)) - k.h) * (1 - Math.exp(-dt * 4));
+    if (k.vol) {
+      const v = k.vol;
+      if (v.t0 == null) v.t0 = now;
+      const t = Math.min(1, Math.max(0, (now - v.t0) / v.duree)), e = t * t * (3 - 2 * t);
+      k.progres = e;
+      if (t >= 1) { k.vol = null; k.arrivee = now; this.placer(); }
+      else { v.dernier = CameraIle.melange(v.de, this.etatCarte(), e); this.placer(v.dernier); }
+      return true;
+    }
+    const I = k.inertie;
+    if (I) {
+      this.cartePan(I.vx * dt, I.vy * dt, true);
+      const f = Math.exp(-5 * dt);
+      I.vx *= f; I.vy *= f;
+      if (Math.hypot(I.vx, I.vy) < 12) k.inertie = null;
+    }
+    const c = k.cur, d = k.des, avant = c.x + c.y * 7 + c.dist * 13 + c.az * 17;
+    const a8 = 1 - Math.exp(-dt * 8), a11 = 1 - Math.exp(-dt * 11);
+    c.x += (d.x - c.x) * a8; c.y += (d.y - c.y) * a8;
+    c.az = CameraIle.arc(c.az + CameraIle.arc(d.az - c.az) * a8);
+    c.dist = Math.exp(Math.log(c.dist) + (Math.log(d.dist) - Math.log(c.dist)) * a11);
+    if (Math.abs(d.x - c.x) + Math.abs(d.y - c.y) < 1e-3) { c.x = d.x; c.y = d.y; }
+    if (Math.abs(CameraIle.arc(d.az - c.az)) < 1e-4) c.az = d.az;
+    if (Math.abs(Math.log(d.dist / c.dist)) < 1e-4) c.dist = d.dist;
+    this.placer();
+    return Math.abs(avant - (c.x + c.y * 7 + c.dist * 13 + c.az * 17)) > 1e-6 || !!I;
+  }
+
+  // Le survol en cours (la carte, son décollage, ou la descente vers le jeu), pour le rendu : la
+  // distance, la largeur de sol vue au point visé, D0, et la part de carte (0 : la vue du jeu, 1 : la
+  // carte posée). Null hors de la carte.
+  survolCarte() {
+    const k = this.carte, r = this.retourCarte, e = this.etatAffiche;
+    if ((!k && !r) || !e) return null;
+    const aspect = this.vw && this.vh ? this.vw / this.vh : 1.6;
+    const largeur = e.dist * 2 * Math.tan(e.fov * Math.PI / 360) * aspect;
+    return { dist: e.dist, largeur, D0: k ? k.D0 : r.D0, progres: k ? k.progres : r.progres, carte: !!k, vol: !!(k && k.vol), arrivee: k ? k.arrivee : 0, x: e.x, y: e.y };
+  }
+
+  // Ce que CameraControls attend d'une caméra, pour les gestes sur la vue de la carte : un doigt n'y
+  // déplace pas la vue (fitZoom infini : la fenêtre de la carte gère elle-même le glisser et son
+  // inertie), deux doigts zooment et tournent, la molette zoome, le bouton droit tourne.
+  adaptateurCarte() {
+    const cam = this;
+    return {
+      get anim() { return null; }, get animAz() { return null; },
+      get zoom() { return cam.carte ? cam.carte.D0 / cam.carte.cur.dist : 1; },
+      fitZoom: Infinity,
+      get azimut() { return cam.carte ? cam.carte.cur.az : 0; },
+      get vw() { return cam.vw; }, get vh() { return cam.vh; },
+      rect: () => cam.rect(), focusRect: () => cam.focusRect(), clientToScreen: (x, y) => cam.clientToScreen(x, y),
+      clientToWorld: (x, y) => cam.carteSol(x, y),
+      zoomAt: (x, y, f, o) => cam.carteZoomAt(x, y, f, o),
+      panBy: (dx, dy) => cam.cartePan(dx, dy),
+      pinchTo: (z, wx, wy, sx, sy) => cam.cartePinch(z, wx, wy, sx, sy),
+      tourner: da => cam.carteTourner(da), tournerA: az => cam.carteTournerA(az), tournerVers: az => cam.carteTournerVers(az),
+      fit: () => cam.carteRecentrer(),
+    };
+  }
+
   // ----- Événement « veylan:camera » -----
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
 
-  state() { return { zoom: this.zoom, x: this.vise.x, y: this.vise.y, fitZoom: this.fitZoom, atFit: this.atFit, width: this.vw, height: this.vh, champ: this.champ, mode: this.mode, passage: !!this.trans }; }
+  state() { return { zoom: this.zoom, x: this.vise.x, y: this.vise.y, fitZoom: this.fitZoom, atFit: this.atFit, width: this.vw, height: this.vh, champ: this.champ, mode: this.mode, passage: !!this.trans, carte: !!this.carte }; }
 
   changed() {
     this.dirty = true;
@@ -808,7 +1167,8 @@ class CameraIle {
   flush() {
     if (!this.dirty) return;
     this.dirty = false;
-    if (this.muette) return;
+    // Pendant la carte, rien ne bouge pour le DOM posé sur le monde (la vue du jeu est figée).
+    if (this.muette || this.mode === 'carte') return;
     const d = this.state();
     for (const fn of this.listeners) { try { fn(d); } catch (e) { console.error(e); } }
     try { window.dispatchEvent(new CustomEvent('veylan:camera', { detail: d })); } catch (e) { /* pas de CustomEvent */ }
@@ -818,3 +1178,9 @@ class CameraIle {
     try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
   }
 }
+
+// Les réglages de la carte (3.30), en rapports de D0 (la distance qui montre l'île entière) : la
+// distance de 0,11 à 3,55 × D0, l'approche d'un lieu à 0,41 × D0 (docs/ANALYSE-MAP-DUALITY.md, 4) ;
+// l'ouverture (degrés), l'élévation au plus près et à D0 (degrés), le décollage et le retour
+// (secondes), la marge du cadrage de D0 (part du petit côté de la vue).
+CameraIle.CARTE = { ouverture: 30, elevation: [50, 74], min: 0.11, max: 3.55, approche: 0.41, depart: 0.9, retour: 0.7, marge: 0.05 };

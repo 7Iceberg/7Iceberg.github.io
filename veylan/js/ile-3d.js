@@ -57,6 +57,11 @@ class Ile3D {
     this.dernier = 0;
     this.marques = {};
     this.directions = new Map();
+    // La carte de l'île (3.30, js/ile-carte.js) : ses marqueurs et ses maillages réunis, l'élément de
+    // la fenêtre où la toile se pose pendant la carte, la photo de la vue du jeu laissée dans la scène.
+    this.carteIle = null;
+    this.hote = null;
+    this.photo = null;
     this._boucle = now => this.boucle(now);
     // Les animations du combat (5.5) : seul le rendu actif y répond, une fois l'aire ouverte ;
     // sinon la promesse est tout de suite résolue (le rendu des cases, endormi, fait de même).
@@ -113,7 +118,9 @@ class Ile3D {
 
   redimensionner() {
     if (!this.renderer || !this.stage) return;
-    const w = this.stage.clientWidth, h = this.stage.clientHeight;
+    // Pendant la carte, la toile est dans la vue de la fenêtre (3.30) : elle en prend la taille.
+    const el = this.hote || this.stage;
+    const w = el.clientWidth, h = el.clientHeight;
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
     if (this.camera) this.camera.setViewport(w, h);
@@ -1295,7 +1302,10 @@ void main() { float a = texture2D(carte, vUv).a * vA;
   }
 
   desactiver() {
+    const carte = this.carteOuverte;
     this.actif = false;
+    // La carte se ferme d'un coup (la fenêtre, avertie, passe au plan peint : la 3D n'est plus là).
+    if (carte) this.fermerCarte(true, 'desactive');
     cancelAnimationFrame(this.raf);
     if (this.arene) this.arene.finirAnimations();
     if (this.canvas) this.canvas.style.opacity = '0';
@@ -1323,6 +1333,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     }
     for (const t of Object.values(this.tex || {})) { if (Array.isArray(t)) t.forEach(rendre); else rendre(t); }
     if (this.figures) this.figures.liberer();
+    if (this.carteIle) { this.carteIle.liberer(); this.carteIle = null; }
     this.heros = null;
     if (this.arene) { this.arene.liberer(); this.arene = null; }
     if (this.rampe) this.rampe.dispose();
@@ -1400,7 +1411,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
   echelleFigure(x, y) {
     if (!this.camera) return 1;
     const p = this.versScene(x, y);
-    return this.camera.pixelsParU(p.u, this.hauteur(p.u, p.v), p.v) * IleFigures.PX;
+    // (Pendant la carte, le DOM posé sur le monde garde la vue du jeu figée.)
+    return this.camera.pixelsParU(p.u, this.hauteur(p.u, p.v), p.v, true) * IleFigures.PX;
   }
   sauter() {
     if (!this.camera || !this.world) return;
@@ -1414,7 +1426,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
   // les objets qui agissent (relais, porte, panneaux), puis le sol (le rayon marche sur la hauteur
   // de marche par pas de 0,5 u, puis une dichotomie). Rend { x, y, cible } en u, ou null.
   screenToCell(cx, cy) {
-    if (!this.camera || !this.figures) return null;
+    // Pendant la carte (3.30), la scène du jeu ne prend pas de toucher : la fenêtre de la carte le fait.
+    if (!this.camera || !this.figures || this.camera.mode === 'carte') return null;
     const cam = this.camera, s = cam.clientToScreen(cx, cy);
     const doigt = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     // En combat : la case de l'aire sous le doigt, par la seule géométrie du sol, comme le rendu des
@@ -1546,7 +1559,10 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (this.salle) return this.imageSalle(now);
     const THREE = window.THREE, w = this.world, p = w.player, cam = this.camera;
     const t0 = performance.now();
-    const dt = this.tempsPrec ? Math.min(0.1, (now - this.tempsPrec) / 1000) : 0.016;
+    // Jamais un pas négatif : une image demandée hors de la boucle (la photo de la carte, 3.30) porte
+    // l'heure du moment, la suivante celle du début de son image, parfois plus ancienne ; la brume s'y
+    // emballait (un mélange de facteur négatif, répété).
+    const dt = this.tempsPrec ? Math.min(0.1, Math.max(0, (now - this.tempsPrec) / 1000)) : 0.016;
     this.tempsPrec = now;
     this.temps += dt;
     const hp = this.hauteur(p.rx, p.ry);
@@ -1554,13 +1570,21 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     cam.update(now, { x: p.rx, y: p.ry, h: hp }, p.moving);
     const c = cam.vise;
     const A = this.arene, tact = this.enArene && this.tactique;
+    // La carte de l'île (3.30) : le survol en cours (la carte, son décollage, la descente vers le
+    // jeu). De haut (au-delà d'une largeur de sol vue selon la qualité), les maillages réunis, prêts
+    // par tranches d'images, prennent la place des tuiles ; de près, les portées du jeu valent autour
+    // du point visé, pour la largeur vue.
+    const vol = cam.survolCarte ? cam.survolCarte() : null, K = this.carteIle;
+    const lodPret = !!(vol && K && K.avancerLod());
+    const survol = !!(vol && lodPret && vol.largeur > K.seuilProche());
+    const champ = vol ? vol.largeur : cam.champ;
     // Les tuiles du sol : la proche (un sommet par u) jusqu'à un champ du point visé (la distance
     // au rectangle de la tuile), la lointaine (un sommet pour 2 u) au-delà.
-    const pres = cam.champ * (this.qualite === 'haute' ? 1.6 : this.qualite === 'basse' ? 0.9 : 1.15) + 6;
+    const pres = champ * (this.qualite === 'haute' ? 1.6 : this.qualite === 'basse' ? 0.9 : 1.15) + 6;
     const distTuile = t => Math.hypot(Math.max(0, Math.abs(t.centre[0] - c.x) - 15), Math.max(0, Math.abs(t.centre[1] - c.y) - 15));
     // Le style Lisière (3.25) : sa caméra basse voit le sol jusqu'à l'horizon ; au-delà de `solMax`
     // u, la brume l'a pris, la tuile ne se dessine plus (le ciel de la brume est derrière).
-    const solMax = this.nuit && this.nuit.solMax && !this.enArene ? this.nuit.solMax : Infinity;
+    const solMax = this.nuit && this.nuit.solMax && !this.enArene && !vol ? this.nuit.solMax : Infinity;
     for (const t of this.tuilesSol) {
       const d = distTuile(t), proche = !t.loin || d < pres;
       t.proche.visible = proche && d < solMax;
@@ -1593,12 +1617,18 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     // La chute du Ru (un voile de 40 u) ne se dessine pas pendant un combat : vue par la caméra
     // orthographique, elle barrait le bord de l'écran au Hameau Vide.
     if (this.meshChute) this.meshChute.visible = !tact && !(A && A.etat);
+    // De haut, les maillages réunis à la place de leurs sources ; l'herbe et les fleurs (des points
+    // à cette distance) se taisent.
+    if (K && K.lod) K.survolLod(survol);
+    if (survol) for (const H of [this.herbe, this.fleurs, this.touffesNuit]) if (H) H.mesh.visible = false;
     if (this.uHerbe) { this.uHerbe.temps.value = this.temps; this.uHerbe.joueur.value.set(p.rx, hp, p.ry); }
     if (this.uFondu) {
       // Les frondaisons entre la caméra et le Veilleur (en combat : l'acteur du tour) s'effacent.
       const vis = this.enArene ? this.cibleFondu() : { u: p.rx, v: p.ry };
       this.uFondu.a.value.copy(cam.courante.position);
       this.uFondu.b.value.set(vis.u, this.hauteur(vis.u, vis.v) + 0.9, vis.v);
+      // Pendant la carte, rien ne s'efface entre la caméra (très haut) et le Veilleur.
+      if (vol) { this.uFondu.a.value.set(-9999, -9999, -9999); this.uFondu.b.value.set(-9999, -9999, -9999); }
       // Ce qui cache l'aire (vu le long de la caméra du combat) devient un fantôme.
       const cd = cam.cadre;
       if (A && A.etat && cd) {
@@ -1616,6 +1646,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const extras = A && A.etat ? A.majEffets(now, dt) : null;
     this.figures.maj(this.sprites(now), cam, now, extras);
     this.majMarques(now, hp);
+    // Les marqueurs et les noms de la carte, d'après la caméra de cette image.
+    if (K) K.maj(now, vol);
     // L'eau, la chute, les halos, les nuages.
     if (this.matEauRef) this.matEauRef.uniforms.temps.value = this.temps;
     if (this.matChute) this.matChute.map.offset.y = -this.temps * 0.32;
@@ -1633,7 +1665,9 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     // autour de son combattant) ; les lucioles dérivent autour du point visé.
     if (this.nuit) {
       const e = this.enArene && this.combat && this.combat.player, q = e ? A.versMonde(e.rx, e.ry) : { u: p.rx, v: p.ry };
-      this.nuit.maj(now, this.temps, { x: q.u, y: q.v }, this.hauteur(q.u, q.v), cam, tact);
+      // Pendant la carte, les lucioles, la pluie, la neige et le dôme se taisent comme en vue
+      // tactique : ils suivent la caméra, qui est très haut.
+      this.nuit.maj(now, this.temps, { x: q.u, y: q.v }, this.hauteur(q.u, q.v), cam, tact || !!vol);
     }
     const r = this.renderer;
     r.info.reset();
@@ -1672,6 +1706,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const an = w && w.showCombat && cb && cb.map && cb.map.ancre;
     const ici = !!(an && (this.salle ? an.salle === this.salle.id : an.plateau === this.plateauId));
     if (ici && !A.ouverte) {
+      // Pas de carte en combat : elle se ferme d'un coup.
+      if (this.carteOuverte) this.fermerCarte(true, 'combat');
       const aire = A.ouvrir(cb.map);
       this.mats.uSol.aireO.value.set(aire.x0, aire.y0);
       cam.entrerCombat(aire, !!this.salle);
@@ -1736,6 +1772,14 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     // éclaircie en combat (la caméra du combat est loin derrière l'aire).
     if (f.isFogExp2) f.density = (this.nuit.densite || 0.016) * (1 - fc) + 0.0035 * fc;
     else { f.near = d * kp * (1 - fc) + (d + 30) * fc; f.far = d * kl * (1 - fc) + (d + 120) * fc; }
+    // Pendant la carte (3.30), la brume s'efface à mesure que la caméra décolle : un voile léger
+    // au loin, l'île entière nette (la portée de la brume suit la distance de la caméra).
+    const vol = this.camera.survolCarte ? this.camera.survolCarte() : null;
+    if (vol) {
+      const k = vol.progres;
+      if (f.isFogExp2) f.density = f.density * (1 - k) + Math.min(f.density, 0.26 / d) * k;
+      else { f.near = f.near * (1 - k) + d * 1.6 * k; f.far = f.far * (1 - k) + d * 4.5 * k; }
+    }
     // Le ciel (le dégradé CSS derrière la toile transparente) suit la brume.
     const tact = this.enArene && this.tactique;
     const hex = tact ? 'tactique' : '#' + f.color.getHexString();
@@ -1757,7 +1801,11 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const w = this.world, out = [];
     const ch = w.ch, cls = DATA.classes[ch.classId], p = w.player;
     const c = this.camera ? this.camera.vise : { x: p.rx, y: p.ry };
-    const rayon = (this.camera ? this.camera.champ : 30) * 1.4 + 12;
+    // Pendant la carte (3.30) : de haut, plus de figures (des points ; les marqueurs les remplacent) ;
+    // de près, celles de la largeur vue, sans leurs noms.
+    const vol = this.camera && this.camera.survolCarte ? this.camera.survolCarte() : null;
+    if (vol && vol.largeur > (typeof IleCarte === 'object' ? IleCarte.FIGURES_MAX : 60)) return out;
+    const rayon = vol ? vol.largeur * 0.8 + 12 : (this.camera ? this.camera.champ : 30) * 1.4 + 12;
     // En combat : les figures du monde dans l'aire et à 2 u autour sont cachées, le Veilleur du
     // monde aussi (le combat a le sien) ; la vue tactique ne garde que les combattants.
     const A = this.arene, enCombat = this.enArene;
@@ -1807,7 +1855,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
         const s = { kind: 'entity', shape: def.shape, color: def.color, glyph: null, team: 'monster', motif: Renderer.motifOf(m.id), noyau: def.noyau || null, scale: def.boss ? 1.3 : this.telephone ? 1.2 : 0.95, facing: prec.f, x, y, h: H(x, y), normale: N(x, y), bob: Math.sin(now / 500 + g.idx + k) * 1.5, alpha: fondu, cible: { type: 'groupe', ref: g } };
         // En combat, les groupes du monde gardent leur figure, pas leur nom.
         // Un boss garde son prénom sur l'étiquette (« Krobb niv. 7 ») : le titre entier tient sur sa fiche.
-        if (k === 0 && !enCombat) { s.label = `${def.boss ? def.name.split(',')[0] : def.name} niv. ${g.level}`; s.labelSorte = 'ennemi'; if (g.monsters.length > 1) s.badge = `×${g.monsters.length}`; }
+        if (k === 0 && !enCombat && !vol) { s.label = `${def.boss ? def.name.split(',')[0] : def.name} niv. ${g.level}`; s.labelSorte = 'ennemi'; if (g.monsters.length > 1) s.badge = `×${g.monsters.length}`; }
         if (fig.modeles && fig.modeles.prend(m.id)) { s.modele = m.id; s.modeleCle = `${g.nid || g.idx}|${k}`; }
         s.cle = fig.cleFigure(s); s.peindre = fig.peindreFigure(s);
         out.push(s);
@@ -1820,7 +1868,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     for (const n of w.npcs) {
       const [nx, ny] = pos(n.x, n.y);
       if (loin(nx, ny)) continue;
-      const s = { kind: 'npc', look: n.def.look || 'marcheur', x: nx, y: ny, h: H(nx, ny), normale: N(nx, ny), label: enCombat ? null : n.def.name, labelSorte: 'nom', quest: enCombat ? null : this.marques[n.id], bob: 0, cible: { type: 'pnj', ref: n } };
+      const s = { kind: 'npc', look: n.def.look || 'marcheur', x: nx, y: ny, h: H(nx, ny), normale: N(nx, ny), label: enCombat || vol ? null : n.def.name, labelSorte: 'nom', quest: enCombat || vol ? null : this.marques[n.id], bob: 0, cible: { type: 'pnj', ref: n } };
       s.cle = fig.cleFigure(s); s.peindre = fig.peindreFigure(s);
       out.push(s);
     }
@@ -1884,6 +1932,85 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     void hp;
   }
 
+  // ----- La carte de l'île (3.30, js/ile-carte.js) -----
+
+  // La carte 3D se peut-elle ici ? Sur le plateau, hors combat et hors salle, la scène prête et
+  // active, la caméra en exploration (pas pendant le passage vers un combat).
+  carteDisponible() {
+    const w = this.world, cam = this.camera;
+    return !!(typeof IleCarte === 'object' && this.actif && this.pret && cam && this.canvas && !this.salle && w && w.plateau && !w.showCombat && !this.enArene && !cam.trans && (cam.mode === 'exploration' || cam.mode === 'carte'));
+  }
+  get carteOuverte() { return !!(this.carteIle && this.carteIle.ouverte); }
+
+  // Ouvre la carte dans `hote` (la vue de la fenêtre « Carte ») : une photo de la vue du jeu reste
+  // dans la scène (`opts.photo` faux : la fenêtre la couvre toute), la toile se pose dans la vue de
+  // la carte, la caméra décolle. `opts` va aussi aux marqueurs (IleCarte.Carte.ouvrir) ; `immediat` :
+  // sans vol. Rend faux si la carte ne se peut pas.
+  ouvrirCarte(hote, opts) {
+    opts = opts || {};
+    if (this.carteOuverte) {
+      if (hote && hote !== this.hote) { this.deplacerToile(hote); this.redimensionner(); }
+      Object.assign(this.carteIle.opts, opts);
+      return true;
+    }
+    if (!hote || !this.carteDisponible()) return false;
+    if (!this.carteIle) this.carteIle = new IleCarte.Carte(window.THREE, this);
+    if (opts.photo !== false) this.prendrePhoto();
+    const T = this.T, def = this.def || {}, contour = def.bord && def.bord.contour;
+    let bornes = null;
+    if (contour && contour.length) {
+      const xs = contour.map(q => q[0]), ys = contour.map(q => q[1]);
+      bornes = { x0: Math.max(0, Math.min(...xs)), y0: Math.max(0, Math.min(...ys)), x1: Math.min(T ? T.largeur : 240, Math.max(...xs)), y1: Math.min(T ? T.hauteur : 180, Math.max(...ys)) };
+    }
+    if (!this.camera.entrerCarte({ el: hote, contour, bornes, immediat: !!opts.immediat })) { this.retirerPhoto(); return false; }
+    this.carteIle.ouvrir(opts);
+    this.deplacerToile(hote);
+    this.redimensionner();
+    return true;
+  }
+
+  // Ferme la carte : la toile revient dans la scène, la caméra redescend vers la vue du jeu (d'un
+  // coup si `immediat`). `raison` (combat, désactivation) : la fermeture ne vient pas de la fenêtre,
+  // qui en est avertie (opts.surFermeture).
+  fermerCarte(immediat, raison) {
+    const K = this.carteIle;
+    if (!K || !K.ouverte) return;
+    const avertir = raison && K.opts && K.opts.surFermeture;
+    K.fermer();
+    if (this.camera) this.camera.sortirCarte(immediat);
+    this.retirerPhoto();
+    this.deplacerToile(null);
+    this.redimensionner();
+    if (avertir) { try { avertir(raison); } catch (e) { console.error(e); } }
+  }
+
+  // La toile dans la vue de la carte (`hote`), ou de retour dans la scène, sous les voiles.
+  deplacerToile(hote) {
+    const cv = this.canvas;
+    if (!cv) return;
+    if (hote) { if (cv.parentNode !== hote) hote.appendChild(cv); cv.classList.add('ile-carte-toile'); }
+    else { if (cv.parentNode !== this.stage) this.stage.insertBefore(cv, this.voiles || this.board); cv.classList.remove('ile-carte-toile'); }
+    if (this.ro) { if (this.hote && this.hote !== hote) this.ro.unobserve(this.hote); if (hote && hote !== this.hote) this.ro.observe(hote); }
+    this.hote = hote || null;
+  }
+
+  // Une image fraîche de la vue du jeu, recopiée tout de suite (la toile n'en garde rien) sur une
+  // toile 2D laissée dans la scène pendant la carte.
+  prendrePhoto() {
+    const cv = this.canvas, st = this.stage;
+    if (!cv || !st || !this.pret) return;
+    this.image(performance.now());
+    const w = Math.max(1, st.clientWidth), h = Math.max(1, st.clientHeight);
+    const ph = this.photo || (this.photo = document.createElement('canvas'));
+    ph.className = 'board-repli ile-photo';
+    ph.setAttribute('aria-hidden', 'true');
+    ph.width = w; ph.height = h;
+    try { ph.getContext('2d').drawImage(cv, 0, 0, w, h); } catch (e) { /* une toile illisible : le ciel seul */ }
+    ph.style.background = cv.style.background;
+    st.insertBefore(ph, this.voiles || this.board);
+  }
+  retirerPhoto() { if (this.photo) { this.photo.remove(); this.photo.width = 0; this.photo.height = 0; this.photo = null; } }
+
   // ----- Pour les tests et le budget -----
 
   // Fait avancer le monde de `ms` millisecondes par pas fixes de 1/30 s (développement seulement :
@@ -1908,7 +2035,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
 
   stats() {
     const r = this.renderer;
-    const tex = this.octetsTex + (this.figures ? this.figures.octets() : 0);
+    const tex = this.octetsTex + (this.figures ? this.figures.octets() : 0) + (this.carteIle ? this.carteIle.octets() : 0);
     let pixi = 0;
     const cases = this.sceneAiguillage && this.sceneAiguillage.cases;
     if (cases && cases.sprTex) for (const t of cases.sprTex.values()) pixi += (t.width || 0) * (t.height || 0) * 4;

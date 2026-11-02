@@ -7,6 +7,9 @@
 // « 3D » ouvre la vue en relief (js/carte-3d.js, Three.js chargé à la demande) ; sans WebGL, un
 // relief peint en canvas la remplace. L'onglet « Monde » montre le continent à l'échelle des
 // régions, celles à venir en îles fermées. Se charge après js/hud-fenetres.js et complète Hud.
+// Sur l'île d'Ervane en 3D, la vue par défaut est la carte 3D de l'île (docs/ILE-TECHNIQUE.md, 3.30) :
+// la scène du jeu elle-même vue d'en haut (js/ile-carte.js, CameraIle en mode carte), ses pastilles,
+// ses noms, la fiche au toucher avec « Y aller » et « Centrer » ; le plan peint et le relief restent.
 (() => {
 const I = Fenetres.ICON;
 const esc = s => Util.esc(s);
@@ -57,34 +60,58 @@ Object.assign(Hud.prototype, {
     if (c.drapeau === undefined) c.drapeau = this.lireDrapeau();
     if (opening) {
       c.sel = null; c.selCase = null; c.region = null; c.bulle = null;
+      // Sur l'île en 3D, la carte 3D de l'île d'abord (le plan peint et le relief restent à un bouton).
+      c.vueIle = this.carteIleDispo(); c.selIle = null; c.bulleIle = null;
       if (c.vues.cartes) Object.assign(c.vues.cartes, this.carteIci());
       if (!this.carteVisibilite) {
         // Onglet du navigateur caché : la vue 3D rend sa mémoire, et revient au retour.
         this.carteVisibilite = () => {
           if (document.hidden) { if (this.carte3d) this.fermer3D(); }
-          else if (this.fen.isOpen('carte') && this.carte.vue3d && this.carte.tab === 'cartes' && !this.carte.repli3d) this.ouvrir3D();
+          else if (this.fen.isOpen('carte') && this.carte.vue3d && this.carte.tab === 'cartes' && !this.carte.repli3d && !this.carteIleActive()) this.ouvrir3D();
         };
         document.addEventListener('visibilitychange', this.carteVisibilite);
       }
-      if (c.vue3d && c.tab === 'cartes' && !c.repli3d) this.ouvrir3D();
+      if (c.vue3d && c.tab === 'cartes' && !c.repli3d && !c.vueIle) this.ouvrir3D();
     }
     const actions = {
       ctab: d => {
         c.tab = d.tab; c.survol = null; c.bulle = null; this.cacherBulle();
-        if (c.tab !== 'cartes') this.fermer3D(); else if (c.vue3d && !c.repli3d) this.ouvrir3D();
+        if (c.tab !== 'cartes') { this.fermer3D(); this.fermerIle(); } else if (c.vue3d && !c.repli3d && !this.carteIleActive()) this.ouvrir3D();
         this.fen.render('carte');
       },
       vue3d: () => {
-        c.vue3d = !c.vue3d; c.bulle = null; this.cacherBulle();
+        // Depuis la carte de l'île : le relief.
+        if (this.carteIleActive()) { c.vueIle = false; this.fermerIle(); c.vue3d = true; }
+        else c.vue3d = !c.vue3d;
+        c.bulle = null; this.cacherBulle();
         if (c.vue3d) { c.repli3d = false; this.ouvrir3D(); } else this.fermer3D();
         this.fen.render('carte');
       },
+      // La carte 3D de l'île, ou le plan peint.
+      vueIle: () => {
+        c.vueIle = !this.carteIleActive() && this.carteIleDispo();
+        if (c.vueIle) this.fermer3D(); else this.fermerIle();
+        c.selIle = null; c.bulleIle = null; c.bulle = null; this.cacherBulle();
+        this.fen.render('carte');
+        if (this.carteJuger) this.carteJuger();
+      },
+      yAller: () => this.yAllerIle(),
+      centrerIle: () => { const s = c.selIle, cam = this.cameraIle(); if (s && cam) cam.carteVoler(s.x, s.y); },
+      nord: () => { const cam = this.cameraIle(); if (cam) cam.carteRecentrer(); },
       tourner: d => {
+        const cam = this.cameraIle();
+        if (cam) { cam.carteTournerVers(cam.carte.des.az + Number(d.sens) * Math.PI / 4); return; }
         if (this.carte3d) this.carte3d.tourner(Number(d.sens));
         else { c.rot = (((c.rot || 0) + Number(d.sens)) % 4 + 4) % 4; c.bulle = null; this.drawCarte(); }
       },
-      zoom: d => { if (this.carte3d && c.tab === 'cartes') this.carte3d.zoom(Number(d.f)); else this.zoomCarte(Number(d.f)); },
+      zoom: d => {
+        const cam = this.cameraIle();
+        if (cam) { const r = cam.rect(); cam.carteZoomAt(r.left + r.width / 2, r.top + r.height / 2, Number(d.f), { smooth: true }); return; }
+        if (this.carte3d && c.tab === 'cartes') this.carte3d.zoom(Number(d.f)); else this.zoomCarte(Number(d.f));
+      },
       centrer: () => {
+        const cam = this.cameraIle();
+        if (cam) { const p = this.world.player; cam.carteVoler(p.rx, p.ry); return; }
         if (this.carte3d && c.tab === 'cartes') { this.carte3d.centrer(); return; }
         if (c.tab === 'monde') Object.assign(this.vueCarte(), { z: 1, cx: 46, cy: 40 });
         else { Object.assign(this.vueCarte(), this.carteIci()); c.sel = null; c.selCase = null; c.bulle = null; }
@@ -123,8 +150,9 @@ Object.assign(Hud.prototype, {
     const sc = this.renderer;
     if (!sc || typeof sc.pause3D !== 'function') return;
     const w = this.fen.wins.get('carte'), stage = document.getElementById('stage');
-    const juger = () => {
-      if (!this.fen.isOpen('carte') || !stage) { sc.pause3D('carte', false); return; }
+    // Pendant la carte 3D de l'île, la scène se dessine dans la fenêtre : jamais de pause.
+    const juger = this.carteJuger = () => {
+      if (!this.fen.isOpen('carte') || !stage || this.carteIleActive()) { sc.pause3D('carte', false); return; }
       const a = w.box.getBoundingClientRect(), b = stage.getBoundingClientRect();
       const ix = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)), iy = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
       sc.pause3D('carte', b.width * b.height > 0 && ix * iy >= 0.9 * b.width * b.height);
@@ -152,7 +180,8 @@ Object.assign(Hud.prototype, {
     this.syncMenus();
     const c = this.carte;
     if (!c) return;
-    c.survol = null; c.bulle = null;
+    c.survol = null; c.bulle = null; c.bulleIle = null; c.selIle = null;
+    this.fermerIle();
     this.fermer3D();
     if (this.carteCouverture) { this.carteCouverture.disconnect(); this.carteCouverture = null; }
     if (this.renderer && typeof this.renderer.pause3D === 'function') this.renderer.pause3D('carte', false);
@@ -162,16 +191,17 @@ Object.assign(Hud.prototype, {
   renderCarte() {
     const c = this.carte;
     const tabs = [['cartes', 'Cartes'], ['monde', 'Monde']].map(([k, l]) => `<button class="vy-onglet${c.tab === k ? ' on' : ''}" data-act="ctab" data-tab="${k}" role="tab" aria-selected="${c.tab === k}">${l}</button>`).join('');
-    const cartes = c.tab === 'cartes';
-    const outils = (cartes ? `<button class="vy-bouton vy-bouton--petit vy-carte__relief" data-act="vue3d" aria-pressed="${!!c.vue3d}" title="Voir en 3D" aria-label="Voir en 3D">${I.relief}<span>3D</span></button>` : '') +
-      (cartes && c.vue3d ? `<button class="vy-bouton vy-bouton--petit vy-bouton--icone" data-act="tourner" data-sens="-1" aria-label="Tourner à gauche" title="Tourner à gauche">${I.tourneG}</button><button class="vy-bouton vy-bouton--petit vy-bouton--icone" data-act="tourner" data-sens="1" aria-label="Tourner à droite" title="Tourner à droite">${I.tourneD}</button>` : '') +
+    const cartes = c.tab === 'cartes', ile = cartes && this.carteIleActive();
+    const outils = (cartes && this.carteIleDispo() ? `<button class="vy-bouton vy-bouton--petit vy-carte__relief" data-act="vueIle" aria-pressed="${ile}" title="${ile ? 'Voir le plan peint' : 'Voir l\'île en 3D'}" aria-label="La carte 3D de l'île">${I.carte}<span>Île</span></button>` : '') +
+      (cartes ? `<button class="vy-bouton vy-bouton--petit vy-carte__relief" data-act="vue3d" aria-pressed="${!!c.vue3d && !ile}" title="Voir en relief" aria-label="Voir en relief">${I.relief}<span>Relief</span></button>` : '') +
+      (cartes && (c.vue3d || ile) ? `<button class="vy-bouton vy-bouton--petit vy-bouton--icone" data-act="tourner" data-sens="-1" aria-label="Tourner à gauche" title="Tourner à gauche">${I.tourneG}</button><button class="vy-bouton vy-bouton--petit vy-bouton--icone" data-act="tourner" data-sens="1" aria-label="Tourner à droite" title="Tourner à droite">${I.tourneD}</button>` : '') +
       `<button class="vy-bouton vy-bouton--petit vy-bouton--icone" data-act="zoom" data-f="0.8" aria-label="Dézoomer" title="Dézoomer">${I.moins}</button>` +
       `<button class="vy-bouton vy-bouton--petit vy-bouton--icone" data-act="zoom" data-f="1.25" aria-label="Zoomer" title="Zoomer">${I.plus}</button>` +
       `<button class="vy-bouton vy-bouton--petit vy-bouton--icone" data-act="centrer" aria-label="Centrer sur moi" title="Centrer sur moi">${I.cible}</button>`;
     return `<div class="vy-carte">
       <div class="vy-carte__barre"><div class="vy-onglets vy-carte__onglets" role="tablist">${tabs}</div><div class="vy-carte__outils">${outils}</div></div>
       <div class="vy-carte__corps"><div class="vy-carte__vue" data-carte-vue></div>
-        <aside class="vy-carte__fiche" data-defile="carte-fiche">${c.tab === 'monde' ? this.ficheRegion() : this.ficheCarte()}</aside></div>
+        <aside class="vy-carte__fiche" data-defile="carte-fiche">${c.tab === 'monde' ? this.ficheRegion() : ile ? this.ficheIle() : this.ficheCarte()}</aside></div>
     </div>`;
   },
 
@@ -192,12 +222,23 @@ Object.assign(Hud.prototype, {
       const pos = c.selCase ? `<h3>${coord(c.selCase)}</h3><p class="muted">Rien n'est encore tracé ici : brume, ou terres à venir.</p>` : '<p class="muted">Touche une case pour la voir.</p>';
       return compte + pos + legende;
     }
+    return compte + this.ficheCase(id) + legende;
+  },
+
+  // Ce que la fiche dit d'une carte : monstres, récolte, relais, donjon, quêtes, habitants.
+  // `opts.titre` : un autre titre ; `opts.sansCoord` : sans la coordonnée de la case (l'île en 3D).
+  ficheCase(id, opts) {
+    opts = opts || {};
+    const w = this.world, ch = w.ch;
+    const seen = new Set(ch.counters.maps);
+    const here = Atlas.hereOf(w.mapId);
     const info = Atlas.mapInfo(id);
+    if (!info) return '';
     const known = seen.has(id);
     const marks = Atlas.questMarks(ch, here);
     const R = info.zone;
     const p = info.coords;
-    let html = `<h3>${esc(info.def.name)}</h3><p class="vy-carte__coord"><b>${coord(p)}</b> ${esc(R.name)} · ${levels(info.def.level)}</p>`;
+    let html = `<h3>${esc(opts.titre || info.def.name)}</h3><p class="vy-carte__coord">${opts.sansCoord ? '' : `<b>${coord(p)}</b> `}${esc(R.name)} · ${levels(info.def.level)}</p>`;
     if (id === here) html += `<p class="vy-carte__ici">${w.mapId === id ? 'Tu es ici.' : 'Tu es dans le donjon de cette carte.'}</p>`;
     if (!known) html += '<p class="muted vy-note">Carte inexplorée : va la découvrir pour en savoir plus.</p>';
     const ligne = (a, b) => `<li><span>${a}</span>${b ? `<b>${b}</b>` : ''}</li>`;
@@ -223,7 +264,7 @@ Object.assign(Hud.prototype, {
     for (const x of marks.targets.get(id) || []) q.push(ligne(`${marque('quete')}${esc(x.name)}<br><small class="muted">${esc(Quests.stepText(ch, x.id))}</small>`));
     if (q.length) html += `<div class="vy-sous"><span>Quêtes</span></div><ul class="vy-carte__liste">${q.join('')}</ul>`;
     if (known && info.npcs.length) html += `<div class="vy-sous"><span>Habitants</span></div><p class="vy-note">${info.npcs.map(Atlas.idPnj).map(n => { const d = World.npcDef(n); return d ? `${esc(d.name)} <small class="muted">${esc(d.title || '')}</small>` : esc(n); }).join(', ')}</p>`;
-    return compte + html + legende;
+    return html;
   },
 
   ficheRegion() {
@@ -254,6 +295,16 @@ Object.assign(Hud.prototype, {
       this.carteBulleEl.setAttribute('role', 'tooltip');
       this.carteBulleEl.hidden = true;
     }
+    // La carte 3D de l'île : la scène du jeu se pose dans la vue (ouverte une fois, gardée d'un rendu
+    // de la fenêtre à l'autre).
+    if (this.carteIleActive()) {
+      const hote = this.carteIleHote();
+      holder.appendChild(hote);
+      if (!this.ouvrirIle(hote)) { c.vueIle = false; requestAnimationFrame(() => { if (this.fen.isOpen('carte')) this.fen.render('carte'); }); }
+      holder.appendChild(this.carteBulleEl);
+      return;
+    }
+    this.fermerIle();
     if (c.tab === 'cartes' && c.vue3d && !c.repli3d) {
       if (this.carte3d && this.carte3d.pret) { holder.appendChild(this.carte3d.dom); this.carte3d.taille(); this.carte3d.majReperes(); this.carte3d.demander(); }
       else holder.insertAdjacentHTML('beforeend', `<div class="vy-carte__charge" role="status"><span>Chargement de la vue 3D...</span><small>${this.carte3dEtape || ''}</small></div>`);
@@ -456,15 +507,19 @@ Object.assign(Hud.prototype, {
     }
   },
 
-  montrerBulle(html, X, Y) {
+  // `dessus` : au-dessus du point, centrée (la bulle d'un toucher sur la carte de l'île).
+  montrerBulle(html, X, Y, dessus) {
     const b = this.carteBulleEl;
     if (!b || !b.isConnected || !html) return;
     if (b.dataset.html !== html) { b.innerHTML = html; b.dataset.html = html; }
     b.hidden = false;
     const W = b.parentNode.clientWidth, H = b.parentNode.clientHeight, w = b.offsetWidth, h = b.offsetHeight;
     let x = X + 14, y = Y + 14;
-    if (x + w > W - 4) x = X - w - 14;
-    if (y + h > H - 4) y = Y - h - 14;
+    if (dessus) { x = X - w / 2; y = Y - h - 10; if (y < 4) y = Y + 24; }
+    else {
+      if (x + w > W - 4) x = X - w - 14;
+      if (y + h > H - 4) y = Y - h - 14;
+    }
     b.style.left = Math.round(clamp(x, 4, Math.max(4, W - w - 4))) + 'px';
     b.style.top = Math.round(clamp(y, 4, Math.max(4, H - h - 4))) + 'px';
   },
@@ -1033,6 +1088,323 @@ Object.assign(Hud.prototype, {
       if (img) g.drawImage(img, x, y, k, k);
     }
     g.strokeStyle = '#00c2ff'; g.lineWidth = 1.5; g.strokeRect(x0 + (k + gap) - 0.5, y0 + (k + gap) - 0.5, k + 1, k + 1);
+  },
+});
+
+
+// ----- La carte 3D de l'île (docs/ILE-TECHNIQUE.md, 3.30) -----
+// La scène du jeu elle-même, vue d'en haut dans la vue de la fenêtre : js/ile-3d.js y pose sa toile
+// (Ile3D.ouvrirCarte), la caméra décolle (CameraIle, mode carte), js/ile-carte.js dessine les
+// pastilles et les noms dans la même image. Ici : les données des pastilles (les mêmes sortes et le
+// même ordre PRIO que la carte peinte), les gestes, le toucher, la bulle, la fiche avec « Y aller »
+// et « Centrer ».
+Object.assign(Hud.prototype, {
+  // Le rendu 3D de l'île, s'il dessine (sur le plateau, hors combat, hors salle).
+  ile3D() { const sc = this.renderer; return sc && sc.en3D && sc.ile ? sc.ile : null; },
+  carteIleDispo() { const ile = this.ile3D(); return !!(ile && typeof ile.carteDisponible === 'function' && ile.carteDisponible()); },
+  carteIleActive() { const c = this.carte; return !!(c && c.tab === 'cartes' && c.vueIle && this.carteIleDispo()); },
+  // La caméra de l'île, si la carte 3D est ouverte.
+  cameraIle() { const ile = this.ile3D(); return ile && ile.carteOuverte && ile.camera && ile.camera.carte ? ile.camera : null; },
+
+  // La vue de la carte de l'île : un élément gardé d'un rendu de la fenêtre à l'autre (la toile de
+  // la scène s'y pose), sa boussole (toucher : l'île entière, le nord en haut), ses gestes.
+  carteIleHote() {
+    if (this.carteIleEl) return this.carteIleEl;
+    const el = this.carteIleEl = document.createElement('div');
+    el.className = 'vy-carte__ile';
+    el.setAttribute('role', 'application');
+    el.setAttribute('aria-label', 'Carte de l\'île : glisser pour se déplacer, molette ou pincement pour zoomer, clic droit ou deux doigts pour tourner, toucher une pastille, un nom ou le sol pour sa fiche.');
+    el.innerHTML = '<button type="button" class="vy-carte__boussole vy-carte__nord" data-act="nord" title="L\'île entière, le nord en haut" aria-label="L\'île entière, le nord en haut"><b>N</b></button>';
+    // Les gestes de la caméra du jeu (CameraControls) : la molette, deux doigts (zoom et rotation),
+    // le bouton droit (rotation), le bouton du milieu. Un doigt ou le bouton gauche : le glisser de la
+    // carte, avec son inertie, et le toucher.
+    const ctl = this.carteIleCtl = new CameraControls({ zoomAt() {}, fitZoom: Infinity, zoom: 1 }, el, { enabled: () => !!this.cameraIle(), keys: () => false });
+    const pts = new Map();
+    let glisse = null;
+    // En pixels de la vue (sous le zoom CSS du corps de la fenêtre au téléphone).
+    const pos = e => { const r = el.getBoundingClientRect(), k = el.clientWidth && r.width ? r.width / el.clientWidth : 1; return { x: (e.clientX - r.left) / k, y: (e.clientY - r.top) / k }; };
+    el.addEventListener('contextmenu', e => e.preventDefault());
+    el.addEventListener('pointerdown', e => {
+      if (e.target.closest('button')) return;
+      pts.set(e.pointerId, true);
+      if (this.carte) this.carte.pointeur = e.pointerType;
+      if (pts.size === 1 && (e.pointerType !== 'mouse' || e.button === 0)) {
+        glisse = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, bouge: false };
+        try { el.setPointerCapture(e.pointerId); } catch (err) { /* rien */ }
+      } else glisse = null;
+    });
+    el.addEventListener('pointermove', e => {
+      const cam = this.cameraIle();
+      if (!pts.has(e.pointerId)) { if (e.pointerType === 'mouse' && !e.buttons) this.survolIle(pos(e)); return; }
+      const g = glisse;
+      if (!g || g.id !== e.pointerId || pts.size > 1 || !cam) return;
+      if (!g.bouge && Math.hypot(e.clientX - g.x0, e.clientY - g.y0) > (e.pointerType === 'mouse' ? 4 : 9)) {
+        g.bouge = true; el.classList.add('glisse');
+        this.survolIle(null);
+      }
+      if (g.bouge) cam.cartePan(e.clientX - g.x, e.clientY - g.y);
+      g.x = e.clientX; g.y = e.clientY;
+    });
+    const fin = e => {
+      if (!pts.has(e.pointerId)) return;
+      pts.delete(e.pointerId);
+      const g = glisse;
+      if (!g || g.id !== e.pointerId) return;
+      glisse = null;
+      el.classList.remove('glisse');
+      const cam = this.cameraIle();
+      if (g.bouge) { if (cam) cam.carteRelacher(); }
+      else if (e.type === 'pointerup' && !ctl.ignoreClick()) this.toucherIle(pos(e), e.pointerType);
+    };
+    el.addEventListener('pointerup', fin);
+    el.addEventListener('pointercancel', fin);
+    el.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') this.survolIle(null); });
+    return el;
+  },
+
+  // Ouvre la carte 3D dans sa vue (rien si elle l'est déjà). Rend faux si l'île ne le peut pas.
+  ouvrirIle(hote) {
+    const ile = this.ile3D();
+    if (!ile) return false;
+    const sc = this.renderer, w = this.fen.wins.get('carte'), stage = document.getElementById('stage');
+    // Une fenêtre qui couvre presque toute la scène (le téléphone) : pas de photo de la vue du jeu.
+    let couvre = false;
+    if (w && stage) {
+      const a = w.box.getBoundingClientRect(), b = stage.getBoundingClientRect();
+      const ix = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)), iy = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+      couvre = ix * iy >= 0.9 * b.width * b.height;
+    }
+    const deja = ile.carteOuverte;
+    const ok = ile.ouvrirCarte(hote, { photo: !couvre, donnees: () => this.donneesIle(), theme: this.themeCarte(), surImage: K => this.surImageIle(K), surFermeture: raison => this.surFermetureIle(raison) });
+    if (!ok) return false;
+    if (sc && typeof sc.pause3D === 'function') sc.pause3D('carte', false);
+    if (this.carteIleCtl) this.carteIleCtl.camera = ile.camera.adaptateurCarte();
+    if (!deja && ile.carteIle) { ile.carteIle.sel = null; ile.carteIle.cible = null; }
+    return true;
+  },
+
+  // Ferme la carte 3D (la caméra redescend vers la vue du jeu).
+  fermerIle() {
+    const ile = this.renderer && this.renderer.ile;
+    if (ile && ile.carteOuverte) ile.fermerCarte(false);
+  },
+
+  // La carte s'est fermée d'elle-même (un combat commence, la scène change) : la fenêtre passe au
+  // plan peint.
+  surFermetureIle() {
+    const c = this.carte;
+    if (!c) return;
+    c.selIle = null; c.bulleIle = null;
+    this.cacherBulle();
+    if (this.fen.isOpen('carte')) { this.fen.render('carte'); if (this.carteJuger) this.carteJuger(); }
+  },
+
+  // ----- Les données des pastilles, en coordonnées du plateau -----
+
+  // Les pastilles : relais et entrée du donjon des sous-zones explorées, ateliers et marchands, quêtes
+  // à prendre (« ! ») et à rendre (« ? ») au PNJ ; les épingles des quêtes suivies (les trois
+  // premières, comme à l'écran), à leur cible précise sur l'île.
+  donneesIle() {
+    const w = this.world, ch = w.ch, P = w.plateau, out = [];
+    if (!P) return out;
+    const vu = new Set(ch.counters.maps);
+    for (const r of P.relais) if (vu.has(r.carte)) out.push({ cle: 'relais:' + r.carte, kind: 'relais', x: r.x, y: r.y, prio: PRIO.relais, map: r.carte });
+    for (const r of P.portes) if (vu.has(r.carte)) out.push({ cle: 'donjon:' + r.carte, kind: 'donjon', x: r.x, y: r.y, prio: PRIO.donjon, map: r.carte, donjon: r.dungeon ? World.dungeonDef(r.dungeon) : null });
+    for (const n of w.npcs) {
+      const d = n.def || {}, base = { x: n.x, y: n.y, map: n.carte, npc: d, npcId: n.id };
+      const rendre = Quests.readyFor(ch, n.id), offre = Quests.available(ch, n.id);
+      if (rendre.length) out.push(Object.assign({ cle: 'rendre:' + n.id, kind: 'rendre', prio: PRIO.rendre, quetes: rendre }, base));
+      else if (offre.length) out.push(Object.assign({ cle: 'offre:' + n.id, kind: 'offre', prio: PRIO.offre, quetes: offre }, base));
+      if (d.workshop && vu.has(n.carte)) out.push(Object.assign({ cle: 'artisan:' + n.id, kind: 'artisan', sub: d.workshop, prio: PRIO.artisan }, base));
+      if (d.shop && vu.has(n.carte)) out.push(Object.assign({ cle: 'marchand:' + n.id, kind: 'marchand', prio: PRIO.marchand }, base));
+    }
+    for (const t of Quests.tracker(ch).slice(0, 3)) {
+      const at = this.cibleQueteIle(t.quest);
+      if (at) out.push({ cle: 'quete:' + t.quest.id, kind: 'quete', epingle: true, x: at.x, y: at.y, quest: t.quest, text: t.text, map: P.secteurDe(at.x, at.y) });
+    }
+    return out;
+  },
+
+  // La cible d'une quête suivie sur l'île : le PNJ à voir ou à qui rendre, le centre de la sous-zone
+  // à visiter, la porte du donjon, le groupe ou le nœud le plus proche du joueur ; null ailleurs.
+  cibleQueteIle(q) {
+    const w = this.world, ch = w.ch, P = w.plateau, st = ch.quests.active[q.id], p = w.player;
+    if (!st || !P) return null;
+    const pnj = id => { const n = w.npcs.find(x => x.id === id); return n ? { x: n.x, y: n.y } : null; };
+    const pres = l => l.sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0] || null;
+    const groupes = m => pres(w.groups.filter(g => g.monsters.some(x => x.id === m)).map(g => ({ x: g.rx, y: g.ry })));
+    if (st.step >= q.steps.length) return pnj(Quests.turnInOf(q));
+    const s = q.steps[st.step];
+    switch (s.type) {
+      case 'visit': { const c = P.centres.get(s.map); return c ? { x: c[0], y: c[1] } : null; }
+      case 'talk': return pnj(s.npc);
+      case 'answer': return pnj(Quests.answerNpc(q, s));
+      case 'dungeon': { const r = P.portes.find(x => x.dungeon === s.dungeon); return r ? { x: r.x, y: r.y } : null; }
+      case 'kill': return groupes(s.monster);
+      case 'kills': { const c = Quests.compteurs(st, s), k = s.kills.find((x, i) => c[i] < x.count) || s.kills[0]; return groupes(k.monster); }
+      case 'gather': return pres(w.nodes.filter(n => n.resource === s.resource).map(n => ({ x: n.x, y: n.y })));
+      default: return null;
+    }
+  },
+
+  // « La Source Claire, les Quatre Sources » : la sous-zone et la zone d'un point.
+  ouIle(x, y) {
+    const P = this.world.plateau, id = P && P.secteurDe(x, y), d = id && World.mapDef(id), z = id && World.zoneOf(id);
+    return d ? `${d.name.charAt(0).toUpperCase() + d.name.slice(1)}${z ? ', ' + z.name.charAt(0).toLowerCase() + z.name.slice(1) : ''}` : '';
+  },
+
+  // ----- Toucher, survoler, la bulle -----
+
+  survolIle(p) {
+    const ile = this.ile3D(), K = ile && ile.carteIle, c = this.carte;
+    if (!K || !c) return;
+    const h = p ? K.sous(p.x, p.y, false) : null;
+    const cle = h ? h.cle : null;
+    if (K.survole !== cle) K.survole = cle;
+    if (h) this.montrerBulle(this.bulleIle(Object.assign({}, h.item, h.groupe && h.groupe.length > 1 ? { groupe: h.groupe } : {})), p.x, p.y);
+    else if (!c.bulleIle) this.cacherBulle();
+  },
+
+  // Un toucher (ou un clic) sur la carte : une pastille, une épingle ou un nom, sinon le sol (la
+  // sous-zone touchée, et le point lui-même pour « Y aller »). Au doigt, la bulle suit l'élément.
+  toucherIle(p, type) {
+    const ile = this.ile3D(), K = ile && ile.carteIle, c = this.carte, P = this.world.plateau;
+    if (!K || !c || !P) return;
+    const tactile = type && type !== 'mouse';
+    const h = K.sous(p.x, p.y, tactile);
+    let s = null;
+    if (h && h.item) {
+      const it = h.item;
+      if (it.kind === 'toi') s = { cle: 'joueur', type: 'joueur', kind: 'toi', x: it.x, y: it.y };
+      else if (it.kind === 'lieu') s = { cle: h.cle, type: 'lieu', sorte: it.sorte, nom: it.nom, sous: it.sous, zone: it.zone, map: it.map || P.secteurDe(it.x, it.y), x: it.x, y: it.y };
+      else s = { cle: h.cle, type: 'repere', item: it, groupe: h.groupe, x: it.x, y: it.y, map: it.map || P.secteurDe(it.x, it.y) };
+    } else {
+      const q = ile.rayonSol(p.x, p.y), map = q && P.secteurDe(q.x, q.y);
+      if (q && map) s = { cle: 'sol', type: 'sol', x: q.x, y: q.y, map };
+    }
+    c.selIle = s;
+    K.sel = s && s.type !== 'sol' ? s.cle : null;
+    K.cible = s && s.type === 'sol' ? { x: s.x, y: s.y } : null;
+    c.bulleIle = s && tactile ? { cle: s.cle, html: s.type === 'sol' ? `<b>${esc(this.ouIle(s.x, s.y))}</b>` : this.bulleIle(s.type === 'repere' ? Object.assign({}, s.item, s.groupe && s.groupe.length > 1 ? { groupe: s.groupe } : {}) : s.type === 'joueur' ? { kind: 'toi', x: s.x, y: s.y } : Object.assign({ kind: 'lieu' }, s)), x: null, y: null } : null;
+    if (!c.bulleIle && tactile) this.cacherBulle();
+    this.majFicheIle();
+  },
+
+  // Chaque image de la carte (js/ile-carte.js) : la boussole suit le cap ; la bulle d'un toucher suit
+  // son élément (déplacée seulement au-delà d'un demi-pixel).
+  surImageIle(K) {
+    const c = this.carte, ile = this.ile3D(), cam = ile && ile.camera;
+    if (!c || !cam || !cam.carte) return;
+    const el = this.carteIleEl, b = el && el.querySelector('.vy-carte__nord');
+    if (b) {
+      const k = cam.carte.cur, h = cam.carte.h, p = cam.versEcran(k.x, h, k.y), q = cam.versEcran(k.x, h, k.y - 20);
+      const deg = Math.round(Math.atan2(q.x - p.x, -(q.y - p.y)) * 180 / Math.PI * 2) / 2;
+      if (deg !== c.boussoleDeg) { c.boussoleDeg = deg; b.style.transform = `rotate(${deg}deg)`; }
+    }
+    const bu = c.bulleIle;
+    if (bu) {
+      let e = null;
+      if (bu.cle === 'sol' && K.cible) { const h = ile.hauteur(K.cible.x, K.cible.y), q = cam.versEcran(K.cible.x, h, K.cible.y); if (q.devant) e = { x: q.x, y: q.y, r: 8 }; }
+      else e = K.ecranDe(bu.cle);
+      const W = cam.vw, H = cam.vh;
+      if (e && e.x > 0 && e.y > 0 && e.x < W && e.y < H) {
+        const x = e.x, y = e.y - (e.r || 0);
+        if (bu.x == null || Math.abs(bu.x - x) > 0.5 || Math.abs(bu.y - y) > 0.5) { bu.x = x; bu.y = y; this.montrerBulle(bu.html, x, y, true); }
+      } else if (bu.x !== -1) { bu.x = -1; this.cacherBulle(); }
+    }
+  },
+
+  // Le contenu des bulles de la carte de l'île.
+  bulleIle(it) {
+    if (!it) return '';
+    if (it.groupe && it.groupe.length > 1) return it.groupe.map(x => this.bulleIle(Object.assign({}, x, { groupe: null }))).join('<hr>');
+    const ch = this.world.ch, ou = it.x != null ? esc(this.ouIle(it.x, it.y)) : '';
+    switch (it.kind) {
+      case 'toi': return `<b>Toi</b><span>${ou}</span>`;
+      case 'quete': return `<b>Quête suivie</b><span class="q">${esc(it.quest.name)}</span><span>${esc(it.text)}</span>`;
+      case 'offre': return `<b>${esc(it.npc.name)}</b><span>${esc(it.npc.title || '')}</span>${it.quetes.map(q => `<span class="q">Quête à prendre : ${esc(q.name)}</span>`).join('')}`;
+      case 'rendre': return `<b>${esc(it.npc.name)}</b><span>${esc(it.npc.title || '')}</span>${it.quetes.map(q => `<span class="q">Quête à rendre : ${esc(q.name)}</span>`).join('')}`;
+      case 'relais': return `<b>Relais du Fil</b><span>${ou}</span><span class="q">${ch.relays.includes(it.map) ? 'Enregistré' : 'Pas encore enregistré'}</span>`;
+      case 'donjon': return `<b>${esc(it.donjon ? it.donjon.name : 'Donjon')}</b><span>${ou}</span>${it.donjon ? `<span class="q">Donjon, ${niveau(it.donjon.level).toLowerCase()}</span>` : ''}`;
+      case 'artisan': return `<b>${esc(it.npc.name)}</b><span>Atelier, ${esc(it.npc.title || ATELIERS[it.sub] || '')}</span>`;
+      case 'marchand': return `<b>${esc(it.npc.name)}</b><span>Marchand, ${esc(it.npc.title || '')}</span>`;
+      case 'lieu': return `<b>${esc(it.nom)}</b><span>${it.sorte === 'zone' ? esc(it.sous || '') : ou}</span>`;
+      default: return '';
+    }
+  },
+
+  // ----- La fiche -----
+
+  majFicheIle() {
+    const w = this.fen.wins.get('carte'), el = w && w.box.querySelector('.vy-carte__fiche');
+    if (el && this.carteIleActive()) { el.innerHTML = this.ficheIle(); el.scrollTop = 0; }
+  },
+
+  // La fiche de l'élément touché (sinon de la sous-zone où l'on est), avec « Y aller » et
+  // « Centrer » ; la légende des pastilles de l'île.
+  ficheIle() {
+    const c = this.carte, w = this.world, ch = w.ch, P = w.plateau, s = c.selIle;
+    const A = Atlas.get(), seen = new Set(ch.counters.maps);
+    const vus = [...A.coords.keys()].filter(id => seen.has(id)).length;
+    const compte = `<p class="vy-carte__compte"><b>${vus}</b> / ${A.coords.size} cartes explorées</p>`;
+    const leg = [['toi', 'Toi'], ['quete', 'Quête suivie'], ['relais', 'Relais du Fil'], ['donjon', 'Donjon'], ['artisan', 'Atelier', 'forgeron'], ['marchand', 'Marchand'], ['offre', 'Quête à prendre'], ['rendre', 'Quête à rendre']];
+    const legende = `<div class="vy-carte__legende">${leg.map(([k, l, sub]) => `<span><img src="${CartePeinture.url(k, sub)}" alt="" width="18" height="18">${l}</span>`).join('')}</div>`;
+    const aide = '<p class="muted vy-note">Touche une pastille, un nom ou le sol pour sa fiche.</p>';
+    if (!s || !P) return compte + (w.mapId && World.mapDef(w.mapId) ? this.ficheCase(w.mapId, { sansCoord: true }) : '') + aide + legende;
+    const actions = `<div class="vy-carte__actions"><button class="vy-bouton vy-bouton--primaire" data-act="yAller">Y aller</button><button class="vy-bouton" data-act="centrerIle">Centrer</button></div>`;
+    const ou = esc(this.ouIle(s.x, s.y));
+    let html = '';
+    if (s.type === 'joueur') html = `<h3>Toi</h3><p class="vy-carte__coord">${ou}</p>`;
+    else if (s.type === 'sol') return compte + this.ficheCase(s.map, { sansCoord: true }).replace('</p>', '</p>' + actions) + legende;
+    else if (s.type === 'lieu') {
+      if (s.sorte === 'sousZone' && s.map) return compte + this.ficheCase(s.map, { sansCoord: true }).replace('</p>', '</p>' + actions) + legende;
+      if (s.sorte === 'zone') {
+        const z = (DATA.content.zones || []).find(x => x.id === s.zone);
+        const rows = z ? z.maps.filter(m => m.plateau === P.id).map(m => `<li><span>${esc(m.name.charAt(0).toUpperCase() + m.name.slice(1))}</span><b>${seen.has(m.id) ? 'explorée' : ''}</b></li>`).join('') : '';
+        html = `<h3>${esc(s.nom)}</h3><p class="vy-carte__coord">${esc(s.sous || '')}</p>${actions}${rows ? `<div class="vy-sous"><span>Lieux</span></div><ul class="vy-carte__liste">${rows}</ul>` : ''}`;
+        return compte + html + legende;
+      }
+      html = `<h3>${esc(s.nom)}</h3><p class="vy-carte__coord">${ou}</p>`;
+    } else {
+      const it = s.item, items = s.groupe && s.groupe.length > 1 ? s.groupe : [it];
+      const ligne = (a, b) => `<li><span>${a}</span>${b ? `<b>${b}</b>` : ''}</li>`;
+      const marque = k => `<img class="vy-carte__marque" src="${CartePeinture.url(k)}" alt="" width="16" height="16">`;
+      const titre = it.npc ? it.npc.name : it.kind === 'relais' ? 'Relais du Fil' : it.kind === 'donjon' ? (it.donjon ? it.donjon.name : 'Donjon') : it.kind === 'quete' ? it.quest.name : '';
+      const sous = it.npc ? (it.npc.title || '') : it.kind === 'quete' ? 'Quête suivie' : it.kind === 'donjon' && it.donjon ? `Donjon · ${levels(it.donjon.level)}` : '';
+      html = `<h3>${esc(titre)}</h3><p class="vy-carte__coord">${esc(sous)}${sous && ou ? ' · ' : ''}${ou}</p>`;
+      const q = [];
+      for (const x of items) {
+        if (x.kind === 'offre' || x.kind === 'rendre') for (const qq of x.quetes) q.push(ligne(`${marque(x.kind)}${esc(qq.name)}${x !== it && x.npc ? ` <small class="muted">${esc(x.npc.name)}</small>` : ''}`, x.kind === 'offre' ? `niv. ${qq.level}` : 'à rendre'));
+        if (x.kind === 'quete') q.push(ligne(`${marque('quete')}${esc(x.quest.name)}<br><small class="muted">${esc(x.text)}</small>`));
+      }
+      if (q.length) html += `<div class="vy-sous"><span>Quêtes</span></div><ul class="vy-carte__liste">${q.join('')}</ul>`;
+      for (const x of items) {
+        if (x.kind === 'marchand') html += `<div class="vy-sous"><span>Marchand</span></div><p class="vy-note">${esc(x.npc.name)} vend de quoi tenir debout : parle-lui pour voir ses étals.</p>`;
+        if (x.kind === 'artisan') html += `<div class="vy-sous"><span>Atelier</span></div><p class="vy-note">${esc(x.npc.name)}, ${esc(x.npc.title || ATELIERS[x.sub] || '')}.</p>`;
+        if (x.kind === 'donjon' && x.donjon) { const key = x.donjon.keyItem && Items.get(x.donjon.keyItem); html += `<div class="vy-sous"><span>Donjon</span></div><p class="vy-note"><b>${esc(x.donjon.name)}</b> <span class="muted">${levels(x.donjon.level)} · ${x.donjon.rooms.length} salles${key ? ' · clé : ' + esc(key.name) : ''}${ch.counters.dungeons.includes(x.donjon.id) ? ' · terminé' : ''}</span></p>`; }
+        if (x.kind === 'relais') {
+          const reg = ch.relays.includes(x.map);
+          html += `<div class="vy-sous"><span>Relais du Fil</span></div><p class="vy-note">${reg ? 'Enregistré.' : 'Pas encore enregistré : touche-le pour pouvoir y revenir.'}</p>`;
+          if (reg && x.map !== w.mapId && w.canTeleport(x.map)) html += `<div class="vy-carte__actions"><button class="vy-bouton" data-act="voyager" data-id="${esc(x.map)}">Voyager</button></div>`;
+        }
+      }
+      html = html.replace(/(<p class="vy-carte__coord">.*?<\/p>)/, '$1' + actions);
+      return compte + html + legende;
+    }
+    return compte + html + actions + legende;
+  },
+
+  // « Y aller » : la carte se ferme, le héros marche jusqu'au point par le chemin du plateau (le plus
+  // proche praticable si le point ne l'est pas) ; surchargé, le message de surcharge habituel.
+  yAllerIle() {
+    const c = this.carte, s = c && c.selIle, w = this.world;
+    if (!s) return;
+    this.fen.close('carte');
+    const P = w.plateau;
+    if (!P || w.state !== 'explore') { this.toast('Pas maintenant.'); return; }
+    for (const g of w.groups) g.hold = false;
+    const r = P.allerA(s.x, s.y, null);
+    if (r === 'impossible' && !(w.ch && w.ch.surcharge())) this.toast('Impossible d\'y aller.');
   },
 });
 
