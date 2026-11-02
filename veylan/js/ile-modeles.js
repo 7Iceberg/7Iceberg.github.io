@@ -181,7 +181,9 @@ const IleModeles = (() => {
   };
   // Les modèles, leur atlas et leur case dans l'atlas : [x, y, côté] en pixels. Atlas 0 (2048 x 1024) :
   // le kit de décor de toute l'île ; atlas 1 (1024 x 1024) : les objets des Mailles (le biome du
-  // village, tools/meshy/biomes), fichiers `m-*-semis.glb`.
+  // village, tools/meshy/biomes), fichiers `m-*-semis.glb` ; atlas 2 (1024 x 512) : ceux des Quatre
+  // Sources, `s-*-semis.glb` (les quatre pierres levées des éléments, la Braise, le cairn percé ; deux
+  // cases libres pour la suite du biome).
   const SEMIS = {
     arbre: { case: [0, 0, 512] }, arbre3: { case: [512, 0, 512] }, arbre2: { case: [0, 512, 512] },
     rocher2: { case: [512, 512, 256] }, buisson: { case: [768, 512, 256] }, roc: { case: [512, 768, 256] }, cristal: { case: [768, 768, 256] },
@@ -190,8 +192,11 @@ const IleModeles = (() => {
     'm-maison': { atlas: 1, case: [0, 0, 512] }, 'm-etal': { atlas: 1, case: [512, 0, 512] },
     'm-tour': { atlas: 1, case: [0, 512, 256] }, 'm-armes': { atlas: 1, case: [256, 512, 256] }, 'm-belvedere': { atlas: 1, case: [512, 512, 256] },
     'm-tonneaux': { atlas: 1, case: [768, 512, 256] }, 'm-lanterne': { atlas: 1, case: [0, 768, 256] }, 'm-pierre': { atlas: 1, case: [256, 768, 256] },
+    's-braise': { atlas: 2, case: [0, 0, 256] }, 's-cairn': { atlas: 2, case: [256, 0, 256] },
+    's-pierre-eau': { atlas: 2, case: [512, 0, 256] }, 's-pierre-feu': { atlas: 2, case: [768, 0, 256] },
+    's-pierre-terre': { atlas: 2, case: [0, 256, 256] }, 's-pierre-air': { atlas: 2, case: [256, 256, 256] },
   };
-  const ATLAS = [[2048, 1024], [1024, 1024]];
+  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 512]];
   // Le modèle d'une instance : `teinte` (linéaire, celle du GLB ou du style) et un hasard fixe (0 à 1)
   // ; null garde l'instance telle qu'exportée. Un feuillage chaud (l'automne des Mailles au style
   // Lisière, les jaunes de l'export) prend l'arbre d'automne. `absolu` : la hauteur en u (sinon celle
@@ -207,14 +212,17 @@ const IleModeles = (() => {
     buisson: { modele: (t, h) => (sombre(t) && h < 0.22 ? 'champignons' : 'buisson'), facteur: 1.15, absolu: { champignons: 1.1 } },
     fougere: { modele: (t, h) => (h < 0.18 ? 'fougeres' : null), absolu: { fougeres: 1.1 } },
   };
-  // Les objets posés (T.objets) remplacés par un modèle : le modèle, sa taille (largeur au sol ou
-  // hauteur, en u, au plus) et le quart de tour qui aligne son grand côté. tools/meshy/retirer-objets.py
-  // a retiré leur forme de l'export.
+  // Les objets posés (T.objets) remplacés par un modèle : le modèle (ou la fonction qui le choisit
+  // d'après l'objet), sa taille (largeur au sol ou hauteur, en u, au plus) et le quart de tour qui
+  // aligne son grand côté. tools/meshy/retirer-objets.py a retiré leur forme de l'export.
   const OBJETS = {
     maison: { modele: 'm-maison', taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 6 }) },
     comptoir: { modele: 'm-etal', taille: o => ({ l: (o.taille || [5, 2])[0], p: (o.taille || [5, 2])[1], h: 3.6 }) },
     lanterne: { modele: 'm-lanterne', taille: () => ({ l: 9, p: 9, h: 2.6 }) },
-    pierre_levee: { modele: 'm-pierre', si: o => !o.element, taille: () => ({ l: 9, p: 9, h: 2.4 }) },
+    // Une pierre levée des Mailles, ou l'une des quatre du Rond des Quatre, teintée par son élément.
+    pierre_levee: { modele: o => (o.element ? 's-pierre-' + o.element : 'm-pierre'), taille: o => ({ l: 9, p: 9, h: o.element ? 2.6 : 2.4 }) },
+    cairn: { modele: 's-cairn', taille: o => ({ l: 9, p: 9, h: (o.hauteur || 2) * 1.05 }) },
+    source: { modele: o => ({ feu: 's-braise' })[o.element], taille: () => ({ l: 3.2, p: 3.2, h: 2.2 }) },
     ratelier: { modele: 'm-armes', taille: () => ({ l: 4, p: 2.2, h: 1.9 }) },
     tour: { modele: 'm-tour', taille: o => ({ l: (o.taille || [6, 6])[0], p: (o.taille || [6, 6])[1], h: 7 }) },
     longue_vue: { modele: 'm-belvedere', taille: () => ({ l: 3, p: 2.2, h: 2.4 }) },
@@ -227,13 +235,13 @@ const IleModeles = (() => {
   function poses(S, T, hauteur) {
     const out = [];
     for (const o of (T && T.objets) || []) {
-      const d = OBJETS[o.sorte], M = d && (!d.si || d.si(o)) && S.modeles[d.modele];
+      const d = OBJETS[o.sorte], nom = d && (typeof d.modele === 'function' ? d.modele(o) : d.modele), M = nom && S.modeles[nom];
       if (!M) continue;
       const t = d.taille(o), y = hauteur(o.u, o.v);
       const k = Math.min(t.l / M.largeur, t.p / M.profondeur, t.h / M.hauteur);
       let a = o.rot || 0;
       if (o.sorte === 'longue_vue') { const r = T.objets.find(x => x.sorte === 'rambarde' && Math.hypot(x.u - o.u, x.v - o.v) < 2); if (r) a = r.rot || 0; }
-      out.push({ nom: d.modele, x: o.u, y: Number.isFinite(y) ? y - 0.05 : 0, z: o.v, a, k });
+      out.push({ nom, x: o.u, y: Number.isFinite(y) ? y - 0.05 : 0, z: o.v, a, k });
     }
     return out;
   }

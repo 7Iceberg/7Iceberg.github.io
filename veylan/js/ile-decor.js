@@ -731,6 +731,16 @@ const IleDecor = (() => {
           if (h >= 3) G.halos.push({ x: o.u, y: yy + 0.3, z: o.v, couleur: '#fff0c0', taille: 2.4, opacite: 0.35 });
           break;
         }
+        case 'source': {
+          // La Source de Braise : un tas de roches sombres, fendues d'une lueur de braise.
+          for (let q = 0; q < 5; q++) {
+            const a = q * 1.26 + (o.rot || 0), d = q ? 0.75 : 0, rr = q ? 0.5 : 0.85;
+            ajouter(o, 'roche', L.blocs[(o.index + q) % 8], matrice(o.u + Math.cos(a) * d, y + rr * 0.35, o.v + Math.sin(a) * d, 0, a, 0, rr, rr * 0.8, rr * 0.9), { c: coul('#5a3030'), bas: 0.75, haut: 1.05, mousse: coul('#6f8a3a') });
+          }
+          ajouter(o, 'lueur', L.octa, matrice(o.u, y + 0.9, o.v, 0, 0, 0, 0.18, 0.12, 0.18), { c: coul('#ff8a3c') });
+          G.halos.push({ x: o.u, y: y + 0.9, z: o.v, couleur: '#ff9a4a', taille: 2.6, opacite: 0.55 });
+          break;
+        }
         case 'arbre_bobine': {
           // L'Arbre-Bobine : un tronc énorme enroulé de fil comme une bobine, une frondaison immense.
           const hT = 9;

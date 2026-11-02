@@ -242,6 +242,9 @@
       { sorte: 'pierre_levee', u: 88, v: 160, element: 'feu' }, { sorte: 'pierre_levee', u: 96, v: 160, element: 'eau' },
       { sorte: 'pierre_levee', u: 96, v: 168, element: 'air' }, { sorte: 'pierre_levee', u: 88, v: 168, element: 'terre' },
       { sorte: 'rambarde', u: 92, v: 172, rot: 0 },
+      // La Source de Braise : ses roches fendues de braise, à la tête du ruisselet (le modèle Meshy des
+      // Sources, js/ile-modeles.js), entre les aires de la Braise.
+      { sorte: 'source', u: 131, v: 131.5, rot: 0.4, element: 'feu' },
     ],
     lieux: {
       // `eveil` : où naît un nouveau Veilleur, à l'écart du cadre du Métier (vu de la caméra, le
