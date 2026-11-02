@@ -177,7 +177,7 @@ const IleModeles = (() => {
     base_arbre_large_0: 'feuillu', base_arbre_large_1: 'feuillu', base_arbre_rond_0: 'feuillu', base_arbre_rond_1: 'feuillu',
     base_arbre_haut_0: 'haut', base_arbre_haut_1: 'haut', base_arbre_pin_0: 'conifere', base_arbre_pin_1: 'conifere',
     base_arbre_tordu_0: 'tordu', base_arbre_mort_0: 'mort', base_rocher_0: 'rocher', base_buisson_0: 'buisson', base_buisson_1: 'buisson',
-    base_fougere_0: 'fougere', base_fleurs_0: 'fleurs', base_galet_0: 'galet',
+    base_fougere_0: 'fougere', base_fleurs_0: 'fleurs', base_galet_0: 'galet', base_borne_0: 'borne',
   };
   // Les modèles, leur atlas et leur case dans l'atlas : [x, y, côté] en pixels. Atlas 0 (2048 x 1024) :
   // le kit de décor de toute l'île, et dans sa moitié haute de droite (1024 x 512) les objets des Murets
@@ -188,11 +188,13 @@ const IleModeles = (() => {
   // source claire, le tertre de mousse, le ponton, la barrière, la dalle, les fleurs des quatre couleurs) ;
   // atlas 3 (1024 x 512) : ceux du Bois Cousu, `b-*-semis.glb` (l'arbre sombre cousu de fils, l'Arbre-
   // Bobine, la cabane, le rocher à racines, les champignons lumineux ; les fougères, le tronc couché et
-  // les pieux de la Tête du Pont dans les cases libres de l'atlas du kit).
+  // les pieux de la Tête du Pont dans les cases libres de l'atlas du kit) ; atlas 4 (1024 x 512) : ceux de
+  // l'Amarre, `a-*-semis.glb` (l'arcade brisée, le mur d'avant-poste, la borne à runes, le pin tordu, la
+  // tente du Fil, le feu de camp, l'anneau du fil d'or).
   const SEMIS = {
     arbre: { case: [0, 0, 512] }, arbre3: { case: [512, 0, 512] }, arbre2: { case: [0, 512, 512] },
     rocher2: { case: [512, 512, 256] }, buisson: { case: [768, 512, 256] }, roc: { case: [512, 768, 256] }, cristal: { case: [768, 768, 256] },
-    ruine: { case: [1280, 512, 256] }, champignons: { case: [1792, 512, 256] },
+ champignons: { case: [1792, 512, 256] },
     souche: { case: [1024, 768, 256] }, tronc: { case: [1280, 768, 256] }, fougeres: { case: [1536, 768, 256] },
     'm-maison': { atlas: 1, case: [0, 0, 512] }, 'm-etal': { atlas: 1, case: [512, 0, 512] },
     'm-tour': { atlas: 1, case: [0, 512, 256] }, 'm-armes': { atlas: 1, case: [256, 512, 256] }, 'm-belvedere': { atlas: 1, case: [512, 512, 256] },
@@ -211,8 +213,11 @@ const IleModeles = (() => {
     'b-fougere': { case: [1536, 256, 256] }, 'b-tronc': { case: [1024, 512, 256] }, 'b-pieux': { case: [1536, 512, 256] },
     'b-arbre': { atlas: 3, case: [0, 0, 512] }, 'b-bobine': { atlas: 3, case: [512, 0, 256] }, 'b-cabane': { atlas: 3, case: [768, 0, 256] },
     'b-rocher': { atlas: 3, case: [512, 256, 256] }, 'b-champignons': { atlas: 3, case: [768, 256, 256] },
+    'a-arcade': { atlas: 4, case: [0, 0, 256] }, 'a-mur': { atlas: 4, case: [256, 0, 256] }, 'a-borne': { atlas: 4, case: [512, 0, 256] },
+    'a-pin': { atlas: 4, case: [768, 0, 256] }, 'a-tente': { atlas: 4, case: [0, 256, 256] }, 'a-feu': { atlas: 4, case: [256, 256, 256] },
+    'a-ancre': { atlas: 4, case: [512, 256, 256] },
   };
-  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512]];
+  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512]];
   // Le modèle d'une instance : `teinte` (linéaire, celle du GLB ou du style) et un hasard fixe (0 à 1)
   // ; null garde l'instance telle qu'exportée. Un feuillage chaud (l'automne des Mailles au style
   // Lisière, les jaunes de l'export) prend l'arbre d'automne. `absolu` : la hauteur en u (sinon celle
@@ -227,6 +232,8 @@ const IleModeles = (() => {
   // Le Bois Cousu : le nord-ouest, à l'ouest du ravin du Ru Clair (qui descend de (146, 52) à (121, 2)) ;
   // plus au sud, jusqu'à la Lisière Cousue (sa cabane, (118,5 ; 60,5)).
   const dansBois = (x, z) => z < 95 && (z > 55 ? x <= 125 : x < 120 + z * 0.45);
+  // L'Amarre : la pointe sud-ouest, à l'ouest de la haie des Bornes (x = 80).
+  const dansAmarre = (x, z) => z >= 95 && x < 80;
   const elementA = (x, z, h) => {
     let m = null, d = 1e9;
     for (const s of SOURCES) { const e = Math.hypot(x - s[1], z - s[2]); if (e < d) { d = e; m = s[0]; } }
@@ -240,7 +247,9 @@ const IleModeles = (() => {
     feuillu: { modele: (t, h, x, z) => (dansBois(x, z) ? 'b-arbre' : chaud(t) || h < 0.2 ? 'arbre3' : 'arbre'), facteur: 1.05 },
     haut: { modele: (t, h, x, z) => (dansBois(x, z) ? 'b-arbre' : 'arbre2'), facteur: 1.0 },
     conifere: { modele: () => 'arbre2', facteur: 1.0 },
-    tordu: { modele: (t) => (chaud(t) ? 'arbre3' : 'arbre'), facteur: 1.0 },
+    // À l'Amarre, le pin tordu par le vent ; ses bornes, la borne à runes violettes.
+    tordu: { modele: (t, h, x, z) => (dansAmarre(x, z) ? 'a-pin' : chaud(t) ? 'arbre3' : 'arbre'), facteur: 0.75 },
+    borne: { modele: () => 'a-borne', facteur: 1.05 },
     mort: { modele: (t, h) => (h < 0.5 ? 'souche' : 'tronc'), absolu: { souche: 1.0, tronc: 0.9 } },
     // Au Bois Cousu : le rocher à racines, les champignons lumineux et le tronc couché parmi les
     // buissons, ses fougères.
@@ -280,10 +289,19 @@ const IleModeles = (() => {
     puits_sec: { modele: 'mu-puits', taille: () => ({ l: 2.6, p: 2.6, h: 3.2 }) },
     // Les Murets : les maisons sans toit du hameau (la porte du côté de la brèche de l'empreinte, d'où
     // l'angle du monde du code), le four, le terrier (sa jupe plate enfoncée).
-    ruine: { modele: o => (dansMurets(o.u, o.v) ? 'mu-ruine' : null), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 4.5 }), angle: o => -(o.rot || 0) },
+    ruine: { modele: o => (dansMurets(o.u, o.v) ? 'mu-ruine' : dansAmarre(o.u, o.v) ? 'a-mur' : null), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 4.5 }), angle: o => -(o.rot || 0),
+      murs: o => dansAmarre(o.u, o.v) },
     four: { modele: 'mu-four', taille: () => ({ l: 2.6, p: 2.6, h: 3 }) },
     terrier: { modele: 'mu-terrier', taille: () => ({ l: 3.6, p: 3.6, h: 9 }), enfonce: () => 0.12, angle: o => -(o.rot || 0) },
-    arche_brisee: { modele: 'ruine', taille: () => ({ l: 4, p: 4, h: 3.2 }) },
+    // L'Amarre : l'arcade brisée de calcaire (le long de l'axe de ses deux piliers), la ruine de
+    // l'avant-poste en quatre murs (la porte du côté de la brèche), les tentes du Fil (celle des Murets
+    // aussi), les feux de camp, et l'anneau du fil d'or près de la plateforme de la Nacelle (le pied du
+    // fil est dans une aire).
+    arche_brisee: { modele: o => (dansAmarre(o.u, o.v) ? 'a-arcade' : null), taille: () => ({ l: 4.6, p: 4.6, h: 3.6 }), angle: o => -(o.rot || 0) },
+    tente: { modele: 'a-tente', taille: o => ({ l: (o.taille || [3, 3])[0] + 0.4, p: (o.taille || [3, 3])[1] + 0.4, h: 3 }), angle: o => -(o.rot || 0) },
+    // Le cercle de pierres et les bûches ; la flamme reste celle de l'export (sa boule lumineuse).
+    feu: { modele: 'a-feu', taille: () => ({ l: 2.2, p: 2.2, h: 9 }) },
+    plateforme: { modele: 'a-ancre', taille: () => ({ l: 1.8, p: 1.8, h: 1.4 }), decalage: [1, -3] },
   };
   // Les poses des objets d'un plateau : { nom, x, y, z, a (angle autour de Y), k (échelle) }, pour la
   // cuisson du semis (IleGlb.construire). `S.modeles` donne la taille de chaque modèle.
@@ -297,9 +315,21 @@ const IleModeles = (() => {
       const enf = d.enfonce ? d.enfonce(o) * M.hauteur * k : 0;
       let a = d.angle ? d.angle(o) : o.rot || 0;
       if (o.sorte === 'longue_vue') { const r = T.objets.find(x => x.sorte === 'rambarde' && Math.hypot(x.u - o.u, x.v - o.v) < 2); if (r) a = r.rot || 0; }
+      // Une ruine en quatre murs (l'Amarre) : chacun face au dehors, étiré à son côté, le mur de devant
+      // (la brèche de l'empreinte, js/ile-terrain.js) du côté +p.
+      if (d.murs && d.murs(o)) {
+        const [l, p] = o.taille || [6, 5], r = o.rot || 0, c = Math.cos(r), s = Math.sin(r), km = 3.4 / M.hauteur;
+        for (const [lx, lz, da, long] of [[0, p / 2, 0, l], [0, -p / 2, Math.PI, l], [l / 2, 0, Math.PI / 2, p], [-l / 2, 0, -Math.PI / 2, p]]) {
+          const u = o.u + lx * c - lz * s, v = o.v + lx * s + lz * c, y = hauteur(u, v);
+          out.push({ nom, x: u, y: (Number.isFinite(y) ? y - 0.1 : 0), z: v, a: -r + da, k: km, kx: (long + 0.5) / (M.largeur * km) });
+        }
+        continue;
+      }
       // Des copies le long de l'axe de l'objet (celui du monde du code, js/ile-decor.js : cos, sin).
-      for (const dx of d.copies || [0]) {
-        const u = o.u + dx * Math.cos(o.rot || 0), v = o.v + dx * Math.sin(o.rot || 0), y = hauteur(u, v);
+      const dec = d.decalage || [0, 0];
+      for (const dx0 of d.copies || [0]) {
+        const dx = dx0 + dec[0];
+        const u = o.u + dx * Math.cos(o.rot || 0) - dec[1] * Math.sin(o.rot || 0), v = o.v + dx * Math.sin(o.rot || 0) + dec[1] * Math.cos(o.rot || 0), y = hauteur(u, v);
         out.push({ nom, x: u, y: (Number.isFinite(y) ? y - 0.05 : 0) - enf, z: v, a: d.copies ? -(o.rot || 0) : a, k });
       }
     }
