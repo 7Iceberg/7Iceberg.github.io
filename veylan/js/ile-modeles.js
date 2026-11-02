@@ -183,11 +183,13 @@ const IleModeles = (() => {
   // le kit de décor de toute l'île ; atlas 1 (1024 x 1024) : les objets des Mailles (le biome du
   // village, tools/meshy/biomes), fichiers `m-*-semis.glb` ; atlas 2 (1024 x 1024) : ceux des Quatre
   // Sources, `s-*-semis.glb` (les quatre pierres levées des éléments, la Braise, le cairn percé, la
-  // source claire, le tertre de mousse, le ponton, la barrière, la dalle, les fleurs des quatre couleurs).
+  // source claire, le tertre de mousse, le ponton, la barrière, la dalle, les fleurs des quatre couleurs) ;
+  // atlas 3 (1024 x 512) : ceux des Murets, `mu-*-semis.glb` (le muret, la haie, la maison sans toit, le
+  // four, le puits à runes, le grand cairn, le terrier ; une case libre).
   const SEMIS = {
     arbre: { case: [0, 0, 512] }, arbre3: { case: [512, 0, 512] }, arbre2: { case: [0, 512, 512] },
     rocher2: { case: [512, 512, 256] }, buisson: { case: [768, 512, 256] }, roc: { case: [512, 768, 256] }, cristal: { case: [768, 768, 256] },
-    puits: { case: [1024, 512, 256] }, ruine: { case: [1280, 512, 256] }, champignons: { case: [1792, 512, 256] },
+    ruine: { case: [1280, 512, 256] }, champignons: { case: [1792, 512, 256] },
     souche: { case: [1024, 768, 256] }, tronc: { case: [1280, 768, 256] }, fougeres: { case: [1536, 768, 256] },
     'm-maison': { atlas: 1, case: [0, 0, 512] }, 'm-etal': { atlas: 1, case: [512, 0, 512] },
     'm-tour': { atlas: 1, case: [0, 512, 256] }, 'm-armes': { atlas: 1, case: [256, 512, 256] }, 'm-belvedere': { atlas: 1, case: [512, 512, 256] },
@@ -200,8 +202,11 @@ const IleModeles = (() => {
     's-dalle': { atlas: 2, case: [512, 512, 256] }, 's-fleurs-eau': { atlas: 2, case: [768, 512, 256] },
     's-fleurs-feu': { atlas: 2, case: [0, 768, 256] }, 's-fleurs-terre': { atlas: 2, case: [256, 768, 256] },
     's-fleurs-air': { atlas: 2, case: [512, 768, 256] },
+    'mu-muret': { atlas: 3, case: [0, 0, 256] }, 'mu-haie': { atlas: 3, case: [256, 0, 256] }, 'mu-ruine': { atlas: 3, case: [512, 0, 256] },
+    'mu-four': { atlas: 3, case: [768, 0, 256] }, 'mu-puits': { atlas: 3, case: [0, 256, 256] }, 'mu-cairn': { atlas: 3, case: [256, 256, 256] },
+    'mu-terrier': { atlas: 3, case: [768, 256, 256] },
   };
-  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024]];
+  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512]];
   // Le modèle d'une instance : `teinte` (linéaire, celle du GLB ou du style) et un hasard fixe (0 à 1)
   // ; null garde l'instance telle qu'exportée. Un feuillage chaud (l'automne des Mailles au style
   // Lisière, les jaunes de l'export) prend l'arbre d'automne. `absolu` : la hauteur en u (sinon celle
@@ -211,6 +216,8 @@ const IleModeles = (() => {
   // galet devient une dalle.
   const SOURCES = [['eau', 160, 148], ['feu', 130, 125], ['terre', 140, 166], ['air', 105, 120], [null, 92, 164]];
   const dansSources = (x, z) => x >= 70 && x <= 170 && z >= 92 && z <= 190;
+  // Les Murets : le plateau au nord-est, au-dessus du village.
+  const dansMurets = (x, z) => x > 110 && z < 80;
   const elementA = (x, z, h) => {
     let m = null, d = 1e9;
     for (const s of SOURCES) { const e = Math.hypot(x - s[1], z - s[2]); if (e < d) { d = e; m = s[0]; } }
@@ -238,7 +245,7 @@ const IleModeles = (() => {
     lanterne: { modele: 'm-lanterne', taille: () => ({ l: 9, p: 9, h: 2.6 }) },
     // Une pierre levée des Mailles, ou l'une des quatre du Rond des Quatre, teintée par son élément.
     pierre_levee: { modele: o => (o.element ? 's-pierre-' + o.element : 'm-pierre'), taille: o => ({ l: 9, p: 9, h: o.element ? 2.6 : 2.4 }) },
-    cairn: { modele: 's-cairn', taille: o => ({ l: 9, p: 9, h: (o.hauteur || 2) * 1.05 }) },
+    cairn: { modele: o => (dansMurets(o.u, o.v) ? 'mu-cairn' : 's-cairn'), taille: o => ({ l: 9, p: 9, h: (o.hauteur || 2) * 1.05 }) },
     // Les sources marquées d'un objet : la Braise (ses roches), la Claire (la vasque où l'eau jaillit),
     // la Mousse (le tertre, sa jupe enfoncée dans le sol).
     source: { modele: o => ({ feu: 's-braise', eau: 's-claire', terre: 's-mousse' })[o.element],
@@ -253,7 +260,12 @@ const IleModeles = (() => {
     tour: { modele: 'm-tour', taille: o => ({ l: (o.taille || [6, 6])[0], p: (o.taille || [6, 6])[1], h: 7 }) },
     longue_vue: { modele: 'm-belvedere', taille: () => ({ l: 3, p: 2.2, h: 2.4 }) },
     tonneau: { modele: 'm-tonneaux', taille: () => ({ l: 2.2, p: 2.2, h: 1.6 }) },
-    puits_sec: { modele: 'puits', taille: () => ({ l: 2.8, p: 2.8, h: 3.2 }) },
+    puits_sec: { modele: 'mu-puits', taille: () => ({ l: 2.6, p: 2.6, h: 3.2 }) },
+    // Les Murets : les maisons sans toit du hameau (la porte du côté de la brèche de l'empreinte, d'où
+    // l'angle du monde du code), le four, le terrier (sa jupe plate enfoncée).
+    ruine: { modele: o => (dansMurets(o.u, o.v) ? 'mu-ruine' : null), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 4.5 }), angle: o => -(o.rot || 0) },
+    four: { modele: 'mu-four', taille: () => ({ l: 2.6, p: 2.6, h: 3 }) },
+    terrier: { modele: 'mu-terrier', taille: () => ({ l: 3.6, p: 3.6, h: 9 }), enfonce: () => 0.12, angle: o => -(o.rot || 0) },
     arche_brisee: { modele: 'ruine', taille: () => ({ l: 4, p: 4, h: 3.2 }) },
   };
   // Les poses des objets d'un plateau : { nom, x, y, z, a (angle autour de Y), k (échelle) }, pour la
@@ -266,7 +278,7 @@ const IleModeles = (() => {
       const t = d.taille(o);
       const k = Math.min(t.l / M.largeur, t.p / M.profondeur, t.h / M.hauteur);
       const enf = d.enfonce ? d.enfonce(o) * M.hauteur * k : 0;
-      let a = o.rot || 0;
+      let a = d.angle ? d.angle(o) : o.rot || 0;
       if (o.sorte === 'longue_vue') { const r = T.objets.find(x => x.sorte === 'rambarde' && Math.hypot(x.u - o.u, x.v - o.v) < 2); if (r) a = r.rot || 0; }
       // Des copies le long de l'axe de l'objet (celui du monde du code, js/ile-decor.js : cos, sin).
       for (const dx of d.copies || [0]) {
@@ -274,7 +286,49 @@ const IleModeles = (() => {
         out.push({ nom, x: u, y: (Number.isFinite(y) ? y - 0.05 : 0) - enf, z: v, a: d.copies ? -(o.rot || 0) : a, k });
       }
     }
+    posesLignes(S, T, hauteur, out);
     return out;
+  }
+
+  // Les murets et les haies (T.lignes) : des segments du modèle bout à bout le long du tracé, sauf dans
+  // les brèches et les barrières. Le muret du village (pierre blanche) garde sa forme de l'export.
+  const LIGNES = {
+    muret: { modele: 'mu-muret', hauteur: l => (l.hauteur || 1) * 1.1, si: l => l.id !== 'muret_des_mailles' },
+    // La haie de Meshy, coupée de son retour en angle, a un bout ouvert (vers -x) : le premier segment
+    // d'un tronçon est retourné, son bout fermé du côté de la brèche.
+    haie: { modele: 'mu-haie', hauteur: l => (l.hauteur || 1.2) * 1.05, retourne: true },
+  };
+  function posesLignes(S, T, hauteur, out) {
+    for (const l of (T && T.lignes) || []) {
+      const d = LIGNES[l.sorte], M = d && (!d.si || d.si(l)) && S.modeles[d.modele];
+      if (!M || !l.pts || l.pts.length < 2) continue;
+      const cum = [0];
+      for (let i = 1; i < l.pts.length; i++) cum.push(cum[i - 1] + Math.hypot(l.pts[i][0] - l.pts[i - 1][0], l.pts[i][1] - l.pts[i - 1][1]));
+      const L = cum[cum.length - 1], k = d.hauteur(l) / M.hauteur, pas = M.largeur * k;
+      const trous = (l.breches || []).concat((l.barrieres || []).map(b => b.plage)).filter(Boolean);
+      const point = s => {
+        let i = 1;
+        while (i < cum.length - 1 && cum[i] < s) i++;
+        const t = (s - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1), a = l.pts[i - 1], b = l.pts[i];
+        return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+      };
+      // Les tronçons pleins entre les trous, chacun rempli de segments égaux.
+      const bornes = [0];
+      for (const [a, b] of trous.slice().sort((x, y) => x[0] - y[0])) bornes.push(Math.max(0, a), Math.min(L, b));
+      bornes.push(L);
+      for (let j = 0; j + 1 < bornes.length; j += 2) {
+        const s0 = bornes[j], s1 = bornes[j + 1];
+        if (s1 - s0 < 0.8) continue;
+        const n = Math.max(1, Math.round((s1 - s0) / pas)), e = (s1 - s0) / n;
+        for (let q = 0; q < n; q++) {
+          const [x0, z0] = point(s0 + q * e), [x1, z1] = point(s0 + (q + 1) * e), [x, z] = point(s0 + (q + 0.5) * e);
+          const y = hauteur(x, z);
+          // L'échelle donne la hauteur ; `kx` ajuste la longueur au tronçon (un peu plus, pour joindre).
+          const a = Math.atan2(-(z1 - z0), x1 - x0) + (d.retourne && q === 0 ? Math.PI : 0);
+          out.push({ nom: d.modele, x, y: (Number.isFinite(y) ? y - 0.08 : 0), z, a, k, kx: Math.hypot(x1 - x0, z1 - z0) * 1.04 / (M.largeur * k) });
+        }
+      }
+    }
   }
 
   // Une image du GLB en ImageBitmap (ou Image), pour la peindre dans l'atlas.

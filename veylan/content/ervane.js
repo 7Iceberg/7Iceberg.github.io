@@ -221,6 +221,8 @@
       { sorte: 'ruine', u: 189, v: 30, rot: 0.1, taille: [6, 5] }, { sorte: 'ruine', u: 186, v: 13.5, rot: -0.15, taille: [6, 5] },
       { sorte: 'four', u: 179, v: 31 }, { sorte: 'puits_sec', u: 170, v: 31.5 },
       { sorte: 'cairn', u: 222, v: 12, hauteur: 4 },
+      // Un terrier creusé dans la lande, au sud de la haie du Terrier (le modèle Meshy des Murets).
+      { sorte: 'terrier', u: 210, v: 60, rot: 0.6 },
       { sorte: 'panneau', u: 152.5, v: 51, texte: 'Le Bois Cousu, niveaux 5 à 7' },
       { sorte: 'panneau', u: 138, v: 16.5, texte: 'Le Bois Cousu, niveaux 5 à 7' },
       // Le Bois Cousu.

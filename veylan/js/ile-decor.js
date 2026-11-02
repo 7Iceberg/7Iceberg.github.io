@@ -753,6 +753,13 @@ const IleDecor = (() => {
           G.halos.push({ x: o.u, y: y + 0.9, z: o.v, couleur: '#ff9a4a', taille: 2.6, opacite: 0.55 });
           break;
         }
+        case 'terrier': {
+          // Un monticule de terre ocre, son trou sombre au pied.
+          ajouter(o, 'roche', L.blocs[o.index % 8], matrice(o.u, y + 0.15, o.v, 0, o.rot || 0, 0, 1.5, 0.6, 1.2), { c: coul('#9a7a3a'), bas: 0.8, haut: 1.05 });
+          const [tx, tz] = local(o, 0, 1.1);
+          ajouter(o, 'roche', L.cailloux[o.index % 8], matrice(tx, y + 0.05, tz, 0, o.rot || 0, 0, 0.5, 0.25, 0.4), { c: coul('#2e2418') });
+          break;
+        }
         case 'ponton': {
           // Le ponton de planches du bassin de la Source Claire, sur quatre pieux.
           const [ax, az] = local(o, -2, 0), [bx, bz] = local(o, 2, 0);

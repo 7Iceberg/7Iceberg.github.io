@@ -258,6 +258,8 @@ const IleTerrain = (() => {
     // vasque ; la Mousse : son tertre). Le ponton du bassin ne bloque rien.
     source: o => [{ x: 0, y: 0, r: o.element === 'eau' ? 2.0 : o.element === 'terre' ? 1.3 : 1.2 }],
     ponton: () => [],
+    // Le terrier des Murets : un monticule de terre et de racines autour de son trou.
+    terrier: () => [{ x: 0, y: 0, r: 1.4 }],
     arbre_bobine: o => [{ x: 0, y: 0, r: 2.4 }],
     margelle: o => [{ anneau: true, r1: o.rayon || 8, r2: (o.rayon || 8) + (o.largeur || 1.2) }],
     treuil: o => [{ x: 0, y: 0, r: 0.8 }],

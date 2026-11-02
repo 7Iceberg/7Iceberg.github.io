@@ -284,14 +284,15 @@ const IleGlb = (() => {
   const hache = (x, z, k) => { const v = Math.sin(x * 12.9898 + z * 78.233 + k * 37.719) * 43758.5453; return v - Math.floor(v); };
   // Cuit un modèle dans le maillage de sa tuile : ses sommets tournés de `a` autour de Y, mis à
   // l'échelle `k`, enfoncés de `enf`, puis portés par la matrice `e` (colonnes, comme Matrix4).
-  function cuire(fusionS, M, e, a, k, enf) {
+  // `kx` : un étirement le long de l'axe x du modèle (les segments d'un muret ajustés à leur tronçon).
+  function cuire(fusionS, M, e, a, k, enf, kx = 1) {
     const ca = Math.cos(a), sa = Math.sin(a), cle = tuileDe(e[12], e[14]) + '|' + (M.atlas || 0);
     let f = fusionS.get(cle);
     if (!f) { f = { pos: [], nrm: [], uv: [], idx: [], n: 0, bornes: [], atlas: M.atlas || 0 }; fusionS.set(cle, f); }
     const P = M.pos, N = M.nrm, U = M.uv, d = f.n;
     f.bornes.push([d, f.idx.length]);
     for (let i = 0; i < M.n; i++) {
-      const px = P[i * 3], py = P[i * 3 + 1], pz = P[i * 3 + 2];
+      const px = P[i * 3] * kx, py = P[i * 3 + 1], pz = P[i * 3 + 2];
       const lx = k * (ca * px + sa * pz), ly = k * py + enf, lz = k * (-sa * px + ca * pz);
       f.pos.push(e[0] * lx + e[4] * ly + e[8] * lz + e[12], e[1] * lx + e[5] * ly + e[9] * lz + e[13], e[2] * lx + e[6] * ly + e[10] * lz + e[14]);
       const qx = ca * N[i * 3] + sa * N[i * 3 + 2], qy = N[i * 3 + 1], qz = -sa * N[i * 3] + ca * N[i * 3 + 2];
@@ -334,7 +335,7 @@ const IleGlb = (() => {
       const M = S.modeles[p.nom];
       if (!M) continue;
       e[12] = p.x; e[13] = p.y; e[14] = p.z;
-      tri += cuire(fusionS, M, e, p.a, p.k, 0);
+      tri += cuire(fusionS, M, e, p.a, p.k, 0, p.kx || 1);
       if (compte) compte[p.nom] = (compte[p.nom] || 0) + 1;
     }
     return tri;
