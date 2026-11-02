@@ -216,9 +216,20 @@ const IleCharge = (() => {
     if (monde() !== 'glb') return null;
     return typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.heros === false ? null : 'auto';
   }
+  // ----- Les modèles Meshy posés sur le monde modelé (js/ile-modeles.js, assets/modeles/) -----
+  // Le Relais du Fil (3.31) ; ?modeles=0 les éteint (le monde modelé reste tel qu'exporté).
+  function modeles() {
+    let q;
+    try { q = new URLSearchParams(location.search).get('modeles'); } catch (e) { q = null; }
+    if (q === '0' || monde() !== 'glb') return null;
+    return typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.modeles === false ? null : 'oui';
+  }
+  function modelesScript() {
+    return glb().then(() => (typeof IleModeles === 'object' ? null : script('js/ile-modeles.js')));
+  }
   function herosScript() {
     return glb().then(() => (typeof IleHeros === 'object' ? null : script('js/ile-heros.js')));
   }
 
-  return { three, webgl, ambiance, vignette, style, lisiere, script, nuit, monde, glb, heros, herosScript, faible, cache: { lire, ecrire, vider }, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
+  return { three, webgl, ambiance, vignette, style, lisiere, script, nuit, monde, glb, heros, herosScript, modeles, modelesScript, faible, cache: { lire, ecrire, vider }, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
 })();

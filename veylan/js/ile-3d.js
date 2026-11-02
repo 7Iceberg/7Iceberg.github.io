@@ -460,6 +460,11 @@ class Ile3D {
       await pause();
       try { await IleCharge.glb(); if (typeof IleGlb === 'object') await IleGlb.poser(THREE, this, scene); } catch (e) { console.warn('Ervane : monde modelé indisponible', e); }
     }
+    // Les modèles Meshy sur le monde modelé (js/ile-modeles.js, 3.31) : le Relais du Fil. Un échec
+    // laisse le monde tel qu'exporté.
+    if (this.monde && IleCharge.modeles && IleCharge.modeles()) {
+      try { await IleCharge.modelesScript(); if (typeof IleModeles === 'object') this.modeles = await IleModeles.poser(THREE, this); } catch (e) { console.warn('Ervane : modèles Meshy indisponibles', e); }
+    }
     // Le héros modelé (js/ile-heros.js) à la place du panneau du Veilleur.
     if (await this.chargerHeros(THREE, etape)) fini('heros');
 
@@ -1334,6 +1339,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     for (const t of Object.values(this.tex || {})) { if (Array.isArray(t)) t.forEach(rendre); else rendre(t); }
     if (this.figures) this.figures.liberer();
     if (this.carteIle) { this.carteIle.liberer(); this.carteIle = null; }
+    this.modeles = null;
     this.heros = null;
     if (this.arene) { this.arene.liberer(); this.arene = null; }
     if (this.rampe) this.rampe.dispose();
@@ -1570,6 +1576,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     cam.update(now, { x: p.rx, y: p.ry, h: hp }, p.moving);
     const c = cam.vise;
     const A = this.arene, tact = this.enArene && this.tactique;
+    if (this.modeles && typeof IleModeles === 'object') IleModeles.animer(this.modeles, this.temps);
     // La carte de l'île (3.30) : le survol en cours (la carte, son décollage, la descente vers le
     // jeu). De haut (au-delà d'une largeur de sol vue selon la qualité), les maillages réunis, prêts
     // par tranches d'images, prennent la place des tuiles ; de près, les portées du jeu valent autour
