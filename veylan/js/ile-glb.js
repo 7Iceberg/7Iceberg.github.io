@@ -276,6 +276,103 @@ const IleGlb = (() => {
     return out;
   }
 
+  // Le semis Meshy (js/ile-modeles.js, 3.32) : chaque instance d'une forme de base remplacée devient
+  // le modèle choisi pour elle (selon son genre, sa teinte et un hasard fixe tiré de sa place),
+  // tourné au hasard, à la hauteur de la forme, un peu enfoncé (pas de jour sous le pied sur une
+  // pente), cuit dans le maillage de sa tuile : positions, normales, UV de l'atlas. Rend le nombre de
+  // triangles posés (0 : la forme reste telle qu'exportée).
+  const hache = (x, z, k) => { const v = Math.sin(x * 12.9898 + z * 78.233 + k * 37.719) * 43758.5453; return v - Math.floor(v); };
+  // Cuit un modèle dans le maillage de sa tuile : ses sommets tournés de `a` autour de Y, mis à
+  // l'échelle `k`, enfoncés de `enf`, puis portés par la matrice `e` (colonnes, comme Matrix4).
+  function cuire(fusionS, M, e, a, k, enf) {
+    const ca = Math.cos(a), sa = Math.sin(a), cle = tuileDe(e[12], e[14]);
+    let f = fusionS.get(cle);
+    if (!f) { f = { pos: [], nrm: [], uv: [], idx: [], n: 0, bornes: [] }; fusionS.set(cle, f); }
+    const P = M.pos, N = M.nrm, U = M.uv, d = f.n;
+    f.bornes.push([d, f.idx.length]);
+    for (let i = 0; i < M.n; i++) {
+      const px = P[i * 3], py = P[i * 3 + 1], pz = P[i * 3 + 2];
+      const lx = k * (ca * px + sa * pz), ly = k * py + enf, lz = k * (-sa * px + ca * pz);
+      f.pos.push(e[0] * lx + e[4] * ly + e[8] * lz + e[12], e[1] * lx + e[5] * ly + e[9] * lz + e[13], e[2] * lx + e[6] * ly + e[10] * lz + e[14]);
+      const qx = ca * N[i * 3] + sa * N[i * 3 + 2], qy = N[i * 3 + 1], qz = -sa * N[i * 3] + ca * N[i * 3 + 2];
+      const nx = e[0] * qx + e[4] * qy + e[8] * qz, ny = e[1] * qx + e[5] * qy + e[9] * qz, nz = e[2] * qx + e[6] * qy + e[10] * qz;
+      const l = Math.hypot(nx, ny, nz) || 1;
+      f.nrm.push(nx / l, ny / l, nz / l);
+      f.uv.push(U[i * 2], U[i * 2 + 1]);
+    }
+    for (let i = 0; i < M.idx.length; i++) f.idx.push(d + M.idx[i]);
+    f.n += M.n;
+    return M.idx.length / 3;
+  }
+
+  // Les instances d'une forme remplacée : rend { tri, restes } (les instances gardées telles
+  // qu'exportées, quand le genre en laisse).
+  function semerMeshy(G, mesh, mats, S, genre, fusionS) {
+    const g = S.genres[genre], restes = [];
+    if (!g) return { tri: 0, restes: mats };
+    let haut = 0;
+    for (const p of mesh.primitives || []) { const a = G.accessors[p.attributes.POSITION]; if (a && a.max) haut = Math.max(haut, a.max[1]); }
+    if (!(haut > 0)) return { tri: 0, restes: mats };
+    let tri = 0;
+    for (const m of mats) {
+      const e = m.elements, x = e[12], z = e[14];
+      const nom = g.modele(m.teinte, hache(x, z, 1)), M = nom && S.modeles[nom];
+      if (!M) { restes.push(m); continue; }
+      // La hauteur voulue : en u (`absolu`, l'échelle de l'instance défaite) ou celle de la forme.
+      const sy = Math.hypot(e[4], e[5], e[6]) || 1, abs = g.absolu && g.absolu[nom];
+      const k = abs ? abs / (M.hauteur * sy) : haut / M.hauteur * (g.facteur || 1);
+      tri += cuire(fusionS, M, e, hache(x, z, 2) * Math.PI * 2, k, -0.06 * (abs ? abs / sy : haut));
+    }
+    return { tri, restes };
+  }
+
+  // Les objets posés (IleModeles.poses) : { nom, x, y, z, a, k }.
+  function poserMeshy(S, fusionS) {
+    let tri = 0;
+    const e = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+    for (const p of S.poses || []) {
+      const M = S.modeles[p.nom];
+      if (!M) continue;
+      e[12] = p.x; e[13] = p.y; e[14] = p.z;
+      tri += cuire(fusionS, M, e, p.a, p.k, 0);
+    }
+    return tri;
+  }
+
+  // Les maillages du semis Meshy, un ou plusieurs par tuile (65 535 sommets au plus : des index sur
+  // 16 bits), avec la matière de l'atlas ; nommés « semis » (la portée du semis, la carte de l'île qui
+  // les réunit d'en haut, la vue tactique qui les cache). Les normales tiennent sur un octet par
+  // composante (normalisées) : 23 octets par sommet au lieu de 32.
+  function maillagesMeshy(THREE, fusionS, mat) {
+    const out = [];
+    for (const [k, f] of fusionS) {
+      // Un morceau réunit des instances entières (leurs triangles ne touchent que leurs sommets).
+      const morceaux = [], b = f.bornes.concat([[f.n, f.idx.length]]);
+      let v0 = 0, i0 = 0;
+      for (let q = 1; q < b.length; q++) {
+        if (b[q][0] - v0 > 65535 && b[q - 1][0] > v0) { morceaux.push([v0, b[q - 1][0], i0, b[q - 1][1]]); v0 = b[q - 1][0]; i0 = b[q - 1][1]; }
+      }
+      morceaux.push([v0, f.n, i0, f.idx.length]);
+      morceaux.forEach(([v0, v1, i0, i1], q) => {
+        const geo = new THREE.BufferGeometry(), n = v1 - v0;
+        geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(f.pos.slice(v0 * 3, v1 * 3)), 3));
+        const N = new Int8Array(n * 3);
+        for (let i = 0; i < n * 3; i++) N[i] = Math.round(f.nrm[v0 * 3 + i] * 127);
+        geo.setAttribute('normal', new THREE.BufferAttribute(N, 3, true));
+        geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(f.uv.slice(v0 * 2, v1 * 2)), 2));
+        const I = new Uint16Array(i1 - i0);
+        for (let i = i0; i < i1; i++) I[i - i0] = f.idx[i] - v0;
+        geo.setIndex(new THREE.BufferAttribute(I, 1));
+        geo.computeBoundingSphere();
+        const o = new THREE.Mesh(geo, mat);
+        o.matrixAutoUpdate = false;
+        o.name = 'semis meshy ' + k + (q ? ' ' + q : '');
+        out.push(o);
+      });
+    }
+    return out;
+  }
+
   // Le groupe de Three du GLB : les grands maillages uniques en Mesh par tuile, le semis fusionné
   // par tuile et par genre, les formes qui émettent (les lucioles) en InstancedMesh par tuile.
   // `opts.teinte(u, v, nomMaillage, teinte)` : un style peut reteindre une instance avant la cuisson
@@ -286,11 +383,20 @@ const IleGlb = (() => {
     const groupe = new THREE.Group();
     groupe.name = 'mo_monde';
     const cache = new Map();
-    const fusion = new Map();
+    const fusion = new Map(), fusionS = new Map();
     let appels = 0, triangles = 0;
-    for (const [mi, mats] of instances(THREE, G)) {
+    for (const [mi, matsTous] of instances(THREE, G)) {
       const mesh = G.meshes[mi];
+      let mats = matsTous;
       if (opts && opts.teinte) for (const m of mats) { const t = m.teinte ? opts.teinte(m.elements[12], m.elements[14], mesh.name || '', m.teinte) : null; if (t) m.teinte = t; }
+      // Le semis Meshy (opts.semis, js/ile-modeles.js) : la forme remplacée par son modèle.
+      const genre = opts && opts.semis && opts.semis.formes[mesh.name];
+      if (genre) {
+        const r = semerMeshy(G, mesh, mats, opts.semis, genre, fusionS);
+        triangles += r.tri;
+        if (!r.restes.length) continue;
+        mats = r.restes;
+      }
       for (const prim of mesh.primitives || []) {
         const geo = geometrie(THREE, G, bin, prim);
         if (!geo) continue;
@@ -327,6 +433,16 @@ const IleGlb = (() => {
       }
     }
     for (const o of maillagesFusionnes(THREE, fusion)) { groupe.add(o); appels++; }
+    if (opts && opts.semis) {
+      triangles += poserMeshy(opts.semis, fusionS);
+      let octets = 0;
+      for (const o of maillagesMeshy(THREE, fusionS, opts.semis.mat)) {
+        groupe.add(o); appels++;
+        for (const a of Object.values(o.geometry.attributes)) octets += a.array.byteLength;
+        octets += o.geometry.index.array.byteLength;
+      }
+      groupe.userData.semisMeshy = { tuiles: fusionS.size, octets };
+    }
     groupe.userData.appels = appels;
     groupe.userData.triangles = Math.round(triangles);
     return groupe;
@@ -334,9 +450,14 @@ const IleGlb = (() => {
 
   // Pose le monde modelé dans la scène de l'île et retire le sol, le décor, l'eau, les falaises et
   // le dessous dessinés par le code (la boucle d'images ne touche plus qu'à des objets hors scène).
-  async function poser(THREE, ile, scene, url) {
+  // `opts.semis` : le semis Meshy (IleModeles.chargerSemis), qui remplace les arbres, rochers et
+  // buissons de l'export.
+  async function poser(THREE, ile, scene, url, opts) {
     const glb = await lire(url || source());
-    const groupe = construire(THREE, glb, { teinte: ile.nuit && typeof ile.nuit.teinteGlb === 'function' ? (u, v, nom, t) => ile.nuit.teinteGlb(u, v, nom, t) : null });
+    const semis = opts && opts.semis;
+    const groupe = construire(THREE, glb, { semis, teinte: ile.nuit && typeof ile.nuit.teinteGlb === 'function' ? (u, v, nom, t) => ile.nuit.teinteGlb(u, v, nom, t) : null });
+    // La mémoire de la scène (Ile3D.stats) : le semis Meshy cuit et son atlas.
+    if (semis && groupe.userData.semisMeshy) { ile.octetsGeo = (ile.octetsGeo || 0) + groupe.userData.semisMeshy.octets; ile.octetsTex = (ile.octetsTex || 0) + semis.octets.tex; }
     const retirer = o => { if (o && o.parent) o.parent.remove(o); };
     for (const t of ile.tuilesSol || []) { retirer(t.proche); retirer(t.loin); }
     for (const t of ile.tuilesDecor || []) { retirer(t.groupe); retirer(t.sil); }
@@ -344,6 +465,21 @@ const IleGlb = (() => {
     retirer(ile.eau);
     for (const m of ile.decorFixe || []) retirer(m);
     retirer(ile.meshEscarpement); retirer(ile.meshFalaise); retirer(ile.meshChute);
+    // Le sol, le décor, l'eau, la falaise et le dessous dessinés par le code ne servent plus : leurs
+    // tampons quittent la carte graphique et leur poids sort de la mémoire de la scène (Ile3D.stats),
+    // qui les avait comptés (Ile3D.construire). La chute et les herbes, non comptées, restent telles.
+    if (typeof Ile3D === 'function' && Ile3D.octetsGeo) {
+      const geos = new Set();
+      const prendre = o => { if (o) o.traverse(x => { if (x.geometry) geos.add(x.geometry); }); };
+      for (const t of ile.tuilesSol || []) { prendre(t.proche); prendre(t.loin); }
+      for (const t of ile.tuilesDecor || []) { prendre(t.groupe); prendre(t.sil); }
+      prendre(ile.eau);
+      for (const m of ile.decorFixe || []) prendre(m);
+      let libere = 0;
+      for (const g of geos) { libere += Ile3D.octetsGeo(g); g.dispose(); }
+      ile.octetsGeo = Math.max(0, (ile.octetsGeo || 0) - libere);
+      groupe.userData.libere = libere;
+    }
     scene.add(groupe);
     ile.monde = groupe;
     // La grille du combat (5.4) sur le sol, les pavés et les lignes (sentiers, murets, haies) du
@@ -363,7 +499,7 @@ const IleGlb = (() => {
         o.material = vues.get(o.material);
       }
     }
-    console.log(`Ervane : monde modelé posé, ${groupe.userData.appels} appels, ${groupe.userData.triangles} triangles`);
+    console.log(`Ervane : monde modelé posé, ${groupe.userData.appels} appels, ${groupe.userData.triangles} triangles` + (groupe.userData.semisMeshy ? `, semis Meshy sur ${groupe.userData.semisMeshy.tuiles} tuiles` : ''));
     return groupe;
   }
 

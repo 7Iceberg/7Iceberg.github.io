@@ -458,7 +458,16 @@ class Ile3D {
     if (IleCharge.monde && IleCharge.monde() === 'glb') {
       etape('Le monde modelé');
       await pause();
-      try { await IleCharge.glb(); if (typeof IleGlb === 'object') await IleGlb.poser(THREE, this, scene); } catch (e) { console.warn('Ervane : monde modelé indisponible', e); }
+      // Le semis Meshy (js/ile-modeles.js, 3.32) : les arbres, rochers et buissons du kit de décor à
+      // la place des formes de l'export ; sans lui (échec, ?modeles=0), le monde tel qu'exporté.
+      let semis = null;
+      if (IleCharge.modeles && IleCharge.modeles()) {
+        try { await IleCharge.modelesScript(); if (typeof IleModeles === 'object') { semis = await IleModeles.chargerSemis(THREE); semis.poses = IleModeles.poses(semis, this.T, (u, v) => this.hauteur(u, v)); } } catch (e) { console.warn('Ervane : semis Meshy indisponible', e); semis = null; }
+      }
+      try { await IleCharge.glb(); if (typeof IleGlb === 'object') await IleGlb.poser(THREE, this, scene, null, { semis }); } catch (e) { console.warn('Ervane : monde modelé indisponible', e); }
+      this.semisMeshy = !!(semis && this.monde && this.monde.userData.semisMeshy);
+      // Le grain des sols de Meshy sur le sol du monde modelé (3.32).
+      if (semis && this.monde) { try { this.octetsTex += await IleModeles.habillerSol(THREE, this); } catch (e) { console.warn('Ervane : sols Meshy indisponibles', e); } }
     }
     // Les modèles Meshy sur le monde modelé (js/ile-modeles.js, 3.31) : le Relais du Fil. Un échec
     // laisse le monde tel qu'exporté.
