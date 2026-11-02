@@ -468,6 +468,8 @@ class Ile3D {
       this.semisMeshy = !!(semis && this.monde && this.monde.userData.semisMeshy);
       // Le grain des sols de Meshy sur le sol du monde modelé (3.32).
       if (semis && this.monde) { try { this.octetsTex += await IleModeles.habillerSol(THREE, this); } catch (e) { console.warn('Ervane : sols Meshy indisponibles', e); } }
+      // Le semis dense (3.34) : les touffes d'herbe haute et les bouquets de fleurs en cartes croisées.
+      if (semis && this.monde && IleModeles.cartes) { try { const c = await IleModeles.cartes(THREE, this); if (c) { this.cartesDenses = c; this.octetsGeo += c.octetsGeo; this.octetsTex += c.octetsTex; } } catch (e) { console.warn('Ervane : semis dense indisponible', e); } }
     }
     // Les modèles Meshy sur le monde modelé (js/ile-modeles.js, 3.31) : le Relais du Fil. Un échec
     // laisse le monde tel qu'exporté.

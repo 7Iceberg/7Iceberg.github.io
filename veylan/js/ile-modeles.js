@@ -162,6 +162,10 @@ const IleModeles = (() => {
   // Chaque image : le portail tissé tourne, les cristaux luisent et battent, le fil d'or palpite.
   // `t` en secondes.
   function animer(etat, t) {
+    VENT.value = t;
+    // La part de nuit pour le sol : celle de l'heure (le style Lisière), toute (la nuit simple), aucune.
+    const N = ileSol && ileSol.nuit;
+    NUIT_SOL.value = N ? (N.amb ? N.amb.nuit : 1) : 0;
     if (!etat) return;
     for (const r of etat.relais) {
       if (!r.groupe.visible) continue;
@@ -222,8 +226,13 @@ const IleModeles = (() => {
     'a-ancre': { atlas: 4, case: [512, 256, 256] },
     'br-racines': { case: [1280, 512, 256] }, 'br-cristaux': { case: [1792, 768, 256] },
     'br-ilot': { atlas: 2, case: [768, 768, 256] }, 'br-pont': { atlas: 4, case: [768, 256, 256] },
+    // La végétation dense (3.34, tools/meshy/biomes/vegetation) : le sixième atlas (1024 x 1024 ; la
+    // moitié basse libre pour les constructions).
+    'jt-vert': { atlas: 5, case: [0, 0, 256] }, 'jt-ambre': { atlas: 5, case: [256, 0, 256] }, 'jt-rouille': { atlas: 5, case: [512, 0, 256] },
+    'v-buisson': { atlas: 5, case: [768, 0, 256] }, 'v-fleurs-blanc': { atlas: 5, case: [0, 256, 256] }, 'v-fleurs-lavande': { atlas: 5, case: [256, 256, 256] },
+    'v-rochers': { atlas: 5, case: [512, 256, 256] }, 'v-amanites': { atlas: 5, case: [768, 256, 256] }, 'v-pierre': { atlas: 5, case: [0, 512, 256] },
   };
-  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512]];
+  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024]];
   // Le modèle d'une instance : `teinte` (linéaire, celle du GLB ou du style) et un hasard fixe (0 à 1)
   // ; null garde l'instance telle qu'exportée. Un feuillage chaud (l'automne des Mailles au style
   // Lisière, les jaunes de l'export) prend l'arbre d'automne. `absolu` : la hauteur en u (sinon celle
@@ -341,7 +350,113 @@ const IleModeles = (() => {
     }
     posesLignes(S, T, hauteur, out);
     posesBords(S, T, hauteur, out);
+    posesDenses(S, T, hauteur, out);
     return out;
+  }
+
+  // ----- Le semis dense (3.34, docs/REFERENCE-OPEN-WORLD.md) -----
+  // À la manière de « Dofus Open World » : beaucoup de petites choses, en grappes. Les jeunes arbres
+  // fins, les buissons, les arbustes fleuris, les rochers pâles, les amanites et les pierres plates sont
+  // des modèles Meshy cuits par tuile (le sixième atlas) ; les touffes d'herbe haute, d'herbe dorée et
+  // les bouquets de fleurs sont des cartes croisées (IleModeles.cartes). Rien de tout cela ne bloque le
+  // pas ni ne compte en combat : pas sur les sentiers, les places, les aires de combat, l'eau, les
+  // objets posés, ni près des PNJ, des relais et des portes. Une graine fixe : la même île à chaque
+  // partie. Par zone : [genre, densité par u², hauteurs, variantes].
+  const DENSE = {
+    ervane_mailles: [['arbre', 0.03, [3.0, 4.2], ['jt-ambre', 'jt-ambre', 'jt-vert']], ['buisson', 0.02, [0.9, 1.3], ['v-buisson']],
+      ['arbuste', 0.02, [0.55, 0.8], ['v-fleurs-blanc', 'v-fleurs-lavande']], ['rocher', 0.004, [0.7, 1.0], ['v-rochers']]],
+    ervane_sources: [['arbre', 0.025, [3.0, 4.4], ['jt-vert', 'jt-vert', 'jt-ambre']], ['buisson', 0.018, [0.9, 1.4], ['v-buisson']],
+      ['arbuste', 0.014, [0.55, 0.8], ['v-fleurs-blanc']], ['rocher', 0.006, [0.8, 1.2], ['v-rochers']], ['amanite', 0.004, [0.45, 0.6], ['v-amanites']]],
+    ervane_murets: [['arbre', 0.018, [2.8, 4.0], ['jt-rouille', 'jt-rouille', 'jt-ambre']], ['buisson', 0.014, [0.9, 1.3], ['v-buisson']],
+      ['arbuste', 0.01, [0.55, 0.75], ['v-fleurs-lavande']], ['rocher', 0.012, [0.8, 1.3], ['v-rochers']]],
+    ervane_amarre: [['arbre', 0.008, [2.8, 3.8], ['jt-rouille']], ['buisson', 0.01, [0.8, 1.2], ['v-buisson']], ['rocher', 0.012, [0.8, 1.3], ['v-rochers']]],
+    ervane_bois: [['amanite', 0.025, [0.45, 0.65], ['v-amanites']], ['buisson', 0.006, [0.9, 1.2], ['v-buisson']]],
+  };
+  // Les cartes : [genre, densité par u², hauteurs, carte] ; les sols où elles poussent (T.sol : 0 l'herbe,
+  // 1 la lande, 2 la terre, 3 le calcaire, 4 la roche, 5 le sous-bois).
+  const CARTES_DENSES = {
+    ervane_mailles: [['herbe', 0.5, [0.7, 1.05], 0], ['fleurs', 0.05, [0.45, 0.6], 2]],
+    ervane_sources: [['herbe', 0.7, [0.75, 1.15], 0], ['fleurs', 0.07, [0.45, 0.62], 2]],
+    ervane_murets: [['doree', 0.55, [0.75, 1.1], 1], ['herbe', 0.15, [0.7, 1.0], 0]],
+    ervane_amarre: [['doree', 0.3, [0.7, 1.0], 1], ['herbe', 0.12, [0.7, 1.0], 0]],
+    ervane_bois: [['herbe', 0.3, [0.7, 1.05], 0]],
+  };
+  const SOLS_CARTES = { herbe: [0, 1, 5], doree: [1, 0, 2], fleurs: [0, 5] };
+  // Un bruit de valeurs doux (pour les grappes), déterministe.
+  function hacheEntier(a, b, c) { let h = (a * 374761393 + b * 668265263 + c * 2147483647) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+  function bruitValeur(x, y, graine) {
+    const x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+    const a = hacheEntier(x0, y0, graine), b = hacheEntier(x0 + 1, y0, graine), c = hacheEntier(x0, y0 + 1, graine), d = hacheEntier(x0 + 1, y0 + 1, graine);
+    return (a * (1 - sx) + b * sx) * (1 - sy) + (c * (1 - sx) + d * sx) * sy;
+  }
+  // Les cases libres du plateau pour le semis dense (une grille de 0,5 u, comme videF) : 1 libre ; et
+  // une marge plus large (2) pour les modèles. Calculée une fois par plateau.
+  function libresDenses(T) {
+    if (T._libresDenses) return T._libresDenses;
+    const FX = T.FX, FY = T.FY, L = new Uint8Array(FX * FY);
+    for (let i = 0; i < FX * FY; i++) L[i] = T.videF && T.videF[i] ? 0 : 2;
+    const marquer = (u, v, r, val) => {
+      const i0 = Math.max(0, Math.floor((u - r) * 2)), i1 = Math.min(FX - 1, Math.ceil((u + r) * 2)), j0 = Math.max(0, Math.floor((v - r) * 2)), j1 = Math.min(FY - 1, Math.ceil((v + r) * 2));
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const x = 0.25 + i * 0.5 - u, y = 0.25 + j * 0.5 - v; if (x * x + y * y <= r * r) L[j * FX + i] = Math.min(L[j * FX + i], val); }
+    };
+    // Le bord du vide : une marge d'un u.
+    for (let j = 0; j < FY; j++) for (let i = 0; i < FX; i++) if (T.videF && T.videF[j * FX + i]) marquer(0.25 + i * 0.5, 0.25 + j * 0.5, 1, 0);
+    for (const a of T.aires || []) for (let j = Math.max(0, (a.y - 1.5) * 2 | 0); j < Math.min(FY, (a.y + 16.5) * 2); j++) for (let i = Math.max(0, (a.x - 1.5) * 2 | 0); i < Math.min(FX, (a.x + 16.5) * 2); i++) L[j * FX + i] = 0;
+    for (const p of T.places || []) marquer(p.centre[0], p.centre[1], p.rayon + 0.6, 0);
+    for (const o of T.objets || []) for (const f of o.empreinte || []) {
+      if (f.rect) marquer(f.u, f.v, Math.hypot(f.l, f.p) + 1.2, 0);
+      else if (f.anneau) marquer(f.u, f.v, f.r2 + 1, 0);
+      else marquer(f.u, f.v, (f.r || 1) + 1, 0);
+    }
+    for (const l of [T.pnjs, T.relais, T.portes, T.noeuds]) for (const p of l || []) marquer(p.u, p.v, 3, 0);
+    for (const d of T.decor || []) if (d.rayon > 0.6) marquer(d.u, d.v, d.rayon + 0.8, 1);
+    const W = T.W, H = T.H;
+    for (let j = 0; j < FY; j++) for (let i = 0; i < FX; i++) {
+      const u = Math.min(W - 1, Math.round(0.25 + i * 0.5)), v = Math.min(H - 1, Math.round(0.25 + j * 0.5)), k = v * W + u;
+      const ds = T.distSentier ? T.distSentier[k] : 99, eau = T.eau && T.eau[k] === T.eau[k];
+      if (eau || ds < 0.3) L[j * FX + i] = 0;
+      else if (ds < 1.6 || (T.pente && T.pente[k] > 0.55)) L[j * FX + i] = Math.min(L[j * FX + i], 1);
+    }
+    return (T._libresDenses = L);
+  }
+  // Les points du semis dense d'une table de règles : { genre, u, v, h, variante, r (un hasard) }.
+  function semerDense(T, regles, pas, marge, graine) {
+    const out = [], L = libresDenses(T), FX = T.FX, W = T.W, H = T.H;
+    for (let gv = 0; gv * pas < H; gv++) for (let gu = 0; gu * pas < W; gu++) {
+      const r1 = hacheEntier(gu, gv, graine), r2 = hacheEntier(gu, gv, graine + 1), r3 = hacheEntier(gu, gv, graine + 2), r4 = hacheEntier(gu, gv, graine + 3);
+      const u = (gu + r1) * pas, v = (gv + r2) * pas;
+      const iu = Math.min(W - 1, Math.round(u)), iv = Math.min(H - 1, Math.round(v)), k = iv * W + iu;
+      const zone = T.regionsZone && T.region ? T.regionsZone[T.region[k]] : null, rg = regles[zone];
+      if (!rg) continue;
+      const c = L[Math.floor(v * 2) * FX + Math.floor(u * 2)];
+      if (!(c >= marge)) continue;
+      // Les grappes : deux octaves de bruit ; la densité s'y concentre (des bosquets et des clairières).
+      const g = bruitValeur(u / 9, v / 9, graine) * 0.7 + bruitValeur(u / 3.5, v / 3.5, graine + 7) * 0.3;
+      // Un fond partout, des grappes au bruit, et le double le long des sentiers et des pentes (la case 1).
+      const amas = (0.3 + Math.max(0, (g - 0.4) * 2.4)) * (c === 1 && marge < 2 ? 1.8 : 1);
+      let acc = 0;
+      for (const regle of rg) {
+        const [genre, densite, haut] = regle;
+        if (regle.sols && !regle.sols.includes(T.sol ? T.sol[k] : 0)) { continue; }
+        acc += densite * pas * pas * amas;
+        if (r3 < acc) {
+          out.push({ genre, u, v, h: haut[0] + (haut[1] - haut[0]) * r4, regle, r: hacheEntier(gu, gv, graine + 4) });
+          break;
+        }
+      }
+    }
+    return out;
+  }
+  function posesDenses(S, T, hauteur, out) {
+    if (!T || !T.FX) return;
+    for (const p of semerDense(T, DENSE, 2.2, 2, 4242)) {
+      const variantes = p.regle[3], nom = variantes[Math.floor(p.r * variantes.length) % variantes.length], M = S.modeles[nom];
+      if (!M) continue;
+      const y = hauteur(p.u, p.v);
+      if (!Number.isFinite(y)) continue;
+      const k = p.h / M.hauteur;
+      out.push({ nom, x: p.u, y: y - 0.05 * p.h, z: p.v, a: p.r * Math.PI * 2 * 7.3, k });
+    }
   }
 
   // Les bords de l'île : le long du contour et des lèvres de l'Échancrure, un pas sur deux un bloc de
@@ -457,6 +572,84 @@ const IleModeles = (() => {
     const blob = new Blob([new Uint8Array(bin, bv.byteOffset || 0, bv.byteLength)], { type: im.mimeType || 'image/jpeg' });
     if (typeof createImageBitmap === 'function') return createImageBitmap(blob);
     return new Promise((ok, ko) => { const i = new Image(), u = URL.createObjectURL(blob); i.onload = () => { URL.revokeObjectURL(u); ok(i); }; i.onerror = ko; i.src = u; });
+  }
+
+  // ----- Les cartes du semis dense (3.34) -----
+  // Les touffes d'herbe haute, d'herbe dorée et les bouquets de fleurs : deux cartes croisées chacune,
+  // détourées dans la planche de la végétation (assets/decor/cartes.png, 1024 x 256, quatre cases),
+  // réunies par grande tuile (120 u : peu d'appels de dessin), qui ondulent au vent par le haut.
+  const CASES_CARTES = { herbe: 0, doree: 1, fleurs: 2 };
+  const VENT = { value: 0 };
+  async function cartes(THREE, ile) {
+    const T = ile && ile.T;
+    if (!T || !T.FX || !ile.monde) return null;
+    for (const rg of Object.values(CARTES_DENSES)) for (const r of rg) r.sols = SOLS_CARTES[r[0]];
+    const pts = semerDense(T, CARTES_DENSES, 0.9, 1, 777);
+    if (!pts.length) return null;
+    const tex = await new Promise((ok, ko) => new THREE.TextureLoader().load(source('assets/decor/cartes.png'), ok, undefined, ko));
+    tex.encoding = THREE.sRGBEncoding;
+    tex.anisotropy = 2;
+    const mat = new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide, vertexColors: true, fog: true });
+    mat.name = 'semis_cartes';
+    mat.onBeforeCompile = sh => {
+      sh.uniforms.tempsVent = VENT;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float vent; uniform float tempsVent;')
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+          float phV = tempsVent * 1.7 + position.x * 0.55 + position.z * 0.43;
+          transformed.x += sin(phV) * 0.07 * vent;
+          transformed.z += cos(phV * 0.83) * 0.05 * vent;`);
+    };
+    mat.customProgramCacheKey = () => 'semis-cartes';
+    const GRAND = 120, groupes = new Map();
+    for (const p of pts) {
+      const y = ile.hauteur(p.u, p.v);
+      if (!Number.isFinite(y)) continue;
+      const k = Math.floor(p.u / GRAND) + ':' + Math.floor(p.v / GRAND);
+      if (!groupes.has(k)) groupes.set(k, []);
+      groupes.get(k).push({ p, y });
+    }
+    const meshes = [];
+    let octets = 0, n = 0;
+    for (const [k, liste] of groupes) {
+      const nv = liste.length * 8, P = new Float32Array(nv * 3), U = new Uint16Array(nv * 2), C = new Uint8Array(nv * 4), N = new Int8Array(nv * 4), V = new Uint8Array(nv);
+      const I = nv > 65535 ? new Uint32Array(liste.length * 12) : new Uint16Array(liste.length * 12);
+      liste.forEach(({ p, y }, q) => {
+        const c = CASES_CARTES[p.genre] || 0, h = p.h, w = h * 1.15, a = p.r * Math.PI * 2, teinte = Math.round(205 + p.r * 50);
+        const u0 = (c * 256 + 3) / 1024, u1 = ((c + 1) * 256 - 3) / 1024;
+        for (let f = 0; f < 2; f++) {
+          const ca = Math.cos(a + f * Math.PI / 2) * w / 2, sa = Math.sin(a + f * Math.PI / 2) * w / 2, b = q * 8 + f * 4;
+          const coins = [[-ca, -0.04, -sa, u0, 0, 0], [ca, -0.04, sa, u1, 0, 0], [ca, h, sa, u1, 1, 1], [-ca, h, -sa, u0, 1, 1]];
+          coins.forEach(([dx, dy, dz, uu, vv, ve], i) => {
+            const j = b + i;
+            P[j * 3] = p.u + dx; P[j * 3 + 1] = y + dy; P[j * 3 + 2] = p.v + dz;
+            U[j * 2] = Math.round(uu * 65535); U[j * 2 + 1] = Math.round((vv ? 0.99 : 0.01) * 65535);
+            C[j * 4] = C[j * 4 + 1] = C[j * 4 + 2] = teinte; C[j * 4 + 3] = 255;
+            N[j * 4 + 1] = 127;
+            V[j] = ve * 255;
+          });
+          const t = q * 12 + f * 6;
+          I[t] = b; I[t + 1] = b + 1; I[t + 2] = b + 2; I[t + 3] = b; I[t + 4] = b + 2; I[t + 5] = b + 3;
+        }
+      });
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(P, 3));
+      g.setAttribute('normal', new THREE.BufferAttribute(N, 4, true));
+      g.setAttribute('uv', new THREE.BufferAttribute(U, 2, true));
+      g.setAttribute('color', new THREE.BufferAttribute(C, 4, true));
+      g.setAttribute('vent', new THREE.BufferAttribute(V, 1, true));
+      g.setIndex(new THREE.BufferAttribute(I, 1));
+      g.computeBoundingSphere();
+      const o = new THREE.Mesh(g, mat);
+      o.matrixAutoUpdate = false;
+      o.name = 'semis cartes ' + k;
+      ile.monde.add(o);
+      meshes.push(o);
+      for (const at of Object.values(g.attributes)) octets += at.array.byteLength;
+      octets += I.byteLength;
+      n += liste.length;
+    }
+    console.log(`Ervane : semis dense, ${n} touffes et bouquets en ${meshes.length} maillages`);
+    return { meshes, mat, n, octetsGeo: octets, octetsTex: 1024 * 256 * 4 * 4 / 3 };
   }
 
   // ----- Les textures précuites en ETC2 (tools/meshy/atlas-etc.py, 3.32) -----
@@ -658,6 +851,26 @@ const IleModeles = (() => {
     t.needsUpdate = true;
     return { t, octets: W * H * 4, W, H };
   }
+  // Les flaques de lumière de la nuit (3.35) : les lanternes, les feux, la Braise, le tour des maisons
+  // et des tentes, les relais ; [u, v, rayon, genre] : 1 une lumière ambrée, 0 le cyan du fil, 2 + r un
+  // anneau ambré qui part du pied des murs (r : le rayon du mur). Vingt-quatre au plus.
+  const MAX_LUMIERES = 24;
+  function lumieresSol(T) {
+    const out = [];
+    for (const o of (T && T.objets) || []) {
+      // Les maisons et les tentes : la lumière des fenêtres et des portes déborde autour d'elles.
+      const t = o.taille || [4, 4], tour = Math.max(t[0], t[1]) / 2;
+      if (o.sorte === 'lanterne') out.push([o.u, o.v, 5.5, 1]);
+      else if (o.sorte === 'feu') out.push([o.u, o.v, 7, 1]);
+      else if (o.sorte === 'source' && o.element === 'feu') out.push([o.u, o.v, 5, 1]);
+      else if (o.sorte === 'maison') out.push([o.u, o.v, tour + 3.5, 2 + tour * 0.8]);
+      else if (o.sorte === 'tente') out.push([o.u, o.v, tour + 2.8, 2 + tour * 0.7]);
+    }
+    for (const r of (T && T.relais) || []) out.push([r.u, r.v, 6.5, 0]);
+    return out.slice(0, MAX_LUMIERES);
+  }
+  const NUIT_SOL = { value: 0 };
+  let ileSol = null;
   // Les places de pierre en cercles de pavés (3.33) : centre, rayon ; huit au plus.
   const MAX_PLACES = 8;
   const v3 = c => `vec3(${c.map(x => x.toFixed(4)).join(', ')})`;
@@ -737,8 +950,11 @@ const IleModeles = (() => {
       dalle *= 1.0 - 0.28 * clamp(1.0 - fP / max(wP, 0.001), 0.0, 1.0);
       float wS = wB * nSe;
       vec3 col = c * (wV * gV + (wB - wS) * gB + wG * gG) + wP * dalle + wS * pave * lumC * 0.95;
-      // Les grandes nappes (pas sur les dalles), comme des ombres de nuages.
+      // Les grandes nappes (pas sur les dalles).
       col *= mix(1.0, 0.86 + 0.26 * bz.r, 0.85 * (1.0 - wP));
+      // Les ombres des nuages qui passent, le jour (3.35) : un bruit lent qui glisse avec le vent.
+      float nuage = texture2D(solBruit, (q + solTemps * vec2(1.1, 0.45)) / 150.0).r;
+      col *= 1.0 - 0.2 * smoothstep(0.52, 0.72, nuage) * (1.0 - solNuit);
       // Les pentes raides : la roche, projetée de côté (sur le plan le plus face à la pente).
       vec3 nS = normalize(vNormaleMonde);
       vec2 qc = abs(nS.x) > abs(nS.z) ? vMonde.zy : vMonde.xy;
@@ -746,6 +962,25 @@ const IleModeles = (() => {
       vec3 gRs = mix(vec3(1.0), clamp(mix(vec3(LUM(tRs) / LUM(moyRoche)), tRs / max(moyRoche, vec3(0.02)), 0.3), 0.0, 2.5), 0.75);
       col = mix(cs * gRs, col, smoothstep(0.5, 0.78, abs(nS.y)));
       diffuseColor.rgb = diffuse * col;
+    }`;
+  // Les flaques de lumière chaude de la nuit (3.35), comme celles de la référence : une lumière propre au
+  // sol (émise), qui suit la couleur du sol éclairé ; les feux vacillent.
+  const GLSL_LUMIERES = `
+    if (solNuit > 0.01) {
+      vec2 qL = vMonde.xz;
+      vec3 L = vec3(0.0);
+      for (int i = 0; i < ${MAX_LUMIERES}; i++) {
+        vec4 P = solLumieres[i];
+        if (P.z <= 0.0) continue;
+        float d = distance(qL, P.xy);
+        if (d > P.z) continue;
+        float chaud = min(P.w, 1.0), f;
+        if (P.w >= 2.0) { float r0 = P.w - 2.0; f = d < r0 ? 1.0 : 1.0 - (d - r0) / max(P.z - r0, 0.5); }
+        else f = 1.0 - d / P.z;
+        f = pow(max(f, 0.0), 1.6) * (0.92 + 0.08 * sin(solTemps * 7.0 + P.x * 3.1) * chaud);
+        L += mix(vec3(0.35, 0.85, 1.0), vec3(1.0, 0.5, 0.16), chaud) * f;
+      }
+      totalEmissiveRadiance += L * (0.3 + 0.7 * diffuseColor.rgb) * 3.0 * solNuit;
     }`;
   // Habille la matière du sol du monde modelé (après IleSol.grille, qui déclare vMonde). Rend les
   // octets des textures, ou 0.
@@ -767,7 +1002,12 @@ const IleModeles = (() => {
     // Les places de pierre (calcaire) assez grandes pour des cercles : centre et rayon.
     const pl = ((ile.T && ile.T.places) || []).filter(p => (p.sol || 'calcaire') === 'calcaire' && p.rayon >= 5).slice(0, MAX_PLACES);
     uniforms.solPlaces = { value: Array.from({ length: MAX_PLACES }, (_, i) => pl[i] ? new THREE.Vector3(pl[i].centre[0], pl[i].centre[1], pl[i].rayon) : new THREE.Vector3(0, 0, 0)) };
-    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + `\nuniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}];`;
+    const lum = lumieresSol(ile.T);
+    uniforms.solLumieres = { value: Array.from({ length: MAX_LUMIERES }, (_, i) => lum[i] ? new THREE.Vector4(lum[i][0], lum[i][1], lum[i][2], lum[i][3]) : new THREE.Vector4(0, 0, 0, 0)) };
+    uniforms.solNuit = NUIT_SOL;
+    uniforms.solTemps = VENT;
+    ileSol = ile;
+    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + `\nuniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}]; uniform vec4 solLumieres[${MAX_LUMIERES}]; uniform float solNuit; uniform float solTemps;`;
     for (const m of mats) {
       const prec = m.onBeforeCompile, cle = Object.prototype.hasOwnProperty.call(m, 'customProgramCacheKey') ? m.customProgramCacheKey : null;
       m.onBeforeCompile = (sh, r) => {
@@ -781,15 +1021,16 @@ const IleModeles = (() => {
         sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vNormaleMonde;')
           .replace('#include <project_vertex>', '#include <project_vertex>\nvNormaleMonde = mat3(modelMatrix) * objectNormal;');
         sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vNormaleMonde;\n' + decl)
-          .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_SOL);
+          .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_SOL)
+          .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + GLSL_LUMIERES);
       };
-      m.customProgramCacheKey = () => 'sol-meshy-2/' + (cle ? cle.call(m) : '');
+      m.customProgramCacheKey = () => 'sol-meshy-3/' + (cle ? cle.call(m) : '');
       m.needsUpdate = true;
     }
     ile.solCarte = !!carte;
     return noms.reduce((a, n) => a + tx[n].octets, 0) + bz.octets + (carte ? carte.octets : 0);
   }
 
-  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, ATLAS, OBJETS, SOLS, VILLAGES, charger, chargerSemis, poses, places, poser, animer, habillerSol };
+  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, ATLAS, OBJETS, SOLS, VILLAGES, DENSE, CARTES_DENSES, cartes, lumieresSol, etatSol: () => ({ nuit: NUIT_SOL.value, temps: VENT.value }), charger, chargerSemis, poses, places, poser, animer, habillerSol };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = IleModeles;
