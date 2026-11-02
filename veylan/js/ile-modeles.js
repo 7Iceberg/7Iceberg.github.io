@@ -1,17 +1,12 @@
-// Les modèles Meshy posés sur le monde modelé (docs/ILE-TECHNIQUE.md, 3.31) : pour commencer, le
-// Relais du Fil (le « zaap » de Veylan), d'après le cristal céleste modelé par le fondateur
-// (assets/modeles/relais.glb, préparé par tools/meshy/relais.py).
+// Les modèles Meshy posés sur le monde modelé (docs/ILE-TECHNIQUE.md, 3.31 et 3.32).
 //
-// Le GLB porte quatre parties, un noeud chacune : le socle et ses montants (fixes), le coeur (le
-// grand cristal, qui flotte et tourne lentement), les anneaux (qui tournent dans l'autre sens) et les
-// éclats (qui gravitent). Une seule matière : la couleur, et une texture d'émission (les cristaux
-// bleus luisent, et battent doucement).
-//
-// Chaque relais du plateau (T.relais) reçoit le modèle : à la place de la pierre 'relais' des objets
-// quand elle est tout près (l'Amarre), sinon au point du relais lui-même (les Mailles, devant le
-// Métier). Les relais sont des enfants du monde modelé : la vue tactique du combat les cache avec le
-// décor (IleGlb.tactique), la carte de l'île les montre (ce ne sont pas des maillages du monde à
-// réunir). Le point qu'on touche ne change pas (les cibles du décor, ile-decor.js).
+// Le Relais du Fil (le « zaap » de Veylan) : assets/modeles/relais.glb, fait par Meshy à la manière de
+// l'« Azure Crystal Sanctum » (concept dessiné, forme en Smart Topology, texture par Meshy 7 ;
+// tools/meshy/relais.py). Le GLB porte trois parties, un noeud chacune : le socle de pierre blanche
+// cousu de fil d'or (fixe), les trois cristaux (qui luisent et battent), le portail tissé (qui tourne
+// lentement). Le fil d'or qui monte du portail est un rayon de lumière dessiné ici. Chaque relais du
+// plateau (T.relais) reçoit le modèle à son point ; les relais sont des enfants du monde modelé (la vue
+// tactique les cache, la carte de l'île les montre) ; le point qu'on touche ne change pas.
 //
 // Le semis (chargerSemis) : le kit de décor Meshy (assets/decor, versions « -semis » allégées, de
 // 150 à 1 500 triangles). Les arbres, rochers, buissons, arbres morts et une part des fougères
@@ -24,8 +19,8 @@
 // Repère : X = u, Y = h, Z = v ; le modèle est posé sur le sol, centré, 1,9 de haut.
 const IleModeles = (() => {
   const FICHIERS = { relais: 'assets/modeles/relais.glb' };
-  // La hauteur du relais dans le monde (u) : un peu plus de deux fois le Veilleur.
-  const HAUTEUR_RELAIS = 3.4;
+  // Le diamètre du socle du relais dans le monde (u) ; ses cristaux montent à un peu plus de 2 u.
+  const DIAMETRE_RELAIS = 3.6;
 
   // Le fichier à côté des scripts, en local comme en ligne (comme IleGlb.source).
   function source(chemin) {
@@ -96,21 +91,28 @@ const IleModeles = (() => {
       geo.computeBoundingSphere();
       for (const a of Object.values(geo.attributes)) compte.geo += a.array.byteLength;
       if (geo.index) compte.geo += geo.index.array.byteLength;
+      geo.userData.place = n.translation || [0, 0, 0];
       parties[n.name || G.meshes[n.mesh].name] = geo;
       triangles += (geo.index ? geo.index.count : p.array.length / 3) / 3;
     }
     return { parties, mat, triangles: Math.round(triangles), octets: compte };
   }
 
-  // Où poser les relais d'un plateau : la pierre 'relais' toute proche (sa place et son orientation),
-  // sinon le point du relais.
+  // Où poser les relais d'un plateau : au point de chaque relais.
   function places(T) {
-    const out = [];
-    for (const r of (T && T.relais) || []) {
-      const pierre = (T.objets || []).find(o => o.sorte === 'relais' && Math.hypot(o.u - r.u, o.v - r.v) < 4);
-      out.push(pierre ? { u: pierre.u, v: pierre.v, rot: pierre.rot || 0, carte: r.carte } : { u: r.u, v: r.v, rot: 0, carte: r.carte });
-    }
-    return out;
+    return ((T && T.relais) || []).map(r => ({ u: r.u, v: r.v, rot: 0, carte: r.carte }));
+  }
+
+  // Le rayon du fil d'or qui monte du portail : un cylindre fin, additif, qui s'efface en montant.
+  function rayon(THREE) {
+    const h = 34, geo = new THREE.CylinderGeometry(0.035, 0.035, h, 6, 8, true);
+    geo.translate(0, h / 2, 0);
+    const pos = geo.getAttribute('position'), col = new Float32Array(pos.count * 4);
+    for (let i = 0; i < pos.count; i++) { const t = pos.getY(i) / h; col.set([1, 0.82, 0.45, Math.pow(1 - t, 1.6) * 0.9], i * 4); }
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 4));
+    const mat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
+    mat.name = 'relais_rayon';
+    return { geo, mat };
   }
 
   // Pose les relais sur le monde modelé de l'île (ile.monde) ; rend l'état animé, ou null.
@@ -120,23 +122,31 @@ const IleModeles = (() => {
     if (!lieux.length) return null;
     const modele = await charger(THREE, 'relais');
     const bb = new THREE.Box3();
-    for (const g of Object.values(modele.parties)) { g.computeBoundingBox(); bb.union(g.boundingBox); }
-    const k = HAUTEUR_RELAIS / Math.max(0.01, bb.max.y - bb.min.y);
+    for (const g of Object.values(modele.parties)) { g.computeBoundingBox(); const b = g.boundingBox.clone(), t = g.userData.place; b.min.x += t[0]; b.max.x += t[0]; b.min.z += t[2]; b.max.z += t[2]; bb.union(b); }
+    const k = DIAMETRE_RELAIS / Math.max(0.01, bb.max.x - bb.min.x, bb.max.z - bb.min.z);
+    const fil = rayon(THREE);
     const relais = [];
     for (const l of lieux) {
       const groupe = new THREE.Group();
       groupe.name = 'modele relais ' + l.carte;
       const y = ile.hauteur(l.u, l.v);
-      groupe.position.set(l.u, (Number.isFinite(y) ? y : 0) - 0.05, l.v);
+      groupe.position.set(l.u, (Number.isFinite(y) ? y : 0) - 0.12, l.v);
       groupe.rotation.y = -l.rot;
       groupe.scale.setScalar(k);
       const morceaux = {};
       for (const [nom, geo] of Object.entries(modele.parties)) {
-        const o = new THREE.Mesh(geo, modele.mat);
+        const o = new THREE.Mesh(geo, modele.mat), t = geo.userData.place;
+        o.position.set(t[0], t[1], t[2]);
         o.name = 'relais_' + nom;
         groupe.add(o);
         morceaux[nom] = o;
       }
+      // Le fil d'or, au centre du portail, à l'échelle du monde (le groupe est mis à l'échelle).
+      const r = new THREE.Mesh(fil.geo, fil.mat);
+      r.name = 'relais_fil'; r.scale.setScalar(1 / k); r.renderOrder = 3;
+      if (morceaux.portail) r.position.copy(morceaux.portail.position);
+      groupe.add(r);
+      morceaux.fil = r;
       ile.monde.add(groupe);
       relais.push({ groupe, morceaux, phase: (l.u * 0.37 + l.v * 0.11) % (Math.PI * 2) });
     }
@@ -147,18 +157,17 @@ const IleModeles = (() => {
     return { relais, mat: modele.mat, triangles: modele.triangles };
   }
 
-  // Chaque image : le coeur flotte et tourne, les anneaux tournent à l'envers, les éclats gravitent,
-  // la lueur bat. `t` en secondes.
+  // Chaque image : le portail tissé tourne, les cristaux luisent et battent, le fil d'or palpite.
+  // `t` en secondes.
   function animer(etat, t) {
     if (!etat) return;
     for (const r of etat.relais) {
       if (!r.groupe.visible) continue;
       const a = t + r.phase, m = r.morceaux;
-      if (m.coeur) { m.coeur.position.y = 0.035 * Math.sin(a * 1.3); m.coeur.rotation.y = a * 0.25; }
-      if (m.anneaux) m.anneaux.rotation.y = -a * 0.35;
-      if (m.eclats) { m.eclats.rotation.y = a * 0.18; m.eclats.position.y = 0.02 * Math.sin(a * 0.9 + 1); }
+      if (m.portail) m.portail.rotation.y = a * 0.3;
+      if (m.fil) m.fil.scale.x = m.fil.scale.z = (1 + 0.35 * Math.sin(a * 3.1)) / r.groupe.scale.x;
     }
-    if (etat.mat) etat.mat.emissiveIntensity = 0.85 + 0.25 * Math.sin(t * 2.1);
+    if (etat.mat) etat.mat.emissiveIntensity = 0.8 + 0.3 * Math.sin(t * 2.1);
   }
 
   // ----- Le semis : arbres, rochers, buissons (assets/decor/*-semis.glb) -----
@@ -344,6 +353,6 @@ const IleModeles = (() => {
     return noms.reduce((a, n) => a + tx[n].octets, 0);
   }
 
-  return { FICHIERS, HAUTEUR_RELAIS, FORMES, SEMIS, OBJETS, SOLS, charger, chargerSemis, poses, places, poser, animer, habillerSol };
+  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, OBJETS, SOLS, charger, chargerSemis, poses, places, poser, animer, habillerSol };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = IleModeles;
