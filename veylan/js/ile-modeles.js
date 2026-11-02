@@ -232,6 +232,10 @@ const IleModeles = (() => {
     'jt-vert': { atlas: 5, case: [0, 0, 256] }, 'jt-ambre': { atlas: 5, case: [256, 0, 256] }, 'jt-rouille': { atlas: 5, case: [512, 0, 256] },
     'v-buisson': { atlas: 5, case: [768, 0, 256] }, 'v-fleurs-blanc': { atlas: 5, case: [0, 256, 256] }, 'v-fleurs-lavande': { atlas: 5, case: [256, 256, 256] },
     'v-rochers': { atlas: 5, case: [512, 256, 256] }, 'v-amanites': { atlas: 5, case: [768, 256, 256] }, 'v-pierre': { atlas: 5, case: [0, 512, 256] },
+    // Les parcelles cultivées (phase D, tools/meshy/biomes/champs) : le rang de choux, les courges, l'épouvantail
+    // cousu de fil d'or, les gerbes de blé, la brouette.
+    'ch-choux': { atlas: 5, case: [256, 512, 256] }, 'ch-courges': { atlas: 5, case: [512, 512, 256] }, 'ch-epouvantail': { atlas: 5, case: [768, 512, 256] },
+    'ch-gerbes': { atlas: 5, case: [0, 768, 256] }, 'ch-brouette': { atlas: 5, case: [256, 768, 256] },
   };
   const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024]];
   // Le modèle d'une instance : `teinte` (linéaire, celle du GLB ou du style) et un hasard fixe (0 à 1)
@@ -352,6 +356,102 @@ const IleModeles = (() => {
     posesLignes(S, T, hauteur, out);
     posesBords(S, T, hauteur, out);
     posesDenses(S, T, hauteur, out);
+    posesParcelles(S, T, hauteur, out);
+    return out;
+  }
+
+  // ----- Les parcelles cultivées (phase D, docs/REFERENCE-OPEN-WORLD.md) -----
+  // Une parcelle (T.objets, sorte `parcelle`) : la terre labourée en sillons le long de son grand côté
+  // (le shader du sol, solParcelles), close de barrières de bois (la barrière des Sources, des
+  // segments de 3 u environ). Les rangs suivent le dessus des sillons (un pas de `sillon` u en
+  // travers). Le potager : des rangs de choux, un rang de courges, un épouvantail au milieu ; le blé et
+  // le lin : des cartes serrées (IleModeles.cartes) ; le blé a son bout moissonné (deux gerbes, une
+  // brouette), le lin son épouvantail. Une graine fixe par parcelle.
+  const CULTURES = {
+    potager: { sillon: 1.1 },
+    ble: { sillon: 0.6, carte: 'ble', hauteurs: [0.85, 1.1], pas: 0.4, moisson: 0.22 },
+    lin: { sillon: 0.62, carte: 'lin', hauteurs: [0.7, 0.92], pas: 0.34, fond: 'herbe', partFond: 0.5 },
+  };
+  const MARGE_PARCELLE = 0.55;
+  const parcelles = T => ((T && T.objets) || []).filter(o => o.sorte === 'parcelle' && CULTURES[o.culture]);
+  // Le repère d'une parcelle : du local (x le long de `rot`, y en travers) au monde.
+  function repere(o) {
+    const r = o.rot || 0, c = Math.cos(r), s = Math.sin(r), [L, P] = o.taille || [8, 6];
+    return { L, P, r, c, s, monde: (x, y) => [o.u + x * c - y * s, o.v + x * s + y * c] };
+  }
+  // Les rangs d'une parcelle : les ordonnées (en travers) du dessus des sillons, dans la marge.
+  function rangs(o) {
+    const { P } = repere(o), d = CULTURES[o.culture].sillon, out = [];
+    for (let k = -Math.floor((P / 2 - MARGE_PARCELLE) / d); k * d <= P / 2 - MARGE_PARCELLE + 1e-6; k++) out.push(k * d);
+    return out;
+  }
+  function posesParcelles(S, T, hauteur, out) {
+    const poser = (nom, x, z, a, h, kx) => {
+      const M = S.modeles[nom], y = hauteur(x, z);
+      if (!M || !Number.isFinite(y)) return;
+      const k = h / M.hauteur;
+      out.push(Object.assign({ nom, x, y: y - 0.04 * h, z, a, k }, kx ? { kx } : {}));
+    };
+    for (const o of parcelles(T)) {
+      const R = repere(o), { L, P } = R, C = CULTURES[o.culture];
+      const B = S.modeles['s-barriere'];
+      // La barrière : chaque côté en segments égaux (les poteaux des bouts se rejoignent aux coins).
+      if (B) for (const [x0, y0, x1, y1] of [[-L / 2, -P / 2, L / 2, -P / 2], [L / 2, -P / 2, L / 2, P / 2], [L / 2, P / 2, -L / 2, P / 2], [-L / 2, P / 2, -L / 2, -P / 2]]) {
+        const lg = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.round(lg / 3)), h = 1.05, k = h / B.hauteur;
+        for (let q = 0; q < n; q++) {
+          const [ax, az] = R.monde(x0 + (x1 - x0) * q / n, y0 + (y1 - y0) * q / n), [bx, bz] = R.monde(x0 + (x1 - x0) * (q + 1) / n, y0 + (y1 - y0) * (q + 1) / n);
+          poser('s-barriere', (ax + bx) / 2, (az + bz) / 2, Math.atan2(-(bz - az), bx - ax), h, Math.hypot(bx - ax, bz - az) * 1.02 / (B.largeur * k));
+        }
+      }
+      const ys = rangs(o), xMax = L / 2 - MARGE_PARCELLE;
+      if (o.culture === 'potager') {
+        // Les choux : des rangs de trois (le modèle est long en z : un quart de tour l'aligne sur le
+        // sillon) ; le rang du milieu laisse la place de l'épouvantail ; le dernier rang, des courges.
+        ys.forEach((y, i) => {
+          const dernier = i === ys.length - 1, milieu = i === Math.floor(ys.length / 2);
+          const lg = dernier ? 1.6 : 1.75, n = Math.max(1, Math.floor((2 * xMax + 0.3) / (lg + 0.3)));
+          for (let q = 0; q < n; q++) {
+            const x = -xMax + lg / 2 + q * (2 * xMax - lg) / Math.max(1, n - 1);
+            if (milieu && Math.abs(x) < 1.2) continue;
+            const hz = hacheSimple(o.u + x, o.v + y), [u, v] = R.monde(x + (hz - 0.5) * 0.2, y);
+            if (dernier) poser('ch-courges', u, v, -R.r + hz * 6.28, 0.62 + hz * 0.12);
+            else poser('ch-choux', u, v, -R.r + Math.PI / 2 + (hz > 0.5 ? Math.PI : 0), 0.34 + hz * 0.06);
+          }
+          if (milieu) { const [u, v] = R.monde(0, y); poser('ch-epouvantail', u, v, -R.r + 0.4, 2.0); }
+        });
+      } else if (o.culture === 'ble') {
+        // Le bout moissonné (du côté +x) : deux gerbes debout, la brouette.
+        const xm = xMax - L * C.moisson;
+        const [u1, v1] = R.monde((xm + xMax) / 2, -P / 4), [u2, v2] = R.monde((xm + xMax) / 2 + 0.2, P / 5);
+        poser('ch-gerbes', u1, v1, -R.r + 0.7, 1.45);
+        poser('ch-gerbes', u2, v2, -R.r + 2.3, 1.3);
+        const [u3, v3] = R.monde(xMax - 0.4, P / 2 - MARGE_PARCELLE - 0.5);
+        poser('ch-brouette', u3, v3, -R.r + Math.PI / 2 + 0.35, 0.95);
+      } else if (o.culture === 'lin') {
+        const [u, v] = R.monde(L * 0.18, ys[Math.floor(ys.length / 2)]);
+        poser('ch-epouvantail', u, v, -R.r - 0.5, 2.0);
+      }
+    }
+  }
+  // Les cartes des cultures (le blé, le lin) : serrées le long des rangs, un peu de jeu ; pas sur le
+  // bout moissonné ni au pied de l'épouvantail. Le lin pousse dans ses feuilles (`fond` : une carte
+  // d'herbe sur deux, plus basse) : ses fleurs seules, fines, se lisaient de loin comme du gravier.
+  function cartesParcelles(T) {
+    const out = [];
+    for (const o of parcelles(T)) {
+      const C = CULTURES[o.culture];
+      if (!C.carte) continue;
+      const R = repere(o), xMax = R.L / 2 - MARGE_PARCELLE, x1 = xMax - (C.moisson ? R.L * C.moisson + 0.4 : 0);
+      const ys = rangs(o), yE = ys[Math.floor(ys.length / 2)];
+      ys.forEach(y => {
+        for (let x = -xMax; x <= x1; x += C.pas) {
+          const r1 = hacheSimple(o.u + x * 1.7, o.v + y * 2.3), r2 = hacheSimple(o.v + x * 0.9, o.u - y * 1.3);
+          if (C.carte === 'lin' && Math.abs(y - yE) < 0.01 && Math.abs(x - R.L * 0.18) < 0.6) continue;
+          const [u, v] = R.monde(x + (r1 - 0.5) * C.pas * 0.6, y + (r2 - 0.5) * 0.12), fond = C.fond && hacheSimple(u * 3.1, v * 1.7) < C.partFond;
+          out.push({ genre: fond ? C.fond : C.carte, u, v, h: (C.hauteurs[0] + (C.hauteurs[1] - C.hauteurs[0]) * r2) * (fond ? 0.8 : 1), r: r1 });
+        }
+      });
+    }
     return out;
   }
 
@@ -400,12 +500,22 @@ const IleModeles = (() => {
       const i0 = Math.max(0, Math.floor((u - r) * 2)), i1 = Math.min(FX - 1, Math.ceil((u + r) * 2)), j0 = Math.max(0, Math.floor((v - r) * 2)), j1 = Math.min(FY - 1, Math.ceil((v + r) * 2));
       for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const x = 0.25 + i * 0.5 - u, y = 0.25 + j * 0.5 - v; if (x * x + y * y <= r * r) L[j * FX + i] = Math.min(L[j * FX + i], val); }
     };
+    // Un rectangle tourné d'empreinte (demi-côtés l, p ; cos, sin), élargi de m.
+    const marquerRect = (f, m) => {
+      const R = Math.hypot(f.l, f.p) + m;
+      const i0 = Math.max(0, Math.floor((f.u - R) * 2)), i1 = Math.min(FX - 1, Math.ceil((f.u + R) * 2)), j0 = Math.max(0, Math.floor((f.v - R) * 2)), j1 = Math.min(FY - 1, Math.ceil((f.v + R) * 2));
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        const x = 0.25 + i * 0.5 - f.u, y = 0.25 + j * 0.5 - f.v, a = x * f.c + y * f.s, b = -x * f.s + y * f.c;
+        if (Math.abs(a) < f.l + m && Math.abs(b) < f.p + m) L[j * FX + i] = 0;
+      }
+    };
     // Le bord du vide : une marge d'un u.
     for (let j = 0; j < FY; j++) for (let i = 0; i < FX; i++) if (T.videF && T.videF[j * FX + i]) marquer(0.25 + i * 0.5, 0.25 + j * 0.5, 1, 0);
     for (const a of T.aires || []) for (let j = Math.max(0, (a.y - 1.5) * 2 | 0); j < Math.min(FY, (a.y + 16.5) * 2); j++) for (let i = Math.max(0, (a.x - 1.5) * 2 | 0); i < Math.min(FX, (a.x + 16.5) * 2); i++) L[j * FX + i] = 0;
     for (const p of T.places || []) marquer(p.centre[0], p.centre[1], p.rayon + 0.6, 0);
     for (const o of T.objets || []) for (const f of o.empreinte || []) {
-      if (f.rect) marquer(f.u, f.v, Math.hypot(f.l, f.p) + 1.2, 0);
+      if (f.rect && o.sorte === 'parcelle') marquerRect(f, 0.9);
+      else if (f.rect) marquer(f.u, f.v, Math.hypot(f.l, f.p) + 1.2, 0);
       else if (f.anneau) marquer(f.u, f.v, f.r2 + 1, 0);
       else marquer(f.u, f.v, (f.r || 1) + 1, 0);
     }
@@ -577,15 +687,16 @@ const IleModeles = (() => {
 
   // ----- Les cartes du semis dense (3.34) -----
   // Les touffes d'herbe haute, d'herbe dorée et les bouquets de fleurs : deux cartes croisées chacune,
-  // détourées dans la planche de la végétation (assets/decor/cartes.png, 1024 x 256, quatre cases),
-  // réunies par grande tuile (120 u : peu d'appels de dessin), qui ondulent au vent par le haut.
-  const CASES_CARTES = { herbe: 0, doree: 1, fleurs: 2 };
+  // détourées dans la planche de la végétation ; le lin et le blé des parcelles, dans celle des champs
+  // (assets/decor/cartes.png, 1024 x 512, deux lignes de quatre cases de 256), réunies par grande tuile
+  // (120 u : peu d'appels de dessin), qui ondulent au vent par le haut.
+  const CASES_CARTES = { herbe: 0, doree: 1, fleurs: 2, lin: 3, ble: 4 };
   const VENT = { value: 0 };
   async function cartes(THREE, ile) {
     const T = ile && ile.T;
     if (!T || !T.FX || !ile.monde) return null;
     for (const rg of Object.values(CARTES_DENSES)) for (const r of rg) r.sols = SOLS_CARTES[r[0]];
-    const pts = semerDense(T, CARTES_DENSES, 0.9, 1, 777);
+    const pts = semerDense(T, CARTES_DENSES, 0.9, 1, 777).concat(cartesParcelles(T));
     if (!pts.length) return null;
     const tex = await new Promise((ok, ko) => new THREE.TextureLoader().load(source('assets/decor/cartes.png'), ok, undefined, ko));
     tex.encoding = THREE.sRGBEncoding;
@@ -616,14 +727,15 @@ const IleModeles = (() => {
       const I = nv > 65535 ? new Uint32Array(liste.length * 12) : new Uint16Array(liste.length * 12);
       liste.forEach(({ p, y }, q) => {
         const c = CASES_CARTES[p.genre] || 0, h = p.h, w = h * 1.15, a = p.r * Math.PI * 2, teinte = Math.round(205 + p.r * 50);
-        const u0 = (c * 256 + 3) / 1024, u1 = ((c + 1) * 256 - 3) / 1024;
+        const u0 = ((c % 4) * 256 + 3) / 1024, u1 = ((c % 4 + 1) * 256 - 3) / 1024, ligne = Math.floor(c / 4);
+        const vHaut = 1 - ligne * 0.5 - 0.005, vBas = 0.5 - ligne * 0.5 + 0.005;
         for (let f = 0; f < 2; f++) {
           const ca = Math.cos(a + f * Math.PI / 2) * w / 2, sa = Math.sin(a + f * Math.PI / 2) * w / 2, b = q * 8 + f * 4;
           const coins = [[-ca, -0.04, -sa, u0, 0, 0], [ca, -0.04, sa, u1, 0, 0], [ca, h, sa, u1, 1, 1], [-ca, h, -sa, u0, 1, 1]];
           coins.forEach(([dx, dy, dz, uu, vv, ve], i) => {
             const j = b + i;
             P[j * 3] = p.u + dx; P[j * 3 + 1] = y + dy; P[j * 3 + 2] = p.v + dz;
-            U[j * 2] = Math.round(uu * 65535); U[j * 2 + 1] = Math.round((vv ? 0.99 : 0.01) * 65535);
+            U[j * 2] = Math.round(uu * 65535); U[j * 2 + 1] = Math.round((vv ? vHaut : vBas) * 65535);
             C[j * 4] = C[j * 4 + 1] = C[j * 4 + 2] = teinte; C[j * 4 + 3] = 255;
             N[j * 4 + 1] = 127;
             V[j] = ve * 255;
@@ -650,7 +762,7 @@ const IleModeles = (() => {
       n += liste.length;
     }
     console.log(`Ervane : semis dense, ${n} touffes et bouquets en ${meshes.length} maillages`);
-    return { meshes, mat, n, octetsGeo: octets, octetsTex: 1024 * 256 * 4 * 4 / 3 };
+    return { meshes, mat, n, octetsGeo: octets, octetsTex: 1024 * 512 * 4 * 4 / 3 };
   }
 
   // ----- La fumée des cheminées et des feux de camp (3.36) -----
@@ -943,6 +1055,10 @@ const IleModeles = (() => {
   let ileSol = null;
   // Les places de pierre en cercles de pavés (3.33) : centre, rayon ; huit au plus.
   const MAX_PLACES = 8;
+  // Les parcelles cultivées (phase D) : deux vec4 chacune, [u, v, cos, sin] et [demi-longueur,
+  // demi-largeur, pas des sillons, 0] ; six au plus. La terre labourée, en lumière linéaire.
+  const MAX_PARCELLES = 6;
+  const TERRE_LABOUREE = [0.3, 0.175, 0.08];
   const v3 = c => `vec3(${c.map(x => x.toFixed(4)).join(', ')})`;
   const GLSL_SOL = `
     {
@@ -1020,6 +1136,20 @@ const IleModeles = (() => {
       dalle *= 1.0 - 0.28 * clamp(1.0 - fP / max(wP, 0.001), 0.0, 1.0);
       float wS = wB * nSe;
       vec3 col = c * (wV * gV + (wB - wS) * gB + wG * gG) + wP * dalle + wS * pave * lumC * 0.95;
+      // Les parcelles cultivées : la terre labourée en sillons le long du grand côté (le dessus plus
+      // clair, le creux sombre), un bord tassé sans sillons, une lisière nette un peu ondulée.
+      for (int i = 0; i < ${MAX_PARCELLES}; i++) {
+        vec4 PA = solParcelles[i * 2], PB = solParcelles[i * 2 + 1];
+        if (PB.x <= 0.0) continue;
+        vec2 e = q - PA.xy, lp = vec2(dot(e, PA.zw), dot(e, vec2(-PA.w, PA.z)));
+        float dB = min(PB.x - abs(lp.x), PB.y - abs(lp.y));
+        if (dB < -0.4) continue;
+        float mP = smoothstep(-0.14, 0.06, dB + (ond - 0.5) * 0.2);
+        float sil = 0.5 + 0.5 * cos(lp.y * 6.2832 / PB.z);
+        sil = mix(sil, 0.62, smoothstep(0.5, 0.2, dB));
+        vec3 lab = ${v3(TERRE_LABOUREE)} * gB * mix(0.42, 1.0, sil * sil) * (0.9 + 0.2 * bz.g);
+        col = mix(col, lab, mP);
+      }
       // Les grandes nappes (pas sur les dalles).
       col *= mix(1.0, 0.86 + 0.26 * bz.r, 0.85 * (1.0 - wP));
       // Les ombres des nuages qui passent, le jour (3.35) : un bruit lent qui glisse avec le vent.
@@ -1072,12 +1202,19 @@ const IleModeles = (() => {
     // Les places de pierre (calcaire) assez grandes pour des cercles : centre et rayon.
     const pl = ((ile.T && ile.T.places) || []).filter(p => (p.sol || 'calcaire') === 'calcaire' && p.rayon >= 5).slice(0, MAX_PLACES);
     uniforms.solPlaces = { value: Array.from({ length: MAX_PLACES }, (_, i) => pl[i] ? new THREE.Vector3(pl[i].centre[0], pl[i].centre[1], pl[i].rayon) : new THREE.Vector3(0, 0, 0)) };
+    const pc = ((ile.T && ile.T.objets) || []).filter(o => o.sorte === 'parcelle' && CULTURES[o.culture]).slice(0, MAX_PARCELLES);
+    uniforms.solParcelles = { value: Array.from({ length: MAX_PARCELLES * 2 }, (_, i) => {
+      const o = pc[i >> 1];
+      if (!o) return new THREE.Vector4(0, 0, 0, 0);
+      const t = o.taille || [8, 6];
+      return i % 2 === 0 ? new THREE.Vector4(o.u, o.v, Math.cos(o.rot || 0), Math.sin(o.rot || 0)) : new THREE.Vector4(t[0] / 2, t[1] / 2, CULTURES[o.culture].sillon, 0);
+    }) };
     const lum = lumieresSol(ile.T);
     uniforms.solLumieres = { value: Array.from({ length: MAX_LUMIERES }, (_, i) => lum[i] ? new THREE.Vector4(lum[i][0], lum[i][1], lum[i][2], lum[i][3]) : new THREE.Vector4(0, 0, 0, 0)) };
     uniforms.solNuit = NUIT_SOL;
     uniforms.solTemps = VENT;
     ileSol = ile;
-    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + `\nuniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}]; uniform vec4 solLumieres[${MAX_LUMIERES}]; uniform float solNuit; uniform float solTemps;`;
+    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + `\nuniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}]; uniform vec4 solParcelles[${MAX_PARCELLES * 2}]; uniform vec4 solLumieres[${MAX_LUMIERES}]; uniform float solNuit; uniform float solTemps;`;
     for (const m of mats) {
       const prec = m.onBeforeCompile, cle = Object.prototype.hasOwnProperty.call(m, 'customProgramCacheKey') ? m.customProgramCacheKey : null;
       m.onBeforeCompile = (sh, r) => {
@@ -1094,7 +1231,7 @@ const IleModeles = (() => {
           .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_SOL)
           .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + GLSL_LUMIERES);
       };
-      m.customProgramCacheKey = () => 'sol-meshy-3/' + (cle ? cle.call(m) : '');
+      m.customProgramCacheKey = () => 'sol-meshy-4/' + (cle ? cle.call(m) : '');
       m.needsUpdate = true;
     }
     ile.solCarte = !!carte;

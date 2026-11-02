@@ -426,17 +426,24 @@ const IleGlb = (() => {
   // par tuile et par genre, les formes qui émettent (les lucioles) en InstancedMesh par tuile.
   // `opts.teinte(u, v, nomMaillage, teinte)` : un style peut reteindre une instance avant la cuisson
   // des couleurs (le feuillage d'automne des Mailles du style Lisière, 3.25) ; rend la nouvelle
-  // teinte (linéaire) ou null.
+  // teinte (linéaire) ou null. `opts.cacher(u, v)` : vrai là où une instance du semis de l'export
+  // (`base_*`) n'a plus sa place (sous une parcelle posée après l'export, T.closA).
   function construire(THREE, glb, opts) {
     const { json: G, bin } = glb;
     const groupe = new THREE.Group();
     groupe.name = 'mo_monde';
     const cache = new Map();
     const fusion = new Map(), fusionS = new Map();
-    let appels = 0, triangles = 0;
+    let appels = 0, triangles = 0, caches = 0;
     for (const [mi, matsTous] of instances(THREE, G)) {
       const mesh = G.meshes[mi];
       let mats = matsTous;
+      if (opts && opts.cacher && /^base_/.test(mesh.name || '')) {
+        const n0 = mats.length;
+        mats = mats.filter(m => !opts.cacher(m.elements[12], m.elements[14]));
+        caches += n0 - mats.length;
+        if (!mats.length) continue;
+      }
       if (opts && opts.teinte) for (const m of mats) { const t = m.teinte ? opts.teinte(m.elements[12], m.elements[14], mesh.name || '', m.teinte) : null; if (t) m.teinte = t; }
       // Le semis Meshy (opts.semis, js/ile-modeles.js) : la forme remplacée par son modèle.
       const genre = opts && opts.semis && opts.semis.formes[mesh.name];
@@ -495,6 +502,7 @@ const IleGlb = (() => {
     }
     groupe.userData.appels = appels;
     groupe.userData.triangles = Math.round(triangles);
+    groupe.userData.caches = caches;
     return groupe;
   }
 
@@ -505,7 +513,8 @@ const IleGlb = (() => {
   async function poser(THREE, ile, scene, url, opts) {
     const glb = await lire(url || source());
     const semis = opts && opts.semis;
-    const groupe = construire(THREE, glb, { semis, teinte: ile.nuit && typeof ile.nuit.teinteGlb === 'function' ? (u, v, nom, t) => ile.nuit.teinteGlb(u, v, nom, t) : null });
+    const T = ile.T, cacher = T && typeof T.closA === 'function' ? (u, v) => T.closA(u, v) : null;
+    const groupe = construire(THREE, glb, { semis, cacher, teinte: ile.nuit && typeof ile.nuit.teinteGlb === 'function' ? (u, v, nom, t) => ile.nuit.teinteGlb(u, v, nom, t) : null });
     // La mémoire de la scène (Ile3D.stats) : le semis Meshy cuit et son atlas.
     if (semis && groupe.userData.semisMeshy) { ile.octetsGeo = (ile.octetsGeo || 0) + groupe.userData.semisMeshy.octets; ile.octetsTex = (ile.octetsTex || 0) + semis.octets.tex; }
     // Et le reste du monde modelé (le sol, les objets, les lignes, les agrafes, les fils, le semis de

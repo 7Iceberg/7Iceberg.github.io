@@ -612,6 +612,21 @@ const IleDecor = (() => {
           for (const hh of [0.5, 0.9]) { const [ax, az] = local(o, -lg / 2, 0), [bx, bz] = local(o, lg / 2, 0); ajouter(o, 'acc', L.cyl(4), entre(ax, y + hh, az, bx, y + hh, bz, 0.06), { c: C.boisClair }); }
           break;
         }
+        case 'parcelle': {
+          // Une parcelle cultivée : la barrière de bois de ses quatre côtés (le monde modelé y met la
+          // terre labourée, les cultures et la barrière de Meshy, js/ile-modeles.js).
+          const [lg, pr] = o.taille || [8, 6];
+          for (const [x0, z0, x1, z1] of [[-lg / 2, -pr / 2, lg / 2, -pr / 2], [lg / 2, -pr / 2, lg / 2, pr / 2], [lg / 2, pr / 2, -lg / 2, pr / 2], [-lg / 2, pr / 2, -lg / 2, -pr / 2]]) {
+            const n = Math.max(1, Math.round(Math.hypot(x1 - x0, z1 - z0) / 1.5));
+            for (let q = 0; q < n; q++) {
+              const [ax, az] = local(o, x0 + (x1 - x0) * q / n, z0 + (z1 - z0) * q / n), [bx, bz] = local(o, x0 + (x1 - x0) * (q + 1) / n, z0 + (z1 - z0) * (q + 1) / n);
+              const ya = solPlat(ax, az), yb = solPlat(bx, bz);
+              ajouter(o, 'acc', L.boite, matrice(ax, ya - 0.05, az, 0, r, 0, 0.14, 1.05, 0.14), { c: C.bois });
+              for (const hh of [0.5, 0.9]) ajouter(o, 'acc', L.cyl(4), entre(ax, ya + hh, az, bx, yb + hh, bz, 0.06), { c: C.boisClair });
+            }
+          }
+          break;
+        }
         case 'linge': {
           // Une corde à linge entre deux piquets, des pièces de toile qui pendent.
           const lg = o.longueur || 4;

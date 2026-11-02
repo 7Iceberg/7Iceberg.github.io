@@ -278,9 +278,27 @@ const IleTerrain = (() => {
     tonneau: o => [{ x: 0, y: 0, r: 0.45 }],
     barriere: o => [{ rect: true, x: 0, y: 0, l: o.longueur || 3, p: 0.3 }],
     linge: o => { const l = (o.longueur || 4) / 2; return [{ x: -l, y: 0, r: 0.2 }, { x: l, y: 0, r: 0.2 }]; },
+    // Une parcelle cultivée (phase D, docs/REFERENCE-OPEN-WORLD.md) : toute la terre close de sa barrière
+    // (`taille` : [longueur le long de `rot`, largeur], 8 x 6 u par défaut) ; on ne marche pas dans les
+    // sillons.
+    parcelle: o => { const t = o.taille || [8, 6]; return [{ rect: true, x: 0, y: 0, l: t[0], p: t[1] }]; },
     // Sans empreinte : ce qu'on voit sans jamais buter dedans.
     fil_d_or: () => [], plateforme: () => [], cerf_volant: () => [], rambarde: () => [], auvent: () => [],
   };
+
+  // Les objets posés après l'export du monde modelé (assets/monde/ervane.glb) : ils ne pèsent pas sur le
+  // tirage du semis du décor (le même que celui du GLB, arbre pour arbre) ; ce qui tombe dessous est
+  // retiré après coup (et caché dans le GLB : T.closA, IleGlb.construire).
+  const SANS_TIRAGE = new Set(['parcelle']);
+  // La marge (u) autour de ces objets : la même pour le semis retiré ici et pour celui que le GLB cache
+  // (IleGlb.poser), pour qu'un arbre bloque le pas là, et là seulement, où on le voit.
+  const MARGE_CLOS = 0.4;
+  // Le point (u, v) dans l'un des rectangles d'empreinte de ces objets, élargis de m.
+  const dansRect = (liste, u, v, m) => liste.some(o => o.empreinte.some(f => {
+    if (!f.rect) return false;
+    const dx = u - f.u, dy = v - f.v, a = dx * f.c + dy * f.s, b = -dx * f.s + dy * f.c;
+    return abs(a) < f.l + m && abs(b) < f.p + m;
+  }));
 
   // Les familles du semis : ce qu'elles bloquent (rayon de tronc ou fraction du rayon) et ce
   // qu'elles deviennent dans une aire cuite (`combat`).
@@ -800,7 +818,8 @@ const IleTerrain = (() => {
     const libreFin = (u, v) => { const i = floor(u * 2), j = floor(v * 2); return i >= 0 && j >= 0 && i < FX && j < FY && !videF[j * FX + i]; };
     const pres = (u, v, liste, r) => liste.some(p => { const dx = u - p.u, dy = v - p.v; return dx * dx + dy * dy < r * r; });
     const lieuxPts = Object.values(lieux).map(p => ({ u: p[0], v: p[1] }));
-    const dansObjet = (u, v, m) => objets.some(o => o.empreinte.some(f => {
+    const tires = objets.filter(o => !SANS_TIRAGE.has(o.sorte)), clos = objets.filter(o => SANS_TIRAGE.has(o.sorte));
+    const dansObjet = (u, v, m) => tires.some(o => o.empreinte.some(f => {
       if (f.anneau) { const dx = u - f.u, dy = v - f.v, d = sqrt(dx * dx + dy * dy); return d > f.r1 - m && d < f.r2 + m; }
       if (f.rect) { const dx = u - f.u, dy = v - f.v, a = dx * f.c + dy * f.s, b = -dx * f.s + dy * f.c; return abs(a) < f.l + m && abs(b) < f.p + m; }
       const dx = u - f.u, dy = v - f.v; return dx * dx + dy * dy < (f.r + m) * (f.r + m);
@@ -867,9 +886,11 @@ const IleTerrain = (() => {
         }
       });
     });
+    // Ce qui tombe sous une parcelle (SANS_TIRAGE) s'en va, le reste ne bouge pas.
+    const garde = clos.length ? out.filter(e => !dansRect(clos, e.u, e.v, MARGE_CLOS)) : out;
     // Ordre stable et coordonnées quantifiées (mêmes bits partout).
-    for (const e of out) { e.u = quantifier(e.u); e.v = quantifier(e.v); e.rayon = quantifier(e.rayon); e.bloque = quantifier(e.bloque); }
-    return out;
+    for (const e of garde) { e.u = quantifier(e.u); e.v = quantifier(e.v); e.rayon = quantifier(e.rayon); e.bloque = quantifier(e.bloque); }
+    return garde;
   }
 
   // ======================================================================
@@ -918,6 +939,10 @@ const IleTerrain = (() => {
     T.secteurIndexA = (u, v) => { const s = T.secteur[pres(u, v)]; return s === 255 ? -1 : s; };
     T.secteurA = (u, v) => { const s = T.secteurIndexA(u, v); return s < 0 ? null : T.secteurs[s]; };
     T.zoneA = (u, v) => T.regionsZone[T.region[pres(u, v)]] || null;
+    // Sous une parcelle (les objets SANS_TIRAGE), à m près (MARGE_CLOS par défaut) : le monde modelé y
+    // cache son semis.
+    const clos = (T.objets || []).filter(o => SANS_TIRAGE.has(o.sorte));
+    T.closA = (u, v, m) => dansRect(clos, u, v, m == null ? MARGE_CLOS : m);
     T.signature = () => signature(T);
     T.exporter = () => exporter(T);
     return T;

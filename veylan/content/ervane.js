@@ -252,6 +252,14 @@
       { sorte: 'source', u: 172.5, v: 146, rot: 2.6, element: 'eau' },
       { sorte: 'ponton', u: 155, v: 148, rot: 0 },
       { sorte: 'source', u: 147.5, v: 163.5, rot: 1.1, element: 'terre' },
+      // Les parcelles cultivées des Mailles (docs/REFERENCE-OPEN-WORLD.md, phase D ; en fin de liste,
+      // l'index des objets d'avant ne bouge pas) : la terre labourée en sillons, close de barrières de
+      // bois (`taille` : [longueur le long de `rot`, largeur]). Le potager de la maison de l'est (des
+      // choux, un rang de courges, un épouvantail), le champ de blé entre les maisons du sud (des gerbes,
+      // une brouette), le champ de lin bleu de l'ouest, celui dont on file le Fil (un épouvantail).
+      { sorte: 'parcelle', u: 221, v: 102.5, rot: 1.42, taille: [9, 6], culture: 'potager' },
+      { sorte: 'parcelle', u: 216, v: 124.5, rot: 0.15, taille: [8, 6], culture: 'ble' },
+      { sorte: 'parcelle', u: 169.5, v: 84, rot: 1.42, taille: [9, 6], culture: 'lin' },
     ],
     lieux: {
       // `eveil` : où naît un nouveau Veilleur, à l'écart du cadre du Métier (vu de la caméra, le
