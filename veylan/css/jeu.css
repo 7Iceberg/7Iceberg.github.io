@@ -673,24 +673,10 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   background: rgba(var(--v-fen-rgb, 12, 19, 29), 0.92); border: 1px solid rgba(var(--v-a-rgb, 233, 207, 152), 0.35);
 }
 .vy-barre-sorts__etats[hidden] { display: none; }
-/* Le cœur, l'étoile, le losange */
-.vy-barre-sorts__vie { flex: none; display: flex; align-items: center; gap: 3px; }
-.vy-coeur { position: relative; flex: none; width: 46px; height: 42px; display: grid; place-items: center; }
-.vy-coeur svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.55)); }
-.vy-coeur__fond { fill: #4a1712; stroke: rgba(240, 122, 92, 0.6); stroke-width: 1.8; }
-.vy-coeur__vie { fill: var(--v-pv, #f07a5c); }
-.vy-coeur__niveau { transition: y 0.35s var(--vy-courbe), height 0.35s var(--vy-courbe); }
-.vy-coeur__reflet { fill: none; stroke: #fff; stroke-opacity: 0.5; stroke-width: 2.4; stroke-linecap: round; }
-.vy-coeur b { position: relative; margin-top: -3px; font: 800 14px/1 var(--vy-font-ui); color: #fff; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 6px rgba(0, 0, 0, 0.6); }
-.vy-coeur.bas .vy-coeur__vie { animation: vy-coeur-bat 1.1s ease-in-out infinite; }
-@keyframes vy-coeur-bat { 50% { fill: #ff4a2e; } }
-.vy-barre-sorts__pts { flex: none; display: flex; flex-direction: column; gap: 1px; }
-.vy-res { position: relative; width: 24px; height: 24px; display: grid; place-items: center; }
-.vy-res svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5)); }
-.vy-res path { stroke: rgba(0, 0, 0, 0.5); stroke-width: 1.3; stroke-linejoin: round; }
-.vy-res--pa path { fill: var(--v-pa, #e9cf98); }
-.vy-res--pm path { fill: var(--v-pm, #8db585); }
-.vy-res b { position: relative; margin-top: 1px; font: 800 11px/1 var(--vy-font-ui); color: #17110a; font-variant-numeric: tabular-nums; }
+/* Les gemmes des PV, PA et PM (le bloc de css/fenetres.css, plus petit) */
+.vy-barre-sorts__vie { flex: none; display: flex; align-items: center; }
+.vy-barre-sorts__vie .vy-gemmes { --u: 28px; }
+.vy-barre-sorts__vie .vy-gemmes--grappe { --u: 28px; }
 /* Les sorts */
 .vy-barre-sorts__sorts { min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 3px; padding: 0 8px; border-left: 1px solid rgba(var(--v-ligne-rgb, 201, 166, 107), 0.16); border-right: 1px solid rgba(var(--v-ligne-rgb, 201, 166, 107), 0.16); }
 .vy-barre-sorts__titre { display: none; font: 700 9px var(--vy-font-ui); letter-spacing: 0.18em; text-transform: uppercase; color: var(--v-texte-2, #a79f8f); text-align: center; }
@@ -699,7 +685,7 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-barre-sorts .vy-sort {
   position: relative; display: block; flex: none; width: 40px; height: 40px; min-height: 0; padding: 0;
   border: 1px solid rgba(var(--v-ligne-rgb, 201, 166, 107), 0.22); border-radius: 10px;
-  background: rgba(var(--v-carte-rgb, 24, 37, 54), 0.9);
+  background: rgba(var(--v-carte-rgb, 24, 37, 54), 0.9); box-shadow: none;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .vy-barre-sorts .vy-sort__icone { position: absolute; inset: 3px; width: calc(100% - 6px); height: calc(100% - 6px); border-radius: 7px; object-fit: cover; display: block; box-shadow: none; }
@@ -778,10 +764,8 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
     pointer-events: none;
   }
   #app.vy-verre .vy-barre-sorts__boite { gap: 12px; padding: 7px 10px 7px 8px; border-radius: 18px; }
-  #app.vy-verre .vy-coeur { width: 62px; height: 57px; }
-  #app.vy-verre .vy-coeur b { font-size: 18px; margin-top: -4px; }
-  #app.vy-verre .vy-res { width: 30px; height: 30px; }
-  #app.vy-verre .vy-res b { font-size: 13px; }
+  #app.vy-verre .vy-barre-sorts__vie .vy-gemmes { --u: 39px; margin: -22px 0 0 -6px; }
+  #app.vy-verre .vy-barre-sorts__vie .vy-gemmes--grappe { --u: 40px; margin: -12px 0 0 -4px; }
   #app.vy-verre .vy-barre-sorts__sorts { padding: 0 12px; }
   #app.vy-verre .vy-barre-sorts__titre { display: block; }
   #app.vy-verre .vy-barre-sorts__liste { display: grid; grid-template-columns: repeat(var(--colonnes, 6), 44px); grid-auto-rows: 44px; gap: 6px; overflow: visible; padding: 6px 4px 0; margin-top: -2px; }

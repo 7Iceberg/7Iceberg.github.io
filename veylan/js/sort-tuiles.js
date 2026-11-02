@@ -1,4 +1,4 @@
-// Les tuiles des sorts, à la manière de Dofus (docs/ANALYSE-ARBRE-SORTS.md) : un carré arrondi au
+// Les tuiles des sorts, à la manière de Dofus (docs/SORTS-FENETRE.md) : un carré arrondi au
 // cadre en relief de la couleur de l'élément (argent pour Aer, or pour Neutre, vert pour Terra,
 // rouge pour Ignis, bleu pour Aqua), un médaillon creusé au centre, le motif du sort ton sur ton
 // (clair, cerné de la teinte sombre de l'élément), les fils du Voile en cyan, et au bas les étoiles

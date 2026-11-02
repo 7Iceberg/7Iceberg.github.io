@@ -127,31 +127,24 @@ Object.assign(Hud.prototype, {
     if (this.fen && this.fen.isOpen('journal')) this.fen.render('journal');
   },
 
-  // ----- Bloc vital : PV dans un cristal, PA et PM, raccourcis -----
+  // ----- Bloc vital : les gemmes (PV, PA, XP, PM) dans le style choisi, raccourcis -----
 
   refreshVital() {
     const ch = this.world.ch;
     if (!ch) return;
     const d = ch.derived();
-    const pct = Math.max(0, Math.min(1, ch.hp / d.hpMax));
     const v = document.getElementById('vital');
-    const sig = [d.hpMax, d.pa, d.pm].join('|');
-    if (v.dataset.sig !== sig) {
-      v.dataset.sig = sig;
-      v.innerHTML =
-        `<div class="vy-vital__pv" role="img" aria-label="Points de vie"><svg viewBox="0 0 80 92" aria-hidden="true">` +
-        `<defs><clipPath id="clip-pv"><path d="M40 3 76 26 70 70 40 89 10 70 4 26z"/></clipPath>` +
-        `<linearGradient id="grad-pv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a7c"/><stop offset="1" stop-color="#9c2d1d"/></linearGradient></defs>` +
-        `<path d="M40 3 76 26 70 70 40 89 10 70 4 26z" class="vy-vital__coque"/>` +
-        `<rect class="vy-vital__niveau" clip-path="url(#clip-pv)" x="0" width="80" y="0" height="92" fill="url(#grad-pv)"/>` +
-        `<path d="M40 3 76 26 70 70 40 89 10 70 4 26z" class="vy-vital__bord"/><path d="M40 3 40 89M4 26 76 26" class="vy-vital__facette"/></svg>` +
-        `<span class="vy-vital__valeur"><b></b><span></span></span></div>` +
-        `<div class="vy-vital__pts"><span class="vy-vital__pa" title="Points d'action"><b>${d.pa}</b><small>PA</small></span><span class="vy-vital__pm" title="Points de mouvement"><b>${d.pm}</b><small>PM</small></span></div>`;
+    const style = this.styleVital();
+    if (v.dataset.style !== style || !v.firstElementChild) {
+      v.dataset.style = style;
+      // Le bloc des gemmes (js/gemmes.js) : « Cœur et losanges » ou « Grappe », avec l'XP.
+      v.innerHTML = Gemmes.bloc(style, true);
     }
-    v.querySelector('.vy-vital__niveau').setAttribute('y', String(92 * (1 - pct)));
-    v.querySelector('.vy-vital__valeur b').textContent = ch.hp;
-    v.querySelector('.vy-vital__valeur span').textContent = d.hpMax;
-    v.classList.toggle('bas', pct < 0.3);
+    const xp = ch.xpProgress(), max = ch.level >= Character.MAX_LEVEL;
+    Gemmes.maj(v.firstElementChild, {
+      hp: ch.hp, hpMax: d.hpMax, pa: d.pa, paMax: d.pa, pm: d.pm, pmMax: d.pm, xp,
+      xpTexte: max ? 'max' : '', xpTitre: max ? `Niveau ${ch.level}, le plus haut` : `Niveau ${ch.level} : ${ch.xp} / ${Character.xpToNext(ch.level)} XP`,
+    });
     // Raccourcis : pains et potions possédés, six cases.
     const conso = Object.keys(ch.inventory).map(id => Items.get(id)).filter(x => x && x.kind === 'consumable').sort((a, b) => (a.heal || 0) - (b.heal || 0)).slice(0, 6);
     const cells = conso.map(x => `<button class="vy-case" data-rarete="${Items.rarity(x)}" data-use="${x.id}" title="${esc(x.name)} : utiliser" aria-label="Utiliser ${esc(x.name)}"><span class="vy-case__icone">${Hud.picto(x)}</span><span class="vy-case__nombre">${ch.count(x.id)}</span></button>`);
@@ -253,9 +246,23 @@ Object.assign(Hud.prototype, {
 
   // ----- Thèmes de l'interface -----
 
-  loadTheme() { try { return localStorage.getItem('veylan.theme') || 'nuit'; } catch (e) { return 'nuit'; } },
+  // Le thème Duality (css/theme-duality.css) est celui par défaut ; qui gardait la Nuit d'Orsane
+  // d'origine (rangée à chaque démarrage) passe une fois au thème Duality, puis garde son choix.
+  loadTheme() {
+    try {
+      let t = localStorage.getItem('veylan.theme');
+      if (!localStorage.getItem('veylan.theme.duality')) { localStorage.setItem('veylan.theme.duality', '1'); if (!t || t === 'nuit') t = 'duality'; }
+      return t || 'duality';
+    } catch (e) { return 'duality'; }
+  },
   applyTheme(t) {
     document.getElementById('app').dataset.uiTheme = t;
+    // Le thème Duality lit Poppins, Rajdhani et JetBrains Mono : on les fait venir tout de suite,
+    // pour qu'aucune ne change la taille d'un élément en arrivant (en combat, la caméra cadre
+    // l'aire d'après la barre et la frise).
+    if (t === 'duality' && document.fonts && document.fonts.load) {
+      for (const f of ['400 12px Poppins', '500 12px Poppins', '600 12px Poppins', '700 12px Poppins', '600 12px Rajdhani', '700 12px Rajdhani', '500 12px "JetBrains Mono"', '700 12px "JetBrains Mono"']) document.fonts.load(f).catch(() => {});
+    }
     try { localStorage.setItem('veylan.theme', t); } catch (e) { /* rien */ }
   },
 
@@ -284,6 +291,23 @@ Object.assign(Hud.prototype, {
     try { v = parseInt(localStorage.getItem('veylan.taille'), 10); } catch (e) { /* rien */ }
     return Number.isFinite(v) ? Math.max(80, Math.min(130, v)) : 100;
   },
+  // Le style du bloc vital et des gemmes de la barre de combat (Options, « Bloc vital ») :
+  // « Cœur et losanges » par défaut, ou « Grappe » (js/gemmes.js).
+  styleVital() {
+    if (!this.vital) {
+      let v = null;
+      try { v = localStorage.getItem('veylan.vital'); } catch (e) { /* rien */ }
+      this.vital = Gemmes.styleSur(v);
+    }
+    return this.vital;
+  },
+  choisirVital(style) {
+    this.vital = Gemmes.styleSur(style);
+    try { localStorage.setItem('veylan.vital', this.vital); } catch (e) { /* rien */ }
+    this.refreshVital();
+    if (this.jeu) this.jeu.majStyleVital();
+    return this.vital;
+  },
   appliquerTaille(taille, garder) {
     const v = Math.max(80, Math.min(130, Math.round(taille)));
     const app = document.getElementById('app');
@@ -298,7 +322,7 @@ Object.assign(Hud.prototype, {
 
 Hud.OPACITE = 90;
 
-Hud.THEMES = [['nuit', 'Nuit d\'Orsane', '#172334', '#c9a66b'], ['royal', 'Bleu des Voiles', '#13264a', '#7fb4ff'], ['braise', 'Braise de Kaldum', '#2a1714', '#f07a5c'], ['cimes', 'Vert des Cimes', '#15261c', '#8db585'], ['ardoise', 'Ardoise claire', '#d9d2c3', '#8e7144']];
+Hud.THEMES = [['duality', 'Duality', '#121019', '#ff8a3d'], ['nuit', 'Nuit d\'Orsane', '#172334', '#c9a66b'], ['royal', 'Bleu des Voiles', '#13264a', '#7fb4ff'], ['braise', 'Braise de Kaldum', '#2a1714', '#f07a5c'], ['cimes', 'Vert des Cimes', '#15261c', '#8db585'], ['ardoise', 'Ardoise claire', '#d9d2c3', '#8e7144']];
 Hud.MENUS = MENUS;
 Hud.STAT = STAT;
 Hud.pic = pic;

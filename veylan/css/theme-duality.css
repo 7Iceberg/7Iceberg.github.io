@@ -1,0 +1,235 @@
+/* ==========================================================================
+   Veylan : le thème « Duality » de l'interface (Options, thème par défaut)
+   --------------------------------------------------------------------------
+   La direction artistique de duality_skills, telle quelle : un anthracite violacé presque noir,
+   un accent en dégradé orange vers rose, des blocs à coins de 14 px au filet blanc à 7 %, des
+   titres de bloc en Rajdhani capitales espacées précédés d'une pastille dégradée, des tuiles de
+   chiffres (étiquette en capitales, gros chiffre coloré), des jauges fines dégradées qui luisent,
+   les nombres en JetBrains Mono, le texte en Poppins ; vert, rouge, ambre, bleu pour les valeurs.
+   Rien ne change dans le jeu ni dans la disposition des fenêtres : seulement les teintes, les
+   polices et l'habillage (couche posée sur css/verre.css, chargée après lui).
+   ========================================================================== */
+
+/* ----- Les teintes et les polices ----- */
+#app.vy-verre[data-ui-theme="duality"] {
+  --v-a: #ff8a3d; --v-b: #ff3d7f; --v-a-rgb: 255, 138, 61; --v-b-rgb: 255, 61, 127;
+  --v-titre: #f3f0f8; --v-accent-texte: #ff9a55;
+  --v-ligne-rgb: 255, 255, 255;
+  --v-act: #38bdf8; --v-act-rgb: 56, 189, 248;
+  --v-fen-rgb: 12, 11, 17; --v-pan-rgb: 14, 12, 19; --v-carte-rgb: 24, 22, 32; --v-champ-rgb: 10, 9, 15;
+  --v-texte: #f3f0f8; --v-texte-2: rgba(243, 240, 248, 0.62); --v-discret: rgba(243, 240, 248, 0.38); --v-encre: #ffffff;
+  --v-pv: #ff5c6c; --v-pa: #4da3ff; --v-pm: #2fd27a; --v-xp: #b78bff;
+  --v-ombre: 0 24px 60px rgba(0, 0, 0, 0.6);
+  --v-ombre-legere: 0 8px 22px rgba(0, 0, 0, 0.4);
+  --v-rayon: 16px;
+  --v-bord: 1px solid rgba(255, 255, 255, 0.07);
+  --fen-filet: rgba(255, 255, 255, 0.07);
+  --d-carte: rgba(20, 18, 27, 0.94); --d-carte2: rgba(255, 255, 255, 0.035);
+  --d-ligne: rgba(255, 255, 255, 0.07); --d-ligne2: rgba(255, 255, 255, 0.13);
+  --d-vert: #2fd27a; --d-rouge: #ff5c6c; --d-ambre: #f5b83d; --d-bleu: #38bdf8;
+  --d-mono: "JetBrains Mono", ui-monospace, monospace;
+  --vy-font-titre: "Rajdhani", "Poppins", system-ui, sans-serif;
+  --vy-font-ui: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --vy-font-lecture: "Poppins", system-ui, sans-serif;
+  font-family: var(--vy-font-ui);
+  --fen-z: 0.9;   /* les fenêtres un peu plus petites que la taille de l'interface */
+}
+
+/* ----- Les fenêtres réduites : leur contenu et leur largeur suivent --fen-z (css/verre.css, 11) ----- */
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre > * { zoom: calc(var(--ui-z, 1) * var(--fen-z, 1)); }
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre { width: min(calc(var(--largeur, 420px) * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 16px)); }
+/* Les fenêtres à hauteur fixe, sur ordinateur, raccourcissent d'autant (au téléphone, elles
+   prennent déjà la hauteur de leur contenu). */
+@media (min-width: 721px) and (min-height: 481px), (min-width: 1001px) {
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--caracs:not(.reduite) { height: min(calc(690px * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 72px)); }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--inventaire:not(.reduite) { height: min(calc(640px * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 72px)); }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--quetes:not(.reduite) { height: min(calc(620px * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 72px)); }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--sorts:not(.reduite) { height: min(calc(600px * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 72px)); }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite { width: min(calc((var(--largeur, 420px) + 24px) * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 8px)); }
+}
+
+/* ----- Les fenêtres : l'en-tête de duality_skills (la marque en carré dégradé, le titre en
+   capitales espacées), le corps anthracite au liseré dégradé ----- */
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre__tete {
+  min-height: 40px; padding: 4px 5px 4px 6px;
+  background: rgba(var(--v-pan-rgb), var(--v-alpha, 0.96));
+  border: 1px solid var(--d-ligne); border-radius: 14px;
+}
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre__icone { width: 28px; height: 28px; padding: 6px; border-radius: 10px; color: #fff; background: var(--v-degrade); box-shadow: 0 6px 20px rgba(var(--v-a-rgb), 0.35); }
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre__titre { font: 700 15px/1.1 var(--vy-font-titre); letter-spacing: 2.2px; text-align: left; }
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre__touche { font: 700 10px var(--d-mono); border-color: var(--d-ligne2); background: rgba(255, 255, 255, 0.06); color: #e6e1f0; }
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre__bouton { width: 28px; height: 28px; border-radius: 10px; border-color: var(--d-ligne); background: var(--d-carte2); }
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre__bouton[data-act="fermer"]:hover { color: #fff; background: rgba(var(--v-a-rgb), 0.2); border-color: rgba(var(--v-a-rgb), 0.4); }
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre__corps {
+  background: var(--v-degrade) top / 100% 2px no-repeat, radial-gradient(ellipse 70% 50% at 0% 0%, rgba(var(--v-b-rgb), 0.07), transparent 70%), radial-gradient(ellipse 60% 50% at 100% 100%, rgba(var(--v-a-rgb), 0.06), transparent 70%), rgba(var(--v-pan-rgb), var(--v-alpha, 0.96));
+  border-color: var(--d-ligne);
+}
+#app.vy-verre[data-ui-theme="duality"] .vy-fen-pied, #app.vy-verre[data-ui-theme="duality"] .vy-caracs__pied { border-top-color: var(--d-ligne); background: rgba(255, 255, 255, 0.02); }
+
+/* ----- Les titres de bloc : capitales espacées, une pastille dégradée qui luit ----- */
+#app.vy-verre[data-ui-theme="duality"] .vy-sous,
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre__corps h4,
+#app.vy-verre[data-ui-theme="duality"] .lbl {
+  font: 700 12px/1.2 var(--vy-font-titre); letter-spacing: 2.4px; text-transform: uppercase; color: rgba(243, 240, 248, 0.42);
+}
+#app.vy-verre[data-ui-theme="duality"] .vy-sous > span:first-child { display: inline-flex; align-items: center; gap: 8px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-sous > span:first-child::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--v-degrade); box-shadow: 0 0 8px rgba(var(--v-a-rgb), 0.8); }
+#app.vy-verre[data-ui-theme="duality"] .vy-sous::after { background: transparent; }
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre__corps h3 { font: 700 18px/1.15 var(--vy-font-titre); letter-spacing: 1.6px; text-transform: uppercase; }
+
+/* ----- Les onglets : capitales espacées, le soulignement dégradé qui luit (comme Aperçu, Arbre) ----- */
+#app.vy-verre[data-ui-theme="duality"] .vy-onglets { gap: 4px; padding: 0 0 6px; border: 0; border-bottom: 1px solid var(--d-ligne); border-radius: 0; background: none; }
+#app.vy-verre[data-ui-theme="duality"] .vy-onglet { position: relative; padding: 6px 10px; border-radius: 8px; background: none; font: 700 13px/1.1 var(--vy-font-titre); letter-spacing: 2.2px; text-transform: uppercase; color: rgba(243, 240, 248, 0.42); }
+#app.vy-verre[data-ui-theme="duality"] .vy-onglet:hover { color: rgba(243, 240, 248, 0.68); background: none; }
+#app.vy-verre[data-ui-theme="duality"] .vy-onglet.on { color: #fff; background: none; box-shadow: none; }
+#app.vy-verre[data-ui-theme="duality"] .vy-onglet.on::after { content: ""; position: absolute; left: 22%; right: 22%; bottom: -7px; height: 2px; border-radius: 2px; background: var(--v-degrade); box-shadow: 0 0 14px rgba(var(--v-a-rgb), 0.8); }
+
+/* ----- Les boutons : le plein en dégradé, le simple sur fond clair à 3,5 %, en capitales ----- */
+#app.vy-verre[data-ui-theme="duality"] :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton {
+  border-radius: 10px; border: 1px solid var(--d-ligne2); background: var(--d-carte2); color: rgba(243, 240, 248, 0.68);
+  font: 700 13px/1.1 var(--vy-font-titre); letter-spacing: 1.6px; text-transform: uppercase;
+}
+#app.vy-verre[data-ui-theme="duality"] :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton:hover:not(:disabled, [aria-disabled="true"]) { color: #fff; border-color: rgba(255, 255, 255, 0.25); }
+#app.vy-verre[data-ui-theme="duality"] :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton--primaire { color: #fff; border-color: transparent; background: var(--v-degrade); box-shadow: 0 8px 22px rgba(var(--v-a-rgb), 0.28); }
+#app.vy-verre[data-ui-theme="duality"] :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton--primaire:hover:not(:disabled, [aria-disabled="true"]) { color: #fff; filter: brightness(1.1); }
+#app.vy-verre[data-ui-theme="duality"] :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton--fantome { border-color: transparent; background: none; }
+
+/* ----- Les jauges : 5 px, piste à 7 %, le dégradé qui luit ; l'XP aussi ----- */
+#app.vy-verre[data-ui-theme="duality"] .vy-jauge--fine { --_hauteur: 5px; background: rgba(255, 255, 255, 0.07); }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__xp .vy-jauge,
+#app.vy-verre[data-ui-theme="duality"] .vy-panneau__xp-jauge .vy-jauge,
+#app.vy-verre[data-ui-theme="duality"] #player-bar .vy-jauge--xp { --_remplissage: linear-gradient(90deg, var(--v-a), var(--v-b)); --_bord: transparent; }
+#app.vy-verre[data-ui-theme="duality"] .vy-jauge--fine .vy-jauge__barre,
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__xp .vy-jauge__barre { box-shadow: 0 0 10px rgba(var(--v-a-rgb), 0.6); }
+
+/* ----- Les blocs : coins de 14 px, fond anthracite, filet blanc à 7 % ----- */
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__tete {
+  padding: 9px 11px; border: 1px solid var(--d-ligne); border-radius: 14px; background: var(--d-carte);
+}
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__tete { grid-template-columns: 40px minmax(0, 1fr) minmax(120px, 0.85fr); column-gap: 11px; }
+@media (max-width: 720px), (max-height: 480px) and (max-width: 1000px) {
+  #app.vy-verre[data-ui-theme="duality"] .vy-caracs__tete { grid-template-columns: 38px minmax(0, 1fr) minmax(150px, 1fr); padding: 8px 10px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-caracs__tete .vy-fiche__portrait { width: 38px; height: 42px; font-size: 16px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fiche__nom { font-size: 17px; }
+}
+/* Le portrait de la classe en hexagone au contour dégradé, comme le niveau du personnage. */
+#app.vy-verre[data-ui-theme="duality"] .vy-fiche__portrait {
+  position: relative; width: 40px; height: 44px; border-radius: 0; background: var(--v-degrade); box-shadow: none; color: #fff;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  font: 700 18px var(--vy-font-titre);
+}
+#app.vy-verre[data-ui-theme="duality"] .vy-fiche__portrait::before { content: ""; position: absolute; inset: 2px; z-index: -1; background: #121019; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+#app.vy-verre[data-ui-theme="duality"] .vy-fiche__portrait { isolation: isolate; }
+#app.vy-verre[data-ui-theme="duality"] .vy-fiche__nom { font: 700 18px/1.05 var(--vy-font-titre); letter-spacing: 1.6px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-fiche__classe { font-size: 11.5px; color: rgba(243, 240, 248, 0.62); }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__xp > span { font: 700 9.5px var(--vy-font-titre); letter-spacing: 1.6px; text-transform: uppercase; color: rgba(243, 240, 248, 0.42); }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__xp > small { font: 700 11px var(--d-mono); color: #f3f0f8; }
+
+/* Les tuiles de chiffres : l'étiquette en capitales, le gros chiffre coloré. */
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__vitaux { gap: 6px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__ligne,
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__ligne:nth-child(odd) {
+  padding: 7px 10px 8px; border: 1px solid var(--d-ligne); border-radius: 12px; background: var(--d-carte);
+}
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__ligne > span { font: 700 9.5px/1.2 var(--vy-font-titre); letter-spacing: 1.6px; color: rgba(243, 240, 248, 0.42); }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__ligne > b { font: 700 21px/1.05 var(--vy-font-titre); margin-top: 2px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__ligne[data-k="initiative"] > b { color: var(--d-bleu); }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__ligne[data-k="prospection"] > b { color: var(--d-ambre); }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__ligne[data-k="invocations"] > b { color: #b78bff; }
+
+/* Les lignes : une tuile d'icône teintée, le nom, la valeur en Mono, le « + » dégradé. */
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__stat,
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__stat:nth-child(even) {
+  border: 1px solid var(--d-ligne); border-radius: 12px; background: var(--d-carte2);
+}
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__stat:hover { border-color: var(--d-ligne2); }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__stat > .vy-pic { border-radius: 9px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__nom { font-weight: 500; font-size: 13px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__nom small { font: 500 10.5px var(--d-mono); color: rgba(243, 240, 248, 0.38); }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__stat > b { font: 700 14px var(--d-mono); }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__plus,
+#app.vy-verre[data-ui-theme="duality"] .vy-sort__plus:not(:disabled) { border-radius: 9px; color: #fff; background: var(--v-degrade); box-shadow: 0 4px 14px rgba(var(--v-a-rgb), 0.35); border-color: transparent; }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__plus:not(:disabled):hover { color: #fff; box-shadow: 0 4px 18px rgba(var(--v-a-rgb), 0.6); }
+#app.vy-verre[data-ui-theme="duality"] .vy-caracs__reste, #app.vy-verre[data-ui-theme="duality"] .vy-sorts__capital b { font-family: var(--d-mono); }
+
+/* Les points à répartir, l'interrupteur : la pastille et le dégradé. */
+#app.vy-verre[data-ui-theme="duality"] .vy-points b { font: 700 18px var(--vy-font-titre); }
+#app.vy-verre[data-ui-theme="duality"] .vy-points.on b { color: var(--v-a); }
+#app.vy-verre[data-ui-theme="duality"] .vy-coche input[type="checkbox"]:checked { background: var(--v-degrade); border-color: transparent; }
+
+/* ----- La fenêtre Sorts : les lignes en blocs Duality, la ligne choisie en dégradé ----- */
+#app.vy-verre[data-ui-theme="duality"] .vy-sorts__classe b { font: 700 14px var(--vy-font-titre); letter-spacing: 2.4px; color: #fff; }
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre--sorts .vy-sort { border-color: var(--d-ligne); border-radius: 12px; background: linear-gradient(90deg, color-mix(in srgb, var(--el, #e4e4e4) 9%, transparent), transparent 55%), var(--d-carte2); box-shadow: none; }
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre--sorts .vy-sort.on { border-color: rgba(var(--v-a-rgb), 0.55); background: linear-gradient(90deg, rgba(var(--v-a-rgb), 0.22), rgba(var(--v-b-rgb), 0.08) 70%), var(--d-carte2); box-shadow: 0 0 22px rgba(var(--v-a-rgb), 0.14), inset 3px 0 0 var(--v-a); }
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre--sorts .vy-sort.on .vy-sort__nom > span { color: #fff; }
+#app.vy-verre[data-ui-theme="duality"] .vy-sort__obt i { font-family: var(--d-mono); font-weight: 700; background: #121019; border-color: var(--d-ligne2); color: rgba(243, 240, 248, 0.42); border-radius: 5px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-sort__obt i.ok { color: var(--v-a); border-color: rgba(var(--v-a-rgb), 0.55); }
+#app.vy-verre[data-ui-theme="duality"] .vy-sort__valeur b, #app.vy-verre[data-ui-theme="duality"] .vy-sort__points { font-family: var(--d-mono); }
+#app.vy-verre[data-ui-theme="duality"] .vy-sort__cout { background: #121019; color: var(--v-a); box-shadow: 0 0 0 1px rgba(var(--v-a-rgb), 0.6); font-family: var(--d-mono); }
+#app.vy-verre[data-ui-theme="duality"] .vy-sorts__fiche { border-color: var(--d-ligne); background: var(--d-carte); border-radius: 14px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-fiche-sort__nom { font: 700 21px/1.05 var(--vy-font-titre); letter-spacing: 1.6px; text-transform: uppercase; color: #fff; }
+#app.vy-verre[data-ui-theme="duality"] .vy-carac-sort { border-color: var(--d-ligne); background: var(--d-carte2); }
+#app.vy-verre[data-ui-theme="duality"] .vy-fiche-sort__recit { color: var(--d-ambre); }
+#app.vy-verre[data-ui-theme="duality"] .vy-effets li > b { font-family: var(--d-mono); color: var(--d-vert); }
+#app.vy-verre[data-ui-theme="duality"] .vy-effets--crit li > b { color: var(--d-ambre); }
+#app.vy-verre[data-ui-theme="duality"] .vy-rang { border-color: var(--d-ligne); background: var(--d-carte2); border-radius: 9px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-rang b { font-family: var(--d-mono); }
+
+/* ----- Le HUD : les chiffres en Mono, les titres en capitales ----- */
+#app.vy-verre[data-ui-theme="duality"] .vy-gemmes b, #app.vy-verre[data-ui-theme="duality"] .vy-barre-sorts__chrono b { font-family: var(--vy-font-titre); font-weight: 700; }
+
+#app.vy-verre[data-ui-theme="duality"] .vy-barre-sorts__titre, #app.vy-verre[data-ui-theme="duality"] .vy-barre-tour__tour { font-family: var(--vy-font-titre); letter-spacing: 2px; }
+
+/* ----- Le HUD d'exploration : la barre du héros, le bandeau du lieu, les raccourcis ----- */
+/* --font-title est posé sur :root (css/style.css) : on le repose ici pour qu'il suive le thème. */
+#app.vy-verre[data-ui-theme="duality"] { --font-title: var(--vy-font-titre); }
+#app.vy-verre[data-ui-theme="duality"] #player-bar { border-color: var(--d-ligne); border-radius: 14px; background: rgba(var(--v-pan-rgb), var(--v-alpha, 0.96)); }
+#app.vy-verre[data-ui-theme="duality"] #player-bar .portrait { color: #fff; background: var(--v-degrade); border-radius: 10px; box-shadow: 0 6px 20px rgba(var(--v-a-rgb), 0.35); font-family: var(--vy-font-titre); }
+#app.vy-verre[data-ui-theme="duality"] #player-bar .pb-name { font: 700 17px/1.1 var(--vy-font-titre); letter-spacing: 2px; }
+#app.vy-verre[data-ui-theme="duality"] #player-bar .pb-name small { font: 500 11px var(--vy-font-ui); letter-spacing: 0.5px; color: rgba(243, 240, 248, 0.42); }
+#app.vy-verre[data-ui-theme="duality"] #map-name { font: 700 14px/1.2 var(--vy-font-titre); letter-spacing: 2.6px; border-color: var(--d-ligne); border-radius: 12px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-raccourcis { border-color: var(--d-ligne); border-radius: 12px; background: rgba(var(--v-pan-rgb), var(--v-alpha, 0.96)); }
+
+/* ----- Au téléphone : les fenêtres étroites gardent la compacité qui les fait tenir à l'écran
+   (css/verre.css, fenêtres en feuille), dans les teintes et les polices du thème ----- */
+@media (orientation: landscape) and (max-height: 500px) {
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre__tete { min-height: 34px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre__icone { width: 24px; height: 24px; padding: 5px; border-radius: 8px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre__titre { font-size: 14px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre__bouton { width: 26px; height: 26px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-caracs__tete { padding: 5px 8px; margin-bottom: 4px; grid-template-columns: 32px minmax(0, 1fr) minmax(130px, 1fr); }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-caracs__tete .vy-fiche__portrait { width: 32px; height: 36px; font-size: 14px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-fiche__nom { font-size: 15px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-fiche__classe { font-size: 10.5px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-onglets { padding-bottom: 4px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-onglet { padding: 4px 8px; font-size: 11.5px; letter-spacing: 1.8px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-onglet.on::after { bottom: -5px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-caracs__vitaux { gap: 4px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-caracs__ligne,
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-caracs__ligne:nth-child(odd) { padding: 3px 8px 4px; border-radius: 10px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-caracs__ligne > span { font-size: 8.5px; letter-spacing: 1.2px; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-caracs__ligne > b { font-size: 15px; margin-top: 0; }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-sous { font-size: 10.5px; letter-spacing: 1.8px; }
+  /* Les « + » des sorts restent assez grands pour le doigt (28 px au moins, une fois réduits). */
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--sorts .vy-sort__rang button { width: 34px; height: 34px; }
+}
+
+/* ----- La bulle d'un PNJ : une carte sombre, le nom en capitales espacées sur un liseré dégradé ;
+   un peu plus serrée, pour tenir au-dessus de sa tête comme avant ----- */
+#app.vy-verre[data-ui-theme="duality"] .vy-bulle-pnj {
+  max-width: min(270px, 72%); color: #f3f0f8; background: rgba(20, 18, 27, 0.97); border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 10px 24px rgba(0, 0, 0, 0.5);
+}
+#app.vy-verre[data-ui-theme="duality"] .vy-bulle-pnj::after { background: rgba(20, 18, 27, 0.97); filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.1)); }
+#app.vy-verre[data-ui-theme="duality"] .vy-bulle-pnj.dessous::after { background: rgba(20, 18, 27, 0.97); }
+#app.vy-verre[data-ui-theme="duality"] .vy-bulle-pnj__nom { padding: 4px 10px 3px; border-radius: 12px 12px 0 0; background: var(--v-degrade) bottom / 100% 2px no-repeat, rgba(14, 12, 19, 0.98); font: 700 12px/1.3 var(--vy-font-titre); letter-spacing: 2px; text-transform: uppercase; color: #fff; }
+#app.vy-verre[data-ui-theme="duality"] .vy-bulle-pnj__texte { padding: 5px 11px 7px; font: 400 12px/1.4 var(--vy-font-ui); }
+#app.vy-verre[data-ui-theme="duality"] .vy-bulle-pnj__suite { background: var(--v-a); }
+
+/* ----- La barre de combat et la frise : des hauteurs qui ne dépendent pas des polices (la caméra
+   cadre l'aire d'après elles ; une police chargée en retard ne doit pas la faire bouger) ----- */
+#app.vy-verre[data-ui-theme="duality"] .vy-barre-sorts__titre { height: 12px; line-height: 12px; overflow: hidden; }
+#app.vy-verre[data-ui-theme="duality"] .vy-barre-tour__tour { line-height: 14px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-barre-sorts__action { height: 40px; line-height: 1; }

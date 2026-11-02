@@ -1,8 +1,10 @@
-// Fenêtre « Sorts » (touche S), sur le modèle du grimoire de Dofus Touch dans la charte de Veylan :
-// à gauche un filtre par type et la liste des sorts de la classe (icône, nom, rang entre « − » et
-// « + », coût prévu) ; à droite la fiche du sort choisi, rang par rang (onglets 1 à 5) : coût,
-// portée, critique, effets, ce que change le rang suivant, récit ; en bas le capital de points,
-// la réinitialisation et la répartition automatique.
+// Fenêtre « Sorts » (touche S), à la manière de la fenêtre des sorts de Dofus, dans la charte de
+// Veylan : à gauche la liste des sorts de la classe en lignes (la tuile, le nom, les niveaux
+// d'obtention au-dessus, le rang en étoiles entre « − » et « + », le coût prévu), la ligne choisie
+// surlignée, une recherche et un filtre par type, « Afficher tous les niveaux d'obtention » ; à
+// droite la fiche du sort comme la bulle de Dofus, rang par rang (onglets 1 à 5) : coût, portée,
+// critique, lancers, le récit, les effets, les effets critiques, ce que change le rang suivant ; en
+// bas le capital de points, la réinitialisation et la répartition automatique.
 // Les « + » ne font que prévoir : rien ne change avant « Valider » et sa confirmation, que la
 // fenêtre redemande si on la ferme avec des changements en attente. « − » ne retire qu'un rang
 // prévu ; les rangs validés ne se rendent que par « Réinitialiser tout ».
@@ -135,7 +137,12 @@ function changements(s, rank) {
 Object.assign(Hud.prototype, {
   // L'état de la fenêtre : sort choisi, filtre, rang regardé, rangs prévus, question en cours.
   sortsState() {
-    return this.sorts || (this.sorts = { sel: null, filtre: 'tous', vue: null, pending: {}, modal: null });
+    if (!this.sorts) {
+      let niveaux = true;
+      try { niveaux = localStorage.getItem('veylan.sorts.niveaux') !== '0'; } catch (e) { /* rien */ }
+      this.sorts = { sel: null, filtre: 'tous', cherche: '', niveaux, vue: null, pending: {}, modal: null };
+    }
+    return this.sorts;
   },
 
   // Le sort tel que le personnage le lance (sa voie comprise), et son rang avec ce qui est prévu.
@@ -199,6 +206,12 @@ Object.assign(Hud.prototype, {
     };
     const onField = (target, kind) => {
       if (target.id === 'sorts-filtre') { S.filtre = target.value; redraw(); }
+      if (target.id === 'sorts-recherche') { S.cherche = target.value; redraw(); }
+      if (target.id === 'sorts-niveaux' && kind === 'change') {
+        S.niveaux = target.checked;
+        try { localStorage.setItem('veylan.sorts.niveaux', S.niveaux ? '1' : '0'); } catch (e) { /* rien */ }
+        redraw();
+      }
       if (target.id === 'sorts-auto' && kind === 'change') {
         if (!guard()) { target.checked = ch().autoSpells; return; }
         ch().autoSpells = target.checked;
@@ -208,7 +221,7 @@ Object.assign(Hud.prototype, {
       }
     };
     const after = body => { const b = body.querySelector('.vy-sorts__modale [data-act="oui"]'); if (b && !body.contains(document.activeElement)) b.focus({ preventScroll: true }); };
-    this.simpleWin('sorts', 'Sorts', () => this.renderSorts(), actions, { width: 820, cls: 'vy-fenetre--sorts', onField, after, beforeClose: () => this.sortsAvantFermeture() });
+    this.simpleWin('sorts', 'Sorts', () => this.renderSorts(), actions, { width: 880, cls: 'vy-fenetre--sorts', onField, after, beforeClose: () => this.sortsAvantFermeture() });
   },
 
   // Fermer la fenêtre : une question ouverte se referme d'abord ; des rangs prévus font demander
@@ -255,9 +268,11 @@ Object.assign(Hud.prototype, {
     if (!ids.includes(S.sel)) S.sel = ids[0];
     const reste = this.sortsReste();
     const enCombat = this.world.state === 'combat';
-    const shown = ids.filter(id => S.filtre === 'tous' || typesOf(DATA.spells[id]).has(S.filtre));
+    const plie = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const cherche = plie(S.cherche.trim());
+    const shown = ids.filter(id => (S.filtre === 'tous' || typesOf(DATA.spells[id]).has(S.filtre)) && (!cherche || plie(this.sortVu(id).name).includes(cherche)));
     if (shown.length && !shown.includes(S.sel)) { S.sel = shown[0]; S.vue = null; }
-    const rows = shown.map(id => this.sortLigne(id, reste, enCombat)).join('') || '<li class="vy-sorts__vide muted">Aucun sort de ce type.</li>';
+    const rows = shown.map(id => this.sortLigne(id, reste, enCombat)).join('') || `<li class="vy-sorts__vide muted">${cherche ? 'Aucun sort à ce nom.' : 'Aucun sort de ce type.'}</li>`;
     const options = TYPES.map(([k, l]) => `<option value="${k}" ${S.filtre === k ? 'selected' : ''}>${l}</option>`).join('');
     const unlocked = ch.unlockedSpells().length;
     const prevu = Object.keys(S.pending).length > 0;
@@ -266,11 +281,16 @@ Object.assign(Hud.prototype, {
       : `<button class="vy-bouton vy-bouton--petit vy-bouton--fantome" data-act="reinit" ${Object.keys(ch.spellRanks).length && !enCombat ? '' : 'disabled'} title="Gratuit : tous tes points de sort te sont rendus">Réinitialiser tout</button>`) +
       `<label class="vy-coche" title="À chaque niveau, tes points vont d'abord à tes sorts de dégâts, puis aux autres"><input type="checkbox" id="sorts-auto" ${ch.autoSpells ? 'checked' : ''} ${enCombat ? 'disabled' : ''}> Répartition automatique des sorts</label>` +
       `<span class="vy-sorts__capital${reste > 0 ? ' on' : ''}">Capital de points : <b>${reste}</b></span>`;
+    const loupe = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>';
     return `<div class="vy-sorts">
       <section class="vy-sorts__gauche" aria-label="Sorts de la classe">
-        <div class="vy-sorts__outils"><select id="sorts-filtre" aria-label="Type de sort">${options}</select><span class="vy-sorts__compte muted">${unlocked} / ${ids.length}</span></div>
-        <div class="vy-sorts__entete" aria-hidden="true"><span>Nom du sort</span><span>Rang</span><span>Points</span></div>
-        <ul class="vy-sorts__liste" data-defile="sorts-liste" role="listbox" aria-label="Sorts">${rows}</ul>
+        <div class="vy-sorts__outils">
+          <span class="vy-sorts__classe"><b>Sorts de classe</b><small>${esc(ch.classDef.name)} · <span class="vy-sorts__compte">${unlocked} / ${ids.length}</span></small></span>
+          <label class="vy-recherche vy-sorts__recherche">${loupe}<input id="sorts-recherche" type="search" placeholder="Rechercher…" value="${esc(S.cherche)}" aria-label="Rechercher un sort"></label>
+          <select id="sorts-filtre" aria-label="Type de sort">${options}</select>
+        </div>
+        <ul class="vy-sorts__liste${S.niveaux ? ' niveaux' : ''}" data-defile="sorts-liste" role="listbox" aria-label="Sorts">${rows}</ul>
+        <label class="vy-coche vy-sorts__niveaux"><input type="checkbox" id="sorts-niveaux" ${S.niveaux ? 'checked' : ''}> Afficher tous les niveaux d'obtention</label>
       </section>
       ${this.sortFiche(S.sel)}
     </div>
@@ -290,11 +310,17 @@ Object.assign(Hud.prototype, {
       const cls = r <= base ? 'on' : r <= rank ? 'prevu' : R().levels[i] > ch.level ? 'verrou' : '';
       return `<i class="${cls}"></i>`;
     }).join('');
+    // Les niveaux d'obtention, comme les cases de Dofus au-dessus de chaque sort : le niveau où il
+    // s'ouvre, puis celui de son dernier rang ; en or ceux qui sont atteints.
+    const obt = [unlock, Math.max(unlock, R().levels[R().max - 1])].filter((v, i, a) => a.indexOf(v) === i)
+      .map(n => `<i class="${n <= ch.level ? 'ok' : ''}">${n}</i>`).join('');
+    const teinte = (DATA.elements[s.element] || DATA.elements.neutre).color;
     const name = `<button class="vy-sort__choix" data-act="choisir" data-id="${id}" aria-label="${esc(s.name)}, rang ${rank}${locked ? `, se débloque au niveau ${unlock}` : ''}">` +
-      `<img class="vy-sort__icone" src="${SortIcones.url(id, s, 80)}" width="36" height="36" alt="">` +
+      `<img class="vy-sort__icone" src="${SortIcones.url(id, s, 88)}" width="44" height="44" alt="">` +
       `<span class="vy-sort__nom"><span>${esc(s.name)}</span><small>${s.pa} PA · ${el(s.element)}</small></span></button>`;
+    const obtention = `<span class="vy-sort__obt" aria-hidden="true">${obt}</span>`;
     if (locked) {
-      return `<li class="vy-sort bloque${S.sel === id ? ' on' : ''}" role="option" aria-selected="${S.sel === id}">${name}` +
+      return `<li class="vy-sort bloque${S.sel === id ? ' on' : ''}" role="option" aria-selected="${S.sel === id}" style="--el:${teinte}">${obtention}${name}` +
         `<span class="vy-sort__niveau">${VERROU}niveau ${unlock}</span><span class="vy-sort__points" aria-hidden="true">·</span></li>`;
     }
     const c = ch.canRaiseSpell(id, rank, reste);
@@ -307,7 +333,7 @@ Object.assign(Hud.prototype, {
     const plus = `<button class="vy-sort__plus" data-act="plus" data-id="${id}" ${plusOk ? '' : 'disabled'} aria-label="${esc(s.name)} : ${esc(plusTitle)}" title="${esc(plusTitle)}">` +
       `${next && R().levels[rank] > ch.level ? VERROU : I.plus}${next && c.cost != null && R().levels[rank] <= ch.level ? `<span class="vy-sort__cout">${Character.rankCost(rank)}</span>` : ''}</button>`;
     const cout = this.sortsCout(id);
-    return `<li class="vy-sort${S.sel === id ? ' on' : ''}${p ? ' prevu' : ''}" role="option" aria-selected="${S.sel === id}">${name}` +
+    return `<li class="vy-sort${S.sel === id ? ' on' : ''}${p ? ' prevu' : ''}" role="option" aria-selected="${S.sel === id}" style="--el:${teinte}">${obtention}${name}` +
       `<span class="vy-sort__rang">${moins}<span class="vy-sort__valeur"><b>${rank}</b><span class="vy-pips" aria-hidden="true">${pips}</span></span>${plus}</span>` +
       `<span class="vy-sort__points${cout ? ' on' : ''}" title="${cout ? `${plural(cout, 'point')} prévu${cout > 1 ? 's' : ''}` : 'Rien de prévu'}">${cout ? '−' + cout : '·'}</span></li>`;
   },
@@ -326,27 +352,28 @@ Object.assign(Hud.prototype, {
       const r = i + 1, lv = needLevel(r);
       const cls = locked ? 'verrou' : [r <= acquis ? 'acquis' : r <= actuel ? 'prevu' : '', r === actuel ? 'actuel' : '', lv > ch.level ? 'verrou' : ''].filter(Boolean).join(' ');
       const title = lv > ch.level ? `Rang ${r} : niveau ${lv} requis` : r === actuel ? `Rang ${r} : ton rang${r > acquis ? ' (prévu)' : ''}` : `Rang ${r}`;
-      return `<button class="vy-rang ${cls}" role="tab" aria-selected="${r === vue}" data-act="vue" data-rang="${r}" title="${title}">${lv > ch.level ? VERROU : ''}<b>${r}</b>${lv > ch.level ? `<small>niv. ${lv}</small>` : ''}</button>`;
+      return `<button class="vy-rang ${cls}" role="tab" aria-selected="${r === vue}" data-act="vue" data-rang="${r}" title="${title}">${lv > ch.level ? VERROU : '<i class="vy-rang__etoile" aria-hidden="true"></i>'}<b>${r}</b>${lv > ch.level ? `<small>niv. ${lv}</small>` : ''}</button>`;
     }).join('');
-    // Caractéristiques au rang regardé.
+    // Caractéristiques au rang regardé, en lignes (comme la bulle des sorts de Dofus).
     const dmg = s.effects.some(ef => ef.type === 'damage' || ef.type === 'sacrifice' || ((ef.type === 'trap' || ef.type === 'leap') && ef.effects.some(x => x.type === 'damage')));
-    const carac = [`<span><b>${s.pa}</b> PA</span>`];
-    if (s.target === 'self') carac.push('<span>Sur soi</span>');
+    const carac = [['Coût', `<b>${s.pa}</b> PA`]];
+    if (s.target === 'self') carac.push(['Portée', 'sur soi']);
     else {
-      carac.push(`<span title="Portée"><b>${s.range[0] === s.range[1] ? s.range[0] : `${s.range[0]} à ${s.range[1]}`}</b> PO${s.range[1] >= 2 ? ' <i>modifiable</i>' : ''}</span>`);
-      carac.push(`<span>${s.los ? 'Ligne de vue' : 'Sans ligne de vue'}</span>`);
-      if (s.line) carac.push('<span>En ligne</span>');
-      if (CIBLE[s.target] && s.target !== 'entity' && s.target !== 'any') carac.push(`<span>Cible : ${CIBLE[s.target]}</span>`);
+      carac.push(['Portée', `<b>${s.range[0] === s.range[1] ? s.range[0] : `${s.range[0]} à ${s.range[1]}`}</b> PO${s.range[1] >= 2 ? ' <i>modifiable</i>' : ''}`]);
+      carac.push(['Ligne de vue', s.los ? 'oui' : 'non, sans ligne de vue']);
+      if (s.line) carac.push(['Lancer', 'en ligne']);
+      if (CIBLE[s.target] && s.target !== 'entity' && s.target !== 'any') carac.push(['Cible', CIBLE[s.target]]);
     }
-    const zone = { cross: `Croix de ${s.aoe.size}`, circle: `Zone de ${s.aoe.size} case${s.aoe.size > 1 ? 's' : ''}`, line: `Ligne de ${s.aoe.size}`, pierce: 'Traverse la ligne' }[s.aoe.shape];
-    if (zone) carac.push(`<span>${zone}${s.affects === 'allies' ? ', alliés' : s.affects === 'enemies' ? ', ennemis' : ''}</span>`);
-    carac.push(`<span>${s.cooldown ? `Relance <b>${plural(s.cooldown, 'tour')}</b>` : 'Sans relance'}</span>`);
-    if (s.maxPerTurn) carac.push(`<span><b>${s.maxPerTurn}</b> par tour</span>`);
-    if (dmg) carac.push(`<span title="Coup critique : dégâts × 1,5">Critique <b>${d.crit} %</b></span>`);
+    const zone = { cross: `croix de ${s.aoe.size}`, circle: `${s.aoe.size} case${s.aoe.size > 1 ? 's' : ''} autour`, line: `ligne de ${s.aoe.size}`, pierce: 'traverse la ligne' }[s.aoe.shape];
+    if (zone) carac.push(['Zone', `${zone}${s.affects === 'allies' ? ', alliés' : s.affects === 'enemies' ? ', ennemis' : ''}`]);
+    carac.push(['Relance', s.cooldown ? `<b>${plural(s.cooldown, 'tour')}</b>` : 'sans relance']);
+    if (s.maxPerTurn) carac.push(['Utilisations', `<b>${s.maxPerTurn}</b> par tour`]);
+    if (dmg) carac.push(['Critique', `<b>${d.crit} %</b> <small>(dégâts × 1,5)</small>`]);
     // Effets au rang regardé, chaque jet de dégâts suivi de son coup critique.
-    const fx = [];
+    // Les coups critiques à part, comme les « Effets critiques » de Dofus.
+    const fx = [], crits = [];
     if (DATA.rankScales(s) && vue > 1) fx.push(['Bonus de rang', `${pct(DATA.rankMult(s, vue))} <small>dégâts, soins, boucliers</small>`]);
-    for (const ef of s.effects.concat(s.selfEffects || [])) fx.push(...lignes(ef, s, true).map(([l, v, sub]) => [l, esc(v), sub]));
+    for (const ef of s.effects.concat(s.selfEffects || [])) for (const [l, v, sub] of lignes(ef, s, true)) (l === 'Coup critique' ? crits : fx).push([l, esc(v), sub]);
     fx.push(...propres(s).map(([l, v]) => [l, esc(v)]));
     const ul = list => list.map(([l, v, sub]) => `<li${sub ? ' class="sous"' : ''}><span>${esc(l)}</span><b>${v}</b></li>`).join('');
     // Le rang suivant : ce qui change, mis en avant.
@@ -359,14 +386,15 @@ Object.assign(Hud.prototype, {
     }
     const statut = locked ? `Se débloque au niveau ${unlock}` : vue === actuel ? `Rang ${actuel}${actuel > acquis ? ' prévu' : ''} sur ${R().max}` : `Aperçu du rang ${vue} · ton rang : ${actuel}`;
     return `<article class="vy-sorts__fiche" data-defile="sorts-fiche" aria-label="${esc(s.name)}">
-      <nav class="vy-rangs" role="tablist" aria-label="Rangs du sort">${tabs}</nav>
-      <header class="vy-fiche-sort"><img class="vy-fiche-sort__icone${locked ? ' bloque' : ''}" src="${SortIcones.url(id, base0, 144)}" width="64" height="64" alt="">
+      <header class="vy-fiche-sort"><img class="vy-fiche-sort__icone${locked ? ' bloque' : ''}" src="${SortIcones.url(id, Object.assign({}, base0, { rank: locked ? 0 : vue }), 144)}" width="64" height="64" alt="">
         <div><h3 class="vy-fiche-sort__nom">${esc(s.name)}</h3><p class="vy-fiche-sort__meta">${statut}</p><p class="vy-fiche-sort__meta">Niveau requis : <b>${needLevel(vue)}</b> · ${esc(DATA.elements[s.element].label)}</p></div></header>
-      <div class="vy-carac-sort">${carac.join('')}</div>
+      <nav class="vy-rangs" role="tablist" aria-label="Rangs du sort">${tabs}</nav>
+      <dl class="vy-carac-sort">${carac.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+      ${s.desc ? `<p class="vy-fiche-sort__recit">${esc(s.desc)}</p>` : ''}
       <div class="vy-sous"><span>Effets au rang ${vue}</span></div>
       <ul class="vy-effets">${ul(fx)}</ul>
+      ${crits.length ? `<div class="vy-sous vy-sous--crit"><span>Effets critiques</span></div><ul class="vy-effets vy-effets--crit">${ul(crits)}</ul>` : ''}
       ${suivant}
-      ${s.desc ? `<p class="vy-fiche-sort__recit">${esc(s.desc)}</p>` : ''}
     </article>`;
   },
 

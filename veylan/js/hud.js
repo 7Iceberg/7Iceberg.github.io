@@ -413,7 +413,11 @@ class Hud {
     const curseur = (id, cls, label, v, min, max) => `<div class="row vy-reglage ${cls}"><label for="${id}">${label}</label><input type="range" id="${id}" min="${min}" max="${max}" step="5" value="${v}" style="--v:${v};--min:${min};--max:${max}" aria-valuetext="${v} %"><output for="${id}">${v} %</output></div>`;
     const opacite = () => curseur('opt-opacite', 'vy-opacite', 'Opacité des fonds', this.opacite || this.loadOpacite(), 40, 100) +
       curseur('opt-taille', 'vy-taille', 'Taille de l\'interface', this.taille || this.loadTaille(), 80, 130);
+    // Le style du bloc vital (et des gemmes de la barre de combat) : un aperçu de chacun (js/gemmes.js).
+    const vitaux = () => Gemmes.STYLES.map(([id, label]) => { const on = this.styleVital() === id;
+      return `<button class="vy-style-vital${on ? ' on' : ''}" data-act="vital" data-vital="${id}" aria-pressed="${on}"><span class="vy-style-vital__apercu" aria-hidden="true">${Gemmes.apercu(id)}</span><span class="vy-style-vital__nom">${label}</span></button>`; }).join('');
     const html = () => `${tuto()}${jeu()}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div>
+      <h4>Bloc vital</h4><div class="vy-styles-vital" role="group" aria-label="Style du bloc vital">${vitaux()}</div>
       ${opacite()}
       <div class="row"><span class="muted">Fenêtres déplacées trop loin ?</span><button data-act="replacer">Replacer les fenêtres</button></div>
       ${invite ? '<div class="row"><span>Partie d\'invité : rien n\'est enregistré sur cet appareil. Pour garder ce personnage, copie son code et importe-le depuis l\'accueil.</span></div>'
@@ -446,6 +450,7 @@ class Hud {
     const actions = {
       savenow: this.actions.savenow, copy: this.actions.copy, import: this.actions.import, newgame: this.actions.newgame,
       theme: d => { this.applyTheme(d.theme); this.fen.close('options'); this.openMenu(); },
+      vital: d => { this.choisirVital(d.vital); this.fen.render('options'); },
       replacer: () => this.fen.resetPositions(),
       tutoPasser: (d, b) => { if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Confirmer : passer'; return; } this.guide.passer(); this.fen.render('options'); },
       tutoRevoir: () => { this.fen.close('options'); this.syncMenus(); this.guide.revoir(); },

@@ -752,7 +752,7 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   .reglages { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 24px; align-items: start; }
   .reglages > .reglages__bloc:nth-child(1) { grid-column: 1 / -1; }
   .reglages > .reglages__bloc:nth-child(2) { grid-row: span 2; }
-  .reglages .vy-themes { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .reglages .vy-themes { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
   .reglages .vy-theme { min-height: 0; padding: 6px 8px; gap: 5px; }
   .reglages .vy-theme__apercu { height: 16px; }
   .reglages__titre { margin-bottom: 7px; }

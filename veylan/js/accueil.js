@@ -923,7 +923,7 @@ class Accueil {
 
   ouvrirReglages() {
     const app = document.getElementById('app');
-    const theme = app.dataset.uiTheme || Accueil.lire('veylan.theme') || 'nuit';
+    const theme = app.dataset.uiTheme || Accueil.lire('veylan.theme') || 'duality';
     const themes = (typeof Hud === 'function' && Hud.THEMES ? Hud.THEMES : [['nuit', 'Nuit d\'Orsane', '#172334', '#c9a66b']])
       .map(([id, label, fond, accent]) => `<button class="vy-theme${theme === id ? ' on' : ''}" data-act="theme" data-theme="${id}" aria-pressed="${theme === id}"><span class="vy-theme__apercu" style="--f:${fond};--a:${accent}"></span>${label}</button>`).join('');
     const pref = Accueil.lire('veylan.rendu') === 'canvas' ? 'canvas' : 'webgl';

@@ -133,6 +133,13 @@
 .vy-theme { display: grid; gap: 6px; padding: 8px; border: 1px solid var(--fen-filet); border-radius: 6px; background: rgba(0, 0, 0, 0.18); color: var(--fen-texte); font: 600 12px var(--vy-font-ui); cursor: pointer; text-align: left; }
 .vy-theme.on { border-color: var(--fen-actif); }
 .vy-theme__apercu { height: 26px; border-radius: 4px; background: linear-gradient(90deg, var(--f) 0 70%, var(--a) 70%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1); }
+/* Le style du bloc vital : un aperçu de chaque style (js/gemmes.js, Gemmes.apercu). */
+.vy-styles-vital { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.vy-style-vital { display: grid; justify-items: center; gap: 6px; padding: 10px 8px 8px; border: 1px solid var(--fen-filet); border-radius: 6px; background: rgba(0, 0, 0, 0.18); color: var(--fen-texte); font: 600 12px var(--vy-font-ui); cursor: pointer; }
+.vy-style-vital.on { border-color: var(--fen-actif); }
+.vy-style-vital__apercu { display: grid; place-items: center; height: 74px; pointer-events: none; }
+.vy-style-vital__apercu .vy-gemmes { --u: 32px; }
+.vy-style-vital__apercu .vy-gemmes--grappe { --u: 34px; }
 
 /* ----- Barre de menus ----- */
 .vy-menus { position: absolute; top: calc(10px + var(--sc-haut)); right: calc(10px + var(--sc-droite)); z-index: 12; display: flex; gap: 3px; padding: 4px; border-radius: 7px; background: rgba(10, 16, 25, 0.86); border: 1px solid var(--fen-filet); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4); }
@@ -160,25 +167,41 @@
 
 /* ----- Bloc vital et raccourcis ----- */
 #bas-centre { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 10px; pointer-events: auto; }
-.vy-vital { display: flex; align-items: center; gap: 6px; }
-.vy-vital__pv { position: relative; width: 74px; height: 86px; }
-.vy-vital__pv svg { width: 100%; height: 100%; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5)); }
-.vy-vital__coque { fill: #160b0a; }
-.vy-vital__niveau { transition: y 0.5s ease; }
-.vy-vital__bord { fill: none; stroke: var(--vy-or); stroke-width: 2.4; stroke-linejoin: round; }
-.vy-vital__facette { fill: none; stroke: rgba(255, 255, 255, 0.14); stroke-width: 1; }
-.vy-vital__valeur { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); font-variant-numeric: tabular-nums; line-height: 1.05; }
-.vy-vital__valeur b { font: 800 16px var(--vy-font-ui); border-bottom: 1px solid rgba(255, 255, 255, 0.5); padding-bottom: 1px; }
-.vy-vital__valeur span { font: 600 12px var(--vy-font-ui); opacity: 0.85; }
-.vy-vital.bas .vy-vital__bord { stroke: var(--vy-braise-clair); animation: vy-pouls 1.1s ease-in-out infinite; }
-@keyframes vy-pouls { 50% { stroke-width: 4; } }
-.vy-vital__pts { display: grid; gap: 5px; }
-.vy-vital__pa, .vy-vital__pm { width: 40px; height: 40px; display: grid; place-content: center; text-align: center; line-height: 1; font-variant-numeric: tabular-nums; }
-.vy-vital__pa b, .vy-vital__pm b { font: 800 16px var(--vy-font-ui); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
-.vy-vital__pa small, .vy-vital__pm small { font: 700 8px var(--vy-font-ui); letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.8); }
-/* PA : un sceau d'or rond ; PM : un chevron de marche vert. */
-.vy-vital__pa { border-radius: 50%; background: radial-gradient(circle at 35% 30%, #f6dc9a, #b0873f 60%, #6e5226); box-shadow: 0 0 0 2px #2a1e0c, 0 0 12px rgba(226, 198, 144, 0.35); }
-.vy-vital__pm { clip-path: polygon(0 0, 62% 0, 100% 50%, 62% 100%, 0 100%, 26% 50%); background: linear-gradient(135deg, #a9d79c, #4f8a4a 65%, #2d5530); padding-left: 6px; }
+.vy-vital { display: flex; align-items: center; }
+.vy-vital .vy-gemmes { --u: 46px; }
+.vy-vital .vy-gemmes--grappe { --u: 50px; }
+
+/* ----- Le bloc des gemmes (js/gemmes.js) : le bloc vital, la barre de combat, l'aperçu des Options.
+   Tout se règle sur --u, le côté d'une petite pierre. « Cœur et losanges » : le cœur de verre, puis
+   les petites pierres en chevron (PA en haut, PM en bas, XP au milieu, à droite). « Grappe » : le
+   grand losange des PV (deux fois --u), les petites pierres serrées sur son flanc, chacune à --d de
+   sa voisine le long du bord qu'elles partagent. ----- */
+.vy-gemmes { --u: 46px; --d: calc(var(--u) * 0.065); position: relative; display: flex; align-items: center; flex: none; }
+.vy-gemmes__pv, .vy-gemmes__trio > span { position: relative; display: grid; place-items: center; line-height: 1; font-variant-numeric: tabular-nums; }
+.vy-gemmes .vy-gem { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.55)); }
+.vy-gemmes b { position: relative; font: 800 calc(var(--u) * 0.4) / 1 var(--vy-font-titre); color: #fff; letter-spacing: 0.01em; pointer-events: none;
+  text-shadow: 1.5px 0 0 rgba(10, 6, 14, 0.9), -1.5px 0 0 rgba(10, 6, 14, 0.9), 0 1.5px 0 rgba(10, 6, 14, 0.9), 0 -1.5px 0 rgba(10, 6, 14, 0.9),
+    1px 1px 0 rgba(10, 6, 14, 0.9), -1px -1px 0 rgba(10, 6, 14, 0.9), 1px -1px 0 rgba(10, 6, 14, 0.9), -1px 1px 0 rgba(10, 6, 14, 0.9), 0 2px 5px rgba(0, 0, 0, 0.6); }
+.vy-gemmes b small { font-size: 0.62em; font-weight: 700; margin-left: 1px; }
+/* Les PV : le cœur (100 × 92) ou le grand losange. */
+.vy-gemmes__pv { flex: none; width: calc(var(--u) * 2.13); height: calc(var(--u) * 1.96); }
+.vy-gemmes__pv b { font-size: calc(var(--u) * 0.52); margin-top: calc(var(--u) * -0.17); }
+.vy-gemmes--grappe .vy-gemmes__pv { width: calc(var(--u) * 2); height: calc(var(--u) * 2); }
+.vy-gemmes--grappe .vy-gemmes__pv b { font-size: calc(var(--u) * 0.54); margin-top: 0; }
+/* Les petites pierres */
+.vy-gemmes__trio { position: relative; flex: none; width: var(--u); height: calc(var(--u) * 2 + var(--d) * 2); margin-left: calc(var(--u) * 0.04); }
+.vy-gemmes--xp .vy-gemmes__trio { width: calc(var(--u) * 1.5 + var(--d) * 2); }
+.vy-gemmes__trio > span { position: absolute; left: 0; width: var(--u); height: var(--u); }
+.vy-gemmes__trio > .vy-gemmes__pa { top: 0; }
+.vy-gemmes__trio > .vy-gemmes__pm { top: calc(var(--u) + var(--d) * 2); }
+.vy-gemmes__trio > .vy-gemmes__xp { left: calc(var(--u) * 0.5 + var(--d)); top: calc(var(--u) * 0.5 + var(--d)); }
+.vy-gemmes__xp b { font-size: calc(var(--u) * 0.27); }
+.vy-gemmes--grappe .vy-gemmes__trio { margin-left: calc(var(--u) * -0.5 + var(--d)); }
+/* La vie sous 30 % : la pierre des PV luit et son liquide bat. */
+.vy-gemmes.bas .vy-gemmes__pv .vy-gem { filter: drop-shadow(0 0 5px #ff3d55) drop-shadow(0 0 12px rgba(255, 61, 85, 0.8)); }
+.vy-gemmes.bas .vy-gemmes__pv .vy-gem__liquide { animation: vy-gem-bat 1.1s ease-in-out infinite; }
+@keyframes vy-gem-bat { 50% { opacity: 0.65; } }
+@media (prefers-reduced-motion: reduce) { .vy-gemmes.bas .vy-gem__liquide { animation: none; } }
 .vy-raccourcis { display: grid; grid-template-columns: repeat(6, 44px); gap: 4px; padding: 5px; border-radius: 7px; background: rgba(10, 16, 25, 0.86); border: 1px solid var(--fen-filet); }
 .vy-raccourcis .vy-case { --vy-case: 44px; width: 44px; height: 44px; min-height: 0; }
 
@@ -222,7 +245,7 @@
   #map-name { display: none; }
   .vy-menu { width: 32px; height: 32px; padding: 6px; min-width: 0; }
   #bas-centre { bottom: 6px; }
-  .vy-vital__pv { width: 56px; height: 66px; }
+  .vy-vital .vy-gemmes, .vy-vital .vy-gemmes--grappe { --u: 30px; }
   .vy-minicarte { width: 120px; height: 78px; top: 50px; bottom: auto; }
   /* Les boutons de la vue restent sous la mini-carte, même sur un écran très bas. */
   .vy-camera { top: max(50%, 180px); }
@@ -232,7 +255,6 @@
   #tracker .tq span { display: none; }
   .vy-fenetre { left: 4px !important; right: 4px; top: 4px !important; bottom: 4px; width: auto; max-height: none; }
 }
-@media (prefers-reduced-motion: reduce) { .vy-vital__niveau { transition: none; } .vy-vital.bas .vy-vital__bord { animation: none; } }
 
 /* Sur le thème clair, l'argent de l'Aer reste lisible. */
 #app[data-ui-theme="ardoise"] .vy-pic, #app[data-ui-theme="ardoise"] .vy-pastille { filter: drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.75)); }

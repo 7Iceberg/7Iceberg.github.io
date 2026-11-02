@@ -349,25 +349,20 @@ class HudJeu {
   }
 
   // ----- La barre de combat, à la manière de Dofus -----
-  // En bas de la scène, au téléphone en paysage comme sur ordinateur (style verre) : le cœur des PV
-  // (il se vide), l'étoile des PA et le losange des PM ; les sorts dans l'ordre de la grille (la
-  // tuile du sort, son coût, sa touche, sa relance ; le sort armé en cyan), sur deux lignes sur
-  // ordinateur ; puis le temps du tour en anneau et « Prêt » ou « Fin du tour ». Au-dessus, les
-  // effets en cours (l'Affût, la Fureur...). La barre de tour devient la frise des combattants :
-  // en haut au téléphone, juste au-dessus de la barre sur ordinateur (css/jeu.css).
+  // En bas de la scène, au téléphone en paysage comme sur ordinateur (style verre) : les gemmes
+  // des PV, PA et PM dans le style du bloc vital (js/gemmes.js ; elles se vident) ; les sorts dans
+  // l'ordre de la grille (la tuile du sort, son coût, sa touche, sa relance ; le sort armé en
+  // cyan), sur deux lignes sur ordinateur ; puis le temps du tour en anneau et « Prêt » ou « Fin
+  // du tour ». Au-dessus, les effets en cours (l'Affût, la Fureur...). La barre de tour devient la
+  // frise des combattants : en haut au téléphone, juste au-dessus de la barre sur ordinateur
+  // (css/jeu.css).
   construireBarreSorts() {
     const b = this.barreSorts = document.createElement('div');
     b.className = 'vy-barre-sorts';
     b.setAttribute('role', 'toolbar');
     b.setAttribute('aria-label', 'Sorts du combat');
-    const coeur = 'M24 42C9.5 31.5 2 24 2 14A11.4 11.4 0 0 1 24 7.8A11.4 11.4 0 0 1 46 14C46 24 38.5 31.5 24 42Z';
     b.innerHTML = '<div class="vy-barre-sorts__boite"><span class="vy-barre-sorts__etats" hidden></span>' +
-      '<div class="vy-barre-sorts__vie">' +
-      `<span class="vy-coeur" title="Points de vie"><svg viewBox="0 0 48 44" aria-hidden="true"><defs><clipPath id="vy-coeur-clip"><rect class="vy-coeur__niveau" x="0" y="0" width="48" height="44"/></clipPath></defs><path class="vy-coeur__fond" d="${coeur}"/><path class="vy-coeur__vie" d="${coeur}" clip-path="url(#vy-coeur-clip)"/><path class="vy-coeur__reflet" d="M9 13.5A7 7 0 0 1 19.5 9.6"/></svg><b></b></span>` +
-      '<span class="vy-barre-sorts__pts">' +
-      '<span class="vy-res vy-res--pa" title="Points d\'action"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1.8l4.3 9.1 10 1.2-7.4 6.8 2 9.9L16 23.8 7.1 28.8l2-9.9-7.4-6.8 10-1.2z"/></svg><b></b></span>' +
-      '<span class="vy-res vy-res--pm" title="Points de mouvement"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.5L29.5 16L16 29.5L2.5 16Z"/></svg><b></b></span>' +
-      '</span></div>' +
+      `<div class="vy-barre-sorts__vie">${Gemmes.bloc(this.hud.styleVital(), false)}</div>` +
       '<div class="vy-barre-sorts__sorts"><span class="vy-barre-sorts__titre">Sorts</span><div class="vy-barre-sorts__liste"></div></div>' +
       '<div class="vy-barre-sorts__fin"><span class="vy-barre-sorts__chrono" role="timer" aria-label="Temps du tour"><svg viewBox="0 0 40 40" aria-hidden="true"><circle class="vy-chrono__piste" cx="20" cy="20" r="17"/><circle class="vy-chrono__reste" cx="20" cy="20" r="17" pathLength="100"/></svg><b></b></span>' +
       '<button type="button" class="vy-bouton vy-bouton--primaire vy-barre-sorts__action" data-ui="pret">Prêt</button></div>' +
@@ -414,28 +409,30 @@ class HudJeu {
     const act = this.ui.el.turnBar && this.ui.el.turnBar.querySelector('.vy-barre-tour__action');
     const etat = act ? [act.textContent, act.disabled ? 1 : 0, act.dataset.ui, act.classList.contains('hidden') ? 1 : 0].join('|') : '';
     const fx = this.ui.effetsTexte || '';
-    const sig = [cases, p.pa, p.pm, p.hp, p.hpMax, etat, fx].join('§');
+    const sig = [cases, p.pa, p.pm, p.hp, p.hpMax, etat, fx, this.hud.styleVital()].join('§');
     if (!force && sig === this.barreSig2) return;
     this.barreSig2 = sig;
     const liste = b.querySelector('.vy-barre-sorts__liste');
     liste.innerHTML = cases;
     liste.style.setProperty('--colonnes', Math.max(1, Math.ceil(ids.length / 2)));
-    b.querySelector('.vy-res--pa b').textContent = p.pa;
-    b.querySelector('.vy-res--pm b').textContent = p.pm;
-    const pct = Math.max(0, Math.min(1, p.hp / Math.max(1, p.hpMax)));
-    const niveau = b.querySelector('.vy-coeur__niveau');
-    niveau.setAttribute('y', (44 * (1 - pct)).toFixed(2));
-    niveau.setAttribute('height', (44 * pct).toFixed(2));
-    const coeur = b.querySelector('.vy-coeur');
-    coeur.querySelector('b').textContent = p.hp;
-    coeur.title = `${p.hp} / ${p.hpMax} PV`;
-    coeur.classList.toggle('bas', pct <= 0.3);
+    // Les PA et PM se vident au fil du tour : le plein est ce que le tour donne (maximum et effets).
+    const plein = k => Math.max(p[k], (k === 'pa' ? p.paMax : p.pmMax) + (p.modifier ? p.modifier(k) : 0));
+    Gemmes.maj(b.querySelector('.vy-gemmes'), { hp: p.hp, hpMax: p.hpMax, pa: p.pa, paMax: plein('pa'), pm: p.pm, pmMax: plein('pm') });
     const etats = b.querySelector('.vy-barre-sorts__etats');
     etats.hidden = !fx;
     etats.innerHTML = fx;
     this.app.classList.toggle('vy-etats-on', !!fx);
     const a = b.querySelector('.vy-barre-sorts__action');
     if (act) { a.textContent = act.textContent; a.disabled = act.disabled; a.dataset.ui = act.dataset.ui || 'pret'; a.hidden = act.classList.contains('hidden'); }
+  }
+
+  // Le style du bloc vital a changé (Options) : les gemmes de la barre suivent.
+  majStyleVital() {
+    const v = this.barreSorts && this.barreSorts.querySelector('.vy-barre-sorts__vie');
+    if (!v) return;
+    v.innerHTML = Gemmes.bloc(this.hud.styleVital(), false);
+    this.barreSig2 = null;
+    this.rafraichirBarreSorts(true);
   }
 
   // Le temps du tour (ou du placement) : l'anneau se vide, les secondes au milieu, en braise à la
