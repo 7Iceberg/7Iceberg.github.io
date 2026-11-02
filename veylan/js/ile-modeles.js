@@ -163,6 +163,7 @@ const IleModeles = (() => {
   // `t` en secondes.
   function animer(etat, t) {
     VENT.value = t;
+    if (ileSol && ileSol.renderer && ileSol.renderer.domElement) FUMEE.hauteur.value = ileSol.renderer.domElement.height || 800;
     // La part de nuit pour le sol : celle de l'heure (le style Lisière), toute (la nuit simple), aucune.
     const N = ileSol && ileSol.nuit;
     NUIT_SOL.value = N ? (N.amb ? N.amb.nuit : 1) : 0;
@@ -652,6 +653,75 @@ const IleModeles = (() => {
     return { meshes, mat, n, octetsGeo: octets, octetsTex: 1024 * 256 * 4 * 4 / 3 };
   }
 
+  // ----- La fumée des cheminées et des feux de camp (3.36) -----
+  // Des points qui montent en s'élargissant et s'effacent, animés par le GPU seul (une phase par point,
+  // le temps du vent) : un appel de dessin pour toute l'île. Au-dessus du toit des maisons (à la hauteur
+  // de leur modèle posé) et des feux de camp ; gris-bleu le jour, plus sombre la nuit.
+  const FUMEE = { hauteur: { value: 800 } };
+  function fumees(THREE, ile, S) {
+    const T = ile && ile.T;
+    if (!T || !ile.monde) return null;
+    const sources = [];
+    for (const o of T.objets || []) {
+      const y0 = ile.hauteur(o.u, o.v);
+      if (!Number.isFinite(y0)) continue;
+      if (o.sorte === 'maison') {
+        const d = OBJETS.maison, nom = d.modele(o, T), M = S && S.modeles[nom], t = d.taille(o);
+        const k = M ? Math.min(t.l / M.largeur, t.p / M.profondeur, t.h / M.hauteur) : 1, h = M ? M.hauteur * k : 4.5;
+        const r = o.rot || 0, dx = t.l * 0.22;
+        sources.push([o.u + Math.cos(r) * dx, y0 + h * 0.92, o.v + Math.sin(r) * dx, 1]);
+      } else if (o.sorte === 'feu') sources.push([o.u, y0 + 0.7, o.v, 1.4]);
+    }
+    if (!sources.length) return null;
+    const PAR = 14, n = sources.length * PAR, P = new Float32Array(n * 3), A = new Float32Array(n * 2);
+    sources.forEach(([x, y, z, k], i) => {
+      for (let j = 0; j < PAR; j++) {
+        const q = i * PAR + j;
+        P[q * 3] = x; P[q * 3 + 1] = y; P[q * 3 + 2] = z;
+        A[q * 2] = j / PAR + hacheEntier(i, j, 31) * 0.05;
+        A[q * 2 + 1] = k * (0.8 + hacheEntier(i, j, 37) * 0.4);
+      }
+    });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(P, 3));
+    g.setAttribute('fumee', new THREE.BufferAttribute(A, 2));
+    const mat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false,
+      uniforms: { temps: VENT, hauteurVue: FUMEE.hauteur, nuit: NUIT_SOL },
+      vertexShader: `
+        attribute vec2 fumee; uniform float temps; uniform float hauteurVue; varying float vA;
+        void main() {
+          float t = fract(temps * 0.11 * (0.85 + fumee.y * 0.15) + fumee.x);
+          vec3 p = position;
+          p.y += t * 4.2 * fumee.y;
+          p.x += t * t * 1.6 + sin(temps * 0.9 + fumee.x * 9.0) * 0.25 * t;
+          p.z += t * t * 0.7 + cos(temps * 0.7 + fumee.x * 7.0) * 0.2 * t;
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          gl_Position = projectionMatrix * mv;
+          float taille = mix(0.7, 3.2, t) * fumee.y;
+          gl_PointSize = taille * projectionMatrix[1][1] * hauteurVue * 0.5 / max(-mv.z, 0.5);
+          vA = smoothstep(0.0, 0.12, t) * (1.0 - t) * (1.0 - smoothstep(40.0, 80.0, -mv.z));
+        }`,
+      fragmentShader: `
+        uniform float nuit; varying float vA;
+        void main() {
+          vec2 c = gl_PointCoord - 0.5;
+          float d = length(c);
+          float a = (1.0 - smoothstep(0.12, 0.5, d)) * vA * 0.75;
+          if (a < 0.01) discard;
+          gl_FragColor = vec4(mix(vec3(0.62, 0.64, 0.7), vec3(0.3, 0.33, 0.42), nuit), a);
+        }`,
+    });
+    mat.name = 'semis_fumees';
+    const o = new THREE.Points(g, mat);
+    o.name = 'semis fumees';
+    o.frustumCulled = false;
+    o.renderOrder = 4;
+    ile.monde.add(o);
+    console.log(`Ervane : fumée sur ${sources.length} toits et feux`);
+    return { o, n: sources.length };
+  }
+
   // ----- Les textures précuites en ETC2 (tools/meshy/atlas-etc.py, 3.32) -----
   // Les cinq atlas du semis et les sols, compressés une fois pour toutes (4 bits par pixel au lieu de
   // 32, mipmaps comprises) : le GPU les lit tels quels quand il connaît ETC2 (les téléphones :
@@ -1031,6 +1101,6 @@ const IleModeles = (() => {
     return noms.reduce((a, n) => a + tx[n].octets, 0) + bz.octets + (carte ? carte.octets : 0);
   }
 
-  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, ATLAS, OBJETS, SOLS, VILLAGES, DENSE, CARTES_DENSES, cartes, lumieresSol, etatSol: () => ({ nuit: NUIT_SOL.value, temps: VENT.value }), charger, chargerSemis, poses, places, poser, animer, habillerSol };
+  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, ATLAS, OBJETS, SOLS, VILLAGES, DENSE, CARTES_DENSES, cartes, fumees, lumieresSol, charger, chargerSemis, poses, places, poser, animer, habillerSol };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = IleModeles;
