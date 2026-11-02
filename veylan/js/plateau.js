@@ -477,6 +477,8 @@ class Plateau {
   // que le chemin est trouvé (souvent dans la même image). Un nouveau but remplace l'ancien.
   // `surEchec` est appelé si la recherche ne trouve aucun chemin (tout de suite ou plus tard).
   planifier(but, action, garderVitesse, surEchec) {
+    // Surchargé : on ne marche plus, comme Dofus (js/world.js, setPath).
+    if (this.world.ch && this.world.ch.surcharge()) { this.world.avertirSurcharge(); if (surEchec) surEchec(); return 'impossible'; }
     const p = this.world.player;
     if (!garderVitesse) { p.chemin = null; p.path = []; p.moving = false; p.vitesse = 0; }
     p.onArrive = null;

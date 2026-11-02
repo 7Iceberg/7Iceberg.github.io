@@ -404,3 +404,58 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
   .vy-inv__noeud { --inv-slot: 32px; }
   .vy-inv__ecaille { width: 28px; height: 28px; }
 }
+
+/* ----- D'après l'inventaire Duality (ox_inventory) : favoris, pods, comparaison, bulle ----- */
+/* L'étoile d'un favori, dans le coin de sa case ; celle de la fiche. */
+.vy-case__favori { position: absolute; top: 2px; right: 2px; width: 12px; height: 12px; color: #f5b83d; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.7)); pointer-events: none; }
+.vy-case__favori svg { width: 100%; height: 100%; display: block; }
+.vy-inv__fiche-favori { flex: none; width: 26px; height: 26px; min-height: 0; padding: 4px; display: grid; place-items: center; border: 1px solid var(--fen-filet); border-radius: 7px; background: rgba(0, 0, 0, 0.2); color: var(--fen-texte-2); cursor: pointer; }
+.vy-inv__fiche-favori svg { width: 100%; height: 100%; display: block; }
+.vy-inv__fiche-favori:hover { color: var(--fen-texte); }
+.vy-inv__fiche-favori.on { color: #f5b83d; border-color: rgba(245, 184, 61, 0.55); }
+/* Les pods : la jauge du poids porté, ambre à 90 %, rouge au-delà (surchargé : on ne marche plus). */
+.vy-inv__pods { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.vy-inv__pods svg { width: 15px; height: 15px; flex: none; color: var(--fen-texte-2); }
+.vy-inv__pods-jauge { width: 96px; height: 5px; border-radius: 3px; overflow: hidden; background: rgba(255, 255, 255, 0.1); }
+.vy-inv__pods-jauge i { display: block; height: 100%; border-radius: 3px; background: var(--vy-succes, #6fbf73); transition: width 0.3s; }
+.vy-inv__pods b { color: var(--fen-texte); font-size: 12.5px; }
+.vy-inv__pods small { color: var(--fen-texte-2); font-size: 11px; }
+.vy-inv__pods.plein .vy-inv__pods-jauge i { background: #f5b83d; }
+.vy-inv__pods.surcharge .vy-inv__pods-jauge i { background: var(--vy-danger, #e05a4f); }
+.vy-inv__pods.surcharge b, .vy-inv__pods.surcharge svg { color: var(--vy-danger, #e05a4f); }
+/* L'écart avec ce qui est porté. */
+.vy-inv__ecart { margin-left: 6px; padding: 0 4px; border-radius: 4px; font: 700 10.5px/16px ui-monospace, monospace; font-style: normal; }
+.vy-inv__ecart.plus { color: #5fd18a; background: rgba(95, 209, 138, 0.12); }
+.vy-inv__ecart.moins { color: #ff6b6b; background: rgba(255, 107, 107, 0.12); }
+.vy-inv__ecart.egal { color: var(--fen-texte-2); background: rgba(255, 255, 255, 0.05); }
+.vy-inv__liste li.vy-inv__face { background: none; padding-top: 0; font-size: 11px; color: var(--fen-texte-2); }
+.vy-inv__liste li.vy-inv__face i { font-style: normal; color: var(--fen-texte); }
+.vy-inv__liste li.perdu > span { opacity: 0.6; }
+.vy-inv__liste li.perdu > b { color: var(--fen-texte-2); }
+/* La bulle au survol. */
+.vy-inv__bulle {
+  position: fixed; z-index: 70; width: 250px; max-width: calc(100vw - 12px); padding: 9px 10px 8px; pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--_r) 55%, transparent); border-radius: 10px;
+  background: rgba(10, 14, 21, 0.97); color: var(--fen-texte, #e8e2d4); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55); font-size: 12px;
+}
+.vy-inv__bulle[hidden] { display: none; }
+#app:not(:has(.vy-fenetre[data-id="sac"])) .vy-inv__bulle { display: none; }
+.vy-inv__bulle header { display: flex; flex-direction: column; gap: 1px; margin-bottom: 6px; }
+.vy-inv__bulle header b { color: var(--_rt); font-size: 13.5px; }
+.vy-inv__bulle header small { color: var(--fen-texte-2, #a79f8f); font-size: 10.5px; }
+.vy-inv__bulle header small span { color: var(--_rt); }
+.vy-inv__bulle .vy-inv__liste { font-size: 11.5px; }
+.vy-inv__bulle .vy-inv__liste li { padding: 2px 4px; }
+/* Au téléphone, le pied du sac est étroit : les pods passent sur leur ligne, la jauge en pleine
+   largeur, sous les pages et les Fils. */
+@media (max-width: 720px), (max-height: 520px) {
+  .vy-inv__pied { flex-wrap: wrap; row-gap: 3px; }
+  .vy-inv__pods { order: 3; flex: 1 0 100%; gap: 5px; }
+  .vy-inv__pods svg { width: 13px; height: 13px; }
+  .vy-inv__pods-jauge { flex: 1; width: auto; height: 4px; }
+  .vy-inv__pods b { font-size: 11px; }
+  .vy-inv__pods small { font-size: 10px; }
+  /* Avec l'onglet des favoris, la rangée des catégories défile plutôt que de déborder. */
+  .vy-inv__onglets { overflow-x: auto; scrollbar-width: none; }
+  .vy-inv__onglets::-webkit-scrollbar { display: none; }
+}

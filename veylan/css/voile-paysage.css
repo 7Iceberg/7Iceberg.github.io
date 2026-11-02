@@ -1,0 +1,109 @@
+/* ==========================================================================
+   Veylan : le paysage animé, fond par défaut du voile de chargement (js/voile-paysage.js)
+   --------------------------------------------------------------------------
+   Le paysage de la planche en calques, assombri comme avant ; l'île et les rochers flottent, le
+   rayon bat (et s'éclaire avec la progression, --p), les cascades coulent, la brume dérive, des
+   lucioles montent. Seulement l'opacité et les transformations : le navigateur l'anime seul.
+   ========================================================================== */
+
+.scene-voile__fond[data-anime] { background: #0a0910; container-type: size; }
+/* Un assombrissement léger (le texte reste lisible), par-dessus l'image et ce qui bouge. */
+.scene-voile__fond[data-fond="paysage"][data-anime]::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 75% 65% at 50% 46%, rgba(10, 9, 16, 0.12) 0%, rgba(10, 9, 16, 0.66) 100%),
+    linear-gradient(180deg, rgba(10, 9, 16, 0.38) 0%, rgba(10, 9, 16, 0.06) 38%, rgba(10, 9, 16, 0.2) 62%, rgba(10, 9, 16, 0.88) 100%);
+}
+
+/* La boîte de l'image : couvre l'écran comme le fond d'avant (centrée, calée à 40 % en hauteur). */
+.vy-paysage {
+  position: absolute; left: 50%; top: calc((100cqh - max(100cqw / 1.03175, 100cqh)) * 0.4);
+  width: max(100cqw, calc(100cqh * 1.03175)); aspect-ratio: 1560 / 1512; transform: translateX(-50%);
+  opacity: 0; transition: opacity 0.35s ease;
+}
+.vy-paysage.prete { opacity: 1; }
+.vy-paysage > * { position: absolute; display: block; pointer-events: none; }
+.vy-paysage__fond { left: 0; top: 0; width: 100%; height: 100%; }
+
+/* L'île et les rochers flottent, chacun à son rythme. */
+.vy-paysage__ile { animation: vy-pay-flotte 7s ease-in-out infinite alternate; will-change: transform; transform-origin: 50% 30%; }
+.vy-paysage__rocs { animation: vy-pay-flotte2 5.4s ease-in-out -2s infinite alternate; will-change: transform; }
+@keyframes vy-pay-flotte { from { transform: translateY(-1.6%) rotate(-0.35deg); } to { transform: translateY(1.6%) rotate(0.35deg); } }
+@keyframes vy-pay-flotte2 { from { transform: translateY(1.8%); } to { transform: translateY(-1.8%); } }
+
+/* Le rayon sous l'île : un halo qui respire, un cœur qui scintille, des lueurs qui montent ; il
+   s'éclaire avec la progression. */
+.vy-paysage__rayon {
+  mix-blend-mode: screen; opacity: calc(0.45 + 0.55 * var(--p, 0));
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 10%, #000 82%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0%, #000 10%, #000 82%, transparent 100%);
+}
+.vy-paysage__rayon > * { position: absolute; display: block; }
+.vy-paysage__rayon b {
+  inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(140, 185, 255, 0.32) 32%, rgba(215, 232, 255, 0.6) 50%, rgba(140, 185, 255, 0.32) 68%, transparent 100%);
+  animation: vy-pay-halo 3.2s ease-in-out infinite; will-change: transform, opacity;
+}
+.vy-paysage__rayon .coeur {
+  left: 50%; top: 0; bottom: 0; width: 9%; transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, #fff 50%, transparent); animation: vy-pay-scintille 1.7s ease-in-out infinite; will-change: opacity;
+}
+@keyframes vy-pay-halo { 0%, 100% { opacity: 0.55; transform: scaleX(0.85); } 50% { opacity: 1; transform: scaleX(1.15); } }
+@keyframes vy-pay-scintille { 0%, 100% { opacity: 0.7; } 30% { opacity: 1; } 60% { opacity: 0.55; } }
+.vy-paysage__rayon .montees { inset: 0; overflow: hidden; }
+.vy-paysage__rayon .montees i {
+  position: absolute; bottom: 0; width: 7px; height: 7px; margin-left: -3px; border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 25%, rgba(180, 215, 255, 0.7) 45%, transparent 70%);
+  animation: vy-pay-monte 4.5s linear infinite; will-change: transform, opacity;
+}
+@keyframes vy-pay-monte { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 12% { opacity: 1; } 80% { opacity: 0.9; } 100% { transform: translateY(-30cqh) scale(1.1); opacity: 0; } }
+/* Le rayon violet, à gauche : plus fin, il bat seul. */
+.vy-paysage__rayon--violet { opacity: 1; }
+.vy-paysage__rayon--violet .coeur { width: 26%; background: linear-gradient(90deg, transparent, rgba(225, 205, 255, 0.95) 50%, transparent); animation: vy-pay-violet 2.8s ease-in-out infinite; }
+@keyframes vy-pay-violet { 0%, 100% { opacity: 0.25; } 45% { opacity: 0.9; } 60% { opacity: 0.5; } }
+/* La flaque de lumière où le rayon touche l'eau, et l'écume au pied des cascades. */
+.vy-paysage__flaque, .vy-paysage__ecume { mix-blend-mode: screen; border-radius: 50%; will-change: opacity; }
+.vy-paysage__flaque { background: radial-gradient(ellipse at center, rgba(205, 228, 255, 0.75) 0%, rgba(120, 170, 255, 0.25) 40%, transparent 70%); animation: vy-pay-halo-flaque 3.2s ease-in-out infinite; }
+.vy-paysage__ecume { background: radial-gradient(ellipse at center, rgba(225, 238, 255, 0.5) 0%, rgba(160, 190, 240, 0.18) 45%, transparent 72%); animation: vy-pay-ecume 2.4s ease-in-out infinite; }
+@keyframes vy-pay-halo-flaque { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+@keyframes vy-pay-ecume { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.85; } }
+
+/* Les cascades : une texture de filets d'eau (assets/ui/paysage-eau.webp, 48 x 256, sans couture
+   de haut en bas) qui descend ; la boucle fait exactement la hauteur d'un motif (192 px). */
+.vy-paysage__cascade {
+  overflow: hidden; mix-blend-mode: screen; opacity: 0.55;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 25%, #000 75%, transparent 100%), linear-gradient(180deg, transparent 0%, #000 14%, #000 84%, transparent 100%);
+  -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent 0%, #000 25%, #000 75%, transparent 100%), linear-gradient(180deg, transparent 0%, #000 14%, #000 84%, transparent 100%); mask-composite: intersect;
+}
+.vy-paysage__cascade i {
+  position: absolute; left: 0; right: 0; top: -192px; height: calc(100% + 192px);
+  background: url("../assets/ui/paysage-eau.webp") 0 0 / 36px 192px repeat;
+  animation: vy-pay-coule 1.4s linear infinite; will-change: transform;
+}
+@keyframes vy-pay-coule { from { transform: translateY(0); } to { transform: translateY(192px); } }
+
+/* La brume, en bas : trois nappes qui dérivent lentement. */
+.vy-paysage__brume { left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; mix-blend-mode: screen; }
+.vy-paysage__brume i {
+  position: absolute; width: 62%; height: 16%; border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(175, 195, 240, 0.34) 0%, rgba(175, 195, 240, 0.12) 45%, transparent 70%);
+  animation: vy-pay-brume 22s ease-in-out infinite alternate; will-change: transform;
+}
+.vy-paysage__brume i:nth-child(1) { left: -12%; top: 80%; }
+.vy-paysage__brume i:nth-child(2) { left: 38%; top: 86%; animation-duration: 27s; animation-delay: -9s; }
+.vy-paysage__brume i:nth-child(3) { left: 18%; top: 71%; height: 12%; animation-duration: 33s; animation-delay: -17s; }
+@keyframes vy-pay-brume { from { transform: translateX(-9%); } to { transform: translateX(9%); } }
+
+/* Les lucioles : de petits points dorés qui montent en dérivant et s'éteignent. */
+.vy-paysage__luciole {
+  width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, #fff1c4 0 25%, rgba(255, 200, 120, 0.55) 45%, transparent 70%);
+  animation: vy-pay-luciole 8s ease-in-out infinite; will-change: transform, opacity;
+}
+.vy-paysage__luciole:nth-child(3n) { animation-name: vy-pay-luciole2; }
+.vy-paysage__luciole:nth-child(3n + 1) { animation-name: vy-pay-luciole3; }
+@keyframes vy-pay-luciole { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: 1; } 50% { transform: translate(2cqw, -6cqh); } 85% { opacity: 0.8; } 100% { transform: translate(-1cqw, -13cqh); opacity: 0; } }
+@keyframes vy-pay-luciole2 { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: 1; } 50% { transform: translate(-2.5cqw, -5cqh); } 85% { opacity: 0.8; } 100% { transform: translate(1cqw, -11cqh); opacity: 0; } }
+@keyframes vy-pay-luciole3 { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: 1; } 50% { transform: translate(1cqw, -7cqh); } 85% { opacity: 0.8; } 100% { transform: translate(2.5cqw, -14cqh); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .vy-paysage__ile, .vy-paysage__rocs, .vy-paysage__rayon b, .vy-paysage__rayon .coeur, .vy-paysage__flaque, .vy-paysage__ecume, .vy-paysage__brume i { animation: none; }
+  .vy-paysage__cascade, .vy-paysage__luciole, .vy-paysage__rayon .montees { display: none; }
+}

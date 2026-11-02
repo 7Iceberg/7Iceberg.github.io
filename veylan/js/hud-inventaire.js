@@ -24,6 +24,9 @@ const ICO = {
   suivant: svg('<path d="M9 5l7 7-7 7"/>'),
   ok: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
   non: svg('<path d="M7 7l10 10M17 7 7 17"/>'),
+  etoile: svg('<path d="M12 3.6l2.5 5.3 5.8.7-4.3 4 1.1 5.7L12 16.5l-5.1 2.8 1.1-5.7-4.3-4 5.8-.7z"/>'),
+  etoilePleine: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.5 5.3 5.8.7-4.3 4 1.1 5.7L12 16.5l-5.1 2.8 1.1-5.7-4.3-4 5.8-.7z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+  pods: svg('<path d="M7 9h10l1.5 10.5h-13z"/><path d="M9.5 9V7.5a2.5 2.5 0 0 1 5 0V9"/>'),
 };
 
 // Emplacements de la poupée : le cou, les doigts, la taille à gauche ; la tête, le dos, la main,
@@ -54,10 +57,16 @@ const FILTRES = {
   conso: [['', 'Toutes catégories'], ['pain', 'Pains'], ['potion', 'Potions'], ['parchemin', 'Parchemins']],
   res: [['', 'Toutes catégories'], ['recolte', 'Récolte'], ['butin', 'Butin de monstre'], ['autre', 'Autres']],
   noeud: [['', 'Tous les Nœuds'], ['noue', 'Noués'], ['libre', 'Pas noués']],
+  favoris: [['', 'Tous les favoris']],
 };
-const TRIS = [['recent', 'Récents'], ['niveau', 'Niveau'], ['rarete', 'Rareté'], ['nom', 'Nom']];
+const TRIS = [['recent', 'Récents'], ['type', 'Par type'], ['niveau', 'Niveau'], ['rarete', 'Rareté'], ['nom', 'Nom']];
+// « Par type » (d'après le bouton Trier de l'inventaire Duality) : les armes, l'équipement, les
+// consommables, les ressources, les Nœuds ; dans chaque sorte, par nom. Les favoris passent
+// toujours devant, quel que soit le tri (Hud.invListe).
+const ORDRE_TYPE = { weapon: 0, equip: 1, consumable: 2, resource: 3, knot: 4 };
 const TRI = {
   recent: (a, b) => b.ordre - a.ordre,
+  type: (a, b) => (ORDRE_TYPE[a.def.kind] ?? 5) - (ORDRE_TYPE[b.def.kind] ?? 5) || a.def.name.localeCompare(b.def.name),
   niveau: (a, b) => (b.def.level || 0) - (a.def.level || 0) || a.def.name.localeCompare(b.def.name),
   nom: (a, b) => a.def.name.localeCompare(b.def.name),
   rarete: (a, b) => Items.RARITIES.indexOf(Items.rarity(b.def)) - Items.RARITIES.indexOf(Items.rarity(a.def)) || a.def.name.localeCompare(b.def.name),
@@ -118,6 +127,7 @@ Object.assign(Hud.prototype, {
       },
       noeudSlot: d => { if (this.invIgnore()) return; s.sel = { de: 'noeud', id: d.id }; r(); },
       fiche: d => { s.fiche = d.fiche; r(); },
+      favori: d => { this.invFavori(d.id); r(); },
       // Sur téléphone en portrait, la fiche se pose sur la poupée : on la referme pour la revoir.
       ficheFermer: () => { s.sel = null; r(); },
       tourner: d => { const F = [1, -1]; s.facing = F[(F.indexOf(s.facing) + Number(d.sens) + F.length * 2) % F.length]; r(); },
@@ -259,8 +269,10 @@ Object.assign(Hud.prototype, {
     const tabs = onglets.map(([k, l, court]) => `<button class="vy-inv__fiche-onglet${fiche === k ? ' on' : ''}" data-act="fiche" data-fiche="${k}" role="tab" aria-selected="${fiche === k}" title="${l}"><span class="long">${l}</span><span class="court" aria-hidden="true">${court}</span></button>`).join('');
     const contenu = fiche === 'conditions' ? this.invConditions(ch, e) : fiche === 'caracs' ? this.invCaracs(ch, e) : fiche === 'panoplie' ? this.invPanoplie(ch, e) : this.invEffets(ch, e);
     const etat = [e.n > 1 ? `×${e.n}` : '', e.porte ? 'porté' : '', e.noue ? 'noué' : ''].filter(Boolean).join(' · ');
+    const favori = this.invFavoris().has(e.id);
+    const etoile = `<button class="vy-inv__fiche-favori${favori ? ' on' : ''}" data-act="favori" data-id="${e.id}" aria-pressed="${favori}" aria-label="${favori ? 'Retirer des favoris' : 'Ajouter aux favoris'}" title="${favori ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${favori ? ICO.etoilePleine : ICO.etoile}</button>`;
     return `<section class="vy-inv__fiche" data-rarete="${r}" aria-label="Fiche : ${esc(d.name)}">
-      <header class="vy-inv__fiche-tete"><h3 class="vy-inv__fiche-nom">${esc(d.name)}</h3><span class="vy-inv__fiche-niv">Niv. ${d.level || 1}</span><button class="vy-fenetre__bouton vy-inv__fiche-fermer" data-act="ficheFermer" aria-label="Fermer la fiche, revoir le personnage">${I.fermer}</button></header>
+      <header class="vy-inv__fiche-tete"><h3 class="vy-inv__fiche-nom">${esc(d.name)}</h3><span class="vy-inv__fiche-niv">Niv. ${d.level || 1}</span>${etoile}<button class="vy-fenetre__bouton vy-inv__fiche-fermer" data-act="ficheFermer" aria-label="Fermer la fiche, revoir le personnage">${I.fermer}</button></header>
       <div class="vy-inv__fiche-barre"><span class="vy-inv__fiche-type"><span class="vy-badge-rarete">${Items.RARITY_LABEL[r]}</span><span>${esc(typeObjet(d))}${etat ? ' · ' + etat : ''}</span></span>
         <nav class="vy-inv__fiche-onglets" role="tablist" aria-label="Fiche de l'objet">${tabs}</nav></div>
       <div class="vy-inv__fiche-corps"><span class="vy-case vy-inv__fiche-icone" data-rarete="${r}" aria-hidden="true"><span class="vy-case__icone">${Hud.picto(d)}</span></span>
@@ -269,16 +281,34 @@ Object.assign(Hud.prototype, {
     </section>`;
   },
 
-  invEffets(ch, e) {
+  // L'objet qu'un équipement du sac remplacerait : celui porté à sa place (un anneau prend la
+  // première place libre, sinon le premier anneau, comme Character.equip).
+  invEnFace(ch, d) {
+    if (!portable(d)) return null;
+    let slot = d.kind === 'weapon' ? 'arme' : d.slot;
+    if (slot === 'anneau') slot = !ch.equipment.anneau1 ? 'anneau1' : !ch.equipment.anneau2 ? 'anneau2' : 'anneau1';
+    const id = ch.equipment[slot];
+    return { slot, def: id && id !== d.id ? Items.get(id) : null };
+  },
+
+  // Effets ; pour un équipement du sac, l'écart avec ce qui est porté à sa place (d'après
+  // l'inventaire Duality : comparer avant d'équiper, comme Dofus) : +3 en vert, -2 en rouge.
+  invEffets(ch, e, court) {
     const d = e.def, L = [];
-    const li = (txt, val, cls) => `<li${cls ? ` class="${cls}"` : ''}><span>${txt}</span>${val != null ? `<b>${val}</b>` : ''}</li>`;
-    if (d.spell) for (const ef of d.spell.effects) {
+    const face = e.de === 'sac' ? this.invEnFace(ch, d) : null, autre = face && face.def;
+    const ecart = (diff, suffixe) => face ? (diff ? `<em class="vy-inv__ecart ${diff > 0 ? 'plus' : 'moins'}">${diff > 0 ? '+' : ''}${diff}${suffixe || ''}</em>` : '<em class="vy-inv__ecart egal">=</em>') : '';
+    const li = (txt, val, cls, ec) => `<li${cls ? ` class="${cls}"` : ''}><span>${txt}</span>${val != null ? `<b>${val}${ec || ''}</b>` : ''}</li>`;
+    if (face) L.push(`<li class="vy-inv__face"><span>${autre ? `Comparé à <i>${esc(autre.name)}</i>, porté` : `${esc(LABEL[face.slot])} libre : tout est gagné`}</span></li>`);
+    const moy = x => x && x.spell ? x.spell.effects.reduce((a, ef) => a + (ef.min + ef.max) / 2, 0) : 0;
+    if (d.spell) d.spell.effects.forEach((ef, i) => {
       const el = element(d.spell.element);
-      L.push(li(`<span class="vy-pastille" style="--c:${el.color}"></span>Dégâts ${el.label.toLowerCase()}`, `${ef.min} à ${ef.max}`, 'vy-inv__degats'));
-    }
+      L.push(li(`<span class="vy-pastille" style="--c:${el.color}"></span>Dégâts ${el.label.toLowerCase()}`, `${ef.min} à ${ef.max}`, 'vy-inv__degats', i === 0 ? ecart(Math.round(moy(d) - moy(autre)), ' moy.') : ''));
+    });
+    const mes = d.stats || {}, siennes = (autre && autre.stats) || {};
     for (const k of ['pa', 'pm', 'vita', 'sagesse', 'force', 'intel', 'chance', 'agi', 'init', 'crit', 'dmg']) {
-      const v = (d.stats || {})[k];
-      if (v) L.push(li(`${picStat(k)}${Items.STAT_LABEL[k]}`, `${v > 0 ? '+' : ''}${v}${k === 'crit' ? ' %' : ''}`, v < 0 ? 'neg' : ''));
+      const v = mes[k] || 0, w = siennes[k] || 0;
+      if (v) L.push(li(`${picStat(k)}${Items.STAT_LABEL[k]}`, `${v > 0 ? '+' : ''}${v}${k === 'crit' ? ' %' : ''}`, v < 0 ? 'neg' : '', ecart(v - w)));
+      else if (w && face) L.push(li(`${picStat(k)}${Items.STAT_LABEL[k]}`, '0', 'perdu', ecart(-w)));
     }
     if (d.kind === 'consumable') {
       if (d.sub === 'pain') L.push(li(`${Hud.pic('pv', 15)}Rend`, `${d.heal} PV`));
@@ -292,7 +322,7 @@ Object.assign(Hud.prototype, {
     }
     if (d.kind === 'resource') L.push(li('Ressource d\'artisanat', `${Items.recipes().filter(x => x.ingredients.some(i => i.id === d.id)).length} recette(s)`));
     if (!L.length) L.push(li('Aucun effet'));
-    return `<ul class="vy-inv__liste">${L.join('')}</ul>${d.lore ? `<p class="vy-inv__recit">${esc(d.lore)}</p>` : ''}`;
+    return `<ul class="vy-inv__liste">${L.join('')}</ul>${d.lore && !court ? `<p class="vy-inv__recit">${esc(d.lore)}</p>` : ''}`;
   },
 
   invConditions(ch, e) {
@@ -347,6 +377,7 @@ Object.assign(Hud.prototype, {
       if (mons.length) L.push(li('Tombe sur', esc(mons.slice(0, 3).join(', ')) + (mons.length > 3 ? '…' : '')));
       if (d.node) L.push(li('Se récolte', 'sur les cartes'));
     }
+    L.push(li('Poids', `${Items.poids(d)} pod${Items.poids(d) > 1 ? 's' : ''}`));
     L.push(li('Revente', `${Items.sellPrice(d)} Fils, chez un marchand`));
     return `<ul class="vy-inv__liste">${L.join('')}</ul>`;
   },
@@ -387,13 +418,38 @@ Object.assign(Hud.prototype, {
     return B.join('');
   },
 
+  // ----- La bulle au survol (à la souris) : le nom, la rareté, le poids et les effets, avec
+  // l'écart à ce qui est porté. Posée à côté de la case, dans l'écran. -----
+
+  invBulle(cell) {
+    let b = document.getElementById('inv-bulle');
+    if (!cell) { if (b) b.hidden = true; this.bulleId = null; return; }
+    const ch = this.world.ch, id = cell.dataset.id, d = Items.get(id);
+    if (!d || !ch.has(id)) { if (b) b.hidden = true; return; }
+    if (!b) { b = document.createElement('div'); b.id = 'inv-bulle'; b.className = 'vy-inv__bulle'; b.setAttribute('role', 'tooltip'); document.getElementById('app').appendChild(b); }
+    if (this.bulleId !== id) {
+      this.bulleId = id;
+      const r = Items.rarity(d);
+      b.dataset.rarete = r;
+      b.innerHTML = `<header><b>${esc(d.name)}</b><small><span>${Items.RARITY_LABEL[r]}</span> · ${esc(typeObjet(d))} · niv. ${d.level || 1} · ${Items.poids(d)} pod${Items.poids(d) > 1 ? 's' : ''}</small></header>` +
+        this.invEffets(ch, { def: d, id, n: ch.count(id), de: 'sac' }, true);
+    }
+    b.hidden = false;
+    const c = cell.getBoundingClientRect(), w = b.offsetWidth, h = b.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+    const x = c.left - w - 10 >= 6 ? c.left - w - 10 : Math.min(vw - w - 6, c.right + 10);
+    b.style.left = Math.max(6, x) + 'px';
+    b.style.top = Math.max(6, Math.min(vh - h - 6, c.top + c.height / 2 - h / 2)) + 'px';
+  },
+
   // ----- Le sac -----
 
   invSac(ch) {
     const s = this.inv;
     const ids = Object.keys(ch.inventory);
     const tab = (k, l, ico, n) => `<button class="vy-inv__onglet${s.onglet === k ? ' on' : ''}" data-act="onglet" data-onglet="${k}" role="tab" aria-selected="${s.onglet === k}" aria-label="${l}${n != null ? ` (${n})` : ''}" title="${l}${n != null ? ` (${n})` : ''}">${ico}</button>`;
+    const fav = this.invFavoris();
     const tabs = ONGLETS.map(([k, l, ico, f]) => tab(k, l, ico, ids.filter(id => { const d = Items.get(id); return d && f(d); }).length)).join('') +
+      tab('favoris', 'Favoris', ICO.etoile, ids.filter(id => fav.has(id)).length) +
       '<span class="vy-inv__sep" aria-hidden="true"></span>' + VUES.map(([k, l, ico]) => tab(k, l, ico)).join('');
     const corps = s.onglet === 'tenues' ? this.invTenues(ch) : s.onglet === 'apparence' ? this.invApparence(ch) : this.invGrille(ch);
     return `<section class="vy-inv__sac" data-depot="sac" aria-label="Sac"><nav class="vy-inv__onglets" role="tablist" aria-label="Catégories du sac">${tabs}</nav>${corps}</section>`;
@@ -416,11 +472,31 @@ Object.assign(Hud.prototype, {
 
   // Les objets de l'onglet, filtrés, cherchés et triés.
   invListe(ch) {
-    const s = this.inv, onglet = ONGLETS.find(o => o[0] === s.onglet) || ONGLETS[0];
+    const s = this.inv, fav = this.invFavoris();
+    const garde = s.onglet === 'favoris' ? (d => fav.has(d.id)) : (ONGLETS.find(o => o[0] === s.onglet) || ONGLETS[0])[3];
     const q = s.q.trim().toLowerCase();
     const list = Object.keys(ch.inventory).map((id, i) => ({ id, n: ch.inventory[id], def: Items.get(id), ordre: i }))
-      .filter(e => e.def && onglet[3](e.def) && this.invFiltre(ch, e.def) && (!q || e.def.name.toLowerCase().includes(q)));
-    return list.sort(TRI[s.tri] || TRI.recent);
+      .filter(e => e.def && garde(e.def) && this.invFiltre(ch, e.def) && (!q || e.def.name.toLowerCase().includes(q)));
+    const tri = TRI[s.tri] || TRI.recent;
+    return list.sort((a, b) => (fav.has(b.id) ? 1 : 0) - (fav.has(a.id) ? 1 : 0) || tri(a, b));
+  },
+
+  // Les favoris : une étoile sur un objet (d'après l'inventaire Duality), rangée dans ce navigateur,
+  // pour chaque personnage. Ils passent devant dans le sac et ont leur onglet.
+  invFavoris() {
+    const ch = this.world.ch, cle = 'veylan.favoris.' + ((ch && (ch.uid || ch.name)) || '');
+    if (!this.favoris || this.favoris.cle !== cle) {
+      let a = [];
+      try { a = JSON.parse(localStorage.getItem(cle) || '[]'); } catch (e) { a = []; }
+      this.favoris = { cle, set: new Set(Array.isArray(a) ? a.filter(x => typeof x === 'string') : []) };
+    }
+    return this.favoris.set;
+  },
+  invFavori(id) {
+    const f = this.invFavoris();
+    if (f.has(id)) f.delete(id); else f.add(id);
+    try { localStorage.setItem(this.favoris.cle, JSON.stringify([...f])); } catch (e) { /* rien */ }
+    return f.has(id);
   },
 
   invGrille(ch) {
@@ -428,19 +504,22 @@ Object.assign(Hud.prototype, {
     const list = this.invListe(ch);
     const pages = Math.max(1, Math.ceil(list.length / s.parPage));
     s.page = Math.max(0, Math.min(pages - 1, s.page));
-    const knots = ch.activeKnots();
+    const knots = ch.activeKnots(), fav = this.invFavoris();
     const choisi = s.sel && s.sel.de === 'sac' ? s.sel.id : null;
     const cells = list.slice(s.page * s.parPage, (s.page + 1) * s.parPage).map(e => {
       const d = e.def, r = Items.rarity(d);
       const bloque = portable(d) && !ch.canEquip(e.id).ok;
       const aide = portable(d) ? 'toucher deux fois ou glisser sur le personnage : équiper' : d.kind === 'consumable' ? 'toucher deux fois : utiliser' : d.kind === 'knot' ? 'toucher deux fois : nouer' : '';
       return `<button class="vy-case vy-inv__case${bloque ? ' vy-case--bloquee' : ''}" data-rarete="${r}" data-act="pick" data-id="${e.id}" data-glisse="sac" role="option" aria-selected="${e.id === choisi}" aria-label="${esc(d.name)}${e.n > 1 ? ', ' + e.n : ''}" title="${esc(d.name)}${aide ? ` (${aide})` : ''}">` +
-        `<span class="vy-case__icone">${Hud.picto(d)}</span>${d.level > 1 ? `<span class="vy-case__niveau">${d.level}</span>` : ''}${e.n > 1 ? `<span class="vy-case__nombre">${e.n}</span>` : ''}${knots.includes(e.id) ? '<span class="vy-case__porte" title="Noué"></span>' : ''}</button>`;
+        `<span class="vy-case__icone">${Hud.picto(d)}</span>${d.level > 1 ? `<span class="vy-case__niveau">${d.level}</span>` : ''}${e.n > 1 ? `<span class="vy-case__nombre">${e.n}</span>` : ''}${knots.includes(e.id) ? '<span class="vy-case__porte" title="Noué"></span>' : ''}${fav.has(e.id) ? `<span class="vy-case__favori" title="Favori">${ICO.etoilePleine}</span>` : ''}</button>`;
     });
     while (cells.length < s.parPage) cells.push('<span class="vy-case vy-case--vide" aria-hidden="true"></span>');
     const filtres = (FILTRES[s.onglet] || []).map(([v, l]) => `<option value="${v}"${s.filtre === v ? ' selected' : ''}>${l}</option>`).join('');
     const tris = TRIS.map(([v, l]) => `<option value="${v}"${s.tri === v ? ' selected' : ''}>${l}</option>`).join('');
     const total = Object.values(ch.inventory).reduce((a, n) => a + n, 0);
+    // Les pods (le poids porté, comme Dofus) : la jauge passe à l'ambre à 90 %, au rouge au-delà.
+    const pods = ch.pods(), max = ch.derived().podsMax, part = pods / Math.max(1, max);
+    const etatPods = part > 1 ? ' surcharge' : part >= 0.9 ? ' plein' : '';
     return `<div class="vy-inv__outils">
         <select id="inv-filtre" aria-label="Filtrer" title="Filtrer">${filtres}</select>
         <label class="vy-recherche vy-inv__recherche">${I.recherche}<input id="inv-q" type="search" placeholder="Rechercher…" value="${esc(s.q)}" aria-label="Rechercher dans le sac"></label>
@@ -448,7 +527,7 @@ Object.assign(Hud.prototype, {
       <div class="vy-inv__grille" role="listbox" aria-label="Contenu du sac" style="--cols:${s.cols}">${cells.join('')}${list.length ? '' : `<p class="vy-inv__rien">${s.q.trim() || s.filtre ? 'Aucun objet ne correspond.' : 'Rien ici pour l\'instant.'}</p>`}</div>
       <footer class="vy-inv__pied">
         <span class="vy-inv__pages"><button class="vy-inv__page" data-act="page" data-sens="-1" ${s.page > 0 ? '' : 'disabled'} aria-label="Page précédente">${ICO.precedent}</button><b>${s.page + 1} / ${pages}</b><button class="vy-inv__page" data-act="page" data-sens="1" ${s.page < pages - 1 ? '' : 'disabled'} aria-label="Page suivante">${ICO.suivant}</button></span>
-        <span class="vy-inv__compte">${total} objet${total > 1 ? 's' : ''}</span>
+        <span class="vy-inv__pods${etatPods}" title="Pods : ${nf(pods)} sur ${nf(max)} (1000, plus 5 par point de Terra). ${total} objet${total > 1 ? 's' : ''}.${part > 1 ? ' Surchargé : tu ne peux plus marcher.' : ''}" role="meter" aria-label="Pods" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${pods}">${ICO.pods}<span class="vy-inv__pods-jauge"><i style="width:${Math.min(100, part * 100).toFixed(1)}%"></i></span><b>${nf(pods)}</b><small>/ ${nf(max)}</small></span>
         <span class="vy-inv__fils" title="Les Fils, la monnaie de Veylan">${ICO.fils}<b>${nf(ch.fils)}</b> Fils</span>
       </footer>`;
   },
@@ -602,7 +681,19 @@ Object.assign(Hud.prototype, {
   apresInventaire(body) {
     this.dessinerPoupee(body);
     this.invMesurer(body);
-    if (!body.invGestes) { body.invGestes = true; body.addEventListener('pointerdown', evt => this.invAppui(evt, body)); }
+    if (!body.invGestes) {
+      body.invGestes = true;
+      body.addEventListener('pointerdown', evt => { this.invBulle(null); this.invAppui(evt, body); });
+      // La bulle de comparaison, à la souris seulement (au doigt, la fiche suffit).
+      body.addEventListener('pointerover', evt => {
+        if (evt.pointerType !== 'mouse' || (this.invGlisse && this.invGlisse.parti)) return;
+        const c = evt.target.closest('.vy-inv__case[data-id]');
+        this.invBulle(c);
+      });
+      body.addEventListener('pointerleave', () => this.invBulle(null));
+    }
+    // Rendue de nouveau : la bulle d'une case disparue s'en va.
+    if (this.bulleId && !body.querySelector(`.vy-inv__case[data-id="${this.bulleId}"]:hover`)) this.invBulle(null);
     if (this.invGlisse && this.invGlisse.parti) this.invMarquer(body);
   },
 

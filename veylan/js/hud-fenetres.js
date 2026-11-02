@@ -89,6 +89,8 @@ Object.assign(Hud.prototype, {
     this.appliquerTaille(this.loadTaille());
     this.initInventaire();
     this.initRecompenses();
+    if (this.initInterface) this.initInterface();
+    if (this.initNotifs) this.initNotifs();
   },
 
   // Événements du DOM (CustomEvent sur window), pour les modules d'à côté (tutoriel, discussion) :
@@ -134,11 +136,12 @@ Object.assign(Hud.prototype, {
     if (!ch) return;
     const d = ch.derived();
     const v = document.getElementById('vital');
-    const style = this.styleVital();
-    if (v.dataset.style !== style || !v.firstElementChild) {
-      v.dataset.style = style;
-      // Le bloc des gemmes (js/gemmes.js) : « Cœur et losanges » ou « Grappe », avec l'XP.
-      v.innerHTML = Gemmes.bloc(style, true);
+    // Le bloc des gemmes (js/gemmes.js) : « Cœur et losanges » ou « Grappe », avec la pierre de
+    // l'XP sauf si l'éditeur de l'interface l'a ôtée (js/hud-interface.js).
+    const style = this.styleVital(), avecXp = !this.ihud || this.ihud.xp !== false, cle = style + (avecXp ? '+xp' : '');
+    if (v.dataset.style !== cle || !v.firstElementChild) {
+      v.dataset.style = cle;
+      v.innerHTML = Gemmes.bloc(style, avecXp);
     }
     const xp = ch.xpProgress(), max = ch.level >= Character.MAX_LEVEL;
     Gemmes.maj(v.firstElementChild, {

@@ -137,6 +137,20 @@ const Items = (() => {
     return 'commun';
   }
 
+  // Les pods d'un objet (son poids, comme Dofus ; les Fils ne pèsent rien) : une ressource ou un
+  // consommable 1, un Nœud 2, une pièce d'équipement 5 plus 1 tous les 5 niveaux, une arme 10 plus 1
+  // tous les 5 niveaux. Un `pods` dans la donnée l'emporte.
+  function poids(d) {
+    if (typeof d === 'string') d = get(d);
+    if (!d) return 0;
+    if (Number.isFinite(d.pods)) return Math.max(0, d.pods);
+    const n = Math.floor((d.level || 1) / 5);
+    if (d.kind === 'weapon') return 10 + n;
+    if (d.kind === 'equip') return 5 + n;
+    if (d.kind === 'knot') return 2;
+    return 1;
+  }
+
   function statLines(stats) {
     const order = ['pa', 'pm', 'vita', 'sagesse', 'force', 'intel', 'chance', 'agi', 'init', 'crit', 'dmg'];
     return order.filter(k => stats[k]).map(k => `${stats[k] > 0 ? '+' : ''}${stats[k]} ${STAT_LABEL[k]}`);
@@ -152,5 +166,5 @@ const Items = (() => {
     return out;
   }
 
-  return { SLOTS, EQUIP_SLOTS, STATS, STAT_LABEL, WEAPON_TYPES, RARITIES, RARITY_LABEL, budget, statsFromProfile, weaponSpell, build, get, all, setOf, getSet, allSets, recipes, recipeFor, sellPrice, statLines, dropsOf, rarity };
+  return { SLOTS, EQUIP_SLOTS, STATS, STAT_LABEL, WEAPON_TYPES, RARITIES, RARITY_LABEL, budget, statsFromProfile, weaponSpell, build, get, all, setOf, getSet, allSets, recipes, recipeFor, sellPrice, statLines, dropsOf, rarity, poids };
 })();

@@ -1,0 +1,79 @@
+/* ==========================================================================
+   Veylan : les notifications (js/hud-notifs.js), d'après esx_notify
+   --------------------------------------------------------------------------
+   Une carte par message : l'icône du type dans sa tuile, un petit titre de la couleur du type
+   (information bleue, succès vert, attention ambre, erreur rouge), le texte ; les gains (Fils en
+   grand, objets) en orange ; les bulles d'XP sur le côté. Trois styles (Verre, Minimal, Ruban),
+   la position, la taille et le nombre réglés dans Options › Notifications.
+   ========================================================================== */
+
+/* ----- La position (sans réglage, celle du jeu : css/style.css, css/jeu.css) ----- */
+#app #toasts[data-pos] { top: auto; bottom: auto; left: auto; right: auto; transform: none; max-width: min(380px, 72%); z-index: 25; }
+#app #toasts[data-pos^="haut"] { top: calc(66px + var(--sc-haut, 0px)); }
+#app #toasts[data-pos^="milieu"] { top: 50%; transform: translateY(-50%); }
+#app #toasts[data-pos^="bas"] { bottom: calc(122px + var(--sc-bas, 0px)); }
+#app #toasts[data-pos$="droite"] { right: calc(14px + var(--sc-droite, 0px)); align-items: flex-end; }
+#app #toasts[data-pos$="gauche"] { left: calc(14px + var(--sc-gauche, 0px)); align-items: flex-start; }
+#app #toasts[data-pos$="centre"] { left: 50%; transform: translateX(-50%); align-items: center; }
+/* La taille : celle de l'interface, fois celle des notifications. */
+#app #toasts > * { zoom: calc(var(--ui-z, 1) * var(--notif-z, 1)); }
+
+/* ----- La carte ----- */
+#app #toasts .vy-notif {
+  --c: #38bdf8;
+  display: flex; align-items: center; gap: 10px; min-width: 200px; max-width: 360px; padding: 7px 14px 7px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.09); border-left: 3px solid var(--c); border-radius: 12px;
+  background: rgba(14, 12, 19, 0.95); color: #f3f0f8; text-align: left;
+  font: 500 12.5px/1.35 var(--vy-font-ui, system-ui, sans-serif); box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+#app #toasts .vy-notif[data-type="succes"] { --c: #2fd27a; }
+#app #toasts .vy-notif[data-type="attention"] { --c: #f5b83d; }
+#app #toasts .vy-notif[data-type="erreur"] { --c: #ff4d6a; }
+#app #toasts .vy-notif[data-type="gain"] { --c: #ff8a3d; }
+.vy-notif__ico { flex: none; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+.vy-notif__ico svg { width: 17px; height: 17px; display: block; }
+.vy-notif__texte { display: grid; gap: 1px; min-width: 0; }
+.vy-notif__texte small { font: 700 9.5px/1.2 var(--vy-font-titre, sans-serif); letter-spacing: 1.6px; text-transform: uppercase; color: var(--c); }
+/* Les gains : la tuile en dégradé, les Fils en grand. */
+.vy-notif--gain .vy-notif__ico { color: #fff; background: linear-gradient(135deg, #ff8a3d, #ff3d7f); box-shadow: 0 4px 14px rgba(255, 61, 127, 0.35); }
+.vy-notif__fils { font: 700 19px/1.1 var(--d-mono, ui-monospace, monospace); color: #f5b83d; }
+.vy-notif__fils i { font: 600 11px var(--vy-font-ui, sans-serif); font-style: normal; color: rgba(245, 184, 61, 0.75); }
+.vy-notif__xp { font: 700 14px/1.15 var(--d-mono, ui-monospace, monospace); color: #b78bff; }
+.vy-notif__objets { font-size: 11.5px; color: rgba(243, 240, 248, 0.72); }
+
+/* ----- Les styles ----- */
+/* Minimal : un point de couleur, sans tuile ni titre. */
+#app #toasts[data-style="minimal"] .vy-notif { min-width: 0; padding: 6px 12px; gap: 8px; border-left-width: 1px; border-radius: 999px; }
+#app #toasts[data-style="minimal"] .vy-notif__ico { width: 8px; height: 8px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); }
+#app #toasts[data-style="minimal"] .vy-notif__ico svg, #app #toasts[data-style="minimal"] .vy-notif__texte small { display: none; }
+#app #toasts[data-style="minimal"] .vy-notif--gain { border-radius: 14px; }
+/* Ruban : la couleur du type en bandeau, qui s'efface vers la droite. */
+#app #toasts[data-style="ruban"] .vy-notif { border: 0; border-radius: 4px 14px 14px 4px; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 34%, rgba(14, 12, 19, 0.96)), rgba(14, 12, 19, 0.96) 72%); }
+#app #toasts[data-style="ruban"] .vy-notif__ico { color: #fff; background: var(--c); }
+
+/* ----- Les bulles d'XP ----- */
+/* Au-dessus du personnage (le milieu de la scène), loin des cartes. */
+.vy-bulles-xp { position: absolute; left: 50%; top: 42%; transform: translateX(-50%); z-index: 30; display: flex; flex-direction: column-reverse; align-items: center; gap: 4px; pointer-events: none; zoom: var(--ui-z, 1); }
+.vy-bulle-xp {
+  padding: 3px 11px; border-radius: 999px; color: #fff; font: 700 15px/1.2 var(--vy-font-titre, sans-serif); letter-spacing: 1px;
+  background: linear-gradient(90deg, rgba(183, 139, 255, 0.92), rgba(124, 92, 255, 0.92)); box-shadow: 0 0 14px rgba(183, 139, 255, 0.5);
+  animation: vy-bulle-xp 2.2s ease-out forwards;
+}
+@keyframes vy-bulle-xp { 0% { opacity: 0; transform: translateY(10px) scale(0.9); } 12% { opacity: 1; transform: none; } 75% { opacity: 1; transform: translateY(-18px); } 100% { opacity: 0; transform: translateY(-30px); } }
+@keyframes vy-bulle-xp-fixe { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .vy-bulle-xp { animation-name: vy-bulle-xp-fixe; } }
+
+/* ----- Options › Notifications : les trois styles ----- */
+.vy-notif-styles { display: inline-flex; gap: 4px; }
+.vy-notif-style { min-height: 0; padding: 4px 10px; border: 1px solid var(--fen-filet, rgba(255, 255, 255, 0.12)); border-radius: 8px; background: rgba(255, 255, 255, 0.03); color: var(--fen-texte, #f3f0f8); font: 600 12px var(--vy-font-ui, sans-serif); cursor: pointer; }
+.vy-notif-style.on { color: #fff; border-color: transparent; background: var(--v-degrade, linear-gradient(90deg, #ff8a3d, #ff3d7f)); }
+
+/* ----- Au téléphone : des cartes plus étroites ----- */
+@media (max-width: 720px), (max-height: 520px) {
+  #app #toasts .vy-notif { min-width: 0; max-width: 300px; }
+}
+/* Sur ordinateur, la position du jeu est en haut au centre (la place libérée par le bandeau du
+   lieu, css/interface.css) : en bas, les cartes couvriraient le bloc vital. */
+@media (min-width: 721px) and (min-height: 501px) {
+  #app.vy-verre #toasts:not([data-pos]) { top: calc(14px + var(--sc-haut, 0px)); bottom: auto; }
+}

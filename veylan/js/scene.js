@@ -32,6 +32,16 @@ class Scene {
     this.stage = document.getElementById('stage');
     this.voileEl = null;
     this.echecs = [];
+    // Les images de la médaille, chargées et décodées tout de suite (pendant l'accueil) : le premier
+    // voile les a déjà, sans noir le temps qu'elles arrivent.
+    const anime = Scene.fondAnime(Scene.fondVoile());
+    this.prechargees = anime ? anime.IMAGES.map(src => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = src;
+      if (img.decode) img.decode().catch(() => {});
+      return img;
+    }) : [];
   }
 
   // ----- Ce que les deux rendus partagent -----
@@ -139,7 +149,8 @@ class Scene {
     if (this.en3D) { this.ile.desactiver(); this.actif = this.cases; }
     this.support = null;
     if (this.controls) this.controls.camera = this.cases.camera;
-    this.montrerVoile(voulu.startsWith('salle:') ? 'On descend dans le Puits...' : 'On recoud Ervane...', '');
+    const salle = voulu.startsWith('salle:');
+    this.montrerVoile(salle ? 'On descend dans le Puits...' : 'On recoud Ervane...', Scene.ETAPES.outils, salle ? 'salle' : 'ile');
     try {
       await IleCharge.three();
       if (gen !== this.generation) return;
@@ -249,7 +260,58 @@ class Scene {
 
   // ----- Les voiles -----
 
-  montrerVoile(titre, etape) {
+  // Le voile de chargement, d'après l'écran de chargement de Duality : le fond illustré, la barre
+  // avec le pourcentage et l'étape en cours, et des phrases qui défilent (astuces, légendes).
+  // Les étapes, dans l'ordre où Ile3D.preparer et preparerSalle les annoncent (js/ile-3d.js) ;
+  // une étape absente (le monde modelé, le héros) est sautée, la barre ne recule jamais.
+  static get ETAPES() {
+    return {
+      outils: 'Le métier à tisser',
+      ile: ['Le métier à tisser', 'Les matières du sol', 'Les cartes de l\'île', 'Le relief', 'Le décor', 'Les eaux et les nuages', 'Le monde modelé', 'Le héros modelé', 'Les Veilleurs et les monstres', 'La lumière'],
+      salle: ['Le métier à tisser', 'La salle', 'Les Veilleurs et les monstres', 'Le héros modelé', 'La lumière'],
+    };
+  }
+  static get PHRASES() {
+    return [
+      ['astuce', 'Les objets marqués d\'une étoile restent en tête du sac.'],
+      ['astuce', 'Trop chargé, tu ne peux plus avancer : surveille la jauge de pods en bas du sac.'],
+      ['astuce', 'Chaque point de Terra ajoute 5 pods à ce que tu peux porter.'],
+      ['astuce', 'Chaque point de Sagesse ajoute 1 % à l\'expérience gagnée.'],
+      ['astuce', 'Avant d\'attaquer un groupe, ouvre sa fiche : elle donne les résistances de chaque monstre.'],
+      ['astuce', 'La Veille du jour change chaque jour : apporte la ressource demandée pour gagner son bonus.'],
+      ['astuce', 'Sur ordinateur, Options › Personnaliser l\'interface te laisse déplacer chaque bloc de l\'écran.'],
+      ['astuce', 'Au survol d\'un objet du sac, la bulle le compare à celui que tu portes.'],
+      ['astuce', 'Le bloc vital a deux styles, Cœur et losanges ou Grappe : choisis le tien dans les Options.'],
+      ['astuce', 'Les notifications se règlent dans les Options : position, style, durée et taille.'],
+      ['legende', 'Veylan est posé sous sept Voiles. Sous chacun dort une ère plus ancienne.'],
+      ['legende', 'Il n\'y a pas de dieux à Veylan, mais sept Grands Dragons. Ruhani, le Dragon de l\'Aube, est le plus fort.'],
+      ['legende', 'Il y a cent ans, le premier Voile s\'est déchiré. On appelle ça la Déchirure.'],
+      ['legende', 'Le Tissage est l\'art de tirer sur les fils des Voiles. Les Veilleurs l\'ont dans les mains.'],
+      ['legende', 'Ervane flotte au-dessus d\'Orsane, cousue au monde par une amarre du Fil.'],
+      ['legende', 'Le Fil veut recoudre les Voiles, la Déchirure veut les ouvrir. Au niveau 20, tu prêteras serment, ou pas.'],
+      ['legende', 'Les Francs-Marcheurs de Thessa commercent avec tout le monde, et vendent de fausses Écailles très bien faites.'],
+      ['legende', 'Au fond du Puits de l\'Amarre attend Krobb, le Ronge-Amarre.'],
+    ];
+  }
+
+  // Le fond du voile : le paysage de la planche animé (js/voile-paysage.js, par défaut), ou la
+  // médaille du V animée (js/voile-medaille.js), gardée en réserve (?chargement=medaille, ou
+  // veylan.chargement = 'medaille' dans ce navigateur).
+  static fondVoile() {
+    try {
+      const q = new URLSearchParams(location.search).get('chargement');
+      if (q) return q === 'medaille' ? 'medaille' : 'paysage';
+      return localStorage.getItem('veylan.chargement') === 'medaille' ? 'medaille' : 'paysage';
+    } catch (e) { return 'paysage'; }
+  }
+  // Le module qui anime ce fond, s'il est chargé (sans lui, le paysage reste immobile).
+  static fondAnime(fond) {
+    if (fond === 'medaille') return typeof VoileMedaille === 'object' ? VoileMedaille : null;
+    return typeof VoilePaysage === 'object' ? VoilePaysage : null;
+  }
+
+  // `liste` : 'ile' ou 'salle' pour la barre ; sans liste (la 3D perdue, le repli), pas de barre.
+  montrerVoile(titre, etape, liste) {
     if (!this.stage) return;
     if (!this.voileEl) {
       const el = this.voileEl = document.createElement('div');
@@ -262,17 +324,89 @@ class Scene {
       });
       this.stage.appendChild(el);
     }
-    this.voileEl.classList.remove('repli');
-    this.voileEl.innerHTML = `<div class="scene-voile__fil" aria-hidden="true"></div><p class="scene-voile__titre">${Util.esc(titre)}</p><p class="scene-voile__etape">${Util.esc(etape || '')}</p>`;
+    const el = this.voileEl;
+    el.classList.remove('repli');
+    el.classList.toggle('sans-barre', !liste);
+    let fond = Scene.fondVoile(), anime = Scene.fondAnime(fond);
+    if (!anime) fond = 'paysage';
+    this.fondAnime = anime;
+    el.classList.toggle('medaille', fond === 'medaille');
+    el.innerHTML = `<div class="scene-voile__fond" data-fond="${fond}"${anime ? ' data-anime' : ''} aria-hidden="true">${anime ? anime.html() : ''}</div>` +
+      '<div class="scene-voile__fil" aria-hidden="true"></div>' +
+      `<p class="scene-voile__titre">${Util.esc(titre)}</p>` +
+      '<div class="scene-voile__barre" role="progressbar" aria-label="Chargement" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>' +
+      `<div class="scene-voile__ligne"><p class="scene-voile__etape">${Util.esc(etape || '')}</p><b class="scene-voile__pct" aria-hidden="true">0 %</b></div>` +
+      '<div class="scene-voile__phrase" aria-live="off"><small></small><p></p></div>';
     this.stage.classList.add('scene-voile');
+    const t = performance.now();
+    this.chargeVoile = { liste: liste ? Scene.ETAPES[liste] : null, p: 0, cible: 0, t, phrase: t, efface: false, phrases: null, n: 0 };
+    if (anime) anime.demarrer(el);
+    this.voilePhrase();
+    if (liste) this.voileEtape(etape);
+    clearInterval(this.voileMinuterie);
+    this.voileMinuterie = setInterval(() => this.voileTic(), 250);
   }
 
   voileEtape(etape) {
-    const e = this.voileEl && this.voileEl.querySelector('.scene-voile__etape');
+    const el = this.voileEl, c = this.chargeVoile;
+    const e = el && el.querySelector('.scene-voile__etape');
     if (e) e.textContent = etape || '';
+    // La barre : le début de l'étape, puis elle glisse doucement vers la suivante.
+    if (!el || !c || !c.liste) return;
+    const i = c.liste.indexOf(etape), n = c.liste.length;
+    if (i < 0) return;
+    c.p = Math.max(c.p, i / n);
+    c.cible = Math.max(c.cible, (i + 0.85) / n);
+    this.voileBarre();
+  }
+
+  voileBarre() {
+    const el = this.voileEl, c = this.chargeVoile;
+    if (!el || !c) return;
+    const pct = Math.min(99, Math.round(c.p * 100));
+    const b = el.querySelector('.scene-voile__barre');
+    if (b) { b.firstChild.style.width = (c.p * 100).toFixed(1) + '%'; b.setAttribute('aria-valuenow', pct); }
+    const t = el.querySelector('.scene-voile__pct');
+    if (t) t.textContent = pct + ' %';
+    if (this.fondAnime) this.fondAnime.progres(el, c.p);
+  }
+
+  // Une phrase au hasard, puis les autres dans un ordre mêlé ; elle change toutes les 6 s.
+  voilePhrase() {
+    const el = this.voileEl, c = this.chargeVoile;
+    const boite = el && el.querySelector('.scene-voile__phrase');
+    if (!boite || !c) return;
+    if (!c.phrases || c.n >= c.phrases.length) {
+      const l = Scene.PHRASES.slice();
+      for (let i = l.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [l[i], l[j]] = [l[j], l[i]]; }
+      c.phrases = l; c.n = 0;
+    }
+    const [genre, texte] = c.phrases[c.n++];
+    boite.dataset.genre = genre;
+    boite.querySelector('small').textContent = genre === 'astuce' ? 'Astuce' : 'Légende';
+    boite.querySelector('p').textContent = texte;
+  }
+
+  // Sur l'horloge, pas sur le nombre de tours : pendant la construction, la page est très occupée
+  // et la minuterie prend du retard.
+  voileTic() {
+    const el = this.voileEl, c = this.chargeVoile;
+    if (!el || !c) { clearInterval(this.voileMinuterie); return; }
+    const t = performance.now(), dt = Math.min(2000, t - c.t);
+    c.t = t;
+    // La barre glisse vers la fin de l'étape en cours (63 % du chemin en 4 s).
+    if (c.liste && c.cible > c.p) { c.p += (c.cible - c.p) * (1 - Math.exp(-dt / 4000)); this.voileBarre(); }
+    // Toutes les 6 s : la phrase s'efface (0,4 s), change, revient.
+    const boite = el.querySelector('.scene-voile__phrase');
+    if (!boite) return;
+    if (!c.efface && t - c.phrase >= 6000) { c.efface = true; boite.classList.add('change'); }
+    else if (c.efface && t - c.phrase >= 6450) { c.efface = false; c.phrase = t; this.voilePhrase(); boite.classList.remove('change'); }
   }
 
   cacherVoile() {
+    clearInterval(this.voileMinuterie);
+    this.voileMinuterie = null;
+    this.chargeVoile = null;
     if (this.voileEl) { this.voileEl.remove(); this.voileEl = null; }
     if (this.stage) this.stage.classList.remove('scene-voile');
   }
@@ -285,6 +419,8 @@ class Scene {
     if (!this.voulu && !this.en3D && !this.supportVoulu()) return;
     const descendre = (ch.quests.done || []).includes('ervane_descente') || ch.level >= 8;
     this.montrerVoile('Ervane ne s\'affiche pas sur cet appareil.', '');
+    clearInterval(this.voileMinuterie);
+    this.voileMinuterie = null;
     const el = this.voileEl;
     el.classList.add('repli');
     el.setAttribute('role', 'alertdialog');

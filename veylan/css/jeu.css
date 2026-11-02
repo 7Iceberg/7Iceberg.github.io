@@ -310,7 +310,7 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   #app #recompenses-btn { bottom: 10px; }
   #app.mode-combat #recompenses-btn { display: none; }
   #banner { top: 16%; padding: 8px 22px; font-size: 17px; }
-  #player-bar, #map-name, #tracker, #bas-centre, #minicarte, #app .vy-menus, .vy-discussion__bouton { display: none !important; }
+  #player-bar, #map-name, #lieu, #tracker, #bas-centre, #minicarte, #app .vy-menus, .vy-discussion__bouton { display: none !important; }
 
   /* La toile remplit la scène (js/camera.js y cadre le plateau, css/style.css), en combat aussi
      (plus de barres autour). La scène touche le haut, le bas et son côté de l'écran, pas celui du

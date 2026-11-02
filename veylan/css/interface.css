@@ -1,0 +1,132 @@
+/* ==========================================================================
+   Veylan : l'interface du HUD réglable (js/hud-interface.js)
+   --------------------------------------------------------------------------
+   Le lieu au-dessus de la mini-carte et la boussole autour d'elle (sur ordinateur, à la place
+   du bandeau du lieu du haut) ; les blocs déplacés, agrandis ou cachés ; l'éditeur (les cadres
+   pointillés sur les blocs, le panneau à gauche). Dans les teintes du thème (--v-*), avec un
+   repli aux couleurs de Duality.
+   ========================================================================== */
+
+/* ----- Le lieu et la boussole : sur ordinateur seulement (au téléphone, la mini-carte est
+   repliée et le nom du lieu est dans la carte d'information) ----- */
+.vy-lieu { display: none; }
+.vy-boussole__p { display: none; }
+@media (min-width: 721px) and (min-height: 501px) {
+  #app.vy-verre #map-name { display: none; }
+  #app.vy-verre #minicarte-nom { display: none; }
+  #app.vy-verre .vy-lieu {
+    position: absolute; right: 10px; bottom: 148px; z-index: 3; zoom: var(--ui-z, 1);
+    display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+    max-width: 260px; text-align: right; pointer-events: none;
+  }
+  /* La mini-carte : un cadre lumineux ; elle laisse dépasser les lettres de la boussole. */
+  #app.vy-verre #minicarte {
+    overflow: visible;
+    box-shadow: 0 0 0 3px rgba(14, 12, 20, 0.92), 0 0 0 4.5px rgba(var(--v-a-rgb, 255, 138, 61), 0.6), 0 0 22px rgba(var(--v-b-rgb, 255, 61, 127), 0.32), var(--v-ombre-legere, 0 8px 22px rgba(0, 0, 0, 0.4));
+  }
+  #app.vy-verre #minicarte canvas { border-radius: inherit; }
+  #app.vy-verre .vy-boussole__p {
+    position: absolute; z-index: 2; width: 20px; height: 20px; transform: translate(-50%, -50%);
+    display: grid; place-items: center; border-radius: 7px; pointer-events: none;
+    font: 700 11px/1 var(--vy-font-titre, "Rajdhani", sans-serif); font-style: normal; color: var(--v-texte, #f3f0f8);
+    background: rgba(var(--v-pan-rgb, 14, 12, 19), 0.96); border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  }
+  #app.vy-verre .vy-boussole__p[data-p="n"] { color: #fff; border-color: transparent; background: var(--v-degrade, linear-gradient(90deg, #ff8a3d, #ff3d7f)); box-shadow: 0 4px 14px rgba(var(--v-b-rgb, 255, 61, 127), 0.5); }
+  #app.vy-verre.vy-sans-boussole .vy-boussole__p { display: none; }
+}
+.vy-lieu__coord {
+  display: inline-flex; align-items: center; gap: 4px; height: 17px; padding: 0 7px 0 5px; border-radius: 6px;
+  color: #fff; background: var(--v-degrade, linear-gradient(90deg, #ff8a3d, #ff3d7f));
+  font: 700 10px/1 var(--d-mono, ui-monospace, monospace); box-shadow: 0 4px 12px rgba(var(--v-b-rgb, 255, 61, 127), 0.35);
+}
+.vy-lieu__coord svg { width: 10px; height: 10px; fill: none; stroke: #fff; stroke-width: 2.4; }
+.vy-lieu__nom {
+  font: 700 15px/1.05 var(--vy-font-titre, "Rajdhani", sans-serif); letter-spacing: 1.8px; text-transform: uppercase; color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.75), 0 0 1px rgba(0, 0, 0, 0.9);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.vy-lieu__zone {
+  font: 600 9.5px/1.2 var(--vy-font-titre, "Rajdhani", sans-serif); letter-spacing: 1.6px; text-transform: uppercase; color: #e9e3f3;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* ----- Les blocs réglés : leur taille grandit depuis leur coin d'ancrage ; un bloc caché garde
+   sa place (les voisins ne bougent pas) ----- */
+#vital, #raccourcis { transform-origin: 50% 100%; }
+#minicarte, #lieu { transform-origin: 100% 100%; }
+#menus, #tracker { transform-origin: 100% 0; }
+#app .vy-hud-cache { visibility: hidden !important; pointer-events: none !important; }
+#app.vy-edition .vy-hud-cache { visibility: visible !important; opacity: 0.3; }
+/* Sans l'alerte de vie basse : la pierre des PV ne luit ni ne bat. */
+#app.vy-sans-alerte .vy-gemmes.bas .vy-gemmes__pv .vy-gem { filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.55)); }
+#app.vy-sans-alerte .vy-gemmes.bas .vy-gem__liquide { animation: none; }
+
+/* ----- L'éditeur ----- */
+.vy-editeur { position: absolute; inset: 0; z-index: 40; pointer-events: none; font-family: var(--vy-font-ui, "Poppins", sans-serif); color: var(--v-texte, #f3f0f8); }
+.vy-editeur__zones { position: absolute; inset: 0; }
+.vy-editeur__zone {
+  position: absolute; pointer-events: auto; cursor: grab; touch-action: none; user-select: none;
+  border: 1.5px dashed rgba(var(--v-a-rgb, 255, 138, 61), 0.9); border-radius: 12px; background: rgba(var(--v-b-rgb, 255, 61, 127), 0.08);
+}
+.vy-editeur__zone:active { cursor: grabbing; }
+.vy-editeur__zone.sel { border-style: solid; box-shadow: 0 0 0 3px rgba(var(--v-a-rgb, 255, 138, 61), 0.25), 0 0 22px rgba(var(--v-b-rgb, 255, 61, 127), 0.35); }
+.vy-editeur__zone.cache { border-color: rgba(255, 255, 255, 0.45); background: rgba(255, 255, 255, 0.04); }
+.vy-editeur__zone span {
+  position: absolute; left: 8px; top: -11px; height: 20px; padding: 0 8px; border-radius: 6px; white-space: nowrap;
+  display: flex; align-items: center; gap: 5px; color: #fff; background: var(--v-degrade, linear-gradient(90deg, #ff8a3d, #ff3d7f));
+  font: 700 10.5px var(--vy-font-titre, "Rajdhani", sans-serif); letter-spacing: 1.6px; text-transform: uppercase; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.vy-editeur__zone span svg { width: 11px; height: 11px; fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; }
+.vy-editeur__zone.cache span { background: rgba(40, 36, 50, 0.95); color: rgba(243, 240, 248, 0.75); }
+
+.vy-editeur__panneau {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 262px; max-height: calc(100% - 24px); overflow-y: auto;
+  pointer-events: auto; zoom: var(--ui-z, 1); display: flex; flex-direction: column; border-radius: 14px;
+  background: rgba(var(--v-pan-rgb, 14, 12, 19), 0.97); border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 40px rgba(var(--v-b-rgb, 255, 61, 127), 0.14), 0 30px 70px rgba(0, 0, 0, 0.55);
+}
+.vy-editeur__panneau::before { content: ""; flex: none; height: 2px; background: var(--v-degrade, linear-gradient(90deg, #ff8a3d, #ff3d7f)); }
+.vy-editeur__panneau svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.vy-editeur__tete { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+.vy-editeur__logo { flex: none; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; color: #fff; background: var(--v-degrade-oblique, linear-gradient(135deg, #ff8a3d, #ff3d7f)); box-shadow: 0 6px 18px rgba(var(--v-b-rgb, 255, 61, 127), 0.35); }
+.vy-editeur__logo svg { width: 14px; height: 14px; }
+.vy-editeur__titre { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.vy-editeur__titre b { font: 700 13.5px var(--vy-font-titre, "Rajdhani", sans-serif); letter-spacing: 1.8px; text-transform: uppercase; }
+.vy-editeur__titre b span { background: var(--v-degrade, linear-gradient(90deg, #ff8a3d, #ff3d7f)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.vy-editeur__titre small { font-size: 9px; color: rgba(243, 240, 248, 0.5); }
+.vy-editeur__x { flex: none; width: 22px; height: 22px; padding: 0; border-radius: 7px; display: grid; place-items: center; color: rgba(243, 240, 248, 0.7); background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); cursor: pointer; }
+.vy-editeur__x svg { width: 11px; height: 11px; }
+.vy-editeur__corps { padding: 8px 9px 9px; display: flex; flex-direction: column; gap: 5px; }
+.vy-editeur__deplacer { display: flex; align-items: center; gap: 7px; padding: 6px 8px; border-radius: 10px; border: 1.5px dashed rgba(var(--v-a-rgb, 255, 138, 61), 0.75); background: rgba(var(--v-b-rgb, 255, 61, 127), 0.08); }
+.vy-editeur__deplacer svg { flex: none; width: 14px; height: 14px; color: var(--v-accent-texte, #ff9a55); }
+.vy-editeur__deplacer b, .vy-editeur__ligne b { display: block; font-size: 11px; font-weight: 600; }
+.vy-editeur__deplacer small, .vy-editeur__ligne small { display: block; font-size: 9px; color: rgba(243, 240, 248, 0.55); }
+.vy-editeur__onglets { display: flex; gap: 3px; padding: 3px; border-radius: 9px; background: rgba(255, 255, 255, 0.035); border: 1px solid rgba(255, 255, 255, 0.06); }
+.vy-editeur__panneau button { min-height: 0; min-width: 0; margin: 0; line-height: 1; letter-spacing: normal; box-shadow: none; }
+.vy-editeur__onglets .vy-editeur__onglet { flex: 1; min-width: 0; padding: 4px 0; border: 0; border-radius: 6px; background: none; cursor: pointer; font: 700 9.5px var(--vy-font-titre, "Rajdhani", sans-serif); letter-spacing: 1.2px; text-transform: uppercase; color: rgba(243, 240, 248, 0.5); }
+.vy-editeur__onglets .vy-editeur__onglet.on { color: #fff; background: var(--v-degrade, linear-gradient(90deg, #ff8a3d, #ff3d7f)); box-shadow: 0 4px 14px rgba(var(--v-b-rgb, 255, 61, 127), 0.3); }
+.vy-editeur__ligne { display: flex; align-items: center; gap: 7px; padding: 5px 8px; border-radius: 9px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); }
+.vy-editeur__ligne > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.vy-editeur__ico { flex: none; width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; color: var(--v-accent-texte, #ff9a55); background: rgba(var(--v-a-rgb, 255, 138, 61), 0.14); }
+.vy-editeur__ico svg { width: 12px; height: 12px; }
+.vy-editeur__inter { flex: none; position: relative; width: 26px; height: 15px; padding: 0; border: 0; border-radius: 8px; cursor: pointer; background: rgba(255, 255, 255, 0.14); }
+.vy-editeur__inter::after { content: ""; position: absolute; left: 3px; top: 3px; width: 9px; height: 9px; border-radius: 50%; background: #d9d3e8; transition: left 0.15s; }
+.vy-editeur__inter.on { background: var(--v-degrade, linear-gradient(90deg, #ff8a3d, #ff3d7f)); }
+.vy-editeur__inter.on::after { left: 14px; background: #fff; }
+.vy-editeur__fleches { flex: none; display: flex; gap: 4px; }
+.vy-editeur__fleches .vy-editeur__fleche { width: 20px; height: 20px; padding: 0; border-radius: 6px; cursor: pointer; color: rgba(243, 240, 248, 0.8); background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); font: 700 12px/1 var(--vy-font-ui, sans-serif); }
+.vy-editeur__points { display: flex; justify-content: center; gap: 5px; }
+.vy-editeur__points i { width: 5px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.18); }
+.vy-editeur__points i.on { width: 14px; background: var(--v-degrade, linear-gradient(90deg, #ff8a3d, #ff3d7f)); }
+.vy-editeur__apercu { display: flex; justify-content: center; padding: 6px; border-radius: 9px; pointer-events: none; background: radial-gradient(ellipse at 50% 100%, rgba(var(--v-b-rgb, 255, 61, 127), 0.16), transparent 70%), rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06); }
+.vy-editeur__apercu .vy-gemmes { --u: 24px; }
+.vy-editeur__taille { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.vy-editeur__taille input { flex: 1; min-width: 0; height: 14px; margin: 0; accent-color: var(--v-a, #ff8a3d); }
+.vy-editeur__taille em { font: 700 9.5px var(--d-mono, ui-monospace, monospace); font-style: normal; color: var(--v-accent-texte, #ff9a55); }
+.vy-editeur__pied { display: flex; gap: 6px; padding: 8px 9px; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+.vy-editeur__pied button { flex: 1; padding: 6px 0; border-radius: 8px; cursor: pointer; font: 700 10.5px var(--vy-font-titre, "Rajdhani", sans-serif); letter-spacing: 1.2px; text-transform: uppercase; }
+.vy-editeur__fantome { background: rgba(255, 255, 255, 0.035); border: 1px solid rgba(255, 255, 255, 0.12); color: rgba(243, 240, 248, 0.7); }
+.vy-editeur__plein { border: 0; color: #fff; background: var(--v-degrade, linear-gradient(90deg, #ff8a3d, #ff3d7f)); box-shadow: 0 8px 22px rgba(var(--v-b-rgb, 255, 61, 127), 0.3); }
+.vy-editeur button:focus-visible { outline: 2px solid var(--v-act, #38bdf8); outline-offset: 1px; }
+@media (prefers-reduced-motion: reduce) { .vy-editeur__inter::after { transition: none; } }

@@ -1652,7 +1652,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this._hudA = now;
     if (typeof document === 'undefined' || !this.stage || !this.figures) return;
     const st = this.stage.getBoundingClientRect(), zones = [];
-    for (const sel of ['#player-bar', '#menus', '#map-name', '#carte-info', '#bas-centre', '#minicarte', '#vue', '#tracker', '.vy-barre-tour', '.vy-ruban:not(.hidden)', '.vy-rappel:not(.hidden)']) {
+    for (const sel of ['#player-bar', '#menus', '#map-name', '#lieu', '#carte-info', '#bas-centre', '#minicarte', '#vue', '#tracker', '.vy-barre-tour', '.vy-ruban:not(.hidden)', '.vy-rappel:not(.hidden)']) {
       for (const el of document.querySelectorAll(sel)) {
         if (!el.offsetWidth || !el.offsetHeight) continue;
         const r = el.getBoundingClientRect();

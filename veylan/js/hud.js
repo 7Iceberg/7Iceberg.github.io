@@ -116,6 +116,12 @@ class Hud {
       Util.setJauge(bar.querySelector('.vy-jauge--xp'), xp, 100);
     }
     bar.querySelector('.vy-jauge--xp').title = 'Expérience : ' + xpText;
+    // Des points à répartir : un point sur le bouton Caractéristiques ou Sorts (la barre du héros,
+    // qui les montrait, est cachée dans le style verre).
+    for (const [id, n] of [['carac', ch.statPoints], ['sorts', ch.spellPoints]]) {
+      const b = document.querySelector(`#menus [data-win="${id}"]`);
+      if (b) b.classList.toggle('vy-menu--point', n > 0);
+    }
     const tr = Quests.tracker(ch).slice(0, 3);
     this.el.tracker.innerHTML = tr.map(t => `<div class="tq${t.quest.main ? ' main' : ''}${t.done ? ' done' : ''}"><b>${esc(t.quest.name)}</b><span>${esc(t.text)}</span></div>`).join('');
   }
@@ -128,15 +134,8 @@ class Hud {
     for (const t of [...this.el.toasts.children]) t.remove();
   }
 
-  toast(text) {
-    if (this.pushJournal) this.pushJournal('evenements', text);
-    const t = document.createElement('div');
-    t.className = 'toast';
-    t.textContent = text;
-    this.el.toasts.appendChild(t);
-    while (this.el.toasts.children.length > 4) this.el.toasts.firstChild.remove();
-    setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 400); }, 2800);
-  }
+  // toast(texte, type) : les notifications typées, leurs réglages et les gains sont dans
+  // js/hud-notifs.js.
 
   // « Succès débloqué » : une carte au contour d'or, la coupe dans une tuile, ce qu'il rapporte.
   // Le texte passe aussi au journal, comme un toast.
@@ -149,9 +148,8 @@ class Hud {
     t.setAttribute('role', 'status');
     t.innerHTML = `<span class="toast__tuile" aria-hidden="true">${Fenetres.ICON.succes}</span><span class="toast__texte"><small>Succès débloqué</small><b>${esc(a.name)}</b></span>${gains.length ? `<span class="toast__gain">${esc(gains[0])}</span>` : ''}`;
     t.setAttribute('aria-label', texte);
-    this.el.toasts.appendChild(t);
-    while (this.el.toasts.children.length > 4) this.el.toasts.firstChild.remove();
-    setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 400); }, 4200);
+    if (this.poserNotif) this.poserNotif(t, ((this.notifs && this.notifs.duree) || 3) * 1000 + 1200);
+    else { this.el.toasts.appendChild(t); setTimeout(() => t.remove(), 4200); }
   }
 
   // ----- Panneaux génériques -----
@@ -418,7 +416,9 @@ class Hud {
       return `<button class="vy-style-vital${on ? ' on' : ''}" data-act="vital" data-vital="${id}" aria-pressed="${on}"><span class="vy-style-vital__apercu" aria-hidden="true">${Gemmes.apercu(id)}</span><span class="vy-style-vital__nom">${label}</span></button>`; }).join('');
     const html = () => `${tuto()}${jeu()}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div>
       <h4>Bloc vital</h4><div class="vy-styles-vital" role="group" aria-label="Style du bloc vital">${vitaux()}</div>
+      ${this.optionsNotifs ? this.optionsNotifs() : ''}
       ${opacite()}
+      <div class="row"><span class="muted">Déplacer, cacher et régler les blocs du HUD</span><button data-act="editeur">Personnaliser l'interface</button></div>
       <div class="row"><span class="muted">Fenêtres déplacées trop loin ?</span><button data-act="replacer">Replacer les fenêtres</button></div>
       ${invite ? '<div class="row"><span>Partie d\'invité : rien n\'est enregistré sur cet appareil. Pour garder ce personnage, copie son code et importe-le depuis l\'accueil.</span></div>'
     : '<div class="row"><span>Partie sauvegardée automatiquement dans ce navigateur.</span><button data-act="savenow">Sauvegarder</button></div>'}
@@ -452,10 +452,14 @@ class Hud {
       theme: d => { this.applyTheme(d.theme); this.fen.close('options'); this.openMenu(); },
       vital: d => { this.choisirVital(d.vital); this.fen.render('options'); },
       replacer: () => this.fen.resetPositions(),
+      editeur: () => { this.fen.close('options'); this.syncMenus(); this.ouvrirEditeur(); },
+      notifStyle: d => { this.styleNotifs(d.style); this.fen.render('options'); },
+      notifEssai: () => this.essaiNotifs(),
       tutoPasser: (d, b) => { if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Confirmer : passer'; return; } this.guide.passer(); this.fen.render('options'); },
       tutoRevoir: () => { this.fen.close('options'); this.syncMenus(); this.guide.revoir(); },
     };
     const onField = (el, kind) => {
+      if (this.champNotifs && this.champNotifs(el, kind)) return;
       if (el.id === 'import-area') this.importDraft = el.value;
       if (el.id === 'opt-opacite' || el.id === 'opt-taille') {
         const v = el.id === 'opt-taille' ? this.appliquerTaille(Number(el.value), kind === 'change') : this.appliquerVerre(Number(el.value), kind === 'change');

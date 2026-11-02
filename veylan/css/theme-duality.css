@@ -190,6 +190,21 @@
 #app.vy-verre[data-ui-theme="duality"] #player-bar .pb-name { font: 700 17px/1.1 var(--vy-font-titre); letter-spacing: 2px; }
 #app.vy-verre[data-ui-theme="duality"] #player-bar .pb-name small { font: 500 11px var(--vy-font-ui); letter-spacing: 0.5px; color: rgba(243, 240, 248, 0.42); }
 #app.vy-verre[data-ui-theme="duality"] #map-name { font: 700 14px/1.2 var(--vy-font-titre); letter-spacing: 2.6px; border-color: var(--d-ligne); border-radius: 12px; }
+/* Le coffre des récompenses : la tuile en dégradé des icônes du thème, l'icône blanche, le compte
+   en pastille sombre cerclée de dégradé, l'onde orange. */
+#app.vy-verre[data-ui-theme="duality"] #recompenses-btn {
+  width: 50px; height: 50px; padding: 11px; border: 0; border-radius: 14px; color: #fff;
+  background: linear-gradient(135deg, var(--v-a), var(--v-b));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45), 0 0 22px rgba(var(--v-b-rgb), 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+#app.vy-verre[data-ui-theme="duality"] #recompenses-btn:hover { color: #fff; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45), 0 0 28px rgba(var(--v-b-rgb), 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+#app.vy-verre[data-ui-theme="duality"] #recompenses-btn svg { filter: drop-shadow(0 1px 2px rgba(80, 10, 30, 0.45)); }
+#app.vy-verre[data-ui-theme="duality"] #recompenses-btn .recompenses-btn__nombre {
+  top: -8px; right: -8px; min-width: 21px; height: 21px; line-height: 17px; padding: 0 5px; border-radius: 11px;
+  border: 2px solid transparent; background: linear-gradient(#141019, #141019) padding-box, linear-gradient(135deg, var(--v-a), var(--v-b)) border-box;
+  color: #fff; font: 700 11px/17px var(--d-mono); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+#app.vy-verre[data-ui-theme="duality"] #recompenses-btn::after { inset: -4px; border-color: rgba(var(--v-a-rgb), 0.75); border-radius: 17px; }
 #app.vy-verre[data-ui-theme="duality"] .vy-raccourcis { border-color: var(--d-ligne); border-radius: 12px; background: rgba(var(--v-pan-rgb), var(--v-alpha, 0.96)); }
 
 /* ----- Au téléphone : les fenêtres étroites gardent la compacité qui les fait tenir à l'écran
@@ -233,3 +248,80 @@
 #app.vy-verre[data-ui-theme="duality"] .vy-barre-sorts__titre { height: 12px; line-height: 12px; overflow: hidden; }
 #app.vy-verre[data-ui-theme="duality"] .vy-barre-tour__tour { line-height: 14px; }
 #app.vy-verre[data-ui-theme="duality"] .vy-barre-sorts__action { height: 40px; line-height: 1; }
+
+/* ----- L'inventaire, le journal des quêtes, la carte du monde : les derniers restes cyan et bleus
+   de l'habillage d'origine passent aux teintes du thème (le fondateur : D, « un autre écran ») ----- */
+/* La poupée : un fond anthracite, une lueur orange derrière le personnage, rose à ses pieds. */
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__poupee {
+  border-color: var(--d-ligne); border-radius: 14px;
+  background: radial-gradient(60% 52% at 50% 40%, rgba(var(--v-a-rgb), 0.11), transparent 72%), radial-gradient(55% 40% at 50% 88%, rgba(var(--v-b-rgb), 0.08), transparent 70%), var(--d-carte);
+}
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__tourne { border-color: var(--d-ligne2); background: rgba(var(--v-pan-rgb), 0.85); color: var(--v-accent-texte); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__tourne:hover { border-color: transparent; color: #fff; background: var(--v-degrade-oblique); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__nom { font-family: var(--vy-font-titre); letter-spacing: 1.6px; text-transform: uppercase; }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__rangee { border-top-color: var(--d-ligne); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__groupe > small { font: 700 10px var(--vy-font-titre); letter-spacing: 1.8px; color: rgba(243, 240, 248, 0.55); }
+/* Les catégories du sac : la catégorie choisie en tuile dégradée, comme un menu ouvert. */
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__onglet { border-color: var(--d-ligne); border-radius: 10px; background: rgba(255, 255, 255, 0.03); color: rgba(243, 240, 248, 0.6); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__onglet:hover { border-color: var(--d-ligne2); color: #fff; }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__onglet.on { color: #fff; border-color: transparent; background: var(--v-degrade-oblique); box-shadow: 0 0 14px rgba(var(--v-a-rgb), 0.35); }
+/* La case choisie : un anneau dégradé qui luit, à la place de l'or. */
+#app.vy-verre[data-ui-theme="duality"] .vy-case[aria-selected="true"], #app.vy-verre[data-ui-theme="duality"] .vy-case.est-choisie {
+  border-color: var(--v-a); box-shadow: 0 0 0 1px rgba(var(--v-b-rgb), 0.55), 0 0 14px rgba(var(--v-b-rgb), 0.4), inset 0 -8px 14px rgba(0, 0, 0, 0.35);
+}
+#app.vy-verre[data-ui-theme="duality"] .vy-case__nombre, #app.vy-verre[data-ui-theme="duality"] .vy-case__niveau { font-family: var(--d-mono); font-weight: 700; }
+/* La fiche de l'objet : le nom en Rajdhani, la rareté en pastille, les onglets soulignés. */
+#app.vy-verre[data-ui-theme="duality"] .vy-fenetre__corps .vy-inv__fiche-nom { font: 700 17px/1.1 var(--vy-font-titre); letter-spacing: 1.4px; text-transform: uppercase; }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__fiche-niv { font: 700 11px var(--d-mono); color: rgba(243, 240, 248, 0.6); }
+#app.vy-verre[data-ui-theme="duality"] .vy-badge-rarete { border-radius: 999px; font-family: var(--vy-font-titre); letter-spacing: 1.2px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__fiche-onglets { gap: 2px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__fiche-onglet {
+  min-height: 26px; padding: 3px 8px; border: 0; border-radius: 0; background: none;
+  color: rgba(243, 240, 248, 0.45); font: 700 11px var(--vy-font-titre); letter-spacing: 1.4px; text-transform: uppercase;
+}
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__fiche-onglet:hover { color: rgba(243, 240, 248, 0.75); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__fiche-onglet.on {
+  color: #fff; background: var(--v-degrade) bottom / 70% 2px no-repeat; text-shadow: 0 0 10px rgba(var(--v-b-rgb), 0.45);
+}
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__liste li { border-radius: 8px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__liste li > b { font-family: var(--d-mono); font-size: 12px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__liste li:not(.neg):not(.vy-inv__degats) > b { color: var(--d-vert); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__degats > b { color: var(--d-ambre); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__liste li.neg > b, #app.vy-verre[data-ui-theme="duality"] .vy-inv__conditions li.ko > b { color: var(--d-rouge); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__conditions li.ok svg { color: var(--d-vert); }
+/* Le pied du sac : les nombres en mono, les Fils en ambre. */
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__pages b, #app.vy-verre[data-ui-theme="duality"] .vy-inv__compte { font-family: var(--d-mono); font-size: 12px; }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__fils svg { color: var(--d-ambre); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__fils b { font: 700 14px var(--d-mono); color: var(--d-ambre); }
+/* La carte du monde : « Tu es ici. » dans l'accent du thème. */
+#app.vy-verre[data-ui-theme="duality"] .vy-carte__ici {
+  padding: 5px 10px; border: 0; border-left: 3px solid var(--v-a); border-radius: 8px;
+  background: linear-gradient(90deg, rgba(var(--v-a-rgb), 0.16), rgba(var(--v-b-rgb), 0.05)); color: #fff;
+  font: 700 12px var(--vy-font-titre); letter-spacing: 1.2px; text-transform: uppercase;
+}
+/* Le journal des quêtes : la tuile de la quête en dégradé, comme les en-têtes des fenêtres. */
+#app.vy-verre[data-ui-theme="duality"] .vy-q-tuile { color: #fff; background: var(--v-degrade-oblique); box-shadow: 0 6px 18px rgba(var(--v-b-rgb), 0.3); }
+/* La rareté en bande sous la case (d'après l'inventaire Duality) : un cadre neutre, un trait de
+   couleur qui luit en bas ; rien pour un objet commun. */
+#app.vy-verre[data-ui-theme="duality"] .vy-case[data-rarete] {
+  border-color: var(--d-ligne2); background: linear-gradient(180deg, #1d1a26, #121019);
+}
+#app.vy-verre[data-ui-theme="duality"] .vy-case[data-rarete]:not([data-rarete="commun"])::after {
+  content: ""; position: absolute; left: 20%; right: 20%; bottom: 3px; height: 3px; border-radius: 2px;
+  background: var(--_r); box-shadow: 0 0 7px var(--_r); pointer-events: none;
+}
+#app.vy-verre[data-ui-theme="duality"] .vy-case[data-rarete="legendaire"] { border-color: var(--d-ligne2); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__fiche-favori { border-color: var(--d-ligne); border-radius: 8px; background: rgba(255, 255, 255, 0.03); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__fiche-favori.on { color: var(--d-ambre); border-color: rgba(245, 184, 61, 0.5); box-shadow: 0 0 10px rgba(245, 184, 61, 0.25); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__pods b { font: 700 12.5px var(--d-mono); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__pods small { font: 500 10.5px var(--d-mono); color: rgba(243, 240, 248, 0.5); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__pods-jauge { background: rgba(255, 255, 255, 0.08); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__pods-jauge i { background: var(--v-degrade); box-shadow: 0 0 8px rgba(var(--v-b-rgb), 0.5); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__pods.plein .vy-inv__pods-jauge i { background: var(--d-ambre); box-shadow: 0 0 8px rgba(245, 184, 61, 0.5); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__pods.surcharge .vy-inv__pods-jauge i { background: var(--d-rouge); box-shadow: 0 0 8px rgba(255, 92, 108, 0.6); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__ecart { font-family: var(--d-mono); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__ecart.plus { color: var(--d-vert); background: rgba(47, 210, 122, 0.12); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__ecart.moins { color: var(--d-rouge); background: rgba(255, 92, 108, 0.12); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__bulle { border-radius: 12px; border-color: var(--d-ligne2); background: rgba(var(--v-pan-rgb), 0.98); font-family: var(--vy-font-ui); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__bulle::before { content: ""; position: absolute; left: 10px; right: 10px; top: 0; height: 2px; border-radius: 2px; background: var(--_r); box-shadow: 0 0 8px var(--_r); }
+#app.vy-verre[data-ui-theme="duality"] .vy-inv__bulle header b { font: 700 15px var(--vy-font-titre); letter-spacing: 1px; text-transform: uppercase; }

@@ -384,10 +384,21 @@ class World {
 
   setPath(path, action) {
     const p = this.player;
+    // Surchargé (plus de pods que le maximum) : on ne marche plus, comme Dofus.
+    if (path && path.length && this.ch && this.ch.surcharge()) { this.avertirSurcharge(); path = []; action = null; }
     p.path = path || [];
     p.moving = p.path.length > 0;
     p.onArrive = action || null;
     this.emit('path', p.path);
+  }
+
+  // « Tu es surchargé » : au plus une fois toutes les deux secondes.
+  avertirSurcharge() {
+    const t = Date.now();
+    if (this.surchargeDit && t - this.surchargeDit < 2000) return;
+    this.surchargeDit = t;
+    const ch = this.ch;
+    this.toast(`Tu es surchargé (${ch.pods()} / ${ch.derived().podsMax} pods) : allège ton sac pour avancer.`);
   }
 
   // Fin d'un déplacement sans action : une case de sortie fait changer de carte.

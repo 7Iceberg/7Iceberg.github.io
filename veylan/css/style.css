@@ -103,25 +103,67 @@ html, body {
 .ile-voiles.nuit .ile-voiles__vignette { background: radial-gradient(ellipse 70% 66% at 50% 54%, rgba(0, 0, 0, 0) 40%, rgba(4, 8, 26, 0.62) 100%); }
 
 /* Le voile de la bascule (js/scene.js) : pendant que la 3D se prépare, ou quand elle est tombée.
+   D'après l'écran de chargement de Duality : le fond illustré (le paysage de la planche, assombri),
+   la barre avec le pourcentage et l'étape en cours, et une phrase qui change toutes les 6 s.
    Les bulles et les fiches accrochées à la scène se cachent : elles n'ont plus de point d'ancrage. */
 .scene-voile-boite {
-  position: absolute; inset: 0; z-index: 30;
+  position: absolute; inset: 0; z-index: 30; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
-  padding: 24px 16px; text-align: center;
-  background: radial-gradient(ellipse at center, #1a2a3c 0%, var(--vy-ombre) 100%);
-  color: var(--vy-texte);
+  padding: 24px 16px 96px; text-align: center;
+  background: #0a0910; color: #f3f0f8;
 }
-.scene-voile__fil { width: min(220px, 60%); height: 2px; border-radius: 1px; background: linear-gradient(90deg, rgba(226, 198, 144, 0) 0%, var(--vy-or-clair) 50%, rgba(226, 198, 144, 0) 100%); background-size: 200% 100%; animation: scene-voile-fil 1.6s ease-in-out infinite; }
+.scene-voile__fond {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse 70% 60% at 50% 46%, rgba(10, 9, 16, 0.35) 0%, rgba(10, 9, 16, 0.86) 100%),
+    linear-gradient(180deg, rgba(10, 9, 16, 0.55) 0%, rgba(10, 9, 16, 0.25) 40%, rgba(10, 9, 16, 0.92) 100%),
+    url("../assets/ui/fond-chargement.webp") 50% 40% / cover no-repeat;
+  animation: scene-voile-fond 24s ease-in-out infinite alternate;
+}
+@keyframes scene-voile-fond { from { transform: scale(1); } to { transform: scale(1.08); } }
+.scene-voile-boite > :not(.scene-voile__fond) { position: relative; }
+.scene-voile__fil { width: min(220px, 60%); height: 2px; border-radius: 1px; background: linear-gradient(90deg, rgba(255, 138, 61, 0) 0%, #ffb37a 50%, rgba(255, 61, 127, 0) 100%); background-size: 200% 100%; animation: scene-voile-fil 1.6s ease-in-out infinite; }
 @keyframes scene-voile-fil { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
-.scene-voile__titre { margin: 0; font: 700 18px/1.3 var(--vy-font-titre); letter-spacing: 0.06em; color: var(--vy-or-clair); }
-.scene-voile__etape { margin: 0; max-width: 420px; font: 500 13px/1.45 var(--vy-font-ui); color: var(--vy-texte-2); min-height: 1.45em; }
+.scene-voile__titre { margin: 0; font: 700 22px/1.25 var(--vy-font-titre); letter-spacing: 0.04em; color: #fff; text-shadow: 0 2px 18px rgba(0, 0, 0, 0.7); }
+/* La barre : la piste, le remplissage au dégradé du thème, la lueur au bout. */
+.scene-voile__barre { width: min(380px, 78%); height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); overflow: hidden; }
+.scene-voile__barre i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--v-degrade, linear-gradient(90deg, #ff8a3d, #ff3d7f)); box-shadow: 0 0 12px rgba(var(--v-b-rgb, 255, 61, 127), 0.6); }
+.scene-voile__ligne { width: min(380px, 78%); display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.scene-voile__etape { margin: 0; min-width: 0; text-align: left; font: 500 12.5px/1.45 var(--vy-font-ui); color: rgba(243, 240, 248, 0.72); min-height: 1.45em; }
+.scene-voile__pct { flex: none; font: 700 13px/1.45 var(--d-mono, ui-monospace, monospace); color: #fff; letter-spacing: 0.02em; }
+/* La phrase : une carte de verre en bas, l'étiquette (Astuce, Légende) de la couleur de son genre. */
+.scene-voile__phrase {
+  position: absolute !important; left: 50%; bottom: calc(18px + var(--sc-bas, 0px)); transform: translateX(-50%);
+  width: min(560px, calc(100% - 32px)); box-sizing: border-box; padding: 10px 16px; text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.08); border-left: 3px solid #ff8a3d; border-radius: 12px;
+  background: rgba(14, 12, 19, 0.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: opacity 0.4s ease;
+}
+.scene-voile__phrase[data-genre="legende"] { border-left-color: #b78bff; }
+.scene-voile__phrase small { display: block; margin-bottom: 2px; font: 700 9.5px/1.2 var(--vy-font-titre); letter-spacing: 1.6px; text-transform: uppercase; color: #ff8a3d; }
+.scene-voile__phrase[data-genre="legende"] small { color: #b78bff; }
+.scene-voile__phrase p { margin: 0; font: 500 13px/1.45 var(--vy-font-ui); color: rgba(243, 240, 248, 0.9); }
+.scene-voile__phrase[data-genre="legende"] p { font-style: italic; }
+.scene-voile__phrase.change { opacity: 0; }
+/* Sans barre (la 3D perdue) ; le repli : ni barre, ni phrase, l'explication et les boutons. */
+.scene-voile-boite.sans-barre .scene-voile__barre, .scene-voile-boite.sans-barre .scene-voile__pct,
+.scene-voile-boite.repli .scene-voile__barre, .scene-voile-boite.repli .scene-voile__pct, .scene-voile-boite.repli .scene-voile__phrase { display: none; }
+.scene-voile-boite.sans-barre .scene-voile__ligne, .scene-voile-boite.repli .scene-voile__ligne { justify-content: center; width: auto; max-width: 420px; }
+.scene-voile-boite.sans-barre .scene-voile__etape, .scene-voile-boite.repli .scene-voile__etape { text-align: center; }
+.scene-voile-boite.repli { padding-bottom: 24px; }
 .scene-voile-boite.repli .scene-voile__fil { animation: none; opacity: 0.5; }
 .scene-voile__boutons { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; max-width: 460px; }
 .scene-voile__boutons .vy-bouton { min-height: 44px; }
-.scene-voile__question { flex-basis: 100%; margin: 0 0 4px; font: 500 13px/1.45 var(--vy-font-ui); color: var(--vy-texte); }
+.scene-voile__question { flex-basis: 100%; margin: 0 0 4px; font: 500 13px/1.45 var(--vy-font-ui); color: #f3f0f8; }
+/* Au téléphone couché : tout plus serré, la phrase plus courte. */
+@media (max-height: 520px) {
+  .scene-voile-boite { gap: 7px; padding-bottom: 76px; }
+  .scene-voile__titre { font-size: 18px; }
+  .scene-voile__phrase { bottom: calc(10px + var(--sc-bas, 0px)); padding: 7px 12px; }
+  .scene-voile__phrase p { font-size: 12px; }
+}
 #stage.scene-voile .vy-fiche-groupe, #stage.scene-voile .vy-bulle-pnj, #stage.scene-voile .vy-emote-bulle,
 #stage.scene-voile .vy-indice, #stage.scene-voile .vy-rappel, #stage.scene-voile .vy-geste { visibility: hidden; }
-@media (prefers-reduced-motion: reduce) { .scene-voile__fil { animation: none; } #stage > .board-3d, .ile-voiles { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .scene-voile__fil, .scene-voile__fond { animation: none; } .scene-voile__phrase { transition: none; } #stage > .board-3d, .ile-voiles { transition: none; } }
 
 #banner {
   position: absolute;

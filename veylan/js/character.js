@@ -141,6 +141,8 @@ class Character {
 
   static xpToNext(level) { return Math.round(20 * Math.pow(level, 2.4)); }
   static get UNLOCK() { return [1, 1, 1, 3, 6, 9, 13, 17, 21, 26]; }
+  static get PODS_BASE() { return 1000; }
+  static get PODS_TERRA() { return 5; }
   static get MAX_LEVEL() { return 30; }
 
   get classDef() { return DATA.classes[this.classId]; }
@@ -185,6 +187,8 @@ class Character {
       esquivePA: sag, esquivePM: sag, retraitPA: sag, retraitPM: sag,
       prospection: 100 + Math.floor((total.chance || 0) / 10) + extra.pp,
       soins: (total.intel || 0) + extra.soin,
+      // Les pods qu'on peut porter, comme Dofus : 1000, plus 5 par point de Terra.
+      podsMax: Character.PODS_BASE + Character.PODS_TERRA * Math.max(0, total.force || 0),
     };
   }
 
@@ -446,6 +450,15 @@ class Character {
   }
 
   // ----- Inventaire -----
+  // Les pods portés : le sac et l'équipement (Items.poids). Au-delà du maximum (derived().podsMax),
+  // le personnage est surchargé : il ne peut plus marcher (js/world.js, js/plateau.js), comme Dofus.
+  pods() {
+    let n = 0;
+    for (const id in this.inventory) n += Items.poids(id) * this.inventory[id];
+    for (const slot of Items.EQUIP_SLOTS) if (this.equipment[slot]) n += Items.poids(this.equipment[slot]);
+    return n;
+  }
+  surcharge() { return this.pods() > this.derived().podsMax; }
   count(id) { return this.inventory[id] || 0; }
   has(id, n) { return this.count(id) >= (n || 1); }
   addItem(id, n) { this.inventory[id] = this.count(id) + (n || 1); return this.inventory[id]; }

@@ -525,6 +525,10 @@ body.vy-discussion-ouverte #app.vy-verre .vy-panneau__discussion { color: var(--
 #app.vy-verre .vy-menu.on, #app.vy-verre .vy-camera__bouton[aria-pressed="true"] { color: var(--v-encre); background: var(--v-degrade-oblique); border-color: transparent; box-shadow: 0 0 14px rgba(var(--v-a-rgb), 0.35); }
 #app.vy-verre .vy-menu.on kbd { color: var(--v-encre); }
 #app.vy-verre .vy-raccourcis .vy-case { border-radius: 10px; }
+/* La barre du héros n'est plus montrée (le fondateur : « inutile ») : la vie et l'XP sont dans les
+   gemmes du bloc vital, le niveau et les Fils dans les fenêtres ; les points à répartir se voient
+   sur les boutons Caractéristiques et Sorts (un point, js/hud.js). */
+#app.vy-verre #player-bar { display: none; }
 #app.vy-verre #player-bar {
   border: var(--v-bord);
   border-radius: var(--v-rayon);

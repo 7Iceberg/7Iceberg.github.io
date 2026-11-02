@@ -142,6 +142,9 @@
 .vy-style-vital__apercu .vy-gemmes--grappe { --u: 34px; }
 
 /* ----- Barre de menus ----- */
+/* Un point sur le bouton quand des points restent à répartir (js/hud.js, refreshBar). */
+.vy-menu--point { position: relative; }
+.vy-menu--point::after { content: ""; position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--v-degrade, #e9cf98); box-shadow: 0 0 0 2px rgba(10, 9, 15, 0.9), 0 0 8px rgba(var(--v-b-rgb, 233, 207, 152), 0.7); pointer-events: none; }
 .vy-menus { position: absolute; top: calc(10px + var(--sc-haut)); right: calc(10px + var(--sc-droite)); z-index: 12; display: flex; gap: 3px; padding: 4px; border-radius: 7px; background: rgba(10, 16, 25, 0.86); border: 1px solid var(--fen-filet); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4); }
 /* En combat, le plateau remplit la scène : la barre descend au coin bas droit, sur la falaise et le
    vide, plutôt que sur les cases du fond. */

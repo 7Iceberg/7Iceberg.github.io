@@ -1,0 +1,129 @@
+/* ==========================================================================
+   Veylan : la médaille du V, fond animé du voile de chargement (js/voile-medaille.js)
+   --------------------------------------------------------------------------
+   L'image remplit le haut de l'écran (centrée sur le V), le titre, la barre et la phrase tiennent
+   en bas sur un dégradé sombre. Tout ce qui bouge n'anime que l'opacité et les transformations :
+   le navigateur l'anime seul pendant que la page construit l'île.
+   ========================================================================== */
+
+.scene-voile-boite.medaille { --bas: 112px; }
+.scene-voile__fond[data-fond="medaille"] { background: #060910; container-type: size; animation: vy-med-approche 30s ease-in-out infinite alternate; }
+@keyframes vy-med-approche { from { transform: scale(1); } to { transform: scale(1.035); } }
+.scene-voile__fond[data-fond="medaille"]::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--bas) + 70px); pointer-events: none;
+  background: linear-gradient(180deg, rgba(6, 9, 16, 0) 0%, rgba(6, 9, 16, 0.78) 45%, rgba(6, 9, 16, 0.95) 100%);
+}
+
+/* La boîte de l'image : couvre la largeur, centrée sur la place au-dessus du bas. */
+.vy-medaille {
+  position: absolute; left: 50%; top: calc((100cqh - var(--bas)) / 2);
+  width: max(100cqw, calc((100cqh - var(--bas) + 40px) * 2.4573)); aspect-ratio: 1612 / 656;
+  transform: translate(-50%, -50%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 88%, transparent 100%); mask-image: linear-gradient(180deg, #000 0%, #000 88%, transparent 100%);
+}
+.vy-medaille > * { position: absolute; display: block; pointer-events: none; }
+/* Tant que l'image n'est pas décodée, rien ne se voit ; puis toute la médaille apparaît en fondu. */
+.vy-medaille { opacity: 0; transition: opacity 0.35s ease; }
+.vy-medaille.prete { opacity: 1; }
+.vy-medaille__image, .vy-medaille__cristaux { left: 0; top: 0; width: 100%; height: 100%; }
+
+/* Les cristaux de l'entre-deux respirent ; une lumière les balaie, en tournant autour de la médaille. */
+.vy-medaille__cristaux { mix-blend-mode: screen; opacity: 0.2; animation: vy-med-respire 3.8s ease-in-out infinite alternate; will-change: opacity; }
+@keyframes vy-med-respire { from { opacity: 0.12; } to { opacity: 0.9; } }
+.vy-medaille__balayage {
+  /* Un carré centré sur la médaille, masqué par deux faisceaux, qui tourne ; dedans, le calque des
+     cristaux tourne à l'envers et reste donc en place : la lumière passe sur les cristaux. */
+  left: 50%; top: 49.09%; width: 110%; aspect-ratio: 1; transform: translate(-50%, -50%) rotate(0deg);
+  -webkit-mask-image: conic-gradient(from 0deg, transparent 0deg 125deg, #000 155deg, transparent 180deg 305deg, #000 335deg, transparent 360deg);
+  mask-image: conic-gradient(from 0deg, transparent 0deg 125deg, #000 155deg, transparent 180deg 305deg, #000 335deg, transparent 360deg);
+  animation: vy-med-tour 9s linear infinite; will-change: transform; mix-blend-mode: screen;
+}
+.vy-medaille__balayage img {
+  position: absolute; left: 4.545%; top: 31.839%; width: 90.909%; height: 36.995%;
+  transform-origin: 50% 49.09%; animation: vy-med-tour-envers 9s linear infinite; will-change: transform;
+  filter: brightness(1.8);
+}
+@keyframes vy-med-tour { to { transform: translate(-50%, -50%) rotate(360deg); } }
+@keyframes vy-med-tour-envers { to { transform: rotate(-360deg); } }
+
+/* Les étincelles : une petite étoile à quatre branches qui s'allume, tourne et s'éteint. */
+.vy-medaille__eclat {
+  width: 1.7%; aspect-ratio: 1; transform: translate(-50%, -50%) scale(0); opacity: 0;
+  background: radial-gradient(circle, #fff 0 8%, rgba(160, 232, 255, 0.95) 16%, rgba(80, 190, 255, 0.35) 34%, transparent 62%);
+  mix-blend-mode: screen; animation: vy-med-eclat 3s ease-in-out infinite; will-change: transform, opacity;
+}
+.vy-medaille__eclat::before, .vy-medaille__eclat::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 240%; height: 7%; border-radius: 50%;
+  background: linear-gradient(90deg, transparent, rgba(230, 250, 255, 0.95), transparent); transform: translate(-50%, -50%);
+}
+.vy-medaille__eclat::after { transform: translate(-50%, -50%) rotate(90deg); }
+@keyframes vy-med-eclat {
+  0%, 58%, 100% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 0; }
+  70% { transform: translate(-50%, -50%) scale(1) rotate(30deg); opacity: 1; }
+  84% { transform: translate(-50%, -50%) scale(0.45) rotate(55deg); opacity: 0.6; }
+}
+
+/* Le cristal du cœur bat, les éclairs courent sur le V. */
+.vy-medaille__coeur { mix-blend-mode: screen; opacity: 0.3; animation: vy-med-coeur 2.6s ease-in-out infinite; will-change: opacity; }
+@keyframes vy-med-coeur { 0%, 100% { opacity: 0.2; } 40% { opacity: 0.95; } 55% { opacity: 0.6; } 65% { opacity: 0.85; } }
+.vy-medaille__eclair { left: 0; top: 0; width: 100%; height: 100%; overflow: visible; opacity: 0; animation: vy-med-eclair 2.4s linear infinite; will-change: opacity; }
+.vy-medaille__eclair path { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.vy-medaille__eclair .lueur { stroke: rgba(80, 185, 255, 0.22); stroke-width: 20px; }
+.vy-medaille__eclair .halo { stroke: rgba(110, 215, 255, 0.65); stroke-width: 8px; }
+.vy-medaille__eclair .coeur { stroke: #f6fdff; stroke-width: 2.4px; }
+@keyframes vy-med-eclair { 0% { opacity: 0; } 2% { opacity: 1; } 5% { opacity: 0.35; } 8% { opacity: 1; } 14% { opacity: 0.85; } 19% { opacity: 0; } 100% { opacity: 0; } }
+/* L'étincelle du contour : un trait de lumière qui fait le tour du V (sa longueur, --l, mesurée au démarrage). */
+.vy-medaille__contour { left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
+.vy-medaille__contour path { fill: none; stroke-linecap: round; stroke-linejoin: round; animation: vy-med-contour 3.4s linear infinite; animation-delay: inherit; }
+.vy-medaille__contour .halo { stroke: rgba(110, 215, 255, 0.55); stroke-width: 7; }
+.vy-medaille__contour .coeur { stroke: #f2fcff; stroke-width: 2.2; }
+@keyframes vy-med-contour { from { stroke-dashoffset: 0; } to { stroke-dashoffset: calc(-1px * var(--l, 1000)); } }
+
+/* Les douze médaillons s'allument avec la progression (un par douzième). */
+.vy-medaille__pastille {
+  width: 5%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, color-mix(in srgb, var(--c) 55%, #fff) 0%, color-mix(in srgb, var(--c) 70%, transparent) 30%, transparent 68%);
+  mix-blend-mode: screen; transition: opacity 0.5s ease;
+}
+.vy-medaille__pastille.on { opacity: 0.85; animation: vy-med-pastille 2.8s ease-in-out infinite; }
+@keyframes vy-med-pastille { 50% { opacity: 0.5; } }
+
+/* ----- Le bas : le titre et l'étape, la barre, la phrase ----- */
+.scene-voile-boite.medaille {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 1fr auto auto auto;
+  grid-template-areas: ". ." "titre ligne" "barre barre" "phrase phrase";
+  align-items: end; column-gap: 14px; row-gap: 8px; text-align: left;
+  padding: 0 max(16px, calc((100% - 760px) / 2)) calc(14px + var(--sc-bas, 0px));
+}
+.scene-voile-boite.medaille .scene-voile__fil { display: none; }
+.scene-voile-boite.medaille .scene-voile__titre { grid-area: titre; font-size: 18px; }
+.scene-voile-boite.medaille .scene-voile__ligne { grid-area: ligne; width: auto; justify-content: flex-end; gap: 10px; }
+.scene-voile-boite.medaille .scene-voile__etape { text-align: right; }
+.scene-voile-boite.medaille .scene-voile__barre { grid-area: barre; width: 100%; }
+.scene-voile-boite.medaille .scene-voile__phrase {
+  grid-area: phrase; position: relative !important; left: auto; bottom: auto; transform: none; width: 100%;
+  margin-top: 2px; background: rgba(12, 14, 22, 0.66);
+}
+/* La 3D perdue (sans barre) et le repli : le texte au centre, en bas, comme avant. */
+.scene-voile-boite.medaille.repli, .scene-voile-boite.medaille.sans-barre {
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; text-align: center;
+  padding-bottom: calc(24px + var(--sc-bas, 0px));
+}
+.scene-voile-boite.medaille.sans-barre .scene-voile__phrase { width: min(560px, 100%); }
+
+/* Au téléphone couché : un bas plus court. */
+@media (max-height: 520px) {
+  .scene-voile-boite.medaille { --bas: 92px; row-gap: 5px; }
+  .scene-voile-boite.medaille .scene-voile__titre { font-size: 15px; }
+  .scene-voile-boite.medaille .scene-voile__phrase { padding: 6px 12px; }
+  .scene-voile-boite.medaille .scene-voile__phrase small { display: inline; margin-right: 6px; }
+  .vy-medaille__eclair .lueur { stroke-width: 12px; }
+  .vy-medaille__eclair .halo { stroke-width: 5px; }
+  .vy-medaille__eclair .coeur { stroke-width: 1.6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-voile__fond[data-fond="medaille"], .vy-medaille__pastille.on { animation: none; }
+  .vy-medaille__cristaux, .vy-medaille__coeur { animation: none; opacity: 0.5; }
+  .vy-medaille__eclat, .vy-medaille__eclair, .vy-medaille__balayage, .vy-medaille__contour { display: none; }
+}

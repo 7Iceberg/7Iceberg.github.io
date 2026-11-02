@@ -177,7 +177,7 @@ const Ile = (() => {
   const FICHIERS = {
     donnees: ['js/data-ile.js', 'content/ervane.js', 'content/ervane-aires.js', 'content/ervane-orsane.js', 'content/tutoriel-ile.js'],
     moteur: ['js/ile-terrain.js', 'js/ile-nav.js', 'js/plateau.js'],
-    rendu: ['js/ile-peinture.js', 'js/ile-camera.js', 'js/ile-sol.js', 'js/ile-decor.js', 'js/ile-figures.js', 'js/ile-arene.js', 'js/ile-salle.js', 'js/ile-3d.js', 'js/scene.js'],
+    rendu: ['js/ile-peinture.js', 'js/ile-camera.js', 'js/ile-sol.js', 'js/ile-decor.js', 'js/ile-figures.js', 'js/ile-arene.js', 'js/ile-salle.js', 'js/ile-3d.js', 'js/voile-paysage.js', 'js/voile-medaille.js', 'js/scene.js'],
   };
   // Écrit les fichiers de l'île dans la page pendant son analyse (ce script est inséré par
   // l'analyseur : document.write est alors synchrone), puis l'application des modules. Rend faux
