@@ -548,19 +548,27 @@ const IleModeles = (() => {
     return { modeles, mat: mats[0], mats, formes: FORMES, genres: GENRES, etc: !!etc, octets: { tex, geo } };
   }
 
-  // ----- Les sols (assets/decor/sols/jeu-*.jpg, 3.32) -----
-  // Le sol du monde modelé garde ses couleurs de sommets (la teinte de chaque lieu) ; une texture de
-  // Meshy y met son grain, choisie d'après cette couleur : le vert clair prend l'herbe, le vert sombre
-  // la litière de forêt, le brun le chemin, le gris la roche, le beige clair les pavés. Le grain est
-  // la texture divisée par sa couleur moyenne : il module la couleur du lieu sans la changer.
+  // ----- Les sols (assets/decor/sols/jeu-*.jpg, 3.32 et 3.33) -----
+  // Le sol du monde modelé part de ses couleurs de sommets (la teinte de chaque lieu), dont on tire
+  // quatre classes : l'herbe (le vert ; sombre, la litière de forêt), les dalles (le clair des places),
+  // la terre (le brun) et la roche (le gris). À la manière de « Dofus OpenWorld » (3.33), les classes
+  // ont des bords nets et ondulés (un bruit déplace leur seuil), la couleur du lieu suit ces bords,
+  // le village est un patchwork de dalles et d'herbe, les champs ont leurs plaques de terre, l'herbe
+  // est propre (le grain de sa texture en luminosité seule, adouci), de grandes nappes plus claires ou
+  // plus sombres passent comme des ombres de nuages. Les dalles (tools/sols/dalles.py) ont leur propre
+  // couleur, à la luminosité du lieu, assombries là où l'herbe les borde.
   // `pas` : la largeur d'une répétition, en u.
   // `moyenne` : la couleur moyenne linéaire de la texture (calculée une fois, à la fabrication).
   const SOLS = {
-    herbe: { pas: 7, moyenne: [0.0241, 0.0736, 0.0405] }, foret: { pas: 6, moyenne: [0.0364, 0.0587, 0.0354] },
-    chemin: { pas: 5, moyenne: [0.1004, 0.0673, 0.0347] }, roche: { pas: 7, moyenne: [0.0433, 0.0812, 0.0947] },
-    paves: { pas: 3.2, moyenne: [0.0276, 0.0539, 0.0765] },
+    herbe: { pas: 6, moyenne: [0.0515, 0.1509, 0.044] }, foret: { pas: 6, moyenne: [0.0364, 0.0587, 0.0354] },
+    chemin: { pas: 5, moyenne: [0.3171, 0.1229, 0.0346] }, roche: { pas: 7, moyenne: [0.0433, 0.0812, 0.0947] },
+    dalles: { pas: 5, moyenne: [0.3113, 0.4039, 0.4353] }, paves: { pas: 3.5, moyenne: [0.1125, 0.0842, 0.0537] },
   };
-  const FORCE_SOL = 0.7;
+  // Les couleurs types des classes (la moyenne des sommets de chaque classe dans le GLB, linéaire) :
+  // une classe gagnée ou perdue par un bord net apporte ou retire la sienne.
+  const TYPES_SOL = { vert: [0.1133, 0.2848, 0.11], dalles: [0.7406, 0.7182, 0.6209], terre: [0.3876, 0.3046, 0.1296], roche: [0.3487, 0.3233, 0.3142] };
+  // Les villages (u, v, rayon, force) : des plaques de dalles dans l'herbe. Les Mailles et le Hameau Vide.
+  const VILLAGES = [[210, 104, 36, 1], [175, 28, 14, 0.7]];
   // `etc` : le GPU lit ETC2, le sol précuit (jeu-<nom>.ktx, retourné comme flipY) d'abord.
   async function texSol(THREE, nom, etc) {
     const m = SOLS[nom].moyenne, moyenne = new THREE.Vector3(m[0], m[1], m[2]);
@@ -580,28 +588,164 @@ const IleModeles = (() => {
       }, undefined, ko);
     });
   }
+  // Le bruit du sol : une texture de valeurs raccordable (256 x 256, faite ici, sans fichier), quatre
+  // fréquences dans ses quatre canaux ; le jeu la répète tous les 40 u : r les nappes (10 u), a les
+  // plaques (5 u), g et b les bords (2,5 et 1,25 u). Une graine fixe : le même sol à chaque partie.
+  function bruitSol(THREE) {
+    const n = 256, data = new Uint8Array(n * n * 4);
+    let graine = 0x5e17a9;
+    const hasard = () => { graine = (graine + 0x6D2B79F5) | 0; let t = Math.imul(graine ^ (graine >>> 15), 1 | graine); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const canal = (k, cellules) => {
+      const g = new Float32Array(cellules * cellules);
+      for (let i = 0; i < g.length; i++) g[i] = hasard();
+      const lisse = t => t * t * (3 - 2 * t);
+      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+        const fx = x / n * cellules, fy = y / n * cellules, x0 = Math.floor(fx), y0 = Math.floor(fy);
+        const tx = lisse(fx - x0), ty = lisse(fy - y0), x1 = (x0 + 1) % cellules, y1 = (y0 + 1) % cellules;
+        const a = g[y0 * cellules + x0] * (1 - tx) + g[y0 * cellules + x1] * tx, b = g[y1 * cellules + x0] * (1 - tx) + g[y1 * cellules + x1] * tx;
+        data[(y * n + x) * 4 + k] = Math.round((a * (1 - ty) + b * ty) * 255);
+      }
+    };
+    canal(0, 4); canal(1, 16); canal(2, 32); canal(3, 8);
+    const t = new THREE.DataTexture(data, n, n, THREE.RGBAFormat, THREE.UnsignedByteType);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.magFilter = THREE.LinearFilter;
+    t.minFilter = THREE.LinearMipmapLinearFilter;
+    t.generateMipmaps = true;
+    t.needsUpdate = true;
+    return { t, octets: n * n * 4 * 4 / 3 };
+  }
+  // La carte des matières (3.33) : un texel par u sur toute l'île, faite ici d'après le plateau (T,
+  // js/ile-terrain.js) : r les sentiers (les pavés de chemin), g les ruelles et les places de pierre (les
+  // dalles), b le village (des plaques de dalles dans l'herbe), a les places de terre. Des distances,
+  // en douceur : le shader en tire des bords nets au bruit.
+  function carteSol(THREE, T) {
+    const W = T.W, H = T.H, data = new Uint8Array(W * H * 4);
+    const pres = (u, v, pts, demi) => {
+      let m = Infinity;
+      for (let k = 0; k + 1 < pts.length; k++) {
+        const ax = pts[k][0], ay = pts[k][1], sx = pts[k + 1][0] - ax, sy = pts[k + 1][1] - ay, l2 = sx * sx + sy * sy;
+        const t = l2 > 0 ? Math.max(0, Math.min(1, ((u - ax) * sx + (v - ay) * sy) / l2)) : 0;
+        m = Math.min(m, Math.hypot(ax + sx * t - u, ay + sy * t - v));
+      }
+      return m - demi;
+    };
+    const val = d => Math.round(255 * Math.max(0, Math.min(1, 0.5 - d / 2.4)));
+    const lignes = T.lignes || [], places = T.places || [];
+    const sentiers = lignes.filter(l => l.sorte === 'sentier' && l.pts), ruelles = lignes.filter(l => l.sorte === 'ruelle' && l.pts);
+    const vil = new Float32Array(W * H);
+    for (let v = 0; v < H; v++) for (let u = 0; u < W; u++) {
+      const i = v * W + u;
+      let dS = 9, dR = 9, dT = 9;
+      for (const l of sentiers) dS = Math.min(dS, pres(u, v, l.pts, l.demi));
+      for (const l of ruelles) dR = Math.min(dR, pres(u, v, l.pts, l.demi));
+      for (const p of places) {
+        const d = Math.hypot(u - p.centre[0], v - p.centre[1]) - p.rayon;
+        if (p.sol === 'terre') dT = Math.min(dT, d); else if (p.sol === 'calcaire') dR = Math.min(dR, d);
+      }
+      data[i * 4] = val(dS); data[i * 4 + 1] = val(dR); data[i * 4 + 3] = val(dT);
+      const z = T.regionsZone && T.region ? T.regionsZone[T.region[i]] : null;
+      vil[i] = z === 'ervane_mailles' ? 1 : 0;
+      for (const V of VILLAGES) { const d = Math.hypot(u - V[0], v - V[1]); if (d < V[2]) vil[i] = Math.max(vil[i], V[3] * Math.min(1, (V[2] - d) / (V[2] * 0.3))); }
+    }
+    // Le village en douceur (deux passes de flou de 3 u) : les plaques s'éclaircissent vers ses bords.
+    const flou = (src) => { const out = new Float32Array(W * H); for (let v = 0; v < H; v++) for (let u = 0; u < W; u++) { let s = 0, n = 0; for (let dv = -3; dv <= 3; dv++) for (let du = -3; du <= 3; du++) { const x = u + du, y = v + dv; if (x < 0 || y < 0 || x >= W || y >= H) continue; s += src[y * W + x]; n++; } out[v * W + u] = s / n; } return out; };
+    const vf = flou(flou(vil));
+    for (let i = 0; i < W * H; i++) data[i * 4 + 2] = Math.round(255 * vf[i]);
+    const t = new THREE.DataTexture(data, W, H, THREE.RGBAFormat, THREE.UnsignedByteType);
+    t.magFilter = t.minFilter = THREE.LinearFilter;
+    t.generateMipmaps = false;
+    t.needsUpdate = true;
+    return { t, octets: W * H * 4, W, H };
+  }
+  // Les places de pierre en cercles de pavés (3.33) : centre, rayon ; huit au plus.
+  const MAX_PLACES = 8;
+  const v3 = c => `vec3(${c.map(x => x.toFixed(4)).join(', ')})`;
   const GLSL_SOL = `
     {
       vec3 cs = vColor.rgb;
       float lumS = dot(cs, vec3(0.3, 0.59, 0.11));
-      float wVert = smoothstep(0.0, 0.06, cs.g - max(cs.r, cs.b));
-      float wPave = smoothstep(0.42, 0.55, lumS) * (1.0 - wVert);
-      float wBrun = smoothstep(0.02, 0.12, cs.r - cs.b) * (1.0 - wVert) * (1.0 - wPave);
-      float wGris = max(0.0, 1.0 - wVert - wPave - wBrun);
-      float tFor = 1.0 - smoothstep(0.13, 0.24, lumS);
       vec2 q = vMonde.xz;
-      #define GRAIN(s, m, p) (pow(texture2D(s, q / p).rgb, vec3(2.2)) / max(m, vec3(0.02)))
-      vec3 g = wVert * mix(GRAIN(solHerbe, moyHerbe, ${SOLS.herbe.pas.toFixed(1)}), GRAIN(solForet, moyForet, ${SOLS.foret.pas.toFixed(1)}), tFor)
-             + wBrun * GRAIN(solChemin, moyChemin, ${SOLS.chemin.pas.toFixed(1)})
-             + wPave * GRAIN(solPaves, moyPaves, ${SOLS.paves.pas.toFixed(1)})
-             + wGris * GRAIN(solRoche, moyRoche, ${SOLS.roche.pas.toFixed(1)});
-      // Les pentes raides : la roche, projetée de côté (sur le plan le plus face à la pente), sans
-      // les stries d'une texture tirée à la verticale.
+      vec4 bz = texture2D(solBruit, q / 40.0);
+      float ond = bz.g * 0.6 + bz.b * 0.4;
+      // Les classes douces (la couleur du lieu), puis nettes : leur seuil déplacé par le bruit.
+      float cV = smoothstep(0.0, 0.06, cs.g - max(cs.r, cs.b));
+      float cP = smoothstep(0.42, 0.55, lumS);
+      float cB = smoothstep(0.02, 0.12, cs.r - cs.b);
+      float tFor = 1.0 - smoothstep(0.13, 0.24, lumS);
+      float sV = cV, sP = cP * (1.0 - cV), sB = cB * (1.0 - cV) * (1.0 - cP);
+      float sG = max(0.0, 1.0 - sV - sP - sB);
+      #define NET(x, d) smoothstep(0.46, 0.54, (x) + ((d) - 0.5) * 0.7)
+      float nV = NET(cV, ond), nP = NET(cP, 1.0 - ond), nB = NET(cB, bz.b);
+      // La carte des matières : r les sentiers, g les ruelles et les places de pierre, b le village, a
+      // les places de terre (un texel par u).
+      vec4 cm = texture2D(solCarte, (q + 0.5) / solCarteTaille);
+      float vil = cm.b;
+      float nSe = NET(cm.r, ond * 0.45 + bz.b * 0.55), nR = NET(cm.g, 1.0 - ond), nT = NET(cm.a, ond);
+      nP = max(nP, nR);
+      nB = max(nB, max(nT, nSe));
+      // Les villages : des plaques de dalles dans l'herbe ; ailleurs, hors des bois, des plaques de terre.
+      float vPl = bz.a * 0.75 + bz.r * 0.25 + (ond - 0.5) * 0.14;
+      float plaque = smoothstep(0.575, 0.605, vPl) * vil;
+      float terre = smoothstep(0.69, 0.72, bz.r * 0.6 + bz.a * 0.4 + (ond - 0.5) * 0.12) * (1.0 - tFor) * (1.0 - vil);
+      nV *= 1.0 - max(max(nR, nSe), nT);
+      float dP = nV * plaque, dB = nV * terre * (1.0 - plaque);
+      float wV = nV - dP - dB;
+      float wP = nP * (1.0 - nV) + dP;
+      float wB = nB * (1.0 - nV) * (1.0 - nP) + dB;
+      // Des îlots d'herbe dans la terre, hors des sentiers et des places.
+      float ilot = smoothstep(0.60, 0.63, bz.a * 0.55 + bz.g * 0.45 + (bz.b - 0.5) * 0.1) * (1.0 - nSe) * (1.0 - nT);
+      float dV = (wB - dB) * ilot;
+      wB -= dV; wV += dV;
+      float wG = max(0.0, 1.0 - wV - wP - wB);
+      // La couleur du lieu suit les bords nets.
+      vec3 c = max(cs + (wV - sV) * ${v3(TYPES_SOL.vert)} + (wP - sP) * ${v3(TYPES_SOL.dalles)} + (wB - sB) * ${v3(TYPES_SOL.terre)} + (wG - sG) * ${v3(TYPES_SOL.roche)}, vec3(0.0));
+      float lumC = dot(c, vec3(0.3, 0.59, 0.11));
+      #define TEX(s, p) pow(texture2D(s, q / p).rgb, vec3(2.2))
+      #define LUM(v) dot(v, vec3(0.3, 0.59, 0.11))
+      // L'herbe peinte (tools/sols/meshy_sol.py) : son grain, ses reflets jaune-vert et ses creux bleu-vert à
+      // moitié ; la litière de forêt en luminosité seule.
+      vec3 tH = TEX(solHerbe, ${SOLS.herbe.pas.toFixed(1)});
+      vec3 gH = mix(vec3(LUM(tH) / LUM(moyHerbe)), tH / max(moyHerbe, vec3(0.02)), 0.5);
+      vec3 gV = mix(gH, vec3(LUM(TEX(solForet, ${SOLS.foret.pas.toFixed(1)})) / LUM(moyForet)), tFor);
+      gV = 1.0 + (clamp(gV, 0.0, 2.5) - 1.0) * 0.6;
+      vec3 tC = TEX(solChemin, ${SOLS.chemin.pas.toFixed(1)});
+      vec3 gB = clamp(mix(vec3(LUM(tC) / LUM(moyChemin)), tC / max(moyChemin, vec3(0.02)), 0.3), 0.0, 2.5);
+      // Les sentiers pavés : les pavés de chemin, leur couleur à la luminosité du lieu.
+      vec3 pave = TEX(solPaves, ${SOLS.paves.pas.toFixed(1)}) / LUM(moyPaves);
+      vec3 tR = TEX(solRoche, ${SOLS.roche.pas.toFixed(1)});
+      vec3 gG = clamp(mix(vec3(LUM(tR) / LUM(moyRoche)), tR / max(moyRoche, vec3(0.02)), 0.3), 0.0, 2.5);
+      gB = mix(vec3(1.0), gB, 0.75); gG = mix(vec3(1.0), gG, 0.75);
+      // Les dalles : leur couleur, à la luminosité du lieu ; l'herbe qui les borde les assombrit.
+      // Les places de pierre : des cercles de pavés autour du centre, un liseré clair au bord.
+      vec2 qd = q;
+      float anneau = 0.0;
+      for (int i = 0; i < ${MAX_PLACES}; i++) {
+        vec3 P = solPlaces[i];
+        if (P.z <= 0.0) continue;
+        vec2 e = q - P.xy;
+        float d = length(e);
+        if (d < P.z + 0.6) {
+          float a = atan(e.y, e.x);
+          qd = vec2(a * max(d, 0.5) * 1.15, d * 1.6) * ${SOLS.dalles.pas.toFixed(1)} / 2.4;
+          anneau = smoothstep(P.z - 1.1, P.z - 0.7, d) * (1.0 - smoothstep(P.z - 0.35, P.z, d));
+        }
+      }
+      vec3 dalle = pow(texture2D(solDalles, qd / ${SOLS.dalles.pas.toFixed(1)}).rgb, vec3(2.2)) / LUM(moyDalles) * lumC * 0.82;
+      dalle *= 1.0 + 0.35 * anneau;
+      float fP = smoothstep(0.5, 0.7, cP + (0.5 - ond) * 0.7) * (1.0 - nV) + nV * smoothstep(0.605, 0.66, vPl) * vil;
+      dalle *= 1.0 - 0.28 * clamp(1.0 - fP / max(wP, 0.001), 0.0, 1.0);
+      float wS = wB * nSe;
+      vec3 col = c * (wV * gV + (wB - wS) * gB + wG * gG) + wP * dalle + wS * pave * lumC * 0.95;
+      // Les grandes nappes (pas sur les dalles), comme des ombres de nuages.
+      col *= mix(1.0, 0.86 + 0.26 * bz.r, 0.85 * (1.0 - wP));
+      // Les pentes raides : la roche, projetée de côté (sur le plan le plus face à la pente).
       vec3 nS = normalize(vNormaleMonde);
       vec2 qc = abs(nS.x) > abs(nS.z) ? vMonde.zy : vMonde.xy;
-      vec3 gR = pow(texture2D(solRoche, qc / ${SOLS.roche.pas.toFixed(1)}).rgb, vec3(2.2)) / max(moyRoche, vec3(0.02));
-      g = mix(gR, g, smoothstep(0.5, 0.78, abs(nS.y)));
-      diffuseColor.rgb *= mix(vec3(1.0), clamp(g, 0.0, 2.5), ${FORCE_SOL.toFixed(2)});
+      vec3 tRs = pow(texture2D(solRoche, qc / ${SOLS.roche.pas.toFixed(1)}).rgb, vec3(2.2));
+      vec3 gRs = mix(vec3(1.0), clamp(mix(vec3(LUM(tRs) / LUM(moyRoche)), tRs / max(moyRoche, vec3(0.02)), 0.3), 0.0, 2.5), 0.75);
+      col = mix(cs * gRs, col, smoothstep(0.5, 0.78, abs(nS.y)));
+      diffuseColor.rgb = diffuse * col;
     }`;
   // Habille la matière du sol du monde modelé (après IleSol.grille, qui déclare vMonde). Rend les
   // octets des textures, ou 0.
@@ -610,13 +754,20 @@ const IleModeles = (() => {
     const mats = new Set();
     for (const o of ile.monde.children) if (/^mo_sol/.test(o.name) && o.material && o.material.vertexColors) mats.add(o.material);
     if (!mats.size) return 0;
-    const noms = ['herbe', 'foret', 'chemin', 'roche', 'paves'], tx = {};
+    const noms = ['herbe', 'foret', 'chemin', 'roche', 'dalles', 'paves'], tx = {};
     const etc = etcLu(ile.renderer);
     await Promise.all(noms.map(async n => { tx[n] = await texSol(THREE, n, etc); }));
     ile.solsEtc = noms.filter(n => tx[n].t.isCompressedTexture).length;
     const uniforms = {}, cap = n => n[0].toUpperCase() + n.slice(1);
     for (const n of noms) { uniforms['sol' + cap(n)] = { value: tx[n].t }; uniforms['moy' + cap(n)] = { value: tx[n].moyenne }; }
-    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n');
+    const bz = bruitSol(THREE), carte = ile.T ? carteSol(THREE, ile.T) : null;
+    uniforms.solBruit = { value: bz.t };
+    uniforms.solCarte = { value: carte ? carte.t : bz.t };
+    uniforms.solCarteTaille = { value: new THREE.Vector2(carte ? carte.W : 1, carte ? carte.H : 1) };
+    // Les places de pierre (calcaire) assez grandes pour des cercles : centre et rayon.
+    const pl = ((ile.T && ile.T.places) || []).filter(p => (p.sol || 'calcaire') === 'calcaire' && p.rayon >= 5).slice(0, MAX_PLACES);
+    uniforms.solPlaces = { value: Array.from({ length: MAX_PLACES }, (_, i) => pl[i] ? new THREE.Vector3(pl[i].centre[0], pl[i].centre[1], pl[i].rayon) : new THREE.Vector3(0, 0, 0)) };
+    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + `\nuniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}];`;
     for (const m of mats) {
       const prec = m.onBeforeCompile, cle = Object.prototype.hasOwnProperty.call(m, 'customProgramCacheKey') ? m.customProgramCacheKey : null;
       m.onBeforeCompile = (sh, r) => {
@@ -632,12 +783,13 @@ const IleModeles = (() => {
         sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vNormaleMonde;\n' + decl)
           .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_SOL);
       };
-      m.customProgramCacheKey = () => 'sol-meshy/' + (cle ? cle.call(m) : '');
+      m.customProgramCacheKey = () => 'sol-meshy-2/' + (cle ? cle.call(m) : '');
       m.needsUpdate = true;
     }
-    return noms.reduce((a, n) => a + tx[n].octets, 0);
+    ile.solCarte = !!carte;
+    return noms.reduce((a, n) => a + tx[n].octets, 0) + bz.octets + (carte ? carte.octets : 0);
   }
 
-  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, ATLAS, OBJETS, SOLS, charger, chargerSemis, poses, places, poser, animer, habillerSol };
+  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, ATLAS, OBJETS, SOLS, VILLAGES, charger, chargerSemis, poses, places, poser, animer, habillerSol };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = IleModeles;
