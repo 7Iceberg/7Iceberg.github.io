@@ -175,17 +175,20 @@ const IleModeles = (() => {
   // (IleGlb.construire). Un genre peut garder une partie des instances telles qu'exportées.
   const FORMES = {
     base_arbre_large_0: 'feuillu', base_arbre_large_1: 'feuillu', base_arbre_rond_0: 'feuillu', base_arbre_rond_1: 'feuillu',
-    base_arbre_haut_0: 'conifere', base_arbre_haut_1: 'conifere', base_arbre_pin_0: 'conifere', base_arbre_pin_1: 'conifere',
+    base_arbre_haut_0: 'haut', base_arbre_haut_1: 'haut', base_arbre_pin_0: 'conifere', base_arbre_pin_1: 'conifere',
     base_arbre_tordu_0: 'tordu', base_arbre_mort_0: 'mort', base_rocher_0: 'rocher', base_buisson_0: 'buisson', base_buisson_1: 'buisson',
     base_fougere_0: 'fougere', base_fleurs_0: 'fleurs', base_galet_0: 'galet',
   };
   // Les modèles, leur atlas et leur case dans l'atlas : [x, y, côté] en pixels. Atlas 0 (2048 x 1024) :
-  // le kit de décor de toute l'île ; atlas 1 (1024 x 1024) : les objets des Mailles (le biome du
+  // le kit de décor de toute l'île, et dans sa moitié haute de droite (1024 x 512) les objets des Murets
+  // (`mu-*-semis.glb` : le muret, la haie, la maison sans toit, le four, le puits à runes, le grand
+  // cairn, le terrier ; une case libre) ; atlas 1 (1024 x 1024) : les objets des Mailles (le biome du
   // village, tools/meshy/biomes), fichiers `m-*-semis.glb` ; atlas 2 (1024 x 1024) : ceux des Quatre
   // Sources, `s-*-semis.glb` (les quatre pierres levées des éléments, la Braise, le cairn percé, la
   // source claire, le tertre de mousse, le ponton, la barrière, la dalle, les fleurs des quatre couleurs) ;
-  // atlas 3 (1024 x 512) : ceux des Murets, `mu-*-semis.glb` (le muret, la haie, la maison sans toit, le
-  // four, le puits à runes, le grand cairn, le terrier ; une case libre).
+  // atlas 3 (1024 x 512) : ceux du Bois Cousu, `b-*-semis.glb` (l'arbre sombre cousu de fils, l'Arbre-
+  // Bobine, la cabane, le rocher à racines, les champignons lumineux ; les fougères, le tronc couché et
+  // les pieux de la Tête du Pont dans les cases libres de l'atlas du kit).
   const SEMIS = {
     arbre: { case: [0, 0, 512] }, arbre3: { case: [512, 0, 512] }, arbre2: { case: [0, 512, 512] },
     rocher2: { case: [512, 512, 256] }, buisson: { case: [768, 512, 256] }, roc: { case: [512, 768, 256] }, cristal: { case: [768, 768, 256] },
@@ -202,9 +205,12 @@ const IleModeles = (() => {
     's-dalle': { atlas: 2, case: [512, 512, 256] }, 's-fleurs-eau': { atlas: 2, case: [768, 512, 256] },
     's-fleurs-feu': { atlas: 2, case: [0, 768, 256] }, 's-fleurs-terre': { atlas: 2, case: [256, 768, 256] },
     's-fleurs-air': { atlas: 2, case: [512, 768, 256] },
-    'mu-muret': { atlas: 3, case: [0, 0, 256] }, 'mu-haie': { atlas: 3, case: [256, 0, 256] }, 'mu-ruine': { atlas: 3, case: [512, 0, 256] },
-    'mu-four': { atlas: 3, case: [768, 0, 256] }, 'mu-puits': { atlas: 3, case: [0, 256, 256] }, 'mu-cairn': { atlas: 3, case: [256, 256, 256] },
-    'mu-terrier': { atlas: 3, case: [768, 256, 256] },
+    'mu-muret': { case: [1024, 0, 256] }, 'mu-haie': { case: [1280, 0, 256] }, 'mu-ruine': { case: [1536, 0, 256] },
+    'mu-four': { case: [1792, 0, 256] }, 'mu-puits': { case: [1024, 256, 256] }, 'mu-cairn': { case: [1280, 256, 256] },
+    'mu-terrier': { case: [1792, 256, 256] },
+    'b-fougere': { case: [1536, 256, 256] }, 'b-tronc': { case: [1024, 512, 256] }, 'b-pieux': { case: [1536, 512, 256] },
+    'b-arbre': { atlas: 3, case: [0, 0, 512] }, 'b-bobine': { atlas: 3, case: [512, 0, 256] }, 'b-cabane': { atlas: 3, case: [768, 0, 256] },
+    'b-rocher': { atlas: 3, case: [512, 256, 256] }, 'b-champignons': { atlas: 3, case: [768, 256, 256] },
   };
   const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512]];
   // Le modèle d'une instance : `teinte` (linéaire, celle du GLB ou du style) et un hasard fixe (0 à 1)
@@ -218,6 +224,9 @@ const IleModeles = (() => {
   const dansSources = (x, z) => x >= 70 && x <= 170 && z >= 92 && z <= 190;
   // Les Murets : le plateau au nord-est, au-dessus du village.
   const dansMurets = (x, z) => x > 110 && z < 80;
+  // Le Bois Cousu : le nord-ouest, à l'ouest du ravin du Ru Clair (qui descend de (146, 52) à (121, 2)) ;
+  // plus au sud, jusqu'à la Lisière Cousue (sa cabane, (118,5 ; 60,5)).
+  const dansBois = (x, z) => z < 95 && (z > 55 ? x <= 125 : x < 120 + z * 0.45);
   const elementA = (x, z, h) => {
     let m = null, d = 1e9;
     for (const s of SOURCES) { const e = Math.hypot(x - s[1], z - s[2]); if (e < d) { d = e; m = s[0]; } }
@@ -226,13 +235,18 @@ const IleModeles = (() => {
   const chaud = t => !!t && t[0] > t[1] * 0.8;
   const sombre = t => !!t && t[1] < 0.2 && t[0] < 0.1;   // le vert profond des sous-bois
   const GENRES = {
-    feuillu: { modele: (t, h) => (chaud(t) || h < 0.2 ? 'arbre3' : 'arbre'), facteur: 1.05 },
+    // Au Bois Cousu, les feuillus et les grands arbres deviennent l'arbre sombre cousu de fils ; les pins
+    // restent.
+    feuillu: { modele: (t, h, x, z) => (dansBois(x, z) ? 'b-arbre' : chaud(t) || h < 0.2 ? 'arbre3' : 'arbre'), facteur: 1.05 },
+    haut: { modele: (t, h, x, z) => (dansBois(x, z) ? 'b-arbre' : 'arbre2'), facteur: 1.0 },
     conifere: { modele: () => 'arbre2', facteur: 1.0 },
     tordu: { modele: (t) => (chaud(t) ? 'arbre3' : 'arbre'), facteur: 1.0 },
     mort: { modele: (t, h) => (h < 0.5 ? 'souche' : 'tronc'), absolu: { souche: 1.0, tronc: 0.9 } },
-    rocher: { modele: (t, h) => (h < 0.12 ? 'roc' : h < 0.26 ? 'cristal' : 'rocher2'), facteur: 1.25, absolu: { roc: 2.6, cristal: 1.3 } },
-    buisson: { modele: (t, h) => (sombre(t) && h < 0.22 ? 'champignons' : 'buisson'), facteur: 1.15, absolu: { champignons: 1.1 } },
-    fougere: { modele: (t, h) => (h < 0.18 ? 'fougeres' : null), absolu: { fougeres: 1.1 } },
+    // Au Bois Cousu : le rocher à racines, les champignons lumineux et le tronc couché parmi les
+    // buissons, ses fougères.
+    rocher: { modele: (t, h, x, z) => (dansBois(x, z) ? 'b-rocher' : h < 0.12 ? 'roc' : h < 0.26 ? 'cristal' : 'rocher2'), facteur: 1.25, absolu: { roc: 2.6, cristal: 1.3, 'b-rocher': 1.9 } },
+    buisson: { modele: (t, h, x, z) => (dansBois(x, z) && h < 0.3 ? 'b-champignons' : dansBois(x, z) && h < 0.45 ? 'b-tronc' : sombre(t) && h < 0.22 ? 'champignons' : 'buisson'), facteur: 1.15, absolu: { champignons: 1.1, 'b-champignons': 1.3, 'b-tronc': 0.9 } },
+    fougere: { modele: (t, h, x, z) => (dansBois(x, z) ? (h < 0.3 ? 'b-fougere' : null) : h < 0.18 ? 'fougeres' : null), absolu: { fougeres: 1.1, 'b-fougere': 1.2 } },
     fleurs: { modele: (t, h, x, z) => (dansSources(x, z) ? 's-fleurs-' + elementA(x, z, h) : null), absolu: { 's-fleurs-eau': 0.75, 's-fleurs-feu': 0.75, 's-fleurs-terre': 0.65, 's-fleurs-air': 0.75 } },
     galet: { modele: (t, h, x, z) => (dansSources(x, z) ? 's-dalle' : null), absolu: { 's-dalle': 0.22 } },
   };
@@ -240,7 +254,10 @@ const IleModeles = (() => {
   // d'après l'objet), sa taille (largeur au sol ou hauteur, en u, au plus) et le quart de tour qui
   // aligne son grand côté. tools/meshy/retirer-objets.py a retiré leur forme de l'export.
   const OBJETS = {
-    maison: { modele: 'm-maison', taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 6 }) },
+    // La maison du Bois Cousu est sa cabane de bois sombre au toit de mousse ; les autres, celles des Mailles.
+    maison: { modele: o => (dansBois(o.u, o.v) ? 'b-cabane' : 'm-maison'), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 6 }) },
+    arbre_bobine: { modele: 'b-bobine', taille: () => ({ l: 9, p: 9, h: 18 }) },
+    pieu: { modele: 'b-pieux', taille: () => ({ l: 2.6, p: 2.6, h: 2 }) },
     comptoir: { modele: 'm-etal', taille: o => ({ l: (o.taille || [5, 2])[0], p: (o.taille || [5, 2])[1], h: 3.6 }) },
     lanterne: { modele: 'm-lanterne', taille: () => ({ l: 9, p: 9, h: 2.6 }) },
     // Une pierre levée des Mailles, ou l'une des quatre du Rond des Quatre, teintée par son élément.
