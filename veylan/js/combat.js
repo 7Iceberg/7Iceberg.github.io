@@ -1582,9 +1582,10 @@ class Combat {
       }
       this.log(`La marée monte : une rangée de plus est inondée (${this.floodLevel}).`, 'system');
     }
+    const noyade = Math.round(12 * (boss.scale || 1));
     for (const t of this.enemies(boss)) {
       const tmp = this.tempAt(t.x, t.y);
-      if (tmp && tmp.kind === 'water' && t.alive) this.dealDamage(boss, t, this.scaleByResist(t, 'eau', 12), 'eau', { label: 'noyade' });
+      if (tmp && tmp.kind === 'water' && t.alive) this.dealDamage(boss, t, this.scaleByResist(t, 'eau', noyade), 'eau', { label: 'noyade' });
     }
   }
 

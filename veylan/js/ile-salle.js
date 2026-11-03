@@ -7,12 +7,14 @@ const IleSalle = (() => {
   PALETTES.planches = { genre: 'planches', joint: '#2e2117', dalles: ['#7d5d3c', '#876643', '#735535', '#8d6c48', '#6b4f32', '#80603f'], roche: '#3e2c1e', trou: '#140f0c', trouCoeur: '#3a2a1a', bordTrou: '#3a2a1c', fissure: '#2a1d12', gravier: '#5a4630', mousse: '#6a6a38', eau: '#243c44', eauClair: '#3c6a74', rive: '#5a4630' };
   PALETTES.terre_battue = { genre: 'terre', joint: '#3a2b1e', dalles: ['#6d5336', '#74593b', '#654d33', '#7a5f41', '#5e4830', '#6f5538'], roche: '#3b2d22', trou: '#120d0a', trouCoeur: '#38241a', bordTrou: '#3f3024', fissure: '#2b1f15', gravier: '#8a7352', mousse: '#55603a', eau: '#2a3c3a', eauClair: '#4a6a62', rive: '#5a4a38' };
   PALETTES.sous_bois = { genre: 'terre', taches: 0.45, joint: '#1c241c', dalles: ['#3c4733', '#424d38', '#374230', '#47523d', '#333d2c', '#3e4935'], roche: '#242b23', trou: '#0d1210', trouCoeur: '#1e3024', bordTrou: '#2a3328', fissure: '#161d16', gravier: '#5a5a44', mousse: '#5b7a44', eau: '#1e3236', eauClair: '#356a66', rive: '#3a4a36' };
+  PALETTES.basalte = { joint: '#3a2420', dalles: ['#4e4a4c', '#555052', '#484446', '#5a5658', '#424042', '#524e50'], roche: '#2a2628', trou: '#160a08', trouCoeur: '#5a2410', bordTrou: '#3a2c2a', fissure: '#7a3a1c', gravier: '#6a6264', mousse: '#5a4a3a', eau: '#2a2a30', eauClair: '#4a4648', rive: '#5a5254' };
   const PAROIS = {
     roche_grise: { mur: '#86838f', pilier: '#908d9a', racine: '#4b3b2e', bloc: '#7d7a86' },
     roche_rousse: { mur: '#8e7464', pilier: '#9a8070', racine: '#4e3a2a', bloc: '#866c5c' },
     bois: { genre: 'bois', mur: '#8a6a48', pilier: '#7a5c3e', racine: '#5a4530', bloc: '#94744f' },
     terre: { genre: 'terre', mur: '#7a5d44', pilier: '#6e5440', racine: '#4a3828', bloc: '#866848' },
     bois_mort: { genre: 'bois', mur: '#6a6660', pilier: '#5e5a54', racine: '#44403a', bloc: '#75706a' },
+    basalte: { mur: '#4e484c', pilier: '#5a5458', racine: '#3a3230', bloc: '#565052' },
   };
   const M = () => IleTerrain.M;
   const hex = (h, k) => { const T = THREE_(), c = new T.Color(h); return [c.r * k, c.g * k, c.b * k]; };

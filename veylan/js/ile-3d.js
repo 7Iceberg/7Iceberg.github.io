@@ -921,10 +921,11 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
   }
 
   matEau(THREE) {
+    const couleursEau = Ile3D.renduDe(this.def).eau || {};
     const m = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
         temps: { value: 0 }, plan: { value: this.tex.eau }, touches: { value: this.tex.touchesLin }, bord: { value: this.tex.poids2 }, tailleIle: { value: new THREE.Vector2(this.T.largeur, this.T.hauteur) },
-        profonde: { value: new THREE.Color('#24566a') }, claire: { value: new THREE.Color('#4f9c9e') }, ecume: { value: new THREE.Color('#eef8f4') }, anime: { value: this.qualite === 'basse' ? 0 : 1 },
+        profonde: { value: new THREE.Color(couleursEau.profonde || '#24566a') }, claire: { value: new THREE.Color(couleursEau.claire || '#4f9c9e') }, ecume: { value: new THREE.Color(couleursEau.ecume || '#eef8f4') }, anime: { value: this.qualite === 'basse' ? 0 : 1 },
       }]),
       vertexShader: `#include <common>
 #include <fog_pars_vertex>

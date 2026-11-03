@@ -405,6 +405,10 @@ const IleModeles = (() => {
     orsane_sentiers: [['arbre', 0.004, [2.8, 4.0], ['jt-ambre', 'jt-rouille']], ['buisson', 0.006, [0.9, 1.3], ['v-buisson']], ['rocher', 0.008, [0.8, 1.3], ['v-rochers']]],
     orsane_toiles: [['amanite', 0.008, [0.45, 0.65], ['v-amanites']], ['buisson', 0.004, [0.9, 1.2], ['v-buisson']], ['rocher', 0.003, [0.8, 1.1], ['v-rochers']]],
     orsane_eboulis: [['arbre', 0.002, [2.8, 3.8], ['jt-rouille']], ['buisson', 0.004, [0.8, 1.2], ['v-buisson']], ['rocher', 0.011, [0.8, 1.4], ['v-rochers']]],
+    kaldum_ville: [['buisson', 0.003, [0.8, 1.1], ['v-buisson']], ['rocher', 0.002, [0.7, 1.0], ['v-rochers']]],
+    kaldum_galeries: [['arbre', 0.0015, [2.6, 3.6], ['jt-rouille']], ['rocher', 0.012, [0.8, 1.5], ['v-rochers']]],
+    kaldum_vapeurs: [['rocher', 0.008, [0.8, 1.3], ['v-rochers']], ['buisson', 0.002, [0.8, 1.1], ['v-buisson']]],
+    kaldum_fonderie: [['arbre', 0.002, [2.6, 3.6], ['jt-rouille']], ['rocher', 0.009, [0.8, 1.4], ['v-rochers']]],
   };
   const CARTES_DENSES = {
     ervane_mailles: [['herbe', 0.5, [0.7, 1.05], 0], ['fleurs', 0.05, [0.45, 0.6], 2]],
@@ -417,6 +421,10 @@ const IleModeles = (() => {
     orsane_sentiers: [['doree', 0.35, [0.75, 1.1], 1], ['herbe', 0.12, [0.7, 1.0], 0]],
     orsane_toiles: [['herbe', 0.2, [0.7, 1.0], 0]],
     orsane_eboulis: [['doree', 0.25, [0.7, 1.0], 1], ['herbe', 0.08, [0.7, 1.0], 0]],
+    kaldum_ville: [['herbe', 0.12, [0.7, 1.0], 0]],
+    kaldum_galeries: [['doree', 0.12, [0.7, 1.0], 1], ['herbe', 0.05, [0.7, 0.95], 0]],
+    kaldum_vapeurs: [['doree', 0.2, [0.7, 1.05], 1], ['herbe', 0.06, [0.7, 1.0], 0]],
+    kaldum_fonderie: [['doree', 0.1, [0.7, 1.0], 1]],
   };
   const SOLS_CARTES = { herbe: [0, 1, 5], doree: [1, 0, 2], fleurs: [0, 5] };
   function hacheEntier(a, b, c) { let h = (a * 374761393 + b * 668265263 + c * 2147483647) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
@@ -506,8 +514,9 @@ const IleModeles = (() => {
     pont: { hauteur: 1.4, tablier: 0.2 },
   };
   const BORDS_ORSANE = { loin: [[220, 141], [289, 92], [372, 56], [404, 56], [388, 40]], ilots: [[-24, 150, 3, 9], [462, 130, -2, 8], [230, 352, -4, 9], [110, -26, 4, 7], [400, -24, 2, 8], [470, 280, 0, 7], [-20, 270, -3, 8]] };
+  const BORDS_KALDUM = { loin: [[26, 72], [124, 113]], ilots: [[-22, 150, 2, 8], [400, 120, -3, 9], [190, 334, 4, 8], [300, -22, -2, 7], [60, 320, 3, 7]] };
   function posesBords(S, T, hauteur, out) {
-    const ICIB = T && T.id && T.id !== 'ervane' ? Object.assign({}, BORDS, T.id === 'orsane' ? BORDS_ORSANE : { loin: [], ilots: [] }) : BORDS;
+    const ICIB = T && T.id && T.id !== 'ervane' ? Object.assign({}, BORDS, T.id === 'orsane' ? BORDS_ORSANE : T.id === 'kaldum' ? BORDS_KALDUM : { loin: [], ilots: [] }) : BORDS;
     const R = S.modeles['br-racines'], C = S.modeles['br-cristaux'], I = S.modeles['br-ilot'], P = S.modeles['br-pont'];
     if (!T || typeof T.videA !== 'function') return;
     let pair = 0;
@@ -829,7 +838,7 @@ const IleModeles = (() => {
     return l > 0.001 ? c.map(x => Math.round(x / l * 1e4) / 1e4) : [1, 1, 1];
   };
   const VILLAGES = [[210, 104, 36, 1], [175, 28, 14, 0.7]];
-  const VILLAGES_PLATEAU = { ervane: { zone: 'ervane_mailles', centres: VILLAGES }, orsane: { zone: 'orsane_cimes', centres: [[222, 92, 62, 1]] } };
+  const VILLAGES_PLATEAU = { ervane: { zone: 'ervane_mailles', centres: VILLAGES }, orsane: { zone: 'orsane_cimes', centres: [[222, 92, 62, 1]] }, kaldum: { zone: 'kaldum_ville', centres: [[90, 72, 52, 1]] } };
   async function texSol(THREE, nom, etc) {
     const m = SOLS[nom].moyenne, moyenne = new THREE.Vector3(m[0], m[1], m[2]);
     if (etc) {
@@ -980,7 +989,7 @@ const IleModeles = (() => {
       float k = clamp(lumS / 0.214, 0.45, 1.3);
       float gainV = max(wV - sV, 0.0) * 0.5, gainP = max(wP - sP, 0.0), gainB = max(wB - sB, 0.0), gainG = max(wG - sG, 0.0);
       float perdu = clamp(max(sV - wV, 0.0) + max(sP - wP, 0.0) + max(sB - wB, 0.0), 0.0, 1.0);
-      vec3 c = cs * (1.0 - perdu) + gainV * ${v3(TYPES_SOL.vert)} * k + gainP * ${v3(TYPES_SOL.dalles)} + gainB * ${v3(TYPES_SOL.terre)} * k + gainG * ${v3(TYPES_SOL.roche)};
+      vec3 c = cs * (1.0 - perdu) + gainV * ${v3(TYPES_SOL.vert)} * k + gainP * ${v3(TYPES_SOL.dalles)} * solGainDalles + gainB * ${v3(TYPES_SOL.terre)} * k + gainG * ${v3(TYPES_SOL.roche)};
       float lumC = dot(c, vec3(0.3, 0.59, 0.11));
       #define TEX(s, p) pow(texture2D(s, q / p).rgb, vec3(2.2))
       #define LUM(v) dot(v, vec3(0.3, 0.59, 0.11))
@@ -1093,8 +1102,10 @@ const IleModeles = (() => {
     const teinte = teinteDalles(ile.def && ile.def.rendu && ile.def.rendu.dalles);
     uniforms.solTeinteDalles = { value: new THREE.Vector3(teinte[0], teinte[1], teinte[2]) };
     ile.solTeinteDalles = teinte;
+    const gainD = ile.def && ile.def.rendu && Number.isFinite(ile.def.rendu.dallesGain) ? Math.max(0, Math.min(1, ile.def.rendu.dallesGain)) : 1;
+    uniforms.solGainDalles = { value: gainD };
     ileSol = ile;
-    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + `\nuniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}]; uniform vec4 solParcelles[${MAX_PARCELLES * 2}]; uniform vec4 solLumieres[${MAX_LUMIERES}]; uniform float solNuit; uniform float solTemps; uniform vec3 solTeinteDalles;`;
+    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + `\nuniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}]; uniform vec4 solParcelles[${MAX_PARCELLES * 2}]; uniform vec4 solLumieres[${MAX_LUMIERES}]; uniform float solNuit; uniform float solTemps; uniform vec3 solTeinteDalles; uniform float solGainDalles;`;
     for (const m of mats) {
       const prec = m.onBeforeCompile, cle = Object.prototype.hasOwnProperty.call(m, 'customProgramCacheKey') ? m.customProgramCacheKey : null;
       m.onBeforeCompile = (sh, r) => {
@@ -1111,7 +1122,7 @@ const IleModeles = (() => {
           .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_SOL)
           .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + GLSL_LUMIERES);
       };
-      m.customProgramCacheKey = () => 'sol-meshy-5/' + (cle ? cle.call(m) : '');
+      m.customProgramCacheKey = () => 'sol-meshy-6/' + (cle ? cle.call(m) : '');
       m.needsUpdate = true;
     }
     ile.solCarte = !!carte;
