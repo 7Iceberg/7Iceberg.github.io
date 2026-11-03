@@ -826,9 +826,9 @@ const IleModeles = (() => {
   }
 
   const SOLS = {
-    herbe: { pas: 6, moyenne: [0.0515, 0.1509, 0.044] }, foret: { pas: 6, moyenne: [0.0364, 0.0587, 0.0354] },
-    chemin: { pas: 5, moyenne: [0.3171, 0.1229, 0.0346] }, roche: { pas: 7, moyenne: [0.0433, 0.0812, 0.0947] },
-    dalles: { pas: 5, moyenne: [0.3113, 0.4039, 0.4353] }, paves: { pas: 3.5, moyenne: [0.1125, 0.0842, 0.0537] },
+    herbe: { pas: 6, moyenne: [0.2304, 0.6006, 0.0767] }, foret: { pas: 6, moyenne: [0.0543, 0.0648, 0.0175] },
+    chemin: { pas: 5, moyenne: [0.5536, 0.3036, 0.1161] }, roche: { pas: 7, moyenne: [0.2214, 0.1974, 0.1531] },
+    dalles: { pas: 9, moyenne: [0.5818, 0.4363, 0.2154] }, paves: { pas: 4.5, moyenne: [0.4429, 0.4041, 0.2351] },
   };
   const TYPES_SOL = { vert: [0.1133, 0.2848, 0.11], dalles: [0.7406, 0.7182, 0.6209], terre: [0.3876, 0.3046, 0.1296], roche: [0.3487, 0.3233, 0.3142] };
   const teinteDalles = hex => {
@@ -1017,11 +1017,15 @@ const IleModeles = (() => {
         float d = length(e);
         if (d < P.z + 0.6) {
           float a = atan(e.y, e.x);
-          qd = vec2(a * max(d, 0.5) * 1.15, d * 1.6) * ${SOLS.dalles.pas.toFixed(1)} / 2.4;
+          // Le pavage en anneaux : une répétition de la texture tous les 7 u (des pierres d'environ 0,7 u).
+          qd = vec2(a * max(d, 0.5), d) * ${SOLS.dalles.pas.toFixed(1)} / 7.0;
           anneau = smoothstep(P.z - 1.1, P.z - 0.7, d) * (1.0 - smoothstep(P.z - 0.35, P.z, d));
         }
       }
-      vec3 dalle = pow(texture2D(solDalles, qd / ${SOLS.dalles.pas.toFixed(1)}).rgb, vec3(2.2)) / LUM(moyDalles) * lumC * 0.82 * solTeinteDalles;
+      // Les dalles gardent 40 % de leur propre couleur (le miel des dalles peintes) ; le reste suit la
+      // teinte des dalles du plateau.
+      vec3 tD = pow(texture2D(solDalles, qd / ${SOLS.dalles.pas.toFixed(1)}).rgb, vec3(2.2));
+      vec3 dalle = mix(vec3(LUM(tD)), tD, 0.4) / LUM(moyDalles) * lumC * 0.82 * solTeinteDalles;
       dalle *= 1.0 + 0.35 * anneau;
       float fP = smoothstep(0.5, 0.7, cP + (0.5 - ond) * 0.7) * (1.0 - nV) + nV * smoothstep(0.605, 0.66, vPl) * vil;
       dalle *= 1.0 - 0.28 * clamp(1.0 - fP / max(wP, 0.001), 0.0, 1.0);
@@ -1122,7 +1126,7 @@ const IleModeles = (() => {
           .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_SOL)
           .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + GLSL_LUMIERES);
       };
-      m.customProgramCacheKey = () => 'sol-meshy-6/' + (cle ? cle.call(m) : '');
+      m.customProgramCacheKey = () => 'sol-meshy-7/' + (cle ? cle.call(m) : '');
       m.needsUpdate = true;
     }
     ile.solCarte = !!carte;
