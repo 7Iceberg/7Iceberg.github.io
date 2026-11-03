@@ -236,6 +236,8 @@ const IleTerrain = (() => {
     barriere: o => [{ rect: true, x: 0, y: 0, l: o.longueur || 3, p: 0.3 }],
     linge: o => { const l = (o.longueur || 4) / 2; return [{ x: -l, y: 0, r: 0.2 }, { x: l, y: 0, r: 0.2 }]; },
     parcelle: o => { const t = o.taille || [8, 6]; return [{ rect: true, x: 0, y: 0, l: t[0], p: t[1] }]; },
+    porte_de_forge: o => [{ x: -1.35, y: 0, r: 0.5 }, { x: 1.35, y: 0, r: 0.5 }, { rect: true, x: 0, y: -1.75, l: 5.2, p: 2.6 }, { x: -2.9, y: -0.9, r: 1.0 }, { x: 2.9, y: -0.9, r: 0.9 }, { x: -2.1, y: 0.6, r: 0.3 }, { x: 2.1, y: 0.6, r: 0.3 }],
+    bouche_de_mine: o => [{ rect: true, x: 0, y: -1.6, l: 5.0, p: 3.0 }, { x: -2.6, y: -1.3, r: 1.0 }, { x: 2.7, y: -1.4, r: 0.9 }].concat(o.genre === 'mine' ? [{ x: 2.0, y: 1.0, r: 0.75 }] : []),
     fil_d_or: () => [], plateforme: () => [], cerf_volant: () => [], rambarde: () => [], auvent: () => [],
   };
 

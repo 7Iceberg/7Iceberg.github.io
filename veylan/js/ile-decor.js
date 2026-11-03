@@ -759,6 +759,26 @@ const IleDecor = (() => {
           ajouter(o, 'roche', L.cailloux[o.index % 8], matrice(tx, y + 0.05, tz, 0, o.rot || 0, 0, 0.5, 0.25, 0.4), { c: coul('#2e2418') });
           break;
         }
+        case 'porte_de_forge': {
+          const a = o.rot || 0, sombre = coul('#5a5048');
+          { const [px, pz] = local(o, 0, -1.75); ajouter(o, 'roche', L.blocs[o.index % 8], matrice(px, y + 1.6, pz, 0, a, 0, 2.8, 2.4, 1.4), { c: C.gris, bas: 0.8, haut: 1.05 }); }
+          for (const k of [-1, 1]) { const [px, pz] = local(o, k * 1.35, 0); ajouter(o, 'acc', L.boite, matrice(px, y + 1.5, pz, 0, a, 0, 0.7, 3.0, 0.8), { c: sombre }); }
+          { const [px, pz] = local(o, 0, 0); ajouter(o, 'acc', L.boite, matrice(px, y + 3.3, pz, 0, a, 0, 3.6, 0.6, 0.9), { c: sombre }); }
+          { const [px, pz] = local(o, 0, -0.2); ajouter(o, 'acc', L.boite, matrice(px, y + 1.45, pz, 0, a, 0, 1.9, 2.9, 0.14), { c: coul('#3a3c44') }); }
+          { const [px, pz] = local(o, 0, -0.1); ajouter(o, 'lueur', L.boite, matrice(px, y + 1.45, pz, 0, a, 0, 0.1, 2.7, 0.06), { c: coul(o.genre === 'cuve' ? '#f2c14e' : '#ff8a3c') }); G.halos.push({ x: px, y: y + 1.6, z: pz, couleur: o.genre === 'cuve' ? '#f2c14e' : '#ff9a4a', taille: 2.2, opacite: 0.4 }); }
+          break;
+        }
+        case 'bouche_de_mine': {
+          const a = o.rot || 0;
+          { const [px, pz] = local(o, 0, -1.6); ajouter(o, 'roche', L.blocs[o.index % 8], matrice(px, y + 0.6, pz, 0, a, 0, 3.0, 1.9, 1.9), { c: C.gris, bas: 0.8, haut: 1.05 }); }
+          { const [px, pz] = local(o, 0, 0.05); ajouter(o, 'acc', L.boite, matrice(px, y + 1.2, pz, 0, a, 0, 2.0, 2.4, 0.6), { c: coul('#0b0a09') }); }
+          for (const q of [0.5, 1.4]) {
+            for (const k of [-1, 1]) { const [px, pz] = local(o, k * 1.3, q); ajouter(o, 'acc', L.cyl(6), matrice(px, y + 1.3, pz, 0, 0, 0, 0.16, 2.6, 0.16), { c: C.bois }); }
+            const [px, pz] = local(o, 0, q); ajouter(o, 'acc', L.boite, matrice(px, y + 2.7, pz, 0, a, 0, 3.0, 0.32, 0.32), { c: C.bois });
+          }
+          { const [px, pz] = local(o, 0.95, 0.5); ajouter(o, 'lueur', L.boite, matrice(px, y + 2.25, pz, 0, a, 0, 0.2, 0.28, 0.2), { c: C.orVif }); G.halos.push({ x: px, y: y + 2.25, z: pz, couleur: '#f2c14e', taille: 1.8, opacite: 0.45 }); }
+          break;
+        }
         case 'ponton': {
           const [ax, az] = local(o, -2, 0), [bx, bz] = local(o, 2, 0);
           ajouter(o, 'acc', L.cyl(4), entre(ax, y + 0.45, az, bx, y + 0.45, bz, 0.5), { c: C.boisClair });
