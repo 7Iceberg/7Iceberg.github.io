@@ -435,8 +435,44 @@ function fabriqueIlePeinture() {
     return c;
   }
 
-  function paroi() {
-    const W = 512, H = 512, c = toile(W, H), g = c.getContext('2d'), R = M().hasard(37);
+  function paroi(genre) {
+    const W = 512, H = 512, c = toile(W, H), g = c.getContext('2d'), R = M().hasard(genre === 'bois' ? 38 : genre === 'terre' ? 39 : 37);
+    if (genre === 'bois') {
+      g.fillStyle = '#6a6a6a'; g.fillRect(0, 0, W, H);
+      const greys = ['#7e7e7e', '#8c8c8c', '#747474', '#969696', '#6c6c6c', '#868686'];
+      let x = 0, k = 0;
+      while (x < W) {
+        const w = 44 + R() * 40, col = greys[k++ % greys.length];
+        g.fillStyle = col; g.fillRect(x, 0, w, H);
+        g.strokeStyle = 'rgba(0,0,0,0.28)'; g.lineWidth = 1;
+        for (let i = 0; i < 4; i++) { const xv = x + 4 + R() * (w - 8); g.beginPath(); g.moveTo(xv, 0); for (let y = 0; y <= H; y += 32) g.lineTo(xv + (bruitRep(y / 40, i, H / 40, 90 + k) - 0.5) * 6, y); g.stroke(); }
+        if (R() < 0.5) { g.globalAlpha = 0.45; g.fillStyle = '#3a3a3a'; g.beginPath(); g.ellipse(x + w / 2 + (R() - 0.5) * w * 0.4, R() * H, 4 + R() * 5, 2.5 + R() * 3, R() * 3, 0, 6.3); g.fill(); g.globalAlpha = 1; }
+        g.fillStyle = '#2c2c2c'; g.fillRect(x + w - 3, 0, 3, H);
+        for (const y of [26, H / 2, H - 26]) { g.fillStyle = '#b8b8b8'; g.beginPath(); g.arc(x + w / 2 + (R() - 0.5) * 8, y + (R() - 0.5) * 10, 2.2, 0, 6.3); g.fill(); g.fillStyle = 'rgba(0,0,0,0.4)'; g.beginPath(); g.arc(x + w / 2 + 1, y + 1.5, 2.2, 0, 6.3); g.fill(); }
+        x += w;
+      }
+      const grd = g.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, 'rgba(0,0,0,0.3)'); grd.addColorStop(0.5, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,0.18)'); g.fillStyle = grd; g.fillRect(0, 0, W, H);
+      return c;
+    }
+    if (genre === 'terre') {
+      g.fillStyle = '#747474'; g.fillRect(0, 0, W, H);
+      for (let i = 0; i < 220; i++) { g.globalAlpha = 0.14 + R() * 0.16; g.fillStyle = R() < 0.5 ? '#3c3c3c' : '#a4a4a4'; g.beginPath(); g.ellipse(R() * W, R() * H, 10 + R() * 40, 5 + R() * 16, (R() - 0.5) * 1.2, 0, 6.3); g.fill(); }
+      for (let i = 0; i < 120; i++) {
+        const x = R() * W, y = R() * H, r = 2.5 + R() * 7;
+        g.globalAlpha = 0.5; g.fillStyle = '#2e2e2e'; g.beginPath(); g.ellipse(x + r * 0.3, y + r * 0.4, r, r * 0.7, R() * 3, 0, 6.3); g.fill();
+        g.globalAlpha = 0.95; g.fillStyle = R() < 0.5 ? '#9c9c9c' : '#b4b4b4'; g.beginPath(); g.ellipse(x, y, r, r * 0.7, R() * 3, 0, 6.3); g.fill();
+      }
+      g.lineCap = 'round';
+      for (let i = 0; i < 16; i++) {
+        let x = R() * W, y = -4;
+        g.globalAlpha = 0.8; g.strokeStyle = R() < 0.5 ? '#3a3230' : '#4a403a'; g.lineWidth = 2 + R() * 3;
+        g.beginPath(); g.moveTo(x, y);
+        for (let k = 0; k < 4; k++) { x += (R() - 0.5) * 36; y += 40 + R() * 60; g.lineTo(x, y); }
+        g.stroke();
+      }
+      const grd = g.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, 'rgba(0,0,0,0.32)'); grd.addColorStop(0.55, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,0.22)'); g.globalAlpha = 1; g.fillStyle = grd; g.fillRect(0, 0, W, H);
+      return c;
+    }
     g.fillStyle = '#6e6572'; g.fillRect(0, 0, W, H);
     const cols = ['#776e7a', '#8a8089', '#655c6a', '#948a93', '#7d7382', '#5e5663'];
     const N = 5;

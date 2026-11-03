@@ -211,7 +211,7 @@ const IleModeles = (() => {
     galet: { modele: (t, h, x, z) => (dansSources(x, z) ? 's-dalle' : null), absolu: { 's-dalle': 0.22 } },
   };
   const OBJETS = {
-    maison: { modele: o => (ervane() && dansBois(o.u, o.v) ? 'b-cabane' : 'm-maison'), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: o.hauteur || 6 }), etire: o => !!o.service, angle: o => -(o.rot || 0) },
+    maison: { modele: o => (!ervane() ? null : dansBois(o.u, o.v) ? 'b-cabane' : 'm-maison'), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: o.hauteur || 6 }), etire: o => !!o.service, angle: o => -(o.rot || 0) },
     arbre_bobine: { modele: 'b-bobine', taille: () => ({ l: 9, p: 9, h: 18 }) },
     pieu: { modele: 'b-pieux', taille: () => ({ l: 2.6, p: 2.6, h: 2 }) },
     comptoir: { modele: 'm-etal', taille: o => ({ l: (o.taille || [5, 2])[0], p: (o.taille || [5, 2])[1], h: 3.6 }), angle: o => -(o.rot || 0) },
@@ -687,8 +687,8 @@ const IleModeles = (() => {
       if (!Number.isFinite(y0)) continue;
       if (o.sorte === 'maison') {
         const d = OBJETS.maison, nom = d.modele(o, T), M = S && S.modeles[nom], t = d.taille(o);
-        const k = M ? Math.min(t.l / M.largeur, t.p / M.profondeur, t.h / M.hauteur) : 1, h = M ? M.hauteur * k : 4.5;
-        const r = o.rot || 0, dx = t.l * 0.22;
+        const k = M ? Math.min(t.l / M.largeur, t.p / M.profondeur, t.h / M.hauteur) : 1, h = M ? M.hauteur * k : (o.hauteur || (o.service ? 5.4 : 4.8)) + 0.6;
+        const r = o.rot || 0, dx = M ? t.l * 0.22 : t.l / 2 - 0.9;
         sources.push([o.u + Math.cos(r) * dx, y0 + h * 0.92, o.v + Math.sin(r) * dx, 1]);
       } else if (o.sorte === 'feu') sources.push([o.u, y0 + 0.7, o.v, 1.4]);
     }

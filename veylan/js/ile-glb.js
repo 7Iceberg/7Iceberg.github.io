@@ -436,6 +436,8 @@ const IleGlb = (() => {
     const groupe = construire(THREE, glb, { semis, cacher, facteurSemis: T && T.facteurSemis > 0 ? T.facteurSemis : 1, teinte: ile.nuit && typeof ile.nuit.teinteGlb === 'function' ? (u, v, nom, t) => ile.nuit.teinteGlb(u, v, nom, t) : null });
     groupe.userData.source = src;
     for (const o of [...groupe.children]) if (/^mo_eau/.test(o.name)) { groupe.remove(o); if (o.geometry) o.geometry.dispose(); }
+    for (const o of [...groupe.children]) if (/^mo_falaise/.test(o.name)) { groupe.remove(o); if (o.geometry) o.geometry.dispose(); }
+    const gardes = new Set([ile.meshFalaise, ...(ile.meshDessous || [])].filter(Boolean));
     if (semis && groupe.userData.semisMeshy) { ile.octetsGeo = (ile.octetsGeo || 0) + groupe.userData.semisMeshy.octets; ile.octetsTex = (ile.octetsTex || 0) + semis.octets.tex; }
     {
       const vus = new Set();
@@ -454,19 +456,19 @@ const IleGlb = (() => {
     for (const t of ile.tuilesSol || []) { retirer(t.proche); retirer(t.loin); }
     for (const t of ile.tuilesDecor || []) { retirer(t.groupe); retirer(t.sil); }
     for (const H of [ile.herbe, ile.fleurs]) if (H && H.mesh) retirer(H.mesh);
-    for (const m of ile.decorFixe || []) retirer(m);
-    retirer(ile.meshEscarpement); retirer(ile.meshFalaise); retirer(ile.meshChute);
+    for (const m of ile.decorFixe || []) if (!gardes.has(m)) retirer(m);
+    retirer(ile.meshEscarpement); retirer(ile.meshChute);
     if (typeof Ile3D === 'function' && Ile3D.octetsGeo) {
       const geos = new Set();
       const prendre = o => { if (o) o.traverse(x => { if (x.geometry) geos.add(x.geometry); }); };
       for (const t of ile.tuilesSol || []) { prendre(t.proche); prendre(t.loin); }
       for (const t of ile.tuilesDecor || []) { prendre(t.groupe); prendre(t.sil); }
-      for (const m of ile.decorFixe || []) prendre(m);
+      for (const m of ile.decorFixe || []) if (!gardes.has(m)) prendre(m);
       let libere = 0;
       for (const g of geos) { libere += Ile3D.octetsGeo(g); g.dispose(); }
       ile.octetsGeo = Math.max(0, (ile.octetsGeo || 0) - libere);
       groupe.userData.libere = libere;
-      const tex = ile.tex || {}, toiles = ['falaise', 'touches', 'feuilles', 'lueur'], libres = new Set();
+      const tex = ile.tex || {}, toiles = ['touches', 'feuilles', 'lueur'], libres = new Set();
       let libereTex = 0;
       for (const k of ['matieres', 'poids1', 'poids2', 'teinte', 'grain', ...toiles]) {
         const t = tex[k];

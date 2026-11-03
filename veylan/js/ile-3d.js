@@ -371,10 +371,19 @@ class Ile3D {
     await pause();
     const geoEau = IleDecor.eau(T);
     if (geoEau) { this.eau = new THREE.Mesh(geoEau, this.matEau(THREE)); this.eau.renderOrder = 2; this.eau.matrixAutoUpdate = false; scene.add(this.eau); this.octetsGeo += Ile3D.octetsGeo(geoEau); }
+    const cxT = T.largeur / 2, czT = T.hauteur / 2;
+    const parSecteurs = (geo, mat, nb) => {
+      const g = new THREE.Group();
+      for (const part of IleDecor.decouperParSecteur(geo, nb, cxT, czT)) { const m = new THREE.Mesh(part, mat); m.matrixAutoUpdate = false; g.add(m); }
+      g.matrixAutoUpdate = false; scene.add(g); fixe.push(g); this.octetsGeo += Ile3D.octetsGeo(geo);
+      return g;
+    };
     const fb = IleDecor.falaiseBord(T, this.telephone);
-    { const m = new THREE.Mesh(fb.geo, mats.falaise); m.matrixAutoUpdate = false; scene.add(m); fixe.push(m); this.meshFalaise = m; this.octetsGeo += Ile3D.octetsGeo(fb.geo); }
+    this.meshFalaise = parSecteurs(fb.geo, mats.falaise, this.qualite === 'basse' ? 1 : 24);
     const ds = IleDecor.dessous(T, L, fb.suspendus, this.telephone);
-    for (const [k, mat] of [['roche', mats.dessous], ['acc', mats.dessousAcc], ['lueur', mats.dessousLueur]]) if (ds[k]) { const m = new THREE.Mesh(ds[k], mat); m.matrixAutoUpdate = false; scene.add(m); fixe.push(m); this.octetsGeo += Ile3D.octetsGeo(ds[k]); }
+    this.meshDessous = [];
+    if (ds.roche) this.meshDessous.push(parSecteurs(ds.roche, mats.dessous, 1));
+    for (const [k, mat] of [['acc', mats.dessousAcc], ['lueur', mats.dessousLueur]]) if (ds[k]) { const m = new THREE.Mesh(ds[k], mat); m.matrixAutoUpdate = false; scene.add(m); fixe.push(m); this.meshDessous.push(m); this.octetsGeo += Ile3D.octetsGeo(ds[k]); }
     const fils = IleDecor.fusion((this.decorGlobal = this.decorGlobalItems(D)).lueur);
     if (fils) { const m = new THREE.Mesh(fils, mats.dessousLueur); m.matrixAutoUpdate = false; scene.add(m); fixe.push(m); this.octetsGeo += Ile3D.octetsGeo(fils); }
     if (D.puits) this.puits(THREE, scene, D.puits);
@@ -485,7 +494,7 @@ class Ile3D {
     const tex = this.tex = {};
     tex.touches = this.textureToile(IlePeinture.trame(8, 0.35), true, true);
     tex.halo = this.textureToile(IlePeinture.halo(), true);
-    tex.paroi = this.textureToile(IlePeinture.paroi(), true, true);
+    tex.paroi = this.textureToile(IlePeinture.paroi((IleSalle.PAROIS[style.paroi] || {}).genre), true, true);
     tex.nuages = [1, 2, 3].map(g => this.textureToile(IlePeinture.nuage(g), true));
     tex.sol = this.textureToile(IleSalle.peindreSol(layout, style, this.qualite === 'haute' ? 1024 : 512), true, false);
     const rampe = this.rampe = Ile3D.rampe(THREE);
@@ -1185,7 +1194,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this.bancs = null; this.eau = null; this.bouffees = null; this.decorGlobal = null; this.moyennes = null; this.rampe = null; this.mats = null;
     this.matEauRef = null; this.matChute = null; this.matHalos = null; this.matBouffees = null;
     this.uFondu = null; this.uHerbe = null; this.ponctuelle = null; this.decorFixe = null;
-    this.meshEscarpement = null; this.meshFalaise = null; this.meshChute = null;
+    this.meshEscarpement = null; this.meshFalaise = null; this.meshDessous = null; this.meshChute = null;
     this.marque = null; this.survol = null; this.repere = null; this.points = null; this.traces = null;
     this.salle = null;
     this.directions.clear();
@@ -1395,6 +1404,12 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (this.touffesNuit) this.touffesNuit.mesh.visible = !tact && !(A && A.etat);
     if (this.eau) this.eau.visible = !tact;
     for (const m of this.decorFixe || []) m.visible = !tact;
+    if (this.meshFalaise && this.meshFalaise.children && !tact) {
+      const pf = Math.max(rSil, 60) * 1.5;
+      let un = false;
+      for (const m of this.meshFalaise.children) { const s = m.geometry.boundingSphere; const v = !!s && Math.hypot(s.center.x - c.x, s.center.z - c.y) - s.radius < pf; m.visible = v; if (v) un = true; }
+      for (const m of this.meshDessous || []) m.visible = un;
+    }
     if (this.monde && typeof IleGlb === 'object' && IleGlb.tactique && this.mondeTactique !== tact) { IleGlb.tactique(this.monde, tact); this.mondeTactique = tact; }
     if (this.meshChute) this.meshChute.visible = !tact && !(A && A.etat);
     if (K && K.lod) K.survolLod(survol);

@@ -4,9 +4,15 @@ const IleSalle = (() => {
     dalles_amarre: { joint: '#2a2530', dalles: ['#6f6660', '#746b64', '#685f5a', '#7a716a', '#625a56', '#716860'], roche: '#2c2831', trou: '#15101f', trouCoeur: '#3a2a58', bordTrou: '#3a3550', fissure: '#3a3238', mousse: '#4e6a44', gravier: '#8d857c' },
     dalles_claires: { joint: '#4a4540', dalles: ['#a39a8c', '#ada497', '#9b9285', '#b0a79a', '#948b7f', '#a89f92'], roche: '#4a443f', trou: '#1a1524', trouCoeur: '#3f2f60', bordTrou: '#4a4560', fissure: '#5a534c', mousse: '#6a8a56', gravier: '#c0b8ac' },
   };
+  PALETTES.planches = { genre: 'planches', joint: '#2e2117', dalles: ['#7d5d3c', '#876643', '#735535', '#8d6c48', '#6b4f32', '#80603f'], roche: '#3e2c1e', trou: '#140f0c', trouCoeur: '#3a2a1a', bordTrou: '#3a2a1c', fissure: '#2a1d12', gravier: '#5a4630', mousse: '#6a6a38', eau: '#243c44', eauClair: '#3c6a74', rive: '#5a4630' };
+  PALETTES.terre_battue = { genre: 'terre', joint: '#3a2b1e', dalles: ['#6d5336', '#74593b', '#654d33', '#7a5f41', '#5e4830', '#6f5538'], roche: '#3b2d22', trou: '#120d0a', trouCoeur: '#38241a', bordTrou: '#3f3024', fissure: '#2b1f15', gravier: '#8a7352', mousse: '#55603a', eau: '#2a3c3a', eauClair: '#4a6a62', rive: '#5a4a38' };
+  PALETTES.sous_bois = { genre: 'terre', taches: 0.45, joint: '#1c241c', dalles: ['#3c4733', '#424d38', '#374230', '#47523d', '#333d2c', '#3e4935'], roche: '#242b23', trou: '#0d1210', trouCoeur: '#1e3024', bordTrou: '#2a3328', fissure: '#161d16', gravier: '#5a5a44', mousse: '#5b7a44', eau: '#1e3236', eauClair: '#356a66', rive: '#3a4a36' };
   const PAROIS = {
     roche_grise: { mur: '#86838f', pilier: '#908d9a', racine: '#4b3b2e', bloc: '#7d7a86' },
     roche_rousse: { mur: '#8e7464', pilier: '#9a8070', racine: '#4e3a2a', bloc: '#866c5c' },
+    bois: { genre: 'bois', mur: '#8a6a48', pilier: '#7a5c3e', racine: '#5a4530', bloc: '#94744f' },
+    terre: { genre: 'terre', mur: '#7a5d44', pilier: '#6e5440', racine: '#4a3828', bloc: '#866848' },
+    bois_mort: { genre: 'bois', mur: '#6a6660', pilier: '#5e5a54', racine: '#44403a', bloc: '#75706a' },
   };
   const M = () => IleTerrain.M;
   const hex = (h, k) => { const T = THREE_(), c = new T.Color(h); return [c.r * k, c.g * k, c.b * k]; };
@@ -45,12 +51,48 @@ const IleSalle = (() => {
         g.globalAlpha = 1;
         continue;
       }
+      if (ch === '~') {
+        const cx = X + cs / 2, cy = Y + cs / 2;
+        const d = g.createRadialGradient(cx, cy, 0, cx, cy, cs * 0.95);
+        d.addColorStop(0, P.eauClair || '#3f7083'); d.addColorStop(1, P.eau || '#24404f');
+        g.fillStyle = d; g.fillRect(X, Y, cs + 0.5, cs + 0.5);
+        g.strokeStyle = 'rgba(205,232,240,1)'; g.lineWidth = Math.max(1, cs / 44); g.lineCap = 'round';
+        for (let i = 0; i < 3; i++) { g.globalAlpha = 0.18 + R() * 0.22; const a0 = R() * 6.28; g.beginPath(); g.arc(X + cs * (0.2 + R() * 0.6), Y + cs * (0.2 + R() * 0.6), cs * (0.12 + R() * 0.22), a0, a0 + 1.1 + R() * 1.2); g.stroke(); }
+        g.globalAlpha = 1;
+        const e = Math.max(2, cs * 0.1);
+        for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+          const v = at(x + dx, y + dy);
+          if (v === '~' || v === '#') continue;
+          g.fillStyle = 'rgba(10,16,22,0.5)'; g.fillRect(dx < 0 ? X : dx > 0 ? X + cs - e : X, dy < 0 ? Y : dy > 0 ? Y + cs - e : Y, dx === 0 ? cs : e, dy === 0 ? cs : e);
+          g.fillStyle = P.rive || '#8a8070'; g.globalAlpha = 0.9;
+          for (let i = 0; i < 4; i++) { const t = R(); g.beginPath(); g.ellipse(dx === 0 ? X + cs * t : (dx < 0 ? X + e * 0.5 : X + cs - e * 0.5), dy === 0 ? Y + cs * t : (dy < 0 ? Y + e * 0.5 : Y + cs - e * 0.5), 1.5 + R() * 2.5, 1 + R() * 1.6, R() * 3, 0, 6.3); g.fill(); }
+          g.globalAlpha = 1;
+        }
+        continue;
+      }
       const col = P.dalles[Math.floor(R() * P.dalles.length)], r = 1.5;
+      if (P.genre === 'planches') {
+        for (let k = 0; k < 2; k++) {
+          const Yk = Y + k * cs / 2, h = cs / 2, c2 = P.dalles[Math.floor(R() * P.dalles.length)];
+          g.fillStyle = c2; g.fillRect(X, Yk + 1, cs + 0.5, h - 2);
+          g.strokeStyle = 'rgba(0,0,0,0.22)'; g.lineWidth = 1;
+          for (let i = 0; i < 3; i++) { const yv = Yk + 2 + R() * (h - 4); g.beginPath(); g.moveTo(X, yv); g.lineTo(X + cs, yv + (R() - 0.5) * 3); g.stroke(); }
+          if (R() < 0.3) { const xc = X + cs * (0.25 + R() * 0.5); g.fillStyle = P.joint; g.fillRect(xc, Yk, 2, h); g.fillStyle = 'rgba(230,220,200,0.6)'; g.beginPath(); g.arc(xc - 4, Yk + h / 2, 1.3, 0, 6.3); g.fill(); g.beginPath(); g.arc(xc + 5, Yk + h / 2, 1.3, 0, 6.3); g.fill(); }
+          if (R() < 0.18) { g.globalAlpha = 0.5; g.fillStyle = '#2e2117'; g.beginPath(); g.ellipse(X + cs * (0.2 + R() * 0.6), Yk + h / 2, 2.2 + R() * 2, 1.4 + R() * 1.2, R(), 0, 6.3); g.fill(); g.globalAlpha = 1; }
+        }
+        g.fillStyle = 'rgba(255,255,255,0.08)'; g.fillRect(X, Y + 1, cs, 1.5); g.fillRect(X, Y + cs / 2 + 1, cs, 1.5);
+      } else if (P.genre === 'terre') {
+        g.fillStyle = col; g.fillRect(X - 0.5, Y - 0.5, cs + 1, cs + 1);
+        for (let i = 0; i < 5; i++) { g.globalAlpha = (0.1 + R() * 0.14) * (P.taches == null ? 1 : P.taches); g.fillStyle = R() < 0.5 ? '#000000' : '#ffffff'; g.beginPath(); g.ellipse(X + R() * cs, Y + R() * cs, 4 + R() * cs * 0.3, 3 + R() * cs * 0.18, R() * 3.1, 0, 6.3); g.fill(); }
+        for (let i = 0; i < 3; i++) { g.globalAlpha = 0.7; g.fillStyle = P.gravier; g.beginPath(); g.ellipse(X + R() * cs, Y + R() * cs, 1.2 + R() * 1.8, 0.9 + R() * 1.2, R() * 3, 0, 6.3); g.fill(); }
+        g.globalAlpha = 1;
+      } else {
       g.fillStyle = col; g.fillRect(X + r, Y + r, cs - 2 * r, cs - 2 * r);
       g.fillStyle = 'rgba(255,255,255,0.09)'; g.fillRect(X + r, Y + r, cs - 2 * r, 2); g.fillRect(X + r, Y + r, 2, cs - 2 * r);
       g.fillStyle = 'rgba(0,0,0,0.2)'; g.fillRect(X + r, Y + cs - r - 2, cs - 2 * r, 2); g.fillRect(X + cs - r - 2, Y + r, 2, cs - 2 * r);
-      for (let i = 0; i < 4; i++) { g.globalAlpha = 0.07 + R() * 0.1; g.fillStyle = R() < 0.5 ? '#000000' : '#ffffff'; g.beginPath(); g.ellipse(X + r + R() * (cs - 2 * r), Y + r + R() * (cs - 2 * r), 2 + R() * 6, 1.5 + R() * 3, R() * 3.1, 0, 6.3); g.fill(); }
-      if (R() < 0.45) {
+      }
+      if (!P.genre) for (let i = 0; i < 4; i++) { g.globalAlpha = 0.07 + R() * 0.1; g.fillStyle = R() < 0.5 ? '#000000' : '#ffffff'; g.beginPath(); g.ellipse(X + r + R() * (cs - 2 * r), Y + r + R() * (cs - 2 * r), 2 + R() * 6, 1.5 + R() * 3, R() * 3.1, 0, 6.3); g.fill(); }
+      if (!P.genre && R() < 0.45) {
         g.globalAlpha = 0.55; g.strokeStyle = P.fissure; g.lineWidth = Math.max(1, cs / 34);
         let fx = X + r + R() * (cs - 2 * r), fy = Y + r + R() * (cs - 2 * r);
         g.beginPath(); g.moveTo(fx, fy);
@@ -93,7 +135,7 @@ const IleSalle = (() => {
   function construire(THREE, ctx) {
     THREE_ = () => THREE;
     const { layout, style, mats } = ctx;
-    const PR = PAROIS[style.paroi] || PAROIS.roche_grise;
+    const PR = PAROIS[style.paroi] || PAROIS.roche_grise, PS = PALETTES[style.sol] || PALETTES.dalles_amarre;
     const L = IleDecor.bibliotheque(!!ctx.telephone);
     const R = M().hasard(M().cle('salle3d:' + (ctx.index || 0) + ':' + layout.join('/')));
     const at = (x, y) => (y >= 0 && y < N && x >= 0 && x < N ? layout[y][x] : '#');
@@ -130,6 +172,13 @@ const IleSalle = (() => {
         piece(roche, L.disque(10), mat(cx, 0.08, cz, 0, 0, 0, 0.5, 1.6, 0.5), varie(PR.pilier, 0.1), { grain: 0.04 });
         piece(roche, L.cyl(10), mat(cx, 0, cz, 0, 0, 0, 0.34, 2.6, 0.34), varie(PR.pilier, 0.12), { grain: 0.05, uvk: 2 });
         piece(roche, L.disque(10), mat(cx, 2.56, cz, 0, 0, 0, 0.52, 1.8, 0.52), varie(PR.pilier, 0.1), { grain: 0.04 });
+      } else if (ch === '~') {
+        for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+          const v = at(x + dx, y + dy);
+          if (v === '~' || v === '#') continue;
+          for (let q = 0; q < 2; q++) piece(roche, L.pierres[Math.floor(R() * 8)], mat(cx + dx * 0.44 + (dy ? (R() - 0.5) * 0.7 : 0), -0.05, cz + dy * 0.44 + (dx ? (R() - 0.5) * 0.7 : 0), 0, R() * 6.28, 0, 0.2, 0.08 + R() * 0.06, 0.13), chaud(varie(PR.bloc, 0.2), cx, cz), { grain: 0.06 });
+        }
+        if (((x + y) & 1) === 0) halos.push({ x: cx, y: 0.1, z: cz, couleur: PS.eauClair || '#3f7083', taille: 1.9, opacite: 0.16 });
       } else if (ch === 'L') {
         piece(roche, L.cyl(6), mat(cx, 0, cz, 0, 0, 0, 0.05, 1.4, 0.05), hex('#3a3540', 1), { grain: 0.02 });
         piece(roche, L.disque(8), mat(cx, 0.02, cz, 0, 0, 0, 0.18, 0.6, 0.18), hex('#3a3540', 1), { grain: 0.02 });

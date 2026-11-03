@@ -1328,5 +1328,29 @@ const IleDecor = (() => {
     return geo;
   }
 
-  return { TUILE, bibliotheque, fusion, matrice, entre, construire, obstaclesDesAires, eau, escarpements, falaiseBord, dessous, chute, departChute, bouffeesBord, coul: h => coul(h), init(three) { THREE = three; } };
+  function decouperParSecteur(geo, nb, cx, cz) {
+    const P = geo.attributes.position, I = geo.index ? geo.index.array : null;
+    if (!P || !I || nb <= 1) return [geo];
+    const parts = Array.from({ length: nb }, () => []);
+    for (let t = 0; t + 2 < I.length; t += 3) {
+      const a = I[t], x = P.getX(a) - cx, z = P.getZ(a) - cz;
+      const k = Math.min(nb - 1, Math.floor((Math.atan2(z, x) + Math.PI) / (2 * Math.PI) * nb));
+      parts[k].push(I[t], I[t + 1], I[t + 2]);
+    }
+    const out = [];
+    for (const idx of parts) {
+      if (!idx.length) continue;
+      const g = new THREE.BufferGeometry();
+      for (const k in geo.attributes) g.setAttribute(k, geo.attributes[k]);
+      g.setIndex(new THREE.BufferAttribute(P.count > 65535 ? new Uint32Array(idx) : new Uint16Array(idx), 1));
+      let x0 = Infinity, y0 = Infinity, z0 = Infinity, x1 = -Infinity, y1 = -Infinity, z1 = -Infinity;
+      for (const i of idx) { const x = P.getX(i), y = P.getY(i), z = P.getZ(i); if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; if (z < z0) z0 = z; if (z > z1) z1 = z; }
+      const c = new THREE.Vector3((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+      g.boundingSphere = new THREE.Sphere(c, Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2);
+      out.push(g);
+    }
+    return out;
+  }
+
+  return { TUILE, bibliotheque, fusion, matrice, entre, construire, obstaclesDesAires, eau, escarpements, falaiseBord, dessous, decouperParSecteur, chute, departChute, bouffeesBord, coul: h => coul(h), init(three) { THREE = three; } };
 })();
