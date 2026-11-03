@@ -1,10 +1,4 @@
-/* Fenêtres du personnage (charte 1.0) : Inventaire (js/hud-inventaire.js), Caractéristiques
-   (js/hud-caracteristiques.js), Récompenses en attente et leur coffre (js/hud-recompenses.js).
-   Les teintes des autres fenêtres (--fen-*) : ardoise de nuit, liseré d'or, cristal pour ce qui
-   est actif. Cinzel pour les titres seulement ; Inter pour les objets, les stats et les chiffres.
-   Trois tailles : ordinateur, téléphone en paysage (trois colonnes), téléphone en portrait. */
 
-/* ----- Commun : feuilles posées sur une fenêtre, pas à pas, « bientôt » ----- */
 .vy-visuel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .vy-bientot { display: inline-block; padding: 0 7px; border: 1px solid color-mix(in srgb, var(--vy-eclat) 60%, transparent); border-radius: 999px; color: var(--vy-eclat-clair); font: 700 9.5px/1.6 var(--vy-font-ui); letter-spacing: 0.08em; text-transform: uppercase; }
 .vy-fenetre--inventaire { height: min(640px, calc(100% - 72px)); }
@@ -39,9 +33,6 @@
 .vy-pas__valeur::-webkit-inner-spin-button, .vy-pas__valeur::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outline-offset: 1px; }
 
-/* ==========================================================================
-   Inventaire : la poupée et la fiche à gauche, le sac à droite
-   ========================================================================== */
 .vy-fenetre--inventaire .vy-fenetre__corps { padding: 10px; }
 .vy-inv {
   --inv-slot: 46px;
@@ -53,7 +44,6 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 }
 .vy-inv [data-glisse] { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 
-/* La poupée : les emplacements, le personnage peint, ses Nœuds et ses Écailles. */
 .vy-inv__poupee {
   grid-area: poupee; min-width: 0;
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 10px; padding: 10px;
@@ -84,7 +74,6 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-inv__cadenas { position: absolute; right: -4px; bottom: -4px; width: 15px; height: 15px; padding: 2px; border-radius: 50%; background: var(--fen-fond); color: var(--fen-texte-2); box-shadow: 0 0 0 1px var(--fen-filet); }
 .vy-inv__cadenas svg { width: 100%; height: 100%; display: block; }
 
-/* La fiche de l'objet : nom, rareté, onglets, lignes, actions. */
 .vy-inv__fiche {
   grid-area: fiche; container: fiche / inline-size;
   min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
@@ -146,7 +135,6 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
   .vy-inv__action { min-width: 0; }
 }
 
-/* Le sac : onglets par sorte, outils, grille en pages, pied. */
 .vy-inv__sac {
   grid-area: sac; container: sac / inline-size;
   min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px;
@@ -190,7 +178,6 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
   .vy-inv__compte { display: none; }
 }
 
-/* Glisser : l'objet suit le doigt ou la souris ; les places possibles se marquent. */
 .vy-inv-fantome { position: fixed; left: 0; top: 0; z-index: 60; pointer-events: none; will-change: transform; }
 .vy-inv-fantome .vy-case { width: 54px; height: 54px; transform: translate(-50%, -50%) scale(1.06); border-color: var(--vy-cristal); box-shadow: 0 12px 26px rgba(0, 0, 0, 0.55), var(--vy-lueur-cristal); }
 .vy-inv--glisse .vy-inv__depot--ok { outline: 2px dashed color-mix(in srgb, var(--fen-actif) 70%, transparent); outline-offset: 2px; }
@@ -199,9 +186,6 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-inv--glisse .vy-inv__sac.vy-inv__depot--survol { background: rgba(0, 194, 255, 0.06); }
 .vy-inv__source { opacity: 0.35; }
 
-/* ==========================================================================
-   Caractéristiques : en-tête, onglets, Résumé, Détails, Éléments, feuille de répartition
-   ========================================================================== */
 .vy-fenetre--caracs .vy-fenetre__corps { padding: 10px 12px 0; }
 .vy-caracs { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .vy-caracs__tete { grid-template-columns: 42px minmax(0, 1fr) minmax(120px, 0.85fr); margin-bottom: 2px; }
@@ -245,7 +229,6 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-zero { color: var(--fen-texte-2); opacity: 0.55; }
 .vy-caracs__elements { display: grid; gap: 0 14px; }
 
-/* La feuille de répartition : pas à pas, aperçu, paliers. */
 .vy-caracs-feuille { container: feuille / inline-size; width: min(420px, calc(100% - 16px)); }
 .vy-caracs__restants { margin: 0; font-size: 13px; color: var(--fen-texte-2); }
 .vy-caracs__restants b { color: var(--vy-succes); font-size: 15px; font-variant-numeric: tabular-nums; }
@@ -261,14 +244,10 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-caracs__paliers td.actuel { background: rgba(0, 194, 255, 0.16); color: var(--fen-texte); font-weight: 700; box-shadow: inset 0 0 0 1px var(--fen-actif); }
 .vy-caracs__paliers td.vise { color: var(--vy-texte-or); box-shadow: inset 0 0 0 1px var(--vy-or-clair); }
 .vy-caracs__bonus { margin: 0; font-size: 11.5px; line-height: 1.45; }
-/* Feuille étroite (téléphone en portrait) : l'aperçu passe sous le pas à pas. */
 @container feuille (max-width: 400px) {
   .vy-caracs__reglage { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
 }
 
-/* ==========================================================================
-   Récompenses en attente
-   ========================================================================== */
 .vy-fenetre--recompenses .vy-fenetre__corps { padding: 10px 12px 0; }
 .vy-recompenses { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .vy-recompenses__liste { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 8px; margin: 0; padding: 0 2px 0 0; list-style: none; }
@@ -289,11 +268,6 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-recompenses__pied { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 10px -12px 0; padding: 10px 12px; border-top: 1px solid var(--fen-filet); background: rgba(0, 0, 0, 0.18); }
 .vy-recompenses__reste { font-weight: 600; }
 
-/* ----- Le coffre des récompenses en attente (#recompenses-btn) -----
-   Au milieu de la vue, au-dessus du bloc vital : sa hauteur est mesurée par le code
-   (--coffre-bas), la valeur d'ici n'est qu'un repli. Seulement s'il reste une récompense ;
-   il bat doucement et porte leur nombre. Sa classe (vy-coffre) l'écarte de l'habillage des
-   boutons sans classe (css/components.css). */
 #recompenses-btn {
   position: absolute; left: 50%; bottom: var(--coffre-bas, 108px); z-index: 3;
   width: 58px; height: 52px; padding: 9px 11px; overflow: visible;
@@ -312,19 +286,14 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 #recompenses-btn:active { transform: translateX(-50%) scale(0.96); }
 #recompenses-btn:focus-visible { outline: 2px solid var(--vy-focus); outline-offset: 3px; }
 #recompenses-btn .recompenses-btn__nombre { position: absolute; top: -9px; right: -9px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--vy-cristal); color: #03131d; font: 800 12px/22px var(--vy-font-ui); text-align: center; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2px #0b131d, 0 0 10px rgba(0, 194, 255, 0.6); }
-/* Le battement ne touche que la transformation et l'opacité : rien à repeindre à chaque image. */
 #recompenses-btn::after { content: ""; position: absolute; inset: -3px; border: 2px solid rgba(242, 220, 170, 0.75); border-radius: 14px; pointer-events: none; animation: recompenses-onde 1.8s ease-out infinite; }
 @keyframes recompenses-pouls { 50% { transform: translateX(-50%) scale(1.06); } }
 @keyframes recompenses-onde { from { transform: scale(1); opacity: 0.85; } to { transform: scale(1.32); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #recompenses-btn, #recompenses-btn::after { animation: none; } }
 
-/* ==========================================================================
-   Téléphone. Les fenêtres y sont en plein écran (css/fenetres.css) : on les laisse s'étirer.
-   ========================================================================== */
 @media (max-width: 720px) { .vy-fenetre--inventaire, .vy-fenetre--caracs { height: auto; } }
 @media (max-height: 480px) and (max-width: 1000px) { .vy-fenetre--inventaire, .vy-fenetre--caracs { height: auto; } }
 
-/* Paysage : trois colonnes (la poupée, la fiche, le sac) ; le Résumé et les Éléments sur deux. */
 @media (max-height: 480px) {
   .vy-fenetre--inventaire .vy-fenetre__corps { padding: 8px; }
   .vy-inv { --inv-slot: 40px; gap: 8px; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr) minmax(0, 1.12fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: "poupee fiche sac"; }
@@ -368,10 +337,6 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
   .vy-inv__tourne { top: 2px; bottom: auto; }
 }
 
-/* Paysage, dans la colonne de jeu du téléphone (le panneau reste à côté, css/jeu.css) : la fenêtre
-   n'a plus la largeur de l'écran. Deux colonnes comme sur Dofus Touch, la poupée et le sac ; la
-   fiche de l'objet choisi se pose sur la poupée (une croix la referme) et s'efface pendant un
-   glissement. */
 .vy-fenetre--inventaire .vy-fenetre__corps { container: inv / inline-size; }
 @media (max-height: 480px) {
   @container inv (max-width: 640px) {
@@ -383,8 +348,6 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
   }
 }
 
-/* Portrait : la poupée en haut, le sac dessous. La fiche d'un objet choisi se pose sur la
-   poupée (une croix la referme) et s'efface pendant un glissement, pour qu'on voie où déposer. */
 @media (max-width: 720px) and (min-height: 481px) {
   .vy-fenetre--inventaire .vy-fenetre__corps { padding: 8px; }
   .vy-inv { --inv-slot: 44px; gap: 8px; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "poupee" "sac"; }
@@ -405,15 +368,12 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
   .vy-inv__ecaille { width: 28px; height: 28px; }
 }
 
-/* ----- D'après l'inventaire Duality (ox_inventory) : favoris, pods, comparaison, bulle ----- */
-/* L'étoile d'un favori, dans le coin de sa case ; celle de la fiche. */
 .vy-case__favori { position: absolute; top: 2px; right: 2px; width: 12px; height: 12px; color: #f5b83d; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.7)); pointer-events: none; }
 .vy-case__favori svg { width: 100%; height: 100%; display: block; }
 .vy-inv__fiche-favori { flex: none; width: 26px; height: 26px; min-height: 0; padding: 4px; display: grid; place-items: center; border: 1px solid var(--fen-filet); border-radius: 7px; background: rgba(0, 0, 0, 0.2); color: var(--fen-texte-2); cursor: pointer; }
 .vy-inv__fiche-favori svg { width: 100%; height: 100%; display: block; }
 .vy-inv__fiche-favori:hover { color: var(--fen-texte); }
 .vy-inv__fiche-favori.on { color: #f5b83d; border-color: rgba(245, 184, 61, 0.55); }
-/* Les pods : la jauge du poids porté, ambre à 90 %, rouge au-delà (surchargé : on ne marche plus). */
 .vy-inv__pods { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .vy-inv__pods svg { width: 15px; height: 15px; flex: none; color: var(--fen-texte-2); }
 .vy-inv__pods-jauge { width: 96px; height: 5px; border-radius: 3px; overflow: hidden; background: rgba(255, 255, 255, 0.1); }
@@ -423,7 +383,6 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-inv__pods.plein .vy-inv__pods-jauge i { background: #f5b83d; }
 .vy-inv__pods.surcharge .vy-inv__pods-jauge i { background: var(--vy-danger, #e05a4f); }
 .vy-inv__pods.surcharge b, .vy-inv__pods.surcharge svg { color: var(--vy-danger, #e05a4f); }
-/* L'écart avec ce qui est porté. */
 .vy-inv__ecart { margin-left: 6px; padding: 0 4px; border-radius: 4px; font: 700 10.5px/16px ui-monospace, monospace; font-style: normal; }
 .vy-inv__ecart.plus { color: #5fd18a; background: rgba(95, 209, 138, 0.12); }
 .vy-inv__ecart.moins { color: #ff6b6b; background: rgba(255, 107, 107, 0.12); }
@@ -432,7 +391,6 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-inv__liste li.vy-inv__face i { font-style: normal; color: var(--fen-texte); }
 .vy-inv__liste li.perdu > span { opacity: 0.6; }
 .vy-inv__liste li.perdu > b { color: var(--fen-texte-2); }
-/* La bulle au survol. */
 .vy-inv__bulle {
   position: fixed; z-index: 70; width: 250px; max-width: calc(100vw - 12px); padding: 9px 10px 8px; pointer-events: none;
   border: 1px solid color-mix(in srgb, var(--_r) 55%, transparent); border-radius: 10px;
@@ -446,8 +404,6 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-inv__bulle header small span { color: var(--_rt); }
 .vy-inv__bulle .vy-inv__liste { font-size: 11.5px; }
 .vy-inv__bulle .vy-inv__liste li { padding: 2px 4px; }
-/* Au téléphone, le pied du sac est étroit : les pods passent sur leur ligne, la jauge en pleine
-   largeur, sous les pages et les Fils. */
 @media (max-width: 720px), (max-height: 520px) {
   .vy-inv__pied { flex-wrap: wrap; row-gap: 3px; }
   .vy-inv__pods { order: 3; flex: 1 0 100%; gap: 5px; }
@@ -455,7 +411,6 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
   .vy-inv__pods-jauge { flex: 1; width: auto; height: 4px; }
   .vy-inv__pods b { font-size: 11px; }
   .vy-inv__pods small { font-size: 10px; }
-  /* Avec l'onglet des favoris, la rangée des catégories défile plutôt que de déborder. */
   .vy-inv__onglets { overflow-x: auto; scrollbar-width: none; }
   .vy-inv__onglets::-webkit-scrollbar { display: none; }
 }

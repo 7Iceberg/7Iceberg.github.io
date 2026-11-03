@@ -1,53 +1,31 @@
-// Un plateau continu dans le monde (docs/ILE-TECHNIQUE.md, section 4) : la marche libre au toucher,
-// le chemin découpé par images, les sous-zones qui changent en marchant, les groupes qui errent
-// sur leur aire, les réapparitions hors de vue, l'annonce des zones trop hautes, les barrières.
-// World (js/world.js) lui confie l'espace quand la carte courante est une carte de plateau ; tout
-// le reste (quêtes, combats, gains, relais, sauvegarde) reste à World.
-//
-// Sans DOM et déterministe : le hasard vient du générateur du monde, les angles de polynômes
-// (IleTerrain.M), et le temps du `dt` que le monde reçoit. Le terrain et la navigation viennent du
-// registre de l'île (Ile.terrain), construits une fois.
-//
-// Repère : x = u, y = v (mêmes nombres, flottants) ; world.player, les PNJ, les groupes et les
-// nœuds gardent leurs champs x, y, rx, ry, comme sur les cartes à cases.
 class Plateau {
   constructor(def, world) {
     this.def = def;
     this.id = def.id;
     this.world = world;
-    // Un seul plateau en mémoire : entrer sur celui-ci oublie l'autre (Ervane ou Orsane).
     const c = Ile.terrain(def.id, { seul: true });
     this.terrain = c.terrain;
     this.nav = c.nav;
-    this.cartes = [];          // [{ def, zone }] : les sous-zones du plateau
-    this.relais = [];          // [{ carte, x, y }]
-    this.portes = [];          // [{ carte, x, y, dungeon }]
-    this.panneaux = [];        // [{ x, y, texte }]
-    this.machines = [];        // [{ x, y, cle, workshop, nom }]
-    // Les sorties vers une carte hors du plateau (la Passe d'Orsane vers Kaldum, en cases) :
-    // [{ carte, cote, vers, arrivee, x, y, rayon }], au lieu nommé de chacune.
+    this.cartes = [];
+    this.relais = [];
+    this.portes = [];
+    this.panneaux = [];
+    this.machines = [];
     this.sorties = (def.sorties || []).map(s => { const p = (def.lieux || {})[s.lieu]; return p ? { carte: s.carte, cote: s.cote, vers: s.vers, arrivee: s.arrivee, x: p[0], y: p[1], rayon: s.rayon || 3 } : null; }).filter(Boolean);
-    this.marque = null;        // la marque de destination { x, y }, posée à l'image du toucher
-    this.recherche = null;     // la recherche de chemin en cours, découpée par images
-    // Le travail de fond de l'A* par image (3.9), compté en cases explorées et non en millisecondes,
-    // pour que le départ du Veilleur ne dépende pas de la vitesse de la machine : 2 000 cases, environ
-    // 1 ms sur la machine de test, 3 ms sur le téléphone de référence (trois fois plus lent).
+    this.marque = null;
+    this.recherche = null;
     this.budgetFond = 2000;
-    this.annonces = new Map(); // sous-zone -> heure de la dernière annonce zoneProche
+    this.annonces = new Map();
     this.horloges = { zone: 0, reapparition: 0, position: 0, trajet: 0 };
     this.cellulesAires = new Map();
     this.centres = this.centresSecteurs();
-    // La composante principale : celle du départ du plateau (`depart`, le Métier sur Ervane).
     const met = Plateau.depart(def);
     const p = met && this.nav.plusProche(met[0], met[1], 6, { statique: true });
     this.compPrincipale = p ? this.nav.composanteA(p[0], p[1]) : 0;
-    // Une barrière se rouvre quand sa quête se termine. L'écouteur est rendu par liberer().
     this.surQuete = e => { if (world.plateau === this && e && e.type === 'complete') this.majPassages(); };
     world.on('quest', this.surQuete);
   }
 
-  // Le monde quitte ce plateau : l'écouteur est retiré, la recherche en cours abandonnée. Le
-  // terrain et la navigation restent dans le registre de l'île (Ile.terrain).
   liberer() {
     if (this.surQuete) this.world.off('quest', this.surQuete);
     this.surQuete = null;
@@ -55,11 +33,9 @@ class Plateau {
   }
 
   static dist(a, b) { const dx = a.x - b.x, dy = a.y - b.y; return Math.sqrt(dx * dx + dy * dy); }
-  // Le point de départ d'un plateau : son lieu `depart`, sinon le Métier (Ervane), ou null.
   static depart(def) { const l = (def && def.lieux) || {}; return l.depart || l.metier || null; }
   static arrondi(x) { return Math.round(x * 100) / 100; }
 
-  // Le centre de chaque sous-zone : la moyenne de ses échantillons de terre ferme.
   centresSecteurs() {
     const T = this.terrain, sommes = new Map();
     for (let v = 0; v < T.H; v++) for (let u = 0; u < T.W; u++) {
@@ -75,11 +51,7 @@ class Plateau {
     return out;
   }
 
-  // ----- L'entrée sur le plateau -----
 
-  // Remplit les PNJ, nœuds et groupes du monde avec ceux de toutes les sous-zones (le plateau est
-  // un seul espace), relit les minuteries de toutes, pose le Veilleur (4.9). Rend l'identifiant de
-  // la sous-zone où il se tient.
   entrer(mapId, arrivee) {
     const w = this.world;
     arrivee = arrivee || {};
@@ -109,7 +81,6 @@ class Plateau {
     }
     if (w.majRecherches) w.majRecherches();
     this.panneaux = this.terrain.objets.filter(o => o.sorte === 'panneau').map(o => ({ x: o.u, y: o.v, texte: o.texte || '' }));
-    // Les machines des ateliers (la Rue des Ateliers) : chacune ouvre l'atelier de son métier.
     this.machines = this.terrain.objets.map(o => { const m = IleTerrain.machine(o); return m ? Object.assign({ x: o.u, y: o.v, cle: `${o.u},${o.v}` }, m) : null; }).filter(Boolean);
     this.majPassages();
     const p = this.pointArrivee(mapId, arrivee);
@@ -117,13 +88,8 @@ class Plateau {
     return this.secteurDe(p[0], p[1]) || mapId;
   }
 
-  // Où poser le Veilleur : { x, y } (ou le plus proche praticable), { lieu }, { side } (le lieu de
-  // la sortie de ce côté de la sous-zone : qui revient de Kaldum par la Passe), sinon le relais de
-  // la sous-zone, sa porte de donjon, le relais du plateau le plus proche de son centre, le départ.
   pointArrivee(mapId, a) {
     const T = this.terrain, lieux = this.def.lieux || {};
-    // D'abord une case libre des groupes (on n'arrive pas figure sur figure, revue finale), sinon la
-    // plus proche praticable sans eux.
     const proche = (x, y, r) => (Number.isFinite(x) && Number.isFinite(y) && T.dans(x, y) ? (this.nav.plusProche(x, y, r, { comp: this.compPrincipale }) || this.nav.plusProche(x, y, r, { statique: true, comp: this.compPrincipale })) : null);
     if (a.x != null && a.y != null) { const p = proche(a.x, a.y, 6); if (p) return this.nav.libre(a.x, a.y) && this.nav.composanteA(a.x, a.y) === this.compPrincipale ? [a.x, a.y] : p; }
     if (a.lieu && lieux[a.lieu]) { const p = proche(lieux[a.lieu][0], lieux[a.lieu][1], 6); if (p) return p; }
@@ -142,7 +108,6 @@ class Plateau {
     return proche(m[0], m[1], 12) || m;
   }
 
-  // Pose le Veilleur, immobile, à ce point.
   placer(x, y) {
     const w = this.world, p = w.player;
     Object.assign(p, { x, y, rx: x, ry: y, path: [], moving: false, onArrive: null, chemin: null, vitesse: 0, course: false });
@@ -152,17 +117,13 @@ class Plateau {
     this.noterPosition(this.secteurDe(x, y) || w.mapId);
   }
 
-  // La position sauvegardée (4.9) : la sous-zone et la position du Veilleur au centième. La seule
-  // écriture de ch.pos sur un plateau (World.changerSecteur l'appelle aussi).
   noterPosition(mapId) {
     const w = this.world, p = w.player;
     w.ch.pos = { map: mapId || w.mapId, x: Plateau.arrondi(p.x), y: Plateau.arrondi(p.y) };
   }
 
-  // La sous-zone d'un point (le vide sous un pont garde celle de la région autour).
   secteurDe(x, y) { return this.terrain.secteurA(x, y); }
 
-  // ----- Les groupes -----
 
   creerGroupe(tpl, idx, carte) {
     const a = tpl.aire || { x: 0, y: 0, errance: 5 };
@@ -181,8 +142,6 @@ class Plateau {
     return g;
   }
 
-  // Les centres des cases de sol de l'aire, dans le cercle d'errance : d'après le plan cuit de
-  // l'aire quand il existe (étape b), sinon d'après la navigation.
   casesAire(carte, idx, a) {
     const cle = `${carte}#${idx}`;
     if (this.cellulesAires.has(cle)) return this.cellulesAires.get(cle);
@@ -205,8 +164,6 @@ class Plateau {
     if (g.chemin) {
       if (g.hold || w.state === 'combat') return;
       const ch = g.chemin;
-      // Il s'arrête plutôt que de marcher sur le Veilleur : sur le centre de la case de sol la plus
-      // proche (sa case de combat), s'il en voit une à 2 u au moins du Veilleur, sinon sur place.
       const devant = ch.pts[Math.min(ch.pts.length - 1, ch.k + 2)];
       if (!ch.repli && Plateau.dist(devant, p) < 1.4) {
         g.chemin = null; g.pause = 1 + w.rng() * 2;
@@ -214,7 +171,6 @@ class Plateau {
         for (const c of this.casesAire(g.carte, g.idx, g.aire)) {
           const d = (c[0] - g.x) * (c[0] - g.x) + (c[1] - g.y) * (c[1] - g.y);
           if (d >= bd || (c[0] - p.x) * (c[0] - p.x) + (c[1] - p.y) * (c[1] - p.y) < 4) continue;
-          // La ligne de vue sans son propre disque.
           this.nav.marquerIgnore(g.nid);
           if (this.nav.voitSans([g.x, g.y], c)) { bd = d; best = c; }
         }
@@ -233,7 +189,6 @@ class Plateau {
       if (ch.k >= ch.pts.length - 1) { g.chemin = null; g.pause = 4 + w.rng() * 4; }
       return;
     }
-    // Un groupe dont la fiche est ouverte attend qu'on se décide ; rien ne bouge hors exploration.
     if (g.hold || w.state !== 'explore') return;
     g.pause -= dt;
     if (g.pause > 0) return;
@@ -250,17 +205,11 @@ class Plateau {
     const c = choix[Math.floor(w.rng() * choix.length)];
     const r = this.nav.chemin([g.x, g.y], c, { max: 2000, ignorer: g.nid });
     if (!r || r.partiel || r.points.length < 2) return;
-    // Le groupe ne sort jamais de son cercle d'errance, même pour contourner un obstacle.
     const cu = g.aire.x + 7.5, cv = g.aire.y + 7.5, lim = (g.aire.errance || 5) + 0.75;
     if (r.points.some(q => (q.x - cu) * (q.x - cu) + (q.y - cv) * (q.y - cv) > lim * lim)) return;
     g.chemin = { pts: r.points, k: 0, but: c };
   }
 
-  // Les groupes vaincus reviennent au centre de leur aire après leur délai, à 25 u au moins du
-  // Veilleur. Le moteur seul en décide (le serveur, 7.5, doit pouvoir le rejouer) : le rendu, qui
-  // connaît le champ de la caméra, ne dessine pas un groupe revenu dans le champ tant qu'il n'en est
-  // pas sorti (`naissance`, lu par js/ile-3d.js). Le groupe du combat en cours (et de son écran de
-  // fin) ne revient pas avant la fin.
   reapparitions() {
     const w = this.world, p = w.player;
     const enCombat = w.showCombat && w.currentGroup;
@@ -281,13 +230,11 @@ class Plateau {
     }
   }
 
-  // ----- La boucle -----
 
   update(dt) {
     const w = this.world;
     if (this.recherche) this.poursuivre(false);
     this.marcher(dt);
-    // Arrivé à une sortie, le Veilleur a quitté le plateau (pour Kaldum, en cases) : plus rien ici.
     if (w.plateau !== this) return;
     for (const g of w.groups) this.errer(g, dt);
     if (w.state === 'combat') return;
@@ -302,7 +249,6 @@ class Plateau {
   marcher(dt) {
     const w = this.world, p = w.player, ch = p.chemin;
     if (!ch) return;
-    // 4,5 u/s au pas, 7 u/s en course ; accélération et freinage sur 0,15 s.
     const vmax = p.course ? 7 : 4.5, acc = vmax / 0.15;
     const reste = ch.longueur - ch.s;
     p.vitesse = Math.min(vmax, p.vitesse + acc * dt, Math.sqrt(2 * acc * Math.max(0, reste)));
@@ -311,12 +257,10 @@ class Plateau {
     ch.s = Math.min(ch.longueur, ch.s + p.vitesse * dt);
     const q = this.pointA(ch, ch.s);
     p.x = q.x; p.y = q.y; p.rx = q.x; p.ry = q.y;
-    // Comme sur une carte à cases, `path` ne garde que ce qui reste à parcourir.
     if (ch.kPath !== ch.k) { ch.kPath = ch.k; p.path = ch.pts.slice(ch.k + 1); }
     const dx = p.x - avant.x, dy = p.y - avant.y;
     if (dx * dx + dy * dy > 1e-8) {
       p.facing = Grid.facing(dx, dy) || p.facing;
-      // Le cap (pour le rendu) tourne de 720° par seconde au plus.
       const vise = IleTerrain.M.atan2(dy, dx);
       let d = vise - (p.cap || 0);
       while (d > Math.PI) d -= 2 * Math.PI;
@@ -327,13 +271,11 @@ class Plateau {
     const h = this.horloges;
     h.position += dt;
     if (h.position >= 1) { h.position = 0; this.noterPosition(); }
-    // Un groupe qui marche sur ce qui reste du trajet : on recalcule (un contrôle par quart de seconde).
     h.trajet += dt;
     if (h.trajet >= 0.25) { h.trajet = 0; if (this.trajetCoupe(ch)) { this.planifier([ch.but.x, ch.but.y], p.onArrive, true); return; } }
     if (ch.s >= ch.longueur - 1e-9) this.arriver();
   }
 
-  // Le point d'un trajet à l'abscisse s.
   pointA(ch, s) {
     const c = ch.cum, n = ch.pts.length;
     if (s <= 0) return ch.pts[0];
@@ -367,21 +309,14 @@ class Plateau {
     const depuis = this.departTrajet;
     this.departTrajet = null;
     if (fn) fn();
-    // Arrivé sans but au bout d'une sortie (à son rayon), en venant d'au-delà : on passe sur l'autre
-    // carte, comme sur la case de sortie d'une carte en cases. Celui qu'on y pose en arrivant (de
-    // Kaldum) ne repart pas en faisant un pas : il faut y revenir de plus loin.
     else { const s = this.sortieProche(); if (s && (!depuis || Plateau.dist(depuis, s) > s.rayon)) w.sortirPlateau(s); }
   }
 
-  // La sortie à portée du Veilleur (à son rayon), ou null.
   sortieProche(marge) {
     const p = this.world.player;
     return this.sorties.find(s => Plateau.dist(p, s) <= s.rayon + (marge || 0)) || null;
   }
-  // Les côtés de la sous-zone qui ont une sortie hors du plateau.
   cotesSortie(mapId) { return this.sorties.filter(s => s.carte === mapId).map(s => s.cote); }
-  // Marcher jusqu'à la sortie de ce côté de la sous-zone, puis passer (le geste vers le bord de
-  // l'écran, js/hud-jeu.js). Faux s'il n'y en a pas.
   allerSortie(mapId, cote) {
     const s = this.sorties.find(x => x.carte === mapId && x.cote === cote);
     if (!s) return false;
@@ -389,7 +324,6 @@ class Plateau {
     return etat !== 'impossible';
   }
 
-  // On ne change de sous-zone qu'une fois entré de 1 u dans la nouvelle.
   verifierSecteur() {
     const w = this.world, p = w.player, T = this.terrain;
     const s = this.secteurDe(p.x, p.y);
@@ -403,9 +337,6 @@ class Plateau {
     w.changerSecteur(s);
   }
 
-  // À 8 u devant le Veilleur sur son trajet : une sous-zone dont le niveau bas dépasse le sien de
-  // deux ou plus est annoncée (une fois par sous-zone et par minute). Une sous-zone sans groupe (le
-  // Pont, la Pointe de la Nacelle) ne l'est pas : son niveau ne sert qu'à l'atlas.
   annoncer() {
     const w = this.world, p = w.player, ch = p.chemin;
     if (!ch) return;
@@ -420,9 +351,7 @@ class Plateau {
     w.emit('zoneProche', { map: s, niveau: def.level, nom: def.name, zone: World.zoneOf(s) && World.zoneOf(s).id });
   }
 
-  // ----- Toucher, marcher, puis agir (4.4) -----
 
-  // Ce qu'on vise près d'un point, faute de cible donnée par le rendu.
   viser(x, y) {
     const w = this.world, cands = [];
     const voir = (type, ref, r) => { const d = Plateau.dist({ x, y }, ref); if (d <= r) cands.push({ type, ref, n: d / r }); };
@@ -433,19 +362,16 @@ class Plateau {
     for (const r of this.portes) voir('porte', r, 2.0);
     for (const r of this.panneaux) voir('panneau', r, 1.0);
     for (const r of this.machines) voir('machine', r, 1.2);
-    // Une sortie se vise de loin : qui s'y tient (il vient d'arriver de Kaldum) marche autour.
     for (const r of this.sorties) if (Plateau.dist(w.player, r) > r.rayon) voir('sortie', r, 2.0);
     cands.sort((a, b) => a.n - b.n);
     return cands[0] ? { type: cands[0].type, ref: cands[0].ref } : null;
   }
 
-  // Un toucher : { x, y, cible? }. Rend l'état de l'approche, ou false si le toucher est refusé.
   toucher(t) {
     const w = this.world;
     if (w.state !== 'explore' || !t || !Number.isFinite(t.x) || !Number.isFinite(t.y) || !this.terrain.dans(t.x, t.y)) return false;
     const c = t.cible && t.cible.type ? t.cible : this.viser(t.x, t.y);
     const ref = c && this.reference(c);
-    // Un nouveau but remplace l'approche d'un groupe qu'on allait attaquer : il reprend sa marche.
     if (!(c && ref && c.type === 'groupe')) for (const g of w.groups) g.hold = false;
     switch (c && ref && c.type) {
       case 'pnj': return this.approcher(ref, 2, () => w.talk(ref), 3);
@@ -463,7 +389,6 @@ class Plateau {
     }
   }
 
-  // La référence vivante d'une cible (le rendu peut donner un identifiant ou l'objet lui-même).
   reference(c) {
     const w = this.world, r = c.ref;
     const parId = (liste, f) => (liste.includes(r) ? r : liste.find(f) || null);
@@ -487,11 +412,6 @@ class Plateau {
     return q ? this.nav.composanteA(q[0], q[1]) : this.compPrincipale;
   }
 
-  // S'approcher d'une cible : s'arrêter à `distance` d'elle, du côté du Veilleur, puis agir si l'on
-  // est à `portee` au plus. Rend 'immediat' | 'en_route' | 'en_calcul' | 'impossible'. `echec`, s'il
-  // est donné, est appelé quand l'action n'aura pas lieu : aucun but, aucun chemin (la recherche
-  // découpée a fini sans en trouver), ou le Veilleur arrivé trop loin de la cible (le but choisi
-  // était à portée, mais la cible a pu bouger) ; World.attackGroup y relâche le groupe visé.
   approcher(cible, distance, action, portee, echec) {
     const w = this.world, p = w.player;
     portee = portee == null ? distance + 1 : portee;
@@ -510,7 +430,6 @@ class Plateau {
     return this.planifier(but, agir, false, echec);
   }
 
-  // Marcher jusqu'à un point, ou jusqu'au plus proche praticable (le vide, l'eau profonde).
   allerA(x, y, action) {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return 'impossible';
     const comp = this.composanteJoueur();
@@ -520,11 +439,7 @@ class Plateau {
     return this.planifier(but, action || null);
   }
 
-  // Lance la recherche : la marque de destination est posée tout de suite ; le Veilleur part dès
-  // que le chemin est trouvé (souvent dans la même image). Un nouveau but remplace l'ancien.
-  // `surEchec` est appelé si la recherche ne trouve aucun chemin (tout de suite ou plus tard).
   planifier(but, action, garderVitesse, surEchec) {
-    // Surchargé : on ne marche plus, comme Dofus (js/world.js, setPath).
     if (this.world.ch && this.world.ch.surcharge()) { this.world.avertirSurcharge(); if (surEchec) surEchec(); return 'impossible'; }
     const p = this.world.player;
     if (!garderVitesse) { p.chemin = null; p.path = []; p.moving = false; p.vitesse = 0; }
@@ -558,8 +473,6 @@ class Plateau {
     for (let k = 1; k < points.length; k++) cum.push(cum[k - 1] + Plateau.dist(points[k - 1], points[k]));
     const longueur = cum[cum.length - 1];
     p.onArrive = action || null;
-    // D'où part le trajet (un trajet recalculé en route garde son départ) : une sortie ne prend que
-    // qui vient d'au-delà de son rayon (arriver).
     if (!garderVitesse || !this.departTrajet) this.departTrajet = { x: p.x, y: p.y };
     if (longueur < 0.02) { p.x = points[points.length - 1].x; p.y = points[points.length - 1].y; p.rx = p.x; p.ry = p.y; this.arriver(); return; }
     p.chemin = { pts: points, cum, longueur, s: 0, k: 0, kPath: 0, but: but || points[points.length - 1] };
@@ -570,7 +483,6 @@ class Plateau {
     w.emit('path', points);
   }
 
-  // Pose le Veilleur sur un point libre (ou le plus proche), immobile. Faux hors du plateau.
   poser(x, y) {
     if (!Number.isFinite(x) || !Number.isFinite(y) || !this.terrain.dans(x, y)) return false;
     const q = this.nav.libre(x, y) ? [x, y] : this.nav.plusProche(x, y, 4);
@@ -580,7 +492,6 @@ class Plateau {
     return true;
   }
 
-  // Un chemin sans bouger (le repère « chemin » du guide) : des points, ou null.
   chemin(a, b) {
     const r = this.nav.chemin(a, b);
     return r ? r.points : null;
@@ -593,15 +504,7 @@ class Plateau {
     return best ? { map: best.carte, x: best.x, y: best.y } : null;
   }
 
-  // ----- Le combat sur le terrain (docs/ILE-TECHNIQUE.md, 5.1 et 5.3) -----
 
-  // L'arène d'un groupe : la carte de combat de son aire (Grid.create sur le plan cuit, la carte
-  // que js/combat.js attend), ancrée sur le terrain par son coin nord-ouest (`map.ancre`, que le
-  // combat ignore et que le rendu lit), et les cases de départ : les six cases les plus proches de
-  // celle du groupe (sans celle du Veilleur), puis les six plus proches de celle du Veilleur (sans
-  // celles des monstres), la règle de World.cellsAround. La case du Veilleur : sa position ramenée
-  // dans le carré, puis la case de sol la plus proche. Sans plan (aire non cuite), rien : jamais de
-  // combat sur l'arène du laboratoire (Grid.create(undefined) la rendrait sans bruit).
   arene(groupe) {
     const a = groupe && groupe.tpl && groupe.tpl.aire;
     if (!a || !Array.isArray(a.layout) || a.layout.length !== 15 || a.layout.some(l => typeof l !== 'string' || l.length !== 15)) return null;
@@ -612,8 +515,6 @@ class Plateau {
     const sols = [];
     for (let y = 0; y < 15; y++) for (let x = 0; x < 15; x++) if (Grid.walkable(map, x, y)) sols.push({ x, y });
     if (!sols.length) return null;
-    // La case de sol la plus proche d'une case (distance de Manhattan, puis à vol d'oiseau, puis
-    // l'ordre de lecture : le même résultat partout).
     const proche = (c, sauf) => {
       let best = null, bd = Infinity;
       for (const s of sols) {
@@ -635,10 +536,6 @@ class Plateau {
     };
   }
 
-  // Un combat commence sur l'aire de `groupe` : les autres groupes dont la position tombe dans
-  // l'aire (plus 1 u) sont reposés hors du carré, sur la case de sol de leur cercle d'errance la plus
-  // proche ; tout est figé pendant le combat (World.update), ils n'y entrent donc pas. Le Veilleur
-  // s'arrête (un chemin, une recherche en cours sont abandonnés).
   ecarterGroupes(groupe) {
     const w = this.world, a = groupe.tpl.aire;
     const dedans = (x, y) => x > a.x - 1 && x < a.x + 16 && y > a.y - 1 && y < a.y + 16;
@@ -657,15 +554,12 @@ class Plateau {
     this.marque = null;
   }
 
-  // Après une victoire (World.resume) : le Veilleur au centre de sa case finale (ou au plus proche
-  // praticable), tourné comme il l'était, et les groupes reprennent leur marche.
   apresCombat(combat) {
     const w = this.world, e = combat && combat.player, ancre = combat && combat.map && combat.map.ancre;
     if (e && ancre && ancre.plateau === this.id) {
       const u = ancre.x0 + e.x + 0.5, v = ancre.y0 + e.y + 0.5;
       const q = this.nav.libre(u, v) && this.nav.composanteA(u, v) === this.compPrincipale ? [u, v] : (this.nav.plusProche(u, v, 4, { comp: this.compPrincipale }) || this.nav.plusProche(u, v, 6));
       if (q) {
-        // Le cap du rendu suit l'orientation du combat (x+ : se, y+ : sw, x- : nw, y- : ne).
         const facing = e.facing || w.player.facing, CAP = { se: 0, sw: Math.PI / 2, nw: Math.PI, ne: -Math.PI / 2 };
         this.placer(q[0], q[1]);
         w.player.facing = facing;
@@ -675,7 +569,6 @@ class Plateau {
     for (const g of w.groups) { g.hold = false; if (!g.chemin) g.pause = Math.min(g.pause, 1 + w.rng() * 2); }
   }
 
-  // Les barrières suivent les quêtes : ouvertes quand la quête qui les ouvre est faite.
   majPassages() {
     const done = (this.world.ch.quests && this.world.ch.quests.done) || [];
     for (const b of this.nav.barrieres) this.nav.barriere(b.id, !!(b.quete && done.includes(b.quete)));

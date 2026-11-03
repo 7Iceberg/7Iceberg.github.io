@@ -1,33 +1,10 @@
-// Le tutoriel de l'île d'Ervane (docs/ILE-DE-DEPART.md, section 6 ; docs/ILE-TECHNIQUE.md, 6) : un
-// second jeu d'étapes, DATA.tutorielIle, que js/guide.js choisit pour un personnage né sur Ervane
-// (ch.tuto.jeu = 'ile'), et DATA.tutorielDescente, joué une fois à sa première carte à cases
-// d'Orsane (ch.tuto.jeu = 'descente'). Selon l'interrupteur : le module ervaneTutoriel les pose,
-// appliqué par js/ile.js ; éteint, seul DATA.tutoriel (content/tutoriel.js) existe.
-//
-// Le format des étapes est celui de content/tutoriel.js. Ce que le guide sait de plus sur un
-// plateau :
-//  - repères : { type: 'point', map, u, v } (un anneau au sol, en unités de l'île) ;
-//              { type: 'chemin', vers: { npc } | { lieu } | { u, v } } (des marques au sol le long
-//              du chemin calculé jusqu'au but, et l'anneau au but) ; { type: 'lieu', lieu } (un lieu
-//              nommé du plateau) ; { type: 'groupeFaible' } (le groupe de Glyms le plus proche dont
-//              un membre craint un élément des sorts de la classe, et ses deux lignes sur la fiche) ;
-//  - événements : { on: 'arrive', u, v, rayon } (en unités de l'île), { on: 'zone', map } (l'entrée
-//    dans une sous-zone), { on: 'fight', monstre } (un combat où ce monstre est présent) ;
-//  - condition : { sortElement: true } (la classe a un sort de dégâts d'un élément qu'un Glym des
-//    Sources craint) ou { sortElement: 'feu' } ;
-//  - mots : {{element}}, {{faible}}, {{resiste}} dans les textes (la leçon des Sources) ;
-//  - `courtSouris` : la ligne du mode court à la souris (comme `saySouris` pour la boîte), choisie par
-//    js/guide.js quand le dernier pointeur n'est pas le doigt.
 (DATA.modules = DATA.modules || {}).ervaneTutoriel = () => {
   if (DATA.tutorielIle) return;
-  // Le premier combat laisse le temps de lire ; le guide s'y joint, comme à Orsane.
   const allie = {
     id: 'guide_varek', name: 'Varek', title: 'Relayeur du Fil', shape: 'pnj', look: 'garde', color: '#8a93a6',
     level: 1, hp: 70, pa: 6, pm: 3, initiative: 40, spells: ['lueur', 'eclat'], ai: 'ranged', summon: true, dmgMult: 0.45,
     desc: 'Ton guide. Il soigne ceux qui faiblissent et tire de loin.',
   };
-  // Le premier combat et le premier niveau : les mêmes étapes qu'à Orsane, sur la grille posée sur
-  // le terrain. `retour` : l'étape où reprendre après une défaite.
   const combat = [
     { id: 'placement', bloc: 'combat', retour: 'groupe', humeur: 'grave',
       say: '**Prépare-toi !** Touche une {cristal|case bleue} pour choisir ta place.',
@@ -100,18 +77,12 @@
 
   DATA.tutorielIle = {
     guide: 'varek_ervane',
-    // Un nouveau Veilleur s'éveille un peu à l'écart du Métier, pour marcher jusqu'au guide.
     depart: { map: 'ervane_mailles_place', u: 209, v: 96 },
     secondesTour: 90,
     allie,
     etapes: [
-      // ----- L'éveil, au Relais des Mailles -----
       { id: 'bienvenue', say: 'Doucement, Veilleur. Tu as dormi trois jours. Je suis **Varek** : je garde le Relais des Mailles, ici, sur **Ervane**.', humeur: 'joie',
         until: { on: 'suite' }, saute: { quete: 'ervane_eveil' } },
-      // Le point qui brille est à plus de 3 u de toute cible du plateau (le Relais, Varek, le Métier) :
-      // la sélection à l'écran (js/ile-3d.js, screenToCell) rend les objets qui agissent avant le
-      // sol, et un doigt sur l'anneau doit faire marcher, pas ouvrir le panneau du Relais. Le
-      // validateur le vérifie (verifierTutoriel).
       { id: 'marcher', say: 'Ici, on marche où l\'on veut. **Touche le sol qui brille** pour y aller.',
         saySouris: 'Ici, on marche où l\'on veut. **Clique sur le sol qui brille** pour y aller.',
         court: 'Touche le sol pour y marcher.', courtSouris: 'Clique sur le sol pour y marcher.',
@@ -133,7 +104,6 @@
         cue: { type: 'chemin', vers: { npc: 'nolwe' } },
         until: [{ on: 'zone', map: 'ervane_porte_des_sources' }, { on: 'dialogue', npc: 'nolwe' }], saute: { queteEtape: ['ervane_eveil', 2] } },
 
-      // ----- La Porte des Sources -----
       { id: 'nolwe', say: 'Voici la Porte. **Nolwé** la garde : parle-lui, elle connaît les Sources.',
         court: 'Parle à Nolwé, la gardienne de la Porte.',
         cue: { type: 'pnj', npc: 'nolwe' },
@@ -149,20 +119,15 @@
         cue: { type: 'ui', cible: '.vy-fiche-groupe [data-act="attaquer"]', main: true, sinon: { type: 'groupe' } }, allie: true,
         until: { on: 'fight' }, saute: { victoires: 1 } },
 
-      // ----- Le premier combat, sur l'aire du Glym -----
       ...combat,
 
-      // ----- Après la victoire -----
       { id: 'victoire', attendre: { explore: true }, humeur: 'joie',
         say: 'Bien joué, Veilleur ! Le Fil a eu raison de te remonter jusqu\'ici.', until: { on: 'suite' } },
       ...niveau,
 
-      // ----- Le sac, l'équipement, la quête rendue -----
       { id: 'sac', say: 'Ce que tu gagnes va dans ton **sac**. Ouvre-le.',
         court: 'Ton butin t\'attend dans le sac.',
         cue: { type: 'ui', cible: '[data-win="sac"]', main: true }, until: { on: 'windowOpen', id: 'inventaire' } },
-      // Ces deux étapes ont une issue (« Suite ») : si le double toucher ne passe pas, ou si l'objet est
-      // vendu ou gardé, le guide ne reste pas bloqué dessus jusqu'à la fin de l'île (revue finale).
       { id: 'equiper_arme', si: { armeEquipable: true },
         say: 'Touche deux fois sur l\'**arme**, ou glisse-la vers ton personnage, pour t\'en équiper. Tu peux aussi passer : le sac t\'attendra.',
         saySouris: 'Double-clique sur l\'**arme**, ou glisse-la vers ton personnage, pour t\'en équiper. Tu peux aussi passer : le sac t\'attendra.',
@@ -182,14 +147,10 @@
         cueDialogue: ['.vy-replique[data-rendre="ervane_eveil"]', '.vy-guide--dialogue [data-act="continuer"]'],
         until: { cond: { queteFinie: 'ervane_eveil' } }, saute: { queteFinie: 'ervane_eveil' } },
 
-      // ----- Le journal des quêtes -----
       { id: 'quetes', say: 'Tes quêtes sont notées dans ton **journal des quêtes**. Ouvre-le : « Les quatre Sources » t\'y attend.',
         court: 'Le journal des quêtes garde tes objectifs.',
         cue: { type: 'ui', cible: '[data-win="quetes"]', main: true }, until: { on: 'windowOpen', id: 'quetes' } },
 
-      // ----- La leçon des Sources : à la première fiche d'un groupe de Glyms -----
-      // `sayAilleurs` : quand la fiche ouverte ne montre pas le Glym qui craint l'élément (une classe
-      // Air devant le Glym Aqua de la Porte) ; le repère pointe alors le groupe qui le craint.
       { id: 'element', si: { sortElement: true }, attendre: { on: 'groupPopup' },
         say: 'Lis la fiche. Ton sort est de type **{{element}}** : le **{{resiste}}** y résiste, le **{{faible}}** le craint. Vise-le.',
         sayAilleurs: 'Lis la fiche : celui-ci ne craint pas ton **{{element}}**. Le **{{faible}}**, lui, le craint : il rôde près d\'une Source voisine, va le voir.',
@@ -197,25 +158,21 @@
         cue: { type: 'groupeFaible' },
         until: [{ on: 'suite' }, { on: 'fight' }], saute: { queteFinie: 'ervane_quatre_sources' } },
 
-      // ----- Le Défi, au deuxième combat -----
       { id: 'defi', si: { victoires: 1 }, attendre: { on: 'battleStart' },
         say: 'Un **Défi** t\'est proposé à chaque combat. Réussi, il rapporte plus d\'{or|XP} ; tu peux l\'ignorer sans rien perdre.',
         court: 'Un Défi réussi rapporte plus d\'XP ; tu peux l\'ignorer.',
         cue: { type: 'ui', cible: '[data-ui="defi"]' },
         until: [{ on: 'suite' }, { on: 'turnEnd' }], saute: { victoires: 4 } },
 
-      // ----- L'arme, au combat suivant -----
       { id: 'arme_combat', si: { arme: true }, attendre: { tourJoueur: true },
         say: 'Maintenant, attaque avec ton **arme** !', court: 'Ton arme est le premier sort de ta barre.',
         cue: { type: 'sort', quel: 'arme' }, until: { on: 'spellCast', spell: 'arme' } },
 
-      // ----- Le Lampignon, aux Murets -----
       { id: 'poussee', attendre: { on: 'fight', monstre: 'lampignon' }, humeur: 'grave',
         say: 'Un **Lampignon** ! Il charge et repousse de deux cases. Place-toi **sans muret dans le dos** : contre un mur, le choc fait mal.',
         court: 'Le Lampignon repousse : pas de muret dans ton dos.',
         until: [{ on: 'suite' }, { on: 'battleStart' }], saute: { queteFinie: 'ervane_hameau_vide' } },
 
-      // ----- La carte, au camp d'Ardek -----
       { id: 'carte', attendre: { on: 'zone', map: 'ervane_camp_ardek' },
         say: 'Le camp d\'Ardek, et le **Relais de l\'Amarre**. Ouvre la **carte** : elle montre l\'île, tes quêtes et tes relais.',
         court: 'La carte montre l\'île, tes quêtes et tes relais.',
@@ -226,7 +183,6 @@
     ],
   };
 
-  // À la descente : les cases d'Orsane, puis le bord de carte, une fois.
   DATA.tutorielDescente = {
     guide: 'varek',
     etapes: [

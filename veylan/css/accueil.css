@@ -1,18 +1,6 @@
-/* ==========================================================================
-   Veylan : l'entrée dans le jeu (js/accueil.js)
-   --------------------------------------------------------------------------
-   Accueil, personnages, choix du monde, « As-tu déjà joué ? », classe, apparence.
-   Lit les rôles de css/tokens.css et les composants de css/components.css (.vy-bouton,
-   .vy-modale). La scène de l'accueil (paysage de la charte, js/titre-fx.js) reste derrière
-   tous les écrans ; la couleur de la classe choisie la teinte (--classe).
-   Repères de taille : téléphone en paysage (hauteur 520 px et moins), téléphone debout
-   (largeur 700 px et moins, en portrait), écran large (1600 px et plus).
-   ========================================================================== */
 
-/* La couleur de la classe, interpolée quand elle change. */
 @property --classe { syntax: "<color>"; inherits: true; initial-value: #0a1220; }
 
-/* ----- Le cadre et la scène ----- */
 html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-behavior: none; }
 #title { position: absolute; inset: 0; z-index: 30; overflow: hidden; background: var(--vy-ombre); transition: --classe 600ms ease; }
 .titre-scene { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: var(--vy-ombre); }
@@ -25,7 +13,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 }
 .titre-fx { position: absolute; inset: 0; width: 100%; height: 100%; }
 .titre-fx-avant { position: fixed; inset: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; transition: opacity 160ms ease; }
-/* Un calque ouvert (réglages, article...) : les éclairs de devant ne passent pas par-dessus */
 .calque-ouvert .titre-fx-avant { opacity: 0; }
 .titre-brume {
   position: absolute; inset: 0;
@@ -33,7 +20,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
     radial-gradient(ellipse 75% 55% at 50% 26%, rgba(5, 9, 16, 0) 0%, rgba(5, 9, 16, 0.35) 62%, rgba(5, 9, 16, 0.82) 100%),
     linear-gradient(180deg, rgba(5, 9, 16, 0) 38%, rgba(8, 13, 22, 0.9) 74%, var(--vy-ombre) 100%);
 }
-/* Le logo de la planche, son reflet (en ligne seulement) et l'éclair qui le traverse */
 .titre-logo { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .titre-logo__image {
   position: relative; margin: 0; line-height: 0;
@@ -66,7 +52,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 @keyframes vy-reflet { 0%, 55% { background-position: 120% 0; } 80%, 100% { background-position: -20% 0; } }
 @keyframes vy-eclair-logo { 0% { filter: brightness(1.55) saturate(1.3) drop-shadow(0 0 16px rgba(130, 225, 255, 0.95)); } 100% { filter: none; } }
 
-/* La teinte de la classe : une lumière de sa couleur monte derrière la scène. */
 .entree-teinte {
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background:
@@ -77,7 +62,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 }
 .entree-teinte.on { opacity: 1; }
 
-/* ----- Les écrans ----- */
 .entree { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; }
 .entree-vue { position: relative; flex: 1; min-height: 0; }
 .ecran { position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
@@ -97,7 +81,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 @keyframes entree-fondu { from { opacity: 0; } }
 @keyframes entree-fondu-sortie { to { opacity: 0; } }
 
-/* Bouton nu : la zone cliquable d'une carte, d'une case, d'une flèche. */
 .e-nu {
   appearance: none; margin: 0; padding: 0; min-height: 0;
   align-items: normal; justify-content: normal; gap: 0;
@@ -109,7 +92,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .e-nu:disabled, .e-nu[aria-disabled="true"] { cursor: not-allowed; }
 .entree svg { display: block; flex: none; }
 
-/* Panneau d'ardoise à cadre d'or et coins sertis (même matière que la modale). */
 .acc-panneau, .monde-panneau, .classe-choix, .app-panneau {
   position: relative;
   border: 2px solid transparent;
@@ -130,7 +112,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
     var(--vy-coin-bd) right bottom / 30px 30px no-repeat;
 }
 
-/* Textes communs */
 .entree-h2 { margin: 0; font: 700 22px/1.2 var(--vy-font-titre); letter-spacing: 0.04em; color: var(--vy-texte-or); text-wrap: balance; }
 .entree-texte { margin: 0; font: 400 15px/1.55 var(--vy-font-lecture); color: var(--vy-ivoire); }
 .entree-note { display: flex; gap: 8px; align-items: flex-start; margin: 0; font: 400 13px/1.45 var(--vy-font-ui); color: var(--vy-texte-2); }
@@ -138,7 +119,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .entree-zone { width: 100%; min-height: 96px; padding: 10px 12px; resize: vertical; font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--vy-texte); background: #0a111b; border: 1.5px solid var(--vy-filet-fort); border-radius: var(--vy-rayon-m); user-select: text; }
 .entree-zone:focus-visible { outline: 2px solid var(--vy-focus); outline-offset: 1px; }
 
-/* ----- En-tête des écrans : retour, titre, étapes ----- */
 .entree-tete {
   position: relative; z-index: 4; flex: none;
   display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px;
@@ -147,7 +127,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   border-bottom: 1px solid var(--vy-filet-fort);
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
 }
-/* La crête d'or et son cristal, au milieu du bord bas */
 .entree-tete::after {
   content: ""; position: absolute; left: 50%; bottom: -12px; width: 120px; height: 22px; transform: translateX(-50%);
   background: var(--vy-crete) center / contain no-repeat;
@@ -180,11 +159,9 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .entree-etapes li.fait .entree-etapes__marque { background: var(--vy-or); border-color: var(--vy-or-clair); }
 .entree-etapes li.ici { color: var(--vy-ivoire); }
 .entree-etapes li.ici .entree-etapes__marque { background: var(--vy-cristal); border-color: #bff3ff; box-shadow: 0 0 8px var(--vy-cristal); }
-/* Le nom de l'étape en cours seulement ; tous les noms sur un écran large */
 .entree-etapes li:not(.ici) .entree-etapes__nom { display: none; }
 .entree-etapes li:not(.ici) { gap: 0; }
 
-/* Message bref, en haut, sous l'en-tête : il ne couvre ni les boutons ni la description */
 .entree-toast {
   position: absolute; left: 50%; top: calc(74px + env(safe-area-inset-top, 0px)); z-index: 60;
   width: max-content; max-width: min(92vw, 520px); padding: 10px 18px;
@@ -196,9 +173,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 }
 .entree-toast.on { opacity: 1; transform: translate(-50%, 0); }
 
-/* ==========================================================================
-   Accueil : actualités à gauche, logo et « Continuer » à droite
-   ========================================================================== */
 .ecran--accueil { padding: 14px clamp(12px, 3vw, 44px) 8px; }
 .acc-coin { position: absolute; top: 14px; right: clamp(12px, 3vw, 44px); z-index: 4; display: flex; gap: 10px; }
 .acc-rond {
@@ -210,7 +184,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   transition: border-color var(--vy-duree-courte), box-shadow var(--vy-duree), color var(--vy-duree-courte);
 }
 .acc-rond svg { width: 24px; height: 24px; }
-/* La communauté n'existe pas encore : une pastille éteinte, marquée « bientôt » */
 .acc-communaute { position: absolute; top: 14px; left: clamp(12px, 3vw, 44px); z-index: 4; }
 .acc-communaute__pastille { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 14px 0 12px; border-radius: 999px; font: 600 13px/1 var(--vy-font-ui); color: var(--vy-texte-2); background: rgba(10, 16, 26, 0.6); border: 1.5px solid var(--vy-filet); opacity: 0.85; }
 .acc-communaute__pastille svg { width: 20px; height: 20px; }
@@ -224,7 +197,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   width: min(100%, 1340px); margin: 0 auto; padding-top: 50px;
 }
 
-/* Le carrousel des actualités */
 .actus {
   position: relative; display: flex; flex-direction: column; min-width: 0; overflow: hidden;
   border: 2px solid transparent; border-radius: 12px;
@@ -264,7 +236,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   .actus__actu:hover .actus__titre, .actus__journal:hover .actus__titre { color: #fff; }
 }
 
-/* Le panneau du logo : continuer, changer de personnage */
 .acc-panneau { display: flex; flex-direction: column; justify-content: center; gap: clamp(14px, 3.5vh, 34px); min-width: 0; padding: 22px 24px 24px; }
 .acc-panneau .titre-logo { padding-top: 4px; }
 .acc-actions { display: flex; flex-direction: column; gap: 12px; }
@@ -277,16 +248,12 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .acc-creer { min-height: 60px; font-size: 17px; }
 .acc-changer { min-height: 48px; }
 
-/* Le pied : version, partie d'invité */
 .acc-pied { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: min(100%, 1340px); margin: 0 auto; padding: 4px 2px 0; }
 .acc-version { font: 500 12px/1.3 var(--vy-font-ui); color: var(--vy-texte-2); text-shadow: 0 1px 2px #000; }
 .acc-version span { opacity: 0.85; }
 .acc-invite { min-height: 44px; padding: 0 4px; font: 600 14px/1 var(--vy-font-ui); color: var(--vy-or-clair); text-decoration: underline; text-decoration-color: rgba(226, 198, 144, 0.5); text-underline-offset: 4px; text-shadow: 0 1px 3px #000; }
 @media (hover: hover) { .acc-invite:hover { color: #fff; text-decoration-color: var(--vy-cristal); } }
 
-/* ==========================================================================
-   Personnages : cinq emplacements
-   ========================================================================== */
 .perso-corps { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 16px; width: min(100%, 1240px); margin: 0 auto; padding: 26px clamp(12px, 3vw, 36px) 16px; }
 .perso-liste { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(10px, 1.6vw, 20px); align-items: stretch; max-height: 450px; align-self: stretch; margin: auto 0; }
 .perso-carte {
@@ -328,9 +295,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .perso-pied small { font-weight: 500; opacity: 0.8; }
 .perso-jouer { min-width: 190px; }
 
-/* ==========================================================================
-   Choix du monde
-   ========================================================================== */
 .monde-corps { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 540px); align-items: center; gap: clamp(12px, 3vw, 44px); width: min(100%, 1340px); margin: 0 auto; padding: 18px clamp(12px, 3vw, 44px) 22px; }
 .monde-globe { position: relative; align-self: stretch; min-height: 180px; }
 .monde-toile { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -348,9 +312,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .monde-table__etat i { width: 9px; height: 9px; flex: none; border-radius: 50%; background: var(--vy-cimes-clair); box-shadow: 0 0 8px var(--vy-cimes-clair); }
 .monde-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 2px; }
 
-/* ==========================================================================
-   « As-tu déjà joué à Veylan ? » : deux moitiés, la fente entre elles
-   ========================================================================== */
 .deja-corps { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr); width: min(100%, 1340px); margin: 0 auto; padding: 22px clamp(12px, 3vw, 44px) 22px; }
 .deja-moitie {
   position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 16px;
@@ -368,7 +329,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   .deja-moitie:hover .deja-toile { transform: scale(1.04); filter: brightness(1.1); }
   .deja-moitie:hover .deja-bouton { border-color: var(--vy-cristal); }
 }
-/* La fente : une déchirure de cristal qui respire */
 .deja-fente {
   align-self: stretch; margin: 6% 0;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 400' preserveAspectRatio='none'%3E%3Cpath d='M15 0 L19 40 L11 78 L18 120 L12 160 L20 205 L10 248 L17 290 L12 330 L18 368 L15 400' fill='none' stroke='%2300c2ff' stroke-width='5' stroke-linejoin='bevel' opacity='.55'/%3E%3Cpath d='M15 0 L19 40 L11 78 L18 120 L12 160 L20 205 L10 248 L17 290 L12 330 L18 368 L15 400' fill='none' stroke='%23e8fbff' stroke-width='1.6' stroke-linejoin='bevel'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
@@ -378,9 +338,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 @keyframes entree-fente { 50% { opacity: 0.7; } }
 @media (prefers-reduced-motion: reduce) { .deja-fente { animation: none; } }
 
-/* ==========================================================================
-   Classe : illustration, socle tournant, grille, bandeau
-   ========================================================================== */
 .classe-corps {
   --droite: clamp(300px, 29vw, 400px); --ecart: clamp(12px, 2vw, 28px); --marge: clamp(12px, 2.5vw, 32px);
   position: relative; flex: 1; min-height: 0;
@@ -389,7 +346,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   padding: 0 var(--marge) 16px 0;
 }
 .classe-scene { position: relative; grid-column: 1; grid-row: 1 / 3; min-height: 0; overflow: hidden; }
-/* Le bas de la scène s'assombrit sous le bandeau de la classe */
 .classe-scene::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; height: 52%; pointer-events: none; background: linear-gradient(180deg, rgba(5, 8, 15, 0) 0%, rgba(5, 8, 15, 0.82) 45%, rgba(5, 8, 15, 0.95) 100%); }
 .classe-illu { position: absolute; left: 0; top: 0; bottom: 0; width: 60%; }
 .classe-illu__toile, .classe-illu__image { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -408,10 +364,8 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .tournant__fleche--g { left: 4%; }
 .tournant__fleche--d { right: 4%; }
 @media (hover: hover) { .tournant__fleche:hover { color: #fff; border-color: var(--vy-cristal); box-shadow: var(--vy-lueur-cristal); } }
-/* --bandeau : la hauteur du bandeau de la classe sous la scène, mesurée par js/accueil.js */
 .classe-scene .tournant { right: 3%; top: 3%; bottom: var(--bandeau, 168px); width: 40%; min-width: 220px; }
 
-/* Le bandeau : rôles, nom et épithète, description, difficulté */
 .classe-infos { position: absolute; z-index: 3; left: 0; right: calc(var(--droite) + var(--ecart) + var(--marge)); bottom: 16px; padding: 0 clamp(12px, 2vw, 24px) 2px clamp(16px, 3vw, 44px); }
 .classe-roles { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-bottom: 10px; }
 .classe-role { display: inline-flex; align-items: center; gap: 8px; }
@@ -440,7 +394,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .classe-diff__pips i.on { background: linear-gradient(135deg, #fff3d2, var(--vy-or) 60%, var(--vy-or-sombre)); border-color: var(--vy-or-clair); box-shadow: 0 0 6px rgba(201, 166, 107, 0.6); }
 .classe-diff__mot { color: var(--vy-texte-or); }
 
-/* Le panneau de choix : grille des classes, genre, voie */
 .classe-choix { position: relative; z-index: 3; grid-column: 2; grid-row: 1; align-self: center; display: flex; flex-direction: column; gap: 14px; margin: 18px 0 14px; padding: 16px; }
 .classe-grille { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .classe-case {
@@ -485,9 +438,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .classe-actions .vy-bouton { min-height: 52px; font-size: 15px; }
 .classe-actions .vy-bouton svg { width: 20px; height: 20px; }
 
-/* ==========================================================================
-   Apparence : le socle à gauche, le panneau à droite
-   ========================================================================== */
 .app-corps { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) clamp(440px, 47vw, 620px); gap: clamp(12px, 2vw, 28px); padding: 14px clamp(12px, 2.5vw, 32px) 16px; }
 .app-scene { position: relative; min-height: 0; }
 .app-scene .tournant { left: 0; right: 0; top: 0; bottom: 34px; }
@@ -536,7 +486,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .app-nom__compte { padding: 0 8px; font: 500 11px/1 var(--vy-font-ui); font-variant-numeric: tabular-nums; color: var(--vy-texte-2); }
 .app-nom .vy-bouton svg { width: 20px; height: 20px; }
 .app-creer { min-width: 116px; font-size: 16px; }
-/* Panneau étroit (téléphone) : le dé seul, pour laisser la place au nom */
 @container (max-width: 480px) {
   .app-nom [data-act="nom-aleatoire"] { width: 44px; padding: 0; }
   .app-nom [data-act="nom-aleatoire"] span { display: none; }
@@ -545,9 +494,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .entree-calque__erreur { margin-top: 8px; }
 .app-erreur:empty { display: none; }
 
-/* ==========================================================================
-   Calques : réglages, journal, article, recommandation, suppression, import
-   ========================================================================== */
 .entree-calque { z-index: 50; }
 .entree-modale--reglages { width: min(580px, 100%); }
 .reglages { display: grid; gap: 20px; }
@@ -611,9 +557,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .quiz__desc { margin: 6px 0 10px; max-width: 46ch; font: 400 15px/1.5 var(--vy-font-lecture); color: var(--vy-ivoire); }
 .quiz__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 
-/* ==========================================================================
-   Écran large
-   ========================================================================== */
 @media (min-width: 1600px) {
   .entree-etapes li:not(.ici) .entree-etapes__nom { display: inline; }
   .entree-etapes li:not(.ici) { gap: 7px; }
@@ -624,9 +567,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   .app-selecteur { min-height: 200px; }
 }
 
-/* ==========================================================================
-   Téléphone en paysage : peu de hauteur, tout se resserre
-   ========================================================================== */
 @media (max-height: 520px) {
   .entree-tete { min-height: 48px; padding-top: 3px; padding-bottom: 3px; }
   .entree-tete::after { width: 90px; height: 16px; bottom: -9px; }
@@ -641,7 +581,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   .entree-h2 { font-size: 18px; }
 
   .ecran--accueil { padding: 8px 14px 4px; }
-  /* Réglages et langue dans le coin du panneau, à l'écart de son ornement d'angle */
   .acc-coin { top: 24px; right: 26px; gap: 8px; }
   .acc-communaute { display: none; }
   .acc-rond { width: 40px; height: 40px; }
@@ -725,7 +664,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   .classe-voie__btn { min-height: 30px; padding: 0 8px; font-size: 11px; }
   .classe-actions .vy-bouton { min-height: 44px; font-size: 14px; }
 
-  /* Le résultat de la recommandation : le buste à gauche, le texte et les boutons à droite */
   .quiz--fin { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "buste sur" "buste classe" "buste desc" "buste actions"; justify-items: start; align-items: center; column-gap: 22px; row-gap: 2px; text-align: left; }
   .quiz--fin .quiz__buste { grid-area: buste; width: 84px; height: 84px; margin-left: 4px; }
   .quiz--fin .quiz__surtitre { grid-area: sur; margin: 0; }
@@ -735,7 +673,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   .quiz--fin .quiz__actions { grid-area: actions; justify-content: flex-start; }
   .quiz--fin .quiz__actions .vy-bouton { min-height: 42px; }
 
-  /* L'article : l'image à gauche, le texte à droite, lisible sans défiler */
   .entree-modale--article { width: min(860px, 100%); }
   .article { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: 18px; align-items: start; }
   .article__toile { grid-row: 1 / 3; max-height: calc(100dvh - 200px); }
@@ -746,8 +683,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   .entree-modale .vy-modale__pied { padding: 8px 22px 12px; }
   .entree-modale .vy-modale__pied .vy-bouton { min-height: 40px; }
 
-  /* Les réglages tiennent sans défiler : les thèmes sur une ligne, puis le rendu à gauche, le
-     son et la langue à droite (la version est déjà au pied de l'accueil) */
   .entree-modale--reglages { width: min(820px, 100%); }
   .reglages { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 24px; align-items: start; }
   .reglages > .reglages__bloc:nth-child(1) { grid-column: 1 / -1; }
@@ -778,14 +713,12 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   .app-creer { min-width: 96px; font-size: 15px; }
 }
 
-/* Paysage très bas (667 × 375) : on gagne encore quelques lignes. */
 @media (max-height: 400px) {
   .acc-panneau { padding-top: 46px; }
   .titre-logo__image { width: min(210px, 100%); }
   .app-tetes { grid-template-columns: repeat(8, minmax(0, 1fr)); }
   .app-selecteur { min-height: 84px; }
   .classe-desc { -webkit-line-clamp: 2; }
-  /* Les trois rôles tiennent sur une ligne (« Placement, Contrôle, Endurance » compris) */
   .classe-roles { gap: 4px 8px; }
   .classe-role { gap: 3px; }
   .classe-role__nom { font-size: 9px; letter-spacing: 0.03em; }
@@ -793,9 +726,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   .article__texte { font-size: 13px; line-height: 1.42; }
 }
 
-/* ==========================================================================
-   Téléphone debout : tout s'empile (un téléphone couché de 667 px garde la mise en page en largeur)
-   ========================================================================== */
 @media (max-width: 700px) and (orientation: portrait) {
   .entree-tete { grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; min-height: 56px; padding: 6px 10px; }
   .entree-tete::after { width: 90px; height: 16px; bottom: -9px; }
@@ -855,7 +785,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   .classe-desc { font-size: 15px; }
   .classe-choix { align-self: stretch; margin: 16px 12px 0; padding: 12px; }
   .classe-grille { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  /* « Suivant » reste sous le pouce, sur une barre pleine largeur : rien ne passe dessous */
   .classe-actions { position: sticky; bottom: -12px; z-index: 4; margin: 14px 0 -12px; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(5, 8, 15, 0.7), rgba(5, 8, 15, 0.97) 38%); box-shadow: 0 -10px 18px rgba(0, 0, 0, 0.35); }
 
   .app-corps { display: flex; flex-direction: column; overflow-y: auto; padding: 8px 12px 14px; gap: 12px; }
@@ -868,12 +797,9 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   .app-outils { grid-template-columns: auto 1fr 1fr; }
   .app-nom { grid-template-columns: minmax(0, 1fr) auto; }
   .app-creer { grid-column: 1 / -1; min-height: 52px; }
-  /* Le nom et « Créer » restent sous le pouce pendant qu'on fait défiler l'apparence */
   .app-nom { position: sticky; bottom: -14px; z-index: 4; margin: 0 -12px -14px; padding: 10px 12px 14px; border-radius: 0 0 10px 10px; background: linear-gradient(180deg, rgba(9, 15, 24, 0.9), rgba(9, 15, 24, 0.98)); box-shadow: 0 -10px 18px rgba(0, 0, 0, 0.45); }
   .entree-modale .quiz__reponses { grid-template-columns: minmax(0, 1fr); }
   .quiz__reponse { flex-direction: row; min-height: 0; text-align: left; padding: 12px; }
-  /* Les calques de l'entrée restent des cartes posées au milieu, pas des pages pleines : une
-     question à deux réponses ne laisse pas un grand vide sous elle. */
   .entree-calque.vy-modale-fond { padding: calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom)); }
   .vy-modale.entree-modale { width: 100%; height: auto; max-height: 100%; border-radius: var(--vy-rayon-l); }
   .vy-modale.entree-modale::before { inset: -7px; }

@@ -1,24 +1,4 @@
-// Les peaux animées de Meshy (docs/ILE-TECHNIQUE.md, 3.38) : des modèles à peau qui apportent leurs
-// propres animations (l'ossature de Meshy, 24 os : Hips, Spine, Spine01, Spine02, neck, Head, les
-// épaules, bras, avant-bras, mains, cuisses, jambes, pieds), lus depuis assets/peaux/<nom>.glb
-// (tools/meshy/peau.py les allège), posés à la place du panneau peint d'un monstre (le Filin : le
-// champignon du fondateur) ou du Veilleur (Nerith : l'assassine de la marine, son ancre à la main).
-//
-// Le lecteur lit les canaux de translation et de rotation des animations (interpolation linéaire
-// ou par paliers) et les joue lui-même : le repos, la marche ou la course au rythme de la figure
-// (le clip accélère avec la vitesse : les pieds ne glissent guère), le geste du combat (une fenêtre
-// du clip ramenée à la durée du geste), chacun fondu dans l'autre. Chaque exemplaire a ses os, son
-// SkinnedMesh et sa matière (l'éclair du coup reçu, la transparence) ; la géométrie et la texture
-// sont partagées. Le parc des monstres (`parc`) suit le contrat du parc des Glyms modelés
-// (js/modele-glym.js : prend, durees, emprise, debut, poser, fin, stats, octets, liberer) ; le héros
-// (`chargerHeros`, `porteur`) celui du héros modelé (js/ile-heros.js).
 const IlePeau = (() => {
-  // Les peaux : le fichier ; la hauteur dans le monde (u, pour `scale` 1) ; le rayon de l'ombre ; les
-  // clips par rôle (le repos, la marche et la course avec la vitesse naturelle du clip en u/s pour
-  // un modèle de 1 u, le sort et le coup avec la fenêtre du clip jouée, en secondes) ; les durées des
-  // gestes du combat (ms ; `lacher` : la part du sort où le trait part), lues par l'arène ; l'arme
-  // tenue (un second GLB, posé sur un os, dans le repère de l'os : la position en u du modèle brut,
-  // la rotation en quaternion, l'échelle).
   const PEAUX = {
     filin: { fichier: 'assets/peaux/filin.glb', hauteur: 1.25, ombre: 0.75, teinte: '#e6e6e6',
       clips: { repos: 'Idle', marche: { nom: 'Slow_Orc_Walk', vitesse: 0.42 }, sort: { nom: 'Attack', de: 0.25, a: 1.45 }, coup: { nom: 'Hit_Reaction', de: 0.02, a: 0.62 } },
@@ -28,17 +8,14 @@ const IlePeau = (() => {
       clips: { repos: 'Idle', marche: { nom: 'Sneaky_Walk', vitesse: 0.5 }, course: { nom: 'RunFast', vitesse: 3.2 }, sort: { nom: 'Weapon_Combo', de: 0.05, a: 1.05 }, coup: { nom: 'Hit_Reaction', de: 0.02, a: 0.62 }, victoire: 'victory' },
       durees: { placement: 0, sort: 620, lacher: 0.5, pousse: 90, saut: 140 } },
   };
-  // Les monstres qui ont une peau, et l'échelle du héros (comme IleHeros.ECHELLE : 1,15 porte le
-  // modèle à 2 u, la hauteur des panneaux des PNJ).
   const MONSTRES = ['filin'];
   const TAU_CAP = 0.08, TAU_MARCHE = 0.12, TAU_GESTE = 0.08;
 
-  // ----- Lire un GLB (via IleGlb.analyser) -----
   function base() {
     try {
       const ref = document.querySelector('script[src*="ile-charge.js"]') || document.querySelector('script[src*="ile-3d.js"]');
       if (ref && ref.src) { const u = new URL(ref.src); return { href: new URL('../', u).href, search: u.search }; }
-    } catch (e) { /* chemin relatif */ }
+    } catch (e) {   }
     return null;
   }
   function adresse(chemin) {
@@ -80,7 +57,6 @@ const IlePeau = (() => {
     }
     return [1024, 1024];
   }
-  // La matière du GLB : Lambert, sa texture de base (une image du tampon, lue par le navigateur).
   function matiere(THREE, G, bin, idx, compte) {
     const m = (G.materials || [])[idx] || {}, pbr = m.pbrMetallicRoughness || {}, baseC = pbr.baseColorFactor || [1, 1, 1, 1];
     let tex = null;
@@ -106,7 +82,6 @@ const IlePeau = (() => {
     geo.computeBoundingBox();
     return geo;
   }
-  // Les clips : par nom, la durée et les pistes (le noeud visé, le chemin, les temps, les valeurs).
   function clips(G, bin) {
     const out = {};
     for (const a of G.animations || []) {
@@ -123,7 +98,6 @@ const IlePeau = (() => {
     return out;
   }
 
-  // ----- Un modèle lu : la géométrie, la matière, les noeuds, le squelette, les clips (partagés) -----
   class Modele {
     constructor(THREE, glb, P, compte) {
       const { json: G, bin } = glb;
@@ -132,7 +106,6 @@ const IlePeau = (() => {
       const articulations = new Set();
       for (const s of G.skins || []) for (const j of s.joints) articulations.add(j);
       this.articulations = articulations;
-      // Le noeud à maillage et sa peau ; la première primitive à peau (Meshy n'en fait qu'une).
       this.noeudMesh = G.nodes.findIndex(n => n.mesh != null);
       const mesh = this.noeudMesh >= 0 ? G.meshes[G.nodes[this.noeudMesh].mesh] : null;
       const prim = mesh && mesh.primitives[0];
@@ -143,17 +116,12 @@ const IlePeau = (() => {
       this.skin = G.nodes[this.noeudMesh].skin;
       this.inv = this.skin != null && G.skins[this.skin].inverseBindMatrices != null ? accesseur(G, bin, G.skins[this.skin].inverseBindMatrices).array : null;
       this.triangles = Math.round((this.geo.index ? this.geo.index.count : this.geo.getAttribute('position').count) / 3);
-      // Le repos de chaque noeud (sa pose dans le fichier).
       this.repos = G.nodes.map(n => ({ p: n.translation ? n.translation.slice() : [0, 0, 0], q: n.rotation ? n.rotation.slice() : [0, 0, 0, 1], s: n.scale ? n.scale.slice() : [1, 1, 1] }));
-      // La hauteur brute du modèle au repos, telle que Three la dessine : des sommets passés par la
-      // peau (boneTransform) puis par le monde du maillage (l'armature de Meshy est à l'échelle 0,01 :
-      // la boîte de la géométrie seule ne dit rien).
       const ex = this.exemplaire(); ex.racine.updateMatrixWorld(true);
       const v = new THREE.Vector3(), pos = this.geo.getAttribute('position'), n = pos.count, pas = Math.max(1, Math.floor(n / 600));
       let bas = Infinity, haut = -Infinity;
       if (ex.mesh.isSkinnedMesh && ex.mesh.boneTransform && ex.mesh.skeleton) {
         ex.mesh.skeleton.update();
-        // (boneTransform de Three r149 lit le sommet dans `v` : il faut l'y mettre d'abord.)
         for (let i = 0; i < n; i += pas) { v.fromBufferAttribute(pos, i); ex.mesh.boneTransform(i, v); v.applyMatrix4(ex.mesh.matrixWorld); if (v.y < bas) bas = v.y; if (v.y > haut) haut = v.y; }
       }
       if (!(haut > bas)) { const bb = this.geo.boundingBox; v.set(0, bb.min.y, 0).applyMatrix4(ex.mesh.matrixWorld); bas = v.y; v.set(0, bb.max.y, 0).applyMatrix4(ex.mesh.matrixWorld); haut = v.y; }
@@ -163,7 +131,6 @@ const IlePeau = (() => {
       this.exemplaires = [ex];
       this.arme = null;
     }
-    // Un exemplaire : ses noeuds (des os pour les articulations), son SkinnedMesh, sa matière.
     exemplaire() {
       const THREE = this.THREE, G = this.G;
       const objets = G.nodes.map((n, i) => {
@@ -185,11 +152,6 @@ const IlePeau = (() => {
         mesh = new THREE.SkinnedMesh(this.geo, mat);
         objets[this.noeudMesh].add(mesh);
         racine.updateMatrixWorld(true);
-        // Lié avec la matrice identité : comme le veut glTF, la transformation du noeud du maillage
-        // (ici l'armature de Meshy à l'échelle 0,01) ne compte pas, seules celles des os et leurs
-        // matrices de liaison inverses (qui portent le passage des mètres aux centimètres). Lier avec
-        // la matrice du monde du maillage (le cas des héros de Blender, js/ile-heros.js) appliquerait
-        // l'échelle 0,01 une fois de trop.
         mesh.bind(new THREE.Skeleton(os, mats), new THREE.Matrix4());
       } else { mesh = new THREE.Mesh(this.geo, mat); objets[this.noeudMesh].add(mesh); }
       mesh.frustumCulled = false;
@@ -197,13 +159,10 @@ const IlePeau = (() => {
       if (this.arme) this.armer(ex);
       return ex;
     }
-    // L'arme tenue : un second modèle (sans peau), posé sur son os.
     armer(ex) {
       const A = this.arme, o = ex.objets.find(x => x.name === A.os);
       if (!o || ex.arme) return;
       const m = new this.THREE.Mesh(A.geo, A.mat);
-      // L'os est sous l'armature de Meshy (échelle 0,01, ses os en centimètres) : l'arme, en mètres,
-      // compense l'échelle du monde de l'os ; sa position est donnée en mètres du modèle.
       ex.racine.updateMatrixWorld(true);
       const s = new this.THREE.Vector3(); o.getWorldScale(s);
       const f = 1 / ((s.x / (ex.racine.scale.x || 1)) || 1);
@@ -219,10 +178,6 @@ const IlePeau = (() => {
     }
     rendre(ex) { ex.racine.visible = false; if (!this.libre.includes(ex)) this.libre.push(ex); }
 
-    // ----- Jouer les clips -----
-    // La pose d'un exemplaire remise au repos, puis un clip mêlé dedans avec un poids (0 à 1) : à un
-    // temps `tt` (secondes, bouclé si `boucle`). Les positions se mêlent linéairement, les rotations
-    // par un nlerp (le court chemin).
     reposer(ex) {
       for (let i = 0; i < this.repos.length; i++) { const r = this.repos[i]; ex.pos.set(r.p, i * 3); ex.rot.set(r.q, i * 4); }
     }
@@ -235,7 +190,6 @@ const IlePeau = (() => {
         const t = pz.t, n = t.length;
         let i = 0;
         if (n > 1) {
-          // Dichotomie : t[i] <= u < t[i + 1].
           let lo = 0, hi = n - 1;
           while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (t[mid] <= u) lo = mid; else hi = mid; }
           i = lo;
@@ -261,7 +215,6 @@ const IlePeau = (() => {
           let x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2];
           if (f > 0) { x += (v[i2 * 3] - x) * f; y += (v[i2 * 3 + 1] - y) * f; z += (v[i2 * 3 + 2] - z) * f; }
           const o = pz.noeud * 3, Pp = ex.pos, r = this.repos[pz.noeud].p;
-          // Les hanches restent à leur place en x et z (un clip qui avance ne fait pas glisser le modèle).
           if (this.articulations.has(pz.noeud) && this.G.nodes[pz.noeud].name === 'Hips') { x = r[0]; z = r[2]; }
           Pp[o] += (x - Pp[o]) * poids; Pp[o + 1] += (y - Pp[o + 1]) * poids; Pp[o + 2] += (z - Pp[o + 2]) * poids;
         }
@@ -278,8 +231,6 @@ const IlePeau = (() => {
     }
     clip(role) { const c = this.P.clips[role]; const nom = c && (typeof c === 'string' ? c : c.nom); return nom ? this.clips[nom] || null : null; }
 
-    // Pose un exemplaire en (x, h, z), le cap (radians, 0 : vers +Z), à l'échelle k ; sa marche (la
-    // vitesse de la figure en u/s, ou `bouge`), son geste { type, t }, l'éclair, l'alpha.
     poser(ex, x, y, z, cap, now, bouge, vitesse, geste, flash, alpha, k) {
       const r = ex.racine, t = now / 1000;
       const dt = ex.tPrec == null ? 0 : Math.min(0.1, Math.max(0, t - ex.tPrec));
@@ -292,10 +243,8 @@ const IlePeau = (() => {
         if (ex.cap == null) ex.cap = cap;
         let d = cap - ex.cap; d = Math.atan2(Math.sin(d), Math.cos(d));
         ex.cap += d * (dt > 0 ? 1 - Math.exp(-dt / TAU_CAP) : 1);
-        // Le modèle de Meshy regarde vers -Z au repos : un demi-tour pour que le cap (0 : vers +Z) soit le sien.
         r.rotation.y = ex.cap + Math.PI;
       }
-      // Le repos, la marche (ou la course) au rythme de la vitesse, le geste par-dessus.
       const P = this.P.clips;
       const marche = bouge && vitesse > 0.05;
       const vise = marche ? 1 : 0;
@@ -315,9 +264,7 @@ const IlePeau = (() => {
       if (clipG) { ex.gesteT = cG.de + Math.max(0, Math.min(1, g.t || 0)) * (cG.a - cG.de); ex.clipG = clipG; }
       if (ex.clipG && ex.kGeste > 0.01) this.meler(ex, ex.clipG, ex.gesteT || 0, Math.min(1, ex.kGeste), false);
       this.appliquer(ex);
-      // Le petit bond du pas et de la poussée, par la hausse du corps.
       if (geste && (geste.type === 'saut' || geste.type === 'pousse')) r.position.y += Math.sin(Math.max(0, Math.min(1, geste.t || 0)) * Math.PI) * (geste.type === 'saut' ? 0.1 : 0.04);
-      // L'éclair du coup reçu, la transparence.
       if (!!flash !== ex.flash) { ex.flash = !!flash; ex.mat.emissive.setRGB(flash ? 0.55 : 0, flash ? 0.18 : 0, flash ? 0.12 : 0); }
       const a = alpha == null ? 1 : Math.max(0, Math.min(1, alpha));
       if (a !== ex.alpha) { ex.alpha = a; ex.mat.transparent = a < 1; ex.mat.opacity = a; ex.mat.needsUpdate = false; }
@@ -332,7 +279,6 @@ const IlePeau = (() => {
     }
   }
 
-  // Charge une peau : son GLB (lu une fois), son arme s'il y en a une.
   async function charger(THREE, nom) {
     const P = Object.assign({ nom }, PEAUX[nom]);
     const compte = { octets: 0 };
@@ -352,7 +298,6 @@ const IlePeau = (() => {
     return M;
   }
 
-  // ----- Le parc des monstres à peau (le contrat du parc des Glyms modelés) -----
   class Parc {
     constructor(THREE, modeles, opts) {
       this.THREE = THREE; this.modeles = modeles; this.opts = opts || {};
@@ -389,7 +334,6 @@ const IlePeau = (() => {
       }
       const ex = e.ex;
       e.pose = true; e.vu = this.now; this.n++;
-      // Le cap : la marche, sinon la cible d'un geste, sinon la caméra (un peu tourné vers son regard).
       const prec = e.prec || (e.prec = { x: s.x, y: s.y, t: this.now });
       const dx = s.x - prec.x, dy = s.y - prec.y, dist = Math.hypot(dx, dy), dtp = Math.max(1e-3, (this.now - prec.t) / 1000);
       const deplace = dist > 0.004 && dist < 3;
@@ -417,7 +361,6 @@ const IlePeau = (() => {
     octets() { let o = 0; for (const M of Object.values(this.modeles)) o += M.octets || 0; return o; }
     liberer() { for (const M of Object.values(this.modeles)) M.liberer(); this.modeles = {}; this.etats.clear(); }
   }
-  // Le parc des monstres à peau : les monstres listés (MONSTRES) dont le fichier se charge.
   async function parc(THREE, opts) {
     const modeles = {};
     for (const id of (opts && opts.ids) || MONSTRES) {
@@ -425,8 +368,6 @@ const IlePeau = (() => {
     }
     return Object.keys(modeles).length ? new Parc(THREE, modeles, opts) : null;
   }
-  // Plusieurs parcs réunis (le parc des Glyms modelés et celui des peaux) sous le contrat d'un seul :
-  // chaque monstre va au parc qui le prend.
   function composer(parcs) {
     const liste = parcs.filter(Boolean);
     if (liste.length === 1) return liste[0];
@@ -445,9 +386,8 @@ const IlePeau = (() => {
     };
   }
 
-  // ----- Le héros à peau (le contrat du héros modelé, js/ile-heros.js) -----
   let ECHELLE = 1;
-  try { const q = parseFloat(new URLSearchParams(location.search).get('heros_echelle')); if (Number.isFinite(q) && q > 0.3 && q < 3) ECHELLE = q; } catch (e) { /* rien */ }
+  try { const q = parseFloat(new URLSearchParams(location.search).get('heros_echelle')); if (Number.isFinite(q) && q > 0.3 && q < 3) ECHELLE = q; } catch (e) {   }
   async function chargerHeros(THREE, classe) {
     const M = await charger(THREE, classe);
     const ex = M.prendre();

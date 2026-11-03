@@ -1,29 +1,8 @@
-// Les figures de l'île d'Ervane (docs/ILE-TECHNIQUE.md, 3.7 et 3.8) : le Veilleur, les PNJ, les
-// monstres des groupes, les nœuds de récolte, peints par le peintre du rendu des cases (les mêmes
-// clés et les mêmes descriptions que RendererGL.worldSprites et paintFigure : 88 × 84 px peints à
-// deux fois la taille, pied en (44, 76)), rangés dans un atlas, et dessinés par une seule
-// InstancedMesh de panneaux tournés vers la caméra. Le shader ramène la profondeur de chaque
-// panneau à celle de son pied (un peu vers la caméra) : une figure n'est jamais coupée par la pente
-// derrière elle et reste cachée par l'arbre devant elle. Instances triées de l'arrière vers l'avant
-// à chaque image, mélange alpha, brume comprise.
-//
-// Une seconde InstancedMesh couche sous chaque figure son ombre au sol ; une troisième dessine, à
-// travers ce qui le cache, la silhouette du Veilleur. Les étiquettes (noms sur la plaque sombre à
-// filet d'or, « Glym Aqua niv. 1 », « ×2 », « ! » et « ? ») sont peintes une fois par chaîne dans un
-// atlas de textes et dessinées en espace écran, sans test de profondeur, à taille constante.
-//
-// En combat (5.4), chaque combattant porte en plus son anneau de camp au sol (l'anneau qui pulse de
-// l'acteur du tour, celui de l'élément dont il est immunisé), sa barre de vie et de bouclier au-dessus
-// de la tête, ses états (étoiles, bouclier, bulle, lanterne) ; les chiffres qui montent passent par
-// l'atlas des textes.
-//
-// Échelle : 1 px de peinture vaut 1/42 u ; un Veilleur mesure 1,7 u.
 const IleFigures = (() => {
   const PX = 1 / 42;
-  const MAX = 160;           // figures dessinées au plus
+  const MAX = 160;
   const MAX_TEXTES = 96;
 
-  // ----- Les atlas (figures, textes) : une toile, des cases, la moins vue rendue d'abord -----
 
   class Atlas {
     constructor(THREE, w, h, cw, ch, opts) {
@@ -40,19 +19,17 @@ const IleFigures = (() => {
       this.tex.minFilter = opts && opts.sansMip ? THREE.LinearFilter : THREE.LinearMipmapLinearFilter;
       this.tex.magFilter = THREE.LinearFilter;
       this.tex.anisotropy = 2;
-      this.cases = new Map();   // clé -> { i, vu }
+      this.cases = new Map();
       this.libres = [];
       for (let i = this.cols * this.rows - 1; i >= 0; i--) this.libres.push(i);
       this.sale = false;
       this.horloge = 0;
     }
-    // La case d'une clé (peinte par `peindre(g, x, y, cw, ch)` la première fois) : { u0, v0, du, dv }.
     obtenir(cle, peindre) {
       let c = this.cases.get(cle);
       if (!c) {
         let i = this.libres.pop();
         if (i == null) {
-          // Plus de place : la case la moins récemment vue est rendue.
           let vieux = null;
           for (const [k, v] of this.cases) if (!vieux || v.vu < vieux[1].vu) vieux = [k, v];
           this.cases.delete(vieux[0]);
@@ -76,7 +53,6 @@ const IleFigures = (() => {
     liberer() { this.tex.dispose(); this.toile.width = 0; this.toile.height = 0; }
   }
 
-  // ----- Les shaders -----
 
   const VS_FIGURE = `
 attribute vec3 pied;
@@ -121,11 +97,6 @@ void main() {
   #include <encodings_fragment>
   #include <fog_fragment>
 }`;
-  // La barre de vie d'un combattant : une instance par barre, un rectangle à taille constante à
-  // l'écran (boite : dx, dy, largeur, hauteur en pixels) dont le fragment peint toute la pilule :
-  // le fond sombre, un liseré de la couleur du camp, la vie en dégradé éclairé par le haut, la trace
-  // pâle des PV qui viennent de partir, le bouclier en bande claire sur le haut, un repère tous les
-  // quarts. `jauge` : la vie (0 à 1), le bouclier, la trace, un drapeau (l'acteur du tour).
   const VS_BARRE = `
 attribute vec3 ancre;
 attribute vec4 boite;
@@ -177,7 +148,6 @@ void main() {
   gl_FragColor = vec4(col, pilule * vCol.a);
   #include <encodings_fragment>
 }`;
-  // L'anneau d'un combattant, couché au sol.
   function peindreAnneau() {
     const c = document.createElement('canvas'); c.width = 128; c.height = 128;
     const g = c.getContext('2d');
@@ -212,7 +182,6 @@ void main() {
   #include <encodings_fragment>
 }`;
 
-  // ======================================================================
 
   class Figures {
     constructor(THREE, opts) {
@@ -220,15 +189,9 @@ void main() {
       this.painter = opts.painter;
       this.telephone = !!opts.telephone;
       this.scene = opts.scene;
-      // L'atlas des figures : 1 024 × 2 048 au téléphone, 2 048 × 2 048 ailleurs ; des cases de
-      // 192 × 176 (la peinture de 176 × 168, une marge contre les débordements des niveaux de mip).
-      // Au téléphone, 1024 x 1024 (25 cases) : le tour de l'île n'en occupe jamais plus de 17 à la
-      // fois (passe de mémoire, 3.32) ; au-delà, la case la moins récemment vue est repeinte.
       this.atlas = new Atlas(THREE, this.telephone ? 1024 : 2048, this.telephone ? 1024 : 2048, 192, 176);
-      // Les textes : 1 024 × 512 au téléphone (32 étiquettes à la fois), 2 048 × 512 ailleurs.
       this.textes = new Atlas(THREE, this.telephone ? 1024 : 2048, 512, 256, 64, { sansMip: true });
       const quad = new THREE.PlaneGeometry(1, 1).translate(0.5, 0.5, 0);
-      // Les figures.
       const geo = new THREE.InstancedBufferGeometry();
       geo.index = quad.index; geo.attributes.position = quad.attributes.position; geo.attributes.uv = quad.attributes.uv;
       this.aPied = new THREE.InstancedBufferAttribute(new Float32Array(MAX * 3), 3);
@@ -238,16 +201,12 @@ void main() {
       for (const a of [this.aPied, this.aRect, this.aTaille, this.aEtat]) a.setUsage(THREE.DynamicDrawUsage);
       geo.setAttribute('pied', this.aPied); geo.setAttribute('rect', this.aRect); geo.setAttribute('taille', this.aTaille); geo.setAttribute('etat', this.aEtat);
       geo.instanceCount = 0;
-      // `lumiereFig` : la lumière posée sur les figures, qui ne voient pas celles de la scène (blanche le
-      // jour ; l'aperçu de nuit, js/ile-nuit.js, la refroidit un peu).
       const uniforms = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { atlas: { value: null }, biais: { value: 0.9 }, teinteX: { value: new THREE.Color('#9fe8ff') }, modeX: { value: 0 }, lumiereFig: { value: new THREE.Color(1, 1, 1) } }]);
       this.mat = new THREE.ShaderMaterial({ uniforms, vertexShader: VS_FIGURE, fragmentShader: FS_FIGURE, transparent: true, depthWrite: false, fog: true });
       this.mat.uniforms.atlas.value = this.atlas.tex;
       this.mesh = new THREE.Mesh(geo, this.mat);
       this.mesh.frustumCulled = false;
       this.mesh.renderOrder = 10;
-      // La silhouette du Veilleur derrière ce qui le cache : le même panneau, dessiné là où le
-      // test de profondeur échoue, en bleu pâle.
       const geoX = new THREE.InstancedBufferGeometry();
       geoX.index = quad.index; geoX.attributes.position = quad.attributes.position;
       this.xPied = new THREE.InstancedBufferAttribute(new Float32Array(3), 3);
@@ -263,7 +222,6 @@ void main() {
       this.meshX = new THREE.Mesh(geoX, this.matX);
       this.meshX.frustumCulled = false;
       this.meshX.renderOrder = 11;
-      // Les ombres au sol.
       const plan = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
       this.texOmbre = new THREE.CanvasTexture(IlePeinture.ombre());
       this.matOmbre = new THREE.MeshBasicMaterial({ map: this.texOmbre, transparent: true, depthWrite: false, opacity: 0.5, color: 0x1a1e2a, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4, fog: true });
@@ -272,7 +230,6 @@ void main() {
       this.ombres.count = 0;
       this.ombres.frustumCulled = false;
       this.ombres.renderOrder = 5;
-      // Les textes.
       const geoT = new THREE.InstancedBufferGeometry();
       geoT.index = quad.index; geoT.attributes.position = quad.attributes.position;
       this.aAncre = new THREE.InstancedBufferAttribute(new Float32Array(MAX_TEXTES * 3), 3);
@@ -286,7 +243,6 @@ void main() {
       this.textesMesh = new THREE.Mesh(geoT, this.matT);
       this.textesMesh.frustumCulled = false;
       this.textesMesh.renderOrder = 20;
-      // Les anneaux des combattants : le camp (mélange), l'acteur du tour (additif).
       this.texAnneau = new THREE.CanvasTexture(peindreAnneau());
       this.texAnneau.encoding = THREE.sRGBEncoding;
       const planA = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
@@ -296,7 +252,6 @@ void main() {
       this.anneaux = new THREE.InstancedMesh(planA, this.matAnneaux, 48);
       this.anneauxL = new THREE.InstancedMesh(planA, this.matAnneauxL, 24);
       for (const a of [this.anneaux, this.anneauxL]) { a.instanceMatrix.setUsage(THREE.DynamicDrawUsage); a.setColorAt(0, blanc); a.instanceColor.setUsage(THREE.DynamicDrawUsage); a.count = 0; a.frustumCulled = false; a.renderOrder = 6; }
-      // Les barres de vie : des rectangles à taille constante à l'écran.
       const geoB = new THREE.InstancedBufferGeometry();
       geoB.index = quad.index; geoB.attributes.position = quad.attributes.position;
       this.bAncre = new THREE.InstancedBufferAttribute(new Float32Array(MAX_BARRES * 3), 3);
@@ -312,13 +267,12 @@ void main() {
       this.barres.renderOrder = 19;
       this.groupe = new THREE.Group();
       this.groupe.add(this.ombres, this.anneaux, this.anneauxL, this.mesh, this.meshX, this.barres, this.textesMesh);
-      this.traces = new Map();      // nid du groupe -> trace de ses positions
-      this.rects = [];              // les rectangles à l'écran de la dernière image (sélection)
+      this.traces = new Map();
+      this.rects = [];
       this.dpr = Math.min(2, (typeof devicePixelRatio === 'number' && devicePixelRatio) || 1);
       this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._v = new THREE.Vector3(); this._s = new THREE.Vector3(); this._n = new THREE.Vector3(); this._up = new THREE.Vector3(0, 1, 0);
     }
 
-    // ----- Peindre une figure (les clés et les gestes de RendererGL) -----
 
     peindreFigure(s) {
       const pt = this.painter;
@@ -344,23 +298,18 @@ void main() {
       return `body|${s.shape}|${allure}|${s.color}|${s.glyph || ''}|${s.motif || ''}|${s.noyau || ''}|${s.team}|${s.flash ? 1 : 0}${hero}`;
     }
 
-    // ----- Peindre un texte -----
 
     texte(cle, sorte, chaine, couleur) {
       return this.textes.obtenir(cle, (g, x, y, cw, ch) => {
-        // Un nom long (« Recherché : Brask Corne-Lasse niv. 11 ») est peint moins grand dans sa case
-        // et montré dans une boîte plus large (Figures.boiteTexte) : le texte garde 11 px à l'écran.
         const k = sorte === 'nom' || sorte === 'ennemi' ? 256 / Figures.boiteTexte(this.largeurTexte(sorte, chaine)) : 2;
         g.translate(x, y);
         g.textAlign = 'center'; g.textBaseline = 'middle';
         if (sorte === 'icone') {
-          // Une icône d'état, dans le carré de gauche de la case (64 × 64).
           const ic = chaine === 'etoile' ? Paint.star() : chaine === 'armure' ? Paint.shieldIcon() : chaine === 'bulle' ? Paint.bubble() : Paint.lanternIcon({ lantern: '#ffcf70' });
           const f = Math.min(64 / ic.width, 64 / ic.height);
           if (chaine === 'bulle') g.drawImage(ic, 0, 0, 64, 64);
           else g.drawImage(ic, (64 - ic.width * f) / 2, (64 - ic.height * f) / 2, ic.width * f, ic.height * f);
         } else if (sorte === 'chiffre') {
-          // Un chiffre qui monte (dégâts, soins, PA, esquive) : gras, cerné de sombre.
           g.font = `800 ${18 * k}px Inter, "Segoe UI", system-ui, sans-serif`;
           g.lineWidth = 4 * k; g.lineJoin = 'round'; g.strokeStyle = '#0b0f18'; g.strokeText(chaine, cw / 2, ch / 2);
           g.fillStyle = couleur || '#ffffff'; g.fillText(chaine, cw / 2, ch / 2);
@@ -391,12 +340,8 @@ void main() {
       g.font = sorte === 'badge' ? '800 11px Inter, sans-serif' : '600 11px Inter, sans-serif';
       return Math.min(sorte === 'badge' ? 126 : 240, g.measureText(chaine).width + (sorte === 'badge' ? 8 : 14));
     }
-    // La boîte à l'écran d'un nom ou d'une étiquette d'ennemi de largeur `w` : 128 px (la case de
-    // 256 texels à 2 texels par pixel), ou plus large pour un nom long (au plus 240 px, la case
-    // entière), peint alors à moins de 2 texels par pixel.
     static boiteTexte(w) { return Math.max(128, Math.min(240, Math.ceil(w))); }
 
-    // ----- Les membres d'un groupe : en file lâche derrière le premier -----
 
     membres(g, now) {
       let t = this.traces.get(g.nid);
@@ -410,7 +355,6 @@ void main() {
       const n = Math.min(4, g.monsters.length);
       for (let k = 0; k < n; k++) {
         if (k === 0) { out.push([g.rx, g.ry]); continue; }
-        // À 1,2 u l'un de l'autre le long de la trace ; sans trace, en arc derrière.
         let reste = 1.2 * k, x = null, y = null;
         for (let i = 0; i + 1 < p.length; i++) {
           const d = Math.hypot(p[i + 1][0] - p[i][0], p[i + 1][1] - p[i][1]);
@@ -425,14 +369,9 @@ void main() {
       return out;
     }
 
-    // ----- Chaque image -----
-    // `sprites` : [{ kind, x, y, h, scale, alpha, flash, facing (±1 ou diagonale), cle, peindre,
-    // cible, label, labelSorte, quest, badge, bob, joueur }] ; `cam` : la CameraIle.
     maj(sprites, cam, now, extras) {
       const THREE = this.THREE;
       const camera = cam.courante || cam.cam, camPos = camera.position;
-      // De l'arrière vers l'avant (profondeur dans la vue décroissante : vaut pour la perspective
-      // comme pour l'orthographique du combat).
       const fwd = this._v.set(0, 0, -1).applyQuaternion(camera.quaternion);
       const fx = fwd.x, fy = fwd.y, fz = fwd.z;
       for (const s of sprites) s._d = (s.x - camPos.x) * fx + (s.h - camPos.y) * fy + (s.y - camPos.z) * fz;
@@ -441,10 +380,6 @@ void main() {
       let joueur = -1;
       this.rects = [];
       const ppuCache = cam.pixelsParU(cam.cible.x, cam.cible.h, cam.cible.y);
-      // Les monstres qui ont un modèle 3D (le Glym modelé par le code, js/modele-glym.js, derrière
-      // son interrupteur : `this.modeles`) : leur panneau est vide (taille nulle), le modèle est posé
-      // à sa place ; l'ombre, la sélection, les étiquettes et le combat restent ceux du panneau. Le
-      // héros modelé (3.27, js/ile-heros.js, `this.heros`) de même, pour la figure marquée `heros`.
       const Mo = this.modeles, He = this.heros;
       if (Mo) Mo.debut(now, camera);
       if (He) He.debut(now, camera);
@@ -457,23 +392,19 @@ void main() {
         const w = 88 * PX * k, h = 84 * PX * k;
         const lift = (s.bob || 0) * PX;
         this.aPied.setXYZ(i, s.x, s.h + lift, s.y);
-        // La case de 192 × 176 contient la peinture de 176 × 168 en son milieu.
         const ox = (192 - 176) / 2 / this.atlas.w, oy = (176 - 168) / 2 / this.atlas.h;
         if (modele) this.aRect.setXYZW(i, 0, 0, 0, 0);
         else this.aRect.setXYZW(i, c.u0 + ox, c.v0 + oy, 176 / this.atlas.w, 168 / this.atlas.h);
         this.aTaille.setXYZW(i, modele ? 0 : w, modele ? 0 : h, 0.5, 76 / 84);
         this.aEtat.setXYZW(i, s.alpha == null ? 1 : s.alpha, s.flash ? 0.8 : 0, typeof s.facing === 'number' ? s.facing : 1, 0);
         if (s.joueur) joueur = i;
-        // L'ombre au sol, couchée sur la pente.
         const nrm = s.normale || [0, 1, 0];
         this._n.set(nrm[0], nrm[1], nrm[2]);
         this._q.setFromUnitVectors(this._up, this._n);
         const r = (s.kind === 'node' ? 0.7 : 0.95) * k;
-        // Sous un modèle : une tache de contact plus serrée, ronde (son emprise vue de dessus).
         if (modele) { const rm = porteur.emprise(s) * 0.62; this._m.compose(this._v.set(s.x, s.h + 0.04, s.y), this._q, this._s.set(rm, 1, rm)); }
         else this._m.compose(this._v.set(s.x, s.h + 0.04, s.y), this._q, this._s.set(r * 1.25, 1, r));
         this.ombres.setMatrixAt(i, this._m);
-        // Le rectangle à l'écran, pour la sélection (agrandi à 44 px de côté au doigt).
         const p = cam.versEcran(s.x, s.h, s.y);
         if (p.devant) {
           const ppu = cam.pixelsParU(s.x, s.h, s.y);
@@ -486,7 +417,6 @@ void main() {
       this.mesh.geometry.instanceCount = n;
       this.ombres.count = n;
       this.ombres.instanceMatrix.needsUpdate = true;
-      // La silhouette : seulement le Veilleur, son panneau recopié.
       if (joueur >= 0) {
         const cp = (a, b, k) => { for (let q = 0; q < k; q++) b.array[q] = a.array[joueur * k + q]; b.needsUpdate = true; };
         cp(this.aPied, this.xPied, 3); cp(this.aRect, this.xRect, 4); cp(this.aTaille, this.xTaille, 4); cp(this.aEtat, this.xEtat, 4);
@@ -499,8 +429,6 @@ void main() {
       this.majTextes(sprites.slice(0, n), cam, now, extras);
     }
 
-    // Les anneaux et les barres des combattants (les sprites qui portent `combat`), à la manière
-    // de RendererGL.updateEntities.
     majCombat(sprites, cam, now) {
       let na = 0, nl = 0, nb = 0;
       const blanc = this._c || (this._c = new this.THREE.Color());
@@ -524,7 +452,6 @@ void main() {
         this.bJauge.setXYZW(nb, jauge[0], jauge[1], jauge[2], jauge[3]);
         nb++;
       };
-      // Le réglage « Barres de vie » (Options) : toutes, sinon celle du combattant visé et de l'acteur.
       const toutes = typeof UI === 'function' && UI.reglage ? UI.reglage('barres') : true;
       for (const s of sprites) {
         const c = s.combat;
@@ -533,11 +460,8 @@ void main() {
         if (na < 48) anneau(this.anneaux, na++, s, 0.98 * k, c.equipe === 'player' ? '#4a90ff' : '#ff5a5a');
         if (c.immun && na < 48) anneau(this.anneaux, na++, s, 1.16 * k, c.immun);
         if (c.actif && nl < 24) { const p = 0.5 + 0.5 * Math.sin(now / 180); anneau(this.anneauxL, nl++, s, (1.18 + p * 0.12) * k, '#ffffff', 0.35 + 0.45 * p); }
-        // Le combattant visé (sa case ou son portrait survolé) : un anneau d'or en plus.
         if (c.vise && nl < 24) { const p = 0.5 + 0.5 * Math.sin(now / 150); anneau(this.anneauxL, nl++, s, (1.3 + p * 0.08) * k, '#ffe6a8', 0.5 + 0.4 * p); }
         if (!toutes && !c.vise && !c.actif) continue;
-        // La barre : une pilule de la couleur du camp (le Veilleur et ses alliés en cristal, ambre
-        // quand il leur reste un quart de vie ; les monstres en braise), la trace des PV perdus, le bouclier.
         const hp = Math.max(0, Math.min(1, c.hp)), trace = Math.max(hp, Math.min(1, c.trace == null ? hp : c.trace));
         const couleur = c.equipe === 'player' ? (hp <= 0.25 ? '#ffb347' : '#4fc8ff') : '#ff6b5e';
         barre(s, 0, 10, c.boss ? 66 : 52, 8, couleur, 1, [hp, Math.min(1, c.bouclier || 0), trace, c.actif ? 1 : 0]);
@@ -548,14 +472,9 @@ void main() {
       this.barres.geometry.instanceCount = nb;
     }
 
-    // Les noms sous les pieds, les marques de quête au-dessus de la tête, le nombre de monstres d'un
-    // groupe près d'elle ; à taille constante, effacés au-delà de 22 u du point visé (le champ le
-    // plus large en montrerait trop).
     majTextes(sprites, cam, now, extras) {
       const items = [];
       const c0 = cam.vise || cam.cible;
-      // La boîte du Veilleur à l'écran : le nom d'un groupe qui tomberait dessus (sous les pieds du
-      // premier monstre) passe au-dessus de sa tête.
       const v = sprites.find(s => s.joueur);
       let boiteV = null;
       if (v) {
@@ -579,8 +498,6 @@ void main() {
         }
         if (s.quest) items.push({ x: s.x, y: tete, z: s.y, dy: 14 + Math.sin(now / 300) * 2, sorte: 'marque', texte: s.quest, a: Math.max(a, 0.6) });
         if (s.badge) items.push({ x: s.x, y: tete - 0.3, z: s.y, dy: 2, dx: 18, sorte: 'badge', texte: s.badge, a });
-        // Les états d'un combattant (comme RendererGL.updateStates) : étoiles qui tournent (sonné),
-        // bouclier (armure), bulle (invulnérable), lanterne.
         const c = s.combat;
         if (c) {
           const al = s.alpha == null ? 1 : s.alpha, ppu = cam.pixelsParU(s.x, s.h, s.y) * PX * k;
@@ -591,9 +508,6 @@ void main() {
         }
       }
       for (const it of extras || []) items.push(it);
-      // Les noms et les marques (pas les chiffres ni les états d'un combat) : jamais sous un rectangle
-      // de l'interface (Ile3D.mesurerHUD), et deux plaques de noms qui se chevaucheraient s'écartent,
-      // la seconde descendant de 14 px (revue finale : les étiquettes passaient sous la barre de menu).
       const zones = this.zonesHUD || [], poses = [];
       const gardes = [];
       for (const it of items) {
@@ -622,7 +536,6 @@ void main() {
         const c = this.texte(`${it.sorte}|${it.texte}|${it.couleur || ''}`, it.sorte, it.texte, it.couleur);
         const kk = it.k || 1;
         this.aAncre.setXYZ(i, it.x, it.y, it.z);
-        // Une icône occupe le carré de gauche de sa case.
         if (it.sorte === 'icone') this.aRectT.setXYZW(i, c.u0, c.v0, c.du / 4, c.dv);
         else this.aRectT.setXYZW(i, c.u0, c.v0, c.du, c.dv);
         this.aBoite.setXYZW(i, it.dx || 0, it.dy || 0, (it.w || 128) * kk, (it.h || 32) * kk);

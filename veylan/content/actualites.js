@@ -1,8 +1,3 @@
-// Actualités de l'accueil et journal des mises à jour (js/accueil.js).
-// Une actualité : { id, date: 'AAAA-MM-JJ', titre, texte, art } ; `art` choisit l'illustration
-// peinte par le code (js/accueil-art.js : factions, carte, dragons, quetes, classes, caracs,
-// fenetres). La plus récente en tête. Le journal liste les mises à jour, la plus récente en tête ;
-// la version du jeu suit la dernière.
 DATA.version = 'Prototype 0.9';
 
 DATA.actualites = [

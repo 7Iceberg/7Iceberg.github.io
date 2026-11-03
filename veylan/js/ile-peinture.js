@@ -1,16 +1,3 @@
-// Les peintres de l'île d'Ervane (docs/ILE-TECHNIQUE.md, 2.4 et 3.4 à 3.6), sur des toiles 2D, sans
-// Three.js : les six matières du sol (herbe, lande, terre, calcaire, roche, sous-bois), qui se
-// répètent tous les 4 u ; les cartes de toute l'île à 2 texels par u (poids des matières, ombres
-// cuites, bord de l'île) ; la teinte de toute l'île (couleurs des zones, accents des sources) ; la
-// lueur (flaques des lanternes, fil d'or, fentes) ; la profondeur de l'eau ; la falaise ; les
-// touches des frondaisons et des pierres ; les nuages ; le halo ; la chute d'eau ; le grain.
-//
-// Le style est celui du prototype de l'arène (grandes taches de teinte, touches, brins, cailloux,
-// coups de brosse), sourd partout, saturé aux lanternes. La lumière froide vient du haut à gauche
-// de l'écran, c'est-à-dire de l'ouest (azimut de la caméra à 45°) : les ombres tombent vers l'est.
-// Le rendu peut tout se permettre ici (il ne décide de rien) ; le hasard vient pourtant de graines,
-// pour que l'île soit la même à chaque chargement.
-// La fabrique est nommée : son texte entier sert d'empreinte au cache des peintures (js/ile-3d.js).
 function fabriqueIlePeinture() {
   const M = () => IleTerrain.M;
   const toile = (w, h) => { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; };
@@ -21,11 +8,8 @@ function fabriqueIlePeinture() {
   const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
   const lisse = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 
-  // La direction de la lumière (horizontale, vers la lumière) et son élévation : de l'ouest, un peu
-  // du nord, à 50°.
   const LUMIERE = (() => { const x = -0.92, y = -0.38, n = Math.sqrt(x * x + y * y); return { x: x / n, y: y / n, pente: Math.tan(50 * Math.PI / 180) }; })();
 
-  // ----- Outils de peinture répétable (les bords se raccordent) -----
 
   function peintre(S, graine) {
     const c = toile(S, S), g = c.getContext('2d'), R = M().hasard(graine);
@@ -50,7 +34,6 @@ function fabriqueIlePeinture() {
     return { c, g, R, tache, trait, S };
   }
 
-  // Un bruit de valeur répétable sur la toile (période S), pour moduler les taches.
   function bruitRep(x, y, n, s) {
     const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi;
     const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
@@ -59,14 +42,11 @@ function fabriqueIlePeinture() {
     return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
   }
 
-  // ======================================================================
-  // Les six matières (512 px au téléphone, 1 024 en qualité haute), pour 4 u de côté
-  // ======================================================================
 
   const MATIERES = ['herbe', 'lande', 'terre', 'calcaire', 'roche', 'sous_bois'];
 
   function matiere(nom, S) {
-    const k = S / 512;    // les tailles sont données pour 512 px
+    const k = S / 512;
     const P = peintre(S, M().cle('matiere_' + nom));
     const { g, R, tache, trait } = P;
     const fond = (col, pal, n, rmin, rmax, a) => {
@@ -77,18 +57,14 @@ function fabriqueIlePeinture() {
       const pal = ['#4f8a44', '#6aa04e', '#5b9448', '#7cae56', '#467d3e', '#6da350', '#86b65c'];
       fond('#5e9649', pal, 240, 26, 80, 0.24);
       for (let i = 0; i < 4200; i++) tache(R() * S, R() * S, (3 + R() * 6) * k, (1.6 + R() * 2.4) * k, R() * 3.14, pal[Math.floor(R() * pal.length)], 0.34);
-      // Les brins, couchés par le vent d'ouest : jaune-vert au soleil, vert profond à l'ombre.
       for (let i = 0; i < 3000; i++) { const clair = R() < 0.55; trait(R() * S, R() * S, (7 + R() * 9) * k, -1.15 + (R() - 0.5) * 0.7, (1.1 + R() * 0.8) * k, clair ? '#bcd877' : '#2c5a31', clair ? 0.3 : 0.28); }
-      // Trèfles, mousse, et quelques fleurs minuscules.
       for (let i = 0; i < 260; i++) tache(R() * S, R() * S, (1.3 + R()) * k, (1 + R()) * k, 0, R() < 0.5 ? '#a3c96a' : '#3e6c3a', 0.5);
       for (let i = 0; i < 70; i++) tache(R() * S, R() * S, 1.3 * k, 1.2 * k, 0, ['#f6f1e2', '#f4d66e', '#eab9d9', '#bcd6ff'][Math.floor(R() * 4)], 0.85);
     } else if (nom === 'lande') {
       const pal = ['#b29752', '#a08646', '#c3a864', '#8f7b41', '#ab934f', '#8c8f4c'];
       fond('#a98f4c', pal, 220, 26, 80, 0.26);
       for (let i = 0; i < 3200; i++) tache(R() * S, R() * S, (3 + R() * 6) * k, (1.5 + R() * 2.2) * k, R() * 3.14, pal[Math.floor(R() * pal.length)], 0.34);
-      // Des plaques d'herbe encore verte, à l'abri.
       for (let i = 0; i < 40; i++) { const x = R() * S, y = R() * S; for (let j = 0; j < 9; j++) tache(x + (R() - 0.5) * 40 * k, y + (R() - 0.5) * 26 * k, (4 + R() * 6) * k, (2.5 + R() * 3) * k, R() * 3, R() < 0.5 ? '#7f9545' : '#93a352', 0.35); }
-      // Bruyère : des touffes mauves, en grappes.
       for (let i = 0; i < 95; i++) {
         const x = R() * S, y = R() * S, n = 7 + Math.floor(R() * 12);
         for (let j = 0; j < n; j++) tache(x + (R() - 0.5) * 34 * k, y + (R() - 0.5) * 22 * k, (2 + R() * 2.6) * k, (1.6 + R() * 1.8) * k, R() * 3, R() < 0.5 ? '#8f6a8e' : (R() < 0.5 ? '#ad86aa' : '#6b4f6a'), 0.62);
@@ -99,9 +75,7 @@ function fabriqueIlePeinture() {
       const pal = ['#9c8160', '#b49874', '#8a7154', '#c2a882', '#a48a66'];
       fond('#a68b66', pal, 200, 24, 70, 0.26);
       for (let i = 0; i < 2600; i++) tache(R() * S, R() * S, (3 + R() * 7) * k, (2 + R() * 3) * k, R() * 3.14, pal[Math.floor(R() * pal.length)], 0.3);
-      // Traces de pas et d'usure : des traits longs et doux, plutôt dans un sens.
       for (let i = 0; i < 260; i++) trait(R() * S, R() * S, (18 + R() * 40) * k, 0.6 + (R() - 0.5) * 0.4, (2 + R() * 3) * k, R() < 0.5 ? '#c9b08a' : '#7f6a50', 0.16);
-      // Cailloux : une ombre, une pierre, un éclat de lumière.
       for (let i = 0; i < 520; i++) {
         const x = R() * S, y = R() * S, r = (1.6 + R() * 3.4) * k, col = R() < 0.5 ? '#cbbfa4' : (R() < 0.5 ? '#9a8e78' : '#b5a88e');
         tache(x + r * 0.35, y + r * 0.35, r, r * 0.8, 0, '#5a4a38', 0.45);
@@ -110,8 +84,6 @@ function fabriqueIlePeinture() {
       }
       for (let i = 0; i < 3000; i++) tache(R() * S, R() * S, (0.6 + R() * 0.8) * k, (0.6 + R() * 0.6) * k, 0, R() < 0.5 ? '#6e5a44' : '#d2bd96', 0.4);
     } else if (nom === 'calcaire') {
-      // Des dalles irrégulières : un pavage de Voronoï répétable (une graine par case d'une grille
-      // de 5 × 5, on ne regarde que les cases voisines), joints sombres, mousse dans les joints.
       const n = 5, cell = S / n, seeds = [];
       for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) seeds.push([(i + 0.18 + R() * 0.64) * cell, (j + 0.18 + R() * 0.64) * cell, R()]);
       const img = g.createImageData(S, S), d = img.data;
@@ -129,7 +101,6 @@ function fabriqueIlePeinture() {
         const joint = Math.sqrt(d2) - Math.sqrt(d1);
         const c = cols[Math.floor(seeds[best][2] * cols.length)];
         const gr = 0.92 + 0.12 * bruitRep(x / 24, y / 24, S / 24, 5);
-        // Le joint : plus sombre et moussu au creux, fondu sur ses bords (pas un trait de dessin).
         const j = joint < 2.2 * k ? 0.74 : joint < 4.6 * k ? 0.74 + 0.26 * (joint - 2.2 * k) / (2.4 * k) : 1;
         const mj = joint < 2.2 * k ? 0.45 : joint < 3.4 * k ? 0.45 * (1 - (joint - 2.2 * k) / (1.2 * k)) : 0;
         const o = (y * S + x) * 4;
@@ -138,14 +109,12 @@ function fabriqueIlePeinture() {
       }
       g.putImageData(img, 0, 0);
       for (let i = 0; i < 900; i++) tache(R() * S, R() * S, (2 + R() * 5) * k, (1.5 + R() * 3) * k, R() * 3, R() < 0.5 ? '#e6e0d2' : '#a39b88', 0.18);
-      // Fissures fines, lichens jaunes et gris, mousse dans les creux.
       for (let i = 0; i < 90; i++) trait(R() * S, R() * S, (8 + R() * 20) * k, R() * 6.28, 1.1 * k, '#857c6c', 0.3);
       for (let i = 0; i < 160; i++) tache(R() * S, R() * S, (1.5 + R() * 3) * k, (1.2 + R() * 2) * k, R() * 3, R() < 0.5 ? '#c4b46a' : '#9da08a', 0.35);
       for (let i = 0; i < 420; i++) tache(R() * S, R() * S, (1.5 + R() * 2.5) * k, (1 + R() * 1.6) * k, R() * 3, R() < 0.6 ? '#7c9a5c' : '#9bb174', 0.45);
     } else if (nom === 'roche') {
       const pal = ['#8e877d', '#a0998e', '#7b756c', '#aba497', '#6e6961'];
       fond('#8b847a', pal, 160, 30, 90, 0.25);
-      // Strates : des bandes presque horizontales, ondulées.
       for (let y = 0; y < S; y += (10 + R() * 26) * k) {
         const h = (6 + R() * 18) * k, col = pal[Math.floor(R() * pal.length)];
         g.globalAlpha = 0.35; g.fillStyle = col;
@@ -161,14 +130,12 @@ function fabriqueIlePeinture() {
       const pal = ['#3d5a3c', '#486a43', '#34503a', '#53774a', '#2f4934'];
       fond('#3e5b3c', pal, 220, 24, 80, 0.28);
       for (let i = 0; i < 2600; i++) tache(R() * S, R() * S, (3 + R() * 7) * k, (2 + R() * 3) * k, R() * 3.14, pal[Math.floor(R() * pal.length)], 0.34);
-      // Mousse claire, aiguilles, feuilles mortes, brindilles.
       for (let i = 0; i < 130; i++) { const x = R() * S, y = R() * S; for (let j = 0; j < 8; j++) tache(x + (R() - 0.5) * 30 * k, y + (R() - 0.5) * 22 * k, (3 + R() * 5) * k, (2 + R() * 3) * k, R() * 3, R() < 0.5 ? '#628e4e' : '#74a052', 0.42); }
       for (let i = 0; i < 2600; i++) trait(R() * S, R() * S, (4 + R() * 6) * k, R() * 6.28, 0.9 * k, R() < 0.5 ? '#7a6644' : '#5e5036', 0.45);
       for (let i = 0; i < 520; i++) tache(R() * S, R() * S, (2.2 + R() * 2.4) * k, (1.2 + R()) * k, R() * 3.14, R() < 0.5 ? '#9a6a3a' : (R() < 0.5 ? '#7d5a32' : '#b07c44'), 0.6);
       for (let i = 0; i < 90; i++) trait(R() * S, R() * S, (10 + R() * 18) * k, R() * 6.28, 1.6 * k, '#4a3a28', 0.55);
     }
     g.globalAlpha = 1;
-    // Le grain de la brosse : de longs traits presque transparents, dans le sens de la lumière.
     for (let i = 0; i < 700; i++) trait(R() * S, R() * S, (20 + R() * 40) * k, -0.55 + (R() - 0.5) * 0.4, 1.2 * k, R() < 0.5 ? '#ffffff' : '#000000', 0.035);
     g.globalAlpha = 1;
     return P.c;
@@ -176,7 +143,6 @@ function fabriqueIlePeinture() {
 
   function matieres(S) { return MATIERES.map(n => matiere(n, S)); }
 
-  // La couleur moyenne de chaque matière (pour la vue lointaine et la vue d'ensemble).
   function moyennes(toiles) {
     return toiles.map(c => {
       const s = toile(8, 8), g = s.getContext('2d');
@@ -188,13 +154,7 @@ function fabriqueIlePeinture() {
     });
   }
 
-  // ======================================================================
-  // Les cartes de toute l'île, 2 texels par u
-  // ======================================================================
 
-  // Distance de chaque texel (centre en ((i + 0,5) / k, (j + 0,5) / k)) à une polyligne, moins
-  // `decale` (la demi-largeur d'un sentier : 0 sur son bord), dans une bande de `rayon` u ; garde
-  // le minimum dans `dist`.
   function distances(dist, W, H, k, pts, rayon, decale) {
     decale = decale || 0;
     for (let s = 0; s + 1 < pts.length; s++) {
@@ -213,10 +173,8 @@ function fabriqueIlePeinture() {
     }
   }
 
-  // Bilinéaire sur la grille du treillis (un échantillon par u).
   const bil = (T, g, u, v) => IleTerrain.bilin(g, T.W, T.H, u, v);
 
-  // Les ombres du terrain sur lui-même, vers la lumière, au treillis : 1 en pleine lumière.
   function ombresTerrain(T) {
     const { W, H, haut, vide } = T, out = new Float32Array(W * H).fill(1);
     const L = LUMIERE;
@@ -236,17 +194,11 @@ function fabriqueIlePeinture() {
     return out;
   }
 
-  // Poids des matières (deux images RGBA de 480 × 360) :
-  //   poids1 = herbe, lande, terre, calcaire ; poids2 = roche, sous-bois, ombre (255 : aucune),
-  //   bord (128 : le bord de l'île ; plus clair dedans, plus sombre dans le vide, 60 par u).
-  // `objets` : les ombres de contact du décor, peintes par l'appelant sur une toile de même taille.
   function cartes(T, ombreDecor) {
     const k = 2, W = Math.round(T.largeur * k), H = Math.round(T.hauteur * k), N = W * H;
     const p1 = new Uint8Array(N * 4), p2 = new Uint8Array(N * 4);
     const regions = T.regionsZone;
     const REG = { ervane_mailles: 0, ervane_sources: 0, ervane_murets: 1, ervane_bois: 5, ervane_amarre: 3 };
-    // Les distances aux lignes, au texel ; celles des sentiers et des ruelles comptées depuis leur
-    // bord (moins la demi-largeur).
     const big = () => new Float32Array(N).fill(99);
     const dSentier = big(), dRuelle = big(), dEsc = big(), dHaie = big(), dMuret = big();
     for (const l of T.lignes) {
@@ -262,7 +214,6 @@ function fabriqueIlePeinture() {
     for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
       const o = j * W + i, u = (i + 0.5) / k, v = (j + 0.5) / k;
       w.fill(0);
-      // La matière de la région, fondue avec celles des voisines sur 1 u (bilinéaire du treillis).
       const u0 = Math.min(T.W - 2, Math.floor(u)), v0 = Math.min(T.H - 2, Math.floor(v)), fu = u - u0, fv = v - v0;
       for (const [du, dv, f] of [[0, 0, (1 - fu) * (1 - fv)], [1, 0, fu * (1 - fv)], [0, 1, (1 - fu) * fv], [1, 1, fu * fv]]) {
         const r = T.region[(v0 + dv) * T.W + u0 + du];
@@ -270,32 +221,25 @@ function fabriqueIlePeinture() {
         w[m == null ? 0 : m] += f;
       }
       const n1 = M().fbm(u / 9, v / 9, gB, 3), n2 = M().fbm(u / 3.5, v / 3.5, gB + 9, 2);
-      // Des mélanges dans chaque région : herbe dans la lande, herbe et terre entre les dalles de
-      // l'Amarre, terre au bord de l'eau.
       if (w[1] > 0) { const a = w[1] * lisse(0.55, 0.72, n1) * 0.8; w[1] -= a; w[0] += a; }
       if (w[3] > 0) { const a = w[3] * lisse(0.5, 0.66, n1) * 0.85; w[3] -= a; w[0] += a; const b = w[3] * lisse(0.62, 0.75, n2) * 0.5; w[3] -= b; w[2] += b; }
       if (w[5] > 0) { const a = w[5] * lisse(0.64, 0.8, n1) * 0.6; w[5] -= a; w[0] += a; }
       const jitter = (n2 - 0.5) * 0.6;
-      // Les pentes : roche.
       const pente = T.penteA(u, v);
       const roche = lisse(0.62, 1.0, pente + jitter * 0.2);
-      // Les sentiers (terre battue) et les ruelles (pavés), bords bruités.
       const sen = 1 - lisse(-0.35, 0.45, dSentier[o] + jitter);
       const rue = 1 - lisse(-0.2, 0.3, dRuelle[o] + jitter * 0.3);
-      // Les places.
       let place = 0, placeM = 3;
       for (const p of T.places) {
         const dx = u - p.centre[0], dy = v - p.centre[1], d = Math.sqrt(dx * dx + dy * dy);
         const f = 1 - lisse(p.rayon - 0.6, p.rayon + 0.5, d + jitter * 0.6);
         if (f > place) { place = f; placeM = p.sol === 'terre' ? 2 : p.sol === 'herbe' ? 0 : 3; }
       }
-      // L'eau : le lit et les berges en terre.
       const prof = T.profondeurA(u, v);
       const eau = lisse(0.02, 0.25, prof);
       const fosse = 1 - lisse(0.5, 1.6, dHaie[o]);
       const pied = 1 - lisse(0.4, 1.2, dMuret[o]);
       const esc = 1 - lisse(0.25, 0.8, dEsc[o]);
-      // Le reste de la région se partage ce que les lignes laissent.
       const appliquer = (m, a) => { if (a <= 0) return; for (let q = 0; q < 6; q++) w[q] *= 1 - a; w[m] += a; };
       appliquer(2, eau * 0.9);
       appliquer(2, fosse * 0.55);
@@ -309,7 +253,6 @@ function fabriqueIlePeinture() {
       s = s || 1;
       p1[o * 4] = Math.round(w[0] / s * 255); p1[o * 4 + 1] = Math.round(w[1] / s * 255); p1[o * 4 + 2] = Math.round(w[2] / s * 255); p1[o * 4 + 3] = Math.round(w[3] / s * 255);
       p2[o * 4] = Math.round(w[4] / s * 255); p2[o * 4 + 1] = Math.round(w[5] / s * 255);
-      // L'ombre : celle du terrain, celle du décor, et l'usure plus sombre au bord des sentiers.
       let om = bil(T, ombreT, u, v);
       if (ombreDecor) om *= 1 - ombreDecor[o] / 255 * 0.7;
       const bordSentier = sen > 0.05 && sen < 0.6 ? 0.06 : 0;
@@ -320,9 +263,6 @@ function fabriqueIlePeinture() {
     return { poids1: p1, poids2: p2, w: W, h: H, k };
   }
 
-  // Le bord de l'île (contour, Échancrure, puits) en champ de distance signé dans le canal A :
-  // 128 au bord, +60 par u à l'intérieur, -60 par u dans le vide, borné à ±2 u. Le shader du sol
-  // le lit en bilinéaire et coupe à 128 : le bord suit le contour bruité, pas la grille.
   function bords(T, p2, W, H, k) {
     const N = W * H, d = new Float32Array(N).fill(2.1);
     const boucle = pts => pts.concat([pts[0]]);
@@ -343,9 +283,6 @@ function fabriqueIlePeinture() {
     }
   }
 
-  // ======================================================================
-  // La teinte de toute l'île (720 × 540, 3 px par u) : multiplie les matières (128 vaut 1)
-  // ======================================================================
 
   const TEINTES = {
     ervane_mailles: [1.03, 1.0, 0.92],
@@ -357,9 +294,7 @@ function fabriqueIlePeinture() {
   const ACCENTS = { braise: [1.38, 0.78, 0.55], mousse: [0.8, 1.3, 0.66], herbe_blanche: [1.25, 1.22, 1.1] };
 
   function teinte(T, def) {
-    // Trois texels par u ; deux sur un grand plateau (Orsane, trois fois Ervane : la mémoire du téléphone).
     const k = T.largeur * T.hauteur > 100000 ? 2 : 3, W = Math.round(T.largeur * k), H = Math.round(T.hauteur * k);
-    // La teinte des régions, au treillis, floutée sur 3 u : les zones se fondent les unes dans les autres.
     const NW = T.W, NH = T.H;
     const tr = [new Float32Array(NW * NH), new Float32Array(NW * NH), new Float32Array(NW * NH)];
     for (let i = 0; i < NW * NH; i++) { const t = TEINTES[T.regionsZone[T.region[i]]] || [1, 1, 1]; tr[0][i] = t[0]; tr[1][i] = t[1]; tr[2][i] = t[2]; }
@@ -376,10 +311,8 @@ function fabriqueIlePeinture() {
     for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
       const u = (i + 0.5) / k, v = (j + 0.5) / k;
       let r = IleTerrain.bilin(tr[0], NW, NH, u, v), gg = IleTerrain.bilin(tr[1], NW, NH, u, v), b = IleTerrain.bilin(tr[2], NW, NH, u, v);
-      // De grandes taches de valeur, plus claires et plus sombres, comme une peinture.
       const n = M().fbm(u / 14, v / 14, gN, 3), n2 = M().fbm(u / 4.5, v / 4.5, gN + 5, 2);
       const val = 0.86 + 0.28 * n + 0.08 * (n2 - 0.5);
-      // Un peu de chaud et de froid dans les taches.
       const chaud = (M().fbm(u / 22, v / 22, gN + 11, 2) - 0.5) * 0.2;
       r *= val * (1 + chaud); gg *= val; b *= val * (1 - chaud);
       for (const a of accents) {
@@ -391,8 +324,6 @@ function fabriqueIlePeinture() {
       d[o] = clamp(r * 128, 0, 255); d[o + 1] = clamp(gg * 128, 0, 255); d[o + 2] = clamp(b * 128, 0, 255); d[o + 3] = 255;
     }
     g.putImageData(img, 0, 0);
-    // La Source Claire : un vert plus frais tout autour ; le Rond des Quatre : quatre quartiers
-    // teintés à peine, un par élément.
     const X = u => u * k, Y = v => v * k;
     const flaque = (u, v, r, col, a) => { const q = g.createRadialGradient(X(u), Y(v), 0, X(u), Y(v), r * k); q.addColorStop(0, rgba(col, a)); q.addColorStop(1, rgba(col, 0)); g.fillStyle = q; g.globalAlpha = 1; g.beginPath(); g.arc(X(u), Y(v), r * k, 0, 6.29); g.fill(); };
     g.globalCompositeOperation = 'source-over';
@@ -405,9 +336,6 @@ function fabriqueIlePeinture() {
     return c;
   }
 
-  // ======================================================================
-  // La lueur (480 × 360) : ce qui luit au sol, en addition
-  // ======================================================================
 
   function lueur(T) {
     const k = 2, W = Math.round(T.largeur * k), H = Math.round(T.hauteur * k);
@@ -426,7 +354,6 @@ function fabriqueIlePeinture() {
     for (const r of T.relais) flaque(r.u, r.v, 3.5, '#6fe0ff', 0.22);
     for (const p of T.portes) flaque(p.u, p.v, 3, '#b06cff', 0.3);
     for (const t of T.trous) flaque(t.centre[0], t.centre[1], t.rayon + 3, '#9a5ad8', 0.22);
-    // Les fentes de la Source de Braise : des traits orangés qui fument.
     const braise = (T.accents || []).find(a => a.sol === 'braise');
     if (braise) {
       g.globalCompositeOperation = 'lighter';
@@ -442,9 +369,6 @@ function fabriqueIlePeinture() {
     return c;
   }
 
-  // ======================================================================
-  // La profondeur de l'eau (480 × 360) : R la profondeur (1,2 u = 255), G un bruit d'écume
-  // ======================================================================
 
   function profondeurEau(T) {
     const k = 2, W = Math.round(T.largeur * k), H = Math.round(T.hauteur * k), out = new Uint8Array(W * H * 4);
@@ -461,11 +385,7 @@ function fabriqueIlePeinture() {
     return { data: out, w: W, h: H };
   }
 
-  // ======================================================================
-  // Textures du décor
-  // ======================================================================
 
-  // Une bande de strate ondulée, répétable en largeur, sur une toile de largeur W.
   function strate(g, W, y, h, col, a, graine) {
     g.globalAlpha = a; g.fillStyle = col;
     for (const dx of [-W, 0, W]) {
@@ -476,27 +396,18 @@ function fabriqueIlePeinture() {
     }
   }
 
-  // La falaise et les faces des escarpements (répétable en largeur, une fois sur la hauteur). Revue
-  // finale : plus du bois strié sous un liseré de caoutchouc. Le calcaire et la terre de l'Amarre en
-  // strates irrégulières (épaisseurs et teintes variées, bords ondulés), des cailloux pris dans la
-  // roche (ombre dessous, éclat dessus), des fissures courtes dans tous les sens, des racines qui
-  // descendent de la lèvre ; en haut, une crête d'herbe dentelée (touffes de hauteurs inégales,
-  // trouées) et quelques pierres de bord, pas une bande continue.
   function falaise() {
     const W = 512, H = 512, c = toile(W, H), g = c.getContext('2d'), R = M().hasard(31);
     g.fillStyle = '#9a8c7a'; g.fillRect(0, 0, W, H);
     const cols = ['#8a7d6b', '#b5a68f', '#c6b8a1', '#7a6f61', '#a89985', '#d0c4ab', '#948874', '#bfae95'];
     for (let y = 26; y < H; y += 4 + R() * 26) strate(g, W, y, 6 + R() * 34, cols[Math.floor(R() * cols.length)], 0.5 + R() * 0.4, 4 + Math.floor(R() * 40));
-    // Des plaques de terre plus sombre, par endroits.
     for (let i = 0; i < 40; i++) { g.globalAlpha = 0.22; g.fillStyle = R() < 0.5 ? '#6e5a48' : '#5e5244'; g.beginPath(); g.ellipse(R() * W, 60 + R() * (H - 60), 30 + R() * 60, 8 + R() * 18, (R() - 0.5) * 0.4, 0, 6.29); g.fill(); }
-    // Les cailloux pris dans la roche : une ombre, la pierre, un éclat.
     for (let i = 0; i < 150; i++) {
       const x = R() * W, y = 50 + R() * (H - 60), r = 3 + R() * 9, col = R() < 0.5 ? '#d7cdb8' : (R() < 0.5 ? '#a99d8b' : '#c2b6a0');
       g.globalAlpha = 0.45; g.fillStyle = '#4e4238'; g.beginPath(); g.ellipse(x + r * 0.3, y + r * 0.45, r, r * 0.7, R() * 3, 0, 6.29); g.fill();
       g.globalAlpha = 0.95; g.fillStyle = col; g.beginPath(); g.ellipse(x, y, r, r * 0.7, R() * 3, 0, 6.29); g.fill();
       g.globalAlpha = 0.5; g.fillStyle = '#f1e9d8'; g.beginPath(); g.ellipse(x - r * 0.3, y - r * 0.3, r * 0.4, r * 0.25, 0, 0, 6.29); g.fill();
     }
-    // Les fissures : courtes, brisées, dans tous les sens.
     g.lineCap = 'round';
     for (let i = 0; i < 34; i++) {
       let x = R() * W, y = 50 + R() * (H - 50);
@@ -505,7 +416,6 @@ function fabriqueIlePeinture() {
       for (let k = 0; k < 3; k++) { x += (R() - 0.5) * 40; y += 6 + R() * 26; g.lineTo(x, y); }
       g.stroke();
     }
-    // Les racines : brunes, qui descendent de la lèvre, parfois fourchues.
     for (let i = 0; i < 14; i++) {
       let x = R() * W, y = 24;
       g.globalAlpha = 0.85; g.strokeStyle = R() < 0.5 ? '#5a4634' : '#6c5440'; g.lineWidth = 2 + R() * 2.5;
@@ -514,8 +424,6 @@ function fabriqueIlePeinture() {
       g.stroke();
     }
     const grd = g.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(46,38,44,0.42)'); g.globalAlpha = 1; g.fillStyle = grd; g.fillRect(0, 0, W, H);
-    // La crête d'herbe : une bande fine et ondulée, puis des touffes dentelées de hauteurs inégales,
-    // trouées, et des pierres de bord.
     strate(g, W, -8, 16, '#6f9a5c', 0.95, 60);
     for (let x = -6; x < W + 6; x += 5 + R() * 5) {
       const h = 10 + bruitRep(x / 40, 1, W / 40, 61) * 46 * (R() < 0.12 ? 0.3 : 1), w = 4 + R() * 6, col = R() < 0.5 ? '#6f9a5c' : (R() < 0.5 ? '#8db86a' : '#5a8450');
@@ -527,9 +435,6 @@ function fabriqueIlePeinture() {
     return c;
   }
 
-  // La paroi d'une salle du Puits (js/ile-salle.js) : le calcaire de l'Amarre en cinq strates
-  // irrégulières sur la hauteur, joints sombres, lichens pâles, quelques fissures ; répétable dans
-  // les deux sens (les blocs des murs répètent la toile).
   function paroi() {
     const W = 512, H = 512, c = toile(W, H), g = c.getContext('2d'), R = M().hasard(37);
     g.fillStyle = '#6e6572'; g.fillRect(0, 0, W, H);
@@ -538,12 +443,10 @@ function fabriqueIlePeinture() {
     for (let k = 0; k < N; k++) {
       const y = k * H / N, h = H / N;
       strate(g, W, y - 4, h + 8, cols[k % cols.length], 0.9, 70 + k);
-      // Le joint sombre sous chaque strate.
       g.globalAlpha = 0.6; g.strokeStyle = '#2d2733'; g.lineWidth = 3; g.lineCap = 'round';
       for (const dx of [-W, 0, W]) { g.beginPath(); for (let x = 0; x <= W; x += 12) g.lineTo(dx + x, y + h - 2 + (bruitRep(x / 40, k, W / 40, 80 + k) - 0.5) * 8); g.stroke(); }
     }
     for (let i = 0; i < 160; i++) { g.globalAlpha = 0.18; g.fillStyle = R() < 0.5 ? '#c9c0c8' : '#3d3542'; g.beginPath(); g.ellipse(R() * W, R() * H, 6 + R() * 30, 3 + R() * 7, (R() - 0.5) * 0.4, 0, 6.29); g.fill(); }
-    // Les lichens pâles et verdâtres.
     for (let i = 0; i < 90; i++) { const x = R() * W, y = R() * H; for (let j = 0; j < 4; j++) { g.globalAlpha = 0.35; g.fillStyle = R() < 0.5 ? '#a8ad8a' : '#8f9a9a'; g.beginPath(); g.ellipse(x + (R() - 0.5) * 16, y + (R() - 0.5) * 12, 2 + R() * 4, 1.5 + R() * 3, R() * 3, 0, 6.29); g.fill(); } }
     g.lineCap = 'round';
     for (let i = 0; i < 22; i++) { let x = R() * W, y = R() * H; g.globalAlpha = 0.6; g.strokeStyle = '#2a2430'; g.lineWidth = 1.5 + R() * 1.5; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 3; k++) { x += (R() - 0.5) * 30; y += 8 + R() * 22; g.lineTo(x, y); } g.stroke(); }
@@ -551,7 +454,6 @@ function fabriqueIlePeinture() {
     return c;
   }
 
-  // Les touches : une trame de taches claires et sombres, répétable, pour frondaisons et pierres.
   function touches(graine, douceur) {
     const S = 256, P = peintre(S, graine);
     P.g.fillStyle = '#9a9a9a'; P.g.fillRect(0, 0, S, S);
@@ -563,9 +465,6 @@ function fabriqueIlePeinture() {
     return P.c;
   }
 
-  // La trame du détail des frondaisons et des pierres : des taches claires et sombres autour d'un gris
-  // très clair, pour moduler la couleur des sommets sans l'éteindre (en linéaire, environ 0,75 en
-  // moyenne). Les touches ci-dessus, centrées sur le gris moyen, servent au bruit du sol et de l'eau.
   function trame(graine, douceur) {
     const S = 256, P = peintre(S, graine);
     P.g.fillStyle = '#e6e6e6'; P.g.fillRect(0, 0, S, S);
@@ -577,7 +476,6 @@ function fabriqueIlePeinture() {
     return P.c;
   }
 
-  // Les nuages : un banc étiré, aux bords diffus, plus clair dessus et gris dessous.
   function nuage(graine) {
     const W = 512, H = 192, c = toile(W, H), g = c.getContext('2d'), R = M().hasard(graine);
     const boule = (x, y, rx, ry, col, a) => { g.save(); g.translate(x, y); g.scale(rx, ry); const q = g.createRadialGradient(0, 0, 0, 0, 0, 1); q.addColorStop(0, rgba(col, a)); q.addColorStop(0.3, rgba(col, a * 0.85)); q.addColorStop(0.65, rgba(col, a * 0.35)); q.addColorStop(1, rgba(col, 0)); g.fillStyle = q; g.beginPath(); g.arc(0, 0, 1, 0, 6.29); g.fill(); g.restore(); };
@@ -593,7 +491,6 @@ function fabriqueIlePeinture() {
     return c;
   }
 
-  // Un banc de nuages répétable, vu d'au-dessus : la mer de nuages sous l'île.
   function bancNuages(taille) {
     const S = taille || 1024, c = toile(S, S), g = c.getContext('2d'), R = M().hasard(321);
     const boule = (x, y, r, col, a) => { for (const dx of [-S, 0, S]) for (const dy of [-S, 0, S]) { g.save(); g.translate(x + dx, y + dy); g.scale(r * 1.9, r * 0.85); const q = g.createRadialGradient(0, 0, 0, 0, 0, 1); q.addColorStop(0, rgba(col, a)); q.addColorStop(0.4, rgba(col, a * 0.7)); q.addColorStop(1, rgba(col, 0)); g.fillStyle = q; g.beginPath(); g.arc(0, 0, 1, 0, 6.29); g.fill(); g.restore(); } };
@@ -605,7 +502,6 @@ function fabriqueIlePeinture() {
     return c;
   }
 
-  // Le halo d'une lanterne : très fondu, pas de bord visible, même en addition.
   function halo() {
     const S = 128, c = toile(S, S), g = c.getContext('2d');
     const q = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
@@ -615,7 +511,6 @@ function fabriqueIlePeinture() {
     return c;
   }
 
-  // L'ombre au sol d'une figure : un disque flou.
   function ombre() {
     const S = 64, c = toile(S, S), g = c.getContext('2d');
     const q = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
@@ -624,7 +519,6 @@ function fabriqueIlePeinture() {
     return c;
   }
 
-  // La chute d'eau : un voile bleuté, des traits d'écume, répétables en hauteur.
   function chute() {
     const W = 128, H = 512, c = toile(W, H), g = c.getContext('2d'), R = M().hasard(9);
     g.fillStyle = 'rgba(176,206,228,0.38)'; g.fillRect(0, 0, W, H);
@@ -639,7 +533,6 @@ function fabriqueIlePeinture() {
     return c;
   }
 
-  // Le grain de papier, posé en surimpression CSS sur la scène 3D.
   function grain() {
     const S = 192, c = toile(S, S), g = c.getContext('2d'), img = g.createImageData(S, S), d = img.data, R = M().hasard(77);
     for (let i = 0; i < S * S; i++) { const v = 110 + R() * 70; d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = v; d[i * 4 + 3] = 255; }
@@ -647,8 +540,6 @@ function fabriqueIlePeinture() {
     return c;
   }
 
-  // La vue d'ensemble de l'île (1 px par u par défaut) : la teinte posée sur la couleur moyenne des
-  // matières, le vide transparent. Elle sert à la carte du monde ; la mini-carte suivra (étape c).
   const vues = new Map();
   const oublierVues = () => vues.clear();
   function vueEnsemble(T, k) {
@@ -657,9 +548,6 @@ function fabriqueIlePeinture() {
     if (vues.has(cle)) return vues.get(cle);
     const W = Math.round(T.largeur * k), H = Math.round(T.hauteur * k), c = toile(W, H), g = c.getContext('2d'), img = g.createImageData(W, H), d = img.data;
     const MOY = { herbe: [0.42, 0.6, 0.35], lande: [0.65, 0.57, 0.36], terre: [0.65, 0.55, 0.41], calcaire: [0.84, 0.81, 0.75], roche: [0.54, 0.56, 0.61], sous_bois: [0.24, 0.35, 0.28] };
-    // La couleur de chaque u (matière, teinte de la zone, ombre de la pente), puis une interpolation
-    // bilinéaire entre les quatre u voisins de chaque pixel (revue finale : à 2 ou 4 px par u, les
-    // u se voyaient en blocs sur les cases de l'onglet Cartes) ; le vide ne pèse rien.
     const WC = T.W, HC = T.H, cols = new Float32Array(WC * HC * 3), plein = new Uint8Array(WC * HC);
     for (let j = 0; j < HC; j++) for (let i = 0; i < WC; i++) {
       const q = j * WC + i;

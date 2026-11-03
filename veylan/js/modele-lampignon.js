@@ -1,50 +1,19 @@
-// Le Lampignon modelé par le code (docs/ILE-TECHNIQUE.md, 3.14) : le champignon des Murets, à la
-// coiffe tachée de lueurs, aux lamelles cyan et à l'œil de verre, écrit pièce par pièce d'après
-// sa planche (le même procédé que le Glym, js/modele-glym.js) : des cotes, des tours (lathe), des
-// ellipsoïdes, des textures peintes par le code, des lueurs à part et un cerne en coque retournée,
-// pour le trait encré de la planche.
-//
-// Cinq maillages, cinq appels : le corps (coiffe, tronc, bras, pieds, monture de l'œil, en ombrage
-// à trois tons et couleurs de sommets), le cerne, les lamelles, les lueurs (taches de la coiffe,
-// verre et anneau de l'œil) et le halo de l'œil, additif. Dans le jeu, une troupe instanciée
-// (Troupe) que le parc des Glyms modelés (ModeleGlym.Parc) pose avec les autres ; sur la planche,
-// un THREE.Group (construire).
-//
-// Repère : y en haut, la face vers +z (l'œil), les pieds sur y = 0 ; unités de la planche.
 const ModeleLampignon = (() => {
   const TAU = Math.PI * 2;
 
   const COTES = {
     hauteur: 25.3, emprise: 24,
-    // Les cotes sont relevées sur la fiche, pixel par pixel (la vue de dos pour la coiffe, qui n'y
-    // est pas penchée vers nous ; la vue de face pour le corps, les bras, les jambes et l'œil) ; les
-    // profils donnent l'inclinaison. La coiffe dans son repère (le bord à y = 0), du bord vers le
-    // sommet (un tour de Three tourne ses faces vers l'extérieur quand y monte) : le bord épais et
-    // roulé qui s'évase, un sommet large et rond qui se détache (le disque clair de la vue de dessus),
-    // aussi haute que son rayon.
     coiffe: [[10.0, 0], [10.75, 0.45], [11.0, 1.2], [11.0, 1.6], [10.7, 2.4], [10.1, 3.1], [9.4, 3.8], [8.6, 4.6], [7.85, 5.5], [7.25, 6.4], [6.8, 7.3], [6.35, 8.1], [5.95, 8.9], [5.45, 9.7], [4.85, 10.5], [4.0, 11.3], [2.9, 11.85], [1.6, 12.25], [0, 12.5]],
-    // Vue de dessus, la coiffe s'allonge un peu d'avant en arrière et se resserre vers l'arrière (l'œuf
-    // de la fiche, le gros bout devant) : `oeuf`, le resserrement au bord de derrière.
     allonge: 1.07, oeuf: 0.28,
-    // Son dessous, peu creusé : les lamelles rayonnent du tronc au bord.
     dessous: [[10.0, 0], [8.6, 0.8], [7.2, 1.4], [5.8, 1.85], [4.5, 2.2], [3.6, 2.4]],
-    // La pose de la coiffe : hauteur du bord, avancée, inclinaison (vers l'arrière : le bord de devant
-    // se relève, comme sur les profils).
     pose: { y: 13.0, z: 0.5, inclinaison: -0.27 },
-    // Le tronc, des jambes au dessous de la coiffe : un sac à peine plus large en bas, presque rond.
     tronc: [[0, 2.2], [2.4, 2.3], [4.4, 2.9], [5.4, 4.0], [5.85, 5.6], [5.85, 7.4], [5.6, 9.2], [5.25, 11.0], [4.95, 12.6], [4.6, 14.0], [4.2, 15.4], [3.4, 16.4], [0, 16.9]],
     aplati: 0.95,
-    // L'œil, au ras du bord de la coiffe : une monture d'ardoise épaisse, un verre bleu-vert sombre
-    // et bombé, un anneau cyan fin, un cœur bleu-vert ; il sort du tronc (saillie).
     oeil: { y: 11.0, monture: 3.45, epaisseur: 0.68, verre: 7.0, anneau: 1.8, trait: 0.36, saillie: 1.1 },
-    // Les bras : de longues pattes molles qui tombent en s'écartant ; les jambes : deux moignons.
     bras: { x: 7.0, y: 7.6, z: 0.2, rayons: [1.4, 3.9, 1.35], angle: 0.62, epaule: [5.0, 10.6, 0.2] },
     pieds: { x: 2.6, z: 0.3, rayons: [1.65, 1.5, 1.8] },
-    // Les taches de lueur de la coiffe (repère de la coiffe) : angle autour (0 la face), hauteur, taille.
     taches: [[-0.55, 10.4, 1.4], [1.25, 7.5, 0.75], [2.35, 9.3, 0.6], [2.8, 7.7, 0.45], [-1.9, 5.9, 0.8], [3.5, 10.0, 1.05], [-2.8, 8.0, 0.55]],
-    // Les reflets peints de la coiffe (petits éclats ; le grand reflet vient de la lumière, matierePeinte).
     reflets: [[-1.15, 8.4, 0.75, 0.32], [-0.75, 10.0, 0.5, 0.24]],
-    // Le trait : franc, brun très sombre, comme l'encrage de la fiche.
     cerne: 0.3,
   };
   const NIVEAUX = {
@@ -59,9 +28,7 @@ const ModeleLampignon = (() => {
     lamelleFond: '#56706b', lamelleBord: '#2f3d3b',
   };
 
-  // ----- Les courbes -----
 
-  // Une polyligne lissée (Catmull-Rom uniforme), `n` points par segment.
   function lisser(pts, n) {
     const out = [], P = [pts[0]].concat(pts, [pts[pts.length - 1]]);
     for (let i = 1; i < P.length - 2; i++) {
@@ -74,7 +41,6 @@ const ModeleLampignon = (() => {
     out.push(pts[pts.length - 1].slice());
     return out;
   }
-  // Le point du profil de la coiffe à une hauteur donnée (sur le dessus) : rayon et normale du profil.
   function surCoiffe(y) {
     const P = lisser(COTES.coiffe, 8).reverse();
     for (let i = 0; i < P.length - 1; i++) {
@@ -88,13 +54,8 @@ const ModeleLampignon = (() => {
     return { r: 0, nr: 0, ny: 1 };
   }
 
-  // ----- Un assembleur de géométries (positions, normales, uv, couleurs, index) -----
 
-  // `partie` : la pièce animée à laquelle appartiennent les sommets ajoutés ensuite (coiffe, bras,
-  // bâton : voir les gestes), rangée dans l'attribut aPartie.
   function Brut() { return { p: [], n: [], uv: [], c: [], idx: [], pa: [], partie: 0 }; }
-  // Ajoute une géométrie THREE à `b`, transformée par la matrice `m`, avec une couleur par sommet
-  // (une fonction de la position locale, ou une couleur) et ses uv (remappés) ou un uv fixe.
   function ajouter(THREE, b, geo, m, couleur, uv) {
     const pos = geo.attributes.position, nor = geo.attributes.normal, uvs = geo.attributes.uv;
     const base = b.p.length / 3, v = new THREE.Vector3(), nm = new THREE.Matrix3().getNormalMatrix(m);
@@ -123,14 +84,12 @@ const ModeleLampignon = (() => {
     g.computeBoundingSphere();
     return g;
   }
-  // Le cerne : la coque gonflée le long des normales (dessinée sur l'envers).
   function coque(THREE, b, e) {
     const o = { p: b.p.slice(), n: b.n.slice(), uv: b.uv.slice(), c: b.c.slice(), idx: b.idx.slice(), pa: b.pa ? b.pa.slice() : null };
     for (let i = 0; i < o.p.length; i += 3) { o.p[i] += o.n[i] * e; o.p[i + 1] += o.n[i + 1] * e; o.p[i + 2] += o.n[i + 2] * e; }
     return enGeo(THREE, o);
   }
 
-  // Un tube de rayon variable le long d'une courbe, entre t0 et t1 (repères par transport parallèle).
   function tube(THREE, courbe, t0, t1, n, rad, rayon) {
     const p = [], nn = [], uv = [], idx = [];
     const P = new THREE.Vector3(), T = new THREE.Vector3(), N = new THREE.Vector3(), B = new THREE.Vector3(), D = new THREE.Vector3();
@@ -161,11 +120,6 @@ const ModeleLampignon = (() => {
     return g;
   }
 
-  // L'occlusion ambiante, cuite dans les couleurs des sommets : chaque sommet s'assombrit selon les
-  // surfaces proches qui lui font face (sous la coiffe, entre les bras et le corps, au pied des
-  // jambes). Les occultants sont un échantillon des sommets des `sources` (rangés dans une grille
-  // pour aller vite) ; un voisin compte s'il est devant le sommet (dans le demi-espace de sa normale)
-  // et près de lui. `force` règle l'assombrissement, `teinte` la couleur de l'ombre.
   function occlusion(cible, sources, o) {
     const R = o.rayon, R2 = R * R, force = o.force, tot = sources.reduce((a, b) => a + b.p.length / 3, 0);
     const pas = Math.max(1, Math.round(tot / (o.echantillons || 3000)));
@@ -196,10 +150,6 @@ const ModeleLampignon = (() => {
       cible.c[3 * i] *= ao + (1 - ao) * tr; cible.c[3 * i + 1] *= ao + (1 - ao) * tg; cible.c[3 * i + 2] *= ao + (1 - ao) * tb;
     }
   }
-  // La matière peinte : un ombrage doux (une rampe fondue au lieu de trois tons tranchés) et un liseré
-  // de lumière sur les bords (le contre-jour des illustrations), ajouté au nuanceur à trois tons.
-  // `o.rampe` : d'autres tons (gris de 0 à 255, de l'ombre à la lumière) ; `o.brillant` : [force,
-  // exposant], un reflet franc de la première lumière directionnelle (le vernis de la fiche).
   function matierePeinte(THREE, params, lisere, o) {
     const tons = (o && o.rampe) || [150, 186, 222, 246, 255];
     const rampe = new Uint8Array(tons.length * 4);
@@ -220,13 +170,6 @@ const ModeleLampignon = (() => {
     return m;
   }
 
-  // ----- Les gestes (sort, saut, placement, coup reçu, poussée) -----
-  // Chaque modèle écrit sa fonction GLSL `geste(partie, g, R, O, Rc, T, S)` : pour le geste g (x :
-  // le genre, y : l'avancement de 0 à 1), le mouvement de la pièce (p devient R p + O ; gPivot donne
-  // une rotation autour d'un pivot), puis la rotation Rc, l'écrasement S (largeur, hauteur) et le
-  // déplacement T du corps entier (repère du modèle, les pieds à l'origine). Le nuanceur l'applique
-  // aux sommets et aux normales ; en jeu, le geste est un attribut d'instance (aGeste), sur la
-  // planche un uniforme (uGeste).
   const GESTES = { aucun: 0, sort: 1, saut: 2, placement: 3, coup: 4, pousse: 5 };
   const GLSL_GESTES = `
 attribute float aPartie;
@@ -249,8 +192,6 @@ void gPivot(mat3 r, vec3 p, out mat3 R, out vec3 O) { R = r; O = p - r * p; }
 // Vrai (1) pour la pièce n.
 float gEst(float partie, float n) { return 1.0 - step(0.5, abs(partie - n)); }
 `;
-  // Rend un matériau animable : la fonction du modèle (`nom`, pour le cache des programmes),
-  // appliquée aux positions et aux normales.
   function animable(m, glsl, nom) {
     const avant = m.onBeforeCompile;
     m.onBeforeCompile = (sh, r) => {
@@ -268,12 +209,9 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
     m.userData.uGeste = m.userData.uGeste || { value: [0, 0, 0, 0] };
     return m;
   }
-  // Pose le geste d'un groupe de la planche : tous ses matériaux (le genre, l'avancement).
   function poserGeste(M, genre, t) {
     for (const m of Object.values(M)) if (m && m.userData && m.userData.uGeste) { const v = m.userData.uGeste.value; v[0] = genre; v[1] = t; }
   }
-  // En jeu : un attribut d'instance pour le geste de chaque monstre, et des copies des géométries
-  // (les attributs partagés, les géométries gardées en cache pour les autres troupes) qui le portent.
   function gesteInstance(THREE, MAX) { const a = new THREE.InstancedBufferAttribute(new Float32Array(MAX * 4), 4); a.setUsage(THREE.DynamicDrawUsage); return a; }
   function avecGeste(THREE, geo, a) {
     const g = new THREE.BufferGeometry();
@@ -283,13 +221,9 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
     g.setAttribute('aGeste', a);
     return g;
   }
-  // Une pièce sans attribut aPartie (le halo) : toute sur la pièce n.
   function partieFixe(THREE, geo, n) { geo.setAttribute('aPartie', new THREE.Float32BufferAttribute(new Float32Array(geo.attributes.position.count).fill(n), 1)); }
 
-  // ----- Les textures peintes -----
 
-  // L'atlas du corps (multiplie les couleurs des sommets) : à gauche les rides du tronc, à droite
-  // les détails de la coiffe ; un bord blanc pour les pièces lisses.
   const cacheTex = new Map();
   function textures(THREE, niv) {
     const N = NIVEAUX[niv], cle = N.tex;
@@ -301,14 +235,7 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
     g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
     let s = 41;
     const h = () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
-    // Le tronc (moitié gauche) : une peau mate marbrée de taches douces, et les rides de la fiche,
-    // des plis encrés qui montent du pied en serpentant et se ramifient (un trait sombre, un liseré
-    // clair à côté).
-    // La bande du tronc dans l'atlas (ses uv : 0,012 + u × 0,466) : ce qui y est peint fait le tour
-    // exactement (repeint décalé d'une largeur de bande), le devant du tronc en x0T.
     const x0T = W * 0.012, xT = W * 0.466;
-    // Une tache douce dans une bande [x0, x0 + l] qui fait le tour (repeinte décalée d'une largeur
-    // de bande de part et d'autre, coupée à la bande) : pas de couture.
     const tacheRaccord = (x, y, r, c0, c1, x0, l) => {
       g.save(); g.beginPath(); g.rect(x0, 0, l, H); g.clip();
       for (const dx of [-l, 0, l]) { const rg = g.createRadialGradient(x + dx, y, 0, x + dx, y, r); rg.addColorStop(0, c0); rg.addColorStop(1, c1); g.fillStyle = rg; g.fillRect(x + dx - r, y - r, 2 * r, 2 * r); }
@@ -319,7 +246,6 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
       const a = 0.05 + h() * 0.06;
       tacheRaccord(x0T + x, y, r, clair ? `rgba(255, 248, 228, ${a})` : `rgba(96, 80, 56, ${a})`, clair ? 'rgba(255, 248, 228, 0)' : 'rgba(96, 80, 56, 0)', x0T, xT);
     }
-    // Une ride : un trait qui monte en ondulant, plus fin au bout, avec une ou deux branches.
     g.lineCap = 'round'; g.lineJoin = 'round';
     const ride = (x0, y0, long, ep, branche) => {
       const pts = [[x0, y0]];
@@ -336,10 +262,7 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
       if (branche) { const j = 3 + Math.floor(h() * 4), p = pts[j]; ride(p[0], p[1], long * 0.35, ep * 0.7, false); }
     };
     g.save(); g.beginPath(); g.rect(x0T, 0, xT, H); g.clip();
-    // (Le bas du tronc en haut de l'image : les rides descendent du col, sur le dos et les flancs,
-    // le devant gardé pour l'œil.)
     for (let i = 0; i < 9; i++) ride(x0T + (0.16 + (i + h() * 0.6) / 9 * 0.68) * xT, H * (0.97 - h() * 0.12), H * (0.3 + h() * 0.35), (4.2 + h() * 2.0) * k, h() < 0.6);
-    // Le pli sous l'œil, de face (le sourire de la fiche) : un arc encré qui remonte aux deux bouts.
     for (const ox of [0, xT]) {
       const x = x0T + ox, y = H * 0.4, dx = xT * 0.075;
       g.strokeStyle = 'rgba(255, 246, 222, 0.35)'; g.lineWidth = 4 * k;
@@ -348,8 +271,6 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
       g.beginPath(); g.moveTo(x - dx, y + 7 * k); g.quadraticCurveTo(x, y - 11 * k, x + dx, y + 7 * k); g.stroke();
     }
     g.restore();
-    // La coiffe (moitié droite) : une marbrure fondue, un voile clair au sommet, un bord plus sombre,
-    // et les deux petites rides de la fiche près du sommet.
     const xC = W * 0.512, wC = W * 0.446;
     for (let i = 0; i < 46; i++) {
       const x = xC + h() * wC, y = H * (0.15 + h() * 0.8), r = (10 + h() * 30) * k, clair = h() < 0.45;
@@ -357,8 +278,6 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
       tacheRaccord(x, y, r, clair ? `rgba(255, 250, 235, ${a})` : `rgba(110, 92, 64, ${a})`, clair ? 'rgba(255, 250, 235, 0)' : 'rgba(110, 92, 64, 0)', xC, wC);
     }
     const grd = g.createLinearGradient(0, 0, 0, H);
-    // Le sommet plus clair, arrêté net (le disque de la « coiffe supérieure » de la fiche), le bord
-    // juste en dessous un peu plus sombre.
     grd.addColorStop(0, 'rgba(255, 252, 240, 0.42)'); grd.addColorStop(0.33, 'rgba(255, 252, 240, 0.3)'); grd.addColorStop(0.385, 'rgba(255, 252, 240, 0)');
     grd.addColorStop(0.41, 'rgba(90, 76, 52, 0.12)'); grd.addColorStop(0.8, 'rgba(90, 76, 52, 0)'); grd.addColorStop(1, 'rgba(80, 66, 44, 0.38)');
     g.fillStyle = grd; g.fillRect(xC, 0, wC, H);
@@ -370,8 +289,6 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
     const corps = new THREE.CanvasTexture(cv);
     corps.wrapS = corps.wrapT = THREE.ClampToEdgeWrapping; corps.anisotropy = 4;
     if ('encoding' in corps) corps.encoding = THREE.sRGBEncoding;
-    // Les lamelles : des nervures cyan qui luisent sur un fond ardoise, courbes comme sur la fiche,
-    // du bord (bas de l'image) au tronc (haut), une sur deux plus courte.
     const LW = N.tex, LH = Math.max(64, N.tex / 4);
     const lv = document.createElement('canvas'); lv.width = LW; lv.height = LH;
     const lg = lv.getContext('2d');
@@ -398,8 +315,6 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
     const lamelles = new THREE.CanvasTexture(lv);
     lamelles.wrapS = THREE.RepeatWrapping; lamelles.wrapT = THREE.ClampToEdgeWrapping; lamelles.anisotropy = 4;
     if ('encoding' in lamelles) lamelles.encoding = THREE.sRGBEncoding;
-    // Les lueurs additives (128 × 64) : à gauche l'anneau de lumière autour de l'anneau de l'œil (le
-    // verre laissé sombre au milieu), à droite le rayonnement doux d'une tache de la coiffe.
     const hv = document.createElement('canvas'); hv.width = 128; hv.height = 64;
     const hg = hv.getContext('2d');
     const rg = hg.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -415,7 +330,6 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
     return res;
   }
 
-  // ----- Les géométries -----
 
   const cacheGeo = new Map();
   function geometries(THREE, niv) {
@@ -429,13 +343,10 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
     const corps = Brut(), lueurs = Brut(), lames = Brut();
     const UV_BLANC = [0.985, 0.5];
 
-    // Le tronc (uv dans la moitié gauche de l'atlas), un peu aplati d'avant en arrière.
     const tronc = new THREE.LatheGeometry(V2(lisser(C.tronc, N.pas)), N.tour);
     ajouter(THREE, corps, tronc, new THREE.Matrix4().makeScale(1, 1, C.aplati), p => mix(K.troncBas, K.tronc, (p.y - 1) / 9), (u, v) => [0.012 + u * 0.466, 1 - v]);
-    // La coiffe : le dessus (moitié droite de l'atlas) puis le bord roulé.
     const Pz = C.pose, MC = new THREE.Matrix4().makeScale(1, 1, C.allonge).premultiply(new THREE.Matrix4().makeRotationX(Pz.inclinaison)).premultiply(new THREE.Matrix4().makeTranslation(0, Pz.y, Pz.z));
     const surC = m => m.clone().premultiply(MC);
-    // L'œuf : vers l'arrière (z < 0, repère de la coiffe), la largeur se resserre ; la normale suit.
     const kOeuf = z => 1 - C.oeuf * Math.max(0, -z) / C.coiffe[2][0];
     const oeuf = geo => {
       const P = geo.attributes.position, Nn = geo.attributes.normal, v = new THREE.Vector3();
@@ -450,33 +361,28 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
     const coiffe = oeuf(new THREE.LatheGeometry(V2(lisser(C.coiffe, N.pas)), N.tour));
     corps.partie = 1;
     ajouter(THREE, corps, coiffe, MC, p => (p.y < 1.4 ? mix(K.bord, K.coiffeBas, (p.y + 0.4) / 1.8) : mix(K.coiffeBas, K.coiffeHaut, (p.y - 1.4) / 11)), (u, v) => [0.512 + u * 0.446, v]);
-    // Les bras : deux ellipsoïdes qui pendent, écartés du tronc.
     for (const sg of [-1, 1]) {
       const B = C.bras, sp = new THREE.SphereGeometry(1, N.sphere[0], N.sphere[1]);
       corps.partie = sg < 0 ? 2 : 3;
       const m = new THREE.Matrix4().compose(new THREE.Vector3(sg * B.x, B.y, B.z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0.1, 0, sg * B.angle)), new THREE.Vector3(...B.rayons));
       ajouter(THREE, corps, sp, m, p => mix(K.troncBas, K.tronc, (p.y + 1) / 2), UV_BLANC);
     }
-    // Les pieds : deux galets posés, tournés vers l'avant.
     corps.partie = 4;
     for (const sg of [-1, 1]) {
       const P = C.pieds, sp = new THREE.SphereGeometry(1, N.sphere[0], N.sphere[1]);
       const m = new THREE.Matrix4().compose(new THREE.Vector3(sg * P.x, P.rayons[1], P.z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, sg * 0.1, -sg * 0.08)), new THREE.Vector3(...P.rayons));
       ajouter(THREE, corps, sp, m, p => mix(K.troncBas, K.pied, (p.y + 1) / 2), UV_BLANC);
     }
-    // L'œil : la monture (un tore épais), posée sur la face du tronc, un peu en saillie.
     const O = C.oeil;
     const zFace = (() => { const P = lisser(C.tronc, 6); let r = 6; for (let i = 0; i < P.length - 1; i++) if (O.y >= P[i][1] && O.y <= P[i + 1][1]) { const f = (O.y - P[i][1]) / (P[i + 1][1] - P[i][1]); r = P[i][0] + (P[i + 1][0] - P[i][0]) * f; } return r * C.aplati; })();
     const zOeil = zFace - 0.35 + O.saillie;
     corps.partie = 0;
     const monture = new THREE.TorusGeometry(O.monture, O.epaisseur, N.tore[0], N.tore[1]);
     ajouter(THREE, corps, monture, new THREE.Matrix4().makeTranslation(0, O.y, zOeil), p => mix(K.monture, K.montureClair, (p.y + O.monture) / (2 * O.monture) * (p.z > 0 ? 1 : 0.4)), UV_BLANC);
-    // Un fond pour boucher la monture derrière le verre.
     const fondOeil = new THREE.CircleGeometry(O.monture + 0.1, N.tore[1]);
     ajouter(THREE, corps, fondOeil, new THREE.Matrix4().makeTranslation(0, O.y, zOeil - 0.08), col(K.monture), UV_BLANC);
     const nCorps = corps.idx.length;
 
-    // Les lueurs (sans ombrage) : le verre bombé, l'anneau, le reflet, les taches de la coiffe.
     const rVerre = O.monture - O.epaisseur * 0.4, ouv = Math.asin(rVerre / O.verre);
     const verre = new THREE.SphereGeometry(O.verre, N.sphere[0], Math.max(4, Math.round(N.sphere[1] * 0.7)), 0, TAU, 0, ouv);
     ajouter(THREE, lueurs, verre, new THREE.Matrix4().makeRotationX(Math.PI / 2).premultiply(new THREE.Matrix4().makeTranslation(0, O.y, zOeil - O.verre * Math.cos(ouv))), p => mix(K.verreCoeur, K.verre, Math.pow(Math.hypot(p.x, p.z) / rVerre, 1.6)), UV_BLANC);
@@ -487,7 +393,6 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
     ajouter(THREE, lueurs, pupille, new THREE.Matrix4().makeTranslation(0, O.y, zVerre - 0.05), p => mix('#2a6f77', K.pupille, Math.hypot(p.x, p.y) / (O.anneau * 0.55)), UV_BLANC);
     const reflet = new THREE.CircleGeometry(0.34, 12);
     ajouter(THREE, lueurs, reflet, new THREE.Matrix4().compose(new THREE.Vector3(-1.05, O.y + 1.25, zVerre - 0.02), new THREE.Quaternion(), new THREE.Vector3(1.3, 0.85, 1)), col('#f2fdff'), UV_BLANC);
-    // Les taches de la coiffe : des ellipses posées sur la surface, le cœur plus clair.
     lueurs.partie = 1;
     for (const [th, y, t] of C.taches) {
       const S = surCoiffe(y), sn = Math.sin(th), cs = Math.cos(th);
@@ -497,7 +402,6 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
       const m = new THREE.Matrix4().compose(surOeuf(new THREE.Vector3(S.r * sn, y, S.r * cs)).addScaledVector(n, 0.06), q, new THREE.Vector3(t * 1.25, t, 1));
       ajouter(THREE, lueurs, disque, surC(m), p => mix(K.lueurCoeur, K.lueur, Math.hypot(p.x, p.y) * 1.3), UV_BLANC);
     }
-    // Les reflets de la coiffe : de longues taches claires, couchées le long de la pente.
     for (const [th, y, lg, la] of C.reflets) {
       const S = surCoiffe(y), sn = Math.sin(th), cs = Math.cos(th);
       const n = new THREE.Vector3(S.nr * sn, S.ny, S.nr * cs).normalize();
@@ -507,14 +411,10 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
       const m = new THREE.Matrix4().compose(surOeuf(new THREE.Vector3(S.r * sn, y, S.r * cs)).addScaledVector(n, 0.05), q.multiply(tq), new THREE.Vector3(lg, la, 1));
       ajouter(THREE, lueurs, disque, surC(m), p => mix('#f4f1e4', '#c9c2a8', Math.hypot(p.x, p.y) * 1.1), UV_BLANC);
     }
-    // Les lamelles : le dessous de la coiffe, du bord au tronc.
     const dessous = oeuf(new THREE.LatheGeometry(V2(lisser(C.dessous, Math.max(1, N.pas - 1))), N.tour));
     lames.partie = 1;
     ajouter(THREE, lames, dessous, MC, col('#ffffff'), (u, v) => [u * 3, 1 - v]);
 
-    // Les lueurs additives : l'anneau autour de l'œil, un disque face à l'avant juste devant le
-    // verre (moitié gauche de leur image), et le rayonnement de chaque tache de la coiffe, un carré
-    // couché sur la coiffe un peu au-dessus d'elle (moitié droite).
     const hp = [], huv = [], hpa = [], hidx = [];
     const carre = (m, u0, partie) => {
       const b0 = hp.length / 3, v = new THREE.Vector3();
@@ -535,8 +435,6 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
     halo.setIndex(hidx);
     halo.computeBoundingSphere();
 
-    // L'occlusion : le haut du tronc sous la coiffe, les flancs derrière les bras, le bas autour des
-    // pieds, le fond des lamelles près du tronc.
     occlusion(corps, [corps, lames], { rayon: 5.5, force: 0.09 });
     occlusion(lames, [corps], { rayon: 5, force: 0.08, teinte: [0.3, 0.3, 0.32] });
 
@@ -549,12 +447,9 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
     return G;
   }
 
-  // ----- Les matières -----
 
   function matieres(THREE, niv) {
     const T = textures(THREE, niv);
-    // La matière peinte (ombrage doux et liseré de lumière), un cerne fin et brun.
-    // Des tons francs comme la fiche (ombre, demi-teinte, lumière, fondus sur un pas) et un vernis.
     const corps = matierePeinte(THREE, { color: 0xffffff, vertexColors: true, map: T.corps }, [1, 0.95, 0.84, 0.38],
       { rampe: [138, 138, 138, 140, 176, 206, 210, 212, 238, 250, 252, 255, 255], brillant: [0.22, 46] });
     const grad = corps.userData.rampe;
@@ -569,30 +464,16 @@ vec3 gesteNormale(vec3 n) { mat3 R, Rc; vec3 O, T; vec2 S; geste(aPartie, GESTE,
     M.grad = grad;
     return { M, T };
   }
-  // Le souffle de l'œil : l'anneau et le halo pulsent doucement (une valeur pour tous).
   function pouls(M, t) {
     const p = 0.82 + 0.18 * Math.sin(t * 1.9) + 0.06 * Math.sin(t * 5.3);
     M.halo.color.setScalar(0.5 * p);
     M.lueurs.color.setScalar(0.9 + 0.1 * p);
   }
-  // Le dandinement : un léger tassement et un balancement d'un pied sur l'autre.
   function dandine(t) {
     const b = Math.sin(t * 2.3);
     return { sx: 1 + 0.018 * b, sy: 1 - 0.03 * b, rz: 0.045 * Math.sin(t * 1.15), dy: 0 };
   }
 
-  // ----- Les gestes du Lampignon -----
-  // Les pièces : 0 le tronc et l'œil, 1 la coiffe (taches, reflets, lamelles), 2 et 3 les bras
-  // gauche et droit, 4 les pieds. La coiffe tourne autour de son attache sur le tronc, les bras
-  // autour de l'épaule ; le corps entier se penche sur ses pieds, s'écrase, avance et saute.
-  //  - Sort (la Bouffée de spores, 650 ms) : il se tasse et se penche en arrière, les bras levés,
-  //    puis se jette en avant d'un coup de coiffe (lâcher des spores à 42 %), la coiffe en retard qui
-  //    fouette et tremble, et revient.
-  //  - Saut (un pas de combat) : il s'écrase, décolle, la coiffe traîne, retombe et s'écrase.
-  //  - Placement (720 ms) : il tombe du ciel, s'écrase en touchant le sol, rebondit une fois, la
-  //    coiffe ballotte.
-  //  - Coup reçu (250 ms) : recul, tassement, la coiffe tremble. Poussée (320 ms) : renversé en
-  //    arrière, les bras qui battent.
   const DUREES = { sort: 650, lacher: 0.42, placement: 720, coup: 250, pousse: 320 };
   const GLSL = `
 void geste(float partie, vec4 g, out mat3 R, out vec3 O, out mat3 Rc, out vec3 T, out vec2 S) {
@@ -647,7 +528,6 @@ void geste(float partie, vec4 g, out mat3 R, out vec3 O, out mat3 Rc, out vec3 T
 }
 `;
 
-  // ----- La planche : un THREE.Group -----
   function construire(THREE, opts) {
     const o = opts || {};
     const niv = o.niveau || 'planche';
@@ -660,7 +540,6 @@ void geste(float partie, vec4 g, out mat3 R, out vec3 O, out mat3 Rc, out vec3 T
     groupe.add(corps);
     groupe.userData = {
       matieres: M, niveau: niv,
-      // Un geste (GESTES : le genre ; t de 0 à 1), ou aucun (genre 0).
       geste(genre, t) { poserGeste(M, typeof genre === 'string' ? GESTES[genre] || 0 : genre, t || 0); },
       animer(t, etat) {
         const e = etat || {};
@@ -674,7 +553,6 @@ void geste(float partie, vec4 g, out mat3 R, out vec3 O, out mat3 Rc, out vec3 T
     return groupe;
   }
 
-  // ----- Le jeu : une troupe instanciée, posée par ModeleGlym.Parc -----
   class Troupe {
     constructor(THREE, opts) {
       const MAX = opts.max || 24, niv = opts.niveau;
@@ -682,11 +560,9 @@ void geste(float partie, vec4 g, out mat3 R, out vec3 O, out mat3 Rc, out vec3 T
       this.M = M; this.octets = T.octets; this.cotes = COTES; this.hauteurJeu = 1.4;
       this.matrice = new THREE.InstancedBufferAttribute(new Float32Array(MAX * 16), 16);
       this.couleur = new THREE.InstancedBufferAttribute(new Float32Array(MAX * 3).fill(1), 3);
-      // Le parc écrit le temps et l'état de chaque instance : gardés ici, lus par etat().
       this.aTemps = new THREE.InstancedBufferAttribute(new Float32Array(MAX), 1);
       this.aEtat = new THREE.InstancedBufferAttribute(new Float32Array(MAX * 4), 4);
       for (const a of [this.matrice, this.couleur]) a.setUsage(THREE.DynamicDrawUsage);
-      // Le geste de chaque instance (le genre, l'avancement), écrit par le parc.
       this.aGeste = gesteInstance(THREE, MAX); this.codes = GESTES; this.durees = DUREES;
       this.geos = [];
       const maillage = (geo0, mat, ordre, teinte) => {
@@ -703,16 +579,12 @@ void geste(float partie, vec4 g, out mat3 R, out vec3 O, out mat3 Rc, out vec3 T
       this.n = 0;
       this.triangles = G.triangles;
     }
-    // Le dandinement d'une instance (le parc l'applique à sa matrice).
     deformer(t) { return dandine(t); }
-    // Le coup reçu : le corps s'éclaircit un instant.
     teinter(i, flash) { const k = 1 + flash * 1.1; this.couleur.array.set([k, k, k], i * 3); }
     debut(t) { pouls(this.M, t); }
     fin() { this.couleur.needsUpdate = this.aGeste.needsUpdate = true; }
   }
 
-  // Les outils d'assemblage, partagés avec les autres modèles écrits par le code
-  // (js/modele-lampignard.js).
   const outils = { Brut, ajouter, enGeo, coque, lisser, tube, dandine, occlusion, matierePeinte, animable, poserGeste, gesteInstance, avecGeste, partieFixe, GESTES };
   return { COTES, NIVEAUX, COULEURS, GESTES, DUREES, construire, geometries, Troupe, outils };
 })();

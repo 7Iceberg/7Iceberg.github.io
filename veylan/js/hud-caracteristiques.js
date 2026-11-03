@@ -1,11 +1,3 @@
-// Caractéristiques (touche C), à la manière de Dofus Touch dans la charte Veylan : le portrait,
-// l'expérience, et trois onglets. Résumé : PV, PA, PM, Initiative, Prospection, Invocations, puis
-// les six caractéristiques avec leur « + », qui ouvre la feuille de répartition (points restants,
-// pas à pas, aperçu du gain et du total, paliers de coût, Valider). Détails : base, bonus (parchemins,
-// équipement, panoplies) et total de tout ce que le moteur calcule. Éléments : le profil en radar,
-// les dégâts et résistances par élément, la voie élémentaire. Au pied : points à répartir,
-// répartition automatique, réinitialisation. La Portée n'existe pas pour un personnage de Veylan :
-// elle n'est pas montrée. Se charge après js/hud-fenetres.js et complète Hud.
 (() => {
 const I = Fenetres.ICON;
 const esc = s => Util.esc(s);
@@ -35,8 +27,6 @@ Object.assign(Hud.prototype, {
         const w = this.fen.wins.get('carac'), b = w && w.body.querySelector('.vy-caracs-feuille [data-act="pas"][data-n="1"]');
         if (b && !b.disabled) b.focus({ preventScroll: true });
       },
-      // Pas à pas : un de plus, un de moins ; les deux flèches vont au prochain arrêt (zéro, puis
-      // le plus qu'on peut poser, ou tout retirer).
       pas: d => { if (s.feuille) { s.feuille.v = borne(s.feuille.v + Number(d.n)); r(); } },
       saut: d => {
         const f = s.feuille;
@@ -62,7 +52,6 @@ Object.assign(Hud.prototype, {
     };
     const onField = (el, kind) => {
       if (el.id === 'carac-auto') ch().autoStats = el.checked;
-      // La valeur tapée suit les bornes, en direct.
       if (el.id === 'carac-valeur' && s.feuille) {
         const v = parseInt(el.value, 10);
         if (Number.isFinite(v) && (kind === 'change' || borne(v) !== s.feuille.v)) { s.feuille.v = borne(v); r(); }
@@ -74,8 +63,6 @@ Object.assign(Hud.prototype, {
     });
   },
 
-  // Ce que la feuille peut faire pour une caractéristique : tout retirer (gratuit jusqu'au niveau
-  // 30), ou poser le plus de points que permettent les paliers, compté pas à pas avec le moteur.
   caracBornes(stat) {
     const ch = this.world.ch;
     let n = 0, v = ch.stats[stat], reste = ch.statPoints;
@@ -83,7 +70,6 @@ Object.assign(Hud.prototype, {
     return { min: -ch.stats[stat], max: n };
   },
 
-  // Points de caractéristique dépensés pour +v (rendus, en négatif, pour -v), palier par palier.
   caracCout(stat, v) {
     const base = this.world.ch.stats[stat];
     let c = 0;
@@ -92,7 +78,6 @@ Object.assign(Hud.prototype, {
     return c;
   },
 
-  // Valider : les méthodes du personnage posent ou rendent les points, au coût des paliers.
   caracValider() {
     const s = this.carac, f = s.feuille, ch = this.world.ch;
     if (!f) return 0;
@@ -105,7 +90,6 @@ Object.assign(Hud.prototype, {
     return gain;
   },
 
-  // Prévient les modules voisins de ce qui a changé depuis `avant` ; retourne le gain total.
   caracSignaler(avant) {
     const ch = this.world.ch;
     let total = 0;
@@ -139,7 +123,6 @@ Object.assign(Hud.prototype, {
     </div>${s.feuille ? this.caracFeuille(ch, d) : ''}`;
   },
 
-  // Bonus d'une caractéristique, par provenance : parchemins, équipement, panoplies.
   caracBonus(ch, d) {
     const equip = {}, sets = {};
     for (const slot of Items.EQUIP_SLOTS) { const it = ch.equipment[slot] && Items.get(ch.equipment[slot]); if (it) for (const k in it.stats) equip[k] = (equip[k] || 0) + it.stats[k]; }
@@ -148,7 +131,6 @@ Object.assign(Hud.prototype, {
     return { equip, sets, texte };
   },
 
-  // ----- Résumé -----
 
   caracResume(ch, d) {
     const bonus = this.caracBonus(ch, d);
@@ -174,7 +156,6 @@ Object.assign(Hud.prototype, {
     </div>`;
   },
 
-  // ----- Détails : base, bonus, total -----
 
   caracDetails(ch, d) {
     const cls = ch.classDef, st = ch.stats, R = DATA.rules, bonus = this.caracBonus(ch, d);
@@ -210,14 +191,12 @@ Object.assign(Hud.prototype, {
       <p class="muted vy-note">Base : tes points, pour les caractéristiques ; ce qu'elles donnent, pour le reste. Bonus : parchemins, équipement et panoplies. Les dégâts par élément sont dans l'onglet Éléments.</p>`;
   },
 
-  // ----- Éléments : profil, dégâts et résistances, voie -----
 
   caracElements(ch, d, cls) {
     return `<div class="vy-caracs__elements"><div>${this.caracProfil(d)}</div><div>${this.caracParElement(ch, d, cls)}</div></div>${this.voieHtml(ch, cls)}
       <p class="muted vy-note">Chaque niveau donne 5 points. Terra, Ignis, Aqua et Aer coûtent 1 point jusqu'à 100, 2 jusqu'à 200, 3 jusqu'à 300, 4 au-delà ; la Vitalité 1 point, la Sagesse 3. Un point d'élément ajoute 1 % aux dégâts de l'élément (et aux soins pour Ignis) ; Aer donne Tacle et Fuite, la Sagesse l'expérience, l'Esquive et le Retrait, Aqua la Prospection. Les parchemins ajoutent des points de base gratuits (${DATA.rules.scrollMax} au plus).</p>`;
   },
 
-  // Voie élémentaire : l'élément des sorts de dégâts, au choix (sans plafond de caractéristique).
   voieHtml(ch, cls) {
     const orig = [...new Set(cls.spells.map(id => DATA.spells[id].element).filter(e => e !== 'neutre'))].map(e => DATA.elements[e].label.toLowerCase()).join(', ');
     const btn = (v, label, color, title) => `<button class="vy-voie${(ch.voie || null) === v ? ' on' : ''}" data-act="voie" data-voie="${v || ''}" aria-pressed="${(ch.voie || null) === v}" style="--c:${color}" title="${title}">${label}</button>`;
@@ -227,7 +206,6 @@ Object.assign(Hud.prototype, {
       <p class="muted vy-note">${ch.voie ? `Tes sorts de dégâts frappent en ${DATA.elements[ch.voie].label.toLowerCase()} ; ta caractéristique est ${Items.STAT_LABEL[ch.mainStat]}.` : `Éléments d'origine : ${orig}.`} Changer de voie rend tes points, gratuitement.</p>`;
   },
 
-  // Profil : un radar à six branches, une par caractéristique.
   caracProfil(d) {
     const keys = Items.STATS;
     const vals = keys.map(k => Math.max(0, d.stats[k] || 0));
@@ -243,7 +221,6 @@ Object.assign(Hud.prototype, {
       <polygon points="${poly}" class="valeur"/>${labels}</svg>`;
   },
 
-  // Par élément : le bonus de dégâts de la caractéristique et la résistance de la classe.
   caracParElement(ch, d, cls) {
     const rows = ['neutre', 'terre', 'feu', 'eau', 'air'].map(el => {
       const k = { terre: 'force', neutre: 'force', feu: 'intel', eau: 'chance', air: 'agi' }[el];
@@ -253,14 +230,12 @@ Object.assign(Hud.prototype, {
     return `<div class="vy-sous"><span>Par élément</span></div><table class="vy-tableau"><thead><tr><th></th><th>Dégâts</th><th>Rés.</th></tr></thead><tbody>${rows}</tbody></table>`;
   },
 
-  // ----- Feuille de répartition -----
 
   caracFeuille(ch, d) {
     const f = this.carac.feuille, k = f.stat, base = ch.stats[k], b = this.caracBornes(k);
     f.v = Math.max(b.min, Math.min(b.max, f.v));
     const v = f.v, cout = this.caracCout(k, v), label = Items.STAT_LABEL[k];
     const total = d.stats[k] || 0, bonusTxt = this.caracBonus(ch, d).texte(k);
-    // Paliers : [de, jusqu'à, coût]. La Vitalité et la Sagesse ont un seul coût.
     const paliers = k === 'vita' || k === 'sagesse' ? [[0, Infinity, Character.pointCost(k, 0)]]
       : DATA.rules.statTiers.map(([haut, c], i, T) => [i ? T[i - 1][0] : 0, haut, c]);
     const dans = (p, x) => x >= p[0] && x < p[1];

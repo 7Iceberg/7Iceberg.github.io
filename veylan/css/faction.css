@@ -1,13 +1,9 @@
-/* Factions (js/hud-faction.js) : la fenêtre Faction, l'écran du serment et ses deux bannières,
-   la confirmation du reniement. Le Fil en blanc et or, la Déchirure en pourpre et noir
-   (docs/MONDE.md) ; les Francs-Marcheurs en vert de route. */
 #app { --fac-fil: #e2c690; --fac-fil-fort: #c9a66b; --fac-dechirure: #c9a8ff; --fac-dechirure-fort: #a66cff; --fac-marcheurs: #8db585; }
 #app[data-ui-theme="ardoise"] { --fac-fil: #7a5f35; --fac-fil-fort: #8e7144; --fac-dechirure: #5a2a80; --fac-dechirure-fort: #6b2fa0; --fac-marcheurs: #3f6e38; }
 .vy-faction--fil, .vy-faction-carte--fil, .vy-serment-fait--fil { --fac: var(--fac-fil); --fac-fort: var(--fac-fil-fort); }
 .vy-faction--dechirure, .vy-faction-carte--dechirure, .vy-serment-fait--dechirure { --fac: var(--fac-dechirure); --fac-fort: var(--fac-dechirure-fort); }
 .vy-embleme { display: block; flex: none; filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.45)); }
 
-/* ----- Fenêtre : sous serment ----- */
 .vy-faction__tete { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px; }
 .vy-faction__nom { font: 700 18px/1.15 var(--vy-font-titre); letter-spacing: 0.04em; color: var(--fac); }
 .vy-faction__rang { font-size: 14px; margin: 2px 0; } .vy-faction__rang b { color: var(--fac); }
@@ -46,7 +42,6 @@
 .vy-ligne-quete small { color: var(--fen-texte-2); font-size: 12px; }
 .vy-ligne-quete--offre b::before { content: "! "; color: var(--vy-attention); }
 
-/* ----- Fenêtre : sans serment, les deux factions côte à côte ----- */
 .vy-faction-cartes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .vy-faction-carte { padding: 12px; border-radius: 6px; border: 1.5px solid color-mix(in srgb, var(--fac) 55%, transparent); }
 .vy-faction-carte--fil { background: linear-gradient(180deg, rgba(247, 240, 222, 0.1), rgba(201, 166, 107, 0.04)); }
@@ -63,13 +58,11 @@
 .vy-marcheurs > div b { color: var(--fac-marcheurs); }
 .vy-marcheurs .vy-note { margin: 0; }
 
-/* ----- Le reniement ----- */
 .vy-renier { display: grid; gap: 8px; justify-items: start; }
 .vy-renier .vy-embleme { justify-self: center; }
 .vy-renier p, .vy-renier ul { margin: 0; } .vy-renier ul { padding-left: 18px; color: var(--vy-texte-2); }
 .vy-renier .vy-coche { color: var(--vy-texte); }
 
-/* ----- Étapes de choix et serment (dans le panneau de dialogue) ----- */
 .vy-serment__voix { display: flex; gap: 12px; align-items: flex-start; }
 .vy-serment__voix p { margin: 4px 0 0; font: 400 15px/1.5 var(--vy-font-lecture); max-width: 70ch; }
 .vy-serment__bannieres { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 14px 0 10px; }
@@ -108,7 +101,6 @@
 .vy-serment-fait b { display: block; font: 700 16px/1.2 var(--vy-font-titre); color: var(--fac); letter-spacing: 0.04em; }
 .vy-serment-fait small { color: var(--vy-texte-2); font-size: 12.5px; }
 
-/* Petits écrans : la fenêtre passe sur une colonne, l'écran du serment se resserre. */
 @media (max-width: 560px) {
   .vy-faction-cartes, .vy-ordres { grid-template-columns: minmax(0, 1fr); }
 }

@@ -1,61 +1,20 @@
-// Le Glym modelé par le code (docs/ILE-TECHNIQUE.md, 3.13) : la méthode d'une ressource FiveM que
-// le fondateur a envoyée, appliquée au Glym Aqua d'Ervane. Chaque pièce du modèle est construite par
-// un script à partir de cotes précises (relevées sur la fiche, docs/ILE-TECHNIQUE.md 3.20 : 21 de
-// large au dôme, une emprise de 21,5 vue de dessus, une cloche de 22,75 de haut sur une collerette à
-// huit lobes), les textures sont peintes par le code, ce qui brille vit dans des calques à part
-// (les runes émissives, puis un halo additif), une version de secours existe sans halo, et les
-// variantes (les « habits » : Aqua, Ignis, Aer, Terra) ne changent que la palette et
-// les runes peintes, jamais la géométrie.
-//
-// Les pièces, en unités de la planche (le sol en y = 0, la face vers +z) :
-//   - le corps : un tour (lathe) écrit à la main, profil de Catmull-Rom rééchantillonné à pas
-//     constant le long de l'arc (la coordonnée v de la texture suit l'arc), le dôme et sa lèvre
-//     rentrée, la taille, le ventre concave dessous ;
-//   - la jupe : une nappe polaire r(θ), une collerette à huit lobes qui s'évase jusqu'au sol ;
-//   - la goutte posée à côté ; ces trois pièces forment une seule géométrie (un seul appel) ;
-//   - le cœur : un ellipsoïde plus sombre, vu à travers la gelée ;
-//   - les yeux : deux sphères aplaties, noires et brillantes, et leurs reflets (des disques posés).
-// Les matières : des ShaderMaterial légères, sans lumière de la scène (une lumière fixe dans le
-// repère de la vue, celle de l'île, en haut à gauche) : la gelée (fresnel, corps translucide, cœur
-// visible, deux brillances), les runes dans la gelée (un calque émissif lu dans deux cartes : une
-// équirectangulaire pour le dôme et la jupe, une polaire pour le sommet), le halo (une coque un peu
-// plus large, en mélange additif, lisant le flou des runes). L'animation (rebond, écrasement et
-// étirement, houle des lobes, pouls des runes, clignement) est dans le nuanceur des sommets : un
-// temps et un état par Glym, en uniformes (ModeleGlym.construire, la planche) ou en attributs
-// d'instance (ModeleGlym.Parc, le jeu : tous les Glyms d'un habit en quatre ou cinq appels).
-//
-// Interrupteur du jeu : ?glym=modele (le Glym Aqua seul), ?glym=tous (les quatre Glyms), ou
-// DATA.ile.modeleGlym (true ou 'tous') posé par une copie d'aperçu ; lu par Ile3D.modeleGlym(),
-// qui ne charge ce fichier que s'il est allumé.
 const ModeleGlym = (() => {
   const TAU = Math.PI * 2;
 
-  // ----- Les cotes (la planche) -----
 
   const COTES = {
-    // Relevées sur la fiche (tools/mesurer-fiche.py, vue de face : 258 px pour 22,75 unités).
     hauteur: 22.75, largeurDome: 21, emprise: 21.5, bordDome: 6.3,
-    // Le profil du corps (rayon, hauteur), du milieu du ventre (dessous) au sommet : le ventre
-    // concave, le bord du dôme qui rentre sur la jupe (vers y = 6,3), une cloche plus large en bas
-    // qu'en haut (21 de large vers y = 11), au sommet large et rond.
     profil: [
       [0, 5.3], [3.0, 5.25], [5.4, 5.4], [6.6, 5.75], [7.3, 6.3], [8.2, 6.85], [9.1, 7.7], [9.75, 8.6], [10.2, 9.6],
       [10.45, 10.8], [10.5, 12.0], [10.3, 13.6], [9.9, 15.1], [9.1, 16.9], [7.85, 18.8], [5.8, 20.9], [3.4, 22.1], [0, 22.75],
     ],
-    // La jupe : une collerette de huit lobes pointus sous le dôme, étroite en haut (12,8 de large,
-    // sous la lèvre du dôme), qui descend en s'évasant jusqu'au sol (6 de haut, 15,2 de large aux
-    // creux, 17,4 aux lobes, en vagues douces vues de dessous ; le haut reste lisse).
     jupe: { lobes: 8, rCreux: 7.6, rLobe: 8.7, finesse: 1.1 },
     coeur: { centre: [0, 6.6, 0.2], rayons: [6.8, 1.4, 6.3] },
-    // Les yeux : deux grosses perles noires et brillantes, le grand reflet en haut à droite.
     yeux: { y: 12.7, ecart: 4.6, rayons: [2.55, 2.75, 1.6], enfonce: 0.25, reflets: [[0.45, 1.0, 0.95], [0.95, -1.15, 0.3]] },
     goutte: { angle: 0.95, distance: 10.2 },
-    // Le sommet en carte polaire : jusqu'à rA pleinement, fondu jusqu'à rB, carte de rayon rP.
     polaire: { rA: 5.5, rB: 6.5, rP: 7.6 },
   };
 
-  // Les niveaux de détail : la planche, le jeu au bureau, le jeu au téléphone ; `coque`, la coque
-  // grossière du halo (un flou n'a pas besoin de détail), que le bureau et le téléphone empruntent.
   const NIVEAUX = {
     planche: { tour: 96, arc: 96, jupe: 224, jupeArc: 44, coeur: [48, 32], oeil: [40, 28], reflet: 24, goutte: [24, 16], carte: 1024, polaire: 512, dos: true, halo: 'planche' },
     bureau: { tour: 40, arc: 40, jupe: 98, jupeArc: 18, coeur: [24, 14], oeil: [20, 14], reflet: 14, goutte: [10, 7], carte: 1024, polaire: 512, dos: true, halo: 'telephone' },
@@ -63,19 +22,14 @@ const ModeleGlym = (() => {
     coque: { tour: 18, arc: 18, jupe: 42, jupeArc: 8, coeur: [6, 4], oeil: [6, 4], reflet: 4, goutte: [6, 4], carte: 512, polaire: 256, dos: false, halo: 'coque' },
   };
 
-  // Les habits : la palette (sRGB) et le jeu de runes. La géométrie est la même pour tous.
   const HABITS = {
     aqua: { nom: 'Aqua', haut: '#cfe1eb', bas: '#93b3c6', sombre: '#56778e', bord: '#f0f7fb', coeur: '#4f7189', rune: '#5ff2ff', runeBord: '#2a8fb5', halo: '#3fdcff', runes: 'aqua' },
-    // (Les trois autres suivent la gelée de l'Aqua de la fiche : translucide, peu saturée.)
     ignis: { nom: 'Ignis', haut: '#f6d4c0', bas: '#de9a7a', sombre: '#9e573b', bord: '#fff4ec', coeur: '#ad5639', rune: '#ffcf6a', runeBord: '#a83a12', halo: '#ff9a3c', runes: 'ignis' },
     aer: { nom: 'Aer', haut: '#e9f5ed', bas: '#b3d5c0', sombre: '#6a957c', bord: '#ffffff', coeur: '#82b396', rune: '#38eea2', runeBord: '#1f6a47', halo: '#9dffd0', runes: 'aer' },
     terra: { nom: 'Terra', haut: '#ecdab6', bas: '#c3a174', sombre: '#7a5935', bord: '#fff4de', coeur: '#8b6638', rune: '#ffd979', runeBord: '#6a4418', halo: '#ffc85a', runes: 'terra' },
   };
 
-  // ----- Les courbes -----
 
-  // Catmull-Rom centripète par les points donnés (les extrémités doublées par des points fantômes
-  // fournis), `n` échantillons par segment.
   function catmull(pts, n) {
     const out = [];
     const d = (a, b) => Math.pow(Math.hypot(b[0] - a[0], b[1] - a[1]), 0.5) || 1e-4;
@@ -93,7 +47,6 @@ const ModeleGlym = (() => {
     out.push(pts[pts.length - 2].slice());
     return out;
   }
-  // `n` points à pas constant le long d'une polyligne ; rend aussi la longueur.
   function reechantillonner(pts, n) {
     const cum = [0];
     for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
@@ -109,8 +62,6 @@ const ModeleGlym = (() => {
   }
   const lisse = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
-  // Le profil du corps, à `n` points par l'arc : les points, la longueur, les normales du profil,
-  // et des lectures (rayon à l'abscisse s, s à une hauteur ou à un rayon du haut du dôme).
   function profilCorps(n) {
     const P = COTES.profil;
     const fantomes = [[-P[1][0], P[1][1]]].concat(P, [[-P[P.length - 2][0], P[P.length - 2][1]]]);
@@ -127,7 +78,6 @@ const ModeleGlym = (() => {
     }
     const L = r.L;
     const lire = (s, k) => { const f = Math.max(0, Math.min(n - 1, s / L * (n - 1))), i = Math.min(n - 2, Math.floor(f)), t = f - i; return pts[i][k] + (pts[i + 1][k] - pts[i][k]) * t; };
-    // Le haut du dôme (au-dessus de la plus grande largeur) : y croît et r décroît avec s.
     let jMax = 0;
     for (let j = 0; j < n; j++) if (pts[j][1] > 8 && pts[j][0] > pts[jMax][0]) jMax = j;
     const sDe = (k, x, croissant) => {
@@ -140,15 +90,11 @@ const ModeleGlym = (() => {
     return { pts, nr, L, rayon: s => lire(s, 0), y: s => lire(s, 1), sDeY: y => sDe(1, y, true), sDeR: x => sDe(0, x, false) };
   }
 
-  // Le facteur de lobe de la jupe à l'angle θ (1 au milieu d'un lobe, 0 au creux), et le rayon du bord.
   function lobe(th) {
     const J = COTES.jupe, c = Math.cos(J.lobes * th / 2);
     return Math.pow(Math.sqrt(c * c + 0.0025), J.finesse);
   }
   const rayonJupe = th => COTES.jupe.rCreux + (COTES.jupe.rLobe - COTES.jupe.rCreux) * lobe(th);
-  // Le profil fermé de la jupe (rayon, hauteur) pour un facteur de lobe `e` et un rayon de bord R :
-  // l'attache dans le corps, le dessus, la boucle retroussée, le contact au sol, le dessous qui
-  // remonte en anneau sous le ventre.
   function profilJupe(e, R, n) {
     const P = [
       [5.9, 6.5], [6.35, 5.9], [6.9, 4.6], [7.4 + 0.35 * (R - 7.4), 3.2 + 0.15 * e], [R - 0.45, 1.75 + 0.45 * e], [R + 0.15 + 0.3 * e, 0.85 + 0.55 * e],
@@ -159,11 +105,8 @@ const ModeleGlym = (() => {
     return reechantillonner(catmull([f0].concat(P, [f1]), 16), n);
   }
 
-  // ----- Les géométries -----
 
-  // Une géométrie de travail : positions, normales, uv, pièce (sombre, jupe, goutte), index.
   function Brut() { return { p: [], n: [], uv: [], pc: [], idx: [] }; }
-  // Remet chaque triangle dans le sens de ses normales (face avant vers l'extérieur).
   function orienter(b) {
     const P = b.p, N = b.n, I = b.idx;
     for (let k = 0; k < I.length; k += 3) {
@@ -176,7 +119,6 @@ const ModeleGlym = (() => {
     }
     return b;
   }
-  // Une grille (colonnes × lignes) en triangles.
   function grille(b, base, cols, rangs) {
     for (let i = 0; i < cols - 1; i++) for (let j = 0; j < rangs - 1; j++) {
       const a = base + i * rangs + j, c = a + rangs;
@@ -196,12 +138,9 @@ const ModeleGlym = (() => {
   }
   const sombreDe = ny => lisse(-0.15, -0.75, ny);
 
-  // Le corps : le tour du dôme (uv : u autour, face en 0,5 ; v de 0,25 à 1 le long de l'arc), la
-  // jupe (v de 0 à 0,24 le long de son profil), la goutte (sans runes).
   function construireCorps(niv) {
     const N = NIVEAUX[niv], b = Brut();
     const pr = profilCorps(N.arc);
-    // Le dôme.
     for (let i = 0; i <= N.tour; i++) {
       const th = -Math.PI + TAU * i / N.tour, sn = Math.sin(th), cs = Math.cos(th);
       for (let j = 0; j < N.arc; j++) {
@@ -212,7 +151,6 @@ const ModeleGlym = (() => {
       }
     }
     grille(b, 0, N.tour + 1, N.arc);
-    // La jupe : chaque colonne a son profil (son lobe), rééchantillonné à pas constant.
     const base = b.p.length / 3, M = N.jupeArc, cols = [];
     for (let i = 0; i <= N.jupe; i++) {
       const th = -Math.PI + TAU * i / N.jupe;
@@ -224,7 +162,6 @@ const ModeleGlym = (() => {
       for (let j = 0; j < M; j++) {
         const [r, y] = cols[i][j];
         const P = (k, jj) => { const th2 = -Math.PI + TAU * k / N.jupe, q = cols[k][jj]; return [q[0] * Math.sin(th2), q[1], q[0] * Math.cos(th2)]; };
-        // Tangentes par différences : le long du profil (t), autour (θ) ; n = t × θ.
         const a = P(i, Math.min(M - 1, j + 1)), c = P(i, Math.max(0, j - 1));
         const tt = [a[0] - c[0], a[1] - c[1], a[2] - c[2]];
         const e = P(is, j), f = P(ip, j);
@@ -238,7 +175,6 @@ const ModeleGlym = (() => {
       }
     }
     grille(b, base, N.jupe + 1, M);
-    // La goutte : un petit tour, posé au sol à côté de la jupe.
     const g0 = b.p.length / 3, G = COTES.goutte, [gt, ga] = N.goutte;
     const gx = Math.sin(G.angle) * G.distance, gz = Math.cos(G.angle) * G.distance;
     const gp = reechantillonner(catmull([[-0.6, 0.06], [0, 0.02], [0.6, 0.06], [0.98, 0.32], [1.05, 0.72], [0.82, 1.18], [0.42, 1.62], [0.1, 1.98], [0, 2.08], [-0.1, 1.98]], 8), ga + 1).pts;
@@ -259,7 +195,6 @@ const ModeleGlym = (() => {
     return { brut: orienter(b), profil: pr, nDome };
   }
 
-  // Un ellipsoïde (le cœur, un œil) : positions, normales vraies, dans un repère donné.
   function ellipsoide(b, c, ax, ay, az, repere, seg, rangs, extra) {
     const base = b.p.length / 3;
     const [X, Y, Z] = repere;
@@ -284,9 +219,6 @@ const ModeleGlym = (() => {
     return orienter(b);
   }
 
-  // Les yeux : posés sur le devant du dôme, bas, écartés ; un repère par œil (z : la normale du
-  // dôme, x : vers la droite de qui regarde) ; les reflets (un grand en haut, un petit en bas à
-  // droite) sont des disques collés à la surface de l'œil. aOeil : (x, y, z locaux, reflet).
   function construireYeux(niv, pr) {
     const N = NIVEAUX[niv], b = Brut(), Y = COTES.yeux, oeil = [];
     const s = pr.sDeY(Y.y), r = pr.rayon(s), j = Math.round(s / pr.L * (pr.pts.length - 1)), [nr, ny] = pr.nr[j];
@@ -316,7 +248,6 @@ const ModeleGlym = (() => {
     return { brut: b, oeil };
   }
 
-  // Les géométries d'un niveau, partagées par tous les habits (gardées par THREE et par niveau).
   const cacheGeo = new Map();
   function geometries(THREE, niv) {
     const cle = niv;
@@ -334,15 +265,6 @@ const ModeleGlym = (() => {
     return G;
   }
 
-  // ----- Les runes, peintes par le code -----
-  //
-  // Une rune est un trait (une polyligne) posé sur la surface en coordonnées (θ, s) : θ l'angle
-  // autour (0 : la face), s l'abscisse le long du profil du dôme ; ou (θ, t) sur la jupe. Les
-  // glyphes sont dessinés dans un repère local en unités de la planche (u à droite, v en haut),
-  // posé sur la surface (u / rayon en θ, v en s) : ils épousent la courbure. Le même trait est
-  // pixellisé dans les deux cartes (l'équirectangulaire et la polaire) : le fondu entre elles, au
-  // sommet, ne montre pas de couture. Trois couches par carte : R le trait net, G son flou (le
-  // halo), B un contour un peu plus large (la lisibilité sur la gelée claire).
 
   const arcL = (cx, cy, r, a0, a1, n) => { const o = []; n = n || Math.max(6, Math.ceil(Math.abs(a1 - a0) * r * 6)); for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * i / n; o.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); } return o; };
   const segL = (x0, y0, x1, y1, n) => { const o = []; n = n || 8; for (let i = 0; i <= n; i++) o.push([x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n]); return o; };
@@ -351,20 +273,13 @@ const ModeleGlym = (() => {
   const O = (cx, cy, r, w) => ({ pts: arcL(cx, cy, r, 0, TAU, Math.max(18, Math.ceil(r * 14))), w: w || 1, ferme: true });
   const spirale = (r, tours, w) => { const o = []; const n = 60; for (let i = 0; i <= n; i++) { const t = i / n, a = t * tours * TAU; o.push([Math.cos(a) * r * (0.15 + 0.85 * t), Math.sin(a) * r * (0.15 + 0.85 * t)]); } return T(o, w); };
 
-  // Les glyphes de chaque élément (environ 3 de haut).
   const GLYPHES = {
     aqua: [
-      // La fourche (Y) : une tige, deux branches qui s'ouvrent, un point.
       () => [T(segL(0, -1.5, 0, -0.15)), T(quadL([0, -0.15], [-0.1, 0.8], [-1.0, 1.35])), T(quadL([0, -0.15], [0.1, 0.8], [1.0, 1.35])), O(0, 0.75, 0.16, 0.8)],
-      // L'arc : deux arcs emboîtés au-dessus d'une courte tige.
       () => [T(arcL(0, -0.2, 1.15, 0.25, Math.PI - 0.25)), T(arcL(0, -0.2, 0.6, 0.35, Math.PI - 0.35)), T(segL(0, -0.2, 0, -1.4))],
-      // La branche : une tige en S, deux rameaux alternés.
       () => [T(quadL([0.1, -1.5], [-0.35, 0], [0.05, 1.5])), T(quadL([-0.08, 0.35], [0.5, 0.45], [0.85, 1.1])), T(quadL([-0.12, -0.45], [-0.55, -0.3], [-0.85, 0.25]))],
-      // Le trident : une tige, trois dents, les deux du dehors s'écartent.
       () => [T(segL(0, -1.5, 0, 1.3)), T(quadL([0, -0.2], [-0.95, -0.15], [-0.9, 1.0])), T(quadL([0, -0.2], [0.95, -0.15], [0.9, 1.0]))],
-      // La goutte : un contour d'eau et son point.
       () => [T(quadL([0, 1.4], [-1.3, -0.5], [0, -1.1]).concat(quadL([0, -1.1], [1.3, -0.5], [0, 1.4]).slice(1))), O(0, -0.35, 0.22, 0.8)],
-      // La vague : deux ondes posées l'une sur l'autre.
       () => [T(quadL([-1.2, 0.4], [-0.6, 1.2], [0, 0.4]).concat(quadL([0, 0.4], [0.6, -0.4], [1.2, 0.4]).slice(1))), T(quadL([-1.0, -0.6], [-0.5, 0.1], [0, -0.6]).concat(quadL([0, -0.6], [0.5, -1.3], [1.0, -0.6]).slice(1)))],
     ],
     ignis: [
@@ -392,7 +307,6 @@ const ModeleGlym = (() => {
       () => [T(segL(-1.1, 0.2, 0, 1.2, 3).concat(segL(0, 1.2, 1.1, 0.2, 3).slice(1))), T(segL(-1.1, -0.6, 1.1, -0.6)), T(segL(0, -0.6, 0, -1.4))],
     ],
   };
-  // Les deux petits glyphes de la jupe, alternés d'un lobe à l'autre (une spirale, un triangle pour Aqua).
   const GLYPHES_JUPE = {
     aqua: [() => [spirale(0.75, 1.75, 0.9)], () => [T(segL(-0.75, -0.6, 0, 0.75, 3).concat(segL(0, 0.75, 0.75, -0.6, 3).slice(1), segL(0.75, -0.6, -0.75, -0.6, 3).slice(1)), 0.9)]],
     ignis: [() => GLYPHES.ignis[0]().map(t => ({ pts: t.pts.map(([x, y]) => [x * 0.55, y * 0.55]), w: 0.9 })), () => [T(segL(-0.75, -0.6, 0, 0.75, 3).concat(segL(0, 0.75, 0.75, -0.6, 3).slice(1), segL(0.75, -0.6, -0.75, -0.6, 3).slice(1)), 0.9)]],
@@ -400,16 +314,11 @@ const ModeleGlym = (() => {
     terra: [() => [T(segL(-0.6, -0.6, 0.6, -0.6, 3).concat(segL(0.6, -0.6, 0.6, 0.6, 3).slice(1), segL(0.6, 0.6, -0.6, 0.6, 3).slice(1), segL(-0.6, 0.6, -0.6, -0.6, 3).slice(1)), 0.9)], () => [T(segL(-0.75, -0.6, 0, 0.75, 3).concat(segL(0, 0.75, 0.75, -0.6, 3).slice(1), segL(0.75, -0.6, -0.75, -0.6, 3).slice(1)), 0.9)]],
   };
 
-  // Une suite pseudo-aléatoire fixe (les runes d'un habit sont toujours les mêmes).
   function graine(n) { let s = n >>> 0; return () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
-  // Le plan des runes d'un habit : la liste des traits en coordonnées de surface.
-  // Trait : { zone: 'dome' | 'jupe', pts: [[θ, s ou t]], w (largeur), ferme, kv (jupe) }.
   function planRunes(cle, pr) {
     const G = GLYPHES[cle], GJ = GLYPHES_JUPE[cle], traits = [], hasard = graine(cle.length * 977 + cle.charCodeAt(0));
-    // Le trait : épais et net, comme sur la fiche (l'Aqua plus encore, ses glyphes sont peu nombreux).
     const LARGEUR = cle === 'aqua' ? 0.26 : 0.21;
-    // Un glyphe local posé sur le dôme en (θ0, s0), tourné de `rot`, à l'échelle `k`.
     const poser = (glyphe, th0, s0, k, rot) => {
       const c = Math.cos(rot || 0), sn = Math.sin(rot || 0);
       for (const t of glyphe) traits.push({
@@ -417,12 +326,9 @@ const ModeleGlym = (() => {
         pts: t.pts.map(([u0, v0]) => { const u = (u0 * c - v0 * sn) * k, v = (u0 * sn + v0 * c) * k, s = s0 + v; return [th0 + u / Math.max(1.5, pr.rayon(s)), s]; }),
       });
     };
-    // Un motif du plan du sommet (x à droite, z vers la face, vu de dessus) ramené sur le dôme.
     const sommet = (pts, w, ferme) => traits.push({ zone: 'dome', ferme: !!ferme, w: LARGEUR * (w || 1), pts: pts.map(([x, z]) => [Math.atan2(x, z), pr.sDeR(Math.hypot(x, z))]) });
     const anneau = (r, w) => sommet(arcL(0, 0, r, 0, TAU, Math.ceil(r * 16)).map(([a, b]) => [a, b]), w, true);
 
-    // L'Aqua de la fiche : de grands traits calligraphiques posés à la main (arcs, fourches, crocs),
-    // qui suivent le dôme ; les autres habits gardent leurs rangs de glyphes.
     if (cle === 'aqua') {
       const arcF = () => [T(quadL([-1.45, -0.55], [0, 1.75], [1.45, -0.55], 20)), T(quadL([1.45, -0.55], [1.6, -1.05], [1.15, -1.4], 8), 0.8), T(quadL([0, 0.6], [-0.15, -0.2], [0.05, -0.9], 10), 0.85)];
       const fourche = () => [T(quadL([0.05, -1.5], [-0.12, -0.6], [0, 0.05], 10)), T(quadL([0, 0.05], [-0.25, 0.85], [-1.0, 1.45], 12)), T(quadL([0, 0.05], [0.35, 0.95], [0.95, 1.5], 12)), T(quadL([-0.45, 0.75], [-0.85, 0.55], [-1.1, 0.75], 6), 0.7)];
@@ -439,7 +345,6 @@ const ModeleGlym = (() => {
 
       for (const [g, th, y, k, rot] of PLAN) poser(g(), th, pr.sDeY(y), k, rot);
     }
-    // Le devant et les côtés : trois rangs, plus serrés en haut ; rien sur les yeux ni sur le dos.
     const Y = COTES.yeux, sY = pr.sDeY(Y.y), aY = Math.asin(Y.ecart / pr.rayon(sY)), yDos = 13.4;
     const rangs = [[19.6, Math.PI / 8, 1.05, 1.0], [15.6, 0, 1.3, 1.0], [11.6, Math.PI / 8, 1.3, 1.0], [8.2, 0, 1.0, 0.8]];
     let n = 0;
@@ -447,16 +352,14 @@ const ModeleGlym = (() => {
       const s = pr.sDeY(y), r = pr.rayon(s), pas = Math.PI / 4;
       for (let th = -Math.PI + pas / 2 + dec; th < Math.PI; th += pas) {
         const a = Math.atan2(Math.sin(th), Math.cos(th));
-        if (Math.hypot((Math.PI - Math.abs(a)) * r, y - yDos) < 7.4) continue;          // le mandala du dos
-        if (Math.hypot((Math.abs(a) - aY) * r, y - Y.y) < Y.rayons[1] + 1.5) continue;  // les yeux
-        if (y < 15 && Math.abs(a) < 0.9) continue;                                     // le bas du devant reste clair
+        if (Math.hypot((Math.PI - Math.abs(a)) * r, y - yDos) < 7.4) continue;
+        if (Math.hypot((Math.abs(a) - aY) * r, y - Y.y) < Y.rayons[1] + 1.5) continue;
+        if (y < 15 && Math.abs(a) < 0.9) continue;
         if (hasard() > dens) continue;
         const g = G[(n++ * 5 + Math.floor(hasard() * 3)) % G.length];
         poser(g(), a + (hasard() - 0.5) * 0.12, s + (hasard() - 0.5) * 0.6, k0 * (0.85 + hasard() * 0.25) * Math.min(1, r / 8.6), (hasard() - 0.5) * 0.35);
       }
     }
-    // Le dos : un mandala de cercles concentriques, un petit anneau au centre, des traits rayonnants
-    // courts et des arcs autour.
     {
       const s0 = pr.sDeY(yDos), dos = (pts, w, ferme) => poser([{ pts, w, ferme }], Math.PI, s0, 1, 0);
       dos(arcL(0, 0, 0.75, 0, TAU, 24), 0.9, true);
@@ -466,8 +369,6 @@ const ModeleGlym = (() => {
       for (let i = 0; i < 8; i++) { const a = i * TAU / 8 + 0.2; dos(arcL(0, 0, 4.4, a, a + 0.42, 10), 0.9); dos([[Math.cos(a + 0.6) * 4.45, Math.sin(a + 0.6) * 4.45], [Math.cos(a + 0.6) * 4.75, Math.sin(a + 0.6) * 4.75]], 0.9); }
       for (let i = 0; i < 6; i++) { const a = i * TAU / 6 + 0.26; dos(arcL(Math.cos(a) * 3.08, Math.sin(a) * 3.08, 0.22, 0, TAU, 10), 0.6, true); }
     }
-    // Le sommet : deux anneaux, de petits glyphes entre eux, un anneau au centre, puis des lignes
-    // qui descendent le dôme en se ramifiant.
     anneau(0.95, 0.9);
     anneau(2.5, 1.0);
     anneau(4.35, 1.05);
@@ -477,13 +378,11 @@ const ModeleGlym = (() => {
       for (const t of g) sommet(t.pts, t.w, t.ferme);
     }
     for (let i = 0; i < 8; i++) {
-      // (L'Aqua n'en garde que quatre, sur les côtés et au dos : la fiche montre peu de traits, larges.)
       if (cle === 'aqua' && i % 2 === 0) continue;
       const a = i * TAU / 8, sH = pr.sDeR(4.35), long = (cle === 'aqua' ? [1.6, 4.2, 6.2, 8.0, 3.2, 8.0, 6.2, 4.2] : [4.2, 8.0, 6.2, 8.0, 3.2, 8.0, 6.2, 8.0])[i];
       const pts = [];
       for (let k = 0; k <= 30; k++) { const s = sH - long * k / 30; pts.push([a + 0.06 * Math.sin(k * 0.35 + i), s]); }
       traits.push({ zone: 'dome', w: LARGEUR * 0.95, pts });
-      // Deux rameaux et un bout fourchu.
       for (const [f, sg] of [[0.35, 1], [0.62, -1]]) {
         const s = sH - long * f, r = pr.rayon(s);
         traits.push({ zone: 'dome', w: LARGEUR * 0.75, pts: quadL([0, 0], [sg * 0.7, -0.2], [sg * 1.2, -1.1], 10).map(([u, v]) => [a + 0.06 * Math.sin(f * 30 * 0.35 + i) + u / r, s + v]) });
@@ -491,7 +390,6 @@ const ModeleGlym = (() => {
       const sb = sH - long, rb = pr.rayon(sb);
       for (const sg of [-1, 1]) traits.push({ zone: 'dome', w: LARGEUR * 0.75, pts: quadL([0, 0], [sg * 0.1, -0.5], [sg * 0.6, -0.9], 8).map(([u, v]) => [a + 0.06 * Math.sin(30 * 0.35 + i) + u / rb, sb + v]) });
     }
-    // La jupe : un petit glyphe par lobe, sur le dessus, près du bord.
     {
       const P = profilJupe(1, COTES.jupe.rLobe, 200), Lj = P.L, t0 = 0.27, ro = P.pts[Math.round(t0 * 199)][0];
       for (let k = 0; k < COTES.jupe.lobes; k++) {
@@ -502,8 +400,6 @@ const ModeleGlym = (() => {
     return traits;
   }
 
-  // Pixellise les traits dans une carte : `proj(a, b)` rend [x, y] en pixels ; la largeur est
-  // appliquée dans le repère de la surface (mesure horizontale kh, verticale kv).
   function pixelliser(g, traits, proj, mesure, copies) {
     g.fillStyle = '#fff';
     for (const t of traits) {
@@ -518,7 +414,6 @@ const ModeleGlym = (() => {
         const l = Math.hypot(tx, ty) || 1;
         const nx = -ty / l, ny = tx / l;
         const f = i / (n - 1);
-        // Un trait de plume : plein au milieu, effilé aux bouts (les cercles gardent un souffle).
         const k = t.ferme ? 0.85 + 0.15 * Math.sin(f * TAU * 2 + 0.7) : 0.3 + 0.7 * Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, f * 1.04 - 0.02))), 0.55);
         const hw = t.w * 0.5 * k;
         gauche.push([P[i][0] + nx * hw / kh, P[i][1] + ny * hw / kv]);
@@ -536,7 +431,6 @@ const ModeleGlym = (() => {
     }
   }
 
-  // Flou en boîte, trois passes séparables (presque gaussien) ; `boucle` : x se referme (la couture).
   function flou(src, W, H, r, boucle) {
     let a = Float32Array.from(src), b = new Float32Array(W * H);
     const passe = (inp, out, horiz) => {
@@ -555,7 +449,6 @@ const ModeleGlym = (() => {
     return a;
   }
 
-  // Les deux cartes d'un habit (une DataTexture chacune : R trait, G halo, B contour).
   const cacheTex = new Map();
   function cartesRunes(THREE, habit, niv) {
     const N = NIVEAUX[niv], cle = habit.runes + '|' + N.carte;
@@ -566,15 +459,11 @@ const ModeleGlym = (() => {
     const W = N.carte, H = N.carte, PW = N.polaire, C = COTES.polaire;
     const pxU = W / 1024;
     const toile = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, w, h); return { c, g }; };
-    // L'équirectangulaire : x = (0,5 + θ / 2π) W ; le dôme sur les trois quarts du haut (v de 0,25 à 1),
-    // la jupe en bas (v de 0 à 0,24). La ligne 0 de la toile est le haut de l'image (v = 1).
     const E = toile(W, H);
     const projE = (t, [a, b]) => [(0.5 + a / TAU) * W, t.zone === 'jupe' ? (1 - 0.24 * b) * H : (1 - (0.25 + 0.75 * b / pr.L)) * H];
     const mesure = (t, [, b]) => t.zone === 'jupe' ? [t.kh, t.kv] : [Math.max(1.5, pr.rayon(b)), 1];
     const copiesE = poly => { let x0 = Infinity, x1 = -Infinity; for (const q of poly) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); } const o = [0]; if (x0 < 0) o.push(W); if (x1 > W) o.push(-W); return o; };
-    // Les traits dont tous les points sont au sommet ne vont pas dans l'équirectangulaire (le pôle).
     pixelliser(E.g, traits.filter(t => t.zone === 'jupe' || t.pts.some(([, b]) => pr.rayon(b) > C.rA - 1.2)), projE, mesure, copiesE);
-    // La polaire : le sommet vu de dessus, x = 0,5 + x / 2rP, ligne = 0,5 + z / 2rP (la face en bas).
     const Pz = toile(PW, PW);
     const projP = (t, [a, b]) => { const r = pr.rayon(b); return [(0.5 + r * Math.sin(a) / (2 * C.rP)) * PW, (0.5 + r * Math.cos(a) / (2 * C.rP)) * PW]; };
     pixelliser(Pz.g, traits.filter(t => t.zone === 'dome' && t.pts.some(([, b]) => pr.y(b) > 15 && pr.rayon(b) < C.rP + 0.5)), projP, mesure, () => [0]);
@@ -608,7 +497,6 @@ const ModeleGlym = (() => {
     return res;
   }
 
-  // ----- Les nuanceurs -----
 
   const COMMUN_VS = `
 #ifdef USE_INSTANCING
@@ -655,7 +543,6 @@ vec3 tourner(vec3 n) {
 #endif
 }
 `;
-  // La transparence des pièces pleines (un fondu, rare) : une trame, pas de tri.
   const TRAME = `
 float trame() { return fract(sin(dot(floor(gl_FragCoord.xy), vec2(12.9898, 78.233))) * 43758.5453); }
 `;
@@ -859,10 +746,7 @@ void main() {
   #include <fog_fragment>
 }`;
 
-  // ----- Les matières d'un habit -----
 
-  // Les matières sont créées par Glym (planche : leurs uniformes portent le temps et l'état) ou
-  // une fois par habit (jeu : le temps et l'état sont des attributs d'instance).
   function matieres(THREE, habit, niv, opts) {
     const o = opts || {};
     const tex = cartesRunes(THREE, habit, niv);
@@ -884,7 +768,6 @@ void main() {
       halo: new THREE.ShaderMaterial({
         uniforms: Object.assign(fog(), communs(), runes(), palette(), { uHalo: { value: new THREE.Vector4(o.halo != null ? o.halo : 0.2, 0.02, 0, 0) }, uGonfle: { value: 0.3 } }),
         vertexShader: GELEE_VS, fragmentShader: HALO_FS, transparent: true, depthWrite: false, fog: true,
-        // Additif sur la couleur, l'alpha de la toile gardé (la toile de l'île est transparente sur le ciel).
         blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor,
       }),
       coeur: new THREE.ShaderMaterial({ uniforms: Object.assign(fog(), communs(), palette()), vertexShader: COEUR_VS, fragmentShader: COEUR_FS, fog: true, transparent: true, depthWrite: false }),
@@ -894,7 +777,6 @@ void main() {
     return { M, tex };
   }
 
-  // Le clignement : fermé pendant 140 ms toutes les 2,5 à 6 s (parfois deux fois de suite).
   function cligneur(graineN) {
     const h = graine(graineN);
     let prochain = 1.2 + h() * 3, double = false;
@@ -905,9 +787,6 @@ void main() {
     };
   }
 
-  // ----- Un Glym : un THREE.Group (la planche, les aperçus) -----
-  // opts : { habit: 'aqua' | objet, niveau: 'planche' | 'bureau' | 'telephone', halo: bool (sans :
-  // la version de secours), echelle, graine }.
   function construire(THREE, opts) {
     const o = opts || {};
     const niv = o.niveau || 'planche', N = NIVEAUX[niv];
@@ -916,8 +795,6 @@ void main() {
     const { M } = matieres(THREE, habit, niv, o);
     const groupe = new THREE.Group();
     groupe.name = 'Glym ' + habit.nom;
-    // L'ordre du dessin : les yeux (pleins), l'envers de la gelée, le cœur (vu à travers elle, devant
-    // son envers), la gelée, le halo.
     const piece = (nom, geo, mat, ordre) => { const m = new THREE.Mesh(geo, mat); m.name = nom; m.renderOrder = ordre; groupe.add(m); return m; };
     piece('coeur', G.coeur, M.coeur, 1.5);
     piece('yeux', G.yeux, M.yeux, 0);
@@ -931,7 +808,6 @@ void main() {
     const mats = Object.values(M);
     groupe.userData = {
       habit, niveau: niv, halo: avecHalo, matieres: M,
-      // Le temps en secondes ; etat : { alpha, flash, runes (intensité), cligne (forcé) }.
       animer(t, etat) {
         const e = etat || {};
         const c = e.cligne != null ? e.cligne : cligne(t);
@@ -943,7 +819,6 @@ void main() {
     return groupe;
   }
 
-  // Ce qu'un objet dessine : triangles et appels (un maillage instancié compte pour un appel).
   function compter(obj) {
     let triangles = 0, appels = 0;
     obj.traverse(m => {
@@ -956,10 +831,6 @@ void main() {
     return { triangles: Math.round(triangles), appels };
   }
 
-  // ----- Le jeu : un parc de Glyms instanciés -----
-  // Une troupe par habit : cinq InstancedMesh (cœur, yeux, dos au bureau, gelée, halo) qui partagent
-  // une matrice et deux attributs d'instance (le temps, l'état) ; triés de l'arrière vers l'avant
-  // chaque image (dans l'ordre où IleFigures les pose). `prend(id)` dit si un monstre a son modèle.
   const MAX = 24;
   class Troupe {
     constructor(THREE, habit, opts) {
@@ -997,7 +868,6 @@ void main() {
   }
 
   class Parc {
-    // opts : { telephone, qualite ('haute' | 'moyenne' | 'basse'), mode ('modele' | 'tous'), hauteur (u) }.
     constructor(THREE, opts) {
       const o = opts || {};
       this.THREE = THREE;
@@ -1006,8 +876,6 @@ void main() {
       this.dos = !o.telephone && o.qualite === 'haute';
       this.hauteur = o.hauteur || 1.2;
       this.ids = o.mode === 'tous' ? { glym_aqua: 'aqua', glym_ignis: 'ignis', glym_aer: 'aer', glym_terra: 'terra' } : { glym_aqua: 'aqua' };
-      // Les autres monstres modelés par le code, chargés à côté (js/modele-lampignon.js,
-      // js/modele-lampignard.js).
       if (typeof ModeleLampignon === 'object') this.ids.lampignon = 'lampignon';
       if (typeof ModeleLampignard === 'object') this.ids.lampignard = 'lampignard';
       this.troupes = {};
@@ -1017,7 +885,6 @@ void main() {
       this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._q2 = new THREE.Quaternion(); this._v = new THREE.Vector3(); this._s = new THREE.Vector3(); this._n = new THREE.Vector3(); this._up = new THREE.Vector3(0, 1, 0);
     }
     prend(id) { return !!this.ids[id]; }
-    // Le rayon au sol (u) d'un monstre posé : la moitié de l'emprise vue de dessus.
     emprise(s) { const T = this.troupe(s.modele), C = T.cotes || COTES; return (s.scale || 1) * (T.hauteurJeu || this.hauteur) / C.hauteur * C.emprise / 2; }
     troupe(id) {
       const h = this.ids[id];
@@ -1031,24 +898,16 @@ void main() {
     debut(now, camera) {
       this.now = now; this.t = (now / 1000) % 3600; this.camera = camera;
       for (const T of Object.values(this.troupes)) { T.n = 0; if (T.debut) T.debut(this.t); }
-      // Le champ de la caméra : un Glym qui en sort n'est pas dessiné (les instances ne sont pas
-      // coupées par Three, frustumCulled étant faux).
       camera.updateMatrixWorld();
       this._pv = this._pv || new this.THREE.Matrix4();
       this._ch = this._ch || new this.THREE.Frustum();
       this._sp = this._sp || new this.THREE.Sphere();
       this._ch.setFromProjectionMatrix(this._pv.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
     }
-    // Les durées des gestes d'un monstre modelé qui en a (js/modele-lampignon.js : sort, lacher,
-    // placement, coup, pousse, en ms ; lacher en fraction du sort), sinon null.
     durees(id) { return this.ids[id] ? this.troupe(id).durees || null : null; }
-    // Un monstre (un sprite d'IleFigures : x, y, h, scale, facing, alpha, flash, bob, normale, combat,
-    // modele, modeleCle ; geste { type, t } et vers { u, v }, le point qu'il regarde pendant un geste).
-    // Rend vrai si le monstre est pris en charge (posé, ou hors du champ) : son panneau reste vide.
     poser(s) {
       const T = this.troupe(s.modele);
       if (T.n >= MAX) return false;
-      // Effacé (une téléportation, l'attente de son arrivée) : un modèle ne s'efface pas, il disparaît.
       if (T.aGeste && s.alpha != null && s.alpha < 0.05) return true;
       const C = T.cotes || COTES, H = T.hauteurJeu || this.hauteur;
       const ech = (s.scale || 1) * H;
@@ -1065,8 +924,6 @@ void main() {
       const dt = e.vu ? Math.min(0.1, Math.max(0, (this.now - e.vu) / 1000)) : 1;
       e.vu = this.now;
       const cam = this.camera.position;
-      // Face à la caméra, un peu tourné vers sa marche (le sens du regard du panneau) ; pendant un
-      // geste qui vise (un sort, un pas), tourné vers sa cible, plus vite.
       const vise = s.vers && Math.hypot(s.vers.u - s.x, s.vers.v - s.y) > 0.05;
       let yaw = vise ? Math.atan2(s.vers.u - s.x, s.vers.v - s.y) : Math.atan2(cam.x - s.x, cam.z - s.y) + (s.combat ? 0 : (typeof s.facing === 'number' ? Math.sign(s.facing) : 1) * 0.32);
       if (e.yaw == null) e.yaw = yaw;
@@ -1078,11 +935,9 @@ void main() {
       this._q2.setFromAxisAngle(this._up, e.yaw);
       this._q.multiply(this._q2);
       const k = (s.scale || 1) * H / C.hauteur;
-      // Le petit saut du panneau ; un modèle qui a ses gestes saute par le sien.
       const geste = T.aGeste && s.geste && T.codes[s.geste.type] ? s.geste : null;
       const lift = geste ? 0 : (s.bob || 0) / 42;
       const t = this.t + e.phase;
-      // Un modèle sans nuanceur d'animation (le Lampignon) se dandine par sa matrice.
       const df = T.deformer ? T.deformer(t) : null;
       if (df) { this._q2.setFromAxisAngle(this._fz || (this._fz = new this.THREE.Vector3(0, 0, 1)), df.rz); this._q.multiply(this._q2); }
       this._m.compose(this._v.set(s.x, s.h + Math.max(0, lift) - 0.02, s.y), this._q, df ? this._s.set(k * df.sx, k * df.sy, k * df.sx) : this._s.set(k, k, k));

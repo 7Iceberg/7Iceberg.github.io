@@ -1,10 +1,3 @@
-// Les tuiles des sorts, à la manière de Dofus (docs/SORTS-FENETRE.md) : un carré arrondi au
-// cadre en relief de la couleur de l'élément (argent pour Aer, or pour Neutre, vert pour Terra,
-// rouge pour Ignis, bleu pour Aqua), un médaillon creusé au centre, le motif du sort ton sur ton
-// (clair, cerné de la teinte sombre de l'élément), les fils du Voile en cyan, et au bas les étoiles
-// d'or du rang. Chaque motif est dessiné pour son sort : les dix du Lyssar et leurs variantes pour
-// l'instant ; les autres sorts gardent leur icône peinte (js/sort-icones.js, qui demande ici d'abord).
-// En SVG, gardé en data URL par sort et par rang.
 const SortTuiles = (() => {
   const PAL = {
     air:    { cadre: ['#f6f8fc', '#aeb9ca', '#4d586c'], disque: ['#f1f5fa', '#a9b8cc'], motif: ['#ffffff', '#dfe6ef'], trait: '#47536a' },
@@ -15,9 +8,6 @@ const SortTuiles = (() => {
   };
   const star4 = (cx, cy, r) => { const k = r * 0.28; return `M${cx} ${cy - r}L${cx + k} ${cy - k}L${cx + r} ${cy}L${cx + k} ${cy + k}L${cx} ${cy + r}L${cx - k} ${cy + k}L${cx - r} ${cy}L${cx - k} ${cy - k}Z`; };
   const star5 = (cx, cy, R) => { let d = ''; for (let i = 0; i < 10; i++) { const r = i % 2 ? R * 0.45 : R, a = (i * 36 - 90) * Math.PI / 180; d += (i ? 'L' : 'M') + (cx + Math.cos(a) * r).toFixed(2) + ' ' + (cy + Math.sin(a) * r).toFixed(2); } return d + 'Z'; };
-  // Une tuile de sort : le cadre carré arrondi en relief, le médaillon creusé au centre, le motif ton
-  // sur ton (clair, cerné de la teinte sombre de l'élément), les fils du Voile en cyan, et en bas les
-  // étoiles d'or du rang (0 à 5).
   function tuile(id, el, motif, rang) {
     const P = PAL[el], [c1, c2, c3] = P.cadre, [d1, d2] = P.disque, [m1, m2] = P.motif, lo = P.trait;
     const k = `${id}-${rang || 0}`;
@@ -102,7 +92,6 @@ const SortTuiles = (() => {
       <ellipse cx="44" cy="50" rx="5.2" ry="16" fill="none" stroke="§I" stroke-width="3.4"/>
       <ellipse cx="64" cy="50" rx="5.2" ry="16" fill="none" stroke="§I" stroke-width="3.4"/>
       <path d="M99 50L82 39.5L86.5 50L82 60.5Z" fill="§I"/></g>`],
-    // ----- Les variantes (une par sort, à la manière de Dofus) -----
     fleche_nouee: ['terre', `<g transform="rotate(-45 50 50)">
       <rect x="16" y="45" width="52" height="10" rx="5" fill="§I"/>
       <path d="M90 50L64 33L69.5 50L64 67Z" fill="§I"/>
@@ -155,9 +144,7 @@ const SortTuiles = (() => {
       <path d="M50 58L35 58.5L43 66.5Z" fill="§I"/>`],
   };
   const cache = new Map();
-  // Ce sort a-t-il sa tuile dessinée ?
   const a = id => Object.prototype.hasOwnProperty.call(S, id);
-  // Le SVG de la tuile, au rang `rang` (0 : sans étoile).
   const svg = (id, rang) => tuile(id, S[id][0], S[id][1], Math.max(0, Math.min(5, Math.floor(rang) || 0)));
   function url(id, rang) {
     if (!a(id)) return '';

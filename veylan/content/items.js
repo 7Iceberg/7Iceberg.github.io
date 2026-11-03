@@ -1,17 +1,7 @@
-// Objets et économie de Veylan : ressources, panoplies, objets, armes, consommables, recettes.
-// Format : docs/SPEC-CONTENU.md. Niveaux 1 à 30, d'Orsane (les Cimes) à Kaldum (les Scories) ;
-// niveaux 31 à 50, Thessa et la Lisière (partie 7), en attendant que ces régions ouvrent.
-// Aucune valeur de stat brute ici : le moteur calcule tout à partir du niveau et des profils.
-// Correspondance des éléments et des caractéristiques : feu = intel, eau = chance, air = agi, terre = force.
 (function () {
   const C = DATA.content;
 
-  // =====================================================================
-  // 1. Ressources
-  // =====================================================================
-  // Pour chaque monstre : la première tombe souvent, la deuxième parfois, la troisième rarement.
 
-  // --- Orsane, les Cimes ---
   C.resources.push(
     { id: 'plume_de_pilou', name: 'Plume de Glym', lore: 'Légère, bleutée, et toujours en trop grand nombre sur le sol de la Volière.',
       drops: [{ monster: 'pilou', rate: 38 }, { monster: 'piouk', rate: 20 }], node: null, price: 2 },
@@ -76,7 +66,6 @@
       drops: [{ monster: 'fileuse', rate: 50 }], node: null, price: 40 },
   );
 
-  // --- Kaldum, les Scories ---
   C.resources.push(
     { id: 'pierre_de_molh', name: 'Pierre de Molh', lore: 'Un morceau de Molh ; il pèse exactement ce qu\'il a l\'air de peser.',
       drops: [{ monster: 'molh', rate: 40 }, { monster: 'molhin', rate: 20 }], node: null, price: 6 },
@@ -141,7 +130,6 @@
       drops: [{ monster: 'kraska', rate: 50 }], node: null, price: 60 },
   );
 
-  // --- Récolte ---
   C.resources.push(
     { id: 'bois_de_cime', name: 'Bois de Cime', lore: 'Bois clair des grands arbres d\'Orsane ; léger, droit, facile à vivre.',
       drops: [], node: { kind: 'bois', zone: 'orsane' }, price: 2 },
@@ -157,11 +145,6 @@
       drops: [], node: { kind: 'plante', zone: 'kaldum' }, price: 6 },
   );
 
-  // =====================================================================
-  // 2. Panoplies
-  // =====================================================================
-  // Chaque panoplie a coiffe, cape, amulette et bottes, plus anneau et/ou ceinture.
-  // Les profils suivent le caractère de la famille ; sur l'ensemble, les six caractéristiques sont servies.
 
   C.sets.push({
     id: 'marcheur', name: 'Panoplie du Marcheur', family: [], level: 1,
@@ -349,14 +332,8 @@
     lore: 'Forgée avec le marteau et l\'enclume de Dorm, le Forgeron Enseveli, dans sa propre forge. La panoplie la plus solide du premier continent, et la plus lourde à porter.',
   });
 
-  // =====================================================================
-  // 3. Objets hors panoplie
-  // =====================================================================
-  // Ils comblent les trous entre les panoplies : une caractéristique à un niveau où aucune panoplie ne la donne.
-  // Pour une source drop, « from » indique le monstre qui la lâche.
 
   C.items.push(
-    // --- Coiffes ---
     { id: 'capuche_de_soie', name: 'Capuche de Soie', slot: 'coiffe', level: 11, profile: { chance: 50, agi: 30, vita: 20 }, source: 'craft',
       lore: 'Légère et glissante ; les coups passent à côté, les regards aussi.' },
     { id: 'heaume_de_calcaire', name: 'Heaume de Calcaire', slot: 'coiffe', level: 16, profile: { vita: 50, force: 30, sagesse: 20 }, source: 'craft',
@@ -368,7 +345,6 @@
     { id: 'casque_de_fer_vif', name: 'Casque de Fer Vif', slot: 'coiffe', level: 28, profile: { agi: 50, chance: 30, vita: 20 }, source: 'drop', from: 'pioche_vive',
       lore: 'Il frémit avant chaque coup, un quart de seconde avant vous.' },
 
-    // --- Capes ---
     { id: 'cape_de_plumes', name: 'Cape de Plumes', slot: 'cape', level: 4, profile: { agi: 60, vita: 40 }, source: 'craft',
       lore: 'Mille plumes de Glym. Elle ne fait pas voler, mais elle fait croire.' },
     { id: 'voile_d_oreth', name: 'Voile d\'Oreth', slot: 'cape', level: 12, profile: { agi: 45, sagesse: 35, vita: 20 }, source: 'craft',
@@ -384,7 +360,6 @@
     { id: 'cape_de_suie', name: 'Cape de Suie', slot: 'cape', level: 26, profile: { agi: 50, intel: 30, vita: 20 }, source: 'drop', from: 'fumerolle',
       lore: 'Noire et légère ; elle tache tout, sauf la réputation.' },
 
-    // --- Amulettes ---
     { id: 'amulette_de_bec', name: 'Amulette de Bec', slot: 'amulette', level: 5, profile: { agi: 50, chance: 30, vita: 20 }, source: 'craft',
       lore: 'Un bec de Glym sur une ficelle. Il pointe toujours vers le prochain repas.' },
     { id: 'pendentif_de_meche', name: 'Pendentif de Mèche', slot: 'amulette', level: 10, profile: { intel: 50, sagesse: 50 }, source: 'craft',
@@ -400,7 +375,6 @@
     { id: 'collier_de_noyau', name: 'Collier de Noyau', slot: 'amulette', level: 29, profile: { chance: 50, intel: 30, vita: 20 }, source: 'drop', from: 'cendrou',
       lore: 'Un noyau de Cendrou serti de fer. Il chauffe quand la chance tourne.' },
 
-    // --- Anneaux ---
     { id: 'anneau_de_corne', name: 'Anneau de Corne', slot: 'anneau', level: 6, profile: { force: 70, vita: 30 }, source: 'craft',
       lore: 'Un bout de corne de Grouk, évidé et poli. On serre le poing plus fort.' },
     { id: 'anneau_de_veille', name: 'Anneau de Veille', slot: 'anneau', level: 8, profile: { intel: 70, vita: 30 }, source: 'craft',
@@ -416,7 +390,6 @@
     { id: 'anneau_d_etincelle', name: 'Anneau d\'Étincelle', slot: 'anneau', level: 30, profile: { agi: 50, intel: 50 }, source: 'drop', from: 'pioche_vive',
       lore: 'Une étincelle de Pioche-Vive court tout autour. Elle ne s\'arrête jamais.' },
 
-    // --- Ceintures ---
     { id: 'ceinture_de_plume', name: 'Ceinture de Plume', slot: 'ceinture', level: 3, profile: { agi: 60, vita: 40 }, source: 'craft',
       lore: 'Des plumes tressées sur une ficelle. Elle tient, et elle allège.' },
     { id: 'ceinture_de_cire', name: 'Ceinture de Cire', slot: 'ceinture', level: 12, profile: { sagesse: 50, intel: 30, vita: 20 }, source: 'craft',
@@ -428,7 +401,6 @@
     { id: 'ceinture_de_charbon', name: 'Ceinture de Charbon', slot: 'ceinture', level: 29, profile: { intel: 50, vita: 50 }, source: 'craft',
       lore: 'Des blocs de charbon montés sur cuir. Elle tient chaud trois jours de suite.' },
 
-    // --- Bottes ---
     { id: 'sandales_de_duvet', name: 'Sandales de Duvet', slot: 'bottes', level: 2, profile: { agi: 50, vita: 50 }, source: 'craft',
       lore: 'Du duvet et de la ficelle. On marche sur un nuage qui aurait des trous.' },
     { id: 'bottes_de_cuir', name: 'Bottes de Cuir', slot: 'bottes', level: 7, profile: { force: 50, vita: 50 }, source: 'drop', from: 'grouk',
@@ -441,13 +413,8 @@
       lore: 'Le fer frémit à chaque pas et vous pousse en avant. Difficile de rester en place.' },
   );
 
-  // =====================================================================
-  // 4. Armes
-  // =====================================================================
-  // Huit types, trois paliers chacun : niveaux 2 à 5 (Volière, Sentier), 12 à 16 (Toiles, Éboulis), 24 à 28 (Kaldum).
 
   C.weapons.push(
-    // --- Épées (1 PA de plus, portée 1) ---
     { id: 'lame_de_cime', name: 'Lame de Cime', type: 'epee', level: 3, element: 'air', profile: { agi: 60, vita: 40 }, source: 'craft',
       lore: 'Une lame de bois de cime durcie au feu. Elle siffle plus qu\'elle ne coupe, mais elle siffle bien.' },
     { id: 'lame_de_galet', name: 'Lame de Galet', type: 'epee', level: 14, element: 'terre', profile: { force: 60, vita: 40 }, source: 'craft',
@@ -455,7 +422,6 @@
     { id: 'lame_de_scorie', name: 'Lame de Scorie', type: 'epee', level: 26, element: 'feu', profile: { intel: 50, force: 30, vita: 20 }, source: 'craft',
       lore: 'Forgée dans la scorie de Rakthul ; le tranchant reste chaud toute la journée.' },
 
-    // --- Dagues (deux coups) ---
     { id: 'dagues_de_bec', name: 'Dagues de Bec', type: 'dague', level: 2, element: 'air', profile: { agi: 70, vita: 30 }, source: 'drop', from: 'pilou',
       lore: 'Deux becs de Glym sur des manches de bois. Elles pincent deux fois.' },
     { id: 'dagues_de_venin', name: 'Dagues de Venin', type: 'dague', level: 13, element: 'eau', profile: { chance: 60, agi: 40 }, source: 'craft',
@@ -463,7 +429,6 @@
     { id: 'dagues_de_suie', name: 'Dagues de Suie', type: 'dague', level: 25, element: 'feu', profile: { intel: 50, agi: 50 }, source: 'drop', from: 'fumerolle',
       lore: 'On ne les voit pas venir, et après, on ne voit plus grand-chose.' },
 
-    // --- Arcs (portée 2 à 6) ---
     { id: 'arc_de_cime', name: 'Arc de Cime', type: 'arc', level: 4, element: 'air', profile: { agi: 60, vita: 40 }, source: 'craft',
       lore: 'Bois de cime et corde de plumes tressées. Il tire droit si on le laisse faire.' },
     { id: 'arc_de_corne', name: 'Arc de Corne', type: 'arc', level: 15, element: 'terre', profile: { force: 60, agi: 40 }, source: 'craft',
@@ -473,7 +438,6 @@
     { id: 'arc_de_fer_vif', name: 'Arc de Fer Vif', type: 'arc', level: 27, element: 'eau', profile: { chance: 60, agi: 40 }, source: 'craft',
       lore: 'Le fer vif tend la corde tout seul. L\'archer n\'a plus qu\'à viser, et parfois pas.' },
 
-    // --- Baguettes (portée 1 à 5) ---
     { id: 'baguette_de_duvet', name: 'Baguette de Duvet', type: 'baguette', level: 3, element: 'eau', profile: { chance: 60, vita: 40 }, source: 'craft',
       lore: 'Une tige de bois de cime emplumée de duvet. Les premiers sorts partent de là.' },
     { id: 'baguette_de_meche', name: 'Baguette de Mèche', type: 'baguette', level: 12, element: 'feu', profile: { intel: 60, sagesse: 40 }, source: 'craft',
@@ -481,7 +445,6 @@
     { id: 'baguette_de_braise', name: 'Baguette de Braise', type: 'baguette', level: 24, element: 'feu', profile: { intel: 70, vita: 30 }, source: 'craft',
       lore: 'Une braise de Rakthul sertie dans la scorie. Les sorts en sortent déjà chauds.' },
 
-    // --- Bâtons (portée 1 à 2, zone croix) ---
     { id: 'baton_de_cime', name: 'Bâton de Cime', type: 'baton', level: 5, element: 'terre', profile: { force: 50, vita: 50 }, source: 'craft',
       lore: 'Un bâton de bois noueux, lourd au bout. Il frappe en croix et en silence.' },
     { id: 'baton_de_cire', name: 'Bâton de Cire', type: 'baton', level: 13, element: 'feu', profile: { intel: 50, sagesse: 30, vita: 20 }, source: 'craft',
@@ -489,7 +452,6 @@
     { id: 'baton_de_lichen', name: 'Bâton de Lichen', type: 'baton', level: 26, element: 'eau', profile: { chance: 60, sagesse: 40 }, source: 'craft',
       lore: 'Un manche de Pioche-Vive couvert de lichen. Il pousse encore un peu chaque nuit.' },
 
-    // --- Marteaux (zone croix au contact) ---
     { id: 'masse_de_calcaire', name: 'Masse de Calcaire', type: 'marteau', level: 5, element: 'terre', profile: { force: 60, vita: 40 }, source: 'craft',
       lore: 'Un bloc de calcaire sur un manche de bois noueux. Simple, lourd, efficace.' },
     { id: 'marteau_de_corne', name: 'Marteau de Corne', type: 'marteau', level: 16, element: 'terre', profile: { force: 70, vita: 30 }, source: 'craft',
@@ -497,7 +459,6 @@
     { id: 'marteau_de_forge', name: 'Marteau de Forge', type: 'marteau', level: 28, element: 'feu', profile: { intel: 40, force: 40, vita: 20 }, source: 'craft',
       lore: 'Reforgé avec le marteau de Dorm lui-même. Il résonne à chaque coup, et le sol aussi.' },
 
-    // --- Pelles (portée 1, vole des PV) ---
     { id: 'pelle_noueuse', name: 'Pelle Noueuse', type: 'pelle', level: 4, element: 'terre', profile: { force: 50, vita: 50 }, source: 'craft',
       lore: 'Du bois noueux et une lame de calcaire. Elle creuse les trous et les PV.' },
     { id: 'pelle_de_brimbe', name: 'Pelle de Brimbe', type: 'pelle', level: 14, element: 'eau', profile: { chance: 60, vita: 40 }, source: 'drop', from: 'brimbe',
@@ -505,7 +466,6 @@
     { id: 'pelle_de_basalte', name: 'Pelle de Basalte', type: 'pelle', level: 26, element: 'terre', profile: { force: 50, chance: 30, vita: 20 }, source: 'craft',
       lore: 'Une lame de basalte noir. Elle prend aux autres ce qu\'elle vous rend.' },
 
-    // --- Haches (portée 1, gros coup) ---
     { id: 'hache_de_cime', name: 'Hache de Cime', type: 'hache', level: 5, element: 'terre', profile: { force: 70, vita: 30 }, source: 'craft',
       lore: 'Du calcaire sur du bois de cime. Un coup, un gros, et on en reparle.' },
     { id: 'hache_de_croc', name: 'Hache de Croc', type: 'hache', level: 15, element: 'air', profile: { agi: 50, force: 50 }, source: 'craft',
@@ -516,10 +476,6 @@
       lore: 'Un poing de Rakthul aplati en lame. Elle fond un peu à chaque coup, et la cible aussi.' },
   );
 
-  // =====================================================================
-  // 5. Consommables
-  // =====================================================================
-  // La Potion de Relais ne soigne pas : « effect: 'relais' » dit au moteur qu'elle ramène au Relais du Fil.
 
   C.consumables.push(
     { id: 'pain_de_cime', name: 'Pain de Cime', kind: 'pain', level: 1, heal: 30, price: 6,
@@ -530,7 +486,6 @@
       lore: 'Pain noir au lichen de scorie. Amer, chaud, et il remet debout.' },
     { id: 'pain_de_forge', name: 'Pain de Forge', kind: 'pain', level: 26, heal: 220, price: 44,
       lore: 'Cuit sur une enclume de Kaldum. Croûte de charbon, cœur tendre, et l\'effet d\'une sieste.' },
-    // Parchemins de caractéristique : +5 de base, gratuits, 50 au plus par caractéristique.
     { id: 'parchemin_terra', name: 'Parchemin de Terra', kind: 'parchemin', stat: 'force', value: 5, level: 10, price: 120,
       lore: 'Un vélin poussiéreux couvert de traits de mine. On le lit à voix basse, et les épaules s\'élargissent.' },
     { id: 'parchemin_ignis', name: 'Parchemin d\'Ignis', kind: 'parchemin', stat: 'intel', value: 5, level: 10, price: 120,
@@ -549,39 +504,29 @@
       lore: 'Lueur de Veilloche et herbe de veille. Elle rend tous les PV et un peu de courage.' },
   );
 
-  // =====================================================================
-  // 6. Recettes
-  // =====================================================================
-  // Ateliers : tailleur (coiffe, cape), cordonnier (bottes, ceinture), bijoutier (amulette, anneau),
-  // forgeron (armes), alchimiste (pains, potions). Une recette par pièce de panoplie, par objet et arme
-  // de source craft, par pain et par potion. Le total de ressources monte avec le niveau : 6 au niveau 1, 20 au niveau 30.
   const R = (result, workshop, pairs, count) => C.recipes.push({
     result, count: count || 1, workshop,
     ingredients: pairs.map(([id, n]) => ({ id, count: n })),
   });
 
-  // --- Panoplie du Marcheur (1) ---
   R('coiffe_marcheur', 'tailleur', [['plume_de_pilou', 3], ['herbe_de_veille', 2], ['bois_de_cime', 1]]);
   R('cape_marcheur', 'tailleur', [['plume_de_pilou', 4], ['herbe_de_veille', 2]]);
   R('amulette_marcheur', 'bijoutier', [['pierre_de_calcaire', 3], ['plume_de_pilou', 2], ['herbe_de_veille', 1]]);
   R('ceinture_marcheur', 'cordonnier', [['herbe_de_veille', 3], ['bois_de_cime', 2], ['plume_de_pilou', 1]]);
   R('bottes_marcheur', 'cordonnier', [['plume_de_pilou', 3], ['bois_de_cime', 2], ['herbe_de_veille', 1]]);
 
-  // --- Panoplie du Glym (3) ---
   R('coiffe_pilou', 'tailleur', [['plume_de_pilou', 5], ['duvet_de_pilou', 1], ['herbe_de_veille', 1]]);
   R('cape_pilou', 'tailleur', [['plume_de_pilou', 6], ['duvet_de_pilou', 1]]);
   R('amulette_pilou', 'bijoutier', [['bec_de_pilou', 2], ['plume_de_pilou', 3], ['pierre_de_calcaire', 2]]);
   R('anneau_pilou', 'bijoutier', [['bec_de_pilou', 2], ['duvet_de_pilou', 1], ['pierre_de_calcaire', 3], ['plume_de_pilou', 1]]);
   R('bottes_pilou', 'cordonnier', [['plume_de_pilou', 4], ['duvet_de_pilou', 1], ['bois_de_cime', 2]]);
 
-  // --- Panoplie du Grouk (6) ---
   R('coiffe_grouk', 'tailleur', [['cuir_de_grouk', 5], ['corne_de_grouk', 2], ['plume_de_pilou', 2]]);
   R('cape_grouk', 'tailleur', [['cuir_de_grouk', 7], ['corne_de_grouk', 1], ['herbe_de_veille', 1]]);
   R('amulette_grouk', 'bijoutier', [['croc_de_grouk', 1], ['corne_de_grouk', 2], ['cuir_de_grouk', 3], ['pierre_de_calcaire', 3]]);
   R('ceinture_grouk', 'cordonnier', [['cuir_de_grouk', 6], ['corne_de_grouk', 2], ['bois_noueux', 1]]);
   R('bottes_grouk', 'cordonnier', [['cuir_de_grouk', 6], ['corne_de_grouk', 1], ['bois_noueux', 2]]);
 
-  // --- Panoplie du Tissefil (9) ---
   R('coiffe_tissefil', 'tailleur', [['soie_de_tissefil', 6], ['patte_de_tissefil', 2], ['plume_de_pilou', 2]]);
   R('cape_tissefil', 'tailleur', [['soie_de_tissefil', 7], ['patte_de_tissefil', 2], ['venin_de_tissefil', 1]]);
   R('amulette_tissefil', 'bijoutier', [['venin_de_tissefil', 1], ['soie_de_tissefil', 4], ['patte_de_tissefil', 2], ['pierre_de_calcaire', 3]]);
@@ -589,21 +534,18 @@
   R('ceinture_tissefil', 'cordonnier', [['soie_de_tissefil', 5], ['cuir_de_grouk', 3], ['patte_de_tissefil', 2]]);
   R('bottes_tissefil', 'cordonnier', [['soie_de_tissefil', 6], ['patte_de_tissefil', 2], ['bois_noueux', 2]]);
 
-  // --- Panoplie de la Veilloche (12) ---
   R('coiffe_veilloche', 'tailleur', [['cire_de_veilloche', 7], ['meche_de_veilloche', 3], ['soie_de_tissefil', 2]]);
   R('cape_veilloche', 'tailleur', [['cire_de_veilloche', 8], ['meche_de_veilloche', 2], ['soie_de_tissefil', 2]]);
   R('amulette_veilloche', 'bijoutier', [['lueur_de_veilloche', 1], ['cire_de_veilloche', 5], ['meche_de_veilloche', 3], ['pierre_de_calcaire', 3]]);
   R('anneau_veilloche', 'bijoutier', [['cire_de_veilloche', 6], ['meche_de_veilloche', 3], ['lueur_de_veilloche', 1], ['pierre_de_calcaire', 2]]);
   R('bottes_veilloche', 'cordonnier', [['cire_de_veilloche', 6], ['meche_de_veilloche', 2], ['cuir_de_grouk', 4]]);
 
-  // --- Panoplie de la Brimbe (14) ---
   R('coiffe_brimbe', 'tailleur', [['ecaille_de_brimbe', 4], ['galet_de_brimbe', 6], ['oeil_de_brimbe', 1], ['cuir_de_grouk', 2]]);
   R('cape_brimbe', 'tailleur', [['ecaille_de_brimbe', 5], ['cuir_de_grouk', 5], ['galet_de_brimbe', 3]]);
   R('amulette_brimbe', 'bijoutier', [['galet_de_brimbe', 7], ['oeil_de_brimbe', 1], ['ecaille_de_brimbe', 2], ['pierre_de_calcaire', 3]]);
   R('ceinture_brimbe', 'cordonnier', [['galet_de_brimbe', 6], ['cuir_de_grouk', 4], ['ecaille_de_brimbe', 3]]);
   R('bottes_brimbe', 'cordonnier', [['ecaille_de_brimbe', 4], ['galet_de_brimbe', 5], ['cuir_de_grouk', 3], ['bois_noueux', 1]]);
 
-  // --- Panoplie du Grand Grouk (18) ---
   R('coiffe_grand_grouk', 'tailleur', [['peau_du_grand_grouk', 1], ['crocs_du_grand_grouk', 1], ['cuir_de_grouk', 8], ['corne_de_grouk', 4]]);
   R('cape_grand_grouk', 'tailleur', [['peau_du_grand_grouk', 2], ['cuir_de_grouk', 9], ['corne_de_grouk', 3]]);
   R('amulette_grand_grouk', 'bijoutier', [['crocs_du_grand_grouk', 1], ['corne_de_grouk', 5], ['croc_de_grouk', 2], ['pierre_de_calcaire', 6]]);
@@ -611,28 +553,24 @@
   R('ceinture_grand_grouk', 'cordonnier', [['peau_du_grand_grouk', 1], ['cuir_de_grouk', 9], ['corne_de_grouk', 4]]);
   R('bottes_grand_grouk', 'cordonnier', [['peau_du_grand_grouk', 1], ['cuir_de_grouk', 8], ['bois_noueux', 3], ['corne_de_grouk', 2]]);
 
-  // --- Panoplie du Molh (21) ---
   R('coiffe_molh', 'tailleur', [['pierre_de_molh', 8], ['mousse_de_molh', 4], ['basalte_de_kaldum', 3]]);
   R('cape_molh', 'tailleur', [['mousse_de_molh', 8], ['pierre_de_molh', 5], ['lichen_de_scorie', 2]]);
   R('amulette_molh', 'bijoutier', [['coeur_de_molh', 1], ['pierre_de_molh', 7], ['mousse_de_molh', 3], ['basalte_de_kaldum', 4]]);
   R('ceinture_molh', 'cordonnier', [['pierre_de_molh', 7], ['mousse_de_molh', 4], ['cuir_de_grouk', 4]]);
   R('bottes_molh', 'cordonnier', [['pierre_de_molh', 8], ['basalte_de_kaldum', 4], ['mousse_de_molh', 3]]);
 
-  // --- Panoplie du Rakthul (23) ---
   R('coiffe_kaldrik', 'tailleur', [['scorie_de_kaldrik', 9], ['poing_de_kaldrik', 3], ['pierre_de_molh', 4]]);
   R('cape_kaldrik', 'tailleur', [['scorie_de_kaldrik', 10], ['poing_de_kaldrik', 2], ['mousse_de_molh', 4]]);
   R('amulette_kaldrik', 'bijoutier', [['braise_de_kaldrik', 1], ['scorie_de_kaldrik', 7], ['poing_de_kaldrik', 3], ['basalte_de_kaldum', 5]]);
   R('ceinture_kaldrik', 'cordonnier', [['scorie_de_kaldrik', 8], ['poing_de_kaldrik', 3], ['pierre_de_molh', 5]]);
   R('bottes_kaldrik', 'cordonnier', [['scorie_de_kaldrik', 8], ['poing_de_kaldrik', 2], ['basalte_de_kaldum', 6]]);
 
-  // --- Panoplie de la Fumerolle (25) ---
   R('coiffe_fumerolle', 'tailleur', [['vapeur_de_fumerolle', 9], ['suie_de_fumerolle', 4], ['souffle_de_fumerolle', 1], ['scorie_de_kaldrik', 3]]);
   R('cape_fumerolle', 'tailleur', [['vapeur_de_fumerolle', 10], ['suie_de_fumerolle', 5], ['scorie_de_kaldrik', 2]]);
   R('amulette_fumerolle', 'bijoutier', [['souffle_de_fumerolle', 1], ['vapeur_de_fumerolle', 8], ['suie_de_fumerolle', 3], ['basalte_de_kaldum', 5]]);
   R('anneau_fumerolle', 'bijoutier', [['vapeur_de_fumerolle', 8], ['suie_de_fumerolle', 4], ['souffle_de_fumerolle', 1], ['basalte_de_kaldum', 4]]);
   R('bottes_fumerolle', 'cordonnier', [['suie_de_fumerolle', 5], ['vapeur_de_fumerolle', 7], ['scorie_de_kaldrik', 5]]);
 
-  // --- Panoplie de la Pioche-Vive (27) ---
   R('coiffe_pioche_vive', 'tailleur', [['fer_de_pioche_vive', 9], ['manche_de_pioche_vive', 3], ['vapeur_de_fumerolle', 6]]);
   R('cape_pioche_vive', 'tailleur', [['fer_de_pioche_vive', 8], ['manche_de_pioche_vive', 4], ['scorie_de_kaldrik', 6]]);
   R('amulette_pioche_vive', 'bijoutier', [['etincelle_de_pioche_vive', 1], ['fer_de_pioche_vive', 9], ['manche_de_pioche_vive', 3], ['basalte_de_kaldum', 5]]);
@@ -640,14 +578,12 @@
   R('ceinture_pioche_vive', 'cordonnier', [['manche_de_pioche_vive', 4], ['fer_de_pioche_vive', 8], ['scorie_de_kaldrik', 6]]);
   R('bottes_pioche_vive', 'cordonnier', [['fer_de_pioche_vive', 8], ['manche_de_pioche_vive', 4], ['basalte_de_kaldum', 6]]);
 
-  // --- Panoplie du Cendrou (29) ---
   R('coiffe_cendrou', 'tailleur', [['charbon_de_cendrou', 5], ['cendre_de_cendrou', 10], ['noyau_de_cendrou', 1], ['vapeur_de_fumerolle', 3]]);
   R('cape_cendrou', 'tailleur', [['cendre_de_cendrou', 11], ['charbon_de_cendrou', 5], ['suie_de_fumerolle', 3]]);
   R('amulette_cendrou', 'bijoutier', [['noyau_de_cendrou', 1], ['charbon_de_cendrou', 6], ['cendre_de_cendrou', 7], ['basalte_de_kaldum', 5]]);
   R('anneau_cendrou', 'bijoutier', [['charbon_de_cendrou', 6], ['cendre_de_cendrou', 8], ['noyau_de_cendrou', 1], ['basalte_de_kaldum', 4]]);
   R('bottes_cendrou', 'cordonnier', [['charbon_de_cendrou', 5], ['cendre_de_cendrou', 8], ['scorie_de_kaldrik', 6]]);
 
-  // --- Panoplie de Dorm (30) ---
   R('coiffe_dorm', 'tailleur', [['marteau_de_dorm', 1], ['enclume_de_dorm', 1], ['fer_de_pioche_vive', 10], ['charbon_de_cendrou', 8]]);
   R('cape_dorm', 'tailleur', [['enclume_de_dorm', 1], ['fer_de_pioche_vive', 9], ['cendre_de_cendrou', 10]]);
   R('amulette_dorm', 'bijoutier', [['enclume_de_dorm', 1], ['marteau_de_dorm', 1], ['fer_de_pioche_vive', 10], ['basalte_de_kaldum', 8]]);
@@ -655,7 +591,6 @@
   R('ceinture_dorm', 'cordonnier', [['marteau_de_dorm', 1], ['fer_de_pioche_vive', 9], ['scorie_de_kaldrik', 10]]);
   R('bottes_dorm', 'cordonnier', [['enclume_de_dorm', 1], ['fer_de_pioche_vive', 9], ['basalte_de_kaldum', 10]]);
 
-  // --- Objets hors panoplie, source craft ---
   R('capuche_de_soie', 'tailleur', [['soie_de_tissefil', 7], ['patte_de_tissefil', 2], ['plume_de_pilou', 2]]);
   R('heaume_de_calcaire', 'tailleur', [['pierre_de_calcaire', 8], ['cuir_de_grouk', 4], ['ecaille_de_brimbe', 2]]);
   R('capuche_de_lichen', 'tailleur', [['lichen_de_scorie', 7], ['mousse_de_molh', 4], ['pierre_de_molh', 3], ['coeur_de_molh', 1]]);
@@ -688,9 +623,7 @@
   R('bottes_de_basalte', 'cordonnier', [['basalte_de_kaldum', 7], ['pierre_de_molh', 5], ['mousse_de_molh', 3]]);
   R('bottes_de_fer_vif', 'cordonnier', [['fer_de_pioche_vive', 9], ['manche_de_pioche_vive', 3], ['scorie_de_kaldrik', 6]]);
 
-  // --- Armes, source craft (forgeron) ---
   R('lame_de_cime', 'forgeron', [['bois_de_cime', 4], ['pierre_de_calcaire', 2], ['plume_de_pilou', 1]]);
-  // La Clé du Terrier : une par entrée. Le Grand Grouk se mérite, comme sa panoplie.
   R('cle_du_terrier', 'forgeron', [['corne_de_grouk', 4], ['cuir_de_grouk', 6], ['galet_de_brimbe', 5], ['croc_de_grouk', 1]]);
   R('lame_de_galet', 'forgeron', [['galet_de_brimbe', 7], ['bois_noueux', 3], ['ecaille_de_brimbe', 3]]);
   R('lame_de_scorie', 'forgeron', [['scorie_de_kaldrik', 9], ['poing_de_kaldrik', 3], ['basalte_de_kaldum', 5]]);
@@ -719,7 +652,6 @@
   R('arc_de_vapeur', 'forgeron', [['vapeur_de_fumerolle', 6], ['basalte_de_kaldum', 4], ['scorie_de_kaldrik', 4], ['suie_de_fumerolle', 2]]);
   R('hache_de_croc', 'forgeron', [['croc_de_grouk', 2], ['bois_noueux', 5], ['ecaille_de_brimbe', 4], ['galet_de_brimbe', 3]]);
 
-  // --- Pains et potions (alchimiste) : une fournée donne plusieurs pains ---
   R('pain_de_cime', 'alchimiste', [['herbe_de_veille', 4], ['plume_de_pilou', 2]], 3);
   R('pain_de_grouk', 'alchimiste', [['herbe_de_veille', 5], ['corne_de_grouk', 1], ['bois_de_cime', 2]], 3);
   R('pain_de_scorie', 'alchimiste', [['lichen_de_scorie', 6], ['mousse_de_molh', 3], ['basalte_de_kaldum', 1]], 3);
@@ -727,16 +659,7 @@
   R('potion_de_relais', 'alchimiste', [['herbe_de_veille', 3], ['plume_de_pilou', 2], ['pierre_de_calcaire', 1]], 2);
   R('potion_de_veille', 'alchimiste', [['lueur_de_veilloche', 1], ['cire_de_veilloche', 4], ['herbe_de_veille', 4], ['meche_de_veilloche', 2]], 1);
 
-  // =====================================================================
-  // 7. Thessa et la Lisière, niveaux 31 à 50
-  // =====================================================================
-  // La suite de l'économie, calquée sur les objets de Dofus du niveau 62 au niveau 100 (un niveau de
-  // Veylan en vaut deux, docs/OBJETS-31-50.md) : une panoplie par famille, une de boss, des objets
-  // hors panoplie aux niveaux où un élément manque, un quatrième palier d'armes, et deux objets qui
-  // donnent un PA ou un PM contre des caractéristiques plus faibles (`extra`, js/items.js).
-  // Le niveau maximum reste 30 dans l'alpha : ces objets attendent Thessa et la Lisière.
 
-  // --- Ressources : Thessa, Marsalée ---
   C.resources.push(
     { id: 'aile_de_sivr', name: 'Aile de Sivr', lore: 'Une aile de toile tendue sur deux baleines de cuivre. Elle vibre encore quand le vent passe.',
       drops: [{ monster: 'sivr', rate: 40 }], node: null, price: 9 },
@@ -779,7 +702,6 @@
       drops: [{ monster: 'mere_des_brisants', rate: 50 }], node: null, price: 80 },
   );
 
-  // --- Ressources : la Lisière, les Effilures ---
   C.resources.push(
     { id: 'corne_de_vulk', name: 'Corne de Vulk', lore: 'Un tronçon de corne cassée en couronne. Elle sonne comme une cloche fêlée.',
       drops: [{ monster: 'vulk', rate: 40 }], node: null, price: 11 },
@@ -810,7 +732,6 @@
       drops: [{ monster: 'fendu', rate: 4 }], node: null, price: 56 },
   );
 
-  // --- Récolte : Thessa et la Lisière ---
   C.resources.push(
     { id: 'bois_flotte', name: 'Bois flotté', lore: 'Blanchi par le sel, poli par la mer. Il a déjà voyagé plus loin que la plupart des Veilleurs.',
       drops: [], node: { kind: 'bois', zone: 'thessa' }, price: 8 },
@@ -824,7 +745,6 @@
       drops: [], node: { kind: 'plante', zone: 'lisiere' }, price: 10 },
   );
 
-  // --- Panoplies 31 à 50 ---
   C.sets.push({
     id: 'sivr', name: 'Panoplie du Sivr', family: ['sivr'], level: 32,
     profile: { agi: 50, chance: 20, vita: 30 },
@@ -969,10 +889,6 @@
     lore: 'Cousue avec ce que la Déchirure laisse des humains qu\'elle a traversés. Elle donne la force et la vitesse des Fendus, et un peu de leur façon d\'être à deux endroits à la fois.',
   });
 
-  // --- Objets hors panoplie 31 à 50 ---
-  // Comme plus haut, ils servent un élément au niveau où aucune panoplie ne le sert : Ignis et Terra
-  // entre 31 et 41. Deux objets donnent un PA ou un PM (`extra`) contre des caractéristiques plus
-  // faibles, comme l'anneau de Dofus qu'on garde des dizaines de niveaux pour ce seul point.
   C.items.push(
     { id: 'ceinture_de_varech', name: 'Ceinture de Varech', slot: 'ceinture', level: 31, profile: { intel: 50, vita: 30, sagesse: 20 }, source: 'craft',
       lore: 'De l\'algue de ressac tressée et séchée. Elle sent la marée basse et les idées neuves.' },
@@ -1002,7 +918,6 @@
       lore: 'Un morceau de Voile déchiré, refermé sur un vide. Elle ne donne presque rien, sauf le temps d\'un geste de plus.' },
   );
 
-  // --- Armes 31 à 50 : le quatrième palier ---
   C.weapons.push(
     { id: 'aiguilles_de_sivr', name: 'Aiguilles de Sivr', type: 'dague', level: 33, element: 'air', profile: { agi: 70, vita: 30 }, source: 'drop', from: 'sivr',
       lore: 'Deux dards de Sivr montés sur cuivre. Elles cousent l\'adversaire en deux points.' },
@@ -1030,7 +945,6 @@
       lore: 'La lame d\'un Fendu, fendue comme lui. Elle frappe ici et un peu plus loin.' },
   );
 
-  // --- Pains 31 à 50 ---
   C.consumables.push(
     { id: 'pain_d_algue', name: 'Pain d\'Algue', kind: 'pain', level: 36, heal: 320, price: 64,
       lore: 'Pain vert de Marsalée, salé à l\'eau de mer. Il se garde un mois et remet d\'aplomb en une bouchée.' },
@@ -1038,22 +952,18 @@
       lore: 'Galette de chardon cuite sur l\'ardoise chaude. Elle pique la langue et ferme les plaies.' },
   );
 
-  // --- Recettes 31 à 50 : de 21 ressources au niveau 32 à 29 au niveau 50 ---
-  // Panoplie du Sivr (32)
   R('coiffe_sivr', 'tailleur', [['aile_de_sivr', 10], ['dard_de_sivr', 4], ['chas_de_sivr', 1], ['bois_flotte', 6]]);
   R('cape_sivr', 'tailleur', [['aile_de_sivr', 11], ['dard_de_sivr', 4], ['algue_de_ressac', 6]]);
   R('amulette_sivr', 'bijoutier', [['chas_de_sivr', 1], ['dard_de_sivr', 5], ['aile_de_sivr', 7], ['sel_de_marsalee', 8]]);
   R('anneau_sivr', 'bijoutier', [['aile_de_sivr', 8], ['dard_de_sivr', 5], ['chas_de_sivr', 1], ['sel_de_marsalee', 7]]);
   R('bottes_sivr', 'cordonnier', [['aile_de_sivr', 9], ['dard_de_sivr', 4], ['bois_flotte', 5], ['galet_de_marnel', 3]]);
 
-  // Panoplie du Marnel (34)
   R('coiffe_marnel', 'tailleur', [['galet_de_marnel', 10], ['pince_de_marnel', 4], ['carapace_de_marnel', 1], ['sel_de_marsalee', 7]]);
   R('cape_marnel', 'tailleur', [['galet_de_marnel', 11], ['pince_de_marnel', 4], ['algue_de_ressac', 7]]);
   R('amulette_marnel', 'bijoutier', [['carapace_de_marnel', 1], ['pince_de_marnel', 5], ['galet_de_marnel', 8], ['sel_de_marsalee', 8]]);
   R('ceinture_marnel', 'cordonnier', [['galet_de_marnel', 10], ['pince_de_marnel', 5], ['bois_flotte', 4], ['aile_de_sivr', 3]]);
   R('bottes_marnel', 'cordonnier', [['galet_de_marnel', 10], ['pince_de_marnel', 4], ['bois_flotte', 8]]);
 
-  // Panoplie du Brisant (38)
   R('coiffe_brisant', 'tailleur', [['ecume_de_brisant', 10], ['remous_de_brisant', 5], ['coeur_de_brisant', 1], ['algue_de_ressac', 7]]);
   R('cape_brisant', 'tailleur', [['ecume_de_brisant', 12], ['remous_de_brisant', 4], ['galet_de_marnel', 7]]);
   R('amulette_brisant', 'bijoutier', [['coeur_de_brisant', 1], ['remous_de_brisant', 5], ['ecume_de_brisant', 8], ['sel_de_marsalee', 9]]);
@@ -1061,35 +971,30 @@
   R('ceinture_brisant', 'cordonnier', [['ecume_de_brisant', 10], ['remous_de_brisant', 4], ['pince_de_marnel', 3], ['bois_flotte', 6]]);
   R('bottes_brisant', 'cordonnier', [['ecume_de_brisant', 10], ['remous_de_brisant', 5], ['bois_flotte', 8]]);
 
-  // Panoplie de la Harpide (40)
   R('coiffe_harpide', 'tailleur', [['plume_de_harpide', 10], ['serre_de_harpide', 5], ['oeil_de_harpide', 1], ['bois_flotte', 8]]);
   R('cape_harpide', 'tailleur', [['plume_de_harpide', 12], ['serre_de_harpide', 4], ['aile_de_sivr', 8]]);
   R('amulette_harpide', 'bijoutier', [['oeil_de_harpide', 1], ['serre_de_harpide', 6], ['plume_de_harpide', 8], ['sel_de_marsalee', 9]]);
   R('anneau_harpide', 'bijoutier', [['plume_de_harpide', 10], ['serre_de_harpide', 5], ['oeil_de_harpide', 1], ['sel_de_marsalee', 8]]);
   R('bottes_harpide', 'cordonnier', [['plume_de_harpide', 10], ['serre_de_harpide', 5], ['ecume_de_brisant', 4], ['bois_flotte', 5]]);
 
-  // Panoplie du Vulk (42)
   R('coiffe_vulk', 'tailleur', [['corne_de_vulk', 11], ['pierre_de_vulk', 5], ['fele_de_vulk', 1], ['ardoise_des_effilures', 8]]);
   R('cape_vulk', 'tailleur', [['corne_de_vulk', 12], ['pierre_de_vulk', 5], ['chardon_de_lisiere', 8]]);
   R('amulette_vulk', 'bijoutier', [['fele_de_vulk', 1], ['pierre_de_vulk', 6], ['corne_de_vulk', 8], ['ardoise_des_effilures', 10]]);
   R('ceinture_vulk', 'cordonnier', [['corne_de_vulk', 11], ['pierre_de_vulk', 5], ['ardoise_des_effilures', 6], ['plume_de_harpide', 3]]);
   R('bottes_vulk', 'cordonnier', [['corne_de_vulk', 11], ['pierre_de_vulk', 5], ['ardoise_des_effilures', 9]]);
 
-  // Panoplie du Noyé (43)
   R('coiffe_noye', 'tailleur', [['corde_de_noye', 11], ['perle_de_noye', 5], ['soupir_de_noye', 1], ['algue_de_ressac', 8]]);
   R('cape_noye', 'tailleur', [['corde_de_noye', 12], ['perle_de_noye', 5], ['algue_de_ressac', 8]]);
   R('amulette_noye', 'bijoutier', [['soupir_de_noye', 1], ['perle_de_noye', 6], ['corde_de_noye', 8], ['sel_de_marsalee', 10]]);
   R('anneau_noye', 'bijoutier', [['corde_de_noye', 10], ['perle_de_noye', 5], ['soupir_de_noye', 1], ['sel_de_marsalee', 9]]);
   R('ceinture_noye', 'cordonnier', [['corde_de_noye', 11], ['perle_de_noye', 5], ['bois_flotte', 6], ['galet_de_marnel', 3]]);
 
-  // Panoplie du Ferrel (45)
   R('coiffe_ferrel', 'tailleur', [['pique_de_ferrel', 11], ['lueur_de_ferrel', 5], ['baume_de_ferrel', 1], ['chardon_de_lisiere', 9]]);
   R('cape_ferrel', 'tailleur', [['pique_de_ferrel', 12], ['lueur_de_ferrel', 5], ['chardon_de_lisiere', 9]]);
   R('amulette_ferrel', 'bijoutier', [['baume_de_ferrel', 1], ['lueur_de_ferrel', 6], ['pique_de_ferrel', 9], ['ardoise_des_effilures', 10]]);
   R('anneau_ferrel', 'bijoutier', [['pique_de_ferrel', 10], ['lueur_de_ferrel', 5], ['baume_de_ferrel', 1], ['ardoise_des_effilures', 10]]);
   R('bottes_ferrel', 'cordonnier', [['pique_de_ferrel', 11], ['lueur_de_ferrel', 5], ['ardoise_des_effilures', 6], ['corne_de_vulk', 4]]);
 
-  // Panoplie du Zhaal (46)
   R('coiffe_zhaal', 'tailleur', [['flammeche_de_zhaal', 11], ['tison_de_zhaal', 5], ['oeil_de_zhaal', 1], ['chardon_de_lisiere', 10]]);
   R('cape_zhaal', 'tailleur', [['flammeche_de_zhaal', 13], ['tison_de_zhaal', 5], ['chardon_de_lisiere', 9]]);
   R('amulette_zhaal', 'bijoutier', [['oeil_de_zhaal', 1], ['tison_de_zhaal', 6], ['flammeche_de_zhaal', 9], ['ardoise_des_effilures', 11]]);
@@ -1097,7 +1002,6 @@
   R('ceinture_zhaal', 'cordonnier', [['flammeche_de_zhaal', 11], ['tison_de_zhaal', 5], ['ardoise_des_effilures', 7], ['pique_de_ferrel', 4]]);
   R('bottes_zhaal', 'cordonnier', [['flammeche_de_zhaal', 11], ['tison_de_zhaal', 5], ['chardon_de_lisiere', 7], ['corne_de_vulk', 4]]);
 
-  // Panoplie de la Mère des Brisants (48) : chaque pièce demande une ressource de boss.
   R('coiffe_mere_des_brisants', 'tailleur', [['maree_figee', 1], ['conque_de_la_mere', 1], ['ecume_de_brisant', 12], ['perle_de_noye', 6], ['sel_de_marsalee', 8]]);
   R('cape_mere_des_brisants', 'tailleur', [['conque_de_la_mere', 1], ['ecume_de_brisant', 12], ['corde_de_noye', 9], ['algue_de_ressac', 6]]);
   R('amulette_mere_des_brisants', 'bijoutier', [['maree_figee', 1], ['conque_de_la_mere', 1], ['remous_de_brisant', 8], ['perle_de_noye', 6], ['sel_de_marsalee', 12]]);
@@ -1105,7 +1009,6 @@
   R('ceinture_mere_des_brisants', 'cordonnier', [['maree_figee', 1], ['ecume_de_brisant', 12], ['corde_de_noye', 8], ['bois_flotte', 7]]);
   R('bottes_mere_des_brisants', 'cordonnier', [['conque_de_la_mere', 1], ['ecume_de_brisant', 11], ['galet_de_marnel', 8], ['bois_flotte', 8]]);
 
-  // Panoplie du Fendu (50)
   R('coiffe_fendu', 'tailleur', [['lambeau_de_fendu', 12], ['eclat_de_lame_fendue', 5], ['fil_dechire', 1], ['chardon_de_lisiere', 11]]);
   R('cape_fendu', 'tailleur', [['lambeau_de_fendu', 14], ['eclat_de_lame_fendue', 5], ['chardon_de_lisiere', 10]]);
   R('amulette_fendu', 'bijoutier', [['fil_dechire', 1], ['eclat_de_lame_fendue', 6], ['lambeau_de_fendu', 10], ['ardoise_des_effilures', 12]]);
@@ -1113,7 +1016,6 @@
   R('ceinture_fendu', 'cordonnier', [['lambeau_de_fendu', 12], ['eclat_de_lame_fendue', 5], ['ardoise_des_effilures', 8], ['corne_de_vulk', 4]]);
   R('bottes_fendu', 'cordonnier', [['lambeau_de_fendu', 12], ['eclat_de_lame_fendue', 5], ['ardoise_des_effilures', 8], ['flammeche_de_zhaal', 4]]);
 
-  // Objets hors panoplie 31 à 50, source craft
   R('ceinture_de_varech', 'cordonnier', [['algue_de_ressac', 10], ['aile_de_sivr', 6], ['bois_flotte', 5]]);
   R('tricorne_de_bois_flotte', 'tailleur', [['bois_flotte', 9], ['galet_de_marnel', 8], ['pince_de_marnel', 2], ['algue_de_ressac', 3]]);
   R('voile_de_sel', 'tailleur', [['sel_de_marsalee', 9], ['aile_de_sivr', 7], ['dard_de_sivr', 3], ['algue_de_ressac', 3]]);
@@ -1126,7 +1028,6 @@
   R('capuche_de_tison', 'tailleur', [['tison_de_zhaal', 5], ['flammeche_de_zhaal', 10], ['oeil_de_zhaal', 1], ['chardon_de_lisiere', 11]]);
   R('ceinture_d_ardoise', 'cordonnier', [['ardoise_des_effilures', 12], ['pierre_de_vulk', 5], ['fele_de_vulk', 1], ['corne_de_vulk', 9]]);
 
-  // Armes 31 à 50, source craft (forgeron)
   R('baguette_de_varech', 'forgeron', [['algue_de_ressac', 9], ['chas_de_sivr', 1], ['bois_flotte', 7], ['dard_de_sivr', 5]]);
   R('pelle_de_carapace', 'forgeron', [['carapace_de_marnel', 1], ['galet_de_marnel', 9], ['bois_flotte', 8], ['pince_de_marnel', 5]]);
   R('arc_de_bois_flotte', 'forgeron', [['bois_flotte', 10], ['aile_de_sivr', 6], ['plume_de_harpide', 4], ['dard_de_sivr', 4]]);
@@ -1135,7 +1036,6 @@
   R('baton_de_lanterne', 'forgeron', [['corde_de_noye', 9], ['perle_de_noye', 4], ['soupir_de_noye', 1], ['bois_flotte', 11]]);
   R('hache_des_effilures', 'forgeron', [['flammeche_de_zhaal', 10], ['tison_de_zhaal', 5], ['oeil_de_zhaal', 1], ['ardoise_des_effilures', 12]]);
 
-  // Pains 31 à 50 (alchimiste)
   R('pain_d_algue', 'alchimiste', [['algue_de_ressac', 6], ['sel_de_marsalee', 3], ['galet_de_marnel', 1]], 3);
   R('pain_des_effilures', 'alchimiste', [['chardon_de_lisiere', 6], ['flammeche_de_zhaal', 3], ['ardoise_des_effilures', 2]], 3);
 })();

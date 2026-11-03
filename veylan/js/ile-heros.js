@@ -1,46 +1,16 @@
-// Les héros modelés dans Blender (tools/blender/lyssar.py, exportés en GLB allégés par --jeu dans
-// assets/heros/), posés dans le jeu à la place du panneau peint du Veilleur (3.7) quand le monde
-// modelé est allumé (3.26) : derrière ?heros=lyssar (forcé) ou, avec ?monde=glb, pour la classe
-// du personnage qui a son modèle (FICHIERS) ; ?heros=0 l'éteint.
-//
-// Un lecteur de GLB à peau, pour nos propres fichiers : les noeuds et leurs os, les maillages
-// (position, normale, UV, indices de joints et poids), les matières (couleur de base, texture de
-// base incluse dans le GLB, émission), le squelette (les matrices de liaison inverses). Les
-// animations ne sont pas lues : la marche et les gestes sont procéduraux, sur les os de MakeHuman
-// (les cuisses, les jambes, les bras balancent ; le corps respire à l'arrêt ; en combat, le tir à
-// l'arbalète, le coup reçu, la poussée, le pas). Le repère du GLB est celui de la scène (X = u,
-// Y = h, Z = v) ; le modèle regarde vers +Z au repos.
-//
-// Le porteur (`porteur`) est ce que les figures (js/ile-figures.js) appellent pour la figure marquée
-// `heros` (le Veilleur sur l'île, le joueur en combat, dans une salle) : le modèle est posé à la
-// place du panneau, son cap suit la marche ou la cible, ses gestes suivent le combat ; l'ombre, la
-// sélection, les anneaux et la barre de vie restent ceux du panneau.
 const IleHeros = (() => {
-  // Aucun héros modelé pour l'instant : le modèle de Lyssar est retiré (3.27). Le lecteur reste pour
-  // les prochains ; une classe entre ici avec son fichier (`classe: 'assets/heros/<classe>.glb'`).
   const FICHIERS = {};
-  // L'arme tenue : le noeud du GLB qui la porte (un enfant du poignet droit), son avant et son
-  // travers dans son propre repère (mesurés sur le GLB par les axes principaux de ses sommets :
-  // l'arbalète est bâtie le long de +Z, ses arcs en X ; au repos elle pend le long de l'avant-bras,
-  // l'arc passé la main). `dessus` : +1 ou -1, le côté de l'arme qui est en haut quand elle vise.
-  // (L'arbalète de Lyssar : { noeud: 'av_arbalete', avant: { x: -0.136, y: 0.011, z: 0.991 },
-  // travers: { x: 0.991, y: 0.001, z: 0.131 }, dessus: 1 }.)
   const ARMES = {};
-  // La visée : la direction du bras droit (le repère du modèle, +Z devant), celles du bras et de
-  // l'avant-bras gauches (l'orbe levé devant).
   const VISEE = { bras: { x: -0.18, y: -0.4, z: 0.9 }, brasG: { x: 0.4, y: -0.55, z: 0.73 }, avantG: { x: 0.1, y: 0.3, z: 0.95 } };
-  // Les durées des gestes du héros en combat (ms), lues par l'arène (js/ile-arene.js) comme celles
-  // des monstres modelés : le tir (le trait part au lâcher), la poussée, le pas ; pas d'entrée.
   const DUREES = { placement: 0, sort: 520, lacher: 0.45, pousse: 90, saut: 140 };
 
-  // L'adresse d'un fichier de héros, à côté des scripts, en local comme en ligne.
   function source(classe) {
     let src = FICHIERS[classe];
     if (!src) return null;
     try {
       const ref = document.querySelector('script[src*="ile-charge.js"]') || document.querySelector('script[src*="ile-3d.js"]');
       if (ref && ref.src) { const u = new URL(ref.src); src = new URL('../' + src, u).href + u.search; }
-    } catch (e) { /* chemin relatif */ }
+    } catch (e) {   }
     return src;
   }
 
@@ -73,8 +43,6 @@ const IleHeros = (() => {
     return { array: out, n, normalized: !!a.normalized };
   }
 
-  // Les dimensions d'une image PNG (son en-tête IHDR), pour compter ses octets décodés sans
-  // l'attendre ; 1 024 de côté si ce n'est pas un PNG.
   function dimsImage(u8) {
     if (u8.length > 24 && u8[0] === 0x89 && u8[1] === 0x50 && u8[2] === 0x4e && u8[3] === 0x47) {
       const v = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
@@ -83,7 +51,6 @@ const IleHeros = (() => {
     return [1024, 1024];
   }
 
-  // Une texture incluse dans le GLB (une image PNG ou JPEG du tampon binaire), lue par le navigateur.
   function texture(THREE, G, bin, idx, cache, compte) {
     if (cache.has('t' + idx)) return cache.get('t' + idx);
     const t = (G.textures || [])[idx];
@@ -101,8 +68,6 @@ const IleHeros = (() => {
     return tex;
   }
 
-  // Une matière de Three pour une matière du GLB : Lambert (la lumière du jeu), la couleur de base,
-  // sa texture s'il y en a une, l'émission ; les cheveux, les tissus et les cils sur les deux faces.
   function materiau(THREE, G, bin, idx, cache, compte) {
     if (cache.has('m' + idx)) return cache.get('m' + idx);
     const m = (G.materials || [])[idx] || {};
@@ -122,7 +87,6 @@ const IleHeros = (() => {
       fog: true,
     });
     mat.name = nom;
-    // L'émission de repos, pour l'éclair du coup reçu (le panneau blanchit ; le modèle rougit).
     mat.emissionBase = { r: em[0] * force, g: em[1] * force, b: em[2] * force };
     cache.set('m' + idx, mat);
     return mat;
@@ -144,10 +108,7 @@ const IleHeros = (() => {
     return geo;
   }
 
-  // Plusieurs géométries (mêmes attributs) réunies en une : les attributs mis bout à bout, l'index
-  // décalé.
   function reunir(THREE, geos) {
-    // Les attributs que toutes ont (une pièce sans UV n'en impose pas aux autres).
     const noms = Object.keys(geos[0].attributes).filter(nom => geos.every(x => x.getAttribute(nom)));
     const g = new THREE.BufferGeometry();
     for (const nom of noms) {
@@ -175,9 +136,6 @@ const IleHeros = (() => {
 
   const octetsGeo = geo => Object.values(geo.attributes).reduce((s, a) => s + (a.array ? a.array.byteLength : 0), 0) + (geo.index && geo.index.array ? geo.index.array.byteLength : 0);
 
-  // Le héros : un groupe (racine) qui porte les os et les maillages à peau du GLB, lié à son
-  // squelette ; les os par nom (sans le préfixe du modèle), leur rotation de repos et leurs repères
-  // pour la marche et les gestes ; l'arme tenue (`arme`) si le modèle en a une.
   function construire(THREE, glb, arme) {
     const { json: G, bin } = glb;
     const cache = new Map();
@@ -207,11 +165,6 @@ const IleHeros = (() => {
     });
     let triangles = 0, appels = 0;
     const geometries = [];
-    // Les primitives à peau d'une même peau sont réunies en un seul SkinnedMesh par matière (les
-    // pièces de la tenue sont nombreuses et petites : un appel par matière, pas par pièce), et les
-    // matières unies (sans texture, sans émission, opaques) en un seul, leur couleur cuite par
-    // sommet : le héros coûte une poignée d'appels (3.28). Les noeuds qui portent ces primitives ont
-    // tous la transformation de leur armature.
     const paquets = new Map();
     const unie = idx => {
       const m = (G.materials || [])[idx] || {}, pbr = m.pbrMetallicRoughness || {}, base = pbr.baseColorFactor || [1, 1, 1, 1], em = m.emissiveFactor || [0, 0, 0];
@@ -232,8 +185,6 @@ const IleHeros = (() => {
           paquets.get(k).noms.push(mesh.name || ('maillage_' + n.mesh));
           paquets.get(k).materiaux.push(prim.material);
         } else {
-          // Les pièces fixes (l'arbalète, l'orbe) : celles d'un même noeud aux matières unies
-          // réunies en un seul maillage, comme les pièces à peau.
           const u = unie(prim.material);
           const k = 'fixe:' + i + ':' + (u ? 'unies' : prim.material);
           if (!paquets.has(k)) paquets.set(k, { skin: null, material: u ? null : prim.material, noeud: i, geos: [], noms: [], materiaux: [] });
@@ -246,8 +197,6 @@ const IleHeros = (() => {
     for (const pq of paquets.values()) {
       let mat;
       if (pq.material == null) {
-        // Les matières unies : la couleur de base de chacune écrite par sommet, une seule matière
-        // Lambert à couleurs par sommet, sur les deux faces si l'une l'était.
         for (let q = 0; q < pq.geos.length; q++) {
           const g = pq.geos[q], n = g.getAttribute('position').count;
           const m = (G.materials || [])[pq.materiaux[q]] || {}, base = (m.pbrMetallicRoughness || {}).baseColorFactor || [1, 1, 1, 1];
@@ -286,8 +235,6 @@ const IleHeros = (() => {
     return h;
   }
 
-  // Les GLB lus, par adresse : une salle du Puits ou un retour sur l'île reconstruisent le héros
-  // sans relire le fichier.
   const LUS = new Map();
   function lire(url) {
     if (typeof IleGlb !== 'object') return Promise.reject(new Error('IleGlb absent'));
@@ -295,13 +242,10 @@ const IleHeros = (() => {
     return LUS.get(url);
   }
 
-  // ----- Une petite algèbre des quaternions {x, y, z, w} et des vecteurs {x, y, z} -----
-  // Sans dépendre de Three (le Three factice des tests n'a que le minimum).
   const IDENT = { x: 0, y: 0, z: 0, w: 1 };
   const qMul = (a, b) => ({ x: a.x * b.w + a.w * b.x + a.y * b.z - a.z * b.y, y: a.y * b.w + a.w * b.y + a.z * b.x - a.x * b.z, z: a.z * b.w + a.w * b.z + a.x * b.y - a.y * b.x, w: a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z });
   const qInv = q => ({ x: -q.x, y: -q.y, z: -q.z, w: q.w });
   const qAxe = (a, t) => { const s = Math.sin(t / 2); return { x: a.x * s, y: a.y * s, z: a.z * s, w: Math.cos(t / 2) }; };
-  // v tourné par q.
   const qVec = (q, v) => {
     const ix = q.w * v.x + q.y * v.z - q.z * v.y, iy = q.w * v.y + q.z * v.x - q.x * v.z, iz = q.w * v.z + q.x * v.y - q.y * v.x, iw = -q.x * v.x - q.y * v.y - q.z * v.z;
     return { x: ix * q.w + iw * -q.x + iy * -q.z - iz * -q.y, y: iy * q.w + iw * -q.y + iz * -q.x - ix * -q.z, z: iz * q.w + iw * -q.z + ix * -q.y - iy * -q.x };
@@ -309,14 +253,12 @@ const IleHeros = (() => {
   const vCroix = (a, b) => ({ x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x });
   const vDot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
   const vNorm = v => { const n = Math.hypot(v.x, v.y, v.z) || 1; return { x: v.x / n, y: v.y / n, z: v.z / n }; };
-  // La rotation qui amène l'unitaire a sur l'unitaire b (la plus courte).
   function qEntre(a, b) {
     const d = vDot(a, b);
     if (d < -0.9999) { const ax = Math.abs(a.x) > 0.9 ? { x: 0, y: 1, z: 0 } : { x: 1, y: 0, z: 0 }; return qAxe(vNorm(vCroix(a, ax)), Math.PI); }
     const c = vCroix(a, b), q = { x: c.x, y: c.y, z: c.z, w: 1 + d }, n = Math.hypot(q.x, q.y, q.z, q.w);
     return { x: q.x / n, y: q.y / n, z: q.z / n, w: q.w / n };
   }
-  // Le quaternion d'un repère orthonormé (ses trois colonnes a, b, c).
   function qRepere(a, b, c) {
     const m00 = a.x, m10 = a.y, m20 = a.z, m01 = b.x, m11 = b.y, m21 = b.z, m02 = c.x, m12 = c.y, m22 = c.z;
     const tr = m00 + m11 + m22;
@@ -327,7 +269,6 @@ const IleHeros = (() => {
     else { const s = 2 * Math.sqrt(1 + m22 - m00 - m11); w = (m10 - m01) / s; x = (m02 + m20) / s; y = (m12 + m21) / s; z = 0.25 * s; }
     return { x, y, z, w };
   }
-  // Le glissement de a vers b (t de 0 à 1), par le court chemin.
   function qGlisse(a, b, t) {
     if (t <= 0) return a;
     if (t >= 1) return b;
@@ -340,16 +281,9 @@ const IleHeros = (() => {
     return { x: q.x / n, y: q.y / n, z: q.z / n, w: q.w / n };
   }
 
-  // ----- La marche et les gestes, sur les os de MakeHuman -----
-  // Les os par rôle (MakeHuman : upperleg01.L, lowerleg01.L, upperarm01.L, lowerarm01.L, spine02,
-  // head ; à défaut, le premier os dont le nom commence ainsi).
   const ROLES = { cuisseG: 'upperleg01.L', cuisseD: 'upperleg01.R', jambeG: 'lowerleg01.L', jambeD: 'lowerleg01.R',
                   brasG: 'upperarm01.L', brasD: 'upperarm01.R', avantG: 'lowerarm01.L', avantD: 'lowerarm01.R', buste: 'spine02', bassin: 'spine05', tete: 'head' };
 
-  // Les repères des os, au repos (le modèle droit, tourné vers +Z) : la rotation du monde de l'os et
-  // de son parent (le repère du modèle), la direction de l'os (son Y), et l'axe local de sa flexion :
-  // tourner autour de lui d'un angle positif porte l'extrémité de l'os vers l'avant (+Z) ; c'est
-  // l'axe latéral, quel que soit le roulis que MakeHuman a donné à l'os.
   function reperer(h) {
     const cache = new Map();
     const qMonde = o => {
@@ -377,30 +311,19 @@ const IleHeros = (() => {
     return null;
   }
 
-  // La rotation locale d'un os plié de `angle` autour de son axe de flexion (positif : vers l'avant).
   function qFlex(h, o, angle) { const R = h.reperes.get(o); return qMul(R.repos, qAxe(R.axe, angle)); }
-  // La rotation locale d'un os plié de `angle` et tordu de `torsion` autour de son propre axe (son Y :
-  // la direction de l'os ; positif : le côté gauche du modèle part vers l'arrière).
   const AXE_OS = { x: 0, y: 1, z: 0 };
   function qFlexTord(h, o, angle, torsion) { const R = h.reperes.get(o); return qMul(qMul(R.repos, qAxe(R.axe, angle)), qAxe(AXE_OS, torsion)); }
-  // La rotation locale d'un os pour une rotation `qd` du monde appliquée à sa pose de repos, son
-  // parent tourné `parent` dans le monde (sa rotation de repos si rien n'est donné) ; et la rotation
-  // du monde qui en résulte (pour les enfants).
   function localeDe(R, qd, parent) {
     const monde = qMul(qd, R.monde);
     return { locale: qMul(parent ? qInv(parent) : R.parentInv, monde), monde };
   }
-  // Un bras : l'os du bras tourné vers `dirBras`, l'avant-bras vers `dirAvant` (le repère du modèle),
-  // au plus court depuis le repos.
   function orienter(h, bras, dirBras, avant, dirAvant) {
     const Rb = h.reperes.get(bras), Ra = h.reperes.get(avant);
     const B = localeDe(Rb, qEntre(Rb.dir, vNorm(dirBras)));
     const A = localeDe(Ra, qEntre(Ra.dir, vNorm(dirAvant)), B.monde);
     return { bras: B.locale, avant: A.locale };
   }
-  // La visée : l'arme tournée vers `d` (unitaire, le repère du modèle), ses arcs à l'horizontale ;
-  // l'avant-bras, la main et l'arme suivent d'un bloc, la prise de repos gardée ; le bras vers
-  // `dirBras`. Rend les rotations locales du bras et de l'avant-bras droits.
   function viser(h, d, dirBras) {
     const A = h.arme, Rb = h.reperes.get(osDe(h, ROLES.brasD)), Ra = h.reperes.get(osDe(h, ROLES.avantD));
     const f0 = vNorm(qVec(A.monde, A.avant));
@@ -418,10 +341,6 @@ const IleHeros = (() => {
   const lisse = u => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
   const melange = (h, pose, o, q, e) => { if (!o) return; const R = h.reperes.get(o); pose.set(o, e >= 1 ? q : qGlisse(pose.get(o) || R.repos, q, e)); };
 
-  // Un geste par-dessus la pose du moment (t de 0 à 1 sur sa durée) : le tir (la visée montée en
-  // 0,3, le lâcher à 0,45 avec un recul, la descente de 0,65 à 1), le coup reçu (le buste et la tête
-  // partent en arrière), la poussée (le buste en arrière), le pas (un petit bond). Rend la hausse du
-  // corps.
   function gesteSur(h, pose, g) {
     const u = Math.max(0, Math.min(1, g.t || 0)), os = n => osDe(h, n);
     if (g.type === 'sort') {
@@ -459,13 +378,6 @@ const IleHeros = (() => {
     return 0;
   }
 
-  // La pose du moment : la marche quand le héros bouge, la respiration à l'arrêt, le passage de
-  // l'une à l'autre en douceur ; puis le geste du combat s'il y en a un. La phase de la marche suit
-  // la distance parcourue (`h.phase`, avancée par `poser`), pas le temps : les pieds ne glissent
-  // pas, l'arrêt fige la foulée avant le retour au repos. La part de course (`kc`, au-delà de
-  // 4,8 u/s) allonge la foulée, plie les genoux et les coudes, penche le buste. Les hanches
-  // suivent la jambe avancée, les épaules la contrarient, la tête garde le cap. Chaque os tourne
-  // autour de son axe de flexion (positif : vers l'avant) à partir de sa rotation de repos.
   function animer(THREE, h, t, bouge, geste) {
     h.kMarche = h.kMarche === undefined ? (bouge ? 1 : 0) : h.kMarche + ((bouge ? 1 : 0) - h.kMarche) * 0.15;
     const k = h.kMarche, w = h.phase || 0;
@@ -478,15 +390,12 @@ const IleHeros = (() => {
     const flex = (nom, a, tord) => { const o = osDe(h, nom); if (o) pose.set(o, tord ? qFlexTord(h, o, a, tord) : qFlex(h, o, a)); };
     flex(ROLES.cuisseG, A * s);
     flex(ROLES.cuisseD, -A * s);
-    // Le genou plie vers l'arrière, plus en course.
     flex(ROLES.jambeG, -Math.max(0, -B * c) - 0.05 * k - 0.25 * kc);
     flex(ROLES.jambeD, -Math.max(0, B * c) - 0.05 * k - 0.25 * kc);
     flex(ROLES.brasG, -C * s + resp);
     flex(ROLES.brasD, C * s + resp);
     flex(ROLES.avantG, coude + Math.max(0, -0.2 * k * s));
     flex(ROLES.avantD, coude + Math.max(0, 0.2 * k * s));
-    // Les hanches tournent avec la jambe avancée (le côté gauche vers l'avant : torsion négative),
-    // les épaules à l'inverse, la tête compense pour regarder devant.
     flex(ROLES.bassin, 0, -0.07 * k * s);
     flex(ROLES.buste, 0.04 * k * Math.sin(2 * w) + resp * 0.5 + 0.12 * kc, 0.14 * k * s);
     flex(ROLES.tete, -0.03 * k * Math.sin(2 * w) - 0.06 * kc, -0.07 * k * s);
@@ -496,7 +405,6 @@ const IleHeros = (() => {
     h.racine.position.y = h.sol + hausse;
   }
 
-  // L'éclair du coup reçu : les matières rougissent un instant.
   function eclairer(h, flash) {
     if (!!flash === !!h.flash) return;
     h.flash = !!flash;
@@ -507,11 +415,6 @@ const IleHeros = (() => {
     }
   }
 
-  // Pose le héros au sol en (x, h, z) (le repère de la scène), le cap (radians, 0 : vers +Z) suivi
-  // en douceur (une constante de temps de 70 ms, quel que soit le rythme des images) ; sa marche
-  // s'il bouge (la phase avancée de la distance parcourue depuis la pose précédente : une foulée
-  // complète, deux pas, vaut 1,4 u plus 0,2 u par u/s de vitesse, à l'échelle du modèle), son geste
-  // s'il en a un, l'éclair du coup reçu.
   function poser(THREE, h, x, y, z, cap, t, bouge, geste, flash) {
     const r = h.racine;
     const dt = h.tPrec == null ? 0 : Math.min(0.1, Math.max(0, t - h.tPrec));
@@ -519,7 +422,6 @@ const IleHeros = (() => {
     const dist = r.visible && h.sol != null ? Math.hypot(x - r.position.x, z - r.position.z) : 0;
     r.visible = true;
     r.position.x = x; r.position.z = z; h.sol = y;
-    // Un saut de 3 u ou plus n'est pas une marche (le modèle replacé, le combat qui commence).
     const v = dt > 0 && dist > 0 && dist < 3 ? dist / dt : 0;
     h.vitesse = h.vitesse == null ? v : h.vitesse + (v - h.vitesse) * (dt > 0 ? Math.min(1, dt / 0.12) : 0);
     if (bouge && dist > 0 && dist < 3) {
@@ -542,7 +444,6 @@ const IleHeros = (() => {
     if (h.ombre) h.ombre.visible = false;
   }
 
-  // Rend les géométries, les matières et les textures du héros, et le retire de son parent.
   function liberer(h) {
     if (!h) return;
     for (const g of h.geometries || []) if (g.dispose) g.dispose();
@@ -552,8 +453,6 @@ const IleHeros = (() => {
     if (p && typeof p.remove === 'function') p.remove(h.racine);
   }
 
-  // Charge le héros d'une classe : le GLB lu (une fois) et construit ; ajouté à `parent` s'il est
-  // donné (sinon le porteur le prendra), caché.
   async function charger(THREE, parent, classe, url) {
     const glb = await lire(url || source(classe));
     const h = construire(THREE, glb, ARMES[classe] || null);
@@ -565,18 +464,8 @@ const IleHeros = (() => {
     return h;
   }
 
-  // Le porteur du héros pour les figures (js/ile-figures.js, `Figures.heros`), à la manière du parc
-  // des monstres modelés : `debut(now)` à chaque image, `poser(s)` pour la figure marquée `heros`
-  // (rend vrai : son panneau est vide), `emprise(s)` pour son ombre, `fin()` cache le modèle si
-  // aucune figure ne l'a posé (le Veilleur mort, hors champ, ou le panneau repris). Le cap suit le
-  // déplacement de la figure, sinon sa cible (`s.vers`, le repère de la scène) ; `s.bouge` dit la
-  // marche (sinon le déplacement la dit) ; `s.geste` ({ type, t }) et `s.flash` viennent du combat ;
-  // `force` ({ type, t, cap }) impose un geste et un cap (les captures d'atelier).
-  // L'échelle du héros dans le monde (ECHELLE : 1 serait le modèle à sa taille de 1,75 u ; 1,15 le
-  // porte à 2 u, la hauteur des panneaux peints des PNJ et de l'ancienne figure du Veilleur, pour
-  // qu'il tienne sa place devant les portes et les bannières) ; ?heros_echelle=1.3 en essaie une autre.
   let ECHELLE = 1.15;
-  try { const q = parseFloat(new URLSearchParams(location.search).get('heros_echelle')); if (Number.isFinite(q) && q > 0.3 && q < 3) ECHELLE = q; } catch (e) { /* rien */ }
+  try { const q = parseFloat(new URLSearchParams(location.search).get('heros_echelle')); if (Number.isFinite(q) && q > 0.3 && q < 3) ECHELLE = q; } catch (e) {   }
   function porteur(THREE, h, parent) {
     if (parent) parent.add(h.racine);
     const P = { h, prec: null, cap: null, now: 0, pose: false, force: null };

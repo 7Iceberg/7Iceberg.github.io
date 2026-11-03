@@ -1,38 +1,18 @@
-// Ervane, l'île de l'Éveil : le plateau continu où naissent les nouveaux Veilleurs, au-dessus
-// d'Orsane (docs/ILE-DE-DEPART.md pour la conception, docs/ILE-TECHNIQUE.md pour le format).
-//
-// Tout dépend de l'interrupteur (content/ervane-interrupteur.js, DATA.ile, allumé, la seule ligne que
-// toute page charge) : ce fichier n'est chargé que si l'île est disponible sur l'appareil, et son
-// contenu est rangé dans le module `ervane`, une fonction qui ne fait rien tant que js/ile.js ne
-// l'appelle pas. Éteint, le jeu ne voit ni le plateau, ni ses cartes, ni ses PNJ.
-//
-// Repère : u d'ouest en est (0 à 240), v du nord au sud (0 à 180), en unités ; 1 u = 1 case de
-// combat. Les positions sont celles du plan du document de conception (section 2).
 
 (DATA.modules = DATA.modules || {}).ervane = () => {
   const C = DATA.content;
   if (C.plateaux.some(p => p.id === 'ervane')) return;
 
-  // ----- Les frontières des régions, partagées par leurs contours et par les lignes -----
-  // Le ravin du Ru Clair sépare les Murets (à l'est) du Bois Cousu ; il finit au pied du coin
-  // nord-ouest du village, où naît le Ru.
   const RAVIN = [[121, -12], [121, 2], [124, 14], [128, 24], [133, 34], [138, 44], [146, 52], [156, 60], [164, 70]];
-  // L'escarpement qui porte les Murets au-dessus du village, et sa branche ouest, au-dessus du Bois.
   const ESCARPEMENT_SO = [[148, 92], [153, 85], [159, 77], [164, 70]];
   const ESCARPEMENT_N = [[164, 70], [180, 71], [195, 69], [205, 69], [215, 70], [228, 68], [250, 69]];
-  // La lèvre de pierre blanche du village, au-dessus du vallon des Sources.
   const LEVRE = [[148, 92], [152, 96], [160, 100], [170, 103], [182, 106], [182, 137], [200, 138], [220, 137], [250, 136]];
-  // La haie des Bornes, entre les Sources et l'Amarre.
   const HAIE = [[80, 92], [81.5, 98], [80, 104], [77.5, 111], [79, 118], [82, 125], [81, 132], [78.5, 141], [80, 150], [82, 157], [78, 165], [79.5, 175], [80, 190]];
   const rev = a => a.slice().reverse();
 
   C.plateaux.push({
     id: 'ervane', name: 'Ervane', graine: 1207,
     taille: [240, 180],
-    // Le rendu propre à ce plateau (js/ile-3d.js, Ile3D.renduDe ; docs/ORSANE-3D.md) : le monde
-    // modelé dans Blender, le style Lisière, l'aperçu de nuit et les modèles Meshy, que
-    // l'interrupteur (DATA.ile) et l'adresse allument. Un plateau sans `rendu` (Orsane) est dessiné
-    // par le code, sans eux.
     rendu: { monde: 'assets/monde/ervane.glb', style: 'lisiere', nuit: true, modeles: true },
     camera: {
       azimut: 45,
@@ -40,7 +20,6 @@
       combat: { orthographique: true, elevation: 30 },
       champ: [18, 60], champDefaut: [26, 32],
     },
-    // Un lambeau en fer à cheval, ouvert à l'ouest sur l'Échancrure.
     bord: {
       contour: [[32, 12.6], [48.5, 12.8], [72.4, 9.2], [79, 9], [88.4, 11.1], [104.4, 17.2], [110.7, 18], [123.3, 15.5], [135.8, 11.5], [152.8, 8.8], [154.6, 7.9], [166.1, 9.4], [176.8, 8.5], [183.7, 6.6], [187.9, 6.6], [194, 9.7], [199.1, 10.4], [202.1, 9.6], [207.1, 6.1], [208.3, 3.2], [216.3, 4.2], [222, 6.9], [224.2, 7], [226.5, 9.6], [227.6, 14.4], [226.9, 17.6], [231.6, 20.3], [232.2, 21.9], [236.9, 44.5], [236.1, 52.1], [232.8, 54.8], [231.5, 57.7], [233.2, 62.9], [236.3, 64.1], [235.2, 81.9], [233.8, 84], [233, 89.1], [235, 94.9], [237.2, 97.7], [236.9, 102.6], [231.5, 109], [230.3, 112.9], [231.6, 118], [233.9, 122.2], [234.6, 132], [235.6, 133.1], [234, 140], [231.7, 141.5], [228.2, 145.4], [222.3, 155], [217.7, 158.5], [207.1, 163.6], [199.1, 166], [185.7, 166.4], [170.5, 169.5], [166.4, 169.1], [156.5, 165.5], [151.8, 165.1], [147, 166.5], [141.1, 170.1], [139.1, 170.1], [137.1, 168.6], [136.1, 166.8], [129.3, 162.7], [111.2, 161.3], [106.1, 163.3], [100.8, 168.8], [99.7, 172], [97.7, 172.9], [95.6, 175.3], [86.9, 174.5], [55, 174], [22, 170], [5, 160], [2, 130], [8, 106], [3, 96], [14.1, 90.7], [16.5, 93.2], [16.1, 87.3], [14.3, 83.9], [12.8, 75.9], [15, 68.7], [15.5, 63], [10.8, 40.9], [11.1, 39.1], [13.1, 32.2], [15.9, 27.2], [25.1, 15.8], [27.9, 13.9]],
       bruit: 1.5, levre: 0.6, cone: [50, 70],
@@ -117,24 +96,19 @@
     ],
     fondu: 8,
     lignes: [
-      // Les falaises : franches, jamais lissées.
       { id: 'escarpement_des_murets', sorte: 'escarpement', points: [...ESCARPEMENT_SO, ...ESCARPEMENT_N.slice(1)], denivele: 12, largeur: 2 },
       { id: 'levre_des_mailles', sorte: 'escarpement', points: LEVRE, denivele: 4, largeur: 1.5 },
-      // Le ravin du Ru Clair et ses passages.
       { id: 'ravin_du_ru', sorte: 'ravin', points: [...RAVIN.slice(0, -1), [162, 66]], largeur: 8, profondeur: 6, berge: 3 },
       { id: 'gue_du_ru', sorte: 'gue', points: [[149, 46.5], [136, 40], [123, 45]], largeur: 3 },
       { id: 'passerelle', sorte: 'pont', points: [[134, 18.5], [126, 20], [118, 21.5]], largeur: 2.4, matiere: 'planches', au_dessus: 'ravin' },
       { id: 'pont_de_cordes', sorte: 'pont', points: [[20, 77], [17.5, 92], [20, 107]], largeur: 2.4, matiere: 'corde', au_dessus: 'vide' },
-      // Les escaliers taillés dans la pierre.
       { id: 'escalier_des_murets', sorte: 'escalier', points: [[205, 75], [205, 63.5]], largeur: 3, marches: 22 },
       { id: 'escalier_de_la_porte', sorte: 'escalier', points: [[186.5, 128.4], [178, 128.4]], largeur: 2.6, marches: 10 },
-      // Les ruelles pavées du village.
       { id: 'ruelle_de_l_escalier', sorte: 'ruelle', points: [[205, 91], [205, 82], [205, 75]], largeur: 3.5 },
       { id: 'ruelle_du_belvedere', sorte: 'ruelle', points: [[196.5, 99], [186, 96.5], [176, 94.5], [170.5, 94]], largeur: 3 },
       { id: 'ruelle_de_la_porte', sorte: 'ruelle', points: [[199.5, 107.5], [194, 114], [189.5, 121], [186.5, 128.4]], largeur: 3 },
       { id: 'ruelle_des_archives', sorte: 'ruelle', points: [[211.5, 106.5], [215.5, 111]], largeur: 3 },
       { id: 'ruelle_de_la_cour', sorte: 'ruelle', points: [[212.5, 94], [218, 89.5]], largeur: 3 },
-      // Les sentiers de terre : aucun segment de plus de 30 u, chaque tracé lissé.
       { id: 'sentier_des_sources', sorte: 'sentier', points: [[178, 128.4], [175, 132], [170, 140], [167, 142.5]], largeur: 2 },
       { id: 'gue_de_la_source', sorte: 'gue', points: [[167, 142.5], [160, 147.5], [153, 143]], largeur: 2.5 },
       { id: 'sentier_de_la_braise', sorte: 'sentier', points: [[153, 143], [148, 140], [132, 128], [118, 132], [105, 122]], largeur: 2 },
@@ -150,15 +124,11 @@
       { id: 'sentier_de_la_bobine', sorte: 'sentier', points: [[96, 42], [75, 52], [56, 60], [36, 66], [22, 73], [20, 77]], largeur: 2 },
       { id: 'sentier_de_l_amarre', sorte: 'sentier', points: [[20, 107], [28, 112], [44, 114], [55, 118], [62, 128], [60, 135], [46, 138.5], [43.5, 138.5]], largeur: 2.2 },
       { id: 'sentier_de_la_nacelle', sorte: 'sentier', points: [[60, 135], [60, 150], [55, 160], [34, 163], [13, 158]], largeur: 2 },
-      // Le muret ouest du village, ouvert à la Porte des Sources.
       { id: 'muret_des_mailles', sorte: 'muret', points: [[183, 108], [183, 122], [183, 136.2]], hauteur: 1, breches: [{ point: [183, 128.4], largeur: 3.2 }] },
-      // Les murets de pierre sèche des Murets, ouverts là où passent les sentiers.
       { id: 'muret_du_haut', sorte: 'muret', points: [[188, 36], [191, 48], [190, 62]], hauteur: 1, breches: [{ point: [190.6, 43.6], largeur: 3.5 }] },
       { id: 'muret_des_enclos', sorte: 'muret', points: [[162, 40], [170, 46], [172, 58]], hauteur: 1, breches: [{ point: [171.4, 50.2], largeur: 3 }] },
       { id: 'muret_du_hameau', sorte: 'muret', points: [[156, 12], [160, 22], [159, 34]], hauteur: 1, breches: [{ point: [159.6, 26.8], largeur: 3.5 }] },
       { id: 'muret_du_cairn', sorte: 'muret', points: [[212, 4], [214, 18], [228, 23]], hauteur: 1, breches: [{ point: [213.5, 14.8], largeur: 3.5 }] },
-      // Les haies : celle des Bornes avec son fossé et sa barrière (fermée tant que « Les lueurs
-      // qui suivent » n'est pas rendue : Ardek l'ouvre), et les enclos des Haies.
       { id: 'haie_des_bornes', sorte: 'haie', points: HAIE, hauteur: 1.4, fosse: 0.6, barrieres: [{ id: 'barriere_des_bornes', point: [80, 150], largeur: 3, quete: 'ervane_lueurs' }] },
       { id: 'haie_des_enclos', sorte: 'haie', points: [[211, 30], [229, 30.5], [233, 46]], hauteur: 1.2 },
       { id: 'haie_du_terrier', sorte: 'haie', points: [[202, 50.5], [214, 53], [228, 51.5]], hauteur: 1.2, breches: [{ point: [211, 52.4], largeur: 3.5 }] },
@@ -168,13 +138,11 @@
       { id: 'mare_du_confluent', sorte: 'bassin', centre: [99, 153], rayon: 2.5, profondeur: 0.45, nom: 'la Mare du Confluent' },
       { id: 'ru_clair', sorte: 'ru', points: [[162, 66], [156, 60], [146, 52], [138, 44], [133, 34], [128, 24], [124, 14], [121, 2], [121, -8]], largeur: 2, profondeur: 0.8, nom: 'le Ru Clair' },
       { id: 'saut_du_ru', sorte: 'chute', point: [121, 2], nom: 'le Saut du Ru' },
-      // Les ruisselets des quatre sources, peu profonds : on les traverse à gué.
       { id: 'ruisselet_claire', sorte: 'ru', points: [[155, 151], [145, 151], [130, 152.5], [115, 153], [102, 153]], largeur: 1.2, profondeur: 0.25 },
       { id: 'ruisselet_braise', sorte: 'ru', points: [[129, 131], [123, 139], [112, 147], [102, 152]], largeur: 1.2, profondeur: 0.25 },
       { id: 'ruisselet_mousse', sorte: 'ru', points: [[136, 163], [124, 160], [111, 156.5], [102, 154]], largeur: 1.2, profondeur: 0.25 },
       { id: 'ruisselet_vent', sorte: 'ru', points: [[104, 127], [100.5, 137], [99.5, 146], [99, 151]], largeur: 1.2, profondeur: 0.25 },
     ],
-    // `nom` : le nom d'un lieu sur la carte 3D de l'île, quand on s'en approche (js/ile-carte.js).
     places: [
       { id: 'place_du_relais', centre: [205, 100], rayon: 9, hauteur: 0, sol: 'calcaire', nom: 'la Place du Relais' },
       { id: 'belvedere', centre: [169.5, 94], rayon: 3.5, sol: 'calcaire', nom: 'le Belvédère' },
@@ -194,7 +162,6 @@
       { centre: [105, 120], rayon: 7, sol: 'herbe_blanche' },
     ],
     objets: [
-      // Les Mailles.
       { sorte: 'metier', u: 205, v: 98, rot: 0 },
       { sorte: 'pierre_levee', u: 198.5, v: 96 }, { sorte: 'pierre_levee', u: 211.5, v: 96 },
       { sorte: 'pierre_levee', u: 198, v: 104.5 }, { sorte: 'pierre_levee', u: 212, v: 104.5 },
@@ -203,8 +170,6 @@
       { sorte: 'maison', u: 228, v: 79.5, rot: -0.2, taille: [6, 5], toit: 'toile' },
       { sorte: 'poteau', u: 219, v: 84 }, { sorte: 'poteau', u: 224, v: 83.5 }, { sorte: 'poteau', u: 226, v: 88.5 },
       { sorte: 'ratelier', u: 217.5, v: 82.5, rot: -0.4 },
-      // Le petit mobilier (revue finale) : des tonneaux devant le comptoir et derrière la maison de
-      // la cour, une corde à linge et une barrière entre les maisons du sud.
       { sorte: 'tonneau', u: 189.3, v: 93.2 }, { sorte: 'tonneau', u: 190.3, v: 93.9, rot: 0.7 }, { sorte: 'tonneau', u: 231.8, v: 83.2, rot: 0.3 },
       { sorte: 'linge', u: 211.5, v: 129.5, rot: 0.15, longueur: 4.5 },
       { sorte: 'barriere', u: 201, v: 129, rot: 0.3, longueur: 3.5 }, { sorte: 'tonneau', u: 222.5, v: 127.5, rot: 1.1 },
@@ -219,23 +184,19 @@
       { sorte: 'lanterne', u: 207.5, v: 87 }, { sorte: 'lanterne', u: 202.5, v: 78 }, { sorte: 'lanterne', u: 181, v: 97.5 },
       { sorte: 'lanterne', u: 191, v: 117 }, { sorte: 'lanterne', u: 214, v: 109.5 },
       { sorte: 'panneau', u: 208, v: 77.5, texte: 'Les Murets, niveaux 3 à 5' },
-      // Les Murets.
       { sorte: 'tente', u: 209.5, v: 55, rot: 0.3, taille: [3, 3] }, { sorte: 'feu', u: 204, v: 54.5 },
       { sorte: 'ruine', u: 175, v: 16.5, rot: 0, taille: [7, 5] }, { sorte: 'ruine', u: 164, v: 19.5, rot: 0.25, taille: [6, 5] },
       { sorte: 'ruine', u: 163.5, v: 34, rot: -0.3, taille: [5, 5] }, { sorte: 'ruine', u: 183, v: 35.5, rot: 0.2, taille: [6, 5] },
       { sorte: 'ruine', u: 189, v: 30, rot: 0.1, taille: [6, 5] }, { sorte: 'ruine', u: 186, v: 13.5, rot: -0.15, taille: [6, 5] },
       { sorte: 'four', u: 179, v: 31 }, { sorte: 'puits_sec', u: 170, v: 31.5 },
       { sorte: 'cairn', u: 222, v: 12, hauteur: 4 },
-      // Un terrier creusé dans la lande, au sud de la haie du Terrier (le modèle Meshy des Murets).
       { sorte: 'terrier', u: 210, v: 60, rot: 0.6 },
       { sorte: 'panneau', u: 152.5, v: 51, texte: 'Le Bois Cousu, niveaux 5 à 7' },
       { sorte: 'panneau', u: 138, v: 16.5, texte: 'Le Bois Cousu, niveaux 5 à 7' },
-      // Le Bois Cousu.
       { sorte: 'arbre_bobine', u: 75, v: 47.5 },
       { sorte: 'maison', u: 118.5, v: 60.5, rot: -0.5, taille: [5, 4], toit: 'toile' },
       { sorte: 'pieu', u: 18, v: 76.5 }, { sorte: 'pieu', u: 22.5, v: 76.5 },
       { sorte: 'panneau', u: 24, v: 76, texte: 'L\'Amarre, niveaux 7 à 8' },
-      // L'Amarre.
       { sorte: 'tente', u: 23.5, v: 115.5, rot: -0.2, taille: [3, 3] }, { sorte: 'tente', u: 33.5, v: 109, rot: 0.4, taille: [3, 3] },
       { sorte: 'feu', u: 30, v: 115.5 },
       { sorte: 'relais', u: 22.5, v: 114.5, rot: 0.6 },
@@ -244,39 +205,24 @@
       { sorte: 'margelle', u: 32, v: 140, rayon: 8, largeur: 1.2 }, { sorte: 'treuil', u: 40.4, v: 137.8 },
       { sorte: 'plateforme', u: 12, v: 158, rot: 0.6 }, { sorte: 'nacelle', u: 5.5, v: 160.5, rot: 0.6 },
       { sorte: 'fil_d_or', u: 8, v: 150 },
-      // Les Quatre Sources.
       { sorte: 'cairn', u: 99, v: 115.5, hauteur: 1.5 }, { sorte: 'cairn', u: 109, v: 114, hauteur: 1.8 }, { sorte: 'cairn', u: 112.5, v: 122.5, hauteur: 1.4 },
       { sorte: 'pierre_levee', u: 88, v: 160, element: 'feu' }, { sorte: 'pierre_levee', u: 96, v: 160, element: 'eau' },
       { sorte: 'pierre_levee', u: 96, v: 168, element: 'air' }, { sorte: 'pierre_levee', u: 88, v: 168, element: 'terre' },
       { sorte: 'rambarde', u: 92, v: 172, rot: 0 },
-      // La Source de Braise : ses roches fendues de braise, à la tête du ruisselet (le modèle Meshy des
-      // Sources, js/ile-modeles.js), entre les aires de la Braise.
       { sorte: 'source', u: 131, v: 131.5, rot: 0.4, element: 'feu' },
-      // La Source Claire : la vasque où l'eau jaillit, à l'est du bassin ; un ponton de planches sur sa
-      // rive ouest. La Source de Mousse : son tertre, au bord de son sol de mousse.
       { sorte: 'source', u: 172.5, v: 146, rot: 2.6, element: 'eau' },
       { sorte: 'ponton', u: 155, v: 148, rot: 0 },
       { sorte: 'source', u: 147.5, v: 163.5, rot: 1.1, element: 'terre' },
-      // Les parcelles cultivées des Mailles (docs/REFERENCE-OPEN-WORLD.md, phase D ; en fin de liste,
-      // l'index des objets d'avant ne bouge pas) : la terre labourée en sillons, close de barrières de
-      // bois (`taille` : [longueur le long de `rot`, largeur]). Le potager de la maison de l'est (des
-      // choux, un rang de courges, un épouvantail), le champ de blé entre les maisons du sud (des gerbes,
-      // une brouette), le champ de lin bleu de l'ouest, celui dont on file le Fil (un épouvantail).
       { sorte: 'parcelle', u: 221, v: 102.5, rot: 1.42, taille: [9, 6], culture: 'potager' },
       { sorte: 'parcelle', u: 216, v: 124.5, rot: 0.15, taille: [8, 6], culture: 'ble' },
       { sorte: 'parcelle', u: 169.5, v: 84, rot: 1.42, taille: [9, 6], culture: 'lin' },
     ],
     lieux: {
-      // `eveil` : où naît un nouveau Veilleur, à l'écart du cadre du Métier (vu de la caméra, le
-      // Métier cachait le Veilleur né derrière sa toile : revue finale, décision de contenu). Le
-      // tutoriel y commence aussi (content/tutoriel-ile.js, depart).
       metier: [205, 98], eveil: [209, 101], porte_des_sources: [182, 128], belvedere: [168, 94], nacelle: [10, 158],
       haut_escalier: [205, 58], gue: [136, 40], tete_du_pont: [22, 74], camp_ardek: [28, 112], margelle: [43, 138.5],
     },
   });
 
-  // ----- Les zones et leurs sous-zones (une carte de plateau par sous-zone) -----
-  // Chaque contour ne compte que dans la région de sa zone : il peut déborder sur une autre zone.
   const P = 'ervane';
   const R = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
   const sources = { style: 'pierres' }, murets = { style: 'murets' }, bois = { style: 'troncs' }, amarre = { style: 'bornes' };
@@ -488,7 +434,6 @@
           { monsters: ['meuliere', 'krobbet', 'gravelin'], level: [7, 7], respawn: 60, aire: aire(amarre, 6, 139, 4) },
           { monsters: ['meuliere', 'krobbet', 'gravelin'], level: [8, 8], respawn: 60, aire: aire(amarre, -2, 128, 4) },
         ],
-        // La porte du Puits de l'Amarre, au treuil de la margelle.
         relay: null, dungeon: 'puits_de_l_amarre', porte: { u: 41.6, v: 138.3 } },
       { id: 'ervane_champ_des_bornes', name: 'le Champ des Bornes', level: [7, 8], plateau: P, contour: [[24, 150], [46, 150], [46, 148], [85, 148], [85, 190], [24, 190]], coords: [-9, -5],
         npcs: [], nodes: [{ resource: 'pierre_de_calcaire', u: 63, v: 151.5 }, { resource: 'pierre_de_calcaire', u: 35, v: 165.5 }],
@@ -503,9 +448,6 @@
     ],
   });
 
-  // ----- Les PNJ d'Ervane -----
-  // Varek d'Ervane a son propre identifiant : une étape « parler à Varek » ne compte pas des deux
-  // côtés du Fil. Même nom, même allure que celui d'Orsane.
   C.npcs.push(
     { id: 'varek_ervane', name: 'Varek', title: 'Relayeur du Fil', look: 'garde',
       dialogue: ['Doucement. Tu as dormi trois jours, et tu viens de traverser un Voile. Bienvenue sur Ervane, Veilleur.', 'Le Métier t\'a remonté jusqu\'ici. Touche le Relais quand tu veux : il te ramènera toujours aux Mailles.'] },
@@ -526,29 +468,15 @@
       dialogue: ['Ne tire pas sur les fils blancs. Personne ne sait qui les a tendus, et personne ne veut le savoir.', 'Dans le Bois, ce que tu ne vois pas ne te voit pas non plus. Sers-t\'en.'] },
     { id: 'ardek', name: 'Ardek', title: 'Gardien de l\'Amarre', look: 'garde',
       dialogue: ['Écoute. Ce craquement, c\'est l\'île. Quelque chose mange notre fil.', 'Le Relais de l\'Amarre est à toi. Si l\'île te secoue trop, c\'est ici que tu reviendras.'] },
-    // Kolm offre le passage de la Nacelle vers la Place du Relais d'Orsane, une fois « La descente »
-    // rendue (docs/ILE-TECHNIQUE.md, 2.9) ; la Nacelle d'Orsane remonte (content/ervane-orsane.js).
-    // L'arrivée : la case 7, 9 de la Place en cases, ou le lieu « nacelle » du plateau d'Orsane quand
-    // Orsane est en 3D (World.arriveePassage, docs/ORSANE-3D.md).
     { id: 'kolm', name: 'Kolm', title: 'Passeur de la Nacelle', look: 'marcheur',
       dialogue: ['Tiens-toi au bord, ne regarde pas en bas. Enfin si, regarde : c\'est Orsane.', 'La Nacelle descend quand le Fil le dit. Pour l\'instant, il dit d\'attendre.'],
       passage: { vers: 'orsane_cimes_place', arrivee: { x: 7, y: 9, lieu: 'nacelle' }, texte: 'Descendre par la Nacelle', quete: 'ervane_descente' } },
   );
-  // La Nacelle d'Orsane : Varek (content/orsane.js) remonte sur Ervane celui qui a rendu « La
-  // descente ». Dans ce module, et non dans celui d'Orsane par personnage : une sauvegarde doit se
-  // valider de la même façon sur toute page où l'île est disponible (docs/ILE-TECHNIQUE.md, 7.2).
   const varekOrsane = C.npcs.find(n => n.id === 'varek');
   if (varekOrsane) varekOrsane.passage = { vers: 'ervane_nacelle', arrivee: { lieu: 'nacelle' }, texte: 'Monter sur Ervane par la Nacelle', quete: 'ervane_descente' };
-  // La statue de sa Voie, au Temple des Voies (docs/CITE-DES-CIMES.md, C6), comme les statues
-  // d'Astrub vers Incarnam : elle ramène au Métier des Mailles.
   const ismere = C.npcs.find(n => n.id === 'ismere');
   if (ismere) ismere.passage = { vers: 'ervane_mailles_place', arrivee: { lieu: 'metier' }, texte: 'Toucher la statue de ta Voie : revenir au Métier d\'Ervane', quete: 'ervane_descente' };
 
-  // ----- Les ressources d'Ervane -----
-  // Le butin des Glyms des Sources est minéral (pas de plumes, pas de panoplie par élément : les
-  // Glyms sont une branche de la famille Glym, docs/ILE-DE-DEPART.md, 4). La nichée de Krobb laisse
-  // du gravier mâché ; Krobb lui-même, sa dent, que le Puits remet aussi. Le Lampignon des Murets sème
-  // ses spores, le Lampignard laisse la bave de son bâton.
   C.resources.push(
     { id: 'spore_lumineuse', name: 'Spore lumineuse', lore: 'Une poussière de coiffe qui luit encore dans le creux de la main. Les Lampignons en sèment partout où ils poussent.',
       drops: [{ monster: 'lampignon', rate: 30 }], node: null, price: 4 },
@@ -562,8 +490,6 @@
       drops: [{ monster: 'krobb', rate: 100 }], node: null, price: 40 },
   );
 
-  // ----- La Panoplie du Ronge-Amarre (niveau 8) : force et vitalité, fabriquée à Orsane -----
-  // Il n'y a pas d'atelier sur l'île : on ramasse ici, on fabrique en bas, chez Thila, Rilka et Korvel.
   C.sets.push({
     id: 'ronge_amarre', name: 'Panoplie du Ronge-Amarre', family: ['krobbet', 'gravelin', 'meuliere', 'krobb'], level: 8,
     profile: { force: 50, vita: 40, sagesse: 10 },
@@ -584,10 +510,6 @@
   RA('ceinture_ronge_amarre', 'cordonnier', [['pierre_de_calcaire', 4], ['gravier_d_amarre', 3]]);
   RA('bottes_ronge_amarre', 'cordonnier', [['gravier_d_amarre', 4], ['pierre_de_calcaire', 3], ['herbe_de_veille', 1]]);
 
-  // ----- Les quêtes : la ligne principale (docs/ILE-DE-DEPART.md, 6) -----
-  // XP à la règle des quêtes secondaires (24 × niveau^1,6) : l'île apprend, elle ne fait pas sauter
-  // de niveaux. Chaque quête a son `turnIn`. Les combats imposés tiennent 80 % par classe au bot
-  // (tests/balance.js --ile).
   C.quests.push(
     { id: 'ervane_eveil', name: 'L\'éveil', level: 1, main: true,
       giver: 'varek_ervane', turnIn: 'nolwe', requires: { level: 1, quests: [] },
@@ -723,7 +645,6 @@
       rewards: { xp: 0, fils: 20 } },
   );
 
-  // ----- Les quêtes secondaires -----
   C.quests.push(
     { id: 'ervane_cerf_volant', name: 'Le cerf-volant de Mibbe', level: 2, main: false,
       giver: 'mibbe', turnIn: 'mibbe', requires: { level: 2, quests: [] },
@@ -749,11 +670,6 @@
         done: ['Quatre éclats, quatre teintes. L\'ancêtre, le Glym Ancestral, vit dans les Clairières d\'Orsane. Si tu descends un jour, va le saluer de ma part.'],
       },
       rewards: { xp: 139, fils: 15, items: [{ id: 'anneau_pilou', count: 1 }] } },
-    // « Le Glym Ancestral » : la suite à Orsane d'« Un air de famille », le fil entre les deux régions
-    // (conception, 3 et 6). Ici, et non dans le module d'Orsane par personnage : un personnage
-    // d'Ervane qui la porte doit se valider (Save.list, Save.importText) sur toute page où l'île est
-    // disponible, même sans ses changements d'Orsane. Un personnage né à Orsane n'y accède pas (elle
-    // exige une quête d'Ervane).
     { id: 'orsane_glym_ancestral', name: 'Le Glym Ancestral', level: 9, main: false,
       giver: 'kelthar', turnIn: 'kelthar', requires: { level: 8, quests: ['ervane_air_de_famille'] },
       steps: [
@@ -805,10 +721,6 @@
       rewards: { xp: 540, fils: 35, items: [{ id: 'potion_de_relais', count: 2 }] } },
   );
 
-  // ----- Le donjon : le Puits de l'Amarre (docs/ILE-DE-DEPART.md, 5) -----
-  // Trois salles, le combat lancé à l'entrée de chacune (`entreeEnCombat`), l'entrée au niveau 7
-  // avec la quête « Le Puits de l'Amarre » acceptée ou finie (`entree`), sans clé. Krobb est dans
-  // js/data-ile.js ; sa clé est la ligne de vue (voitEnnemi). Les salles en 3D : js/ile-salle.js.
   C.dungeons.push({
     id: 'puits_de_l_amarre', name: 'Le Puits de l\'Amarre', zone: 'ervane_amarre', level: [7, 8],
     entryMap: 'ervane_margelle',
@@ -886,7 +798,6 @@
     rewards: { fils: 60, items: [{ id: 'dent_de_krobb', rate: 100 }, { id: 'gravier_d_amarre', rate: 50 }] },
   });
 
-  // ----- Les succès d'Ervane -----
   C.achievements.push(
     { id: 'donjon_puits', name: 'Le fil tient bon', desc: 'Terminer le Puits de l\'Amarre.', cond: { type: 'dungeon', dungeon: 'puits_de_l_amarre' }, rewards: { xp: 150, fils: 30 } },
     { id: 'defi_puits', name: 'Cache-cache', desc: 'Frapper Krobb dix fois pendant qu\'il renifle, gueule ouverte.', cond: { type: 'feat', key: 'krobb_gueule_ouverte', count: 10 }, rewards: { xp: 200, fils: 40, title: 'Ronge-Krobb' } },

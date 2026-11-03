@@ -1,7 +1,3 @@
-// content/ervane-aires.js : généré par node tools/cuire-aires.js, ne pas modifier à la main.
-// Les plans des aires de combat d'Ervane (docs/ILE-TECHNIQUE.md, 2.10 et 5.2) : 15 lignes de 15
-// cases par groupe, rangées par « carte#index du groupe », tirées du terrain et du style de l'aire.
-// Un module, appliqué par js/ile.js après le module `ervane` : éteint, rien n'est chargé.
 (DATA.modules = DATA.modules || {}).ervaneAires = () => {
   const AIRES = {
     'ervane_arbre_bobine#0': [

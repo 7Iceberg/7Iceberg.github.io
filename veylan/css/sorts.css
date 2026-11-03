@@ -1,14 +1,9 @@
-/* Fenêtre Sorts (js/hud-sorts.js) : la liste et ses rangs à gauche, la fiche du sort à droite, le
-   capital de points en pied. Mêmes teintes que les autres fenêtres (css/fenetres.css) : ardoise de
-   nuit, or ancien pour ce qui est acquis, cristal pour ce qui est prévu ou regardé.
-   Aussi : l'icône peinte des sorts dans la barre de combat (js/ui.js) et la pastille du menu. */
 
 .vy-fenetre--sorts { height: min(600px, calc(100% - 72px)); }
 .vy-fenetre--sorts.reduite { height: auto; }
 .vy-fenetre--sorts .vy-fenetre__corps { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 10px 12px 0; }
 .vy-sorts { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.04fr); gap: 14px; }
 
-/* ----- Liste, à la manière de la fenêtre des sorts de Dofus ----- */
 .vy-sorts { grid-template-columns: minmax(0, 1fr) minmax(0, 340px); }
 .vy-sorts__gauche { min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 .vy-sorts__outils { display: flex; align-items: center; gap: 8px; }
@@ -22,8 +17,6 @@
 .vy-sorts__liste { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; list-style: none; margin: 0; padding: 4px 4px 8px 0; display: grid; gap: 6px; align-content: start; }
 .vy-sorts__liste.niveaux { gap: 15px; padding-top: 10px; }
 .vy-sorts__vide { padding: 14px 10px; }
-/* Une ligne : une barre sombre au liseré, teintée à gauche de la couleur de l'élément ; la ligne
-   choisie se remplit d'or, comme le sort surligné de Dofus. */
 .vy-sort {
   position: relative; min-height: 58px; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px;
   background: linear-gradient(90deg, color-mix(in srgb, var(--el, #e4e4e4) 13%, transparent), transparent 48%), rgba(0, 0, 0, 0.28);
@@ -37,7 +30,6 @@
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--fen-accent) 25%, transparent), 0 0 18px color-mix(in srgb, var(--fen-accent) 18%, transparent), inset 3px 0 0 var(--fen-accent);
 }
 .vy-sort.prevu:not(.on) { border-color: color-mix(in srgb, var(--fen-actif) 50%, transparent); }
-/* Les niveaux d'obtention au-dessus de la ligne, comme les cases « 27 · 72 · 118 » de Dofus. */
 .vy-sort__obt { position: absolute; left: 58px; top: -9px; display: none; gap: 3px; pointer-events: none; }
 .vy-sorts__liste.niveaux .vy-sort__obt, .vy-sort.bloque .vy-sort__obt { display: flex; }
 .vy-sort__obt i { min-width: 24px; height: 16px; padding: 0 5px; border-radius: 4px; font: 800 10px/16px var(--vy-font-ui); font-style: normal; text-align: center; font-variant-numeric: tabular-nums; color: var(--fen-texte-2); background: rgb(12, 18, 27); border: 1px solid rgba(255, 255, 255, 0.12); }
@@ -67,7 +59,6 @@
 .vy-sort__valeur { width: 44px; display: grid; justify-items: center; gap: 3px; }
 .vy-sort__valeur b { font: 700 15px/1 var(--vy-font-ui); font-variant-numeric: tabular-nums; color: var(--fen-texte); }
 .vy-sort.prevu .vy-sort__valeur b { color: var(--fen-actif); }
-/* Le rang en étoiles d'or (les étoiles des tuiles de sorts de Dofus). */
 .vy-pips { display: flex; gap: 1px; }
 .vy-pips i, .vy-rang__etoile { width: 8px; height: 8px; background: rgba(255, 255, 255, 0.16); clip-path: polygon(50% 0, 62% 35%, 100% 37%, 70% 59%, 81% 96%, 50% 75%, 19% 96%, 30% 59%, 0 37%, 38% 35%); }
 .vy-pips i.on, .vy-rang__etoile { background: linear-gradient(180deg, #fff2b0, #ffd24d 55%, #d9951c); }
@@ -77,7 +68,6 @@
 .vy-sort__points.on { color: var(--fen-actif); background: color-mix(in srgb, var(--fen-actif) 15%, rgba(0, 0, 0, 0.4)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fen-actif) 45%, transparent); }
 .vy-sorts__niveaux { flex: none; font-size: 12px; color: var(--fen-texte-2); }
 
-/* ----- Fiche, comme la bulle d'un sort dans Dofus ----- */
 .vy-sorts__fiche { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 10px 12px 14px; border-radius: 12px; border: 1px solid var(--fen-filet); background: rgba(0, 0, 0, 0.3); }
 .vy-fiche-sort { display: grid; grid-template-columns: 60px minmax(0, 1fr); align-items: center; gap: 12px; margin-bottom: 9px; }
 .vy-fiche-sort__icone { width: 60px; height: 60px; border-radius: 12px; filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.5)); }
@@ -98,14 +88,12 @@
 .vy-rang.actuel { border-color: var(--fen-accent); }
 .vy-rang.verrou { color: color-mix(in srgb, var(--fen-texte-2) 70%, transparent); }
 .vy-rang[aria-selected="true"] { background: color-mix(in srgb, var(--fen-actif) 15%, var(--fen-fond-2)); border-color: var(--fen-actif); color: var(--fen-texte); box-shadow: var(--vy-lueur-cristal-in); }
-/* Les caractéristiques en lignes : Coût, Portée, Ligne de vue, Relance, Utilisations, Critique. */
 .vy-carac-sort { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 14px; margin: 0 0 9px; padding: 8px 11px; border-radius: 9px; background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.05); font: 500 12.5px/1.35 var(--vy-font-ui); }
 .vy-carac-sort dt { color: var(--fen-texte-2); }
 .vy-carac-sort dd { margin: 0; color: var(--fen-texte); }
 .vy-carac-sort b { font-weight: 700; }
 .vy-carac-sort i { font-style: normal; color: var(--fen-actif); }
 .vy-carac-sort small { color: var(--fen-texte-2); }
-/* Le récit dans la teinte de l'accent, les effets en vert, les coups critiques en ambre (Dofus). */
 .vy-fiche-sort__recit { margin: 0 0 8px; font: 500 13px/1.5 var(--vy-font-ui); color: var(--vy-or-clair); }
 .vy-effets { list-style: none; margin: 0; padding: 0; display: grid; }
 .vy-effets li { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 3px 2px; font-size: 12.5px; }
@@ -122,13 +110,11 @@
 .vy-effets--suivant li > b { color: var(--vy-texte); }
 .vy-effets--suivant s { text-decoration: none; color: var(--fen-texte-2); font-weight: 500; }
 
-/* ----- Pied : réinitialiser ou valider, répartition automatique, capital ----- */
 .vy-sorts__pied { margin: 0 -12px; padding: 8px 12px; flex: none; }
 .vy-sorts__capital { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; color: var(--fen-texte-2); white-space: nowrap; }
 .vy-sorts__capital b { min-width: 30px; padding: 3px 9px; border-radius: 999px; background: rgba(0, 0, 0, 0.45); color: var(--fen-texte); font: 700 14px var(--vy-font-ui); text-align: center; font-variant-numeric: tabular-nums; }
 .vy-sorts__capital.on b { color: var(--vy-succes); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vy-succes) 50%, transparent); }
 
-/* ----- Confirmation ----- */
 .vy-sorts__voile { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; padding: 16px; border-radius: 7px; background: rgba(5, 8, 13, 0.62); backdrop-filter: blur(1.5px); }
 .vy-sorts__modale { width: min(380px, 100%); max-height: 100%; overflow-y: auto; padding: 14px 18px 16px; border: 1.5px solid transparent; border-radius: 8px; text-align: center; background: var(--vy-grain) padding-box, linear-gradient(180deg, var(--fen-fond-2), var(--fen-fond)) padding-box, var(--vy-cadre) border-box; box-shadow: var(--vy-ombre-portee); animation: vy-entree var(--vy-duree) var(--vy-courbe); }
 .vy-sorts__modale h3 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--fen-filet); font: 700 15px var(--vy-font-titre); letter-spacing: 0.08em; color: var(--fen-accent); }
@@ -140,17 +126,14 @@
 .vy-sorts__choix { display: flex; gap: 10px; margin-top: 14px; }
 .vy-sorts__choix .vy-bouton { flex: 1; }
 
-/* ----- Pastille du menu : des points de sort à placer ----- */
 .vy-menu.a-placer::after { content: ""; position: absolute; top: 4px; right: 4px; width: 7px; height: 7px; border-radius: 50%; background: var(--vy-cristal); box-shadow: 0 0 6px var(--vy-cristal); }
 
-/* ----- Barre de sorts du combat : l'icône peinte prend la place du losange de l'élément ----- */
 .spell.avec-icone .icon { width: 22px; height: 22px; left: 5px; bottom: 4px; transform: none; background: none; border-radius: 5px; }
 .spell.avec-icone .icon img { display: block; width: 100%; height: 100%; border-radius: 5px; }
 .spell.avec-icone .cost { padding-left: 27px; }
 #app.mode-combat .spell.avec-icone .icon { width: 20px; height: 20px; left: 4px; bottom: 3px; }
 #app.mode-combat .spell.avec-icone .cost { padding-left: 25px; }
 
-/* ----- Téléphone ----- */
 @media (max-width: 720px), (max-height: 480px) and (max-width: 1000px) {
   .vy-fenetre--sorts { height: auto; }
   .vy-fenetre--sorts .vy-fenetre__tete { padding-top: 3px; padding-bottom: 3px; }
@@ -193,7 +176,6 @@
   .vy-sorts__pied .vy-coche { font-size: 12px; }
   .vy-sorts__capital b { font-size: 13px; padding: 2px 8px; }
 }
-/* Téléphone en largeur étroite : la liste au-dessus, la fiche dessous. */
 @media (max-width: 560px) {
   .vy-sorts { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 46%) minmax(0, 1fr); }
   .vy-sorts__fiche { border-top: 1px solid var(--fen-filet); padding-top: 6px; }

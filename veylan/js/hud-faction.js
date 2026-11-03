@@ -1,17 +1,7 @@
-// Les factions à l'écran (docs/MONDE.md) : la fenêtre Faction (touche F), l'écran solennel du
-// serment avec les deux bannières, les autres étapes de choix (le reniement), la confirmation du
-// reniement, et les annonces envoyées à la discussion. Se charge après js/hud-fenetres.js et
-// complète la classe Hud ; le moteur (js/factions.js, js/quests.js) ne sait rien du DOM.
-//
-// Événements de fenêtre émis ici, pour les modules qui les écoutent (la discussion) :
-//   'veylan:chat'       detail { type: 'systeme' | 'quete', text }
-//   'veylan:windowOpen' detail { id: 'faction' }, annoncé par js/fenetres.js
 (() => {
 const esc = s => Util.esc(s);
-const chat = (type, text) => { try { window.dispatchEvent(new CustomEvent('veylan:chat', { detail: { type, text } })); } catch (e) { /* rien */ } };
+const chat = (type, text) => { try { window.dispatchEvent(new CustomEvent('veylan:chat', { detail: { type, text } })); } catch (e) {   } };
 
-// Les emblèmes, en SVG. Le Fil : une auréole de fil d'or cousue au-dessus d'une aiguille, sur un
-// champ blanc. La Déchirure : une cape noire fendue, une lueur violette dans la fente.
 let emblemes = 0;
 function embleme(id, size) {
   const u = 'em' + (++emblemes), z = size || 64;
@@ -37,21 +27,17 @@ function embleme(id, size) {
     `<circle cx="32" cy="15" r="2.2" fill="#a66cff" stroke="#f1e6ff" stroke-width=".7"/></svg>`;
 }
 
-// Les quêtes de faction : celle du serment (une réponse qui fait prêter serment) et celle du
-// reniement (une réponse qui fait renier), trouvées dans le contenu plutôt que nommées ici.
 const answerWith = type => Quests.defs().find(q => q.steps.some(s => s.type === 'answer' && (s.options || []).some(o => (o.effects || []).some(e => e.type === type))));
 const npcPlace = id => {
   for (const z of DATA.content.zones || []) for (const m of z.maps || []) if ((m.npcs || []).some(n => (n && typeof n === 'object' ? n.id : n) === id)) return m.name;
   return '';
 };
-// « auprès d'Okrel », « auprès de Kethril » ; un PNJ et sa carte : « Ulkara (La Passe de Kaldum) ».
 const de = n => (/^[aeiouyàâéèêîïôû]/i.test(n) ? 'd\'' : 'de ') + n;
 const qui = id => `${Quests.npcName(id)}${npcPlace(id) ? ` (${npcPlace(id)})` : ''}`;
 
 Object.assign(Hud.prototype, {
   initFaction() {
     const w = this.world;
-    // Serment, rang, ordre, reniement, confiance : un mot à l'écran, et la discussion.
     w.on('faction', ev => {
       const text = Factions.describe(ev);
       if (!text) return;
@@ -73,11 +59,9 @@ Object.assign(Hud.prototype, {
     });
   },
 
-  // ----- La fenêtre Faction -----
 
   openFaction() {
     const actions = {
-      // L'ordre se choisit une fois, au rang 3 : deux appuis.
       ordre: (d, b) => {
         if (!b.dataset.sure) { b.dataset.sure = '1'; b.classList.add('vy-ordre--sur'); b.querySelector('.vy-ordre__ok').textContent = 'Toucher encore pour confirmer'; return; }
         this.world.chooseOrder(d.order);
@@ -94,8 +78,6 @@ Object.assign(Hud.prototype, {
     return Factions.isSworn(ch) ? this.factionJuree(ch, f) : this.factionLibre(ch, f) + this.factionMarcheurs(ch, f);
   },
 
-  // Sous serment : l'emblème, le rang, la barre jusqu'au rang suivant, l'ordre, ce qu'ouvre
-  // chaque rang, les quêtes de faction, et le reniement.
   factionJuree(ch, f) {
     const d = Factions.def(f.id), pr = Factions.progress(f);
     const barre = pr.next != null
@@ -126,7 +108,6 @@ Object.assign(Hud.prototype, {
       <footer class="vy-fen-pied vy-faction__pied">${pied}</footer></div>`;
   },
 
-  // Les quêtes de faction en cours, et celles à prendre (avec leur PNJ).
   factionQuetes(ch, f) {
     const actives = Quests.tracker(ch).filter(t => t.quest.category === 'faction');
     const mine = Quests.defs().filter(q => q.category === 'faction' && !q.hidden && q.requires && q.requires.faction && Quests.canStart(ch, q.id));
@@ -136,8 +117,6 @@ Object.assign(Hud.prototype, {
     return f && f.id ? `<p class="muted vy-note">Rien en cours. Les quêtes de ton rang : ${esc(Factions.def(f.id).contact)}.</p>` : '<p class="muted vy-note">Aucune quête de faction en cours.</p>';
   },
 
-  // Sans serment : les deux factions côte à côte, ce qu'elles veulent, leur part de lumière et
-  // d'ombre, et où prêter serment.
   factionLibre(ch, f) {
     const s = answerWith('faction');
     const carte = id => {
@@ -165,7 +144,6 @@ Object.assign(Hud.prototype, {
       <div class="vy-faction-cartes">${Factions.IDS.map(carte).join('')}</div>${ou}${passe}${enCours}`;
   },
 
-  // Les Francs-Marcheurs : une confiance, pas un rang.
   factionMarcheurs(ch, f) {
     const M = Factions.MARCHEURS, t = Factions.tier(f.marcheurs);
     const jauge = t.next ? Util.jauge('faction', f.marcheurs - t.at, t.next.at - t.at, `${f.marcheurs} / ${t.next.at}`, 'Confiance des Francs-Marcheurs', 'vy-jauge--marcheurs') : Util.jauge('faction', 1, 1, `${f.marcheurs}`, 'Confiance des Francs-Marcheurs', 'vy-jauge--marcheurs');
@@ -174,8 +152,6 @@ Object.assign(Hud.prototype, {
       <p class="muted vy-note">${esc(M.texte)} ${esc(M.neutres)}</p></div>`;
   },
 
-  // Le reniement, depuis la fenêtre : une confirmation forte (ce qu'on perd, une case à cocher),
-  // puis la quête « Le reniement » commence ; il se fait devant la guetteuse de la Passe.
   openRenier() {
     const ch = this.world.ch, f = Factions.of(ch);
     const ren = answerWith('renounce');
@@ -200,10 +176,7 @@ Object.assign(Hud.prototype, {
       <div class="dialogue-actions"><button class="vy-bouton vy-bouton--danger" data-act="renierGo" disabled>Aller renier ${esc(d.nom)}</button><button class="vy-bouton vy-bouton--fantome" data-act="renierNon">Garder mon serment</button></div></div>`);
   },
 
-  // ----- Étapes de choix, dans le dialogue -----
 
-  // Une étape de choix auprès de ce PNJ : l'écran solennel s'il s'agit du serment, sinon les
-  // réponses en boutons (celles qui coûtent demandent deux appuis).
   openAnswer(npc, questId, pick) {
     const ch = this.world.ch, q = Quests.get(questId), st = Quests.state(ch, questId);
     const s = q && st && q.steps[st.step];
@@ -225,7 +198,6 @@ Object.assign(Hud.prototype, {
       this.el.panelBody.innerHTML = `<div class="vy-choix">${voix}<div class="dialogue-actions">${btns}</div></div>`;
       return;
     }
-    // Le serment : les deux bannières ; on en touche une, puis on prête serment.
     const banniere = o => {
       const id = o.effects.find(e => e.type === 'faction').id, d = Factions.def(id);
       return `<button class="vy-banniere vy-banniere--${id}${pick === o.id ? ' on' : ''}" data-act="answerPick" data-opt="${o.id}" aria-pressed="${pick === o.id}">
@@ -243,7 +215,6 @@ Object.assign(Hud.prototype, {
         ${autres.map(o => `<button class="vy-bouton vy-bouton--fantome" data-act="answerOpt" data-opt="${o.id}">${esc(o.text)}</button>`).join('')}</div></div>`;
   },
 
-  // Après une réponse : la fin de la quête si elle s'est rendue, sinon la réplique du PNJ.
   answerDone(npc, q, opt, r) {
     const reply = opt.reply || [];
     const sworn = (r.events || []).find(e => e.type === 'serment');

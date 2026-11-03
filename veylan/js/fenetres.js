@@ -1,6 +1,3 @@
-// Fenêtres de l'interface : déplaçables, empilables, réductibles, plusieurs ouvertes à la fois
-// (inventaire et caractéristiques côte à côte). Sur téléphone, une seule à la fois, en plein
-// écran. Chaque fenêtre a son rendu et ses actions ; le gestionnaire ne sait rien du jeu.
 class Fenetres {
   constructor(layer) {
     this.layer = layer;
@@ -33,7 +30,6 @@ class Fenetres {
     });
   }
 
-  // Les champs (recherche, tri, cases à cocher) passent par `onField` de la fenêtre.
   field(evt, kind) {
     const box = evt.target.closest('.vy-fenetre');
     const w = box && this.wins.get(box.dataset.id);
@@ -46,12 +42,6 @@ class Fenetres {
 
   toggle(id, spec) { if (this.isOpen(id)) this.close(id); else this.open(id, spec); }
 
-  // spec : { title, icon (svg), key, width, cls (classe en plus), render() → html, actions, onField, place: {x, y} | 'centre',
-  //          onEscape() → vrai si la fenêtre a refermé une feuille à elle (Échap ne la ferme pas alors) }
-  // Une fenêtre qui s'ouvre le dit à la page (événement 'veylan:windowOpen', { id }) : le guide
-  // (js/guide.js) attend certaines fenêtres, et ce point de passage les voit toutes, une fois
-  // chacune. spec.annonce : le nom annoncé quand il diffère de l'identifiant (sac → inventaire,
-  // carac → caracteristiques).
   open(id, spec) {
     if (Fenetres.compact) for (const other of [...this.wins.keys()]) if (other !== id) this.close(other);
     let w = this.wins.get(id);
@@ -69,7 +59,6 @@ class Fenetres {
         `<button class="vy-fenetre__bouton" data-act="fermer" aria-label="Fermer">${Fenetres.ICON.fermer}</button></span></header>` +
         `<div class="vy-fenetre__corps"></div>`;
       if (spec.width) box.style.setProperty('--largeur', spec.width + 'px');
-      // Au téléphone en paysage, une fenêtre étroite garde sa largeur, le jeu reste visible à côté (css/verre.css).
       if ((spec.width || 420) <= 520) box.classList.add('vy-fenetre--etroite');
       if (spec.cls) box.classList.add(spec.cls);
       this.layer.appendChild(box);
@@ -93,7 +82,6 @@ class Fenetres {
   render(id) {
     const w = this.wins.get(id);
     if (!w) return;
-    // On garde le défilement et le champ actif d'un rendu à l'autre.
     const scrolls = [...w.body.querySelectorAll('[data-defile]')].map(el => [el.dataset.defile, el.scrollTop]);
     const top = w.body.scrollTop;
     const active = document.activeElement && w.body.contains(document.activeElement) ? document.activeElement : null;
@@ -108,8 +96,6 @@ class Fenetres {
 
   refreshAll() { for (const id of this.wins.keys()) this.render(id); }
 
-  // Une fenêtre peut retenir sa fermeture (`beforeClose` rend faux : la fenêtre Sorts demande d'abord
-  // s'il faut valider ses changements) ; `force` ferme sans demander.
   close(id, force) {
     const w = this.wins.get(id);
     if (!w) return;
@@ -123,7 +109,6 @@ class Fenetres {
     let top = null;
     for (const w of this.wins.values()) if (!top || Number(w.box.style.zIndex) > Number(top.box.style.zIndex)) top = w;
     if (!top) return false;
-    // Une feuille ouverte dans la fenêtre (confirmation, répartition) se referme d'abord.
     if (!(top.spec.onEscape && top.spec.onEscape())) this.close(top.id);
     return true;
   }
@@ -137,8 +122,6 @@ class Fenetres {
     for (const o of this.wins.values()) o.box.classList.toggle('active', o === w);
   }
 
-  // Position : celle enregistrée, sinon la première place libre de gauche à droite (les fenêtres
-  // s'ouvrent côte à côte), sinon en cascade ; toujours ramenée dans l'écran.
   place(w) {
     if (Fenetres.compact) return;
     const r = this.layer.getBoundingClientRect();
@@ -180,22 +163,20 @@ class Fenetres {
       start = null;
       w.box.classList.remove('deplacee');
       this.pos[w.id] = { x: w.box.offsetLeft, y: w.box.offsetTop };
-      try { localStorage.setItem('veylan.fenetres', JSON.stringify(this.pos)); } catch (e) { /* stockage indisponible */ }
+      try { localStorage.setItem('veylan.fenetres', JSON.stringify(this.pos)); } catch (e) {   }
     };
     head.addEventListener('pointerup', stop);
     head.addEventListener('pointercancel', stop);
-    // Double-clic sur le titre : réduire.
     head.addEventListener('dblclick', evt => { if (!evt.target.closest('button')) w.box.classList.toggle('reduite'); });
   }
 
   resetPositions() {
     this.pos = {};
-    try { localStorage.removeItem('veylan.fenetres'); } catch (e) { /* rien */ }
+    try { localStorage.removeItem('veylan.fenetres'); } catch (e) {   }
     for (const w of this.wins.values()) this.place(w);
   }
 }
 
-// Pictogrammes de l'interface : un trait, lisibles en 18 px, sans dégradé.
 Fenetres.ICON = (() => {
   const s = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
   return {

@@ -1,32 +1,12 @@
-// Le rendu 3D de l'île d'Ervane (docs/ILE-TECHNIQUE.md, section 3) : la toile Three.js posée sous
-// #board, le WebGLRenderer, la boucle et son budget, l'activation, la construction de la scène par
-// étapes (sous le voile de js/scene.js), la sélection au toucher, les lumières, la brume de la
-// région, le ciel (un dégradé CSS derrière une toile transparente), les nuages, la qualité, la
-// perte de contexte. Il présente à l'aiguillage le contrat du rendu (5.8) : cellToScreen,
-// worldToClient, screenToCell, echelleFigure, camera, stats().
-//
-// Les pièces : CameraIle (js/ile-camera.js), IlePeinture (js/ile-peinture.js), IleSol
-// (js/ile-sol.js), IleDecor (js/ile-decor.js), IleFigures (js/ile-figures.js), IleArene
-// (js/ile-arene.js, le combat sur le terrain). Le moteur (World, Plateau, Combat) ne sait rien de
-// tout ceci : le rendu lit l'état du monde et du combat à chaque image.
-//
-// Le support : un point (x, y) que l'interface donne au rendu (cellToScreen, worldToClient,
-// echelleFigure, les repères du guide) est un point du plateau (u, v) en exploration ; pendant un
-// combat sur le terrain, c'est une case de l'aire (fractions permises), dont le centre est
-// (x0 + x + 0,5, y0 + y + 0,5) ; screenToCell rend alors une case de l'aire. Dans une salle de
-// donjon (js/ile-salle.js, 6), c'est toujours une case, dont le centre est (x + 0,5, y + 0,5) sur un
-// sol plat : la caméra orthographique du combat cadre la salle entière, en combat ou non.
 class Ile3D {
-  // Un contexte WebGL se crée-t-il ? (La naissance sur Ervane en dépend, 1.4.)
   static disponible() { return typeof IleCharge === 'object' && IleCharge.webgl(); }
 
   static qualiteParDefaut() {
     let q = null;
-    try { q = new URLSearchParams(location.search).get('quality'); } catch (e) { /* rien */ }
+    try { q = new URLSearchParams(location.search).get('quality'); } catch (e) {   }
     if (q === 'haute' || q === 'moyenne' || q === 'basse') return { q, force: true };
     const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     const coeurs = (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) || 4;
-    // Un appareil faible (IleCharge.faible, 3.28) : la qualité basse d'office.
     if (typeof IleCharge === 'object' && IleCharge.faible && IleCharge.faible()) return { q: 'basse', force: false };
     return { q: coarse ? 'moyenne' : coeurs >= 4 ? 'haute' : 'moyenne', force: false };
   }
@@ -57,14 +37,10 @@ class Ile3D {
     this.dernier = 0;
     this.marques = {};
     this.directions = new Map();
-    // La carte de l'île (3.30, js/ile-carte.js) : ses marqueurs et ses maillages réunis, l'élément de
-    // la fenêtre où la toile se pose pendant la carte, la photo de la vue du jeu laissée dans la scène.
     this.carteIle = null;
     this.hote = null;
     this.photo = null;
     this._boucle = now => this.boucle(now);
-    // Les animations du combat (5.5) : seul le rendu actif y répond, une fois l'aire ouverte ;
-    // sinon la promesse est tout de suite résolue (le rendu des cases, endormi, fait de même).
     const cb = this.combat;
     if (cb && typeof cb.on === 'function') {
       const ici = () => this.actif && this.pret && !!this.arene && this.arene.ouverte;
@@ -76,7 +52,6 @@ class Ile3D {
     }
   }
 
-  // ----- La toile et le rendu WebGL -----
 
   creerRendu() {
     if (this.renderer) return;
@@ -87,7 +62,6 @@ class Ile3D {
     cv.setAttribute('aria-hidden', 'true');
     cv.style.opacity = '0';
     this.stage.insertBefore(cv, this.board);
-    // Les voiles de la peinture : glacis, vignette, grain, posés sur la 3D, sous l'interface.
     const voiles = this.voiles = document.createElement('div');
     voiles.className = 'ile-voiles';
     voiles.setAttribute('aria-hidden', 'true');
@@ -99,13 +73,12 @@ class Ile3D {
     r.info.autoReset = false;
     this.webgl2 = !!r.capabilities.isWebGL2;
     this.appliquerDensite();
-    // Une toile retirée (liberer(true)) ne parle plus : son contexte peut encore revenir.
     cv.addEventListener('webglcontextlost', e => { e.preventDefault(); if (cv === this.canvas) this.surPerte(); }, false);
     cv.addEventListener('webglcontextrestored', () => { if (cv === this.canvas) this.surRetour(); }, false);
     const taille = this._taille = () => this.redimensionner();
     if (typeof ResizeObserver === 'function') { this.ro = new ResizeObserver(taille); this.ro.observe(this.stage); }
     addEventListener('resize', taille);
-    try { const g = IlePeinture.grain(); voiles.querySelector('.ile-voiles__grain').style.backgroundImage = `url(${g.toDataURL()})`; } catch (e) { /* rien */ }
+    try { const g = IlePeinture.grain(); voiles.querySelector('.ile-voiles__grain').style.backgroundImage = `url(${g.toDataURL()})`; } catch (e) {   }
   }
 
   appliquerDensite() {
@@ -118,42 +91,32 @@ class Ile3D {
 
   redimensionner() {
     if (!this.renderer || !this.stage) return;
-    // Pendant la carte, la toile est dans la vue de la fenêtre (3.30) : elle en prend la taille.
     const el = this.hote || this.stage;
     const w = el.clientWidth, h = el.clientHeight;
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
     if (this.camera) this.camera.setViewport(w, h);
     if (this.figures) this.figures.matT.uniforms.vue.value.set(w, h);
-    // setSize vide la toile : la boucle endormie (carte du monde ouverte) redessine une image.
     if (this.actif && this.dessinEndormi && this.pret) this.image(performance.now());
   }
 
-  // ----- Le Glym modelé par le code (docs/ILE-TECHNIQUE.md, 3.13), derrière son interrupteur -----
 
-  // ?glym=modele (le Glym Aqua), ?glym=tous (les quatre Glyms), ?glym=0 (éteint), sinon
-  // DATA.ile.modeleGlym (true, 'modele' ou 'tous'), qu'une copie d'aperçu peut poser. Éteint (le
-  // défaut), js/modele-glym.js n'est pas chargé et rien ne change.
   static modeleGlym() {
     let q = null;
-    try { q = new URLSearchParams(location.search).get('glym'); } catch (e) { /* rien */ }
+    try { q = new URLSearchParams(location.search).get('glym'); } catch (e) {   }
     if (q === 'modele' || q === 'tous') return q;
     if (q === '0') return null;
     const d = typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.modeleGlym;
     return d === 'tous' ? 'tous' : d ? 'modele' : null;
   }
 
-  // Charge js/modele-glym.js (à côté de ce script) et donne aux figures leur parc de Glyms
-  // modelés. Un échec laisse les panneaux peints : le jeu continue comme interrupteur éteint.
   async modelesGlym(THREE, scene) {
     const mode = Ile3D.modeleGlym();
     if (!mode) return;
     try {
-      // Les générateurs (js/modele-glym.js, puis js/modele-lampignon.js et js/modele-lampignard.js), à côté de ce script.
-      // (Un `const` de script n'est pas une propriété de window : `present` le teste directement.)
       const charger = (fichier, present) => present() ? Promise.resolve() : new Promise((ok, ko) => {
         let src = 'js/' + fichier;
-        try { const ref = document.querySelector('script[src*="ile-3d.js"]'); if (ref && ref.src) src = new URL(fichier, ref.src).href; } catch (e) { /* chemin relatif */ }
+        try { const ref = document.querySelector('script[src*="ile-3d.js"]'); if (ref && ref.src) src = new URL(fichier, ref.src).href; } catch (e) {   }
         const el = document.createElement('script');
         el.src = src; el.async = true;
         el.onload = () => ok();
@@ -162,14 +125,10 @@ class Ile3D {
       });
       await charger('modele-glym.js', () => typeof ModeleGlym === 'object');
       if (typeof ModeleGlym !== 'object') throw new Error('ModeleGlym absent');
-      // Le Lampignon est un plus : sans lui, le Glym reste modelé et le Lampignon peint.
       await charger('modele-lampignon.js', () => typeof ModeleLampignon === 'object').catch(e => console.warn('Lampignon modelé : ' + e.message));
-      // Le Lampignard, son grand frère, reprend ses outils : il vient après lui, et seulement avec lui.
       if (typeof ModeleLampignon === 'object') await charger('modele-lampignard.js', () => typeof ModeleLampignard === 'object').catch(e => console.warn('Lampignard modelé : ' + e.message));
       const parc = new ModeleGlym.Parc(THREE, { telephone: this.telephone, qualite: this.qualite, mode });
       scene.add(parc.groupe);
-      // Les monstres à peau Meshy (js/ile-peau.js, 3.38 : le Filin) : leur parc réuni à celui des Glyms.
-      // (Pas en qualité basse : le jeu dessiné par le code garde ses panneaux, et son budget de mémoire.)
       let peaux = null;
       if (this.qualite !== 'basse') try {
         await IleCharge.peauScript();
@@ -180,10 +139,6 @@ class Ile3D {
     } catch (e) { console.warn('Glym modelé : ' + e.message); }
   }
 
-  // Le héros modelé (3.27, js/ile-heros.js) à la place du panneau du Veilleur : la classe du
-  // personnage si elle a son modèle, ou celle que l'adresse force (IleCharge.heros). Le GLB est lu
-  // une fois, le modèle reconstruit pour chaque scène (l'île, une salle). Un échec garde le
-  // panneau. Rend vrai si un héros était demandé.
   async chargerHeros(THREE, etape) {
     this.heros = null;
     const classeHeros = IleCharge.heros ? IleCharge.heros() : null;
@@ -192,7 +147,6 @@ class Ile3D {
     if (!classe) return false;
     etape('Le héros modelé');
     try {
-      // Une peau animée de Meshy (js/ile-peau.js, 3.38 : Nerith) avant un héros modelé par nous.
       if (this.qualite !== 'basse') await IleCharge.peauScript();
       if (this.qualite !== 'basse' && typeof IlePeau === 'object' && IlePeau.PEAUX[classe]) this.heros = await IlePeau.chargerHeros(THREE, classe);
       else {
@@ -202,39 +156,25 @@ class Ile3D {
     } catch (e) { console.warn('Ervane : héros modelé indisponible', e); this.heros = null; }
     return true;
   }
-  // Les figures portent le héros (IleHeros.porteur) : posé à la place du panneau de la figure
-  // marquée `heros`, dans le groupe des figures (il suit leur scène).
   porterHeros(THREE) {
     if (!this.heros || !this.figures) return;
     if (this.heros.porteur) this.figures.heros = this.heros.porteur(THREE, this.figures.groupe);
     else if (typeof IleHeros === 'object') this.figures.heros = IleHeros.porteur(THREE, this.heros, this.figures.groupe);
   }
 
-  // ----- La construction, par étapes, sous le voile -----
 
   async preparer(world, etape) {
     const THREE = window.THREE;
     this.world = world;
     const plateau = world.plateau;
-    // Une salle d'un donjon dont l'entrée est sur un plateau (6) : une scène à part, plate.
     if (!plateau && typeof Ile === 'object' && Ile.donjon3D(world.mapId)) return this.preparerSalle(world, etape);
     if (!plateau) throw new Error('pas de plateau');
-    // Un contexte perdu pendant le sommeil (à Orsane) et jamais rendu : on repart d'une toile neuve
-    // plutôt que de construire une île noire sur un contexte mort.
     if (this.renderer && (this.contextePerdu || this.renderer.getContext().isContextLost())) this.liberer(true);
     this.creerRendu();
     if (this.pret && this.plateauId === plateau.id) { this.sauter(); return; }
     if (this.pret) this.liberer();
     IleDecor.init(THREE);
-    // L'aperçu de nuit (3.24) : ?ambiance=nuit ou DATA.ile.ambiance ; ses fichiers se chargent à la
-    // demande. Un échec laisse le jour : l'île se construit comme avant.
     this.nuit = null;
-    // Le style Lisière (3.25) : ?style=lisiere ou DATA.ile.style ; il prend la place de la nuit (il
-    // en reprend le décor ajouté et les lucioles) et règle le ciel, la brume et les lumières à
-    // l'heure et au temps qu'il fait. Un échec laisse l'île comme avant.
-    // Le rendu propre à chaque plateau (`rendu` : le monde modelé, le style, l'aperçu de nuit, les
-    // modèles Meshy ; docs/ORSANE-3D.md) : ce que l'interrupteur et l'adresse demandent ne vient que
-    // sur le plateau qui l'a. Ervane les a tous ; Orsane aucun pour l'instant, dessinée par le code.
     const rendu = Ile3D.renduDe(plateau.def);
     if (rendu.style === 'lisiere' && IleCharge.style && IleCharge.style() === 'lisiere') {
       try { await IleCharge.lisiere(); if (typeof IleLisiere === 'object') this.nuit = new IleLisiere.Lisiere(THREE, this); } catch (e) { console.warn('Ervane : style Lisière indisponible', e); this.nuit = null; }
@@ -252,9 +192,6 @@ class Ile3D {
     const tex = this.tex = {};
     const scene = this.scene = new THREE.Scene();
 
-    // Le cache des peintures (2.12, IleCharge.cache) : la clé suit le plateau, son relief et son
-    // contenu, la taille des matières et le texte du code qui peint ; une entrée trouvée remplace
-    // toutes les peintures sur le processeur.
     const S = this.qualite === 'haute' ? 1024 : 512;
     const prefixe = `ile|${plateau.id}|${S}|`;
     const cleCache = prefixe + T.signature() + '|' + Ile3D.empreintePeinture(def);
@@ -262,7 +199,6 @@ class Ile3D {
     const garde = { toiles: {}, donnees: {} };
     let neuf = false;
     this.chargement.cache = !!K;
-    // Une toile peinte (ou relue : ses pixels reposés sur une toile neuve).
     const toile = (nom, peindre) => {
       const e = K && K.toiles && K.toiles[nom];
       if (e) {
@@ -276,7 +212,6 @@ class Ile3D {
       neuf = true;
       return c;
     };
-    // Des données calculées (tableaux typés), relues telles quelles.
     const calcul = (nom, faire, valide) => {
       const e = K && K.donnees && K.donnees[nom];
       const v = e && (!valide || valide(e)) ? e : (neuf = true, faire());
@@ -284,7 +219,6 @@ class Ile3D {
       return v;
     };
 
-    // 1. Les matières, peintes (512 px, 1 024 en qualité haute), en une DataArrayTexture.
     etape('Les matières du sol');
     await pause();
     const MAT = calcul('matieres', () => {
@@ -309,17 +243,13 @@ class Ile3D {
       tex.matieres = t;
       this.octetsTex += S * S * 4 * MAT.n * 1.33;
     } else tex.matieres = null;
-    // Les moyennes, linéaires (le shader les mélange comme les texels décodés).
     const lin = v => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
     this.moyennes = MAT.moy.map(c => c.map(lin));
     fini('matieres');
 
-    // 2. Les cartes de toute l'île : poids et ombres, teinte, lueur, eau.
     etape('Les cartes de l\'île');
     await pause();
     const cartes = calcul('cartes', () => IlePeinture.cartes(T, this.peindreOmbresDecor(T)));
-    // Sans WebGL2 (10.3), une texture dont un côté n'est pas une puissance de 2 n'a ni mipmaps ni
-    // répétition : Three agrandirait les toiles, mais pas les données (la texture serait noire).
     const pot = (w, h) => (w & (w - 1)) === 0 && (h & (h - 1)) === 0;
     const donnee = (data, w, h, opts) => {
       const t = new THREE.DataTexture(data, w, h, THREE.RGBAFormat, THREE.UnsignedByteType);
@@ -340,11 +270,9 @@ class Ile3D {
     const eauP = calcul('eau', () => IlePeinture.profondeurEau(T));
     tex.eau = donnee(eauP.data, eauP.w, eauP.h);
     tex.grain = toileTex(toile('grain', () => IlePeinture.touches(13, 0.5)), false, true);
-    // La trame claire du détail : elle module les couleurs des sommets sans les assombrir.
     tex.touches = toileTex(toile('touches', () => IlePeinture.trame(8, 0.35)), true, true);
     tex.feuilles = toileTex(toile('feuilles', () => IlePeinture.trame(9, 0.7)), true, true);
     tex.falaise = toileTex(toile('falaise', () => IlePeinture.falaise()), true, true);
-    // Une seule fois sur la hauteur (la mousse de la lèvre en haut) ; répétée en largeur.
     tex.falaise.wrapT = THREE.ClampToEdgeWrapping;
     tex.banc = toileTex(toile('banc', () => IlePeinture.bancNuages(this.qualite === 'haute' ? 1024 : 512)), true, true);
     tex.nuages = [1, 2, 3].map(g => toileTex(toile('nuage' + g, () => IlePeinture.nuage(g)), true));
@@ -353,7 +281,6 @@ class Ile3D {
     tex.touchesLin = toileTex(toile('touchesLin', () => IlePeinture.touches(8, 0.35)), false, true);
     fini('cartes');
 
-    // 3. Les matériaux, les lumières, la brume.
     const rampe = this.rampe = Ile3D.rampe(THREE);
     const toon = o => new THREE.MeshToonMaterial(Object.assign({ gradientMap: rampe }, o));
     const brume = (m, haut, bas, couleur) => {
@@ -387,12 +314,7 @@ class Ile3D {
     this.fonduHouppiers(THREE, mats.fronde, 'fronde');
     this.fonduHouppiers(THREE, mats.acc, 'acc');
     this.fonduHouppiers(THREE, mats.roche, 'roche');
-    // Les fils blancs du Bois, les corolles, les lanternes : en combat, ce qui survole l'aire s'efface
-    // (revue finale : un fil tendu entre deux troncs traversait le plateau de combat).
     this.fonduHouppiers(THREE, mats.lueur, 'lueur');
-    // Le fil d'or du Métier (80 u de haut), le brin de l'amarre, le fil de la Nacelle : vus par la
-    // caméra orthographique du combat, ils barraient l'écran d'une ligne dorée ; en combat, seule la
-    // part qui est à moins de 4 u de l'aire reste (le fil du Puits dans son propre combat).
     this.clipAire(THREE, mats.dessousLueur);
     brume(mats.falaise, -4, -30, '#7d8aa6');
     brume(mats.dessous, -14, -60, '#7d8aa6');
@@ -403,7 +325,6 @@ class Ile3D {
     this.brumeVoulue = scene.fog.color.clone();
     fini('materiaux');
 
-    // 4. Le sol : les tuiles de relief.
     etape('Le relief');
     await pause();
     const prepSol = IleSol.preparer(T);
@@ -417,14 +338,11 @@ class Ile3D {
       this.octetsGeo += Ile3D.octetsGeo(t.proche) + (t.loin ? Ile3D.octetsGeo(t.loin) : 0);
       return { tx: t.tx, ty: t.ty, centre: t.centre, proche, loin };
     });
-    // Ce que la vue tactique du combat cache, en plus du décor des morceaux : faces, falaise,
-    // dessous, fils, puits, chute, nuages, halos.
     const fixe = this.decorFixe = [];
     const esc = IleDecor.escarpements(prepSol.faces);
     if (esc) { const m = new THREE.Mesh(esc, mats.escarpement); m.matrixAutoUpdate = false; scene.add(m); fixe.push(m); this.meshEscarpement = m; this.octetsGeo += Ile3D.octetsGeo(esc); }
     fini('sol');
 
-    // 5. Le décor, fusionné par tuile.
     etape('Le décor');
     await pause();
     const D = this.decor = IleDecor.construire(THREE, { T, def: this.nuit && this.nuit.defDecor ? this.nuit.defDecor(def) : def, telephone: this.telephone, qualite: this.qualite, ajouts: this.nuit ? A => this.nuit.ajouts(A) : null });
@@ -439,11 +357,9 @@ class Ile3D {
       return { tx: t.tx, ty: t.ty, centre: t.centre, groupe: g, sil };
     });
     this.preparerHerbe(THREE, D, cartes, L, rampe);
-    // La nuit : les touffes des modèles libres, refaites autour du point visé comme l'herbe.
     this.touffesNuit = this.nuit ? this.nuit.preparerTouffes(rampe) : null;
     fini('decor');
 
-    // 6. L'eau, la falaise du bord, le dessous, la chute, les fils, les nuages, les halos.
     etape('Les eaux et les nuages');
     await pause();
     const geoEau = IleDecor.eau(T);
@@ -452,13 +368,10 @@ class Ile3D {
     { const m = new THREE.Mesh(fb.geo, mats.falaise); m.matrixAutoUpdate = false; scene.add(m); fixe.push(m); this.meshFalaise = m; this.octetsGeo += Ile3D.octetsGeo(fb.geo); }
     const ds = IleDecor.dessous(T, L, fb.suspendus, this.telephone);
     for (const [k, mat] of [['roche', mats.dessous], ['acc', mats.dessousAcc], ['lueur', mats.dessousLueur]]) if (ds[k]) { const m = new THREE.Mesh(ds[k], mat); m.matrixAutoUpdate = false; scene.add(m); fixe.push(m); this.octetsGeo += Ile3D.octetsGeo(ds[k]); }
-    // Les fils et le puits : une seule géométrie lumineuse.
     const fils = IleDecor.fusion((this.decorGlobal = this.decorGlobalItems(D)).lueur);
     if (fils) { const m = new THREE.Mesh(fils, mats.dessousLueur); m.matrixAutoUpdate = false; scene.add(m); fixe.push(m); this.octetsGeo += Ile3D.octetsGeo(fils); }
     if (D.puits) this.puits(THREE, scene, D.puits);
     const ch = (def.eaux || []).find(e => e.sorte === 'chute');
-    // Le voile part du point où le ru quitte la terre ferme, pas du point déclaré s'il est dans le
-    // vide (le Ru Clair est tracé jusqu'à 24 u au large, revue finale).
     const geoChute = ch && IleDecor.chute(T, IleDecor.departChute(T, ch.point));
     if (geoChute) {
       const m = new THREE.MeshBasicMaterial({ map: tex.chute, transparent: true, depthWrite: false, side: THREE.DoubleSide, color: new THREE.Color('#e4f0f7'), opacity: 0.88, fog: true });
@@ -471,43 +384,30 @@ class Ile3D {
     this.lanternes = D.lanternes;
     this.cibles = D.cibles;
     fini('eaux');
-    // Le monde modelé dans Blender (tools/blender/monde, assets/monde/ervane.glb) à la place du sol
-    // et du décor dessinés par le code : ?monde=glb ou DATA.ile.monde. Un échec laisse l'île comme
-    // avant.
     if (rendu.monde && IleCharge.monde && IleCharge.monde() === 'glb') {
       etape('Le monde modelé');
       await pause();
-      // Le semis Meshy (js/ile-modeles.js, 3.32) : les arbres, rochers et buissons du kit de décor à
-      // la place des formes de l'export ; sans lui (échec, ?modeles=0), le monde tel qu'exporté.
       let semis = null;
       if (rendu.modeles && IleCharge.modeles && IleCharge.modeles()) {
         try { await IleCharge.modelesScript(); if (typeof IleModeles === 'object') { semis = await IleModeles.chargerSemis(THREE, this.renderer); semis.poses = IleModeles.poses(semis, this.T, (u, v) => this.hauteur(u, v)); } } catch (e) { console.warn('Ervane : semis Meshy indisponible', e); semis = null; }
       }
       try { await IleCharge.glb(); if (typeof IleGlb === 'object') await IleGlb.poser(THREE, this, scene, IleGlb.source(rendu.monde), { semis }); } catch (e) { console.warn('Ervane : monde modelé indisponible', e); }
       this.semisMeshy = !!(semis && this.monde && this.monde.userData.semisMeshy);
-      // Le grain des sols de Meshy sur le sol du monde modelé (3.32).
       if (semis && this.monde) { try { this.octetsTex += await IleModeles.habillerSol(THREE, this); } catch (e) { console.warn('Ervane : sols Meshy indisponibles', e); } }
-      // Le semis dense (3.34) : les touffes d'herbe haute et les bouquets de fleurs en cartes croisées.
       if (semis && this.monde && IleModeles.cartes) { try { const c = await IleModeles.cartes(THREE, this); if (c) { this.cartesDenses = c; this.octetsGeo += c.octetsGeo; this.octetsTex += c.octetsTex; } } catch (e) { console.warn('Ervane : semis dense indisponible', e); } }
-      // La fumée des cheminées et des feux de camp (3.36).
       if (semis && this.monde && IleModeles.fumees) { try { this.fumees = IleModeles.fumees(THREE, this, semis); } catch (e) { console.warn('Ervane : fumée indisponible', e); } }
     }
-    // Les modèles Meshy sur le monde modelé (js/ile-modeles.js, 3.31) : le Relais du Fil. Un échec
-    // laisse le monde tel qu'exporté.
     if (this.monde && rendu.modeles && IleCharge.modeles && IleCharge.modeles()) {
       try { await IleCharge.modelesScript(); if (typeof IleModeles === 'object') this.modeles = await IleModeles.poser(THREE, this); } catch (e) { console.warn('Ervane : modèles Meshy indisponibles', e); }
     }
-    // Le héros modelé (js/ile-heros.js) à la place du panneau du Veilleur.
     if (await this.chargerHeros(THREE, etape)) fini('heros');
 
-    // 7. Les figures et les marques.
     etape('Les Veilleurs et les monstres');
     await pause();
     this.figures = new IleFigures.Figures(THREE, { painter: this.painter, telephone: this.telephone, scene });
     scene.add(this.figures.groupe);
     this.porterHeros(THREE);
     await this.modelesGlym(THREE, scene);
-    // L'arène du combat (js/ile-arene.js) : la texture de ses cases va au shader du sol.
     this.arene = new IleArene.Arene(THREE, this);
     if (this.uFondu) this.uFondu.cases.value = this.arene.texCases;
     scene.add(this.arene.groupe);
@@ -518,12 +418,10 @@ class Ile3D {
     this.redimensionner();
     const p = world.player;
     cam.sauter(p.rx, p.ry, this.hauteur(p.rx, p.ry));
-    // Les figures connues se peignent avant le premier envoi de l'atlas.
     this.figures.maj(this.sprites(performance.now()), cam, performance.now());
     this.vus = new WeakSet(); this.caches = new Map();
     fini('figures');
 
-    // 8. L'envoi des textures et la compilation des shaders, puis la première image.
     etape('La lumière');
     await pause();
     for (const t of Object.values(tex)) { if (Array.isArray(t)) t.forEach(x => this.renderer.initTexture(x)); else if (t && t.isTexture) this.renderer.initTexture(t); }
@@ -536,12 +434,9 @@ class Ile3D {
     this.image(performance.now());
     fini('image');
     temps.total = Math.round(performance.now() - temps.debut);
-    // Ce qui a été peint part dans le cache, après la première image (sans l'attendre).
     if (neuf) IleCharge.cache.ecrire(cleCache, garde, prefixe).then(ok => { this.chargement.cacheEcrit = ok; });
   }
 
-  // Une texture d'une toile peinte : sans retournement, sRGB pour une couleur, répétée ou non.
-  // Sans WebGL2, une toile dont un côté n'est pas une puissance de 2 n'a ni mipmaps ni répétition.
   textureToile(c, srgb, rep) {
     const THREE = window.THREE;
     const pot = (w, h) => (w & (w - 1)) === 0 && (h & (h - 1)) === 0;
@@ -554,7 +449,6 @@ class Ile3D {
     return t;
   }
 
-  // La rampe du modelé en aplats (MeshToonMaterial) : ombre à 42 %, lumière pleine, une marche douce.
   static rampe(THREE) {
     const N = 128, d = new Uint8Array(N * 4);
     for (let i = 0; i < N; i++) { const t = i / (N - 1), s = Math.max(0, Math.min(1, (t - 0.4) / 0.22)), v = Math.round(255 * (0.42 + 0.58 * s * s * (3 - 2 * s))); d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = v; d[i * 4 + 3] = 255; }
@@ -562,12 +456,7 @@ class Ile3D {
     return t;
   }
 
-  // ----- Une salle de donjon (js/ile-salle.js, 6) -----
 
-  // La salle courante du monde (une carte « donjon#n » dont l'entrée est sur un plateau) : une
-  // scène plate, construite en quelques dizaines de millisecondes, sans cache. L'île, si elle était
-  // construite, est rendue d'abord (au téléphone, les deux ne tiennent pas) : le retour sur le
-  // plateau la refait depuis les caches (Ile.terrain, les peintures).
   async preparerSalle(world, etape) {
     const THREE = window.THREE;
     this.world = world;
@@ -595,9 +484,7 @@ class Ile3D {
     const scene = this.scene = new THREE.Scene();
     const sol = IleSol.materiauSalle(THREE, tex.sol, rampe);
     const toon = o => new THREE.MeshToonMaterial(Object.assign({ gradientMap: rampe }, o));
-    // Les murs, blocs, piliers et racines portent les strates du calcaire (IlePeinture.paroi).
     const mats = this.mats = { sol: sol.sol, uSol: sol.uniforms, roche: toon({ vertexColors: true, map: tex.paroi }), lueur: new THREE.MeshBasicMaterial({ vertexColors: true }) };
-    // Les blocs et les piliers deviennent des fantômes là où ils cachent une case de sol de l'aire.
     this.fonduHouppiers(THREE, mats.roche, 'roche');
     const S = IleSalle.construire(THREE, { layout, style, index, accessoires: (style.accessoires || []).filter(a => a && a.salle === index), telephone: this.telephone, mats });
     scene.add(S.groupe);
@@ -608,9 +495,6 @@ class Ile3D {
     this.brumeSalle(THREE, scene, S.brume || [], style);
     this.lanternes = S.lanternes;
     this.cibles = [];
-    // La brume de la salle : la couleur du style, mais sombre ; derrière la toile, un dégradé radial
-    // (clair au milieu, sombre aux coins) plutôt qu'un aplat : la salle se détache dans la profondeur
-    // du puits.
     const brume = new THREE.Color(style.brume).multiplyScalar(0.45);
     scene.fog = new THREE.Fog(brume, 112, 148);
     this.brumeVoulue = brume.clone();
@@ -624,7 +508,6 @@ class Ile3D {
     await pause();
     this.figures = new IleFigures.Figures(THREE, { painter: this.painter, telephone: this.telephone, scene });
     scene.add(this.figures.groupe);
-    // Le héros modelé descend dans la salle (3.27) : le GLB lu une fois, reconstruit pour sa scène.
     await this.chargerHeros(THREE, etape);
     this.porterHeros(THREE);
     this.arene = new IleArene.Arene(THREE, this);
@@ -647,9 +530,6 @@ class Ile3D {
     temps.total = Math.round(performance.now() - temps.debut);
   }
 
-  // Une salle : une lueur froide et basse, un jour pâle du fond, le contre-jour de la lanterne, une
-  // lumière ponctuelle par lanterne (quatre au plus), et celle, plus vive, qui va à la lanterne la
-  // plus proche du Veilleur.
   lumieresSalle(scene, style, lanternes) {
     const THREE = window.THREE;
     const hemi = new THREE.HemisphereLight(new THREE.Color('#5d5a80'), new THREE.Color('#1c1826'), 0.55);
@@ -664,8 +544,6 @@ class Ile3D {
     }
   }
 
-  // La brume d'une salle : des bouffées de nuage posées autour, basses, en mélange ordinaire (un
-  // voile, pas une lumière), une seule géométrie instanciée.
   brumeSalle(THREE, scene, liste, style) {
     const n = liste.length;
     if (!n) return;
@@ -702,8 +580,6 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     if (this.decorFixe) this.decorFixe.push(mesh);
   }
 
-  // L'image d'une salle : la caméra du combat cadre la salle, l'aire s'y ouvre et s'y ferme, les
-  // blocs deviennent fantômes devant les cases qu'ils cachent, la lanterne proche s'allume.
   imageSalle(now) {
     const w = this.world, p = w.player, cam = this.camera;
     const t0 = performance.now();
@@ -743,11 +619,6 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     cam.flush();
   }
 
-  // L'empreinte du code qui peint et du contenu qu'il lit (la clé du cache des peintures) : le
-  // texte entier de la fabrique d'IlePeinture, les outils de bruit, les ombres du décor ; les
-  // régions, sols et eaux du plateau. Le code ne change pas pendant la page : gardée.
-  // Le rendu d'un plateau (`def.rendu`) : { monde: chemin du GLB, style: 'lisiere', nuit, modeles },
-  // tout absent par défaut (le monde dessiné par le code, sans style).
   static renduDe(def) { const r = def && def.rendu; return r && typeof r === 'object' ? r : {}; }
 
   static empreintePeinture(def) {
@@ -757,14 +628,11 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
       const fab = typeof fabriqueIlePeinture === 'function' ? String(fabriqueIlePeinture) : Object.values(IlePeinture).map(String).join('|');
       Ile3D._codePeinture = M.cle(fab + '|' + outils + '|' + String(Ile3D.prototype.peindreOmbresDecor)).toString(16);
     }
-    // Les plans des aires : leurs obstacles portent des ombres peintes.
     const plans = [];
     for (const c of IleTerrain.cartesDe(def.id)) for (const g of c.groups || []) if (g.aire && g.aire.layout) plans.push(g.aire.x + ',' + g.aire.y + ':' + g.aire.layout.join(''));
     return Ile3D._codePeinture + '-' + M.cle(JSON.stringify({ r: def.regions || null, s: def.sols || null, e: def.eaux || null, a: def.accents || null, l: def.lieux || null, p: plans })).toString(16);
   }
 
-  // Les ombres de contact du décor, peintes sur une toile de 480 × 360 (2 texels par u), vers l'est :
-  // la lumière vient du haut à gauche de l'écran.
   peindreOmbresDecor(T) {
     const k = 2, W = Math.round(T.largeur * k), H = Math.round(T.hauteur * k);
     const c = document.createElement('canvas'); c.width = W; c.height = H;
@@ -789,7 +657,6 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
         else tache(f.u + 0.4, f.v + 0.15, f.r + 0.4, f.r + 0.3, 0.45);
       }
     }
-    // Les obstacles des aires cuites (rochers, bornes, souches, bouts de muret).
     for (const o of IleDecor.obstaclesDesAires(T)) tache(o.X + 0.5 + 0.35, o.Y + 0.5 + 0.15, 0.75, 0.6, 0.55);
     for (const l of T.lignes) if (l.sorte === 'muret' || l.sorte === 'haie') {
       g.strokeStyle = 'rgba(255,255,255,0.4)'; g.lineWidth = (l.sorte === 'haie' ? 1.8 : 1.1) * k; g.lineCap = 'round';
@@ -801,13 +668,10 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     return out;
   }
 
-  // Les fils (d'or, du Métier) et les liens lumineux posés par le décor, en une seule géométrie.
   decorGlobalItems(D) { return { lueur: (D.global || []).slice() }; }
 
   lumieres(scene) {
     const THREE = window.THREE;
-    // Le ciel bleu dessus, un rebond chaud dessous ; le soleil (blanc chaud) de l'ouest à 50° ; un
-    // reflet chaud de face, un contre-jour froid à peine.
     const hemi = new THREE.HemisphereLight(new THREE.Color('#c6d4ef'), new THREE.Color('#544b3c'), 0.62);
     const L = IlePeinture.LUMIERE, el = 50 * Math.PI / 180;
     const cle = new THREE.DirectionalLight(new THREE.Color('#fff2df'), 1.28);
@@ -820,28 +684,6 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     if (this.nuit) this.nuit.lumieres(scene, this.lum);
   }
 
-  // Les houppiers entre la caméra et le Veilleur s'effacent en trame (un cylindre de 3,2 u autour
-  // de la ligne de vue, au-dessus de sa tête) : sous les grands arbres du Bois, on voit encore le
-  // Veilleur, le chemin et les monstres. La trame de Bayer 8 × 8 (plus fine qu'en 4 × 4, un bord
-  // doux de 1,8 à 3,2 u) n'a besoin ni de tri ni de mélange.
-  //
-  // En combat (5.4), tout ce qui cache une part de l'aire (frondaisons, troncs, toiles) s'efface :
-  // le point du fragment, ramené le long de la vue jusqu'à la hauteur de l'aire, tombe dans le
-  // carré (agrandi de 4 u devant, vers la caméra, pour emporter le pied des troncs).
-  //
-  // Les obstacles de l'aire elle-même (bornes, souches, rochers, bouts de muret : `roche` et `acc`
-  // dont le fragment est dans le carré) suivent une autre règle, depuis la revue de l'étape b : vus à
-  // 30°, une borne de 1,8 u ou une souche de 1,5 u couvraient une à deux cases derrière elles, et
-  // le joueur ne voyait pas où il posait le doigt. Un fragment d'obstacle devient un fantôme (une
-  // trame à 36 %) là où le point qu'il cache, ramené le long de la caméra du combat au sol (la
-  // hauteur de la case lue dans la texture des cases, en trois passes), tombe sur une case de sol
-  // de l'aire (genre 0) autre que la sienne ; son pied et ce qui ne couvre que sa propre case ou
-  // une autre case d'obstacle restent pleins : l'obstacle se lit toujours comme un bloc.
-  //
-  // Les pièces lumineuses (`lueur` : fils blancs du Bois, corolles, lanternes) suivent la seule règle
-  // du dehors, dedans comme dehors : un fragment à plus de 0,35 u au-dessus du plan de l'aire, dont le
-  // point ramené au sol tombe dans le carré, s'efface. Un fil tendu au-dessus des cases ne se lit
-  // plus comme un trait de sélection.
   uniformesFondu(THREE) {
     if (!this.uFondu) this.uFondu = { a: { value: new THREE.Vector3() }, b: { value: new THREE.Vector3(0, -1000, 0) }, aire: { value: new THREE.Vector4(0, 0, -1, -1) }, dir: { value: new THREE.Vector3(0, 1, 0) }, h: { value: 0 }, orig: { value: new THREE.Vector2(0, 0) }, cases: { value: null } };
     return this.uFondu;
@@ -897,10 +739,6 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
     m.customProgramCacheKey = () => 'ile-fondu-' + nom;
   }
 
-  // En combat, un matériau ainsi marqué ne garde que les fragments dont le pied (x, z) est à moins de
-  // 4 u du carré de l'aire : les grands fils lumineux (le fil d'or du Métier monte à 80 u, celui de
-  // la Nacelle descend à 150 u) ne barrent plus l'écran de la caméra orthographique. Hors combat,
-  // rien ne change (fonduAire.z < fonduAire.x).
   clipAire(THREE, m) {
     const U = this.uniformesFondu(THREE);
     const prec = m.onBeforeCompile;
@@ -916,7 +754,6 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
     m.customProgramCacheKey = () => 'ile-clip-' + (m.name || '');
   }
 
-  // Les herbes : des lames opaques, balancées par le vertex shader et écartées autour du Veilleur.
   matHerbe(THREE, rampe) {
     if (this._matHerbe) return this._matHerbe;
     const m = new THREE.MeshToonMaterial({ gradientMap: rampe, vertexColors: true });
@@ -947,10 +784,6 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
     return m;
   }
 
-  // L'herbe proche : les touffes du semis et d'autres, posées sur l'herbe, la lande et le sous-bois
-  // (d'après la carte des matières), hors de l'eau et des obstacles ; une seule InstancedMesh, refaite
-  // autour du point visé quand il s'éloigne (le travail de fond de 3.9), qui s'efface au bord de son
-  // rayon. Les candidates sont rangées une fois dans une grille de 8 u.
   preparerHerbe(THREE, D, cartes, L, rampe) {
     const T = this.T, def = this.def, tel = this.telephone;
     const pas = this.qualite === 'haute' ? 1.0 : this.qualite === 'basse' ? 1.7 : tel ? 1.45 : 1.2;
@@ -959,7 +792,6 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
     const nav = this.world && this.world.plateau && this.world.plateau.nav;
     const IM = IleTerrain.M, R = IM.hasard(IM.cle('herbe-proche'));
     const mats = [], cols = [];
-    // Les touffes du semis (le contenu), puis celles du rendu.
     for (const t of D.tuiles) for (const h of t.herbes) { for (let q = 0; q < 16; q++) mats.push(h.m.elements[q]); cols.push(h.c[0], h.c[1], h.c[2]); }
     const m4 = new THREE.Matrix4(), qu = new THREE.Quaternion(), eu = new THREE.Euler(0, 0, 0, 'YXZ'), po = new THREE.Vector3(), sc = new THREE.Vector3();
     const C = new THREE.Color(), C2 = new THREE.Color();
@@ -969,7 +801,6 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
       if (i < 0 || j < 0 || i >= W || j >= Hc) continue;
       const o = (j * W + i) * 4;
       const herbe = P1[o] / 255, lande = P1[o + 1] / 255, sousBois = P2[o + 1] / 255, vert = herbe + lande + sousBois;
-      // En touffes groupées par places (un bruit de 7 u), pas en semis régulier.
       const amas = IM.fbm(x / 7, z / 7, 991, 2), dense = Math.max(0, Math.min(1, (amas - 0.32) / 0.36));
       if (vert < 0.6 || tirage > (vert - 0.45) * 1.6 * (0.18 + 1.5 * dense)) continue;
       const y = T.marcheA(x, z);
@@ -987,8 +818,6 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
     }
     const max = tel ? 1300 : this.qualite === 'haute' ? 4200 : 3200;
     this.herbe = this.semisProche(THREE, L.touffe, this.matHerbe(THREE, rampe), mats, cols, max);
-    // Les fleurs des prés : de petits bouquets de corolles, par places, surtout aux Sources (leurs
-    // quatre couleurs au Confluent), plus rares ailleurs ; la même mécanique que l'herbe.
     const fm = [], fc = [], pasF = tel ? 2.3 : 1.7;
     const COULEURS = {
       ervane_sources: ['#ffb347', '#a6f0e4', '#dcd6ff', '#c9f06a', '#fff6dc', '#ff8a6a'],
@@ -1024,8 +853,6 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
     this.fleurs = this.semisProche(THREE, L.octa, matF, fm, fc, tel ? 520 : 1800);
   }
 
-  // Une InstancedMesh refaite autour du point visé : les matrices et couleurs de toutes les
-  // candidates, rangées par cellules de 8 u (un tri par dénombrement).
   semisProche(THREE, geo, mat, mats, cols, max) {
     const T = this.T, n = cols.length / 3, CEL = 8, NX = Math.ceil(T.largeur / CEL) + 1, NZ = Math.ceil(T.hauteur / CEL) + 1;
     const M = new Float32Array(mats), Cc = new Float32Array(cols);
@@ -1045,8 +872,6 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
     return { mesh, M, C: Cc, n, CEL, NX, NZ, debut: compte, ordre, max, centre: null, rayon: 0 };
   }
 
-  // Refait l'herbe et les fleurs proches autour de (x, y) si le point visé s'est éloigné de plus de
-  // 3 u, ou si le champ a changé de rayon. Ce qui est au bord rapetisse jusqu'à disparaître.
   majHerbe(x, y) {
     const r0 = Math.min(this.telephone ? 20 : 30, this.camera.champ * (this.telephone ? 0.72 : 0.85));
     const rayon = this.qualite === 'basse' ? r0 * 0.75 : r0;
@@ -1078,8 +903,6 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
     H.mesh.instanceColor.needsUpdate = true;
   }
 
-  // L'eau : la nappe translucide du prototype, ses touches qui dérivent, l'écume aux rives, lue sur
-  // la carte de profondeur de toute l'île.
   matEau(THREE) {
     const m = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
@@ -1122,8 +945,6 @@ void main() {
 }`,
       transparent: true, depthWrite: false, fog: true,
     });
-    // UniformsUtils.merge clone les textures : on pose les originales après, pour que liberer()
-    // les rende vraiment (un clone gardé tiendrait la texture sur la carte graphique).
     m.uniforms.plan.value = this.tex.eau;
     m.uniforms.touches.value = this.tex.touchesLin;
     m.uniforms.bord.value = this.tex.poids2;
@@ -1131,10 +952,6 @@ void main() {
     return m;
   }
 
-  // Le puits de l'Amarre (revue finale : plus un disque de noir absolu) : une paroi intérieure en
-  // strates de calcaire (la texture de la falaise, six fois autour, de la lèvre moussue au fond) qui
-  // s'assombrit sur 8 u puis se perd dans un violet sombre ; un fond en dégradé radial (violet au
-  // centre, jamais noir) ; la lueur qui monte vient des halos posés par le décor (js/ile-decor.js).
   puits(THREE, scene, p) {
     const geo = new THREE.CylinderGeometry(p.r, p.r * 0.86, 26, 48, 6, true).translate(0, -13, 0);
     const uv = geo.attributes.uv;
@@ -1149,7 +966,6 @@ void main() {
     mesh.position.set(p.x, p.y + 0.1, p.z);
     scene.add(mesh);
     if (this.decorFixe) this.decorFixe.push(mesh);
-    // Le fond : un disque dont les couleurs des sommets vont du violet (au centre) à l'ombre (au bord).
     const fond = new THREE.CircleGeometry(p.r * 0.9, 40);
     const col = new Float32Array(fond.attributes.position.count * 3);
     const c0 = new THREE.Color('#3a2454'), c1 = new THREE.Color('#120c1a');
@@ -1163,25 +979,16 @@ void main() {
     this.octetsGeo += Ile3D.octetsGeo(geo) + Ile3D.octetsGeo(fond);
   }
 
-  // La mer de nuages : trois bancs (des plans répétés, plus bas, plus gris, plus sombres) et des
-  // bouffées qui dérivent autour de l'île.
   nuages(THREE, scene) {
     const R = IleTerrain.M.hasard(123), T = this.T;
     const cx = T.largeur / 2, cz = T.hauteur / 2;
     this.bancs = [];
-    // Les bancs, sans la brume du lointain (elle les noierait dans sa couleur) : la mer de nuages
-    // reste lisible sous l'île, plus sombre et plus bleue en profondeur.
-    // Une répétition de la texture tous les 70 à 110 u : des moutons de nuages lisibles de haut.
-    // Revue finale : la mer de nuages se lisait comme une plaque grise. Les bancs sont moins opaques
-    // (on voit celui du dessous), et leurs sommets portent un dégradé de profondeur : sombre et bleu
-    // sous l'île (à l'ombre), clair vers l'horizon.
     const bancs = this.qualite === 'basse' ? [[-30, 8, '#aab3c6', 0.9]] : [[-46, 13, '#8e98b0', 0.95], [-34, 10, '#a7b0c4', 0.78], [-24, 7, '#c3cad8', 0.62]];
     const sombre = new THREE.Color('#4f5a78'), cTmp = new THREE.Color();
     for (const [y, rep, teinte, op] of bancs) {
       const t = this.tex.banc.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep * 2, rep * 2); t.offset.set(R(), R());
       const g = new THREE.PlaneGeometry(1400, 1400, 28, 28), P = g.attributes.position, col = new Float32Array(P.count * 3);
       for (let i = 0; i < P.count; i++) {
-        // Le plan est couché ensuite (rotation x) : son y devient -z.
         const d = Math.hypot(P.getX(i), -P.getY(i) * 0.8);
         const f = Math.max(0, Math.min(1, (d - 30) / 150));
         cTmp.set(teinte).lerp(sombre, (1 - f) * 0.55);
@@ -1192,11 +999,7 @@ void main() {
       m.rotation.x = -Math.PI / 2; m.position.set(cx, y, cz); m.renderOrder = -2; m.userData.vit = 0.0012 + R() * 0.0012;
       scene.add(m); this.bancs.push(m); if (this.decorFixe) this.decorFixe.push(m);
     }
-    // Les bouffées : des panneaux face à la caméra, une seule géométrie instanciée ; elles tournent
-    // lentement autour de l'île (le vertex shader les place, rien à faire par image).
     const nLarge = this.qualite === 'basse' ? 8 : this.telephone ? 16 : 26;
-    // Des bouffées posées (sans orbite) sous le bord de l'île et dans l'Échancrure : le vide y prend
-    // du volume au lieu d'une plaque (revue finale). Hors du large, à 5 à 14 u de la lèvre.
     const posees = IleDecor.bouffeesBord(T, this.qualite === 'basse' ? 10 : this.telephone ? 18 : 30);
     const n = nLarge + posees.length;
     const pages = this.tex.nuages, pw = pages[0].image.width, ph = pages[0].image.height;
@@ -1218,8 +1021,6 @@ void main() {
       teinte.set([c.r, c.g, c.b, 0.55 + R() * 0.25], i * 4);
     }
     posees.forEach((b, k) => {
-      // Le vertex shader place une bouffée par son orbite (angle, distance, le z étiré de 0,8) :
-      // une bouffée posée est une orbite immobile qui passe par son point.
       const i = nLarge + k, dx = b.x - cx, dz = (b.z - cz) / 0.8;
       orbite.set([Math.atan2(dz, dx), Math.hypot(dx, dz), b.y, 0], i * 4);
       forme.set([b.taille * 1.3, b.taille * 0.42, i % pages.length], i * 3);
@@ -1262,14 +1063,12 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     if (this.decorFixe) this.decorFixe.push(mesh);
   }
 
-  // Les halos : des quads additifs tournés vers la caméra, une seule InstancedMesh.
   halos(THREE, scene, liste) {
     const n = liste.length;
     if (!n) return;
     const geo = new THREE.InstancedBufferGeometry();
     const q = new THREE.PlaneGeometry(1, 1);
     geo.index = q.index; geo.attributes.position = q.attributes.position; geo.attributes.uv = q.attributes.uv;
-    // Par halo : le centre, la couleur et la taille, l'opacité et la phase du scintillement.
     const pos = new Float32Array(n * 3), col = new Float32Array(n * 4), op = new Float32Array(n * 2);
     const c = new THREE.Color();
     liste.forEach((h, i) => { pos.set([h.x, h.y, h.z], i * 3); c.set(h.couleur); col.set([c.r, c.g, c.b, h.taille], i * 4); op[i * 2] = h.opacite == null ? 0.6 : h.opacite; op[i * 2 + 1] = (i * 37 % 100) * 0.0628; });
@@ -1305,7 +1104,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (this.decorFixe) this.decorFixe.push(mesh);
   }
 
-  // La marque de destination, le chemin, le survol, le repère du guide.
   marques3D(THREE, scene) {
     const anneau = new THREE.RingGeometry(0.55, 0.78, 32).rotateX(-Math.PI / 2);
     const mk = (couleur, op) => new THREE.MeshBasicMaterial({ color: new THREE.Color(couleur), transparent: true, opacity: op, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6, fog: false });
@@ -1314,8 +1112,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this.repere = new THREE.Mesh(new THREE.RingGeometry(0.7, 1.0, 40).rotateX(-Math.PI / 2), mk('#00c2ff', 0.8)); this.repere.visible = false; this.repere.renderOrder = 6;
     const pt = new THREE.CircleGeometry(0.09, 8).rotateX(-Math.PI / 2);
     this.points = new THREE.InstancedMesh(pt, mk('#ffffff', 0.75), 48); this.points.count = 0; this.points.frustumCulled = false; this.points.renderOrder = 6;
-    // Les marques du guide le long d'un chemin (js/guide.js, repère `chemin` ; « Montrer le chemin »
-    // du journal des quêtes, js/hud-quetes.js) : assez larges pour se voir sur les pavés clairs.
     this.traces = new THREE.InstancedMesh(new THREE.RingGeometry(0.2, 0.36, 16).rotateX(-Math.PI / 2), mk('#00c2ff', 0.92), 48); this.traces.count = 0; this.traces.frustumCulled = false; this.traces.renderOrder = 6;
     scene.add(this.marque, this.survol, this.repere, this.points, this.traces);
   }
@@ -1327,7 +1123,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     return n;
   }
 
-  // ----- L'activation -----
 
   activer() {
     if (!this.pret) return;
@@ -1345,7 +1140,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
   desactiver() {
     const carte = this.carteOuverte;
     this.actif = false;
-    // La carte se ferme d'un coup (la fenêtre, avertie, passe au plan peint : la 3D n'est plus là).
     if (carte) this.fermerCarte(true, 'desactive');
     cancelAnimationFrame(this.raf);
     if (this.arene) this.arene.finirAnimations();
@@ -1354,9 +1148,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (this.camera) this.camera.muette = true;
   }
 
-  // Rend les géométries et les textures ; le contexte reste (un retour par la Nacelle). `total` :
-  // après la descente, tout part, contexte compris. Les références de la construction (décor,
-  // relief, terrain, matériaux gardés) partent aussi : rien de l'île ne reste en mémoire à Orsane.
   liberer(total) {
     this.desactiver();
     const rendre = t => { if (t && t.isTexture) t.dispose(); };
@@ -1366,7 +1157,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
         const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
         for (const m of mats) {
           rendre(m.map);
-          // Les textures des uniforms (ShaderMaterial), clones compris.
           if (m.uniforms) for (const u of Object.values(m.uniforms)) rendre(u && u.value);
           m.dispose();
         }
@@ -1396,7 +1186,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this.vus = null; this.caches = null;
     if (total && this.renderer) {
       this.renderer.dispose();
-      // Un contexte déjà perdu ne se perd pas deux fois (l'extension le signalerait).
       if (!this.renderer.getContext().isContextLost()) this.renderer.forceContextLoss();
       if (this.canvas) this.canvas.remove();
       if (this.voiles) this.voiles.remove();
@@ -1408,10 +1197,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     }
   }
 
-  // Le contexte WebGL perdu (fréquent au téléphone quand l'application passe en arrière-plan) : la
-  // boucle s'arrête, le voile « Ervane se recoud... » ; sans retour en 5 s, le voile de repli.
-  // Endormi (le joueur est à Orsane), rien ne s'affiche : on le note, et un retour sur l'île
-  // repartira d'une toile neuve si le contexte n'est pas revenu d'ici là.
   surPerte() {
     const sc = this.sceneAiguillage;
     const enJeu = this.actif || !!(sc && (sc.en3D || sc.voulu));
@@ -1420,19 +1205,17 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this.contextePerdu = true;
     clearTimeout(this.minuteriePerte);
     if (!enJeu || !sc) return;
-    // « Ervane se recoud... » ou « Orsane se recoud... », selon le plateau montré (js/scene.js).
     sc.perte();
     this.minuteriePerte = setTimeout(() => { if (sc.en3D || sc.voulu) sc.repli(); }, 5000);
   }
   surRetour() {
     clearTimeout(this.minuteriePerte);
     this.contextePerdu = false;
-    try { this.liberer(); } catch (e) { /* le contexte neuf n'a plus rien */ }
+    try { this.liberer(); } catch (e) {   }
     const sc = this.sceneAiguillage;
     if (sc) sc.retour();
   }
 
-  // ----- Le contrat du rendu -----
 
   hauteur(x, y) {
     const T = this.T;
@@ -1440,9 +1223,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const h = T.marcheA(x, y);
     return Number.isFinite(h) ? h : T.solBrutA(x, y);
   }
-  // La normale du sol : celle du terrain ; verticale dans une salle.
   normale(x, y) { return this.T ? this.T.normaleA(x, y) : [0, 1, 0]; }
-  // Le support courant : l'aire pendant un combat sur le terrain, la salle (des cases), le plateau sinon.
   get enArene() { return !!(this.arene && this.arene.ouverte); }
   versScene(x, y) { return this.enArene ? this.arene.versMonde(x, y) : this.salle ? { u: x + 0.5, v: y + 0.5 } : { u: x, v: y }; }
   cellToScreen(x, y) { return { x, y }; }
@@ -1454,42 +1235,29 @@ void main() { float a = texture2D(carte, vUv).a * vA;
   echelleFigure(x, y) {
     if (!this.camera) return 1;
     const p = this.versScene(x, y);
-    // (Pendant la carte, le DOM posé sur le monde garde la vue du jeu figée.)
     return this.camera.pixelsParU(p.u, this.hauteur(p.u, p.v), p.v, true) * IleFigures.PX;
   }
   sauter() {
     if (!this.camera || !this.world) return;
-    // Dans une salle, la caméra du combat cadre la salle entière, tout de suite.
     if (this.salle) { const q = this.versScene(this.world.player.rx, this.world.player.ry); this.camera.joueur = { x: q.u, y: q.v, h: 0 }; this.camera.entrerCombat(this.salle.aire, true); return; }
     const p = this.world.player;
     this.camera.sauter(p.rx, p.ry, this.hauteur(p.rx, p.ry));
   }
 
-  // La sélection (3.10) : les figures (rectangles de la dernière image, agrandis à 44 px au doigt),
-  // les objets qui agissent (relais, porte, panneaux), puis le sol (le rayon marche sur la hauteur
-  // de marche par pas de 0,5 u, puis une dichotomie). Rend { x, y, cible } en u, ou null.
   screenToCell(cx, cy) {
-    // Pendant la carte (3.30), la scène du jeu ne prend pas de toucher : la fenêtre de la carte le fait.
     if (!this.camera || !this.figures || this.camera.mode === 'carte') return null;
     const cam = this.camera, s = cam.clientToScreen(cx, cy);
     const doigt = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
-    // En combat : la case de l'aire sous le doigt, par la seule géométrie du sol, comme le rendu des
-    // cases (Grid.fromScreen), ou null hors de la grille (3.10). Les panneaux des combattants ne
-    // captent pas le toucher : un panneau couvre la case ou les cases derrière lui (une case de
-    // départ, un pas, les pieds d'un monstre qui se tient là), et la confirmation au doigt montre de
-    // toute façon la case visée.
     if (this.enArene) {
       const sol = this.rayonSol(s.x, s.y) || cam.ecranVersPlan(s.x, s.y);
       const c = this.arene.caseSous(sol.x, sol.y);
       return this.combat && this.combat.map && Grid.inBounds(this.combat.map, c.x, c.y) ? c : null;
     }
-    // Dans une salle, hors combat : la case du sol plat sous le doigt (le monde y voit le groupe).
     if (this.salle) {
       const sol = cam.ecranVersPlan(s.x, s.y, 0);
       const c = { x: Math.floor(sol.x), y: Math.floor(sol.y) };
       return this.salle.map && Grid.inBounds(this.salle.map, c.x, c.y) ? c : null;
     }
-    // 1. Les figures, de la plus proche à la plus lointaine.
     const rects = this.figures.rects.slice().sort((a, b) => a.z - b.z);
     for (const r of rects) {
       if (!r.s.cible) continue;
@@ -1497,7 +1265,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       const x0 = r.x - w / 2, y0 = r.y - h * 0.95, y1 = r.y + Math.max(6, h * 0.12);
       if (s.x >= x0 && s.x <= x0 + w && s.y >= y0 && s.y <= y1) return { x: r.s.cible.ref.x, y: r.s.cible.ref.y, cible: r.s.cible };
     }
-    // 2. Les objets qui agissent, par leur volume projeté (un fuseau vertical).
     for (const c of this.cibles || []) {
       if (c.type === 'decor') continue;
       const h0 = this.hauteur(c.x, c.y), a = cam.versEcran(c.x, h0, c.y), b = cam.versEcran(c.x, h0 + c.h, c.y);
@@ -1507,11 +1274,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       const px = a.x + (b.x - a.x) * t, py = a.y + (b.y - a.y) * t;
       if ((s.x - px) ** 2 + (s.y - py) ** 2 <= rr * rr) return { x: c.x, y: c.y, cible: { type: c.type, ref: c.ref != null ? c.ref : c } };
     }
-    // 3. Le sol.
     const sol = this.rayonSol(s.x, s.y);
     if (sol) return { x: sol.x, y: sol.y, cible: null };
-    // Hors de l'île (les nuages) : le point du plan du point visé ; le moteur cherche le plus
-    // proche praticable.
     const q = cam.ecranVersPlan(s.x, s.y);
     return { x: Math.max(0, Math.min(this.T.largeur, q.x)), y: Math.max(0, Math.min(this.T.hauteur, q.y)), cible: null };
   }
@@ -1521,7 +1285,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (!T) return null;
     const ray = this.camera.rayon(sx, sy);
     const o = ray.origin, d = ray.direction;
-    // Du haut du relief (20 u) jusqu'au plus bas (-10 u), par pas de 0,5 u le long du rayon.
     if (d.y >= -1e-4) return null;
     let t = Math.max(0, (20 - o.y) / d.y);
     const tFin = (-12 - o.y) / d.y;
@@ -1543,25 +1306,20 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     return null;
   }
 
-  // ----- La boucle -----
 
   boucle(now) {
     if (!this.actif) return;
     this.raf = requestAnimationFrame(this._boucle);
-    // Les animations du combat avancent toujours : le moteur de combat les attend.
     if (this.arene) this.arene.avancer(now);
     if (this.enPause) return;
     const dtReel = this.dernier ? now - this.dernier : 16;
     this.dernier = now;
-    // Le dessin endormi (une fenêtre couvre la scène, la carte du monde en 3D vit à côté, 3.12) :
-    // le monde avance toujours (minuteries, errance), mais rien ne se dessine.
     if (this.dessinEndormi) { if (this.onTick) this.onTick(now); return; }
     this.surveillerCadence(dtReel);
     if (this.onTick) this.onTick(now);
     this.image(now);
   }
 
-  // Endort ou réveille le dessin, sans quitter la scène (Scene.pause3D).
   endormirDessin(oui) {
     oui = !!oui;
     if (oui === !!this.dessinEndormi) return;
@@ -1570,10 +1328,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (!oui && this.actif && this.pret) this.image(performance.now());
   }
 
-  // Sous 30 images par seconde pendant trois secondes (le temps cumulé des images lentes, pas leur
-  // nombre), un cran de qualité en moins ; jamais on ne remonte seul ; ?quality= l'impose. Un trou de
-  // plus d'un quart de seconde ne compte pas. L'antialias reste celui du départ (fixé à la création
-  // du contexte).
   surveillerCadence(dt) {
     if (this.qualiteForcee || dt > 250 || this.qualite === 'basse') return;
     this.cadence = this.cadence ? this.cadence * 0.95 + dt * 0.05 : dt;
@@ -1585,8 +1339,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     }
   }
 
-  // Ce qui suit la qualité sans reconstruire : la densité de pixels, l'animation de l'eau, le rayon
-  // de l'herbe proche, le nombre de bouffées de nuages ; le reste attend la prochaine construction.
   descendreQualite(q) {
     this.qualite = q;
     this.appliquerDensite();
@@ -1595,16 +1347,11 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     for (const H of [this.herbe, this.fleurs, this.touffesNuit]) if (H) H.centre = null;
   }
 
-  // Une image : la caméra, les tuiles (niveaux de détail), les figures, les marques, l'eau, les
-  // nuages, la brume de la région, la lanterne la plus proche, puis le rendu.
   image(now) {
     if (!this.pret || !this.renderer) return;
     if (this.salle) return this.imageSalle(now);
     const THREE = window.THREE, w = this.world, p = w.player, cam = this.camera;
     const t0 = performance.now();
-    // Jamais un pas négatif : une image demandée hors de la boucle (la photo de la carte, 3.30) porte
-    // l'heure du moment, la suivante celle du début de son image, parfois plus ancienne ; la brume s'y
-    // emballait (un mélange de facteur négatif, répété).
     const dt = this.tempsPrec ? Math.min(0.1, Math.max(0, (now - this.tempsPrec) / 1000)) : 0.016;
     this.tempsPrec = now;
     this.temps += dt;
@@ -1614,66 +1361,42 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const c = cam.vise;
     const A = this.arene, tact = this.enArene && this.tactique;
     if (this.modeles && typeof IleModeles === 'object') IleModeles.animer(this.modeles, this.temps);
-    // La carte de l'île (3.30) : le survol en cours (la carte, son décollage, la descente vers le
-    // jeu). De haut (au-delà d'une largeur de sol vue selon la qualité), les maillages réunis, prêts
-    // par tranches d'images, prennent la place des tuiles ; de près, les portées du jeu valent autour
-    // du point visé, pour la largeur vue.
     const vol = cam.survolCarte ? cam.survolCarte() : null, K = this.carteIle;
     const lodPret = !!(vol && K && K.avancerLod());
     const survol = !!(vol && lodPret && vol.largeur > K.seuilProche());
     const champ = vol ? vol.largeur : cam.champ;
-    // Les tuiles du sol : la proche (un sommet par u) jusqu'à un champ du point visé (la distance
-    // au rectangle de la tuile), la lointaine (un sommet pour 2 u) au-delà.
     const pres = champ * (this.qualite === 'haute' ? 1.6 : this.qualite === 'basse' ? 0.9 : 1.15) + 6;
     const distTuile = t => Math.hypot(Math.max(0, Math.abs(t.centre[0] - c.x) - 15), Math.max(0, Math.abs(t.centre[1] - c.y) - 15));
-    // Le style Lisière (3.25) : sa caméra basse voit le sol jusqu'à l'horizon ; au-delà de `solMax`
-    // u, la brume l'a pris, la tuile ne se dessine plus (le ciel de la brume est derrière).
     const solMax = this.nuit && this.nuit.solMax && !this.enArene && !vol ? this.nuit.solMax : Infinity;
     for (const t of this.tuilesSol) {
       const d = distTuile(t), proche = !t.loin || d < pres;
       t.proche.visible = proche && d < solMax;
       if (t.loin) t.loin.visible = !proche && d < solMax;
     }
-    // Le monde modelé (3.26) : ses tuiles suivent les mêmes portées (le sol sous la brume, le semis
-    // et le reste à la portée des silhouettes), posées plus bas, une fois les portées connues.
-    // Le décor : complet jusqu'à 45 u (60 en qualité haute, 30 en basse), silhouettes jusqu'à 80 u.
-    // La nuit (3.24), la brume plus proche cache le lointain : le décor détaillé et les silhouettes
-    // s'arrêtent plus tôt (ce qu'on y gagne paie une part du décor ajouté).
-    // Le style Lisière (3.25) règle ses propres portées : sa caméra basse voit plus de morceaux.
     const kNuit = this.nuit ? (this.nuit.kDetail || (this.telephone ? 0.8 : 0.85)) : 1;
     const rDet = (this.qualite === 'haute' ? 60 : this.qualite === 'basse' ? 30 : 45) * kNuit, rSil = (this.qualite === 'haute' ? 120 : 80) * (this.nuit ? (this.nuit.kSil || 0.72) : 1);
     const demi = IleDecor.TUILE / 2;
     const distMorceau = t => Math.hypot(Math.max(0, Math.abs(t.centre[0] - c.x) - demi), Math.max(0, Math.abs(t.centre[1] - c.y) - demi));
     if (this.monde && typeof IleGlb === 'object' && IleGlb.portee && !tact) IleGlb.portee(this.monde, c, { sol: solMax, semis: rSil, reste: Math.max(rSil, 60) });
-    // La vue tactique cache le décor, l'herbe et l'eau : le damier d'ardoise du sol reste seul.
     for (const t of this.tuilesDecor) {
       const d = distMorceau(t);
       t.groupe.visible = d < rDet && !tact;
       if (t.sil) t.sil.visible = d >= rDet && d < rSil && !tact;
     }
     for (const H of [this.herbe, this.fleurs, this.touffesNuit]) if (H) H.mesh.visible = !tact;
-    // Les touffes de la nuit se taisent pendant un combat : la grille reste nette, le budget aussi.
     if (this.touffesNuit) this.touffesNuit.mesh.visible = !tact && !(A && A.etat);
     if (this.eau) this.eau.visible = !tact;
     for (const m of this.decorFixe || []) m.visible = !tact;
-    // Le monde modelé (3.26) : son semis, son eau et ses objets se cachent de même en vue tactique.
     if (this.monde && typeof IleGlb === 'object' && IleGlb.tactique && this.mondeTactique !== tact) { IleGlb.tactique(this.monde, tact); this.mondeTactique = tact; }
-    // La chute du Ru (un voile de 40 u) ne se dessine pas pendant un combat : vue par la caméra
-    // orthographique, elle barrait le bord de l'écran au Hameau Vide.
     if (this.meshChute) this.meshChute.visible = !tact && !(A && A.etat);
-    // De haut, les maillages réunis à la place de leurs sources ; l'herbe et les fleurs (des points
-    // à cette distance) se taisent.
     if (K && K.lod) K.survolLod(survol);
     if (survol) for (const H of [this.herbe, this.fleurs, this.touffesNuit]) if (H) H.mesh.visible = false;
     if (this.uHerbe) { this.uHerbe.temps.value = this.temps; this.uHerbe.joueur.value.set(p.rx, hp, p.ry); }
     if (this.uFondu) {
-      // Les frondaisons entre la caméra et le Veilleur (en combat : l'acteur du tour) s'effacent.
       const vis = this.enArene ? this.cibleFondu() : { u: p.rx, v: p.ry };
       this.uFondu.a.value.copy(cam.courante.position);
       this.uFondu.b.value.set(vis.u, this.hauteur(vis.u, vis.v) + 0.9, vis.v);
-      // Pendant la carte, rien ne s'efface entre la caméra (très haut) et le Veilleur.
       if (vol) { this.uFondu.a.value.set(-9999, -9999, -9999); this.uFondu.b.value.set(-9999, -9999, -9999); }
-      // Ce qui cache l'aire (vu le long de la caméra du combat) devient un fantôme.
       const cd = cam.cadre;
       if (A && A.etat && cd) {
         this.uFondu.aire.value.set(A.x0 - 0.3, A.y0 - 0.3, A.x0 + 19, A.y0 + 19);
@@ -1684,33 +1407,23 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       } else this.uFondu.aire.value.set(0, 0, -1, -1);
     }
     this.majHerbe(c.x, c.y);
-    // Les figures, leurs étiquettes (jamais sous les barres de l'interface) ; en combat, les effets
-    // et les chiffres qui montent.
     this.mesurerHUD(now);
     const extras = A && A.etat ? A.majEffets(now, dt) : null;
     this.figures.maj(this.sprites(now), cam, now, extras);
     this.majMarques(now, hp);
-    // Les marqueurs et les noms de la carte, d'après la caméra de cette image.
     if (K) K.maj(now, vol);
-    // L'eau, la chute, les halos, les nuages.
     if (this.matEauRef) this.matEauRef.uniforms.temps.value = this.temps;
     if (this.matChute) this.matChute.map.offset.y = -this.temps * 0.32;
     if (this.matHalos) this.matHalos.uniforms.temps.value = this.temps;
     for (const b of this.bancs || []) b.material.map.offset.x += dt * b.userData.vit;
     if (this.matBouffees) this.matBouffees.uniforms.temps.value = this.temps;
-    // La brume prend, en deux secondes, la couleur de la région sous le point visé.
     this.majBrume(dt);
-    // La lanterne allumée la plus proche du Veilleur porte la seule lumière ponctuelle.
     let best = null, bd = 14 * 14;
     for (const l of this.lanternes || []) { const d = (l.x - p.rx) ** 2 + (l.z - p.ry) ** 2; if (d < bd) { bd = d; best = l; } }
     if (best) { this.ponctuelle.position.set(best.x, best.y + 0.3, best.z); this.ponctuelle.intensity = 1.6 * (0.85 + 0.15 * Math.sin(this.temps * 9 + best.x)); }
     else this.ponctuelle.intensity = 0;
-    // La nuit (3.24) : la lumière ponctuelle devient la flaque dorée autour du Veilleur (en combat,
-    // autour de son combattant) ; les lucioles dérivent autour du point visé.
     if (this.nuit) {
       const e = this.enArene && this.combat && this.combat.player, q = e ? A.versMonde(e.rx, e.ry) : { u: p.rx, v: p.ry };
-      // Pendant la carte, les lucioles, la pluie, la neige et le dôme se taisent comme en vue
-      // tactique : ils suivent la caméra, qui est très haut.
       this.nuit.maj(now, this.temps, { x: q.u, y: q.v }, this.hauteur(q.u, q.v), cam, tact || !!vol);
     }
     const r = this.renderer;
@@ -1722,9 +1435,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     cam.flush();
   }
 
-  // Les rectangles de l'interface posés sur la scène (la fiche du Veilleur, la barre de menu, le
-  // bandeau, la mini-carte, les boutons de la vue, la barre de tour...), en coordonnées de la toile,
-  // mesurés quatre fois par seconde : une étiquette de figure ne s'y dessine pas (revue finale).
   mesurerHUD(now) {
     if (this._hudA && now - this._hudA < 250 && now >= this._hudA) return;
     this._hudA = now;
@@ -1741,29 +1451,22 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this.figures.zonesHUD = zones;
   }
 
-  // Le combat sur ce plateau commence ou finit : l'aire s'ouvre et la caméra passe en
-  // orthographique, ou l'aire se ferme et la caméra revient au Veilleur ; les uniformes du sol
-  // (l'aire, le passage, l'épaisseur des traits, la vue tactique) et l'état des cases suivent.
   majArene(now) {
     const A = this.arene, cam = this.camera, w = this.world, cb = this.combat;
     if (!A || !cam) return;
     const an = w && w.showCombat && cb && cb.map && cb.map.ancre;
     const ici = !!(an && (this.salle ? an.salle === this.salle.id : an.plateau === this.plateauId));
     if (ici && !A.ouverte) {
-      // Pas de carte en combat : elle se ferme d'un coup.
       if (this.carteOuverte) this.fermerCarte(true, 'combat');
       const aire = A.ouvrir(cb.map);
       this.mats.uSol.aireO.value.set(aire.x0, aire.y0);
       cam.entrerCombat(aire, !!this.salle);
     } else if (!ici && A.ouverte) {
       A.fermer();
-      // Dans une salle, la caméra reste celle du combat : elle cadre la salle.
       if (!this.salle) cam.sortirCombat();
     }
     if (A.etat === 'fermeture' && !cam.trans) A.eteindre();
     cam.setTactique(ici && this.tactique);
-    // La barre de tour du téléphone (dans le coin bas droit de la scène) : mesurée quatre fois par
-    // seconde, le cadrage du combat l'évite.
     if (ici && (!this._coinA || now - this._coinA > 250 || now < this._coinA)) {
       this._coinA = now;
       const tb = typeof document !== 'undefined' ? document.querySelector('.vy-barre-tour') : null;
@@ -1783,10 +1486,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     u.aireOn.value = A.etat ? Math.max(0, Math.min(1, cam.fondu)) : 0;
     u.tempsSol.value = now / 1000;
     u.tactiqueSol.value = ici && this.tactique ? 1 : 0;
-    // La grille de l'aire (réglage « Afficher la grille » des Options, js/ui.js).
     if (u.grilleSol) u.grilleSol.value = typeof UI === 'function' && UI.reglage && !UI.reglage('grille') ? 0 : 1;
     if (A.etat) {
-      // Un pixel d'écran en u, perpendiculairement au bord d'une case (l'azimut est de 45°).
       const el = cam.enCombat && !cam.trans && cam.cadre ? cam.cadre.el : (cam.dernierEtat ? cam.dernierEtat.el : cam.elevation());
       const se = Math.sin(el), f = se / (0.7071 * Math.sqrt(1 + se * se));
       const v = cam.vise, ppu = cam.pixelsParU(v.x, v.h, v.y);
@@ -1794,7 +1495,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     }
   }
 
-  // En combat, le point dont les frondaisons s'effacent : l'acteur du tour, sinon le Veilleur.
   cibleFondu() {
     const cb = this.combat, A = this.arene;
     const e = cb.actor && cb.actor.alive ? cb.actor : cb.player;
@@ -1809,24 +1509,16 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const f = this.scene.fog;
     const a = 1 - Math.exp(-dt * 2.2);
     f.color.lerp(this.brumeVoulue, a);
-    // En combat, la brume se tient loin derrière l'aire (la caméra orthographique est à 120 u) ;
-    // pendant le passage, elle glisse d'un réglage à l'autre.
     const d = this.camera.distance(), fc = this.camera.fondu || 0;
-    // La nuit, la brume vient plus près : le lointain se perd dans le bleu.
     const kp = this.nuit ? 0.92 : 1.1, kl = this.nuit ? 2.0 : 2.7;
-    // Le style Lisière (3.25) : une brume exponentielle, sa densité réglée par le temps qu'il fait,
-    // éclaircie en combat (la caméra du combat est loin derrière l'aire).
     if (f.isFogExp2) f.density = (this.nuit.densite || 0.016) * (1 - fc) + 0.0035 * fc;
     else { f.near = d * kp * (1 - fc) + (d + 30) * fc; f.far = d * kl * (1 - fc) + (d + 120) * fc; }
-    // Pendant la carte (3.30), la brume s'efface à mesure que la caméra décolle : un voile léger
-    // au loin, l'île entière nette (la portée de la brume suit la distance de la caméra).
     const vol = this.camera.survolCarte ? this.camera.survolCarte() : null;
     if (vol) {
       const k = vol.progres;
       if (f.isFogExp2) f.density = f.density * (1 - k) + Math.min(f.density, 0.26 / d) * k;
       else { f.near = f.near * (1 - k) + d * 1.6 * k; f.far = f.far * (1 - k) + d * 4.5 * k; }
     }
-    // Le ciel (le dégradé CSS derrière la toile transparente) suit la brume.
     const tact = this.enArene && this.tactique;
     const hex = tact ? 'tactique' : '#' + f.color.getHexString();
     if (hex !== this.cielHex && tact) {
@@ -1841,42 +1533,30 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     }
   }
 
-  // Les figures du monde : le Veilleur, les monstres des groupes (en file derrière le premier),
-  // les PNJ (leur marque de quête), les nœuds de récolte.
   sprites(now) {
     const w = this.world, out = [];
     const ch = w.ch, cls = DATA.classes[ch.classId], p = w.player;
     const c = this.camera ? this.camera.vise : { x: p.rx, y: p.ry };
-    // Pendant la carte (3.30) : de haut, plus de figures (des points ; les marqueurs les remplacent) ;
-    // de près, celles de la largeur vue, sans leurs noms.
     const vol = this.camera && this.camera.survolCarte ? this.camera.survolCarte() : null;
     if (vol && vol.largeur > (typeof IleCarte === 'object' ? IleCarte.FIGURES_MAX : 60)) return out;
     const rayon = vol ? vol.largeur * 0.8 + 12 : (this.camera ? this.camera.champ : 30) * 1.4 + 12;
-    // En combat : les figures du monde dans l'aire et à 2 u autour sont cachées, le Veilleur du
-    // monde aussi (le combat a le sien) ; la vue tactique ne garde que les combattants.
     const A = this.arene, enCombat = this.enArene;
     if (enCombat && this.tactique) return A.sprites(this.combat, now, this.figures, this.telephone);
     const dansAire = enCombat ? (x, y) => x > A.x0 - 2 && x < A.x0 + 17 && y > A.y0 - 2 && y < A.y0 + 17 : () => false;
     const loin = (x, y) => Math.abs(x - c.x) > rayon || Math.abs(y - c.y) > rayon || dansAire(x, y);
     const H = (x, y) => this.hauteur(x, y);
     const N = (x, y) => this.normale(x, y);
-    // Dans une salle hors combat, les positions du monde sont des cases : leur centre dans la scène.
     const salle = !!this.salle && !enCombat;
     const pos = (x, y) => (salle ? [x + 0.5, y + 0.5] : [x, y]);
     const fig = this.figures;
     const [px, py] = pos(p.rx, p.ry);
     const veilleur = { kind: 'entity', shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, team: 'player', facing: p.facing, look: ch.look, gender: ch.gender, scale: 1, x: px, y: py, h: H(px, py), normale: N(px, py), bob: p.moving ? Math.abs(Math.sin(now / 70)) * 3 : Math.sin(now / 900) * 0.8, joueur: true };
     veilleur.cle = fig.cleFigure(veilleur); veilleur.peindre = fig.peindreFigure(veilleur);
-    // Le héros modelé (3.27) : les figures le posent à la place du panneau du Veilleur, sur l'île
-    // comme dans une salle (en combat, l'arène marque la figure du joueur) ; sa marche suit `moving`.
     if (fig.heros && !enCombat) { veilleur.heros = true; veilleur.bouge = !!p.moving; }
     if (!enCombat) out.push(veilleur);
     else for (const s of A.sprites(this.combat, now, fig, this.telephone)) out.push(s);
     for (const g of w.groups) {
       const [gx, gy] = pos(g.rx, g.ry);
-      // Un groupe revenu (Plateau.reapparitions pose `naissance`) alors qu'il est dans le champ de la
-      // caméra attend, invisible, d'en être sorti, ou que le Veilleur s'en approche à 12 u ; puis il
-      // paraît en fondu. Le moteur, lui, ne regarde jamais la caméra (4.5, 7.5).
       let fondu = 1;
       if (g.naissance != null && this.vus && !salle) {
         if (!this.vus.has(g)) { this.vus.add(g); if (this.camera && this.camera.dansChamp(gx, gy, 4)) this.caches.set(g, null); }
@@ -1889,7 +1569,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       }
       if (loin(gx, gy)) continue;
       const membres = fig.membres(salle ? Object.assign({}, g, { rx: gx, ry: gy }) : g, now);
-      // Le sens du regard suit la marche à l'écran (vers la droite : +u, -v).
       const prec = this.directions.get(g) || { x: g.rx, y: g.ry, f: 1 };
       const sx = (g.rx - prec.x) - (g.ry - prec.y);
       if (Math.abs(sx) > 0.02) prec.f = sx > 0 ? 1 : -1;
@@ -1899,8 +1578,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
         if (!def) return;
         const [x, y] = membres[k];
         const s = { kind: 'entity', shape: def.shape, color: def.color, glyph: null, team: 'monster', motif: Renderer.motifOf(m.id), noyau: def.noyau || null, scale: def.boss || def.recherche ? 1.3 : this.telephone ? 1.2 : 0.95, facing: prec.f, x, y, h: H(x, y), normale: N(x, y), bob: Math.sin(now / 500 + g.idx + k) * 1.5, alpha: fondu, cible: { type: 'groupe', ref: g } };
-        // En combat, les groupes du monde gardent leur figure, pas leur nom.
-        // Un boss garde son prénom sur l'étiquette (« Krobb niv. 7 ») : le titre entier tient sur sa fiche.
         if (k === 0 && !enCombat && !vol) { s.label = `${def.recherche ? 'Recherché : ' : ''}${def.boss ? def.name.split(',')[0] : def.name} niv. ${g.level}`; s.labelSorte = 'ennemi'; if (g.monsters.length > 1) s.badge = `×${g.monsters.length}`; }
         if (fig.modeles && fig.modeles.prend(m.id)) { s.modele = m.id; s.modeleCle = `${g.nid || g.idx}|${k}`; }
         s.cle = fig.cleFigure(s); s.peindre = fig.peindreFigure(s);
@@ -1938,7 +1615,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       this.marque.position.set(m.x, this.hauteur(m.x, m.y) + 0.06, m.y);
       this.marque.scale.set(k, 1, k);
     }
-    // Le chemin qui reste : des points tous les 1,2 u.
     const ch = p.chemin;
     let n = 0;
     if (!enCombat && ch && ch.pts && ch.pts.length > 1) {
@@ -1951,11 +1627,9 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       this.points.instanceMatrix.needsUpdate = true;
     }
     this.points.count = n;
-    // Le survol (à la souris) : un anneau sous la cible, ou sous le point du sol.
     const hv = !enCombat && this.highlights && this.highlights.hover;
     this.survol.visible = !!(hv && Number.isFinite(hv.x) && hv.cible);
     if (this.survol.visible) { this.survol.position.set(hv.x, this.hauteur(hv.x, hv.y) + 0.05, hv.y); }
-    // Le repère du guide : { cell }, { group }, { entity }, { point }, et les marques de { chemin }.
     const cue = this.guideCue;
     const o = cue && (cue.group || cue.entity || cue.cell || cue.point);
     this.repere.visible = !!o;
@@ -1969,7 +1643,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this.traces.count = nt;
     if (o) {
       let x = o.rx != null ? o.rx : o.x != null ? o.x : o.u, y = o.ry != null ? o.ry : o.y != null ? o.y : o.v;
-      // En combat, une case ou un combattant sont des cases de l'aire ; dans une salle, tout l'est.
       if ((enCombat && !cue.group && !cue.point) || (this.salle && !cue.point)) { const q = this.versScene(x, y); x = q.u; y = q.v; }
       const k = 1 + 0.18 * Math.sin(now / 280);
       this.repere.position.set(x, this.hauteur(x, y) + 0.07, y);
@@ -1978,20 +1651,13 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     void hp;
   }
 
-  // ----- La carte de l'île (3.30, js/ile-carte.js) -----
 
-  // La carte 3D se peut-elle ici ? Sur le plateau, hors combat et hors salle, la scène prête et
-  // active, la caméra en exploration (pas pendant le passage vers un combat).
   carteDisponible() {
     const w = this.world, cam = this.camera;
     return !!(typeof IleCarte === 'object' && this.actif && this.pret && cam && this.canvas && !this.salle && w && w.plateau && !w.showCombat && !this.enArene && !cam.trans && (cam.mode === 'exploration' || cam.mode === 'carte'));
   }
   get carteOuverte() { return !!(this.carteIle && this.carteIle.ouverte); }
 
-  // Ouvre la carte dans `hote` (la vue de la fenêtre « Carte ») : une photo de la vue du jeu reste
-  // dans la scène (`opts.photo` faux : la fenêtre la couvre toute), la toile se pose dans la vue de
-  // la carte, la caméra décolle. `opts` va aussi aux marqueurs (IleCarte.Carte.ouvrir) ; `immediat` :
-  // sans vol. Rend faux si la carte ne se peut pas.
   ouvrirCarte(hote, opts) {
     opts = opts || {};
     if (this.carteOuverte) {
@@ -2015,9 +1681,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     return true;
   }
 
-  // Ferme la carte : la toile revient dans la scène, la caméra redescend vers la vue du jeu (d'un
-  // coup si `immediat`). `raison` (combat, désactivation) : la fermeture ne vient pas de la fenêtre,
-  // qui en est avertie (opts.surFermeture).
   fermerCarte(immediat, raison) {
     const K = this.carteIle;
     if (!K || !K.ouverte) return;
@@ -2030,7 +1693,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (avertir) { try { avertir(raison); } catch (e) { console.error(e); } }
   }
 
-  // La toile dans la vue de la carte (`hote`), ou de retour dans la scène, sous les voiles.
   deplacerToile(hote) {
     const cv = this.canvas;
     if (!cv) return;
@@ -2040,8 +1702,6 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this.hote = hote || null;
   }
 
-  // Une image fraîche de la vue du jeu, recopiée tout de suite (la toile n'en garde rien) sur une
-  // toile 2D laissée dans la scène pendant la carte.
   prendrePhoto() {
     const cv = this.canvas, st = this.stage;
     if (!cv || !st || !this.pret) return;
@@ -2051,17 +1711,13 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     ph.className = 'board-repli ile-photo';
     ph.setAttribute('aria-hidden', 'true');
     ph.width = w; ph.height = h;
-    try { ph.getContext('2d').drawImage(cv, 0, 0, w, h); } catch (e) { /* une toile illisible : le ciel seul */ }
+    try { ph.getContext('2d').drawImage(cv, 0, 0, w, h); } catch (e) {   }
     ph.style.background = cv.style.background;
     st.insertBefore(ph, this.voiles || this.board);
   }
   retirerPhoto() { if (this.photo) { this.photo.remove(); this.photo.width = 0; this.photo.height = 0; this.photo = null; } }
 
-  // ----- Pour les tests et le budget -----
 
-  // Fait avancer le monde de `ms` millisecondes par pas fixes de 1/30 s (développement seulement :
-  // les tests du rendu logiciel n'attendent pas en temps réel), la caméra avec lui, puis dessine une
-  // image. Avec `enPause`, la boucle ne fait plus avancer le monde : seul ce pas d'horloge le fait.
   avancer(ms) {
     const w = this.world;
     if (!w || !this.pret) return;

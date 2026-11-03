@@ -1,19 +1,10 @@
-// Factions : le Fil et la Déchirure, le serment, les rangs, l'ordre, le reniement, et la confiance
-// des Francs-Marcheurs, qui restent neutres (docs/MONDE.md, « Les deux factions »). Ne touche pas
-// au DOM : chaque changement rend des événements, que le monde transmet à l'interface.
-// L'état vit dans character.faction = { id, points, rank, order, sworn, renounced, marcheurs } :
-//  - id : 'fil', 'dechirure', ou null (pas de serment) ;
-//  - points : gagnés par les quêtes de faction ; le rang s'en déduit (rankFor) ;
-//  - order : l'ordre choisi au rang 3 ; sworn : le niveau du serment ;
-//  - renounced : le nombre de reniements ; marcheurs : la confiance des Francs-Marcheurs.
-// Une faction ne donne jamais de puissance de combat : des titres, des apparences, des services.
 const Factions = (() => {
-  const SWEAR_LEVEL = 20;      // le serment, à la Passe de Kaldum
-  const ORDER_RANK = 3;        // le choix de l'ordre
+  const SWEAR_LEVEL = 20;
+  const ORDER_RANK = 3;
   const MAX_RANK = 10;
-  const PER_RANK = 30;         // environ trois quêtes de faction par rang, 10 points chacune
-  const RENOUNCE_RANKS = 2;    // ce que coûte un reniement
-  const NEUTRAL_BONUS = 1.5;   // les neutres sont bien reçus chez les Francs-Marcheurs
+  const PER_RANK = 30;
+  const RENOUNCE_RANKS = 2;
+  const NEUTRAL_BONUS = 1.5;
 
   const LIST = {
     fil: {
@@ -30,7 +21,6 @@ const Factions = (() => {
         { id: 'gardiens_ecailles', name: 'les Gardiens d\'Écailles', role: 'le savoir, les dragons' },
       ],
       ranks: ['Bout de fil', 'Couseur', 'Point', 'Ourlet', 'Trame', 'Navette', 'Fuseau', 'Métier', 'Grand Tisserand', 'Main du Fil'],
-      // Ce que chaque rang ouvre ; `venir` : promis, pas encore construit.
       unlocks: [
         { text: 'Le titre, l\'insigne d\'or et les quêtes d\'Okrel.' },
         { text: 'Une couture d\'or au bord de la cape.', venir: true },
@@ -74,7 +64,6 @@ const Factions = (() => {
   };
   const IDS = Object.keys(LIST);
 
-  // Les Francs-Marcheurs : une confiance, pas un rang.
   const MARCHEURS = {
     nom: 'les Francs-Marcheurs',
     texte: 'La guilde de Thessa commerce avec tout le monde, loue ses lames et vend de fausses Écailles très bien faites. Ils ne prennent pas parti : on gagne leur confiance, pas un rang.',
@@ -85,21 +74,17 @@ const Factions = (() => {
   const isInt = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;
   const def = id => LIST[id] || null;
   const empty = () => ({ id: null, points: 0, rank: 0, order: null, sworn: null, renounced: 0, marcheurs: 0 });
-  // L'état du personnage, créé au besoin (une sauvegarde d'avant les factions n'en a pas).
   function of(ch) {
     if (!ch.faction || typeof ch.faction !== 'object') ch.faction = empty();
     return ch.faction;
   }
 
-  // ----- Rangs -----
   const MAX_POINTS = PER_RANK * (MAX_RANK - 1);
   const pointsFor = rank => PER_RANK * (Math.max(1, rank) - 1);
   const rankFor = points => Math.max(1, Math.min(MAX_RANK, 1 + Math.floor(Math.max(0, points) / PER_RANK)));
   const title = (id, rank) => (def(id) && rank >= 1 ? def(id).ranks[Math.min(MAX_RANK, rank) - 1] : null);
-  // Les titres de rang que le serment en cours justifie (rangs 1 à rang).
   const titles = f => (f && def(f.id) ? def(f.id).ranks.slice(0, f.rank) : []);
   const isSworn = ch => !!(ch.faction && def(ch.faction.id));
-  // Où en est le rang : points, seuil suivant, part accomplie.
   function progress(f) {
     if (!f || !def(f.id)) return null;
     const next = f.rank < MAX_RANK ? pointsFor(f.rank + 1) : null;
@@ -108,8 +93,6 @@ const Factions = (() => {
   }
   const orderDef = (id, order) => (def(id) ? def(id).orders.find(o => o.id === order) || null : null);
 
-  // Donne les titres des rangs atteints ; le titre affiché suit le rang s'il était déjà un titre
-  // de rang de cette faction.
   function grantTitles(ch, f, from) {
     const out = [];
     for (let r = from + 1; r <= f.rank; r++) {
@@ -121,7 +104,6 @@ const Factions = (() => {
     return out;
   }
 
-  // ----- Serment, points, ordre, reniement -----
 
   function canSwear(ch, id) {
     if (!def(id)) return { ok: false, reason: 'Faction inconnue.' };
@@ -130,8 +112,6 @@ const Factions = (() => {
     return { ok: true };
   }
 
-  // Le serment : la faction, le rang que les points gardés justifient (1 pour un premier serment),
-  // les titres de ce rang.
   function swear(ch, id) {
     const c = canSwear(ch, id);
     if (!c.ok) return [];
@@ -143,7 +123,6 @@ const Factions = (() => {
     return [{ type: 'serment', faction: id }].concat(grantTitles(ch, f, 0));
   }
 
-  // Points de faction (récompense de quête) : peuvent faire monter de plusieurs rangs.
   function addPoints(ch, n) {
     if (!isSworn(ch) || !(n > 0)) return [];
     const f = ch.faction, before = f.rank;
@@ -154,7 +133,6 @@ const Factions = (() => {
     return out;
   }
 
-  // L'ordre : au rang 3, un des trois de sa faction, une fois.
   function chooseOrder(ch, order) {
     if (!isSworn(ch)) return { ok: false, reason: 'Il faut d\'abord prêter serment.' };
     const f = ch.faction;
@@ -166,9 +144,6 @@ const Factions = (() => {
     return { ok: true, events: [{ type: 'ordre', faction: f.id, order: o.id }] };
   }
 
-  // Le reniement (effet d'une quête, docs/MONDE.md) : il coûte deux rangs de points, qui restent
-  // pour le prochain serment ; l'ordre et les titres de la faction quittée s'en vont, le compte
-  // des reniements et les quêtes déjà faites restent.
   function renounce(ch) {
     if (!isSworn(ch)) return [];
     const f = ch.faction, was = f.id, rank = f.rank;
@@ -181,7 +156,6 @@ const Factions = (() => {
     return [{ type: 'reniement', faction: was, rank, kept: rankFor(f.points) }];
   }
 
-  // ----- Francs-Marcheurs -----
 
   function tier(points) {
     const T = MARCHEURS.tiers;
@@ -198,11 +172,8 @@ const Factions = (() => {
     return [{ type: 'marcheurs', value: gained, total: f.marcheurs, tier: t.name, up: t.name !== before }];
   }
 
-  // ----- Quêtes : prérequis et effets -----
 
   const asList = v => (v == null ? [] : Array.isArray(v) ? v : [v]);
-  // requires.faction (un id ou une liste : il faut l'un de ces serments), requires.notFaction
-  // (serments exclus), requires.factionRank (rang minimum, dans le serment en cours).
   function requirementsMet(ch, r) {
     const f = ch.faction && def(ch.faction.id) ? ch.faction : null;
     const want = asList(r.faction), not = asList(r.notFaction);
@@ -212,8 +183,6 @@ const Factions = (() => {
     return true;
   }
 
-  // Les effets que portent les réponses des étapes de choix (js/quests.js) ; « later » est géré
-  // par les quêtes elles-mêmes.
   const EFFECTS = ['faction', 'renounce', 'later'];
   function canApply(ch, ef) {
     if (ef.type === 'faction') return canSwear(ch, ef.id);
@@ -226,7 +195,6 @@ const Factions = (() => {
     return [];
   }
 
-  // ----- Textes des événements, pour le journal et la discussion -----
 
   function describe(ev) {
     const d = def(ev.faction);
@@ -241,15 +209,11 @@ const Factions = (() => {
       default: return '';
     }
   }
-  // Discussion : « systeme » pour l'état du personnage, sauf les points, qui restent dans le journal.
   const chatType = ev => (ev.type === 'points' ? null : 'systeme');
 
-  // L'insigne porté dans le monde (js/render.js, js/render-gl.js) : la faction et le rang.
   const insigne = ch => (isSworn(ch) ? { id: ch.faction.id, rank: ch.faction.rank } : null);
 
-  // ----- Sauvegarde -----
 
-  // Le plus que les quêtes faites peuvent avoir donné : points de faction, confiance.
   function maxPoints(done) {
     let n = 0;
     for (const id of done || []) { const q = Quests.get(id); if (q && q.rewards && q.rewards.faction > 0) n += q.rewards.faction; }
@@ -261,9 +225,6 @@ const Factions = (() => {
     return n;
   }
 
-  // Valide l'état lu dans une sauvegarde (js/save.js) : faction connue, pas avant le niveau 20,
-  // rang égal à celui des points, points et confiance que les quêtes faites justifient, ordre de
-  // sa faction et seulement au rang 3. Rend { errors, data } : data est un état sûr.
   function validate(raw, ctx) {
     const errors = [];
     const f = empty();
@@ -275,7 +236,6 @@ const Factions = (() => {
     if (raw.points != null) { if (isInt(raw.points, 0, maxPoints(done))) points = raw.points; else errors.push('points de faction'); }
     if (raw.id == null) {
       if (raw.rank || raw.order != null || raw.sworn != null) errors.push('faction sans serment');
-      // Sans serment, des points ne restent qu'après un reniement.
       if (points && !f.renounced) { errors.push('points de faction sans serment'); points = 0; }
       f.points = points;
       return { errors, data: f };

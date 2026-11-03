@@ -1,15 +1,7 @@
-// Interface en fenêtres (à la manière des grands tactiques en ligne, dans la charte Veylan) :
-// barre de menus, bloc vital, raccourcis d'objets, mini-carte, et les fenêtres Quêtes, Succès,
-// Carnet, Journal, Options. L'Inventaire est dans js/hud-inventaire.js, les Caractéristiques dans
-// js/hud-caracteristiques.js, les Récompenses en attente dans js/hud-recompenses.js, la Carte du
-// monde dans js/hud-carte.js. Se charge après js/hud.js et complète la classe Hud ;
-// js/fenetres.js gère le déplacement et l'empilement.
 (() => {
 const I = Fenetres.ICON;
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-// Caractéristiques : couleur, élément, pictogramme. L'élément donne +1 % de dégâts par point.
-// Partagés par les fenêtres Inventaire et Caractéristiques (Hud.STAT, Hud.pic).
 const STAT = {
   vita: { court: 'Vit', couleur: 'var(--vy-braise-clair)', element: null, svg: '<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>' },
   sagesse: { court: 'Sag', couleur: 'var(--vy-eclat-clair)', element: null, svg: '<path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/>' },
@@ -18,7 +10,6 @@ const STAT = {
   chance: { court: 'Aqu', couleur: '#22b8cf', element: 'eau', svg: '<path d="M12 3c3 5 6 8 6 11a6 6 0 0 1-12 0c0-3 3-6 6-11z"/>' },
   agi: { court: 'Aer', couleur: '#dde4ec', element: 'air', svg: '<path d="M3 9h11a3 3 0 1 0-3-3M3 13h15a3 3 0 1 1-3 3M3 17h7"/>' },
 };
-// Les autres valeurs du personnage, au même trait ; la couleur dit la caractéristique qui les nourrit.
 const VAL = {
   pv: { couleur: 'var(--vy-braise-clair)', svg: '<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/><path d="M7.5 11.5h2.6l1.3-2.3 1.8 4 1.1-1.7h2.2"/>' },
   pa: { couleur: 'var(--vy-or-clair)', svg: '<path d="M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z"/><circle cx="12" cy="12" r="2.4"/>' },
@@ -36,8 +27,6 @@ const VAL = {
 };
 const pic = (k, size) => { const p = STAT[k] || VAL[k]; return p ? `<svg class="vy-pic" style="--c:${p.couleur}" viewBox="0 0 24 24" width="${size || 16}" height="${size || 16}" fill="none" stroke="${p.couleur}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p.svg}</svg>` : '<span class="vy-pic"></span>'; };
 
-// Les fenêtres et leur raccourci clavier. L'Inventaire réunit l'ancien Sac et l'ancienne fenêtre
-// Personnage : le bouton Personnage et la touche P l'ouvrent aussi (ALIAS).
 const MENUS = [
   ['carac', 'Caractéristiques', 'C', I.carac],
   ['sorts', 'Sorts', 'S', I.sorts],
@@ -56,11 +45,9 @@ const ALIAS = { perso: 'sac' };
 Object.assign(Hud.prototype, {
   initFenetres() {
     this.fen = new Fenetres(document.getElementById('fenetres'));
-    // Après la descente d'Ervane (js/scene.js, oublierIle), la vue d'ensemble de la mini-carte est rendue.
     window.addEventListener('veylan:ile-oubliee', () => { this.miniVue = null; });
     this.journal = { combat: [], evenements: [] };
     this.journalTab = 'evenements';
-    // Barre de menus : toujours visible, en exploration comme en combat.
     const bar = document.getElementById('menus');
     bar.innerHTML = MENUS.map(([id, label, key, icon]) => `<button class="vy-menu" data-win="${id}" aria-label="${label} (${key})" title="${label} (${key})">${icon}<kbd>${key}</kbd></button>`).join('');
     bar.addEventListener('click', evt => { const b = evt.target.closest('[data-win]'); if (b) this.toggleWin(b.dataset.win); });
@@ -73,7 +60,6 @@ Object.assign(Hud.prototype, {
       const m = MENUS.find(x => x[2].toLowerCase() === evt.key.toLowerCase());
       if (m && document.getElementById('title').classList.contains('hidden')) { evt.preventDefault(); this.toggleWin(m[0]); }
     }, true);
-    // Raccourcis d'objets (pains, potions) et bloc vital.
     document.getElementById('raccourcis').addEventListener('click', evt => {
       const b = evt.target.closest('[data-use]');
       if (b) { if (this.world.state === 'combat') this.toast('Pas pendant un combat.'); else this.world.useItem(b.dataset.use); }
@@ -93,14 +79,8 @@ Object.assign(Hud.prototype, {
     if (this.initNotifs) this.initNotifs();
   },
 
-  // Événements du DOM (CustomEvent sur window), pour les modules d'à côté (tutoriel, discussion) :
-  //  - 'veylan:windowOpen' { id : 'inventaire' | 'caracteristiques' | 'recompenses' }, à l'ouverture
-  //    (annoncé une fois par js/fenetres.js, qui prend spec.annonce quand le nom diffère de l'identifiant) ;
-  //  - 'veylan:itemEquipped' { id, slot } ;
-  //  - 'veylan:statsAllocated' { stat, points, cost } : points gagnés (négatifs s'ils sont retirés) ;
-  //  - 'veylan:chat' { type : 'systeme' | 'succes' | 'gain', text }.
   signal(nom, detail) {
-    try { window.dispatchEvent(new CustomEvent('veylan:' + nom, { detail })); } catch (e) { /* rien */ }
+    try { window.dispatchEvent(new CustomEvent('veylan:' + nom, { detail })); } catch (e) {   }
   },
   chat(type, text) { this.signal('chat', { type, text }); },
 
@@ -114,7 +94,6 @@ Object.assign(Hud.prototype, {
     this.syncMenus();
   },
 
-  // Une fenêtre « simple » à partir d'un rendu HTML et d'actions, pour les écrans d'avant.
   simpleWin(id, title, render, actions, opts) {
     const m = MENUS.find(x => x[0] === id) || [];
     this.fen.open(id, Object.assign({ title, icon: m[3], key: m[2], width: 460, render, actions: actions || {}, onClose: () => this.syncMenus() }, opts || {}));
@@ -129,15 +108,12 @@ Object.assign(Hud.prototype, {
     if (this.fen && this.fen.isOpen('journal')) this.fen.render('journal');
   },
 
-  // ----- Bloc vital : les gemmes (PV, PA, XP, PM) dans le style choisi, raccourcis -----
 
   refreshVital() {
     const ch = this.world.ch;
     if (!ch) return;
     const d = ch.derived();
     const v = document.getElementById('vital');
-    // Le bloc des gemmes (js/gemmes.js) : « Cœur et losanges » ou « Grappe », avec la pierre de
-    // l'XP sauf si l'éditeur de l'interface l'a ôtée (js/hud-interface.js).
     const style = this.styleVital(), avecXp = !this.ihud || this.ihud.xp !== false, cle = style + (avecXp ? '+xp' : '');
     if (v.dataset.style !== cle || !v.firstElementChild) {
       v.dataset.style = cle;
@@ -148,7 +124,6 @@ Object.assign(Hud.prototype, {
       hp: ch.hp, hpMax: d.hpMax, pa: d.pa, paMax: d.pa, pm: d.pm, pmMax: d.pm, xp,
       xpTexte: max ? 'max' : '', xpTitre: max ? `Niveau ${ch.level}, le plus haut` : `Niveau ${ch.level} : ${ch.xp} / ${Character.xpToNext(ch.level)} XP`,
     });
-    // Raccourcis : pains et potions possédés, six cases.
     const conso = Object.keys(ch.inventory).map(id => Items.get(id)).filter(x => x && x.kind === 'consumable').sort((a, b) => (a.heal || 0) - (b.heal || 0)).slice(0, 6);
     const cells = conso.map(x => `<button class="vy-case" data-rarete="${Items.rarity(x)}" data-use="${x.id}" title="${esc(x.name)} : utiliser" aria-label="Utiliser ${esc(x.name)}"><span class="vy-case__icone">${Hud.picto(x)}</span><span class="vy-case__nombre">${ch.count(x.id)}</span></button>`);
     while (cells.length < 6) cells.push('<span class="vy-case vy-case--vide" aria-hidden="true"></span>');
@@ -157,7 +132,6 @@ Object.assign(Hud.prototype, {
     if (r.dataset.html !== html) { r.dataset.html = html; r.innerHTML = html; }
   },
 
-  // ----- Mini-carte : la carte vue de dessus, en losange comme le jeu -----
 
   drawMinimap(force) {
     const cv = document.getElementById('minicarte-cv');
@@ -191,16 +165,12 @@ Object.assign(Hud.prototype, {
     for (const npc of w.npcs) dot(npc.x, npc.y, '#f2e2c9', 2.4);
     for (const g of w.groups) dot(g.x, g.y, '#f07a5c', 2.6);
     dot(Math.round(p.rx != null ? p.rx : p.x), Math.round(p.ry != null ? p.ry : p.y), '#00c2ff', 3.4);
-    // Les cartes voisines et la coordonnée [x, y] de la carte (js/hud-carte.js, js/atlas.js).
     if (this.drawVoisins) this.drawVoisins(c, W);
     const pos = !w.mapId.includes('#') && typeof Atlas === 'object' && Atlas.coordsOf(w.mapId);
     const label = document.getElementById('minicarte-nom');
     if (label) label.textContent = w.mapDef ? w.mapDef.name + (pos ? ` [${pos[0]},${pos[1]}]` : '') : '';
   },
 
-  // La mini-carte d'un plateau (l'île d'Ervane) : la vue d'ensemble peinte (IlePeinture.vueEnsemble,
-  // une fois par plateau), tournée comme la caméra (le nord-ouest en haut : un point (u, v) tombe en
-  // (u - v, u + v)), centrée sur le Veilleur, avec les relais, portes, PNJ et groupes de la sous-zone.
   drawMinimapPlateau(cv, force) {
     const w = this.world, P = w.plateau, p = w.player;
     const sig = ['plateau', w.mapId, Math.round(p.x * 4), Math.round(p.y * 4), w.groups.length].join('|');
@@ -211,14 +181,11 @@ Object.assign(Hud.prototype, {
     if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
     const c = cv.getContext('2d');
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // Le vide (le ravin de la Source de Braise, l'Échancrure, le large) dans le gris nuage de la carte
-    // peinte, pas en noir (revue finale).
     c.fillStyle = '#9ba6ba'; c.fillRect(0, 0, W, H);
     if (!this.miniVue || this.miniVue.id !== P.id) this.miniVue = { id: P.id, toile: IlePeinture.vueEnsemble(P.terrain, 2) };
-    const s = W / 56;   // pixels par u : 56 u de large dans la fenêtre
+    const s = W / 56;
     const iso = (u, v) => ({ x: W / 2 + ((u - p.x) - (v - p.y)) * s / 2, y: H / 2 + ((u - p.x) + (v - p.y)) * s / 4 });
     c.save();
-    // La vue d'ensemble (2 px par u) posée par la transformation isométrique.
     const o = iso(0, 0);
     c.transform(s / 4, s / 8, -s / 4, s / 8, o.x, o.y);
     c.imageSmoothingEnabled = true;
@@ -236,7 +203,6 @@ Object.assign(Hud.prototype, {
     if (label) label.textContent = def.name ? def.name + (pos ? ` [${pos[0]},${pos[1]}]` : '') : '';
   },
 
-  // ----- Journal : combat et événements -----
 
   openJournal() {
     const actions = { jtab: d => { this.journalTab = d.tab; this.fen.render('journal'); } };
@@ -247,10 +213,7 @@ Object.assign(Hud.prototype, {
     }, actions, { width: 380 });
   },
 
-  // ----- Thèmes de l'interface -----
 
-  // Le thème Duality (css/theme-duality.css) est celui par défaut ; qui gardait la Nuit d'Orsane
-  // d'origine (rangée à chaque démarrage) passe une fois au thème Duality, puis garde son choix.
   loadTheme() {
     try {
       let t = localStorage.getItem('veylan.theme');
@@ -260,20 +223,15 @@ Object.assign(Hud.prototype, {
   },
   applyTheme(t) {
     document.getElementById('app').dataset.uiTheme = t;
-    // Le thème Duality lit Poppins, Rajdhani et JetBrains Mono : on les fait venir tout de suite,
-    // pour qu'aucune ne change la taille d'un élément en arrivant (en combat, la caméra cadre
-    // l'aire d'après la barre et la frise).
     if (t === 'duality' && document.fonts && document.fonts.load) {
       for (const f of ['400 12px Poppins', '500 12px Poppins', '600 12px Poppins', '700 12px Poppins', '600 12px Rajdhani', '700 12px Rajdhani', '500 12px "JetBrains Mono"', '700 12px "JetBrains Mono"']) document.fonts.load(f).catch(() => {});
     }
-    try { localStorage.setItem('veylan.theme', t); } catch (e) { /* rien */ }
+    try { localStorage.setItem('veylan.theme', t); } catch (e) {   }
   },
 
-  // Le style en verre (css/verre.css) : allumé par défaut, ?hud=ancien rend les cadres de métal.
-  // L'opacité des fonds se règle dans les Options, de 40 à 100 %, gardée sur l'appareil.
   loadOpacite() {
     let v = NaN;
-    try { v = parseInt(localStorage.getItem('veylan.opacite'), 10); } catch (e) { /* rien */ }
+    try { v = parseInt(localStorage.getItem('veylan.opacite'), 10); } catch (e) {   }
     return Number.isFinite(v) ? Math.max(40, Math.min(100, v)) : Hud.OPACITE;
   },
   appliquerVerre(opacite, garder) {
@@ -282,31 +240,26 @@ Object.assign(Hud.prototype, {
     const v = Math.max(40, Math.min(100, Math.round(opacite)));
     app.style.setProperty('--v-alpha', String(v / 100));
     this.opacite = v;
-    if (garder) { try { localStorage.setItem('veylan.opacite', String(v)); } catch (e) { /* rien */ } }
+    if (garder) { try { localStorage.setItem('veylan.opacite', String(v)); } catch (e) {   } }
     return v;
   },
 
-  // La taille de l'interface (Options, de 80 à 130 %, comme l'échelle de l'interface de Dofus) :
-  // --ui-z sur #app (css/verre.css, section 11). La languette et le panneau changent de largeur :
-  // un « resize » rend ses marges à la caméra et ses mesures au panneau.
   loadTaille() {
     let v = NaN;
-    try { v = parseInt(localStorage.getItem('veylan.taille'), 10); } catch (e) { /* rien */ }
+    try { v = parseInt(localStorage.getItem('veylan.taille'), 10); } catch (e) {   }
     return Number.isFinite(v) ? Math.max(80, Math.min(130, v)) : 100;
   },
-  // Le style du bloc vital et des gemmes de la barre de combat (Options, « Bloc vital ») :
-  // « Cœur et losanges » par défaut, ou « Grappe » (js/gemmes.js).
   styleVital() {
     if (!this.vital) {
       let v = null;
-      try { v = localStorage.getItem('veylan.vital'); } catch (e) { /* rien */ }
+      try { v = localStorage.getItem('veylan.vital'); } catch (e) {   }
       this.vital = Gemmes.styleSur(v);
     }
     return this.vital;
   },
   choisirVital(style) {
     this.vital = Gemmes.styleSur(style);
-    try { localStorage.setItem('veylan.vital', this.vital); } catch (e) { /* rien */ }
+    try { localStorage.setItem('veylan.vital', this.vital); } catch (e) {   }
     this.refreshVital();
     if (this.jeu) this.jeu.majStyleVital();
     return this.vital;
@@ -317,8 +270,8 @@ Object.assign(Hud.prototype, {
     if (v === 100) app.style.removeProperty('--ui-z'); else app.style.setProperty('--ui-z', String(v / 100));
     const change = this.taille != null && this.taille !== v;
     this.taille = v;
-    if (garder) { try { localStorage.setItem('veylan.taille', String(v)); } catch (e) { /* rien */ } }
-    if (change) { try { window.dispatchEvent(new Event('resize')); } catch (e) { /* rien */ } }
+    if (garder) { try { localStorage.setItem('veylan.taille', String(v)); } catch (e) {   } }
+    if (change) { try { window.dispatchEvent(new Event('resize')); } catch (e) {   } }
     return v;
   },
 });

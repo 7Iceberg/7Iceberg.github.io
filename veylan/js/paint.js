@@ -1,20 +1,11 @@
-// Peinture procédurale pour le rendu WebGL (js/render-gl.js) : tout ce qui est « peint » une
-// fois puis envoyé au GPU comme texture. Ciel, falaises de l'île, sols, décors, corps des
-// personnages et des monstres, lueurs. Rien n'est chargé depuis un fichier : le jeu reste
-// autonome, et une image d'artiste pourra remplacer chaque peintre sans toucher au moteur.
-//
-// Direction : la planche de la charte 1.0 (crépuscule bleu profond, or ancien, cristal bleu,
-// pierre fissurée veinée d'or), par région (docs/DIRECTION-ARTISTIQUE.md).
 const Paint = (() => {
-  const OS = 2;   // suréchantillonnage des textures de décor et de personnage
+  const OS = 2;
 
-  // ----- Bruit déterministe -----
   function hash(x, y, seed) {
     let h = (x * 374761393 + y * 668265263 + (seed || 0) * 974634211) ^ 0x5bd1e995;
     h = Math.imul(h ^ (h >>> 13), 1274126177);
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   }
-  // Bruit de valeur lissé ; le treillis boucle sur N pour une texture sans couture.
   function vnoise(x, y, N, seed) {
     const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi;
     const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
@@ -28,7 +19,6 @@ const Paint = (() => {
     return v / s;
   }
 
-  // ----- Couleurs -----
   const rgb = hex => { const v = parseInt(hex.slice(1), 16); return [(v >> 16) & 255, (v >> 8) & 255, v & 255]; };
   const hex = (r, g, b) => '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
   const mix = (a, b, t) => { const [r1, g1, b1] = rgb(a), [r2, g2, b2] = rgb(b); return hex(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t); };
@@ -37,7 +27,6 @@ const Paint = (() => {
   const dark = (h, t) => mix(h, '#000000', t);
   const toInt = h => parseInt(h.slice(1), 16);
 
-  // ----- Palettes par région : le crépuscule de la planche, décliné -----
   const PALETTES = {
     orsane: {
       skyTop: '#070d1b', skyMid: '#1a2a52', skyHorizon: '#7a4f6b', skyWarm: '#d9875a', skyBottom: '#0b1222',
@@ -109,7 +98,6 @@ const Paint = (() => {
 
   function canvas(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; }
 
-  // ----- Tuiles de bruit, en cache : motif « tacheté » et motif « coups de pinceau » -----
   const tiles = {};
   function noiseTile(kind) {
     if (tiles[kind]) return tiles[kind];
@@ -117,7 +105,7 @@ const Paint = (() => {
     const f = kind === 'strokes' ? 6 : 5;
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
       let v;
-      if (kind === 'strokes') v = fbm(x / N * f * 3, y / N * f, 3, f, 41);     // étiré en largeur : des traînées
+      if (kind === 'strokes') v = fbm(x / N * f * 3, y / N * f, 3, f, 41);
       else if (kind === 'fine') v = fbm(x / N * 14, y / N * 14, 2, 14, 7);
       else v = fbm(x / N * f, y / N * f, 4, f, 3);
       const g = Math.round(64 + v * 128);
@@ -131,20 +119,17 @@ const Paint = (() => {
 
   function diamondPath(c, x, y, w, h) { c.beginPath(); c.moveTo(x, y - h / 2); c.lineTo(x + w / 2, y); c.lineTo(x, y + h / 2); c.lineTo(x - w / 2, y); c.closePath(); }
 
-  // ----- Le ciel : dégradé du crépuscule, étoiles, nébuleuses, îles lointaines, rayon de cristal -----
   function sky(P, W, H) {
     const cv = canvas(W, H), c = cv.getContext('2d');
     const g = c.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, P.skyTop); g.addColorStop(0.45, P.skyMid); g.addColorStop(0.64, mix(P.skyMid, P.skyHorizon, 0.7)); g.addColorStop(0.73, mix(P.skyHorizon, P.skyWarm, 0.45)); g.addColorStop(0.8, mix(P.skyHorizon, P.skyBottom, 0.5)); g.addColorStop(1, P.skyBottom);
     c.fillStyle = g; c.fillRect(0, 0, W, H);
-    // Nébuleuses
     for (let i = 0; i < 4; i++) {
       const x = W * (0.15 + 0.7 * hash(i, 3, 5)), y = H * (0.1 + 0.4 * hash(i, 9, 5)), r = W * (0.18 + 0.2 * hash(i, 2, 5));
       const n = c.createRadialGradient(x, y, 0, x, y, r);
       n.addColorStop(0, rgba(P.nebula[i % 2], 0.22)); n.addColorStop(0.5, rgba(P.nebula[i % 2], 0.08)); n.addColorStop(1, rgba(P.nebula[i % 2], 0));
       c.fillStyle = n; c.fillRect(x - r, y - r, r * 2, r * 2);
     }
-    // Rayon de cristal vertical, comme sur la planche
     const bx = W * 0.64;
     const beam = c.createLinearGradient(bx - 28, 0, bx + 28, 0);
     beam.addColorStop(0, rgba(P.crystal, 0)); beam.addColorStop(0.5, rgba(P.crystalLight, 0.22)); beam.addColorStop(1, rgba(P.crystal, 0));
@@ -152,17 +137,14 @@ const Paint = (() => {
     const core = c.createLinearGradient(bx - 5, 0, bx + 5, 0);
     core.addColorStop(0, rgba(P.crystalLight, 0)); core.addColorStop(0.5, rgba('#ffffff', 0.35)); core.addColorStop(1, rgba(P.crystalLight, 0));
     c.fillStyle = core; c.fillRect(bx - 5, 0, 10, H * 0.7);
-    // Étoiles
     for (let i = 0; i < 260; i++) {
       const x = hash(i, 1, 9) * W, y = hash(i, 2, 9) * H * 0.62, a = 0.25 + 0.7 * hash(i, 3, 9), r = 0.5 + hash(i, 4, 9) * 1.3;
       c.fillStyle = `rgba(215,230,255,${a})`; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
     }
-    // Lune voilée (halo chaud) près de l'horizon
     const mx = W * 0.22, my = H * 0.58;
     const moon = c.createRadialGradient(mx, my, 4, mx, my, 120);
     moon.addColorStop(0, rgba(P.skyWarm, 0.5)); moon.addColorStop(0.3, rgba(P.skyWarm, 0.16)); moon.addColorStop(1, rgba(P.skyWarm, 0));
     c.fillStyle = moon; c.fillRect(mx - 120, my - 120, 240, 240);
-    // Îles lointaines qui flottent
     for (let i = 0; i < 7; i++) {
       const x = W * (0.05 + 0.9 * hash(i, 5, 11)), y = H * (0.2 + 0.42 * hash(i, 6, 11)), s = 18 + 50 * hash(i, 7, 11);
       const far = 0.5 + 0.5 * hash(i, 8, 11);
@@ -172,18 +154,15 @@ const Paint = (() => {
       c.fillStyle = top; c.beginPath(); c.ellipse(x, y, s, s * 0.22, 0, 0, Math.PI * 2); c.fill();
       if (hash(i, 9, 11) < 0.5) { c.fillStyle = rgba(P.lantern, 0.8); c.fillRect(x + s * 0.2, y - 3, 2, 3); }
     }
-    // Brume de l'horizon
     const mist = c.createLinearGradient(0, H * 0.58, 0, H * 0.88);
     mist.addColorStop(0, rgba(P.mist, 0)); mist.addColorStop(0.5, rgba(P.mist, 0.12)); mist.addColorStop(1, rgba(P.mist, 0));
     c.fillStyle = mist; c.fillRect(0, H * 0.58, W, H * 0.3);
-    // Sous l'île, le vide s'assombrit
     const deep = c.createLinearGradient(0, H * 0.78, 0, H);
     deep.addColorStop(0, rgba(P.skyBottom, 0)); deep.addColorStop(1, rgba(P.skyBottom, 0.85));
     c.fillStyle = deep; c.fillRect(0, H * 0.78, W, H * 0.22);
     return cv;
   }
 
-  // ----- Le plateau : falaises, sols, dallages veinés d'or, eau, failles -----
   function cliffFace(c, P, A, B, Hc, side, seed) {
     const n = 14;
     const pts = [];
@@ -202,7 +181,6 @@ const Paint = (() => {
     c.globalCompositeOperation = 'overlay'; c.globalAlpha = 0.6; c.fillStyle = pattern(c, 'mottle');
     c.fillRect(Math.min(A.x, B.x) - 20, Math.min(A.y, B.y) - 10, Math.abs(B.x - A.x) + 40, Hc * 1.3);
     c.globalCompositeOperation = 'source-over';
-    // Strates parallèles à la lèvre
     for (let k = 1; k <= 5; k++) {
       const d = Hc * (0.1 + k * 0.14);
       c.globalAlpha = 0.5 - k * 0.06; c.strokeStyle = k % 2 ? P.cliffDark : rgba(P.cliffLight, 0.5); c.lineWidth = k % 2 ? 2.2 : 1;
@@ -210,20 +188,17 @@ const Paint = (() => {
       for (let i = 0; i <= n; i++) c.lineTo(pts[i].x, pts[i].y + d + Math.sin(i * 1.7 + k) * 2.5);
       c.stroke();
     }
-    // Crevasses
     c.globalAlpha = 0.65; c.strokeStyle = P.cliffDark; c.lineWidth = 2;
     for (let k = 0; k < 7; k++) {
       const t = hash(k, 1, seed), i = Math.floor(t * n), x = pts[i].x, y = pts[i].y;
       c.beginPath(); c.moveTo(x, y + 4); c.lineTo(x + 3, y + 18 + hash(k, 2, seed) * 20); c.lineTo(x - 2, y + 38 + hash(k, 3, seed) * 25); c.stroke();
     }
-    // Racines qui pendent
     c.strokeStyle = P.trunkDark; c.lineWidth = 1.6; c.globalAlpha = 0.85;
     for (let k = 0; k < 5; k++) {
       const t = hash(k, 4, seed), i = Math.floor(t * n), x = pts[i].x, y = pts[i].y;
       c.beginPath(); c.moveTo(x, y); c.bezierCurveTo(x + 6, y + 12, x - 8, y + 20, x + 2, y + 30 + hash(k, 5, seed) * 18); c.stroke();
       c.beginPath(); c.moveTo(x + 1, y + 10); c.lineTo(x + 7, y + 22); c.stroke();
     }
-    // Cristaux enchâssés
     for (let k = 0; k < 2; k++) {
       const t = 0.2 + 0.6 * hash(k, 6, seed), i = Math.floor(t * n), x = pts[i].x, y = pts[i].y + 14 + hash(k, 7, seed) * 30;
       const gl = c.createRadialGradient(x, y, 1, x, y, 22);
@@ -232,10 +207,8 @@ const Paint = (() => {
       shard(c, x, y, 7, P, hash(k, 8, seed));
     }
     c.restore();
-    // Lèvre de la falaise
     c.globalAlpha = 1; c.strokeStyle = rgba(P.cliffLight, 0.7); c.lineWidth = 1.5;
     c.beginPath(); c.moveTo(A.x, A.y); c.lineTo(B.x, B.y); c.stroke();
-    // Le bas se perd dans le vide
     c.save(); c.globalCompositeOperation = 'destination-out';
     const fade = c.createLinearGradient(0, Math.max(A.y, B.y) + Hc * 0.45, 0, Math.max(A.y, B.y) + Hc * 1.15);
     fade.addColorStop(0, 'rgba(0,0,0,0)'); fade.addColorStop(1, 'rgba(0,0,0,1)');
@@ -243,7 +216,6 @@ const Paint = (() => {
     c.restore();
   }
 
-  // Un éclat de cristal : losange étiré, face claire et face sombre, arête blanche.
   function shard(c, x, y, s, P, n) {
     const a = (n - 0.5) * 0.9, h = s * (1.6 + n), w = s * 0.55;
     c.save(); c.translate(x, y); c.rotate(a);
@@ -267,16 +239,13 @@ const Paint = (() => {
     const tileAt = (x, y) => Grid.inBounds(map, x, y) ? map.cells[y][x] : -1;
     const kindAt = (x, y) => Grid.inBounds(map, x, y) ? map.kind[y][x] : '';
     const land = (x, y) => { const v = tileAt(x, y); return v !== -1 && v !== Grid.WATER && v !== Grid.HOLE; };
-    // Distance au relais ou à une porte : les dallages de ville sont veinés d'or
     const marks = [];
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (kindAt(x, y) === 'Z' || kindAt(x, y) === 'D') marks.push({ x, y });
     const cityness = (x, y) => marks.reduce((m, k) => Math.max(m, 1 - Math.max(0, Grid.dist({ x, y }, k) - 1) / 4), 0);
 
-    // Falaises
     cliffFace(c, P, l, b, cliffH, 'gauche', 3);
     cliffFace(c, P, b, r, cliffH, 'droite', 5);
 
-    // Sols de base
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const v = tileAt(x, y), k = kindAt(x, y), p = S(x, y);
       diamondPath(c, p.x, p.y, TW + 0.8, TH + 0.4);
@@ -286,7 +255,6 @@ const Paint = (() => {
       else { const n = fbm(x * 0.9, y * 0.9, 2, 64, 1); c.fillStyle = mix(P.floorA, P.floorB, n); }
       c.fill();
     }
-    // Grain continu sur toutes les terres
     c.save();
     c.beginPath(); c.moveTo(t.x, t.y); c.lineTo(r.x, r.y); c.lineTo(b.x, b.y); c.lineTo(l.x, l.y); c.closePath(); c.clip();
     c.globalCompositeOperation = 'overlay'; c.globalAlpha = 0.55; c.fillStyle = pattern(c, 'mottle'); c.fillRect(l.x, t.y, r.x - l.x, b.y - t.y);
@@ -294,7 +262,6 @@ const Paint = (() => {
     c.globalCompositeOperation = 'overlay'; c.globalAlpha = 0.25; c.fillStyle = pattern(c, 'fine'); c.fillRect(l.x, t.y, r.x - l.x, b.y - t.y);
     c.restore();
 
-    // Détails par case
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const v = tileAt(x, y), k = kindAt(x, y), p = S(x, y), n = hash(x, y, 2), n2 = hash(y, x, 4);
       if (v === Grid.WATER) {
@@ -303,7 +270,6 @@ const Paint = (() => {
         if (P.lava) { g.addColorStop(0, P.water); g.addColorStop(1, P.waterDeep); }
         else { g.addColorStop(0, mix(P.water, P.waterDeep, 0.3)); g.addColorStop(1, P.waterDeep); }
         c.fillStyle = g; c.fill();
-        // Bord sombre contre la terre : la profondeur
         c.save(); c.clip();
         c.lineWidth = 6; c.strokeStyle = P.lava ? rgba(P.waterLight, 0.35) : 'rgba(0,0,0,0.35)';
         const edges = [[x - 1, y, [p.x - TW / 2, p.y, p.x, p.y - TH / 2]], [x, y - 1, [p.x, p.y - TH / 2, p.x + TW / 2, p.y]], [x + 1, y, [p.x + TW / 2, p.y, p.x, p.y + TH / 2]], [x, y + 1, [p.x, p.y + TH / 2, p.x - TW / 2, p.y]]];
@@ -322,7 +288,6 @@ const Paint = (() => {
         g.addColorStop(0, P.hole); g.addColorStop(1, mix(P.hole, P.holeRim, 0.35));
         c.fillStyle = g; c.fill();
         c.save(); c.clip();
-        // Parois du fond : strates sur les deux arêtes arrière
         for (let i = 1; i <= 3; i++) {
           c.strokeStyle = rgba(P.holeRim, 0.55 - i * 0.14); c.lineWidth = 1.5;
           c.beginPath(); c.moveTo(p.x - TW / 2 + i * 7, p.y - i * 1.2); c.lineTo(p.x, p.y - TH / 2 + i * 3.5); c.lineTo(p.x + TW / 2 - i * 7, p.y - i * 1.2); c.stroke();
@@ -330,7 +295,6 @@ const Paint = (() => {
         if (n < 0.3) { const gl = c.createRadialGradient(p.x, p.y + 3, 0, p.x, p.y + 3, 10); gl.addColorStop(0, rgba(P.crystal, 0.5)); gl.addColorStop(1, rgba(P.crystal, 0)); c.fillStyle = gl; c.fillRect(p.x - 10, p.y - 7, 20, 20); }
         c.restore();
       } else if (k === ',') {
-        // Dalle biseautée : lumière sur les arêtes nord, ombre sur les arêtes sud, joints sombres
         c.save(); diamondPath(c, p.x, p.y, TW - 1.5, TH - 0.75); c.clip();
         const g = c.createLinearGradient(p.x - TW / 2, p.y - TH / 2, p.x + TW / 2, p.y + TH / 2);
         g.addColorStop(0, mix(P.path, P.pathLight, 0.5 * n2)); g.addColorStop(1, mix(P.path, P.pathDark, 0.35 + 0.3 * n));
@@ -339,7 +303,6 @@ const Paint = (() => {
         c.beginPath(); c.moveTo(p.x - TW / 2 + 2, p.y); c.lineTo(p.x, p.y - TH / 2 + 1); c.lineTo(p.x + TW / 2 - 2, p.y); c.stroke();
         c.strokeStyle = rgba(P.pathDark, 0.6);
         c.beginPath(); c.moveTo(p.x - TW / 2 + 2, p.y); c.lineTo(p.x, p.y + TH / 2 - 1); c.lineTo(p.x + TW / 2 - 2, p.y); c.stroke();
-        // Fissures
         const cracks = 1 + Math.floor(n * 2.2);
         c.strokeStyle = rgba(P.pathDark, 0.75); c.lineWidth = 1;
         for (let i = 0; i < cracks; i++) {
@@ -348,7 +311,6 @@ const Paint = (() => {
           let cx = sx, cy = sy;
           for (let j = 0; j < 3; j++) { cx += (hash(x, y, 60 + i * 3 + j) - 0.5) * 16; cy += (hash(y, x, 60 + i * 3 + j) - 0.4) * 7; c.lineTo(cx, cy); }
           c.stroke();
-          // Veine d'or dans la fissure, en ville surtout
           const gold = cityness(x, y) > 0.4 ? n2 < 0.55 : n2 < 0.08;
           if (gold && i === 0) {
             c.save(); c.globalCompositeOperation = 'lighter';
@@ -360,7 +322,6 @@ const Paint = (() => {
         c.restore();
         c.strokeStyle = rgba(P.pathDark, 0.5); c.lineWidth = 1.2; diamondPath(c, p.x, p.y, TW - 1, TH - 0.5); c.stroke();
       } else {
-        // Herbe : touffes et fleurs clairsemées, plus denses loin des chemins
         if (n < 0.34) {
           c.lineWidth = 1.3; c.lineCap = 'round';
           for (let i = 0; i < 3; i++) {
@@ -370,7 +331,6 @@ const Paint = (() => {
           }
         }
         if (n2 < 0.06 && !P.dead) { c.fillStyle = P.flower; for (let i = 0; i < 2; i++) { c.beginPath(); c.arc(p.x + (hash(x, y, 90 + i) - 0.5) * 30, p.y + (hash(y, x, 90 + i) - 0.5) * 12, 1.6, 0, Math.PI * 2); c.fill(); } }
-        // Ombre douce des cases hautes voisines (rochers, arbres) sur le sol
         if (tileAt(x - 1, y) === Grid.ROCK || tileAt(x, y - 1) === Grid.ROCK || tileAt(x - 1, y) === Grid.TREE || tileAt(x, y - 1) === Grid.TREE) {
           c.save(); diamondPath(c, p.x, p.y, TW, TH); c.clip();
           const sh = c.createLinearGradient(p.x, p.y - TH / 2, p.x, p.y + TH / 2);
@@ -379,7 +339,6 @@ const Paint = (() => {
           c.restore();
         }
       }
-      // Sorties : chevrons d'or
       if ('nsew'.includes(k) && k !== '') {
         const d = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] }[k];
         const dir = { x: (d[0] - d[1]) * 0.5, y: (d[0] + d[1]) * 0.25 };
@@ -390,7 +349,6 @@ const Paint = (() => {
         }
       }
     }
-    // Assombrissement du bord du plateau et lèvre claire
     c.save();
     c.beginPath(); c.moveTo(t.x, t.y); c.lineTo(r.x, r.y); c.lineTo(b.x, b.y); c.lineTo(l.x, l.y); c.closePath(); c.clip();
     c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = 26; c.globalAlpha = 0.5;
@@ -401,7 +359,6 @@ const Paint = (() => {
     return cv;
   }
 
-  // ----- Décors : chaque peintre rend { canvas, ax, ay } ; (ax, ay) est le point au sol -----
   function sprite(w, h, ax, ay, fn) {
     const cv = canvas(w * OS, h * OS), c = cv.getContext('2d');
     c.scale(OS, OS); c.lineJoin = 'round'; c.lineCap = 'round';
@@ -412,20 +369,16 @@ const Paint = (() => {
   function rock(P, n, crystal) {
     return sprite(80, 72, 40, 62, c => {
       const w = 22 + n * 7, h = 10 + n * 4, z = 14 + n * 12, x = 40, y = 62;
-      // Facettes : gauche, droite, dessus, avec un éclairage venu d'en haut à gauche
       const gL = c.createLinearGradient(x - w, y - z, x, y + h); gL.addColorStop(0, P.rock); gL.addColorStop(1, P.rockDark);
       c.fillStyle = gL; c.beginPath(); c.moveTo(x - w, y - 1); c.lineTo(x - w * 0.9, y - z); c.lineTo(x + 2, y + h - z - 4); c.lineTo(x, y + h); c.closePath(); c.fill();
       const gR = c.createLinearGradient(x, y - z, x + w, y + h); gR.addColorStop(0, dark(P.rock, 0.35)); gR.addColorStop(1, dark(P.rockDark, 0.4));
       c.fillStyle = gR; c.beginPath(); c.moveTo(x + w, y - 2); c.lineTo(x + w * 0.85, y - z - 2); c.lineTo(x + 2, y + h - z - 4); c.lineTo(x, y + h); c.closePath(); c.fill();
       const gT = c.createLinearGradient(x - w, y - h - z, x + w * 0.5, y - z + 4); gT.addColorStop(0, P.rockLight); gT.addColorStop(1, P.rock);
       c.fillStyle = gT; c.beginPath(); c.moveTo(x - 4, y - h - z - 3); c.lineTo(x + w * 0.85, y - z - 2); c.lineTo(x + 2, y + h - z - 4); c.lineTo(x - w * 0.9, y - z); c.closePath(); c.fill();
-      // Petite facette cassée
       c.fillStyle = light(P.rockLight, 0.3); c.beginPath(); c.moveTo(x - 4, y - h - z - 3); c.lineTo(x + 6, y - z - 7); c.lineTo(x - 8, y - z - 4); c.closePath(); c.fill();
-      // Contour et arêtes
       c.strokeStyle = 'rgba(0,0,0,0.55)'; c.lineWidth = 1.4;
       c.beginPath(); c.moveTo(x - w, y - 1); c.lineTo(x - w * 0.9, y - z); c.lineTo(x - 4, y - h - z - 3); c.lineTo(x + w * 0.85, y - z - 2); c.lineTo(x + w, y - 2); c.lineTo(x, y + h); c.closePath(); c.stroke();
       c.strokeStyle = 'rgba(0,0,0,0.3)'; c.beginPath(); c.moveTo(x + 2, y + h - z - 4); c.lineTo(x, y + h); c.stroke();
-      // Lumière de bord en haut à gauche, fissure, mousse et veine
       c.strokeStyle = rgba(P.rockLight, 0.9); c.lineWidth = 1; c.beginPath(); c.moveTo(x - w * 0.9, y - z); c.lineTo(x - 4, y - h - z - 3); c.stroke();
       c.strokeStyle = rgba(P.rockDark, 0.8); c.lineWidth = 1; c.beginPath(); c.moveTo(x - 10, y - z - 2); c.lineTo(x - 6, y - z + 6); c.lineTo(x - 9, y - z + 12); c.stroke();
       if (n > 0.55) { c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = rgba(P.vein, 0.9); c.lineWidth = 1; c.beginPath(); c.moveTo(x + 6, y - z - 4); c.lineTo(x + 9, y - z + 4); c.lineTo(x + 14, y - z + 8); c.stroke(); c.restore(); }
@@ -437,29 +390,24 @@ const Paint = (() => {
   function tree(P, n) {
     return sprite(96, 110, 48, 102, c => {
       const x = 48, y = 102, hgt = 46 + n * 16;
-      // Tronc évasé, écorce
       const gT = c.createLinearGradient(x - 6, 0, x + 6, 0); gT.addColorStop(0, light(P.trunk, 0.15)); gT.addColorStop(0.55, P.trunk); gT.addColorStop(1, P.trunkDark);
       c.fillStyle = gT; c.beginPath(); c.moveTo(x - 4, y - hgt + 10); c.lineTo(x + 4, y - hgt + 10); c.lineTo(x + 7, y - 2); c.lineTo(x + 12, y + 1); c.lineTo(x - 12, y + 1); c.lineTo(x - 7, y - 2); c.closePath(); c.fill();
       c.strokeStyle = rgba(P.trunkDark, 0.8); c.lineWidth = 1; for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(x - 2 + i * 2, y - 6 - i * 10); c.lineTo(x - 1 + i * 2, y - 16 - i * 10); c.stroke(); }
       if (P.dead) {
-        // Arbre mort : branches nues, quelques feuilles sombres
         c.strokeStyle = P.trunk; c.lineWidth = 3;
         for (const [dx, dy, ex, ey] of [[0, -hgt + 12, -18, -hgt - 6], [0, -hgt + 16, 16, -hgt - 2], [0, -hgt + 24, -10, -hgt + 2], [0, -hgt + 20, 12, -hgt + 14]]) { c.beginPath(); c.moveTo(x + dx, y + dy); c.quadraticCurveTo(x + (dx + ex) / 2 + 4, y + (dy + ey) / 2, x + ex, y + ey); c.stroke(); }
         c.fillStyle = rgba(P.crown, 0.9); for (let i = 0; i < 6; i++) { c.beginPath(); c.ellipse(x + (hash(i, 1, 3) - 0.5) * 40, y - hgt + 4 + (hash(i, 2, 3) - 0.5) * 20, 7, 4, hash(i, 3, 3), 0, Math.PI * 2); c.fill(); }
         return;
       }
-      // Feuillage en trois étages : du sombre en bas au clair en haut, éclairé en haut à gauche
       const layers = [[0, -hgt + 2, 30, 20, 0.0], [-13, -hgt + 12, 20, 14, 0.15], [14, -hgt + 10, 19, 13, 0.1], [-4, -hgt - 12, 22, 15, 0.3], [9, -hgt - 6, 16, 11, 0.4]];
       for (const [dx, dy, rx, ry, lt] of layers) {
         const cx = x + dx, cy = y + dy;
         const g = c.createRadialGradient(cx - rx * 0.4, cy - ry * 0.5, 1, cx, cy, rx * 1.1);
         g.addColorStop(0, mix(P.crownLight, '#ffffff', lt * 0.4)); g.addColorStop(0.45, mix(P.crown, P.crownLight, lt)); g.addColorStop(1, P.crownDark);
         c.fillStyle = g; c.beginPath(); c.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); c.fill();
-        // Touches de feuilles
         c.fillStyle = rgba(P.crownLight, 0.55);
         for (let i = 0; i < 5; i++) { const a = hash(i, dx, 7) * Math.PI * 2, rr = hash(i, dy, 7) * 0.8; c.beginPath(); c.ellipse(cx + Math.cos(a) * rx * rr - rx * 0.2, cy + Math.sin(a) * ry * rr - ry * 0.25, 3.2, 1.8, a, 0, Math.PI * 2); c.fill(); }
       }
-      // Liseré de lumière et contour doux
       c.strokeStyle = rgba(P.crownLight, 0.5); c.lineWidth = 1.2; c.beginPath(); c.ellipse(x - 4, y - hgt - 12, 22, 15, 0, Math.PI * 1.05, Math.PI * 1.8); c.stroke();
       c.strokeStyle = rgba(P.crownDark, 0.7); c.lineWidth = 1; c.beginPath(); c.ellipse(x, y - hgt + 2, 30, 20, 0, 0.1, Math.PI * 0.9); c.stroke();
     });
@@ -472,7 +420,6 @@ const Paint = (() => {
       c.strokeStyle = '#555a6c'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(x - 1, y - 2); c.lineTo(x - 1, y - 36); c.stroke();
       c.fillStyle = '#2a2d3a'; c.beginPath(); c.ellipse(x, y, 6, 2.5, 0, 0, Math.PI * 2); c.fill();
       c.strokeStyle = '#2a2d3a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(x, y - 38); c.quadraticCurveTo(x + 10, y - 40, x + 10, y - 50); c.stroke();
-      // Boîtier à vitres, verre chaud
       const bx = x + 10, by = y - 50;
       c.fillStyle = '#2a2d3a'; c.beginPath(); c.moveTo(bx - 6, by + 2); c.lineTo(bx + 6, by + 2); c.lineTo(bx + 5, by + 14); c.lineTo(bx - 5, by + 14); c.closePath(); c.fill();
       c.beginPath(); c.moveTo(bx - 4, by + 2); c.lineTo(bx, by - 3); c.lineTo(bx + 4, by + 2); c.closePath(); c.fill();
@@ -486,18 +433,15 @@ const Paint = (() => {
   function door(P) {
     return sprite(72, 80, 36, 72, c => {
       const x = 36, y = 72;
-      // Montants de pierre, blocs
       const g = c.createLinearGradient(x - 24, 0, x + 24, 0); g.addColorStop(0, P.rockLight); g.addColorStop(0.5, P.rock); g.addColorStop(1, P.rockDark);
       c.fillStyle = g; c.beginPath(); c.moveTo(x - 24, y + 2); c.lineTo(x - 24, y - 34); c.quadraticCurveTo(x, y - 66, x + 24, y - 34); c.lineTo(x + 24, y + 2); c.closePath(); c.fill();
       c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 1.4; c.stroke();
       c.strokeStyle = 'rgba(0,0,0,0.3)'; c.lineWidth = 1;
       for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(x - 24, y - 6 - i * 9); c.lineTo(x - 15, y - 6 - i * 9); c.moveTo(x + 15, y - 6 - i * 9); c.lineTo(x + 24, y - 6 - i * 9); c.stroke(); }
-      // L'ouverture : nuit et lueur de cristal au fond
       const inner = c.createLinearGradient(0, y - 50, 0, y);
       inner.addColorStop(0, '#05070d'); inner.addColorStop(0.7, '#0a1424'); inner.addColorStop(1, rgba(P.crystal, 0.35));
       c.fillStyle = inner; c.beginPath(); c.moveTo(x - 14, y + 1); c.lineTo(x - 14, y - 30); c.quadraticCurveTo(x, y - 52, x + 14, y - 30); c.lineTo(x + 14, y + 1); c.closePath(); c.fill();
       c.strokeStyle = rgba(P.crystal, 0.5); c.lineWidth = 1; for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(x - 12 + i * 2, y - 4 - i * 6); c.lineTo(x + 12 - i * 2, y - 4 - i * 6); c.stroke(); }
-      // Liseré d'or ciselé sur l'arche
       c.strokeStyle = P.vein; c.lineWidth = 2.2; c.beginPath(); c.moveTo(x - 22, y - 34); c.quadraticCurveTo(x, y - 64, x + 22, y - 34); c.stroke();
       c.strokeStyle = rgba(P.veinGlow, 0.7); c.lineWidth = 0.8; c.beginPath(); c.moveTo(x - 22, y - 35); c.quadraticCurveTo(x, y - 65, x + 22, y - 35); c.stroke();
       c.fillStyle = P.vein; c.beginPath(); c.moveTo(x, y - 66); c.lineTo(x + 5, y - 60); c.lineTo(x, y - 54); c.lineTo(x - 5, y - 60); c.closePath(); c.fill();
@@ -510,17 +454,14 @@ const Paint = (() => {
       const x = 28, y = 78;
       c.fillStyle = P.rockDark; c.beginPath(); c.ellipse(x, y, 16, 6, 0, 0, Math.PI * 2); c.fill();
       c.fillStyle = P.rock; c.beginPath(); c.ellipse(x, y - 3, 14, 5, 0, 0, Math.PI * 2); c.fill();
-      // Obélisque à facettes
       const gL = c.createLinearGradient(x - 9, 0, x, 0); gL.addColorStop(0, P.rockLight); gL.addColorStop(1, P.rock);
       c.fillStyle = gL; c.beginPath(); c.moveTo(x - 9, y - 4); c.lineTo(x - 5, y - 56); c.lineTo(x, y - 58); c.lineTo(x, y - 2); c.closePath(); c.fill();
       const gR = c.createLinearGradient(x, 0, x + 9, 0); gR.addColorStop(0, dark(P.rock, 0.2)); gR.addColorStop(1, P.rockDark);
       c.fillStyle = gR; c.beginPath(); c.moveTo(x + 9, y - 4); c.lineTo(x + 5, y - 56); c.lineTo(x, y - 58); c.lineTo(x, y - 2); c.closePath(); c.fill();
       c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(x - 9, y - 4); c.lineTo(x - 5, y - 56); c.lineTo(x, y - 58); c.lineTo(x + 5, y - 56); c.lineTo(x + 9, y - 4); c.stroke();
-      // Gravures d'or
       c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = rgba(P.vein, 0.9); c.lineWidth = 1;
       for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(x - 6 + i * 0.5, y - 14 - i * 10); c.lineTo(x - 1, y - 12 - i * 10); c.lineTo(x - 6 + i * 0.5, y - 10 - i * 10); c.stroke(); }
       c.restore();
-      // Cristal au sommet, serti d'or
       c.fillStyle = P.vein; c.beginPath(); c.moveTo(x, y - 78); c.lineTo(x + 9, y - 66); c.lineTo(x, y - 54); c.lineTo(x - 9, y - 66); c.closePath(); c.fill();
       c.fillStyle = P.crystal; c.beginPath(); c.moveTo(x, y - 75); c.lineTo(x + 6, y - 66); c.lineTo(x, y - 57); c.lineTo(x - 6, y - 66); c.closePath(); c.fill();
       c.fillStyle = P.crystalLight; c.beginPath(); c.moveTo(x, y - 75); c.lineTo(x + 6, y - 66); c.lineTo(x, y - 66); c.closePath(); c.fill();
@@ -534,7 +475,6 @@ const Paint = (() => {
     });
   }
 
-  // ----- Corps des personnages et des monstres, avec volume -----
   function body(s) {
     return sprite(72, 72, 36, 64, c => {
       const x = 36, y = 64, top = y - 42;
@@ -553,20 +493,16 @@ const Paint = (() => {
         case 'player': {
           c.fillStyle = '#1a1510'; c.beginPath(); c.roundRect(x - 7.5, y - 15, 5.5, 14, 2); c.roundRect(x + 2, y - 15, 5.5, 14, 2); c.fill();
           c.fillStyle = '#2a2018'; c.fillRect(x - 8, y - 2, 6.5, 2.5); c.fillRect(x + 1.5, y - 2, 6.5, 2.5);
-          // Cape, en pans, dans la couleur assombrie
           const cg = c.createLinearGradient(x - 14, top + 10, x + 4, y); cg.addColorStop(0, dark(color, 0.3)); cg.addColorStop(1, dark(color, 0.7));
           c.fillStyle = cg; c.beginPath(); c.moveTo(x - 11, top + 12); c.lineTo(x - 15, y - 6); c.lineTo(x - 9, y - 9); c.lineTo(x - 5, y - 5); c.lineTo(x + 3, y - 10); c.lineTo(x + 5, top + 12); c.closePath(); c.fill(); c.stroke();
           c.strokeStyle = 'rgba(0,0,0,0.3)'; c.lineWidth = 1; c.beginPath(); c.moveTo(x - 8, top + 16); c.lineTo(x - 10, y - 10); c.moveTo(x - 2, top + 16); c.lineTo(x - 3, y - 9); c.stroke();
-          // Tunique
           c.lineWidth = 2; c.strokeStyle = 'rgba(0,0,0,0.6)';
           c.fillStyle = grad(x - 10, top + 10, x + 10, top + 34); c.beginPath(); c.roundRect(x - 10, top + 10, 20, 24, 5); c.fill(); finish();
           c.fillStyle = '#5c4628'; c.fillRect(x - 10, top + 26, 20, 3); c.fillStyle = '#e2c690'; c.fillRect(x - 2, top + 25.5, 4, 4);
-          // Tête, capuche de la couleur de la classe
           const sk = c.createRadialGradient(x - 3, top - 1, 1, x, top + 2, 10); sk.addColorStop(0, '#ffe9d2'); sk.addColorStop(1, '#d9b596');
           c.fillStyle = sk; c.beginPath(); c.arc(x, top + 2, 9, 0, Math.PI * 2); c.fill(); c.stroke();
           c.fillStyle = grad(x - 10, top - 10, x + 10, top); c.beginPath(); c.arc(x, top - 1, 9.6, Math.PI, Math.PI * 2); c.lineTo(x + 9.6, top + 2); c.quadraticCurveTo(x, top - 3, x - 9.6, top + 2); c.closePath(); c.fill(); c.stroke();
           eyes(x, top + 3, 3.4, 1.8);
-          // Lettre de la classe, en or
           c.font = `bold ${(s.glyph || 'V').length > 1 ? 11 : 13}px Cinzel, serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
           c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,0.7)'; c.strokeText(s.glyph || 'V', x, top + 20); c.fillStyle = '#f2dcaa'; c.fillText(s.glyph || 'V', x, top + 20);
           break;
@@ -624,7 +560,6 @@ const Paint = (() => {
         break;
       }
       case 'cap': {
-        // Le Lampignon : une coiffe de champignon tachée de lueurs, l'œil de verre allumé au milieu.
         const cg = c.createLinearGradient(p.x, cy - 34, p.x, cy - 10); cg.addColorStop(0, light(color, 0.25)); cg.addColorStop(1, dark(color, 0.15));
         c.fillStyle = cg; c.beginPath(); c.moveTo(p.x - 26, cy - 10); c.bezierCurveTo(p.x - 24, cy - 40, p.x + 24, cy - 40, p.x + 26, cy - 10);
         c.quadraticCurveTo(p.x, cy - 16, p.x - 26, cy - 10); c.closePath(); c.fill(); c.stroke();
@@ -635,8 +570,6 @@ const Paint = (() => {
         break;
       }
       case 'shaman': {
-        // Le Lampignard : une coiffe rousse festonnée, deux yeux turquoise dessous, et le bâton à la
-        // crosse baveuse sur le côté.
         c.strokeStyle = '#4f4232'; c.lineWidth = 3.2; c.beginPath(); c.moveTo(p.x + 22, cy + 16); c.quadraticCurveTo(p.x + 25, cy - 8, p.x + 21, cy - 34); c.stroke();
         c.strokeStyle = '#9ee04a'; c.lineWidth = 3; c.beginPath(); c.arc(p.x + 25, cy - 34, 4.5, Math.PI, Math.PI * 2.6); c.stroke();
         c.fillStyle = '#9ee04a'; c.beginPath(); c.ellipse(p.x + 29, cy - 26, 1.6, 3, 0, 0, Math.PI * 2); c.fill();
@@ -739,7 +672,6 @@ const Paint = (() => {
     });
   }
 
-  // ----- Lueurs, anneaux, particules -----
   function glow(hexColor, size = 128, inner = 0.9) {
     const cv = canvas(size, size), c = cv.getContext('2d'), r = size / 2;
     const g = c.createRadialGradient(r, r, 0, r, r, r);
@@ -827,13 +759,9 @@ const Paint = (() => {
     return cv;
   }
   function bolt(P) {
-    // Une image d'éclair pour les lanternes qui crépitent : inutile ici, les éclairs sont tracés.
     return glow(P.crystal, 64, 1);
   }
 
-  // Le noyau d'un Glym des Sources (docs/ILE-TECHNIQUE.md, 3.7) : la couleur vive de l'élément au
-  // creux de la crête, une gemme qui luit sur un corps teinté mais sourd. `p` : le pied de la figure
-  // (le repère des peintres de figures) ; `s.noyau` : la couleur ; `s.shape` place la gemme.
   function noyau(c, p, s) {
     if (!s || !s.noyau) return;
     const top = p.y - 42, x = p.x, col = s.noyau;

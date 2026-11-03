@@ -1,11 +1,3 @@
-// Les Nœuds et le Carnet du Veilleur (docs/DONJONS-ET-COMBATS.md).
-//
-// Nœuds : on en noue jusqu'à quatre avant de combattre. Chacun durcit les combats du monde d'une
-// façon précise et ajoute 15 % d'XP et de chances de butin. Ce sont des objets qu'on fabrique
-// chez le tailleur ; nouer ne les consomme pas.
-//
-// Carnet : la liste des remontées, région par région. Une remontée vaincue s'y inscrit ; les
-// succès du Carnet récompensent les régions complètes. Se charge après les fichiers content/.
 (() => {
 DATA.knots = [
   { id: 'noeud_lourd', name: 'Nœud Lourd', level: 6, desc: 'Tu as 1 PM de moins pendant tout le combat.',
@@ -32,7 +24,6 @@ for (const k of DATA.knots) {
   DATA.content.recipes.push({ result: k.id, count: 1, workshop: 'tailleur', ingredients: k.recipe });
 }
 
-// Succès du Carnet : un tiers, puis toute une région inscrite.
 const regions = { orsane: 'Orsane', kaldum: 'Kaldum' };
 for (const r in regions) {
   const n = Object.values(DATA.monsters).filter(m => m.region === r && !m.summon).length;

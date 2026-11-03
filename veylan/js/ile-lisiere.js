@@ -1,28 +1,7 @@
-// Le style Lisière de l'île d'Ervane (docs/ILE-TECHNIQUE.md, 3.25) : ce que la maquette de la
-// Lisière (tools/maquette-lisiere.js, 3.23) a montré, porté dans le vrai jeu, derrière son
-// interrupteur (?style=lisiere, ou DATA.ile.style = 'lisiere' ; IleCharge.style).
-//
-//  - la caméra d'exploration plus basse et plus ouverte, le regard levé au-dessus du Veilleur : on
-//    voit l'horizon et le ciel (CameraIle, `style`) ; celle du combat ne change pas ;
-//  - le ciel en dôme peint par un nuanceur (étoiles, Voie lactée, lune, nuages, étoiles filantes,
-//    aurore, soleil, éclairs), la brume exponentielle et les lumières réglés par l'heure et le temps
-//    qu'il fait (?heure=0 à 24 ou cycle, ?meteo=clair, nuageux, pluie, orage, brume, neige) ; la
-//    pluie et la neige dans une boîte qui suit la caméra ;
-//  - le décor de la nuit (js/ile-nuit.js : buissons, courges, fanions, touffes, lucioles, flaque de
-//    lumière du Veilleur), dont la part nocturne suit la nuit de l'heure : au jour, plus de lucioles ;
-//  - les arbres des Mailles en feuillage d'automne (la palette de la zone, pour le seul décor).
-//
-// Rien ici ne touche au moteur : la navigation, la grille de marche, les aires de combat restent
-// celles du jeu. Chargé après js/ile-nuit.js (IleCharge.lisiere) ; la classe en reprend les crochets.
-//
-// Repère : X = u, Y = h, Z = v (comme js/ile-decor.js). Three.js est chargé avant.
 const IleLisiere = (() => {
   const lisse = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   function hache(i, j) { let h = Math.imul(i, 374761393) + Math.imul(j, 668265263); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 
-  // ----- Le ciel, la pluie, la neige, l'heure, le temps qu'il fait, l'orage (repris de la maquette) -----
-  // Les directions du ciel sont celles de la maquette (sa caméra regarde vers -Z) : le dôme tourne de
-  // 45° moins l'azimut de la maquette (0,18) pour que l'île les voie au même endroit de l'écran.
   const TOUR_DOME = Math.PI / 4 - 0.18;
 
   const CIEL_VS = `varying vec3 vDir;
@@ -157,8 +136,6 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
     [22, '#060a1a', '#1f2c4c', '#6b7aa8', '#262f4c', '#000000', 0],
     [24, '#060a1a', '#1f2c4c', '#6b7aa8', '#262f4c', '#000000', 0],
   ];
-  // Le temps qu'il fait : couverture des nuages, lumière, gris du ciel, brume, pluie, neige, sol
-  // mouillé, éclairs (fréquence), étoiles et aurore visibles.
   const METEOS = {
     clair: { nom: 'Clair', couv: 0.25, lum: 1, gris: 0, brume: 0.016, pluie: 0, neige: 0, mouille: 0, eclair: 0, etoiles: 1, aurore: 1 },
     nuageux: { nom: 'Nuageux', couv: 0.62, lum: 0.8, gris: 0.25, brume: 0.019, pluie: 0, neige: 0, mouille: 0, eclair: 0, etoiles: 0.55, aurore: 0 },
@@ -167,13 +144,10 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
     brume: { nom: 'Brume', couv: 0.5, lum: 0.65, gris: 0.5, brume: 0.055, pluie: 0, neige: 0, mouille: 0.3, eclair: 0, etoiles: 0.2, aurore: 0 },
     neige: { nom: 'Neige', couv: 0.85, lum: 0.75, gris: 0.45, brume: 0.024, pluie: 0, neige: 1, mouille: 0, eclair: 0, etoiles: 0.1, aurore: 0 },
   };
-  // Le soleil : il se lève à l'est (à droite de la vue) vers 6 h 15 et se couche à l'ouest (à gauche)
-  // vers 19 h, un peu devant la caméra pour qu'on voie l'aube et le soir.
   function soleil(h) {
     const a = (h - 6.25) / 12.75 * Math.PI, jour = h > 6.25 && h < 19;
     return [Math.cos(a) * 0.88, jour ? Math.sin(a) * 0.8 : -0.25 - 0.2 * Math.abs(Math.sin(a)), -0.5];
   }
-  // L'ambiance d'une heure et d'un temps : de quoi régler le ciel, les lumières, la brume, le sol.
   function ambiance(THREE, h, meteo) {
     h = ((h % 24) + 24) % 24;
     let i = 0; while (HEURES[i + 1][0] <= h && i < HEURES.length - 2) i++;
@@ -182,7 +156,6 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
     const M = METEOS[meteo] || METEOS.clair;
     const s = new THREE.Vector3(...soleil(h)).normalize();
     const jour = lisse(-0.12, 0.25, s.y), nuit = 1 - jour;
-    // Le gris du mauvais temps : la couleur perd sa teinte et un peu de sa lumière.
     const griser = c => { const l = c.r * 0.3 + c.g * 0.55 + c.b * 0.15; return c.lerp(new THREE.Color(l, l, l * 1.06), M.gris).multiplyScalar(1 - 0.35 * M.gris); };
     return {
       h, meteo, jour, nuit, soleil: s,
@@ -193,7 +166,6 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
     };
   }
 
-  // L'orage lointain (la maquette) : un éclair par période de 9 s ; rend { az, force, graine, trait } ou null.
   function orage(t, frequence) {
     const P = 9 / (frequence || 1), n = Math.floor(t / P), u = t - n * P;
     if (hache(n, 11) < 0.2) return null;
@@ -205,28 +177,20 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
     return { az: -2.5 + hache(n, 5) * 1.9, force: Math.min(1, force), graine: n % 97, trait };
   }
 
-  // ----- Le réglage : l'heure et le temps qu'il fait -----
-  // ?heure=21 (de 0 à 24), ?heure=cycle (une journée en douze minutes) ; ?meteo= une clé de METEOS.
-  // DATA.ile.heure, DATA.ile.heureDepart et DATA.ile.meteo, qu'une copie peut poser. Sans rien : 21 h,
-  // temps clair (la nuit de la maquette).
   function reglage() {
     let qh = null, qm = null;
-    try { const q = new URLSearchParams(location.search); qh = q.get('heure'); qm = q.get('meteo'); } catch (e) { /* rien */ }
+    try { const q = new URLSearchParams(location.search); qh = q.get('heure'); qm = q.get('meteo'); } catch (e) {   }
     const d = typeof DATA === 'object' && DATA && DATA.ile ? DATA.ile : {};
     const h = qh != null ? qh : d.heure != null ? String(d.heure) : '21';
     const cycle = h === 'cycle';
     const n = parseFloat(h);
     const meteo = METEOS[qm] ? qm : METEOS[d.meteo] ? d.meteo : 'clair';
-    // Le cycle part de DATA.ile.heureDepart (le matin de la copie), sinon de 18 h 30 (la maquette).
     const depart = d.heureDepart != null && Number.isFinite(+d.heureDepart) ? ((+d.heureDepart % 24) + 24) % 24 : 18.5;
     return { cycle, heure: cycle ? depart : Number.isFinite(n) ? ((n % 24) + 24) % 24 : 21, meteo };
   }
 
-  // Le feuillage d'automne des Mailles : rouge, orange, rouille, un vert olive passé.
   const AUTOMNE = ['#b8432a', '#e0912e', '#c4602a', '#9a8a34'];
 
-  // Les lumières du jour (Ile3D.lumieres) et de la nuit (IleNuit.Nuit.lumieres), mêlées par la part
-  // de jour de l'heure ; l'azimut ne bouge pas (les ombres cuites restent justes).
   const LUM_JOUR = { hemi: ['#c6d4ef', '#544b3c', 0.62], cle: ['#fff2df', 1.28], chaud: ['#ffd2a0', 0.22], contre: ['#9fb4ff', 0.14] };
   const LUM_NUIT = { hemi: ['#3a4f8e', '#121220', 0.3], cle: ['#9cb4ff', 0.5], chaud: ['#ff9f5a', 0.04], contre: ['#8aa8ff', 0.55] };
 
@@ -242,29 +206,19 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       this.compte.automne = 0;
       this.fNuit = -1;
       this.c0 = new THREE.Color(); this.c1 = new THREE.Color();
-      // Les portées du décor (Ile3D.image) : la caméra basse voit plus de morceaux ; au téléphone,
-      // le décor détaillé s'arrête plus tôt (la brume l'a déjà pris), pour tenir le budget de 3.9.
       this.kDetail = this.telephone ? 0.68 : 0.7;
       this.kSil = this.telephone ? 0.5 : 0.72;
-      // Le sol au-delà de `solMax` u du point visé ne se dessine plus : la brume l'a pris.
       this.solMax = this.telephone ? 36 : 64;
     }
 
-    // La caméra d'exploration (CameraIle, `style`) : 11° à 20° d'élévation au lieu de 35° à 45°,
-    // 46° d'ouverture au lieu de 20°, le regard levé de 2,4 u : le haut de la vue montre le ciel.
     styleCamera() { return { ouverture: 46, elevation: [11, 20], leve: 2.4, champDefaut: [22, 26] }; }
 
-    // La définition que lit le décor : les Mailles en feuillage d'automne. Le sol, ses peintures et
-    // leur cache gardent la définition du jeu.
     defDecor(def) {
       this.palettesJeu = (def.regions || []).map(r => r.palette || {});
       const regions = (def.regions || []).map(r => (r.zone === 'ervane_mailles' ? Object.assign({}, r, { palette: Object.assign({}, r.palette, { feuillages: AUTOMNE }) }) : r));
       return Object.assign({}, def, { regions });
     }
 
-    // Le monde modelé (3.26) : ses arbres des Mailles prennent le feuillage d'automne (la teinte de
-    // l'instance remplacée avant la cuisson des couleurs, IleGlb.construire) ; les pins et les arbres
-    // morts, et les autres zones, gardent la leur.
     teinteGlb(u, v, nom, teinte) {
       if (!/arbre/.test(nom) || /mort|pin/.test(nom)) return null;
       const T = this.ile.T, def = this.ile.def;
@@ -272,19 +226,13 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       const reg = (def.regions || [])[T.regionA(u, v)];
       if (!reg || reg.zone !== 'ervane_mailles') return null;
       const h = Math.abs(Math.sin(u * 12.9898 + v * 78.233) * 43758.5453) % 1;
-      // Surtout l'orange et la rouille, un peu de rouge, un peu d'olive.
       const a = AUTOMNE[h < 0.4 ? 1 : h < 0.72 ? 2 : h < 0.9 ? 0 : 3], b = AUTOMNE[Math.floor(h * 7) % AUTOMNE.length];
-      // Éclairci vers le jaune paille, comme les lobes hauts des arbres d'automne du décor du code.
       const c = this.c0.set(a).lerp(this.c1.set(b), ((h * 13) % 1) * 0.5).lerp(this.c1.set('#f2d27a'), 0.28).convertSRGBToLinear();
       this.compte.automne++;
       void teinte;
       return [c.r, c.g, c.b];
     }
 
-    // Le décor de la nuit garde les verts du jeu (ses jeunes sapins, ses buissons). Puis les grands
-    // arbres d'automne des Mailles : seulement là où la navigation est déjà fermée (au pied des
-    // falaises, des murets, au bord de l'île), jamais sur un sentier, une place, une aire ou un objet ;
-    // un tronc, un houppier en cumulus de lobes roux (comme les arbres du semis), une silhouette.
     ajouts(A) {
       const THREE = this.THREE, ile = this.ile, T = ile.T, P = this.palettesJeu, nav = ile.world && ile.world.plateau && ile.world.plateau.nav;
       const palette = P ? (u, v) => P[T.regionA(u, v)] || A.palette(u, v) : A.palette;
@@ -334,12 +282,9 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       void THREE;
     }
 
-    // ----- La brume, le fond, les lumières, les matières -----
 
     brouillard() { return new this.THREE.FogExp2(this.amb.horizon.clone(), this.densite); }
-    // La couleur de la brume : l'horizon de l'heure, à peine teinté par la région.
     brume(couleurRegion) { return this.amb.horizon.clone().lerp(this.c(couleurRegion), 0.1); }
-    // Derrière la toile (le dôme la couvre ; la vue tactique du combat la montre) : le dégradé de l'heure.
     ciel(brumeSRGB) {
       const z = this.amb.zenith.clone().convertLinearToSRGB();
       return `linear-gradient(180deg, #${z.getHexString()} 0%, #${brumeSRGB.getHexString()} 100%)`;
@@ -349,8 +294,6 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       this.L = L;
     }
 
-    // Ce que la nuit change aux matières (IleNuit.Nuit.materiaux), relevé avant et après : la part de
-    // nuit de l'heure mêle les deux (appliquer).
     releve() {
       const ile = this.ile, m = ile.mats, e = ile.matEauRef;
       return {
@@ -366,14 +309,12 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
     materiaux() {
       const jour = this.releve();
       super.materiaux();
-      // Sous la lune, les feuilles rousses gardent leur rouge (la nuit de 3.24 tire les frondaisons vers le vert).
       if (this.ile.mats && this.ile.mats.fronde) this.ile.mats.fronde.color.setRGB(0.86, 0.86, 0.8);
       this.mj = { jour, nuit: this.releve() };
       this.lisereNuit = this.uLisere ? this.uLisere.value.clone() : null;
       this.flaqueNuit = this.uFlaqueCouleur ? this.uFlaqueCouleur.value.clone() : null;
       this.appliquer(this.amb.nuit);
     }
-    // La part de nuit `f` (0 : le jour du jeu, 1 : la nuit de 3.24).
     appliquer(f) {
       if (!this.mj || Math.abs(f - this.fNuit) < 0.01) return;
       this.fNuit = f;
@@ -394,7 +335,6 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       if (this.uFlaqueCouleur && this.flaqueNuit) this.uFlaqueCouleur.value.copy(this.flaqueNuit).multiplyScalar(f);
     }
 
-    // ----- Le ciel en dôme, la pluie, la neige -----
 
     ciel3D(scene) {
       const THREE = this.THREE, tel = this.telephone;
@@ -412,7 +352,6 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       dome.renderOrder = -10; dome.frustumCulled = false;
       scene.add(dome);
       this.dome = dome;
-      // La pluie : des traits dans une boîte de 2B u de côté et H u de haut qui suit la caméra.
       const B = 16, H = 22, R = IleTerrain.M.hasard(IleTerrain.M.cle('lisiere-pluie'));
       const nP = tel ? 900 : 1800, pos = new Float32Array(nP * 6), bout = new Float32Array(nP * 2);
       for (let i = 0; i < nP; i++) { const x = (R() * 2 - 1) * B, y = R() * H, z = (R() * 2 - 1) * B; pos.set([x, y, z, x, y, z], i * 6); bout[i * 2] = 0; bout[i * 2 + 1] = 1; }
@@ -432,9 +371,6 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       this.meteo = { pluie, neige, uCam };
     }
 
-    // Le sol mouillé (METEOS.mouille : la pluie, l'orage, un peu la brume) : le sol plus sombre d'un
-    // tiers au plus, le sol dessiné par le code (ses matières) comme le sol et les lignes du monde
-    // modelé (IleGlb.mouiller) ; la couleur sèche est gardée pour revenir.
     mouiller(k) {
       if (Math.abs(k - (this.kMouille || 0)) < 0.005 && this.kMouille !== undefined) return;
       this.kMouille = k;
@@ -447,10 +383,8 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       if (ile.monde && typeof IleGlb === 'object' && IleGlb.mouiller) IleGlb.mouiller(ile.monde, f);
     }
 
-    // ----- Chaque image -----
     maj(now, temps, joueur, hj, cam, tact) {
       const THREE = this.THREE, ile = this.ile;
-      // L'heure : fixe, ou une journée en douze minutes.
       if (this.reglage.cycle) {
         this.heure = (this.heure + (this._tPrec ? Math.min(0.1, temps - this._tPrec) : 0) * 24 / 720) % 24;
         this.amb = ambiance(THREE, this.heure, this.reglage.meteo);
@@ -462,8 +396,6 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       if (ile.brumeVoulue && ile.brumeCle) ile.brumeVoulue.copy(this.brume(ile.brumeCle));
       super.maj(now, temps, joueur, hj, cam, tact);
       this.mouiller(A.mouille);
-      // La part de nuit : la flaque dorée, la lanterne proche et les lucioles s'éteignent au jour,
-      // et sous la pluie ou la neige pour les lucioles.
       const f = A.nuit;
       if (this.flaque) this.flaque.intensity *= f;
       if (this.lanterne) this.lanterne.intensity *= f;
@@ -473,7 +405,6 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
         u.c1.value.copy(this._lu[0]).multiplyScalar(k); u.c2.value.copy(this._lu[1]).multiplyScalar(k);
         if (k < 0.02) this.points.visible = false;
       }
-      // Les lumières, l'orage.
       const ec = A.eclair > 0 ? orage(temps, A.eclair) : null, flash = ec ? ec.force : 0;
       const L = this.L;
       if (L) {
@@ -485,12 +416,10 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
           lumiere.intensity = (i0 + (i1 - i0) * j) * lum;
         };
         mel(L.hemi, 'hemi', 2, true); mel(L.cle, 'cle', 1); mel(L.chaud, 'chaud', 1); mel(L.contre, 'contre', 1);
-        // À l'aube et au soir, la lumière du soleil rougit.
         if (A.lueur > 0.01 && j > 0.05) L.cle.color.lerp(c0.copy(A.soleilCoul), Math.min(0.6, A.lueur * 0.5));
         L.hemi.intensity += flash * 0.9;
         L.cle.intensity += flash * 0.6;
       }
-      // Le dôme suit la caméra ; il se tait sous la caméra orthographique du combat et en vue tactique.
       const cc = cam.courante, D = this.dome;
       if (D) {
         D.visible = !tact && !cc.isOrthographicCamera;

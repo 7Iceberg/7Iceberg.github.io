@@ -1,5 +1,3 @@
-// Le monde hors combat : cartes, déplacement, groupes errants, PNJ, récolte, relais, donjons,
-// passage au combat et retour avec les gains. Ne touche pas au DOM : il émet des événements.
 class World {
   constructor(opts) {
     this.ch = opts.character;
@@ -10,32 +8,28 @@ class World {
     this.mapDef = null;
     this.map = null;
     this.zone = null;
-    // facing : l'une des quatre diagonales de l'écran (Grid.facing), celle du dernier pas.
     this.player = { x: 0, y: 0, rx: 0, ry: 0, path: [], moving: false, speed: 5, onArrive: null, facing: 'se' };
     this.groups = [];
     this.npcs = [];
     this.nodes = [];
     this.door = null;
     this.relay = null;
-    this.plateau = null;             // le plateau continu courant (js/plateau.js), ou null sur une carte à cases
-    this.state = 'explore';          // explore | combat | dialogue | panel
-    this.showCombat = false;         // le rendu affiche le combat (jusqu'au retour au monde)
-    this.mapStates = {};             // mapId -> { dead: { idx: respawnAt }, used: { idx: readyAt } }
+    this.plateau = null;
+    this.state = 'explore';
+    this.showCombat = false;
+    this.mapStates = {};
     this.time = 0;
     this.regenAcc = 0;
     this.saveAcc = 0;
     this.currentGroup = null;
-    this.pending = null;             // action à faire quand le joueur ferme l'écran de fin de combat
+    this.pending = null;
     this.lastResult = null;
-    // Les cartes de plateau (Ervane) demandent le rendu 3D (js/scene.js, étape a2) : sans lui, le
-    // jeu passe `plateaux: false` et le monde les refuse au lieu de planter au rendu des cases.
     this.plateauxPermis = opts.plateaux !== false;
     this.combat.on('end', d => this.onFightEnd(d));
   }
 
   on(evt, fn) { (this.listeners[evt] = this.listeners[evt] || []).push(fn); }
   off(evt, fn) { const l = this.listeners[evt]; if (!l) return; const i = l.indexOf(fn); if (i >= 0) l.splice(i, 1); }
-  // Les événements que le guide et la discussion suivent passent aussi par le bus (js/util.js).
   emit(evt, data) {
     for (const fn of this.listeners[evt] || []) fn(data);
     if (World.PUBLIC.has(evt) && typeof Bus === 'object') Bus.emit(evt, data);
@@ -45,7 +39,6 @@ class World {
   }
   toast(text) { this.emit('toast', text); }
 
-  // ----- Données -----
 
   static index() {
     if (!World._index) {
@@ -61,68 +54,50 @@ class World {
   static zoneOf(id) { const e = World.index().maps.get(id); return e ? e.zone : null; }
   static dungeonDef(id) { return ((DATA.content && DATA.content.dungeons) || []).find(d => d.id === id) || null; }
   static npcDef(id) { return ((DATA.content && DATA.content.npcs) || []).find(n => n.id === id) || null; }
-  // La première carte d'un personnage : le Métier d'Ervane pour un personnage né sur l'île (quand
-  // l'île est chargée), sinon la première carte du contenu.
   static firstMap(ch) {
     if (ch && ch.origine === 'ervane' && typeof Ile === 'object' && Ile.actif() && DATA.ile && World.mapDef(DATA.ile.naissance.map)) return DATA.ile.naissance.map;
     const z = ((DATA.content && DATA.content.zones) || [])[0]; return z && z.maps[0] ? z.maps[0].id : null;
   }
-  // Une carte de plateau, ou une salle d'un donjon dont l'entrée est sur un plateau, quand le rendu
-  // 3D manque (`plateaux: false`) : refusée, avec un mot. Toute autre carte est acceptée ici.
   accessible(mapId) {
     if (this.plateauxPermis || typeof Ile !== 'object' || typeof mapId !== 'string') return true;
     if (!(mapId.includes('#') ? Ile.donjon3D(mapId) : Ile.estPlateau(mapId))) return true;
-    // Un seul mot par instant du monde (le départ essaie la carte sauvegardée, puis le Métier).
     if (this.refusA !== this.time) { this.refusA = this.time; this.toast(`${World.nomPlateau(mapId)} ne s'affiche pas encore sur cet appareil.`); }
     return false;
   }
-  // Le nom du plateau d'une carte ou d'une salle de donjon (« Ervane », « Orsane »).
   static nomPlateau(mapId) {
     const id = String(mapId || ''), d = id.includes('#') ? World.dungeonDef(id.split('#')[0]) : null;
     const m = World.mapDef(d ? d.entryMap : id), pl = m && m.plateau && typeof Ile === 'object' ? Ile.plateau(m.plateau) : null;
     return pl && pl.name ? pl.name : 'Ervane';
   }
-  // Quitter le plateau courant : il rend son écouteur au monde.
   libererPlateau() {
     if (this.plateau) this.plateau.liberer();
     this.plateau = null;
   }
-  // Après l'application d'un module de contenu (js/ile.js) : l'index sera refait.
   static reindexer() { World._index = null; }
 
-  // ----- Entrée sur une carte -----
 
-  // arrival : { x, y } | { side: 'n'|'s'|'e'|'w' } (par quelle sortie on arrive) | { relay: true } | vide ;
-  // sur un plateau, aussi { lieu } (un lieu nommé du plateau).
   enter(mapId, arrival) {
     arrival = arrival || {};
     let def, zone;
     if (typeof mapId !== 'string') return false;
     if (mapId.includes('#')) {
-      // Une salle de donjon : « id_du_donjon#numéro ».
       const [did, idx] = mapId.split('#');
       const d = World.dungeonDef(did);
       const room = d && d.rooms[Number(idx)];
       if (!room) return false;
       if (!this.accessible(mapId)) return false;
-      // Refusée avant de toucher à ch.dungeon : un refus laisse le personnage comme il était.
       if (!Array.isArray(room.layout)) { this.toast('Cette carte ne peut pas s\'afficher.'); return false; }
       def = { id: mapId, name: `${d.name} : ${room.name}`, layout: room.layout, exits: {}, npcs: [], nodes: [],
         groups: [{ monsters: room.monsters.map(m => m.id), levels: room.monsters.map(m => m.level), respawn: 0 }], dungeon: null, relay: true, room: true, dungeonId: did, roomIndex: Number(idx) };
       zone = World.zoneOf(d.entryMap) || { id: d.zone, name: d.name, palette: 'orsane', level: d.level };
-      // Les tours se cumulent d'une salle à l'autre : le succès « en moins de N tours » compte la course entière.
       const prev = this.ch.dungeon;
       this.ch.dungeon = { id: did, room: Number(idx), turns: prev && prev.id === did && Number(idx) > 0 ? (prev.turns || 0) : 0 };
-      // Le point de retour d'un donjon entré depuis un plateau (docs/ILE-TECHNIQUE.md, 6.3) suit
-      // d'une salle à l'autre, et survit à un rechargement.
       if (prev && prev.id === did && prev.retour) this.ch.dungeon.retour = prev.retour;
     } else {
       def = World.mapDef(mapId);
       zone = World.zoneOf(mapId);
       if (!def) return false;
       if (def.plateau) return this.accessible(mapId) ? this.enterPlateau(mapId, def, zone, arrival) : false;
-      // Une carte sans plan ni plateau est refusée (Grid.create retomberait sans bruit sur l'arène
-      // du laboratoire), avant de toucher à ch.dungeon.
       if (!Array.isArray(def.layout)) { this.toast('Cette carte ne peut pas s\'afficher.'); return false; }
       this.ch.dungeon = null;
     }
@@ -131,12 +106,9 @@ class World {
     this.mapDef = def;
     this.zone = zone;
     this.map = Grid.create(def.layout);
-    // Une salle d'un donjon dont l'entrée est sur un plateau (le Puits de l'Amarre) : le rendu 3D
-    // ancre l'aire du combat sur la salle elle-même (js/ile-3d.js, majArene).
     if (def.room && typeof Ile === 'object' && Ile.donjon3D(mapId)) this.map.ancre = { salle: mapId, x0: 0, y0: 0 };
     const S = this.map.spots;
     const st = this.mapStates[mapId] || (this.mapStates[mapId] = { dead: {}, used: {} });
-    // Minuteries sauvegardées (heure réelle) : recharger ne fait pas réapparaître groupes et récoltes.
     const saved = !def.room && this.ch.mapTimers && this.ch.mapTimers[mapId];
     if (saved) {
       const now = Date.now();
@@ -158,7 +130,6 @@ class World {
     this.door = S.door ? { x: S.door.x, y: S.door.y, dungeon: def.dungeon } : null;
     this.relay = S.relay ? { x: S.relay.x, y: S.relay.y } : null;
 
-    // Position d'arrivée.
     let pos = null;
     if (arrival.x != null) pos = { x: arrival.x, y: arrival.y };
     else if (arrival.side && this.map.exits[arrival.side].length) {
@@ -174,12 +145,9 @@ class World {
     const touched = Quests.onEvent(this.ch, { type: 'visit', map: mapId });
     this.afterEvents(touched);
     this.state = 'explore';
-    // Un donjon `entreeEnCombat` (le Puits de l'Amarre, 6.3) : chaque salle lance son combat dès
-    // qu'on y entre, après un court plan de la salle ; d'ici là, toucher le sol ne fait rien.
     const dd = def.room ? World.dungeonDef(def.dungeonId) : null;
     this.combatAuto = dd && dd.entreeEnCombat && this.groups.length ? { at: this.time + 1.5, group: this.groups[0] } : null;
     this.emit('map', { mapId, def, zone });
-    // Une carte de plus : les succès d'exploration se débloquent à l'arrivée.
     this.checkAchievements();
     this.emit('update');
     return true;
@@ -190,11 +158,7 @@ class World {
     return { x: 0, y: 0 };
   }
 
-  // ----- Plateau continu (Ervane, docs/ILE-TECHNIQUE.md, 4.10) -----
 
-  // Entrée sur une carte de plateau : le Plateau (repris s'il est le même) remplit PNJ, nœuds et
-  // groupes et pose le Veilleur ; la suite (compteurs, quêtes, événement map, succès) est celle des
-  // cartes à cases.
   enterPlateau(mapId, def, zone, arrival) {
     const pdef = typeof Ile === 'object' ? Ile.plateau(def.plateau) : null;
     if (!pdef) { this.toast('Cette carte ne peut pas s\'afficher.'); return false; }
@@ -206,7 +170,6 @@ class World {
     const ici = this.plateau.entrer(mapId, arrival);
     if (ici && ici !== mapId && World.mapDef(ici)) { mapId = ici; def = World.mapDef(ici); zone = World.zoneOf(ici); }
     this.mapId = mapId; this.mapDef = def; this.zone = zone;
-    // ch.pos est déjà écrit par Plateau.placer (la sous-zone calculée, la position au centième).
     if (!this.ch.counters.maps.includes(mapId)) this.ch.counters.maps.push(mapId);
     this.afterEvents(Quests.onEvent(this.ch, { type: 'visit', map: mapId }));
     this.state = 'explore';
@@ -216,8 +179,6 @@ class World {
     return true;
   }
 
-  // Le Veilleur entre dans une autre sous-zone du plateau en marchant : pas de chargement, la
-  // carte courante change. Émet map (avec secteur) et zone.
   changerSecteur(mapId) {
     const def = World.mapDef(mapId), zone = World.zoneOf(mapId);
     if (!this.plateau || !def || def.plateau !== this.plateau.id || mapId === this.mapId) return false;
@@ -233,7 +194,6 @@ class World {
     return true;
   }
 
-  // Un groupe de monstres d'après un gabarit : niveaux tirés dans la fourchette, bornés à la famille.
   makeGroup(tpl, idx, cell) {
     const monsters = tpl.monsters.map((id, i) => {
       const def = DATA.monsters[id];
@@ -246,13 +206,11 @@ class World {
     return { idx, tpl, monsters, x: cell.x, y: cell.y, rx: cell.x, ry: cell.y, wander: 1 + this.rng() * 3, level: Math.round(monsters.reduce((s, m) => s + m.level, 0) / monsters.length) };
   }
 
-  // ----- Boucle -----
 
   update(dt) {
     this.time += dt;
     this.ch.playTime += dt;
     if (this.state === 'combat') return;
-    // Le combat d'une salle `entreeEnCombat` part de lui-même, le plan de la salle vu.
     if (this.combatAuto && this.state === 'explore' && this.time >= this.combatAuto.at) {
       const g = this.combatAuto.group;
       this.combatAuto = null;
@@ -265,8 +223,6 @@ class World {
         for (const g of this.groups) this.updateGroup(g, dt);
       }
       for (const n of this.nodes) if (!n.ready && n.readyAt <= this.time) { n.ready = true; this.emit('update'); }
-      // Hors donjon seulement, 1 % des PV par seconde : les pains gardent leur usage, et un donjon
-      // use ses PV d'une salle à l'autre.
       this.regenAcc += dt;
       if (this.regenAcc >= 1) {
         this.regenAcc = 0;
@@ -313,7 +269,6 @@ class World {
       return;
     }
     g.wander -= dt;
-    // Un groupe dont la fiche est ouverte attend qu'on se décide.
     if (g.wander > 0 || this.state !== 'explore' || g.hold) return;
     g.wander = 2 + this.rng() * 4;
     const opts = Grid.neighbors(this.map, g).filter(c => this.isFreeForGroup(c));
@@ -331,7 +286,6 @@ class World {
     return !this.groupAt(c) && !this.npcAt(c) && !this.nodeAt(c);
   }
 
-  // ----- Ce qu'il y a sur une case -----
 
   npcAt(c) { return this.npcs.find(n => n.x === c.x && n.y === c.y) || null; }
   groupAt(c) { return this.groups.find(g => g.x === c.x && g.y === c.y) || null; }
@@ -345,13 +299,9 @@ class World {
     return !!(this.groupAt(c) || this.npcAt(c) || this.nodeAt(c));
   }
 
-  // ----- Interaction -----
 
-  // Le joueur touche une case : marcher, parler, inspecter un groupe, récolter, entrer, se relayer.
-  // Sur un plateau : un point { x, y, cible? } (4.4), confié au Plateau.
   tap(cell) {
     if (this.plateau) return this.state === 'explore' ? this.plateau.toucher(cell) : false;
-    // Dans une salle dont le combat va partir seul, on ne marche pas case par case.
     if (this.combatAuto) return false;
     if (this.state !== 'explore' || !cell || !Grid.inBounds(this.map, cell.x, cell.y)) return;
     const npc = this.npcAt(cell), group = this.groupAt(cell), node = this.nodeAt(cell);
@@ -363,8 +313,6 @@ class World {
     this.walkTo(cell, null);
   }
 
-  // Marche jusqu'à une case voisine de `cell` (ou agit tout de suite si déjà voisin).
-  // Sur un plateau : s'arrêter à 1,5 u de la cible ; rend l'état de l'approche (4.4).
   approach(cell, action) {
     if (this.plateau) return this.plateau.approcher(cell, 1.5, action, 2.5);
     const p = this.player;
@@ -392,7 +340,6 @@ class World {
 
   setPath(path, action) {
     const p = this.player;
-    // Surchargé (plus de pods que le maximum) : on ne marche plus, comme Dofus.
     if (path && path.length && this.ch && this.ch.surcharge()) { this.avertirSurcharge(); path = []; action = null; }
     p.path = path || [];
     p.moving = p.path.length > 0;
@@ -400,16 +347,14 @@ class World {
     this.emit('path', p.path);
   }
 
-  // « Tu es surchargé » : au plus une fois toutes les deux secondes.
   avertirSurcharge() {
     const t = Date.now();
     if (this.surchargeDit && t - this.surchargeDit < 2000) return;
     this.surchargeDit = t;
     const ch = this.ch;
-    this.toast(`Tu es surchargé (${ch.pods()} / ${ch.derived().podsMax} pods) : allège ton sac pour avancer.`);
+    this.toast(`Tu es trop chargé (${ch.pods()} / ${ch.derived().podsMax}) : allège ton sac pour avancer.`);
   }
 
-  // Fin d'un déplacement sans action : une case de sortie fait changer de carte.
   arrivedAt(cell) {
     const dir = this.exitDir(cell);
     if (dir && this.mapDef.exits && this.mapDef.exits[dir]) {
@@ -421,11 +366,7 @@ class World {
     }
   }
 
-  // Glisser l'écran (js/hud-jeu.js) : le Veilleur marche jusqu'à la case de sortie la plus proche
-  // de ce côté, puis change de carte comme s'il l'avait touchée. Faux s'il n'y a pas de sortie.
   exitToward(side) {
-    // Sur un plateau : seulement une sortie hors du plateau (la Passe vers Kaldum), de ce côté de la
-    // sous-zone ; on y marche, puis on passe.
     if (this.plateau) return this.state === 'explore' && this.plateau.allerSortie(this.mapId, side);
     if (this.state !== 'explore' || !this.mapDef || !this.mapDef.exits || !this.mapDef.exits[side]) return false;
     const reach = this.reach();
@@ -438,9 +379,6 @@ class World {
     return true;
   }
 
-  // Le côté de la carte vers lequel pointe un vecteur à l'écran (vx, vy), parmi `sides`. La carte
-  // est un losange : vue de face, la sortie n est en haut à droite, e en bas à droite, s en bas à
-  // gauche, w en haut à gauche. Null si aucun côté n'est à moins de 70 degrés du geste.
   static sideToward(vx, vy, sides) {
     const n = Math.hypot(vx, vy);
     if (!n) return null;
@@ -455,15 +393,12 @@ class World {
     return best;
   }
 
-  // Les côtés de la carte courante qui mènent quelque part.
   openSides() {
     if (this.plateau) return this.plateau.cotesSortie(this.mapId);
     const ex = (this.mapDef && this.mapDef.exits) || {};
     return ['n', 'e', 's', 'w'].filter(d => ex[d] && (this.map.exits[d] || []).length);
   }
 
-  // Le Veilleur passe une sortie d'un plateau (js/plateau.js) : il entre sur la carte d'à côté, hors
-  // du plateau, par le côté opposé (la Passe d'Orsane mène à la Porte de Kaldum, par son ouest).
   sortirPlateau(s) {
     if (!s || !s.vers || this.state !== 'explore' || !this.plateau) return false;
     if (!this.enter(s.vers, { side: s.arrivee })) return false;
@@ -471,7 +406,6 @@ class World {
     return true;
   }
 
-  // Pose le Veilleur sur une case libre de la carte courante (le début du tutoriel).
   placeAt(x, y) {
     if (this.plateau) return this.plateau.poser(x, y);
     if (!this.map || !Grid.walkable(this.map, x, y) || this.blockedForPlayer(x, y)) return false;
@@ -481,9 +415,7 @@ class World {
     return true;
   }
 
-  // ----- Groupes de monstres : fiche, puis attaque -----
 
-  // Toucher un groupe ouvre sa fiche (le HUD l'affiche près du groupe) ; il attend qu'on se décide.
   inspectGroup(group) {
     if (!group || !this.groups.includes(group)) return;
     for (const g of this.groups) g.hold = false;
@@ -495,14 +427,8 @@ class World {
     if (group) group.hold = false;
   }
 
-  // « Attaquer » sur la fiche : le Veilleur s'approche, puis le combat commence comme avant. Le
-  // groupe attend sur place pendant l'approche.
   attackGroup(group) {
     if (this.state !== 'explore' || !group || !this.groups.includes(group)) return false;
-    // Sur un plateau (4.4) : le Veilleur s'approche à 1,5 u du groupe (2,5 u au plus pour lancer),
-    // puis le combat se joue sur l'aire du groupe. L'approche rend un état ; le groupe, qui attend,
-    // est relâché par le rappel d'échec de Plateau.approcher : aucun chemin (tout de suite ou quand
-    // la recherche découpée finit), ou le Veilleur arrivé trop loin pour lancer.
     if (this.plateau) {
       group.hold = true;
       const etat = this.plateau.approcher(group, 1.5, () => { if (this.state === 'explore' && this.groups.includes(group)) this.startFight(group); else group.hold = false; }, 2.5, () => { group.hold = false; });
@@ -511,31 +437,24 @@ class World {
     }
     group.hold = true;
     this.approach({ x: group.x, y: group.y }, () => { if (this.state === 'explore' && this.groups.includes(group)) this.startFight(group); else group.hold = false; });
-    // Pas de chemin jusqu'au groupe : il reprend sa marche.
     if (this.state === 'explore' && !this.player.moving) group.hold = false;
     return true;
   }
 
-  // XP annoncée par la fiche d'un groupe : la formule du combat (Entity.xpFor), les Nœuds noués et
-  // la Sagesse du personnage. Le Défi, tiré au début du combat, peut y ajouter son bonus.
   groupXp(group) {
     const base = group.monsters.reduce((s, m) => s + Entity.xpFor(DATA.monsters[m.id], m.level), 0);
     const knots = this.ch.activeKnots().length * (DATA.rules.knotBonus || 0);
     return this.ch.wisdomXp(Math.round(base * (1 + knots / 100)));
   }
 
-  // Indication de difficulté : la somme des niveaux du groupe (un boss compte triple) rapportée à
-  // deux monstres et demi du niveau du Veilleur, ce qu'un combat de zone ordinaire lui oppose.
   groupDifficulty(group) {
     const sum = group.monsters.reduce((s, m) => s + m.level * (DATA.monsters[m.id] && DATA.monsters[m.id].boss ? 3 : 1), 0);
     const r = sum / (Math.max(1, this.ch.level) * 2.5);
     return r <= 0.6 ? 'facile' : r <= 1.1 ? 'mesure' : r <= 1.6 ? 'difficile' : 'danger';
   }
 
-  // ----- PNJ, quêtes, boutiques -----
 
   talk(npc) {
-    // Sur un plateau, on parle à 3 u au plus (le moteur vérifie, comme le serveur le fera).
     if (this.plateau && (!npc || Plateau.dist(this.player, npc) > 3)) { this.toast('Trop loin pour parler.'); return false; }
     this.state = 'dialogue';
     this.talkNpc = npc;
@@ -545,13 +464,11 @@ class World {
   }
 
   dialogueContext(npc) {
-    // Un PNJ peut saluer autrement qui a prêté serment (factionLines : { fil: [...], dechirure: [...] }).
     const f = Factions.insigne(this.ch), byFaction = f && npc.def.factionLines && npc.def.factionLines[f.id];
     return {
       npc,
       lines: byFaction || npc.def.dialogue || [],
       offers: Quests.available(this.ch, npc.id),
-      // « done » : la quête se termine ici (turnIn) ; ailleurs, le PNJ rappelle seulement où en est la quête.
       active: Quests.activeFor(this.ch, npc.id).map(q => ({ quest: q, text: Quests.stepText(this.ch, q.id), done: Quests.canTurnIn(this.ch, q.id, npc.id) })),
       answers: Quests.answersFor(this.ch, npc.id),
       shop: npc.def.shop || null,
@@ -562,13 +479,10 @@ class World {
       temple: !!npc.def.temple,
       metiers: !!npc.def.metiers,
       marche: Marche.genreDe(npc),
-      // Un passeur (la Nacelle d'Ervane, docs/ILE-TECHNIQUE.md, 2.9) : offert quand sa quête est faite.
       passage: this.passageDe(npc),
     };
   }
 
-  // Le passage qu'un PNJ offre maintenant : { vers, arrivee, texte, quete }, ou null si sa quête
-  // n'est pas faite.
   passageDe(npc) {
     const p = npc && npc.def && npc.def.passage;
     if (!p || !p.vers) return null;
@@ -576,8 +490,6 @@ class World {
     return p;
   }
 
-  // Prendre le passage du PNJ à qui l'on parle (la Nacelle, dans les deux sens) : le dialogue se
-  // ferme, le monde change de carte, la partie est sauvegardée. Faux si rien n'est offert.
   passage() {
     const npc = this.talkNpc, p = this.passageDe(npc);
     if (!p || this.state !== 'dialogue') return false;
@@ -589,9 +501,6 @@ class World {
     return true;
   }
 
-  // L'arrivée d'un passage, selon ce qu'est la carte d'arrivée : sur un plateau, le lieu (la Nacelle
-  // d'Orsane en 3D) ; sur une carte en cases, la case (la Place du Relais en cases) ; sinon le relais.
-  // Le passage de Kolm porte les deux (content/ervane.js) : Orsane peut être l'un ou l'autre.
   static arriveePassage(p) {
     const a = (p && p.arrivee) || {};
     const plateau = typeof Ile === 'object' && Ile.estPlateau(p && p.vers);
@@ -606,8 +515,6 @@ class World {
     this.emit('update');
   }
 
-  // La discussion (js/discussion.js) écrit « Nouvelle quête », « Quête mise à jour » et « Quête
-  // terminée » d'après les événements quest et questProgress.
   acceptQuest(id) {
     if (!Quests.canStart(this.ch, id) || !Quests.accept(this.ch, id)) return false;
     const q = Quests.get(id);
@@ -617,7 +524,6 @@ class World {
     return true;
   }
 
-  // Une quête se rend au PNJ à qui l'on parle, s'il est celui de la remise (turnIn ou donneur).
   completeQuest(id) {
     if (!this.talkNpc || !Quests.canTurnIn(this.ch, id, this.talkNpc.id)) return null;
     const r = Quests.complete(this.ch, id);
@@ -634,8 +540,6 @@ class World {
     return r;
   }
 
-  // Répondre à une étape de choix (le serment, le reniement), auprès du PNJ à qui l'on parle.
-  // Si la quête se rend à ce PNJ, elle se termine dans la foulée.
   answerQuest(id, optionId) {
     if (!this.talkNpc) return { ok: false, reason: 'Personne à qui répondre.' };
     const r = Quests.answer(this.ch, id, optionId, this.talkNpc.id);
@@ -650,7 +554,6 @@ class World {
     return r;
   }
 
-  // Abandonner une quête en cours (fenêtre Quêtes) : l'avancement est perdu, elle redevient disponible.
   abandonQuest(id) {
     const r = Quests.abandon(this.ch, id);
     if (!r.ok) { this.toast(r.reason); return r; }
@@ -661,7 +564,6 @@ class World {
     return r;
   }
 
-  // L'ordre de faction, au rang 3 (fenêtre Faction).
   chooseOrder(order) {
     const r = Factions.chooseOrder(this.ch, order);
     if (!r.ok) { this.toast(r.reason); return r; }
@@ -671,13 +573,10 @@ class World {
     return r;
   }
 
-  // Serment, rang, ordre, reniement, confiance : l'interface les annonce.
   factionEvents(events) {
     for (const ev of events || []) this.emit('faction', ev);
   }
 
-  // Quêtes dont une étape vient d'avancer : la discussion et le suivi l'écrivent ; une quête finie
-  // dit en plus à qui la rendre.
   afterEvents(touched) {
     for (const t of touched || []) {
       if (t.finished) this.toast(`${t.quest.name} : terminé, à rendre à ${Quests.npcName(Quests.turnInOf(t.quest))}.`);
@@ -685,14 +584,12 @@ class World {
     if (touched && touched.length) this.emit('questProgress', touched);
   }
 
-  // Une quantité d'objets valable : entière, de 1 à 999. Ce sont les règles qu'appliquera le serveur.
   static okCount(n) { return Number.isInteger(n) && n >= 1 && n <= 999; }
 
   buy(id, n) {
     const d = Items.get(id);
     n = n == null ? 1 : Number(n);
     if (!d || !World.okCount(n) || !Number.isFinite(this.ch.fils)) return false;
-    // On n'achète qu'à un marchand ouvert, et seulement ce qu'il vend.
     const shop = this.talkNpc && this.talkNpc.def.shop;
     if (!shop || !shop.includes(id)) return false;
     const cost = d.price * n;
@@ -718,9 +615,6 @@ class World {
     return true;
   }
 
-  // La Banque du Fil (docs/CITE-DES-CIMES.md) : déposer et retirer des objets et des Fils, seulement
-  // en parlant à la banquière (un PNJ `banque`), hors combat. Le coffre n'a pas de limite de poids ;
-  // ce qu'il garde ne compte pas pour les quêtes (comme dans le sac d'un autre).
   aLaBanque() { return !!(this.talkNpc && this.talkNpc.def && this.talkNpc.def.banque) && this.state !== 'combat'; }
   static okBanque(n) { return Number.isInteger(n) && n >= 1 && n <= 99999; }
   deposer(id, n) {
@@ -761,8 +655,6 @@ class World {
     return true;
   }
 
-  // Le Marché des Cimes (js/marche.js) : acheter à l'étal du jour, vendre au prix du jour, seulement
-  // à un comptoir du Marché (un PNJ `marche`), hors combat.
   auMarche() { return this.state !== 'combat' ? Marche.genreDe(this.talkNpc) : null; }
   acheterMarche(id, n) {
     n = n == null ? 1 : Number(n);
@@ -792,9 +684,6 @@ class World {
     return true;
   }
 
-  // Une machine d'atelier (docs/CITE-DES-CIMES.md, C6), comme dans Dofus : la toucher ouvre l'atelier
-  // de son métier sans passer par l'artisan. On « parle » à la machine (talkNpc) : on y fabrique
-  // comme chez l'artisan, et fermer l'atelier la quitte.
   machine(m) {
     if (this.state !== 'explore' || !m || !m.workshop) return false;
     if (this.plateau && Plateau.dist(this.player, m) > 3) { this.toast('Trop loin.'); return false; }
@@ -804,8 +693,6 @@ class World {
     return true;
   }
 
-  // Les avis de recherche de la Garde (js/avis.js) : on les prend, on y renonce et l'on touche la
-  // prime en parlant à la capitaine (un PNJ `avis`), hors combat.
   aLaGarde() { return !!(this.talkNpc && this.talkNpc.def && this.talkNpc.def.avis) && this.state !== 'combat'; }
   prendreAvis(id) {
     if (!this.aLaGarde()) return false;
@@ -824,7 +711,6 @@ class World {
     this.emit('update');
     return true;
   }
-  // La prime d'un avis capturé : l'XP, les Fils, les Sceaux de la Garde.
   rendreAvis(id) {
     if (!this.aLaGarde()) return null;
     const r = Avis.rendre(this.ch, id);
@@ -844,8 +730,6 @@ class World {
     this.emit('update');
     return Object.assign({}, r, { xp: g.gained, levels: g.levels });
   }
-  // La cible d'un avis pris se joint en tête de son groupe (sa carte, son numéro) : l'étiquette, la
-  // fiche et le combat la montrent ; elle le quitte quand l'avis est rendu, abandonné ou capturé.
   majRecherches() {
     for (const g of this.groups) {
       if (!g || !g.monsters || this.estDojo(g)) continue;
@@ -853,13 +737,10 @@ class World {
       if ((a ? a.id : null) === (g.recherche || null)) continue;
       g.monsters = g.monsters.filter(m => !m.recherche);
       g.recherche = a ? a.id : null;
-      // Au niveau de son avis au moins, et jamais en dessous de son escorte (les zones montent pour
-      // un Veilleur né sur Ervane), dans la fourchette de sa définition.
       if (a) { const def = DATA.monsters[a.monstre], [lo, hi] = def ? Entity.levelRange(def) : [1, 99]; const niv = Math.max(lo, Math.min(hi, Math.max(a.niveau, ...g.monsters.map(m => m.level)))); g.monsters = [{ id: a.monstre, level: niv, recherche: true }].concat(g.monsters); }
       g.level = Math.round(g.monsters.reduce((s, m) => s + m.level, 0) / g.monsters.length);
     }
   }
-  // Le Temple des Voies : la gardienne (un PNJ `temple`) échange les Sceaux de la Garde.
   auTemple() { return !!(this.talkNpc && this.talkNpc.def && this.talkNpc.def.temple) && this.state !== 'combat'; }
   echangerTemple(id) {
     if (!this.auTemple()) return false;
@@ -873,7 +754,6 @@ class World {
   }
 
   craft(recipe) {
-    // On fabrique à l'atelier du PNJ à qui l'on parle.
     if (!recipe || !this.talkNpc || this.talkNpc.def.workshop !== recipe.workshop) return false;
     const cost = this.recipeCost(recipe);
     for (const ing of cost) if (!this.ch.has(ing.id, ing.count)) { this.toast('Il manque des ingrédients.'); return false; }
@@ -888,7 +768,6 @@ class World {
     return true;
   }
 
-  // `want` : l'emplacement visé pour un anneau (anneau1 ou anneau2). Retourne { ok, slot } ou false.
   equip(id, want) {
     const r = this.ch.equip(id, want);
     if (!r.ok) { this.toast(r.reason); return false; }
@@ -907,14 +786,12 @@ class World {
     return !!r;
   }
 
-  // ----- Récolte, relais, donjons -----
 
   gather(node) {
     if (this.plateau && Plateau.dist(this.player, node) > 2.5) { this.toast('Trop loin pour récolter.'); return; }
     if (!node.ready) { this.toast('Rien à récolter pour l\'instant.'); return; }
     node.ready = false;
     node.readyAt = this.time + 60;
-    // La minuterie va sous la carte du nœud (sur un plateau, sa sous-zone).
     const carte = node.carte || this.mapId;
     (this.mapStates[carte] || (this.mapStates[carte] = { dead: {}, used: {} })).used[node.idx] = node.readyAt;
     this.persistTimer('used', node.idx, 60, carte);
@@ -930,7 +807,6 @@ class World {
 
   useRelay() {
     if (this.ch.dungeon) { this.emit('dungeonLeavePrompt', World.dungeonDef(this.ch.dungeon.id)); return; }
-    // Sur un plateau : le relais le plus proche à 3 u ; le point de retour prend sa carte.
     const r = this.plateau ? this.plateau.relaisProche(3) : { map: this.mapId, x: this.relay.x, y: this.relay.y };
     if (!r) { this.toast('Aucun Relais du Fil à portée.'); return; }
     this.ch.relay = { map: r.map, x: r.x, y: r.y };
@@ -941,8 +817,6 @@ class World {
     this.emit('save');
   }
 
-  // Seulement depuis un Relais du Fil, hors donjon et hors combat, vers un relais connu. La carte
-  // du monde demande la même chose avant d'offrir « Voyager ».
   canTeleport(mapId) {
     return !!(this.relayOpen && !this.ch.dungeon && this.state !== 'combat' && this.ch.relays.includes(mapId) && World.mapDef(mapId) && (this.plateauxPermis || typeof Ile !== 'object' || !Ile.estPlateau(mapId)));
   }
@@ -958,24 +832,18 @@ class World {
 
   teleportToRelay() {
     const r = this.ch.relay || { map: World.firstMap(this.ch) };
-    // Un personnage d'Ervane sans relais revient au Métier.
     const naissance = !this.ch.relay && this.ch.origine === 'ervane' && DATA.ile && r.map === DATA.ile.naissance.map;
     this.enter(r.map, naissance ? { lieu: DATA.ile.naissance.lieu } : { relay: true });
     this.emit('save');
   }
 
-  // ----- Veille du jour (js/veille.js) -----
 
-  // Au tableau d'un Relais du Fil : son panneau est ouvert, ou le joueur se tient sur sa case. Pas
-  // en donjon (la case d'arrivée d'une salle n'est pas un relais) ni en combat.
   atRelay() {
     if (this.plateau) return !this.ch.dungeon && this.state !== 'combat' && (!!this.relayOpen || !!this.plateau.relaisProche(3));
     if (!this.relay || this.ch.dungeon || (this.mapDef && this.mapDef.room) || this.state === 'combat') return false;
     return !!this.relayOpen || (this.player.x === this.relay.x && this.player.y === this.relay.y);
   }
 
-  // Le dépôt du jour, ou d'une Veille en réserve, au Relais où l'on se tient. Retourne le résultat
-  // de Veille.deposer ({ ok, raison } en cas de refus).
   veilleDeposer(date) {
     if (typeof Veille !== 'object') return { ok: false, raison: 'La Veille n\'est pas disponible.' };
     const r = Veille.deposer(this.ch, { date, auRelais: this.atRelay() });
@@ -989,12 +857,10 @@ class World {
     return r;
   }
 
-  // Les ingrédients d'une recette aujourd'hui : la Veille allège l'atelier du jour.
   recipeCost(recipe) {
     return typeof Veille === 'object' ? Veille.cout(this.ch, recipe) : recipe.ingredients;
   }
 
-  // Le bonus de la Veille pour un combat gagné : XP par monstre, butin, texte ; neutre sans elle.
   static veilleBonus(ch, ctx) {
     return typeof Veille === 'object' ? Veille.combat(ch, ctx) : { xp: () => 1, butin: 1, texte: null };
   }
@@ -1005,8 +871,6 @@ class World {
     this.emit('update');
   }
 
-  // La condition d'entrée d'un donjon (`entree: { niveau, quete }`, docs/ILE-TECHNIQUE.md, 6.1) :
-  // le niveau, et la quête acceptée ou finie. Rend { ok, reason }.
   canEnterDungeon(d) {
     const e = d && d.entree;
     if (!e) return { ok: true };
@@ -1026,10 +890,8 @@ class World {
     if (d.keyItem && !this.ch.has(d.keyItem)) { this.toast(`Il faut ${Items.get(d.keyItem).name} pour entrer.`); return false; }
     if (d.keyItem) this.ch.removeItem(d.keyItem, 1);
     this.returnMap = { map: this.mapId, x: this.player.x, y: this.player.y };
-    // Chaque entrée repart d'un donjon plein : les salles vaincues de la fois d'avant reviennent.
     for (let i = 0; i < d.rooms.length; i++) delete this.mapStates[`${id}#${i}`];
     if (!this.enter(`${id}#0`, { relay: true })) return false;
-    // Depuis un plateau, le point de retour (position continue) est sauvegardé avec le donjon.
     if (this.ch.dungeon && typeof Ile === 'object' && Ile.estPlateau(this.returnMap.map)) this.ch.dungeon.retour = { map: this.returnMap.map, x: Plateau.arrondi(this.returnMap.x), y: Plateau.arrondi(this.returnMap.y) };
     this.emit('save');
     return true;
@@ -1040,18 +902,13 @@ class World {
     this.ch.dungeon = null;
     this.state = 'explore';
     this.combatAuto = null;
-    // Le point de retour : celui de la partie en cours, sinon celui sauvegardé avec le donjon
-    // (après un rechargement en pleine salle), sinon l'entrée du donjon.
     const back = this.returnMap || (dg && dg.retour) || (d && { map: d.entryMap });
     if (back) this.enter(back.map, back.x != null ? { x: back.x, y: back.y } : { relay: true });
     else this.teleportToRelay();
     this.emit('save');
   }
 
-  // ----- Combat -----
 
-  // Les `n` cases les plus proches de `center` (4 pas au plus). `map` : une aire de combat (un
-  // plateau, 5.1), où seules les cases interdites comptent (ni PNJ, ni groupe, ni nœud dessus).
   cellsAround(center, n, forbid, map) {
     const interdite = (x, y) => !!(forbid && forbid.some(c => c.x === x && c.y === y));
     const reach = map ? Grid.reachable(map, center, 4, interdite) : Grid.reachable(this.map, center, 4, (x, y) => this.blockedForPlayer(x, y) || (forbid && forbid.some(c => c.x === x && c.y === y)));
@@ -1059,11 +916,7 @@ class World {
     return cells.slice(0, n);
   }
 
-  // Le Dojo du Fil : un groupe d'entraînement (`dojo` sur son modèle) se bat au niveau du personnage,
-  // sans défi, sans marque de combat en cours (fermer la page ne coûte rien), sans compter de combat.
   estDojo(group) { return !!(group && group.tpl && group.tpl.dojo); }
-  // S'entraîner au Dojo depuis la maîtresse du Dojo : le groupe de mannequins de la carte (ou du
-  // plateau) le plus proche.
   entrainement() {
     if (this.state !== 'explore' && this.state !== 'dialogue' && this.state !== 'panel') return false;
     const g = this.groups.filter(x => this.estDojo(x)).sort((a, b) => Math.hypot(a.x - this.player.x, a.y - this.player.y) - Math.hypot(b.x - this.player.x, b.y - this.player.y))[0];
@@ -1073,8 +926,6 @@ class World {
   }
 
   startFight(group) {
-    // Sur un plateau, le combat se joue sur l'aire du groupe (Plateau.arene) ; sans plan, pas de
-    // combat.
     const arene = this.plateau ? this.plateau.arene(group) : null;
     if (this.plateau && !arene) { if (group) group.hold = false; this.toast('Ce combat n\'est pas prêt.'); return false; }
     if (arene) this.plateau.ecarterGroupes(group);
@@ -1083,7 +934,6 @@ class World {
     this.currentGroup = group;
     group.hold = false;
     const knots = this.ch.activeKnots();
-    // Nœud de Meute : un monstre de plus, copie d'un monstre du groupe.
     let monsters = group.monsters;
     const dojo = this.estDojo(group);
     if (dojo) monsters = monsters.map(m => Object.assign({}, m, { level: this.ch.level }));
@@ -1103,7 +953,6 @@ class World {
     this.combat.emit('challenge', this.combat.challenge);
     if (!dojo) {
       this.ch.counters.fights++;
-      // Marque « combat en cours » : si la page se ferme avant la fin, le combat compte comme perdu.
       this.ch.fight = { map: this.mapId, at: Date.now() };
     }
     this.emit('save');
@@ -1117,7 +966,6 @@ class World {
     delete ch.fight;
     const result = { victory: d.victory, xp: 0, gained: 0, levels: 0, fils: 0, drops: [], achievements: [], quests: [], dungeon: null };
     const monsters = this.combat.entities.filter(e => e.team === 'monster' && !e.isSummon);
-    // Défi : réussi, il ajoute son bonus à l'XP et aux chances de butin.
     const chal = this.combat.challenge;
     const knotCount = this.combat.knots ? this.combat.knots.size : 0;
     const bonus = (d.victory && chal && chal.success ? chal.bonus : 0) + (d.victory ? knotCount * DATA.rules.knotBonus : 0);
@@ -1130,18 +978,13 @@ class World {
     if (d.victory && knotCount >= 4) ch.counters.feats.noeuds_4 = (ch.counters.feats.noeuds_4 || 0) + 1;
     if (d.victory) {
       ch.counters.wins++;
-      // Veille du jour, une fois le dépôt fait : plus d'XP dans une zone ou sur une famille, plus de
-      // butin dans un donjon (js/veille.js).
       const veille = World.veilleBonus(ch, { zone: this.zone && this.zone.id, dungeon: ch.dungeon && ch.dungeon.id, monsters: monsters.map(e => e.def.id) });
       result.veille = veille.texte;
-      // Prospection comme Dofus : 100 + Aqua / 10 ; chaque taux de butin est multiplié par elle / 100.
       const prospection = (ch.derived().prospection / 100) * (1 + bonus / 100) * veille.butin;
       for (const e of monsters) {
         result.xp += e.xp * veille.xp(e.def.id);
         ch.counters.kills[e.def.id] = (ch.counters.kills[e.def.id] || 0) + 1;
         if (e.boss && !ch.counters.bosses.includes(e.def.id)) ch.counters.bosses.push(e.def.id);
-        // Bourse de la Nerith : un monstre achevé par un sort de vol rapporte + `lootBonus` % de
-        // Fils et de chances de butin (js/combat.js, onDeath).
         const purse = 1 + (e.lootBonus || 0) / 100;
         result.fils += Math.round((1 + Math.floor(this.rng() * 3)) * e.level * purse);
         for (const drop of Items.dropsOf(e.def.id)) {
@@ -1153,7 +996,6 @@ class World {
         result.quests.push(...Quests.onEvent(ch, { type: 'kill', monster: e.def.id }));
       }
       result.xp = Math.round(result.xp * (1 + bonus / 100));
-      // Un avis de recherche dont la cible est tombée : capturé, la prime attend à la Garde.
       result.avis = Avis.victoire(ch, monsters.map(e => e.def.id)).map(a => ({ id: a.id, nom: DATA.monsters[a.monstre].name }));
       const g = ch.gainXp(result.xp);
       result.gained = g.gained; result.levels = g.levels;
@@ -1162,9 +1004,7 @@ class World {
       if (!g.levels) ch.hp = Math.max(1, this.combat.player.hp);
       if (g.levels) result.quests.push(...Quests.onEvent(ch, { type: 'level', level: ch.level }));
       result.quests.push(...Quests.onEvent(ch, { type: 'inventory' }));
-      // Le groupe disparaît et réapparaîtra plus tard.
       if (this.currentGroup) {
-        // La minuterie va sous la carte du groupe (sur un plateau, sa sous-zone, 4.5).
         const carte = this.currentGroup.carte || this.mapId;
         const st = this.mapStates[carte] || (this.mapStates[carte] = { dead: {}, used: {} });
         st.dead[this.currentGroup.idx] = this.time + (this.currentGroup.tpl.respawn || 45);
@@ -1184,15 +1024,11 @@ class World {
           result.quests.push(...Quests.onEvent(ch, { type: 'dungeon', dungeon: dd.id }));
           result.dungeon = { def: dd, cleared: true, turns: ch.dungeon.turns };
           this.pending = 'exitDungeon';
-          // La sauvegarde de fin de combat place déjà le personnage dehors : recharger sur cet
-          // écran ne rouvre pas la salle du boss. Le point de retour sauvegardé avec le donjon sert
-          // après un rechargement en pleine salle.
           this.returnMap = this.returnMap || ch.dungeon.retour || { map: dd.entryMap };
           ch.dungeon = null;
           ch.pos = { map: this.returnMap.map, x: this.returnMap.x, y: this.returnMap.y };
         } else {
           result.dungeon = { def: dd, cleared: false, next: ch.dungeon.room + 1 };
-          // La salle avance dès la victoire : recharger ne rejoue pas la salle gagnée.
           ch.dungeon.room += 1;
           ch.pos = null;
           this.pending = 'nextRoom';
@@ -1202,10 +1038,8 @@ class World {
       ch.hp = Math.max(1, Math.round(ch.derived().hpMax * 0.5));
       this.pending = 'relay';
       if (ch.dungeon) ch.dungeon = null;
-      // La sauvegarde place déjà le personnage au relais (et non dans la salle perdue).
       ch.pos = ch.relay ? { map: ch.relay.map, x: ch.relay.x, y: ch.relay.y } : null;
     }
-    // Les étapes `kills` à faire en un seul combat repartent de zéro si ce combat ne les a pas remplies.
     result.quests.push(...Quests.onEvent(ch, { type: 'fightEnd', victory: !!d.victory }));
     result.achievements = this.checkAchievements(true);
     this.lastResult = result;
@@ -1216,9 +1050,6 @@ class World {
     this.emit('save');
   }
 
-  // La fin d'un entraînement au Dojo : ni XP, ni Fils, ni butin, ni quête, ni compteur ; les PV
-  // d'avant le combat ; les mannequins restent sur la cour. Le bilan : les dégâts faits aux
-  // mannequins, les tours, les mannequins abattus.
   finEntrainement(d) {
     const ch = this.ch;
     const mannequins = this.combat.entities.filter(e => e.team === 'monster' && !e.isSummon);
@@ -1234,8 +1065,6 @@ class World {
     this.emit('save');
   }
 
-  // Quitter un combat en cours : il compte comme perdu (moitié des PV, retour au Relais), comme un
-  // combat laissé ouvert à la fermeture de la page (js/main.js).
   abandonFight() {
     if (this.state !== 'combat' || this.combat.phase === 'ended' || this.combat.busy) return false;
     if (!this.combat.entrainement) this.ch.counters.abandons = (this.ch.counters.abandons || 0) + 1;
@@ -1244,9 +1073,6 @@ class World {
     return true;
   }
 
-  // Un allié mené par l'IA (le guide du premier combat, js/guide.js) : une entité du camp du joueur,
-  // jouée comme une invocation sans maître. Elle ne compte ni pour la victoire ni pour la défaite,
-  // ne rapporte pas d'XP et n'entre pas dans la limite d'invocations.
   addAlly(def) {
     const cb = this.combat;
     if (this.state !== 'combat' || cb.phase !== 'placement' || !def) return null;
@@ -1263,8 +1089,6 @@ class World {
     return e;
   }
 
-  // Garde une minuterie en heure réelle, et oublie celles qui sont passées. `carte` : la carte du
-  // groupe ou du nœud (sur un plateau, sa sous-zone) ; par défaut la carte courante.
   persistTimer(kind, idx, seconds, carte) {
     if (!this.mapId || this.mapDef.room) return;
     carte = carte || this.mapId;
@@ -1278,7 +1102,6 @@ class World {
     t[kind][idx] = now + seconds * 1000;
   }
 
-  // Après l'écran de fin de combat : salle suivante, sortie du donjon, retour au relais, ou rien.
   resume() {
     const p = this.pending;
     this.pending = null;
@@ -1288,8 +1111,6 @@ class World {
     else if (p === 'exitDungeon') this.leaveDungeon();
     else if (p === 'relay') this.teleportToRelay();
     else if (this.plateau) {
-      // Sur un plateau, après une victoire : le Veilleur reprend sa case finale (5.3), sans voyage ;
-      // `apresCombat` dit au rendu de revenir à l'exploration en douceur, sans saut de caméra.
       this.plateau.apresCombat(this.combat);
       this.emit('map', { mapId: this.mapId, def: this.mapDef, zone: this.zone, plateau: this.plateau.id, apresCombat: true });
     } else this.emit('map', { mapId: this.mapId, def: this.mapDef, zone: this.zone });
@@ -1303,10 +1124,6 @@ class World {
     return got;
   }
 
-  // ----- Récompenses de succès -----
-  // Un succès débloqué attend qu'on vienne chercher son XP, ses Fils et ses objets ; chacun ne se
-  // remet qu'une fois (Achievements.claim). Pas pendant un combat : le personnage du combat ne
-  // changerait pas de niveau. Émet 'claim' avec ce qui a été gagné.
 
   claimAchievement(id) {
     if (this.state === 'combat') return null;

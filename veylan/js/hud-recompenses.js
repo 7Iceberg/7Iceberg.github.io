@@ -1,9 +1,3 @@
-// Récompenses en attente, à la manière de Dofus Touch dans la charte Veylan. Un succès débloqué
-// est inscrit tout de suite, avec son titre (le plus simple : la validation des sauvegardes reste
-// la même) ; son XP, ses Fils et ses objets attendent qu'on vienne les chercher, une ligne à la
-// fois ou tout d'un coup (World.claimAchievement, Achievements.claim : une seule fois chacun).
-// Le coffre (#recompenses-btn) se montre au-dessus du bloc vital tant qu'il reste quelque chose,
-// avec leur nombre, et ouvre la fenêtre. Se charge après js/hud-fenetres.js et complète Hud.
 (() => {
 const esc = s => Util.esc(s);
 const svg = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
@@ -14,7 +8,6 @@ const nf = n => Number(n).toLocaleString('fr-FR');
 
 Object.assign(Hud.prototype, {
   initRecompenses() {
-    // Le coffre est à lui seul : un bouton posé dans le calque d'exploration, caché en combat.
     let b = document.getElementById('recompenses-btn');
     if (!b) {
       b = document.createElement('button');
@@ -28,15 +21,12 @@ Object.assign(Hud.prototype, {
     b.onclick = () => this.toggleRecompenses();
     this.coffre = b;
     const w = this.world;
-    // Un succès débloqué : la discussion, le coffre, et la fenêtre si elle est ouverte (le monde
-    // n'émet pas toujours 'update' après un déblocage).
     const nouveau = list => {
       for (const g of list) this.chat('succes', `Succès déverrouillé : ${g.achievement.name}`);
       this.majCoffre();
       if (list.length && this.fen.isOpen('recompenses')) this.fen.render('recompenses');
     };
     w.on('achievement', g => nouveau([g]));
-    // En fin de combat, les succès sont débloqués en silence : l'écran de fin les montre.
     w.on('fightEnd', r => nouveau(r.achievements || []));
     w.on('claim', list => this.apresRecompense(list));
     w.on('update', () => this.majCoffre());
@@ -45,7 +35,6 @@ Object.assign(Hud.prototype, {
     this.majCoffre();
   },
 
-  // Le coffre se montre tant qu'il reste une récompense, avec leur nombre.
   majCoffre() {
     const b = this.coffre, ch = this.world && this.world.ch;
     if (!b || !ch) return;
@@ -57,7 +46,6 @@ Object.assign(Hud.prototype, {
     if (n) this.placerCoffre();
   },
 
-  // Au-dessus du bloc vital, où qu'il soit : sa place est mesurée, pas supposée.
   placerCoffre() {
     const b = this.coffre, bas = document.getElementById('bas-centre');
     if (!b || b.hidden || !bas || !b.offsetParent) return;
@@ -117,7 +105,6 @@ Object.assign(Hud.prototype, {
     return this.world.claimAllAchievements();
   },
 
-  // Ce qui vient d'être remis : la discussion, un mot à l'écran, le coffre.
   apresRecompense(list) {
     if (!list || !list.length) return;
     const xp = list.reduce((s, g) => s + g.xp, 0), fils = list.reduce((s, g) => s + g.fils, 0);

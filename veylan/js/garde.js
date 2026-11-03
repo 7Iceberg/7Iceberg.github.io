@@ -1,6 +1,3 @@
-// Garde-fou : chargé en premier. Toute erreur non rattrapée (au chargement ou en jeu) s'affiche
-// en haut de l'écran, avec le fichier et la ligne, pour qu'un testeur puisse l'envoyer en
-// capture au lieu de voir un écran noir. Sans dépendance : il doit marcher même si le reste casse.
 (function () {
   let box = null, count = 0;
   function show(text) {
@@ -26,7 +23,7 @@
       const line = document.createElement('div');
       line.textContent = text;
       box.appendChild(line);
-    } catch (e) { /* rien à faire de plus */ }
+    } catch (e) {   }
   }
   const where = () => {
     const ua = navigator.userAgent || '';

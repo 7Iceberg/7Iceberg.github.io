@@ -1,10 +1,4 @@
-// Kaldum : la deuxième région de Veylan, niveaux 20 à 30.
-// Mines, forges, roche chaude. Terre des Kaldrin. Les forges s'éteignent, et quelque chose
-// en dessous récupère leur chaleur. Format : docs/SPEC-CONTENU.md.
 
-// ===================================================================================
-// ZONES
-// ===================================================================================
 
 DATA.content.zones.push({
   id: 'kaldum_ville', name: 'Kaldum, la ville des forges', region: 'kaldum', level: [20, 22],
@@ -31,7 +25,6 @@ DATA.content.zones.push({
         '###############',
       ],
       exits: { n: null, e: 'kaldum_ville_place', s: null, w: 'orsane_eboulis_passe' },
-      // Okrel, le capitaine du Fil, tient la Porte avec les Kaldrin.
       npcs: ['okrel', 'ravok'],
       nodes: [],
       groups: [
@@ -610,9 +603,6 @@ DATA.content.zones.push({
   ],
 });
 
-// ===================================================================================
-// PNJ
-// ===================================================================================
 
 DATA.content.npcs.push({
   id: 'ravok', name: 'Thulvar', title: 'Garde de la Porte', look: 'garde',
@@ -714,8 +704,6 @@ DATA.content.npcs.push({
   ],
 });
 
-// Le Fil à Kaldum : son capitaine tient la Porte. La Déchirure, elle, attend à la Fosse
-// (Kethril, content/orsane.js).
 DATA.content.npcs.push({
   id: 'okrel', name: 'Okrel', title: 'Capitaine du Fil', look: 'garde',
   dialogue: [
@@ -728,9 +716,6 @@ DATA.content.npcs.push({
   },
 });
 
-// ===================================================================================
-// QUÊTES : ligne principale
-// ===================================================================================
 
 DATA.content.quests.push({
   id: 'kaldum_arrivee', name: "L'arrivée à Kaldum", level: 20, main: true,
@@ -850,9 +835,6 @@ DATA.content.quests.push({
   rewards: { xp: 10497, fils: 100, items: [{ id: 'bottes_cendrou', count: 1 }] },
 });
 
-// ===================================================================================
-// QUÊTES : secondaires
-// ===================================================================================
 
 DATA.content.quests.push({
   id: 'kaldum_habille_pour_la_mine', name: 'Habillé pour la mine', level: 20, main: false,
@@ -1093,14 +1075,7 @@ DATA.content.quests.push({
   rewards: { xp: 4962, fils: 80, items: [{ id: 'potion_de_veille', count: 1 }] },
 });
 
-// ===================================================================================
-// QUÊTES : les factions, rangs 1 et 2 (docs/MONDE.md)
-// ===================================================================================
-// Trois quêtes par rang et par faction, 10 points chacune : trente points font un rang
-// (js/factions.js). Le Fil protège, recoud et scelle ; la Déchirure regarde, ouvre et lie.
-// Elles se rendent au contact de la faction : Okrel à la Porte, Kethril à la Fosse.
 
-// ----- Le Fil, rang 1 : Bout de fil -----
 
 DATA.content.quests.push({
   id: 'kaldum_fil_la_porte_tient', name: 'La Porte tient', level: 20, main: false, category: 'faction',
@@ -1167,7 +1142,6 @@ DATA.content.quests.push({
   rewards: { xp: 3877, fils: 55, faction: 10 },
 });
 
-// ----- Le Fil, rang 2 : Couseur -----
 
 DATA.content.quests.push({
   id: 'kaldum_fil_recoudre_la_bouche', name: 'Recoudre la Bouche', level: 25, main: false, category: 'faction',
@@ -1235,7 +1209,6 @@ DATA.content.quests.push({
   rewards: { xp: 5249, fils: 70, items: [{ id: 'pain_de_forge', count: 2 }], faction: 10 },
 });
 
-// ----- La Déchirure, rang 1 : Accroc -----
 
 DATA.content.quests.push({
   id: 'kaldum_dechirure_les_yeux_ouverts', name: 'Les yeux ouverts', level: 20, main: false, category: 'faction',
@@ -1306,7 +1279,6 @@ DATA.content.quests.push({
   rewards: { xp: 3877, fils: 55, faction: 10 },
 });
 
-// ----- La Déchirure, rang 2 : Éraflure -----
 
 DATA.content.quests.push({
   id: 'kaldum_dechirure_lier_une_vapeur', name: 'Lier une vapeur', level: 25, main: false, category: 'faction',
@@ -1378,9 +1350,6 @@ DATA.content.quests.push({
   rewards: { xp: 5249, fils: 70, items: [{ id: 'pain_de_forge', count: 2 }], faction: 10 },
 });
 
-// ===================================================================================
-// DONJONS
-// ===================================================================================
 
 DATA.content.dungeons.push({
   id: 'forge_morte', name: 'La Forge Morte', zone: 'kaldum_fonderie', level: [28, 30],

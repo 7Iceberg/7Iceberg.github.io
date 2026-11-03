@@ -1,17 +1,3 @@
-// Fenêtre « Sorts » (touche S), à la manière de la fenêtre des sorts de Dofus, dans la charte de
-// Veylan : à gauche la liste des sorts de la classe en lignes (la tuile, le nom, les niveaux
-// d'obtention au-dessus, le rang en étoiles entre « − » et « + », le coût prévu), la ligne choisie
-// surlignée, une recherche et un filtre par type, « Afficher tous les niveaux d'obtention » ; à
-// droite la fiche du sort comme la bulle de Dofus, rang par rang (onglets 1 à 5) : coût, portée,
-// critique, lancers, le récit, les effets, les effets critiques, ce que change le rang suivant ; en
-// bas le capital de points, la réinitialisation et la répartition automatique.
-// Les « + » ne font que prévoir : rien ne change avant « Valider » et sa confirmation, que la
-// fenêtre redemande si on la ferme avec des changements en attente. « − » ne retire qu'un rang
-// prévu ; les rangs validés ne se rendent que par « Réinitialiser tout ».
-// Événements DOM sur window : `veylan:windowOpen` ({ id: 'sorts' }) à l'ouverture (js/fenetres.js),
-// `veylan:spellUpgraded` ({ id, rank }) pour chaque sort monté, `veylan:chat` (message système)
-// après une validation. Les rangs sont dans js/character.js et DATA.spellRanks (js/data.js), les
-// icônes dans js/sort-icones.js. Se charge après js/hud-fenetres.js et complète la classe Hud.
 (() => {
 const I = Fenetres.ICON;
 const esc = s => Util.esc(s);
@@ -21,7 +7,6 @@ const TYPES = [['tous', 'Tous'], ['degats', 'Dégâts'], ['soin', 'Soin'], ['bou
 const VERROU = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 const CIBLE = { free: 'case libre', enemy: 'ennemi', ally: 'allié', summon: 'invocation alliée', entity: 'une créature', any: 'toute case' };
 
-// Les types d'un sort, d'après ses effets (un sort peut en avoir plusieurs) ; « Autres » s'il n'en a aucun.
 function typesOf(s) {
   const t = new Set();
   const all = s.effects.concat(s.selfEffects || []);
@@ -51,8 +36,6 @@ const tours = n => n === 0 ? 'ce tour' : plural(n, 'tour');
 const jet = ef => { const v = DATA.rankShown(ef); return v.min === v.max ? `${v.min}` : `${v.min} à ${v.max}`; };
 const pct = m => `+${Math.round((m - 1) * 100)} %`;
 
-// Les lignes [libellé, valeur, sous-ligne] d'un effet au rang du sort `s` (jets et valeurs déjà au
-// rang) ; `crit` ajoute le coup critique sous chaque jet de dégâts (× 1,5, js/combat.js rollDamage).
 function lignes(ef, s, crit) {
   const critique = () => crit ? [['Coup critique', `${Math.round(ef.min * (ef.mult || 1) * 1.5)} à ${Math.round(ef.max * (ef.mult || 1) * 1.5)} ${el(s.element)}`]] : [];
   const sous = list => list.map(([l, v]) => [l, v, true]);
@@ -95,7 +78,6 @@ function lignes(ef, s, crit) {
   }
 }
 
-// Ce que le sort fait en plus de ses effets (vol de vie, Fureur, Affût...).
 function propres(s) {
   const out = [];
   if (s.lifesteal) out.push(['Vol de vie', `${s.lifesteal} % des dégâts`]);
@@ -115,7 +97,6 @@ function propres(s) {
   return out;
 }
 
-// Ce que le rang `rank` change par rapport au précédent, en lignes [libellé, avant, après].
 function changements(s, rank) {
   const out = [];
   const cd = n => n ? plural(n, 'tour') : 'aucune';
@@ -135,21 +116,18 @@ function changements(s, rank) {
 }
 
 Object.assign(Hud.prototype, {
-  // L'état de la fenêtre : sort choisi, filtre, rang regardé, rangs prévus, question en cours.
   sortsState() {
     if (!this.sorts) {
       let niveaux = true;
-      try { niveaux = localStorage.getItem('veylan.sorts.niveaux') !== '0'; } catch (e) { /* rien */ }
+      try { niveaux = localStorage.getItem('veylan.sorts.niveaux') !== '0'; } catch (e) {   }
       this.sorts = { sel: null, filtre: 'tous', cherche: '', niveaux, vue: null, pending: {}, modal: null };
     }
     return this.sorts;
   },
 
-  // Le sort tel que le personnage le lance (sa voie comprise), et son rang avec ce qui est prévu.
   sortVu(id) { return this.world.ch.spellFor(id) || DATA.spells[id]; },
   sortRang(id) { return this.world.ch.spellRank(id) + (this.sortsState().pending[id] || 0); },
 
-  // Coût de ce qui est prévu pour un sort, ou pour tous.
   sortsCout(id) {
     const ch = this.world.ch, P = this.sortsState().pending;
     let n = 0;
@@ -158,8 +136,6 @@ Object.assign(Hud.prototype, {
   },
   sortsReste() { return this.world.ch.spellPoints - this.sortsCout(); },
 
-  // Ce qui est prévu reste possible (un niveau, une réinitialisation, la répartition automatique ont
-  // pu passer entre-temps) : on garde, sort par sort, les rangs que les points paient encore.
   sortsPurge() {
     const ch = this.world.ch, S = this.sortsState();
     const kept = {};
@@ -209,7 +185,7 @@ Object.assign(Hud.prototype, {
       if (target.id === 'sorts-recherche') { S.cherche = target.value; redraw(); }
       if (target.id === 'sorts-niveaux' && kind === 'change') {
         S.niveaux = target.checked;
-        try { localStorage.setItem('veylan.sorts.niveaux', S.niveaux ? '1' : '0'); } catch (e) { /* rien */ }
+        try { localStorage.setItem('veylan.sorts.niveaux', S.niveaux ? '1' : '0'); } catch (e) {   }
         redraw();
       }
       if (target.id === 'sorts-auto' && kind === 'change') {
@@ -224,8 +200,6 @@ Object.assign(Hud.prototype, {
     this.simpleWin('sorts', 'Sorts', () => this.renderSorts(), actions, { width: 880, cls: 'vy-fenetre--sorts', onField, after, beforeClose: () => this.sortsAvantFermeture() });
   },
 
-  // Fermer la fenêtre : une question ouverte se referme d'abord ; des rangs prévus font demander
-  // s'il faut les valider.
   sortsAvantFermeture() {
     const S = this.sortsState();
     if (S.modal) { S.modal = null; this.fen.render('sorts'); return false; }
@@ -240,7 +214,6 @@ Object.assign(Hud.prototype, {
     for (const [id, n] of Object.entries(S.pending)) for (let i = 0; i < n; i++) { if (!ch.raiseSpell(id).ok) break; if (!montes.includes(id)) montes.push(id); }
     S.pending = {}; S.modal = null; S.vue = null;
     if (montes.length) {
-      // Des rangs choisis à la main : la répartition automatique ne doit plus les défaire.
       ch.autoSpells = false;
       for (const id of montes) window.dispatchEvent(new CustomEvent('veylan:spellUpgraded', { detail: { id, rank: ch.spellRank(id) } }));
       window.dispatchEvent(new CustomEvent('veylan:chat', { detail: { type: 'systeme', text: 'Les changements de tes sorts sont enregistrés.' } }));
@@ -298,7 +271,6 @@ Object.assign(Hud.prototype, {
     ${S.modal ? this.sortsModale() : ''}`;
   },
 
-  // Une ligne de la liste : le sort (bouton qui le choisit), son rang entre « − » et « + », le coût prévu.
   sortLigne(id, reste, enCombat) {
     const ch = this.world.ch, S = this.sortsState();
     const s = this.sortVu(id);
@@ -310,8 +282,6 @@ Object.assign(Hud.prototype, {
       const cls = r <= base ? 'on' : r <= rank ? 'prevu' : R().levels[i] > ch.level ? 'verrou' : '';
       return `<i class="${cls}"></i>`;
     }).join('');
-    // Les niveaux d'obtention, comme les cases de Dofus au-dessus de chaque sort : le niveau où il
-    // s'ouvre, puis celui de son dernier rang ; en or ceux qui sont atteints.
     const obt = [unlock, Math.max(unlock, R().levels[R().max - 1])].filter((v, i, a) => a.indexOf(v) === i)
       .map(n => `<i class="${n <= ch.level ? 'ok' : ''}">${n}</i>`).join('');
     const teinte = (DATA.elements[s.element] || DATA.elements.neutre).color;
@@ -338,7 +308,6 @@ Object.assign(Hud.prototype, {
       `<span class="vy-sort__points${cout ? ' on' : ''}" title="${cout ? `${plural(cout, 'point')} prévu${cout > 1 ? 's' : ''}` : 'Rien de prévu'}">${cout ? '−' + cout : '·'}</span></li>`;
   },
 
-  // La fiche du sort choisi, au rang regardé (onglets 1 à 5) : par défaut son rang, prévu compris.
   sortFiche(id) {
     const ch = this.world.ch, S = this.sortsState(), d = ch.derived();
     const base0 = this.sortVu(id);
@@ -354,7 +323,6 @@ Object.assign(Hud.prototype, {
       const title = lv > ch.level ? `Rang ${r} : niveau ${lv} requis` : r === actuel ? `Rang ${r} : ton rang${r > acquis ? ' (prévu)' : ''}` : `Rang ${r}`;
       return `<button class="vy-rang ${cls}" role="tab" aria-selected="${r === vue}" data-act="vue" data-rang="${r}" title="${title}">${lv > ch.level ? VERROU : '<i class="vy-rang__etoile" aria-hidden="true"></i>'}<b>${r}</b>${lv > ch.level ? `<small>niv. ${lv}</small>` : ''}</button>`;
     }).join('');
-    // Caractéristiques au rang regardé, en lignes (comme la bulle des sorts de Dofus).
     const dmg = s.effects.some(ef => ef.type === 'damage' || ef.type === 'sacrifice' || ((ef.type === 'trap' || ef.type === 'leap') && ef.effects.some(x => x.type === 'damage')));
     const carac = [['Coût', `<b>${s.pa}</b> PA`]];
     if (s.target === 'self') carac.push(['Portée', 'sur soi']);
@@ -369,14 +337,11 @@ Object.assign(Hud.prototype, {
     carac.push(['Relance', s.cooldown ? `<b>${plural(s.cooldown, 'tour')}</b>` : 'sans relance']);
     if (s.maxPerTurn) carac.push(['Utilisations', `<b>${s.maxPerTurn}</b> par tour`]);
     if (dmg) carac.push(['Critique', `<b>${d.crit} %</b> <small>(dégâts × 1,5)</small>`]);
-    // Effets au rang regardé, chaque jet de dégâts suivi de son coup critique.
-    // Les coups critiques à part, comme les « Effets critiques » de Dofus.
     const fx = [], crits = [];
     if (DATA.rankScales(s) && vue > 1) fx.push(['Bonus de rang', `${pct(DATA.rankMult(s, vue))} <small>dégâts, soins, boucliers</small>`]);
     for (const ef of s.effects.concat(s.selfEffects || [])) for (const [l, v, sub] of lignes(ef, s, true)) (l === 'Coup critique' ? crits : fx).push([l, esc(v), sub]);
     fx.push(...propres(s).map(([l, v]) => [l, esc(v)]));
     const ul = list => list.map(([l, v, sub]) => `<li${sub ? ' class="sous"' : ''}><span>${esc(l)}</span><b>${v}</b></li>`).join('');
-    // Le rang suivant : ce qui change, mis en avant.
     let suivant = '';
     if (vue < R().max) {
       const lv = needLevel(vue + 1), cost = Character.rankCost(vue);
@@ -398,7 +363,6 @@ Object.assign(Hud.prototype, {
     </article>`;
   },
 
-  // La question avant de valider, de fermer avec des changements prévus, ou de tout réinitialiser.
   sortsModale() {
     const ch = this.world.ch, S = this.sortsState();
     let q, detail;
@@ -416,7 +380,6 @@ Object.assign(Hud.prototype, {
       <div class="vy-sorts__choix"><button class="vy-bouton vy-bouton--primaire" data-act="oui">Oui</button><button class="vy-bouton" data-act="non">Non</button></div></div></div>`;
   },
 
-  // Une pastille sur le bouton du menu tant qu'un point de sort peut servir.
   marquerSorts() {
     const b = document.querySelector('#menus [data-win="sorts"]');
     const ch = this.world && this.world.ch;
@@ -427,7 +390,6 @@ Object.assign(Hud.prototype, {
   },
 });
 
-// La pastille suit chaque mise à jour du monde.
 const initFenetres = Hud.prototype.initFenetres;
 Hud.prototype.initFenetres = function () {
   initFenetres.call(this);

@@ -1,35 +1,12 @@
-// Le sol de l'île d'Ervane en 3D (docs/ILE-TECHNIQUE.md, 3.4) : 8 × 6 tuiles de relief de 30 × 30 u
-// sur un treillis global aux u entiers (un sommet par u : les coins de chaque case de combat sont
-// des sommets du maillage), un niveau lointain à un sommet pour 2 u au-delà de 70 u du point visé,
-// une jupe sous les bords des tuiles lointaines contre les fentes. Les triangles dont les trois
-// sommets sont loin de la terre ferme disparaissent ; ceux du bord passent par une variante du
-// matériau qui coupe exactement au contour de l'île (le champ de distance de js/ile-peinture.js).
-//
-// Les escarpements : un sommet par u dessinerait en dents de scie une falaise de 12 u tracée en
-// biais. Les sommets du treillis proches du tracé (lissé) y sont ramenés, chacun du côté de sa
-// hauteur : la marche suit le tracé, et une face de falaise dédiée (js/ile-decor.js, d'après
-// IleSol.falaises) la couvre de strates.
-//
-// Le matériau : MeshToonMaterial (la rampe à deux valeurs du prototype) dont le shader mélange les
-// six matières peintes (une DataArrayTexture en WebGL2, répétée tous les 4 u) selon la carte des
-// poids, multiplie par la teinte de l'île, assombrit par les ombres cuites et ajoute la lueur.
-// Sans WebGL2, la couleur moyenne des matières et un grain remplacent les couches.
 const IleSol = (() => {
   const TUILE = 30;
 
-  // ----- Les escarpements -----
 
-  // Pour chaque escarpement : le tracé lissé, et pour chaque sommet du treillis à moins de 1,6 u,
-  // sa position ramenée sur le tracé du côté de sa hauteur (haut ou bas). Rend { surcharges: Map
-  // index -> { u, v, cote }, faces: [{ pts, hauts, bas, cote }] }.
   function falaises(T) {
     const surcharges = new Map(), faces = [];
-    // Les tracés lissés et leurs échantillons (normales, côté haut, hauteurs, face vraie) viennent du
-    // terrain : la navigation (js/ile-nav.js) ferme la même bande que ces faces couvrent.
     for (const f of IleTerrain.facesEscarpements(T)) {
       const { pts, cum, ech } = f;
       faces.push(f);
-      // Les sommets du treillis proches du tracé.
       const u0 = Math.max(0, Math.floor(Math.min(...pts.map(p => p[0])) - 2)), u1 = Math.min(T.W - 1, Math.ceil(Math.max(...pts.map(p => p[0])) + 2));
       const v0 = Math.max(0, Math.floor(Math.min(...pts.map(p => p[1])) - 2)), v1 = Math.min(T.H - 1, Math.ceil(Math.max(...pts.map(p => p[1])) + 2));
       for (let v = v0; v <= v1; v++) for (let u = u0; u <= u1; u++) {
@@ -37,7 +14,6 @@ const IleSol = (() => {
         const pr = IleTerrain.projeter(pts, cum, u, v);
         if (pr.d > 1.6) continue;
         const q = IleTerrain.pointA(pts, cum, pr.s);
-        // L'échantillon le plus proche dit le côté haut et les hauteurs.
         const k = Math.min(ech.length - 1, Math.max(0, Math.round(pr.s / Math.max(1e-6, cum[cum.length - 1]) * (ech.length - 1))));
         const e = ech[k];
         if (!e.vrai) continue;
@@ -52,10 +28,7 @@ const IleSol = (() => {
     return { surcharges, faces };
   }
 
-  // ----- Hauteurs et normales du rendu -----
 
-  // Les hauteurs du rendu : celles du terrain, prolongées de 2 u dans le vide autour de la terre
-  // ferme (la moyenne des voisins), pour que le bord coupé par le shader continue la pente.
   function hauteurs(T) {
     const { W, H, haut, vide } = T, out = new Float32Array(haut), connu = new Uint8Array(W * H);
     for (let i = 0; i < W * H; i++) connu[i] = vide[i] ? 0 : 1;
@@ -78,8 +51,6 @@ const IleSol = (() => {
     return { h: out, connu };
   }
 
-  // La normale d'un sommet du treillis, par différences centrées ; près d'un escarpement, seulement
-  // avec les voisins du même côté (sinon le bord du plateau s'assombrirait d'une marche fantôme).
   function normale(T, Hr, surch, u, v, out) {
     const W = T.W, Hh = T.H;
     const i = v * W + u, s = surch.get(i);
@@ -104,9 +75,7 @@ const IleSol = (() => {
     return out;
   }
 
-  // ----- Les tuiles -----
 
-  // Les sommets utiles : à moins de 1,5 u de la terre ferme.
   function utiles(T) {
     const { W, H, vide } = T, out = new Uint8Array(W * H);
     for (let v = 0; v < H; v++) for (let u = 0; u < W; u++) {
@@ -120,8 +89,6 @@ const IleSol = (() => {
     return out;
   }
 
-  // Une tuile au pas `pas` (1 : proche, 2 : lointaine) : BufferGeometry à deux groupes (intérieur,
-  // bord). Rend null si la tuile n'a rien à dessiner.
   function tuile(THREE, T, prep, tx, ty, pas) {
     const { W } = T, Hr = prep.h, surch = prep.surcharges;
     const u0 = tx * TUILE, v0 = ty * TUILE, n = TUILE / pas + 1;
@@ -141,18 +108,15 @@ const IleSol = (() => {
     for (let b = 0; b + 1 < n; b++) for (let a = 0; a + 1 < n; a++) {
       const A = ids[b * n + a], B = ids[b * n + a + 1], C = ids[(b + 1) * n + a], D = ids[(b + 1) * n + a + 1];
       if (A < 0 || B < 0 || C < 0 || D < 0) continue;
-      // Un coin dans le vide, ou trop près du bord : la cellule passe par le matériau qui coupe.
       let bord = false;
       for (const [aa, bb] of [[a, b], [a + 1, b], [a, b + 1], [a + 1, b + 1]]) {
         const [u, v] = lat(aa, bb);
         if (prep.presBord[v * W + u]) { bord = true; break; }
       }
       const L = bord ? idxBord : idxIn;
-      // Diagonale alternée : moins de facettes orientées toutes dans le même sens.
       if ((a + b) % 2 === 0) L.push(A, C, B, B, C, D); else L.push(A, C, D, A, D, B);
     }
     if (!idxIn.length && !idxBord.length) return null;
-    // La jupe des tuiles lointaines : 1 u sous les quatre bords, contre les fentes entre niveaux.
     if (pas > 1) {
       const jupe = (list) => {
         for (let k = 0; k + 1 < list.length; k++) {
@@ -181,12 +145,10 @@ const IleSol = (() => {
     return geo;
   }
 
-  // Toutes les tuiles, proches et lointaines : [{ tx, ty, proche, loin, centre: [u, v] }].
   function preparer(T) {
     const f = falaises(T);
     const hh = hauteurs(T);
     const prep = { h: hh.h, surcharges: f.surcharges, utiles: utiles(T), presBord: new Uint8Array(T.W * T.H) };
-    // Près du bord : un sommet dans le vide, ou un voisin à 1 u qui l'est.
     for (let v = 0; v < T.H; v++) for (let u = 0; u < T.W; u++) {
       let b = false;
       for (let dv = -1; dv <= 1 && !b; dv++) for (let du = -1; du <= 1 && !b; du++) {
@@ -209,14 +171,7 @@ const IleSol = (() => {
     return out;
   }
 
-  // ----- Le matériau du sol -----
 
-  // La grille du combat, posée sur la couleur finale (après l'encodage, comme les surbrillances des
-  // cartes à cases, peintes en sRGB) : hors de l'aire, le terrain s'assombrit doucement ; dans
-  // l'aire, un filet sombre au bord des cases de sol, puis l'état de chaque case lu dans une
-  // texture de 64 × 16 (4 texels par case : remplissage, trait, genre, drapeaux et hauteur, piège), avec la
-  // priorité et les couleurs de RendererGL.updateCells. Les bords suivent les u entiers du monde : la
-  // grille épouse le relief, sans fwidth (absent de WebGL 1 sans extension).
   const GRILLE = `
   if (aireOn > 0.002) {
     vec2 qA = vMonde.xz - aireO;
@@ -335,8 +290,6 @@ const IleSol = (() => {
     }
   }`;
 
-  // `tex` : { matieres (DataArrayTexture ou null), poids1, poids2, teinte, lueur, grain }, `moy` :
-  // les couleurs moyennes des six matières (linéaires). Rend { interieur, bord, uniforms }.
   function materiaux(THREE, tex, moy, rampe, T, opts) {
     opts = opts || {};
     const uniforms = {
@@ -344,9 +297,6 @@ const IleSol = (() => {
       grainSol: { value: tex.grain }, tailleIle: { value: new THREE.Vector2(T.largeur, T.hauteur) },
       matieres: { value: tex.matieres }, moyennes: { value: moy.map(c => new THREE.Vector3(c[0], c[1], c[2])) },
       forceLueur: { value: 1 }, reperage: { value: 4 },
-      // Le combat (5.4) : l'aire (son coin), l'état de ses cases, le passage (0 à 1), la largeur d'un
-      // pixel en u (les traits gardent leur épaisseur à l'écran), le temps (les cases qui
-      // respirent), la vue tactique.
       aireOn: { value: 0 }, aireO: { value: new THREE.Vector2(0, 0) }, etatCases: { value: null },
       tempsSol: { value: 0 }, traitU: { value: 0.05 }, tactiqueSol: { value: 0 }, grilleSol: { value: 1 },
     };
@@ -396,8 +346,6 @@ ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
     return { interieur: fabriquer(false), bord: fabriquer(true), uniforms };
   }
 
-  // Le sol d'une salle de donjon (js/ile-salle.js) : la toile peinte des dalles, le modelé en aplats
-  // et la grille du combat par-dessus, avec les mêmes uniformes que le sol de l'île. Rend { sol, uniforms }.
   function materiauSalle(THREE, texSol, rampe) {
     const uniforms = { aireOn: { value: 0 }, aireO: { value: new THREE.Vector2(0, 0) }, etatCases: { value: null }, tempsSol: { value: 0 }, traitU: { value: 0.05 }, tactiqueSol: { value: 0 }, grilleSol: { value: 1 } };
     const m = new THREE.MeshToonMaterial({ color: 0xffffff, map: texSol, gradientMap: rampe, side: THREE.DoubleSide });
@@ -414,10 +362,6 @@ ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
     return { sol: m, uniforms };
   }
 
-  // La grille du combat posée sur une matière qui existe déjà (le sol du monde modelé, js/ile-glb.js,
-  // 3.26) : les mêmes uniformes que le sol de l'île (Ile3D.mats.uSol : l'aire, l'état des cases, le
-  // passage, la vue tactique), le même dessin (GRILLE) après le brouillard. Sans elle, le monde
-  // modelé cachait les cases du combat (le shader des cases était celui du sol dessiné par le code).
   function grille(materiau, uniforms) {
     const prec = materiau.onBeforeCompile, cle = Object.prototype.hasOwnProperty.call(materiau, 'customProgramCacheKey') ? materiau.customProgramCacheKey : null;
     materiau.onBeforeCompile = (sh, r) => {

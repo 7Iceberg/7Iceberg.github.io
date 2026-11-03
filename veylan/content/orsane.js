@@ -1,9 +1,4 @@
-// Contenu d'Orsane, les Cimes : zones de départ, niveaux 1 à 20.
-// Format : docs/SPEC-CONTENU.md. Validation : node tools/validate-content.js content/orsane.js
-// Les ressources (plume_de_pilou, bois_de_cime...), les objets (pain_de_cime, coiffe_pilou...)
-// et les cartes de Kaldum (kaldum_ville_porte) sont définis dans d'autres fichiers.
 
-// ===== Zone 1 : la ville, les Cimes d'Orsane =====
 DATA.content.zones.push({
   id: 'orsane_cimes', name: 'Les Cimes d\'Orsane', region: 'orsane', level: [1, 3],
   palette: 'orsane',
@@ -57,8 +52,6 @@ DATA.content.zones.push({
       exits: { n: null, e: null, s: 'orsane_cimes_place', w: null },
       npcs: ['kelthar', 'brakk', 'saya', 'vali', 'fenna'],
       nodes: [],
-      // Les mannequins du Dojo du Fil (docs/CITE-DES-CIMES.md, C4) : un groupe d'entraînement, au
-      // niveau du personnage, toujours là.
       groups: [{ monsters: ['mannequin', 'mannequin', 'mannequin'], level: [1, 1], respawn: 1, dojo: true }],
       dungeon: null,
       relay: false,
@@ -122,7 +115,6 @@ DATA.content.zones.push({
   ],
 });
 
-// ===== Zone 2 : les Clairières =====
 DATA.content.zones.push({
   id: 'orsane_clairieres', name: 'Les Clairières d\'Orsane', region: 'orsane', level: [1, 6],
   palette: 'orsane',
@@ -316,7 +308,6 @@ DATA.content.zones.push({
   ],
 });
 
-// ===== Zone 3 : les Sentiers =====
 DATA.content.zones.push({
   id: 'orsane_sentiers', name: 'Les Sentiers des Cimes', region: 'orsane', level: [5, 12],
   palette: 'orsane',
@@ -512,7 +503,6 @@ DATA.content.zones.push({
   ],
 });
 
-// ===== Zone 4 : les Toiles =====
 DATA.content.zones.push({
   id: 'orsane_toiles', name: 'Les Toiles', region: 'orsane', level: [10, 16],
   palette: 'orsane',
@@ -676,7 +666,6 @@ DATA.content.zones.push({
   ],
 });
 
-// ===== Zone 5 : les Éboulis =====
 DATA.content.zones.push({
   id: 'orsane_eboulis', name: 'Les Éboulis', region: 'orsane', level: [14, 20],
   palette: 'orsane',
@@ -733,8 +722,6 @@ DATA.content.zones.push({
         '###############',
       ],
       exits: { n: 'orsane_eboulis_terrier', e: 'orsane_eboulis_chaos', s: null, w: 'orsane_eboulis_pente' },
-      // Le prélude des factions : Avreth (le Fil) à l'ouest du Relais, Lekra (la Déchirure) à l'est,
-      // Elkor (les Francs-Marcheurs) vers la route de la Passe.
       npcs: ['elkor', 'avreth', 'karvel', 'lekra'],
       nodes: ['pierre_de_calcaire'],
       groups: [
@@ -765,7 +752,6 @@ DATA.content.zones.push({
         '#######s#######',
       ],
       exits: { n: null, e: null, s: 'orsane_eboulis_relais', w: null },
-      // La Fosse : le camp caché de la Déchirure, au-dessus des Éboulis (docs/MONDE.md).
       npcs: ['kethril'],
       nodes: ['pierre_de_calcaire'],
       groups: [
@@ -830,7 +816,6 @@ DATA.content.zones.push({
         '###############',
       ],
       exits: { n: null, e: 'kaldum_ville_porte', s: null, w: 'orsane_eboulis_chaos' },
-      // Terrain neutre : on y prête serment, devant Ulkara.
       npcs: ['ulkara'],
       nodes: ['pierre_de_calcaire'],
       groups: [
@@ -846,7 +831,6 @@ DATA.content.zones.push({
   ],
 });
 
-// ===== PNJ =====
 DATA.content.npcs.push({
   id: 'varek', name: 'Varek', title: 'Relayeur du Fil', look: 'garde',
   dialogue: ['Bienvenue sur les Cimes, Veilleur. Le Relais est à toi : touche-le, il te ramènera toujours ici.', 'Les Glyms ont volé la moitié des lanternes cette nuit. Si tu veux te rendre utile, c\'est le moment.'],
@@ -876,8 +860,6 @@ DATA.content.npcs.push({
   id: 'velka', name: 'Velka', title: 'Alchimiste', look: 'artisan', workshop: 'alchimiste',
   dialogue: ['Herbe de veille, cire de Veilloche, un peu de patience : voilà une potion de Relais.', 'Ne bois pas ce qui fume en vert. Celle-là, c\'est pour les Grouks.'],
 });
-// Les services de la Cité des Cimes (docs/CITE-DES-CIMES.md) : la banque, le Marché, l'Hôtel des
-// Métiers, l'armurerie, le Dojo, la Garde, la boulangerie.
 DATA.content.npcs.push({
   id: 'ysolde', name: 'Ysolde', title: 'Banquière du Fil', look: 'tisseur', banque: true,
   dialogue: ['Ce que tu déposes ici reste à toi, objets et Fils, et ton sac s\'en trouve plus léger.', 'Un coffre sans fond, disent les Veilleurs. Il en a un, mais personne n\'y a jamais touché.'],
@@ -907,18 +889,12 @@ DATA.content.npcs.push({
   id: 'hessa', name: 'Hessa', title: 'Capitaine de la Garde', look: 'garde', avis: true,
   dialogue: ['La Garde des Cimes tient la Place, la Porte et les murs. Dehors, c\'est à toi de tenir.', 'Les avis de recherche sont cloués à la tour : un par zone, une prime chacun. Ramène-moi la bête, je paie en Fils et en Sceaux.'],
 });
-// Le Temple des Voies (docs/CITE-DES-CIMES.md, C6), au nord-ouest de la Place : les statues des dix
-// Voies ; Ismère échange les Sceaux de la Garde (comme les doplons aux temples d'Astrub), et la
-// statue de sa Voie ramène celui qui vient d'Ervane au Métier (le passage, content/ervane.js).
 DATA.content.npcs.push({
   id: 'ismere', name: 'Ismère', title: 'Gardienne du Temple des Voies', look: 'ancien', temple: true,
   dialogue: ['Dix statues, dix Voies. Chacune a commencé par un geste, et chacune a fini par un serment.', 'La Garde paie ses primes en Sceaux. Ici, un Sceau vaut une page de ce que les Voies ont appris.'],
 });
-// Les Sceaux de la Garde : la prime des avis de recherche, la monnaie du Temple des Voies.
 DATA.content.resources.push({ id: 'sceau_de_la_garde', name: 'Sceau de la Garde', monnaie: true, drops: [], node: null, price: 8,
   lore: 'Un jeton de cire bleue frappé de la tour des Cimes. La Garde le donne pour chaque bête ramenée ; le Temple le reprend contre ses pages.' });
-// Les avis de recherche de la Garde des Cimes (js/avis.js) : un par zone d'Orsane. La cible se joint
-// au groupe `groupe` de la carte `carte`, au niveau `niveau` ; la prime : XP, Fils, Sceaux.
 (DATA.content.avis = DATA.content.avis || []).push(
   { id: 'avis_brask', monstre: 'brask', niveau: 6, carte: 'orsane_clairieres_oree', groupe: 2, lieu: 'à l\'Orée des Sentiers, au bout des Clairières',
     texte: 'Un vieux Grouk qui charge les charrettes des fermes. Deux ou trois Grouks le suivent partout.', prime: { xp: 300, fils: 40, sceaux: 1 } },
@@ -963,8 +939,6 @@ DATA.content.npcs.push({
   dialogue: ['Derrière moi, le Terrier. Dedans, le Grand Grouk. Tu veux vraiment entrer ?', 'La passe de l\'est mène à Kaldum. Chaud, bruyant, plein de Kaldrin. Tu vas adorer.'],
 });
 
-// ----- Le prélude des factions (docs/MONDE.md, « Les deux factions ») -----
-// `factionLines` : ce que dit le PNJ à qui a prêté serment, à la place de `dialogue`.
 DATA.content.npcs.push({
   id: 'avreth', name: 'Avreth', title: 'Émissaire du Fil', look: 'tisseur',
   dialogue: ['Le Fil tient les Voiles cousues, Veilleur. Quelqu\'un doit bien le faire.', 'La Déchirure t\'a déjà parlé ? Elle parle beaucoup. Nous, nous recousons.'],
@@ -1002,7 +976,6 @@ DATA.content.npcs.push({
   },
 });
 
-// ===== Quêtes : ligne principale =====
 DATA.content.quests.push({
   id: 'orsane_arrivee', name: 'L\'arrivée sur les Cimes', level: 1, main: true,
   giver: 'varek', turnIn: 'orvak', requires: { level: 1, quests: [] },
@@ -1018,8 +991,6 @@ DATA.content.quests.push({
   },
   rewards: { xp: 48, fils: 15, items: [{ id: 'pain_de_cime', count: 2 }] },
 });
-// La visite de la Cité (docs/CITE-DES-CIMES.md, C5) : une quête courte, une étape par service, comme
-// le tour d'Astrub des nouveaux venus.
 DATA.content.quests.push({
   id: 'orsane_visite_cite', name: 'La visite de la Cité', level: 1,
   giver: 'maelis', turnIn: 'maelis', requires: { level: 1, quests: ['orsane_arrivee'] },
@@ -1135,7 +1106,6 @@ DATA.content.quests.push({
   rewards: { xp: 4466, fils: 130, items: [{ id: 'heaume_de_calcaire', count: 1 }, { id: 'potion_de_relais', count: 2 }] },
 });
 
-// ===== Quêtes secondaires =====
 DATA.content.quests.push({
   id: 'orsane_toupie_de_vali', name: 'La toupie de Vali', level: 2, main: false,
   giver: 'vali', requires: { level: 1, quests: [] },
@@ -1334,10 +1304,6 @@ DATA.content.quests.push({
   rewards: { xp: 2233, fils: 80, items: [{ id: 'potion_de_veille', count: 1 }] },
 });
 
-// ===== Quêtes : le prélude des factions, de 17 à 20 =====
-// Au Relais des Éboulis, chaque faction montre sa vision par un acte (dans n'importe quel ordre) ;
-// à la Passe de Kaldum, terrain neutre, le serment au niveau 20, ou le refus. Le serment ne
-// bloque jamais la ligne principale : « L'arrivée à Kaldum » ne le demande pas.
 DATA.content.quests.push({
   id: 'orsane_la_fissure_du_chaos', name: 'La fissure du Chaos', level: 18, main: false, category: 'faction',
   giver: 'avreth', requires: { level: 17, notFaction: 'dechirure' },
@@ -1405,8 +1371,6 @@ DATA.content.quests.push({
   },
   rewards: { xp: 5336, fils: 140, items: [{ id: 'pain_de_scorie', count: 3 }] },
 });
-// Le serment : une étape de choix. Refuser rend la quête à Ulkara, qui la proposera encore ;
-// répétable, elle sert aussi après un reniement, et ne paie qu'une fois.
 DATA.content.quests.push({
   id: 'orsane_le_serment', name: 'Le serment', level: 20, main: true, category: 'faction', repeat: true,
   giver: 'ulkara', requires: { level: 20, quests: ['orsane_la_passe_au_crepuscule'], notFaction: ['fil', 'dechirure'] },
@@ -1428,8 +1392,6 @@ DATA.content.quests.push({
   },
   rewards: { xp: 5793, fils: 100 },
 });
-// Le reniement : caché (la fenêtre Faction le lance), répétable, sans récompense. Il coûte deux
-// rangs ; « Je garde mon serment » l'annule.
 DATA.content.quests.push({
   id: 'orsane_le_reniement', name: 'Le reniement', level: 20, main: false, category: 'faction', repeat: true, hidden: true,
   giver: 'ulkara', requires: { level: 20, faction: ['fil', 'dechirure'] },
@@ -1450,7 +1412,6 @@ DATA.content.quests.push({
   rewards: {},
 });
 
-// ===== Donjon : le Terrier du Grand Grouk =====
 DATA.content.dungeons.push({
   id: 'terrier_du_grand_grouk', name: 'Le Terrier du Grand Grouk', zone: 'orsane_eboulis', level: [15, 20],
   entryMap: 'orsane_eboulis_terrier',
@@ -1567,7 +1528,6 @@ DATA.content.dungeons.push({
   rewards: { fils: 150, items: [{ id: 'crocs_du_grand_grouk', rate: 100 }, { id: 'peau_du_grand_grouk', rate: 50 }] },
 });
 
-// ===== Donjon : le Grenier des Glyms =====
 DATA.content.dungeons.push({
   id: 'grenier_des_pilous', name: 'Le Grenier des Glyms', zone: 'orsane_clairieres', level: [4, 6],
   entryMap: 'orsane_clairieres_bosquet',
@@ -1642,7 +1602,6 @@ DATA.content.dungeons.push({
   rewards: { fils: 40, items: [{ id: 'lanterne_cabossee', rate: 100 }, { id: 'plume_doree', rate: 50 }] },
 });
 
-// ===== Donjon : la Volière des Kavous =====
 DATA.content.dungeons.push({
   id: 'voliere_des_kavous', name: 'La Volière des Kavous', zone: 'orsane_sentiers', level: [12, 14],
   entryMap: 'orsane_sentiers_crete',
@@ -1759,7 +1718,6 @@ DATA.content.dungeons.push({
   rewards: { fils: 100, items: [{ id: 'eclat_de_prisme', rate: 100 }, { id: 'plume_changeante', rate: 50 }] },
 });
 
-// ===== Donjon : le Nid des Toiles =====
 DATA.content.dungeons.push({
   id: 'nid_des_toiles', name: 'Le Nid des Toiles', zone: 'orsane_toiles', level: [12, 14],
   entryMap: 'orsane_toiles_nid',
@@ -1834,21 +1792,7 @@ DATA.content.dungeons.push({
   rewards: { fils: 100, items: [{ id: 'cocon_de_fileuse', rate: 100 }, { id: 'soie_de_fileuse', rate: 50 }] },
 });
 
-// =====================================================================
-// Les quêtes d'Incarnam, adaptées aux Cimes (niveaux 1 à 10)
-// =====================================================================
-// Dofus ouvre le jeu sur Incarnam : une île de départ, quatre séries de quêtes rangées en succès
-// et un titre pour qui les finit toutes. Les Cimes reprennent ces séries une à une, en gardant leur
-// forme (qui donne, ce qu'on fait, dans quel ordre) et en changeant tout le reste
-// (docs/QUETES-INCARNAM.md, sources : Dofus pour les Noobs) :
-// - « En route pour l'aventure » devient « Le chemin des Écailles » (Kelthar, Maëlis, Fenna) ;
-// - « Service dans la milice » devient « Service de la Porte » (Orvak, Ilsa) ;
-// - les quêtes de métiers de Berb Nhin deviennent « Les mains des ateliers » (Thila) ;
-// - « Ramdam sur Incarnam » devient « Remue-ménage aux Cimes » (Brann, Dalric) ;
-// - « Instincts primaires » garde sa place à part (Velka) ;
-// - le titre « Fils d'Incarnam » devient « Enfant des Cimes ».
 
-// ----- PNJ -----
 DATA.content.npcs.push({
   id: 'maelis', name: 'Maëlis', title: 'Doyenne des Cimes', look: 'ancien',
   dialogue: ['Les Cimes ne sont pas grandes, mais tout le monde y compte. Moi, je compte tout le monde.', 'Un nouveau visage ? Va saluer ceux qui font tenir la ville. Ils t\'aideront plus vite s\'ils te connaissent.'],
@@ -1874,11 +1818,6 @@ DATA.content.npcs.push({
   dialogue: ['Chaque lanterne du Fil porte sa couleur. Je les repeins une à une, et il y en a mille.', 'Les Kavous ont les plus belles plumes des Clairières. Les plus belles couleurs aussi, si on sait les broyer.'],
 });
 
-// ----- Le chemin des Écailles (« En route pour l'aventure ») -----
-// Incarnam : Réponses à tout (le guide parle des six Dofus) ; Le village dans les nuages (la
-// mairesse envoie saluer quatre notables, puis la bibliothécaire) ; Espoirs et tragédies (lire la
-// légende, jouer aux dés, battre une bête, parler aux chercheurs) ; Dans la gueule du Milimilou
-// (le fossoyeur, la bête du tombeau, seul) ; Destination Astrub (le passage vers le monde).
 DATA.content.quests.push({
   id: 'orsane_questions_de_kelthar', name: 'Les questions de Kelthar', level: 1, main: false, category: 'region',
   giver: 'kelthar', turnIn: 'maelis', requires: { level: 1, quests: ['orsane_arrivee'] },
@@ -1938,7 +1877,7 @@ DATA.content.quests.push({
   rewards: { xp: 315, fils: 25, items: [{ id: 'amulette_de_bec', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_gueule_du_glouton', name: 'Dans la gueule du Glouton', level: 8, main: false, category: 'region',
+  id: 'orsane_gueule_du_glouton', name: 'Le Glouton du vieux puits', level: 8, main: false, category: 'region',
   giver: 'fenna', requires: { level: 7, quests: ['orsane_legende_d_ithren'] },
   steps: [
     { type: 'talk', npc: 'osk', text: 'Interroger Osk, le gardien du vieux puits de la Halte' },
@@ -1953,7 +1892,7 @@ DATA.content.quests.push({
   rewards: { xp: 668, fils: 40, items: [{ id: 'bottes_de_cuir', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_destination_toiles', name: 'Destination : les Toiles', level: 10, main: false, category: 'region',
+  id: 'orsane_destination_toiles', name: 'Vers les Toiles', level: 10, main: false, category: 'region',
   giver: 'fenna', turnIn: 'thevra', requires: { level: 9, quests: ['orsane_gueule_du_glouton'] },
   steps: [
     { type: 'visit', map: 'orsane_sentiers_crete', text: 'Monter jusqu\'à la Crête des Sentiers' },
@@ -1968,13 +1907,9 @@ DATA.content.quests.push({
   rewards: { xp: 955, fils: 50, items: [{ id: 'pain_de_grouk', count: 3 }] },
 });
 
-// ----- Service de la Porte (« Service dans la milice ») -----
-// Incarnam : Mise à l'épreuve (battre la caporale), Champs de bataille (un monstre de chaque
-// espèce), Coups d'épée dans l'eau, Décime-moi des bouftous, Chasse aux chapardams, Leçon
-// d'humilité, Des chafers qui marchent. Le capitaine donne, on lui rend chaque mission.
 DATA.content.quests.push({
-  id: 'porte_mise_a_l_epreuve', name: 'Mise à l\'épreuve', level: 3, main: false, category: 'region',
-  giver: 'orvak', requires: { level: 2, quests: ['orsane_arrivee'] },
+  id: 'porte_mise_a_l_epreuve', name: 'Le regard d\'Ilsa', level: 3, main: false, category: 'region',
+  giver: 'orvak', requires: { level: 3, quests: ['ateliers_produits_des_cimes'] },
   steps: [
     { type: 'talk', npc: 'ilsa', text: 'Se présenter à Ilsa, la caporale' },
     { type: 'kill', monster: 'piouk', count: 3, text: 'Vaincre trois Glymets sous les yeux d\'Ilsa' },
@@ -1988,7 +1923,7 @@ DATA.content.quests.push({
   rewards: { xp: 139, fils: 15, items: [{ id: 'coiffe_marcheur', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'porte_champs_de_bataille', name: 'Champs de bataille', level: 4, main: false, category: 'region',
+  id: 'porte_champs_de_bataille', name: 'Toutes les bêtes des Clairières', level: 4, main: false, category: 'region',
   giver: 'orvak', requires: { level: 3, quests: ['porte_mise_a_l_epreuve'] },
   steps: [
     { type: 'kill', monster: 'piouk', count: 1, text: 'Vaincre un Glymet' },
@@ -2006,7 +1941,7 @@ DATA.content.quests.push({
   rewards: { xp: 221, fils: 20, items: [{ id: 'cape_marcheur', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'porte_coups_d_epee_dans_l_eau', name: 'Coups d\'épée dans l\'eau', level: 4, main: false, category: 'region',
+  id: 'porte_coups_d_epee_dans_l_eau', name: 'Les Groukins du Ruisseau', level: 4, main: false, category: 'region',
   giver: 'orvak', requires: { level: 3, quests: ['porte_champs_de_bataille'] },
   steps: [
     { type: 'equip', slot: 'arme', text: 'Prendre une arme en main' },
@@ -2022,7 +1957,7 @@ DATA.content.quests.push({
   rewards: { xp: 221, fils: 20, items: [{ id: 'amulette_marcheur', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'porte_decime_des_grouks', name: 'Décime-moi des Grouks', level: 5, main: false, category: 'region',
+  id: 'porte_decime_des_grouks', name: 'Dix Grouks pour la Porte', level: 5, main: false, category: 'region',
   giver: 'orvak', requires: { level: 4, quests: ['porte_coups_d_epee_dans_l_eau'] },
   steps: [
     { type: 'kill', monster: 'grouk', count: 10, text: 'Repousser dix Grouks' },
@@ -2036,24 +1971,24 @@ DATA.content.quests.push({
   rewards: { xp: 315, fils: 25, items: [{ id: 'ceinture_marcheur', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'porte_chasse_aux_chapardeurs', name: 'Chasse aux chapardeurs', level: 6, main: false, category: 'region',
+  id: 'porte_chasse_aux_chapardeurs', name: 'Les voleurs de rubans', level: 6, main: false, category: 'region',
   giver: 'orvak', requires: { level: 5, quests: ['porte_decime_des_grouks'] },
   steps: [
-    { type: 'kill', monster: 'kavou_bleu', count: 1, text: 'Vaincre un Kavou Bleu' },
-    { type: 'kill', monster: 'kavou_roux', count: 1, text: 'Vaincre un Kavou Roux' },
-    { type: 'kill', monster: 'kavou_ocre', count: 1, text: 'Vaincre un Kavou Ocre' },
-    { type: 'kill', monster: 'kavou_blanc', count: 1, text: 'Vaincre un Kavou Blanc' },
+    { type: 'kill', monster: 'kavou_bleu', count: 1, text: 'Vaincre un Kavou de Brume' },
+    { type: 'kill', monster: 'kavou_roux', count: 1, text: 'Vaincre un Kavou de Braise' },
+    { type: 'kill', monster: 'kavou_ocre', count: 1, text: 'Vaincre un Kavou des Mousses' },
+    { type: 'kill', monster: 'kavou_blanc', count: 1, text: 'Vaincre un Kavou des Vents' },
     { type: 'talk', npc: 'orvak', text: 'Revenir voir Orvak' },
   ],
   dialogue: {
-    offer: ['Quelqu\'un vole les rubans des lanternes. Pas les Glyms, eux prennent tout. Quelqu\'un qui choisit les couleurs.', 'Les Kavous. Un de chaque couleur, à la Mare et à l\'Orée. Ramène-les à la raison.'],
+    offer: ['Quelqu\'un vole les rubans des lanternes. Pas les Glyms, eux prennent tout. Quelqu\'un qui choisit les couleurs.', 'Les Kavous. Un de chaque sorte, à la Mare et à l\'Orée. Ramène-les à la raison.'],
     progress: ['Bleu et roux à la Mare, ocre et blanc à l\'Orée. Ils aiment ce qui brille et ce qui flotte.'],
     done: ['Quatre couleurs, quatre voleurs. Dalric va pouvoir repeindre ses lanternes en paix.'],
   },
   rewards: { xp: 422, fils: 30, items: [{ id: 'bottes_marcheur', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'porte_lecon_d_humilite', name: 'Leçon d\'humilité', level: 7, main: false, category: 'region',
+  id: 'porte_lecon_d_humilite', name: 'Le reproche d\'Ilsa', level: 7, main: false, category: 'region',
   giver: 'orvak', requires: { level: 6, quests: ['porte_chasse_aux_chapardeurs'] },
   steps: [
     { type: 'answer', npc: 'ilsa', text: 'Écouter le reproche d\'Ilsa',
@@ -2073,7 +2008,7 @@ DATA.content.quests.push({
   rewards: { xp: 540, fils: 35, items: [{ id: 'anneau_de_corne', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'porte_tissefils_en_marche', name: 'Des Tissefils qui marchent', level: 8, main: false, category: 'region',
+  id: 'porte_tissefils_en_marche', name: 'La Corniche qui grouille', level: 8, main: false, category: 'region',
   giver: 'orvak', requires: { level: 7, quests: ['porte_lecon_d_humilite'] },
   steps: [
     { type: 'visit', map: 'orsane_sentiers_corniche', text: 'Monter à la Corniche' },
@@ -2088,12 +2023,8 @@ DATA.content.quests.push({
   rewards: { xp: 668, fils: 40, items: [{ id: 'manteau_de_cuir', count: 1 }] },
 });
 
-// ----- Les mains des ateliers (les quêtes de métiers de Berb Nhin) -----
-// Incarnam : Produits naturels (trois préparations dans trois ateliers), Le métier des aventuriers
-// (chasse), La hache et la pioche (récolte), Boune un jour, boune toujours (fabriquer et porter
-// la panoplie de départ), Préparation au combat (une arme et de quoi entrer au donjon).
 DATA.content.quests.push({
-  id: 'ateliers_produits_des_cimes', name: 'Produits des Cimes', level: 4, main: false, category: 'region',
+  id: 'ateliers_produits_des_cimes', name: 'Deux pains et une potion', level: 4, main: false, category: 'region',
   giver: 'thila', requires: { level: 3, quests: ['orsane_visages_des_cimes'] },
   steps: [
     { type: 'collect', item: 'pain_de_cime', count: 2, text: 'Cuire deux pains de Cime chez l\'alchimiste' },
@@ -2109,7 +2040,7 @@ DATA.content.quests.push({
   rewards: { xp: 221, fils: 20, items: [{ id: 'sandales_de_duvet', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'ateliers_metier_des_veilleurs', name: 'Le métier des Veilleurs', level: 4, main: false, category: 'region',
+  id: 'ateliers_metier_des_veilleurs', name: 'Cuir et plumes', level: 4, main: false, category: 'region',
   giver: 'thila', requires: { level: 3, quests: ['ateliers_produits_des_cimes'] },
   steps: [
     { type: 'kill', monster: 'groukin', count: 3, text: 'Chasser trois Groukins' },
@@ -2125,7 +2056,7 @@ DATA.content.quests.push({
   rewards: { xp: 221, fils: 20, items: [{ id: 'pain_de_cime', count: 3 }] },
 });
 DATA.content.quests.push({
-  id: 'ateliers_la_hache_et_le_burin', name: 'La hache et le burin', level: 5, main: false, category: 'region',
+  id: 'ateliers_la_hache_et_le_burin', name: 'Bois, calcaire et herbe de veille', level: 5, main: false, category: 'region',
   giver: 'thila', requires: { level: 4, quests: ['ateliers_metier_des_veilleurs'] },
   steps: [
     { type: 'gather', resource: 'bois_de_cime', count: 4, text: 'Couper quatre bois de Cime' },
@@ -2141,7 +2072,7 @@ DATA.content.quests.push({
   rewards: { xp: 315, fils: 25, items: [{ id: 'lame_de_cime', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'ateliers_marcheur_un_jour', name: 'Marcheur un jour, marcheur toujours', level: 5, main: false, category: 'region',
+  id: 'ateliers_marcheur_un_jour', name: 'La panoplie du Marcheur', level: 5, main: false, category: 'region',
   giver: 'thila', requires: { level: 4, quests: ['ateliers_la_hache_et_le_burin'] },
   steps: [
     { type: 'equip', item: 'coiffe_marcheur', text: 'Porter la Coiffe du Marcheur' },
@@ -2159,7 +2090,7 @@ DATA.content.quests.push({
   rewards: { xp: 315, fils: 25, items: [{ id: 'baguette_de_duvet', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'ateliers_preparation_au_combat', name: 'Préparation au combat', level: 6, main: false, category: 'region',
+  id: 'ateliers_preparation_au_combat', name: 'Une masse avant le Grenier', level: 6, main: false, category: 'region',
   giver: 'thila', turnIn: 'thorak', requires: { level: 5, quests: ['ateliers_marcheur_un_jour'] },
   steps: [
     { type: 'collect', item: 'masse_de_calcaire', count: 1, text: 'Forger une Masse de Calcaire' },
@@ -2174,12 +2105,8 @@ DATA.content.quests.push({
   rewards: { xp: 422, fils: 30, items: [{ id: 'baton_de_cime', count: 1 }] },
 });
 
-// ----- Remue-ménage aux Cimes (« Ramdam sur Incarnam ») -----
-// Incarnam : La galette secrète (une recette à l'atelier, livrée, un pot contre des orties),
-// Mort au rat ! (l'affiche de l'auberge, la cave, le rat), Cryptologie (refaire le donjon et parler
-// au boss), Un peu de pigment (de la poudre pour repeindre, prise sur des monstres).
 DATA.content.quests.push({
-  id: 'remue_galette_de_brann', name: 'La galette de Brann', level: 7, main: false, category: 'region',
+  id: 'remue_galette_de_brann', name: 'Le miel de Vali', level: 7, main: false, category: 'region',
   giver: 'brann', requires: { level: 6, quests: ['orsane_visages_des_cimes'] },
   steps: [
     { type: 'collect', item: 'pain_de_cime', count: 3, text: 'Cuire trois pains de Cime selon la recette secrète de Brann' },
@@ -2195,7 +2122,7 @@ DATA.content.quests.push({
   rewards: { xp: 540, fils: 35, items: [{ id: 'pain_de_grouk', count: 2 }] },
 });
 DATA.content.quests.push({
-  id: 'remue_mort_aux_glymets', name: 'Mort aux Glymets !', level: 7, main: false, category: 'region',
+  id: 'remue_mort_aux_glymets', name: 'Les Glymets du cellier', level: 7, main: false, category: 'region',
   giver: 'brann', requires: { level: 6, quests: ['orsane_visages_des_cimes'] },
   steps: [
     { type: 'answer', npc: 'brann', text: 'Commander à Brann de quoi attirer les Glymets du cellier',
@@ -2229,7 +2156,7 @@ DATA.content.quests.push({
   rewards: { xp: 422, fils: 30, items: [{ id: 'arc_de_cime', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'remue_un_peu_de_pigment', name: 'Un peu de pigment', level: 8, main: false, category: 'region',
+  id: 'remue_un_peu_de_pigment', name: 'Les couleurs de Dalric', level: 8, main: false, category: 'region',
   giver: 'dalric', requires: { level: 7, quests: ['orsane_visages_des_cimes'] },
   steps: [
     { type: 'collect', item: 'plume_de_kavou', count: 3, text: 'Rapporter trois plumes de Kavou à broyer' },
@@ -2243,10 +2170,8 @@ DATA.content.quests.push({
   rewards: { xp: 668, fils: 40, items: [{ id: 'anneau_de_veille', count: 1 }] },
 });
 
-// ----- Instincts primaires (hors succès) -----
-// Incarnam : une liste de monstres à chasser pour une herboriste, puis le capitaine.
 DATA.content.quests.push({
-  id: 'orsane_instincts_primaires', name: 'Instincts primaires', level: 5, main: false, category: 'region',
+  id: 'orsane_instincts_primaires', name: 'Le tableau de chasse de Velka', level: 5, main: false, category: 'region',
   giver: 'velka', requires: { level: 4, quests: [] },
   steps: [
     { type: 'kill', monster: 'filin', count: 2, text: 'Vaincre deux Filins' },

@@ -1,7 +1,3 @@
-// Interface du monde : barre du personnage, boutons, suivi de quêtes, panneaux (personnage,
-// sac, quêtes, succès, menu, dialogue, boutique, atelier, relais, fin de combat). L'accueil et
-// la création de personnage sont dans js/accueil.js. Tout passe par le DOM ; le monde et le
-// combat n'en savent rien.
 class Hud {
   constructor(world, combat, renderer, ui) {
     this.world = world;
@@ -30,16 +26,13 @@ class Hud {
       if (fn) fn(b.dataset, b);
     });
     const w = world;
-    // Sur l'île, passer d'une sous-zone à l'autre en marchant (`secteur`) change seulement le nom.
     w.on('map', d => {
       if (!d.secteur) this.setMode('explore');
-      // La zone dans un span : une fenêtre étroite (901 à 1180 px) ne garde que la sous-zone (css/style.css).
       this.el.mapName.innerHTML = `${d.zone ? `<span class="zone">${Util.esc(d.zone.name)} · </span>` : ''}${Util.esc(d.def.name)}`;
       this.refresh();
     });
     w.on('update', () => this.refresh());
     w.on('hp', () => this.refreshBar());
-    // Délégation unique pour les champs des panneaux (titre, répartition auto).
     this.el.panelBody.addEventListener('change', evt => {
       if (evt.target.id === 'title-select') { const v = evt.target.value; this.world.ch.title = this.world.ch.titles.includes(v) ? v : null; this.refreshBar(); }
       if (evt.target.dataset.act === 'auto') this.world.ch.autoStats = evt.target.checked;
@@ -48,11 +41,8 @@ class Hud {
       if (this.el.panel.dataset.open === 'fightEnd' && (evt.key === 'Enter' || evt.key === ' ')) { evt.preventDefault(); this.closePanel(); }
     });
     w.on('toast', t => this.toast(t));
-    // Sur l'île d'Ervane : le bandeau d'une sous-zone à l'entrée (et à l'arrivée sur le plateau), la
-    // sous-zone trop forte annoncée sur le chemin, le texte d'un panneau.
     w.on('zone', d => this.annoncerZone(d));
     w.on('map', d => {
-      // Une salle de donjon, ou la sortie du donjon : les toasts du combat précédent s'effacent.
       if (d && !d.secteur && !d.apresCombat && ((w.ch && w.ch.dungeon) || this.enDonjon)) this.viderToasts();
       this.enDonjon = !!(w.ch && w.ch.dungeon);
       if (d && d.plateau && !d.secteur && !d.apresCombat) this.annoncerZone({ map: d.mapId, zone: d.zone, nouveau: false });
@@ -60,8 +50,6 @@ class Hud {
     w.on('zoneProche', d => this.toast(`Attention : ${d.nom}, niveau ${d.niveau[0]}${d.niveau[1] !== d.niveau[0] ? ' à ' + d.niveau[1] : ''}. Plus fort que toi.`));
     w.on('panneau', d => this.toast(d.texte));
     w.on('dialogue', ctx => this.openDialogue(ctx));
-    // Un combat qui part ferme le panneau et toutes les fenêtres (Sorts, Sac...), sans demander : sur
-    // l'île, une figure visible à côté d'une fenêtre ouverte lançait le combat sous elle (revue finale).
     w.on('fight', () => { this.closePanel(); this.fermerFenetres(); this.setMode('combat'); this.ui.refresh(); this.ui.updateHighlights(); });
     w.on('fightEnd', r => this.openFightEnd(r));
     w.on('machine', ctx => this.openWorkshop(ctx));
@@ -70,11 +58,8 @@ class Hud {
     w.on('relay', d => this.openRelay(d));
     w.on('dungeonPrompt', d => this.openDungeonPrompt(d));
     w.on('dungeonLeavePrompt', d => this.openDungeonLeave(d));
-    // L'avancement des quêtes s'écrit dans la discussion (« Quête mise à jour ») et le suivi.
     w.on('questProgress', () => this.refresh());
     w.on('save', () => Save.write(w.ch));
-    // La discussion, les dialogues de PNJ, l'interface de jeu du téléphone et le tutoriel
-    // (js/discussion.js, js/dialogues.js, js/hud-jeu.js, js/guide.js).
     this.discussion = new Discussion(this);
     this.conversation = new Conversation(this);
     this.jeu = new HudJeu(this);
@@ -87,7 +72,6 @@ class Hud {
     this.ui.hideBanner();
   }
 
-  // ----- Barre et suivi -----
 
   refresh() {
     this.refreshBar();
@@ -100,8 +84,6 @@ class Hud {
     const cls = ch.classDef;
     const xp = Math.round(ch.xpProgress() * 100);
     const xpText = ch.level >= Character.MAX_LEVEL ? 'niveau maximum' : xp + ' %';
-    // On ne reconstruit la barre que si le texte change ; sinon les jauges glissent vers la
-    // nouvelle valeur (la perte de PV reste visible un instant).
     const sig = [ch.name, cls.id, ch.level, ch.title, ch.fils, ch.statPoints, d.hpMax].join('|');
     const bar = this.el.playerBar;
     if (this.barSig !== sig || !bar.querySelector('.vy-jauge')) {
@@ -117,8 +99,6 @@ class Hud {
       Util.setJauge(bar.querySelector('.vy-jauge--xp'), xp, 100);
     }
     bar.querySelector('.vy-jauge--xp').title = 'Expérience : ' + xpText;
-    // Des points à répartir : un point sur le bouton Caractéristiques ou Sorts (la barre du héros,
-    // qui les montrait, est cachée dans le style verre).
     for (const [id, n] of [['carac', ch.statPoints], ['sorts', ch.spellPoints]]) {
       const b = document.querySelector(`#menus [data-win="${id}"]`);
       if (b) b.classList.toggle('vy-menu--point', n > 0);
@@ -128,18 +108,12 @@ class Hud {
   }
 
 
-  // Vide la pile des toasts (les gains du combat précédent ne traînent pas d'une salle du donjon à
-  // l'autre, ni jusqu'à la sortie) ; le journal les garde.
   viderToasts() {
     if (!this.el.toasts) return;
     for (const t of [...this.el.toasts.children]) t.remove();
   }
 
-  // toast(texte, type) : les notifications typées, leurs réglages et les gains sont dans
-  // js/hud-notifs.js.
 
-  // « Succès débloqué » : une carte au contour d'or, la coupe dans une tuile, ce qu'il rapporte.
-  // Le texte passe aussi au journal, comme un toast.
   annoncerSucces(g) {
     const a = g.achievement, texte = `Succès : ${a.name}${g.title ? ' · titre « ' + g.title + ' »' : ''}`;
     if (this.pushJournal) this.pushJournal('evenements', texte);
@@ -153,7 +127,6 @@ class Hud {
     else { this.el.toasts.appendChild(t); setTimeout(() => t.remove(), 4200); }
   }
 
-  // ----- Panneaux génériques -----
 
   openPanel(id, title, html, refresh) {
     this.el.panel.dataset.open = id;
@@ -165,14 +138,12 @@ class Hud {
     if (this.world.state === 'explore') this.world.state = 'panel';
   }
 
-  // Toutes les fenêtres, fermées sans demander (un combat qui part).
   fermerFenetres() {
     if (!this.fen) return;
     for (const id of [...this.fen.wins.keys()]) this.fen.close(id, true);
   }
 
   closePanel() {
-    // Un dialogue de PNJ ouvert hors du panneau (bulle et réponses) se ferme aussi.
     if (this.el.panel.classList.contains('hidden')) { if (this.conversation && this.conversation.ouverte) this.conversation.fermer(); return; }
     const id = this.el.panel.dataset.open;
     this.el.panel.classList.add('hidden');
@@ -193,9 +164,7 @@ class Hud {
     for (const sel of ['#explore-hud', '#hud', '#topbar', '#side']) { const el = document.querySelector(sel); if (el) el.inert = !!on; }
   }
 
-  // ----- Personnage -----
 
-  // Personnage : la fenêtre Caractéristiques et la fenêtre Personnage, côte à côte.
   openCharacter() { this.openCaracs(); this.openPerso(); }
 
   openCharacterPanel() {
@@ -243,10 +212,7 @@ class Hud {
     this.openPanel('character', 'Personnage', render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
-  // ----- Sac -----
 
-  // Sac : grille de cases au code couleur de rareté (css/components.css, .vy-inventaire), et la
-  // fiche de l'objet choisi avec ses actions.
   openInventory(opts) {
     opts = opts || {};
     if (!opts.sell) return this.openSac();
@@ -268,7 +234,6 @@ class Hud {
           (e.n > 1 ? `<span class="vy-case__nombre">${e.n}</span>` : '') +
           (knots.includes(e.id) ? '<span class="vy-case__porte" title="Noué"></span>' : '') + `</button>`;
       });
-      // Des cases vides complètent la dernière rangée : le sac se lit comme un sac.
       const empty = Math.max(0, Math.max(12, Math.ceil(cells.length / 6) * 6) - cells.length);
       for (let i = 0; i < empty; i++) cells.push('<span class="vy-case vy-case--vide" aria-hidden="true"></span>');
       const sel = list.find(e => e.id === this.invSel);
@@ -285,7 +250,6 @@ class Hud {
     this.openPanel(opts.sell ? 'shop' : 'inventory', opts.sell ? 'Vendre' : 'Sac', render(), rerender);
   }
 
-  // Fiche d'un objet du sac : rareté, emplacement, niveau, effets, récit, actions.
   itemCard(e, opts) {
     const ch = this.world.ch;
     const d = e.def, r = Items.rarity(d);
@@ -308,7 +272,6 @@ class Hud {
       (btns ? `<div class="vy-objet__actions">${btns}</div>` : '') + `</article>`;
   }
 
-  // Pictogrammes simplifiés des cases du sac (charte : lisibles en petit, sans dégradé).
   static picto(d) {
     const P = {
       coiffe: '<path d="M5 16a7 7 0 0 1 14 0v2H5z"/><path d="M12 6V4M9 16v2M15 16v2"/>',
@@ -326,7 +289,6 @@ class Hud {
     return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[k] || P.ressource}</svg>`;
   }
 
-  // ----- Nœuds -----
 
   knotsSection(ch) {
     const owned = (DATA.knots || []).filter(k => ch.has(k.id));
@@ -337,16 +299,13 @@ class Hud {
     return `<h4>Nœuds <small class="muted">${active.length} / ${DATA.rules.maxKnots} noués · +${active.length * DATA.rules.knotBonus} %</small></h4>${rows}`;
   }
 
-  // ----- Carnet du Veilleur -----
 
   openCarnet() {
-    // Le premier onglet : la région où l'on se trouve (Ervane pour un Veilleur qui s'y éveille).
     const ici = this.world.zone && this.world.zone.region;
     this.carnetTab = this.carnetTab || (ici && Object.values(DATA.monsters).some(m => m.region === ici && !m.summon) ? ici : 'orsane');
     const render = () => {
       const ch = this.world.ch;
       const kills = ch.counters.kills || {};
-      // L'onglet d'Ervane : pour qui y est né ou y a déjà vaincu une remontée (un personnage d'Orsane n'y monte pas).
       const ileVue = ch.origine === 'ervane' || Object.keys(kills).some(id => DATA.monsters[id] && DATA.monsters[id].region === 'ervane');
       const regions = Object.keys(DATA.regions).filter(r => Object.values(DATA.monsters).some(m => m.region === r && !m.summon) && (r !== 'ervane' || ileVue));
       const tabs = regions.map(r => {
@@ -367,16 +326,12 @@ class Hud {
     this.simpleWin('carnet', 'Carnet du Veilleur', render, { ctab: d => { this.carnetTab = d.tab; this.fen.render('carnet'); } }, { width: 480 });
   }
 
-  // ----- Quêtes et succès -----
 
-  // Le journal des quêtes (touche Q) : js/hud-quetes.js.
 
-  // Un succès débloqué dont la récompense attend est « à réclamer » (js/hud-recompenses.js).
   openAchievements() {
     const render = () => {
       const ch = this.world.ch;
       const attente = Achievements.pending(ch).map(a => a.id);
-      // Un personnage né à Orsane ne monte jamais sur Ervane : les succès de l'île ne lui sont pas montrés.
       const ileSeule = a => /ervane|puits_de_l_amarre|krobb/.test(JSON.stringify(a.cond || {}));
       const defs = Achievements.defs().filter(a => ch.origine === 'ervane' || ch.achievements.includes(a.id) || !ileSeule(a));
       const list = defs.map(a => {
@@ -390,13 +345,10 @@ class Hud {
     this.simpleWin('succes', 'Succès', render, { recompenses: () => this.openRecompenses() }, { width: 480 });
   }
 
-  // ----- Menu -----
-  // La carte du monde (touche M) est dans js/hud-carte.js.
 
   openMenu() {
     const ch = this.world.ch;
     const themes = Hud.THEMES.map(([id, label, fond, accent]) => `<button class="vy-theme${document.getElementById('app').dataset.uiTheme === id ? ' on' : ''}" data-act="theme" data-theme="${id}" aria-pressed="${document.getElementById('app').dataset.uiTheme === id}"><span class="vy-theme__apercu" style="--f:${fond};--a:${accent}"></span>${label}</button>`).join('');
-    // Une partie d'invité n'écrit rien : on le dit, et on propose de garder le personnage par un code.
     const invite = !!ch.invite;
     const tuto = () => {
       const mode = Guide.modeDe(ch), t = ch.tuto;
@@ -407,8 +359,6 @@ class Hud {
     const jeu = () => `<h4>Jeu</h4>
       <div class="row"><label class="vy-coche"><input type="checkbox" id="opt-gaucher" ${this.jeu && this.jeu.gaucher ? 'checked' : ''}> Mode gaucher</label><span class="muted">le panneau de jeu passe à gauche</span></div>
       ${PleinEcran.disponible() ? `<div class="row"><label class="vy-coche"><input type="checkbox" id="opt-plein-ecran"${PleinEcran.actif() ? ' checked' : ''}> Plein écran</label><span class="muted">sans la barre du navigateur</span></div>` : ''}`;
-    // Le combat (comme les options de combat de Dofus) : la confirmation des sorts, la grille, les
-    // cases de déplacement, la portée des sorts, le coût du chemin, les barres de vie (UI.reglage).
     const coche = (nom, label, aide) => `<div class="row"><label class="vy-coche"><input type="checkbox" id="opt-combat-${nom}" ${UI.reglage(nom) ? 'checked' : ''}> ${label}</label><span class="muted">${aide}</span></div>`;
     const combat = () => `<h4>Combat</h4>
       <div class="row"><label class="vy-coche"><input type="checkbox" id="opt-confirmer" ${UI.confirmerSorts(null) ? 'checked' : ''}> Confirmer les sorts</label><span class="muted">un toucher sur la cible, puis la coche</span></div>
@@ -417,11 +367,9 @@ class Hud {
       ${coche('portee', 'Portée des sorts', 'en bleu, pour le sort choisi')}
       ${coche('cout', 'Coût du déplacement', 'les PM du chemin, au survol')}
       ${coche('barres', 'Barres de vie', 'au-dessus de chaque combattant ; sinon celui qu\'on vise et celui qui joue')}`;
-    // L'opacité des fonds : la valeur posée (le curseur suit, même si la fenêtre se redessine en cours de route).
     const curseur = (id, cls, label, v, min, max) => `<div class="row vy-reglage ${cls}"><label for="${id}">${label}</label><input type="range" id="${id}" min="${min}" max="${max}" step="5" value="${v}" style="--v:${v};--min:${min};--max:${max}" aria-valuetext="${v} %"><output for="${id}">${v} %</output></div>`;
     const opacite = () => curseur('opt-opacite', 'vy-opacite', 'Opacité des fonds', this.opacite || this.loadOpacite(), 40, 100) +
       curseur('opt-taille', 'vy-taille', 'Taille de l\'interface', this.taille || this.loadTaille(), 80, 130);
-    // Le style du bloc vital (et des gemmes de la barre de combat) : un aperçu de chacun (js/gemmes.js).
     const vitaux = () => Gemmes.STYLES.map(([id, label]) => { const on = this.styleVital() === id;
       return `<button class="vy-style-vital${on ? ' on' : ''}" data-act="vital" data-vital="${id}" aria-pressed="${on}"><span class="vy-style-vital__apercu" aria-hidden="true">${Gemmes.apercu(id)}</span><span class="vy-style-vital__nom">${label}</span></button>`; }).join('');
     const html = () => `${tuto()}${jeu()}${combat()}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div>
@@ -444,17 +392,15 @@ class Hud {
     this.actions.copy = () => { const ta = document.getElementById('export-area'); ta.select(); const fallback = () => this.toast('Sélectionne et copie le code.'); try { navigator.clipboard.writeText(ta.value).then(() => this.toast('Code copié.'), fallback); } catch (e) { fallback(); } };
     this.actions.import = () => {
       const r = Save.importText(document.getElementById('import-area').value);
-      // Un personnage d'Ervane sur une page sans l'île : le code attend, la page se recharge (js/save.js).
       if (r.recharge) { this.toast(r.error); Save.write(ch); Save.suspend(); setTimeout(() => location.reload(), 50); return; }
       if (!r.ch) { this.toast(r.error || 'Code invalide.'); return; }
       this.importDraft = ''; Save.write(ch); Save.write(r.ch); Save.suspend(); location.reload();
     };
-    // Changer de personnage : on sauvegarde celui-ci et on revient à la liste des emplacements.
     this.actions.newgame = (d, b) => {
       if (invite && !b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Confirmer : quitter sans garder'; return; }
       if (!invite) Save.write(ch);
       Save.suspend();
-      try { sessionStorage.setItem('veylan.entree', invite ? 'accueil' : 'personnages'); } catch (e) { /* rien */ }
+      try { sessionStorage.setItem('veylan.entree', invite ? 'accueil' : 'personnages'); } catch (e) {   }
       location.reload();
     };
     const actions = {
@@ -479,27 +425,21 @@ class Hud {
       }
       if (kind !== 'change') return;
       if (el.id === 'opt-tuto') { this.guide.choisirMode(el.value); this.fen.render('options'); }
-      if (el.id === 'opt-confirmer') { try { localStorage.setItem('veylan.confirmerSorts', el.checked ? '1' : '0'); } catch (e) { /* stockage indisponible */ } }
+      if (el.id === 'opt-confirmer') { try { localStorage.setItem('veylan.confirmerSorts', el.checked ? '1' : '0'); } catch (e) {   } }
       if (/^opt-combat-/.test(el.id)) { UI.regler(el.id.slice(11), el.checked); if (this.ui && this.ui.updateHighlights) this.ui.updateHighlights(); }
       if (el.id === 'opt-gaucher' && this.jeu) this.jeu.mettreGaucher(el.checked);
       if (el.id === 'opt-plein-ecran') PleinEcran.basculer().then(() => { if (this.fen.isOpen('options')) this.fen.render('options'); });
     };
-    // La case suit le plein écran, même quitté par Échap ou par le bouton de la vue.
     if (!this.suitPleinEcran) { this.suitPleinEcran = true; PleinEcran.surChangement(() => { if (this.fen.isOpen('options')) this.fen.render('options'); }); }
     this.simpleWin('options', 'Options', html, actions, { width: 480, onField });
   }
 
-  // ----- Dialogue, boutique, atelier -----
 
-  // Parler à un PNJ : sa bulle au-dessus de la tête et la boîte de réponses (js/dialogues.js) ;
-  // les textes de quête passent dans la grande boîte au portrait.
   openDialogue(ctx) {
     this.dialogue = ctx;
     this.conversation.ouvrir(ctx);
   }
 
-  // Une étape de choix (le serment, le reniement) se joue dans le grand panneau : on parle toujours
-  // au PNJ (world.talkNpc), et « Continuer » lui rend la parole avec l'état des quêtes relu.
   openAnswerPanel(npc, questId) {
     const q = Quests.get(questId);
     this.actions.back = () => this.retourConversation(npc);
@@ -517,7 +457,6 @@ class Hud {
     this.conversation.ouvrir(this.dialogue);
   }
 
-  // La fin d'une quête, dite par le PNJ de la remise ; `before` : les répliques d'un choix.
   questDoneHtml(npc, q, r, before) {
     const lines = (before || []).concat((q.dialogue && q.dialogue.done) || []);
     const gained = r.first === false ? 'déjà reçu' : rewardText(q.rewards);
@@ -543,8 +482,6 @@ class Hud {
     this.openPanel('dialogue', `Boutique de ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
-  // La Banque du Fil : le sac à gauche, le coffre à droite ; un objet passe de l'un à l'autre (un, ou
-  // toute la pile) ; les Fils par cent ou tous.
   openBanque(ctx) {
     const render = () => {
       const ch = this.world.ch, c = ch.coffre || { items: {}, fils: 0 };
@@ -563,8 +500,6 @@ class Hud {
     this.openPanel('dialogue', `La Banque du Fil, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
-  // Un comptoir du Marché des Cimes (js/marche.js) : l'étal du jour, et la vente au prix du jour (qui
-  // baisse à chaque vente du même objet aujourd'hui).
   openMarche(ctx) {
     const g = ctx.marche, G = Marche.GENRES[g];
     this.marcheTab = this.marcheTab || 'acheter';
@@ -584,9 +519,6 @@ class Hud {
     this.openPanel('dialogue', `Le Marché des Cimes, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
-  // Le tableau des métiers de l'Hôtel des Métiers (docs/CITE-DES-CIMES.md) : pour chaque atelier, ses
-  // artisans, ce qu'on y fabrique (nombre de recettes, niveaux) et les ressources les plus demandées,
-  // d'où elles viennent (la récolte ou le butin des monstres).
   openMetiers(ctx) {
     const ateliers = (typeof Veille === 'object' && Veille.ATELIERS) || {};
     const res = id => (DATA.content.resources || []).find(r => r.id === id);
@@ -606,8 +538,6 @@ class Hud {
     this.openPanel('dialogue', `L'Hôtel des Métiers, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
-  // Les avis de recherche de la Garde (js/avis.js) : la cible de chaque avis, où elle se cache, sa
-  // prime ; prendre l'avis, y renoncer, toucher la prime.
   openAvis(ctx) {
     const render = () => {
       const ch = this.world.ch;
@@ -629,7 +559,6 @@ class Hud {
     this.openPanel('dialogue', `Les avis de recherche, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
-  // Le Temple des Voies : ce que la gardienne donne contre des Sceaux de la Garde.
   openTemple(ctx) {
     const render = () => {
       const ch = this.world.ch, n = ch.count(Avis.SCEAU);
@@ -645,12 +574,10 @@ class Hud {
     this.openPanel('dialogue', `Le Temple des Voies, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
-  // `ctx.npc` : l'artisan, ou la machine de l'atelier (World.machine : `machine`, son nom).
   openWorkshop(ctx) {
     const render = () => {
       const ch = this.world.ch;
       const recipes = Items.recipes().filter(r => r.workshop === ctx.workshop).map(r => ({ r, def: Items.get(r.result) })).filter(x => x.def).sort((a, b) => a.def.level - b.def.level);
-      // La Veille du jour peut alléger cet atelier (World.recipeCost).
       const remise = typeof Veille === 'object' ? Veille.remise(ch, ctx.workshop) : 0;
       const rows = recipes.map(({ r, def }) => {
         const cost = this.world.recipeCost(r);
@@ -665,7 +592,6 @@ class Hud {
     this.openPanel('dialogue', ctx.npc.machine ? ctx.npc.def.name : `Atelier de ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
-  // ----- Relais, donjons, fin de combat -----
 
   openRelay(d) {
     const rows = d.known.map(k => `<div class="row"><span>${k.def ? esc(k.def.name) : k.id}<br><small class="muted">${k.zone ? esc(k.zone.name) : ''}</small></span>${k.id === d.here ? '<small class="muted">ici</small>' : `<button data-act="tp" data-id="${k.id}">Aller</button>`}</div>`).join('');
@@ -678,8 +604,6 @@ class Hud {
   openDungeonPrompt(d) {
     if (!d) return;
     const lvl = d.level ? `niveaux ${d.level[0]} à ${d.level[1]}` : '';
-    // La condition d'entrée (`entree`, js/world.js, canEnterDungeon) : dite, et le bouton éteint tant
-    // qu'elle ne tient pas.
     const peut = this.world.canEnterDungeon ? this.world.canEnterDungeon(d) : { ok: true };
     const e = d.entree || {};
     const q = e.quete && Quests.get(e.quete);
@@ -688,8 +612,6 @@ class Hud {
     this.openPanel('dungeon', d.name, `<p>${esc(d.description || '')}</p><p class="muted">${lvl} · ${d.rooms.length} salles${d.keyItem ? ' · clé : ' + esc(Items.get(d.keyItem).name) : ''}</p>${entree}${peut.ok ? '' : `<p class="missing">${esc(peut.reason)}</p>`}<div class="row"><button data-act="enterd" class="primary"${peut.ok ? '' : ' disabled'}>Entrer</button></div>`);
   }
 
-  // Le bandeau d'une sous-zone de l'île (js/plateau.js, changerSecteur) : la zone, puis la sous-zone
-  // et son niveau, « lieu découvert » la première fois ; pas deux fois la même en vingt secondes.
   annoncerZone(d) {
     const w = this.world, def = d && d.map ? World.mapDef(d.map) : null;
     if (!def || !this.ui || !this.ui.ruban) return;
@@ -699,9 +621,6 @@ class Hud {
     this.zonesVues.set(d.map, t);
     const l = def.level, niveau = Array.isArray(l) ? (l[0] === l[1] ? `niveau ${l[0]}` : `niveaux ${l[0]} à ${l[1]}`) : '';
     const sous = [def.name, niveau].filter(Boolean).join(', ') + (d.nouveau ? ' · Lieu découvert' : '');
-    // Sous le voile d'une bascule (js/scene.js), le bandeau attend que la scène soit visible : vingt
-    // essais au plus (six secondes), une seule minuterie à la fois, oubliée si une autre annonce vient
-    // (un voile de repli qui reste ne garde donc pas de minuterie en vie).
     if (this.rubanZone) { clearTimeout(this.rubanZone); this.rubanZone = null; }
     let essais = 0;
     const montrer = () => {
@@ -739,7 +658,6 @@ class Hud {
     this.openPanel('fightEnd', r.victory ? 'Combat gagné' : 'Combat perdu', `${html}<div class="row center"><button data-act="cont" class="primary">Continuer</button></div>`);
   }
 
-  // Une quête rendue : la discussion écrit « Quête terminée », l'XP et les objets (js/discussion.js).
   openReward() {
     this.refresh();
   }

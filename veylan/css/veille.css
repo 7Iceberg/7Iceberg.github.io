@@ -1,18 +1,12 @@
-/* Veille du jour (js/hud-veille.js) : la carte du jour à gauche, le cycle et les paliers à droite ;
-   une seule colonne sur téléphone en portrait. L'or pour ce qui est fait, le cristal pour
-   aujourd'hui, la couleur de l'élément du jour en filet (--el). Les teintes des fenêtres suivent le
-   thème de l'interface (css/fenetres.css). */
 .vy-veille { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 .vy-veille__jour, .vy-veille__suivi { min-width: 0; }
 
-/* ----- La carte du jour ----- */
 .vy-veille__jour {
   display: grid; gap: 10px; align-content: start; padding: 12px;
   border: 1px solid var(--fen-filet); border-top: 2px solid var(--el); border-radius: 6px;
   background: linear-gradient(180deg, color-mix(in srgb, var(--el) 10%, transparent), transparent 140px), rgba(0, 0, 0, 0.16);
 }
 .vy-veille__tete { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 12px; align-items: center; }
-/* La page du calendrier : ivoire, cerclée d'or, le Voile en tête. */
 .vy-veille__page {
   display: grid; justify-items: center; align-content: center; gap: 1px; height: 62px; padding-top: 10px; position: relative; line-height: 1;
   border-radius: 5px; color: var(--vy-encre); background: linear-gradient(180deg, #f6ead4, #dcc9a6);
@@ -47,7 +41,6 @@
 .vy-veille__sceau { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1.5px solid var(--vy-or); border-radius: 5px; color: var(--vy-texte-or); background: rgba(201, 166, 107, 0.1); font: 700 13px var(--vy-font-ui); }
 .vy-veille__sceau::before { content: ""; width: 10px; height: 10px; transform: rotate(45deg); background: var(--vy-or-cisele); box-shadow: 0 0 8px rgba(201, 166, 107, 0.5); }
 
-/* ----- Le cycle : quatre semaines, sept Voiles ----- */
 .vy-veille__grille { display: grid; grid-template-columns: 44px repeat(7, minmax(0, 1fr)); gap: 4px; align-items: center; }
 .vy-veille__col { font: 700 10px var(--vy-font-titre); color: var(--fen-texte-2); text-align: center; letter-spacing: 0.04em; }
 .vy-veille__sem { display: flex; align-items: center; gap: 5px; min-width: 0; font: 700 10.5px var(--vy-font-ui); color: var(--fen-texte-2); }
@@ -70,14 +63,12 @@
 .vy-veille__legende [data-etat="auj"]::before { border-color: var(--fen-actif); box-shadow: 0 0 6px rgba(0, 194, 255, 0.5); }
 .vy-veille__legende [data-etat="manque"]::before { border-style: dashed; border-color: var(--vy-pierre-clair); }
 
-/* ----- Réserve : sept losanges de cristal ----- */
 .vy-veille__reserve { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
 .vy-veille__pips { display: inline-flex; gap: 7px; padding: 0 3px; }
 .vy-veille__pip { width: 10px; height: 10px; transform: rotate(45deg); border-radius: 2px; border: 1.5px solid color-mix(in srgb, var(--fen-actif) 50%, transparent); }
 .vy-veille__pip.on { border-color: var(--fen-actif); background: var(--fen-actif); box-shadow: 0 0 8px rgba(0, 194, 255, 0.45); }
 .vy-veille__reserve small { flex: 1 1 160px; font-size: 11.5px; line-height: 1.4; color: var(--fen-texte-2); }
 
-/* ----- Marques et paliers ----- */
 .vy-veille__marques { font: 800 14px var(--vy-font-ui); color: var(--vy-texte-or); letter-spacing: 0; }
 .vy-veille__paliers { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .vy-veille__palier { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 8px; border: 1px solid var(--fen-filet); border-radius: 5px; background: rgba(0, 0, 0, 0.16); }
@@ -92,23 +83,18 @@
 .vy-veille__palier.got small { color: var(--vy-texte-or); }
 .vy-veille__palier.got em { color: var(--vy-succes); }
 
-/* ----- Panneau du Relais : le bouton « Veille du jour » et son point ----- */
 #panel-body .row.center { flex-wrap: wrap; }
 .vy-veille-point { display: inline-block; width: 8px; height: 8px; margin-left: 8px; border-radius: 50%; background: var(--vy-cristal); box-shadow: 0 0 8px rgba(0, 194, 255, 0.8); vertical-align: 1px; }
 
-/* ----- Thème clair : l'or reste lisible ----- */
 #app[data-ui-theme="ardoise"] .vy-veille__bonus b, #app[data-ui-theme="ardoise"] .vy-veille__sceau,
 #app[data-ui-theme="ardoise"] .vy-veille__marques, #app[data-ui-theme="ardoise"] .vy-veille__palier.got small { color: var(--fen-accent); }
 #app[data-ui-theme="ardoise"] .vy-veille__jour, #app[data-ui-theme="ardoise"] .vy-veille__bloc, #app[data-ui-theme="ardoise"] .vy-veille__case,
 #app[data-ui-theme="ardoise"] .vy-veille__palier { background-color: rgba(255, 255, 255, 0.35); }
 
-/* ----- Téléphone ----- */
-/* En portrait : une colonne, la carte du jour d'abord. */
 @media (max-width: 600px) {
   .vy-veille { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .vy-veille__case { min-height: 0; }
 }
-/* En paysage : deux colonnes qui défilent chacune, la carte du jour reste sous les yeux. */
 @media (max-height: 480px) and (max-width: 1000px) {
   .vy-fenetre--veille .vy-fenetre__corps { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 8px 10px 10px; }
   .vy-fenetre--veille.reduite .vy-fenetre__corps { display: none; }

@@ -1,21 +1,13 @@
-// Le chargement de Three.js (vendor/three.min.js), une seule fois pour toute la page, partagé par la
-// carte du monde en 3D (js/hud-carte.js) et l'île d'Ervane (js/scene.js, docs/ILE-TECHNIQUE.md, 1.5) ;
-// et le test synchrone de WebGL dont dépend la naissance sur Ervane (1.4).
-//
-// IleCharge.three(delai) rend une promesse de THREE. Un échec (fichier absent, refusé, trop lent :
-// 20 s par défaut) rejette la promesse et l'oublie : un nouvel appel recommence (« Réessayer » du
-// voile de repli, 1.8). IleCharge.webgl() dit si un contexte webgl2 ou webgl se crée.
 const IleCharge = (() => {
   let promesse = null;
   let essais = 0;
 
-  // vendor/three.min.js à côté de ce script, en local comme en ligne.
   function source() {
     let src = 'vendor/three.min.js';
     try {
       const ref = document.querySelector('script[src*="ile-charge.js"]') || document.querySelector('script[src*="hud-carte.js"]');
       if (ref && ref.src) { const u = new URL(ref.src); src = new URL('../vendor/three.min.js', u).href + u.search; }
-    } catch (e) { /* chemin relatif */ }
+    } catch (e) {   }
     return src;
   }
 
@@ -42,8 +34,6 @@ const IleCharge = (() => {
     return promesse;
   }
 
-  // Un contexte webgl2 ou webgl se crée-t-il ? Gardé après le premier essai ; le contexte d'essai
-  // est rendu aussitôt (un téléphone n'en garde qu'une poignée en vie).
   let gl = null;
   function webgl() {
     if (gl != null) return gl;
@@ -57,12 +47,6 @@ const IleCharge = (() => {
     return gl;
   }
 
-  // ----- Le cache des peintures (2.12) -----
-  // IndexedDB garde ce que la construction de l'île peint sur le processeur (matières, cartes,
-  // toiles) : la première entrée peint et range, les suivantes relisent. Une seule entrée par
-  // plateau et par taille de matières (l'ancienne part à l'écriture). Sans IndexedDB (navigation
-  // privée, quota), on peint comme avant : chaque étape a sa minuterie et ne fait jamais échouer
-  // la construction. `?cache=0` le coupe (mesures à froid).
   const BASE = 'veylan-ile', MAGASIN = 'peintures';
   let base = null;
   const coupe = () => { try { return new URLSearchParams(location.search).get('cache') === '0'; } catch (e) { return false; } };
@@ -107,10 +91,6 @@ const IleCharge = (() => {
     return borne(new Promise(ok => { try { const tx = db.transaction(MAGASIN, 'readwrite'); tx.objectStore(MAGASIN).clear(); tx.oncomplete = () => ok(true); tx.onerror = tx.onabort = () => ok(false); } catch (e) { ok(false); } }), 3000);
   }
 
-  // ----- L'aperçu de nuit (docs/ILE-TECHNIQUE.md, 3.24) -----
-  // L'ambiance voulue : 'nuit' si l'adresse porte ?ambiance=nuit, ou si la copie de l'aperçu a posé
-  // DATA.ile.ambiance = 'nuit' (tools/make-online.sh --nuit) ; ?ambiance=jour l'emporte sur la donnée.
-  // Sinon null : le jeu ne charge rien de plus et rien ne change.
   function ambiance() {
     let q = null;
     try { q = new URLSearchParams(location.search).get('ambiance'); } catch (e) { q = null; }
@@ -118,10 +98,6 @@ const IleCharge = (() => {
     if (q === 'jour') return null;
     return typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.ambiance === 'nuit' ? 'nuit' : null;
   }
-  // La vignette de l'aperçu : ?vignette=nuit, ou DATA.ile.vignette posé par la copie
-  // (tools/make-online.sh --vignette). Elle ouvre droit une partie d'invité, la nuit, au bord est des
-  // Mailles, derrière la Place du Relais (une maison, son potager, la lèvre de l'île et le ciel) :
-  // js/main.js. Rend le lieu { map, x, y }, ou null.
   const VIGNETTE = { map: 'ervane_mailles_place', x: 232.75, y: 85.75 };
   function vignette() {
     let q = null;
@@ -131,14 +107,13 @@ const IleCharge = (() => {
     if (q !== 'nuit' && !d) return null;
     return d && typeof d === 'object' ? Object.assign({}, VIGNETTE, d) : Object.assign({}, VIGNETTE);
   }
-  // Un script classique de plus, une seule fois (chemin relatif à la racine du jeu, comme Three).
   const scripts = new Map();
   function script(chemin, delai) {
     if (scripts.has(chemin)) return scripts.get(chemin);
     const p = new Promise((ok, ko) => {
       const el = document.createElement('script');
       let src = chemin;
-      try { src = new URL('../' + chemin, source()).href; } catch (e) { /* chemin relatif */ }
+      try { src = new URL('../' + chemin, source()).href; } catch (e) {   }
       el.src = src;
       el.async = true;
       const minuterie = setTimeout(() => { scripts.delete(chemin); ko(new Error(chemin + ' met trop de temps à se charger')); }, delai || 20000);
@@ -149,8 +124,6 @@ const IleCharge = (() => {
     scripts.set(chemin, p);
     return p;
   }
-  // Les fichiers de l'aperçu de nuit : le module (js/ile-nuit.js) et les modèles libres convertis
-  // (assets/libres/modeles-libres.js). Un échec n'empêche pas l'île : la nuit se passe des modèles.
   function nuit() {
     return Promise.all([
       typeof IleNuit === 'object' ? Promise.resolve() : script('js/ile-nuit.js'),
@@ -158,28 +131,20 @@ const IleCharge = (() => {
     ]);
   }
 
-  // ----- Le style Lisière (docs/ILE-TECHNIQUE.md, 3.25) -----
-  // 'lisiere' si l'adresse porte ?style=lisiere, ou si DATA.ile.style = 'lisiere' ; ?style=0
-  // l'emporte sur la donnée. Sinon null : rien de plus ne se charge.
   function style() {
     let q = null;
     try { q = new URLSearchParams(location.search).get('style'); } catch (e) { q = null; }
     if (q === 'lisiere') return 'lisiere';
     if (q === '0') return null;
-    // La copie « vignette » (make-online.sh --vignette) et ?ambiance=nuit montrent l'aperçu de nuit
-    // (3.24) tel quel, sans le style que la donnée allume (l'adresse peut demander les deux).
     let amb = null;
     try { amb = new URLSearchParams(location.search).get('ambiance'); } catch (e) { amb = null; }
     if (vignette() || amb === 'nuit') return null;
     return typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.style === 'lisiere' && !faible() ? 'lisiere' : null;
   }
-  // Ses fichiers : ceux de la nuit (le décor ajouté, les lucioles), puis js/ile-lisiere.js.
   function lisiere() {
     return nuit().then(() => (typeof IleLisiere === 'object' ? null : script('js/ile-lisiere.js')));
   }
 
-  // ----- Le monde modelé dans Blender (tools/blender/monde, js/ile-glb.js) -----
-  // 'glb' si l'adresse porte ?monde=glb, ou si DATA.ile.monde = 'glb' ; ?monde=0 l'éteint.
   function monde() {
     let q;
     try { q = new URLSearchParams(location.search).get('monde'); } catch (e) { q = null; }
@@ -187,11 +152,6 @@ const IleCharge = (() => {
     if (q === '0') return null;
     return typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.monde === 'glb' && !faible() ? 'glb' : null;
   }
-  // Un appareil faible (3.28) : ?quality=basse, ou 2 Go de mémoire ou moins (navigator.deviceMemory,
-  // que Chrome donne et que Safari tait). Le monde modelé et le style Lisière que la donnée allume
-  // par défaut n'y viennent pas (le jeu dessiné par le code reste, moins lourd) ; l'adresse peut
-  // toujours les demander. Le nombre de coeurs n'est pas un signe : Safari le plafonne contre le
-  // pistage (à 2 sur certains iPhone), un bon téléphone passerait pour faible.
   function faible() {
     let q = null;
     try { q = new URLSearchParams(location.search).get('quality'); } catch (e) { q = null; }
@@ -204,10 +164,6 @@ const IleCharge = (() => {
     return typeof IleGlb === 'object' ? Promise.resolve() : script('js/ile-glb.js');
   }
 
-  // ----- Les héros modelés (js/ile-heros.js, assets/heros/) -----
-  // La classe dont le modèle remplace le panneau du Veilleur : ?heros=<classe> la force (même sans
-  // le monde modelé), ?heros=0 l'éteint ; sinon, avec le monde modelé, la classe du personnage si
-  // elle a son fichier (IleHeros.FICHIERS), ce que dit 'auto'.
   function heros() {
     let q;
     try { q = new URLSearchParams(location.search).get('heros'); } catch (e) { q = null; }
@@ -216,8 +172,6 @@ const IleCharge = (() => {
     if (monde() !== 'glb') return null;
     return typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.heros === false ? null : 'auto';
   }
-  // ----- Les modèles Meshy posés sur le monde modelé (js/ile-modeles.js, assets/modeles/) -----
-  // Le Relais du Fil (3.31) ; ?modeles=0 les éteint (le monde modelé reste tel qu'exporté).
   function modeles() {
     let q;
     try { q = new URLSearchParams(location.search).get('modeles'); } catch (e) { q = null; }
@@ -230,7 +184,6 @@ const IleCharge = (() => {
   function herosScript() {
     return glb().then(() => (typeof IleHeros === 'object' ? null : script('js/ile-heros.js')));
   }
-  // Les peaux animées de Meshy (js/ile-peau.js, assets/peaux/, 3.38) : le Filin et Nerith.
   function peauScript() {
     return glb().then(() => (typeof IlePeau === 'object' ? null : script('js/ile-peau.js')));
   }

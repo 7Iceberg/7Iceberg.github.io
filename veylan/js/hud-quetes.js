@@ -1,12 +1,3 @@
-// Le journal des quêtes (touche Q), à la manière de celui de Dofus, dans le verre de Veylan
-// (docs/ANALYSE-HUD-DUALITY.md, maquette 5). À gauche : « En cours » et « Terminées », une
-// recherche, les quêtes rangées par catégorie (principales, région, faction, donjons, secondaires),
-// chacune avec son anneau d'avancement. À droite, la quête choisie : son récit, ses étapes
-// (faites, en cours avec leur compte, à venir, puis la remise), ce qu'elle rapporte, et trois
-// gestes : « Suivre » (la carte d'infos du téléphone la montre), « Abandonner » (deux appuis) et
-// « Montrer le chemin » : sur un plateau, les marques au sol jusqu'à l'objectif de l'étape (le PNJ à
-// voir, le groupe à vaincre, le nœud à récolter), comme le guide du tutoriel. Au téléphone en
-// portrait, la liste puis la fiche. Se charge après js/hud.js et js/hud-fenetres.js.
 (() => {
 const esc = s => Util.esc(s);
 const svg = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
@@ -21,24 +12,22 @@ const ICO = {
 const CATS = [['main', 'Principales'], ['region', 'Région'], ['faction', 'Faction'], ['donjon', 'Donjons'], ['autre', 'Secondaires']];
 const catDe = q => q.main ? 'main' : ['region', 'faction', 'donjon'].includes(q.category) ? q.category : 'autre';
 const sansAccents = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-// L'anneau d'avancement d'une quête (le pourcentage au milieu).
 const anneau = (pct, fini) => {
   const v = Math.round(pct * 100);
   return `<span class="vy-q-anneau${fini ? ' fini' : ''}" style="--p:${v}" aria-hidden="true"><svg viewBox="0 0 36 36"><circle class="piste" cx="18" cy="18" r="15"/><circle class="part" cx="18" cy="18" r="15" pathLength="100" stroke-dasharray="${v} 100"/></svg><b>${fini ? ICO.coche : v + '<i>%</i>'}</b></span>`;
 };
 
 Object.assign(Hud.prototype, {
-  // La quête suivie : gardée sur l'appareil, par personnage ; à défaut, la première du suivi.
   quetesSuivie() {
     const ch = this.world.ch;
     let id = null;
-    try { id = localStorage.getItem('veylan.suivie.' + (ch.uid || ch.name)); } catch (e) { /* rien */ }
+    try { id = localStorage.getItem('veylan.suivie.' + (ch.uid || ch.name)); } catch (e) {   }
     return id && ch.quests.active[id] ? id : null;
   },
   suivreQuete(id) {
     const ch = this.world.ch, cle = 'veylan.suivie.' + (ch.uid || ch.name);
     const deja = this.quetesSuivie() === id;
-    try { if (deja) localStorage.removeItem(cle); else localStorage.setItem(cle, id); } catch (e) { /* rien */ }
+    try { if (deja) localStorage.removeItem(cle); else localStorage.setItem(cle, id); } catch (e) {   }
     if (this.jeu && this.jeu.rafraichirCarte) this.jeu.rafraichirCarte();
     return !deja;
   },
@@ -51,7 +40,6 @@ Object.assign(Hud.prototype, {
       choisir: d => { s.choisie = d.id; s.vue = 'fiche'; r(); },
       retour: () => { s.vue = 'liste'; r(); },
       suivre: d => { const on = this.suivreQuete(d.id); this.toast(on ? 'Quête suivie.' : 'Quête plus suivie.'); r(); },
-      // Abandonner : l'avancement est perdu, la quête redevient disponible (deux appuis).
       abandon: (d, b) => {
         if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Confirmer l\'abandon'; b.classList.add('vy-bouton--danger'); return; }
         this.world.abandonQuest(d.id);
@@ -76,7 +64,6 @@ Object.assign(Hud.prototype, {
         const sous = t.done ? `à rendre à ${Quests.npcName(q.turnIn || q.giver)}` : `étape ${Math.min(n, (st ? st.step : 0) + 1)} sur ${n}`;
         return { quest: q, fini: false, pct: HudJeu.avancement(ch, t), sous, pret: t.done };
       });
-    // La quête choisie : celle qu'on a touchée, sinon la suivie, sinon la première.
     if (!s.choisie || !liste.some(x => x.quest.id === s.choisie)) s.choisie = (suivie && liste.some(x => x.quest.id === suivie) ? suivie : liste[0] && liste[0].quest.id) || null;
     const groupes = CATS.map(([k, label]) => {
       const items = liste.filter(x => catDe(x.quest) === k);
@@ -102,7 +89,6 @@ Object.assign(Hud.prototype, {
     </div>`;
   },
 
-  // La fiche d'une quête : l'en-tête, le récit, les étapes, les récompenses, les gestes.
   ficheQuete(q, finie, suivie) {
     const ch = this.world.ch, st = Quests.state(ch, q.id), steps = q.steps || [], n = steps.length;
     const enCours = !finie && !!st, cur = enCours ? st.step : (finie ? n : -1);
@@ -138,8 +124,6 @@ Object.assign(Hud.prototype, {
       ${abandon || chemin ? `<footer class="vy-q-pied">${abandon}<span class="vy-q-pied__ressort"></span>${chemin}</footer>` : ''}`;
   },
 
-  // L'objectif de l'étape en cours d'une quête, sur le plateau courant : { point, nom }, ou une
-  // raison quand il n'y a rien à rejoindre (pas sur un plateau, en combat, une étape sans lieu).
   objectifQuete(id) {
     const w = this.world, ch = w.ch, q = Quests.get(id), st = Quests.state(ch, id);
     if (!q || !st) return null;
@@ -151,7 +135,6 @@ Object.assign(Hud.prototype, {
     const groupe = ids => { const g = proche(w.groups.filter(g2 => g2.monsters.some(m => ids.includes(m.id)))); return g ? { point: { x: g.x, y: g.y }, nom: 'le groupe le plus proche' } : { raison: 'Aucun groupe à vaincre ici' }; };
     if (!e) return pnj(q.turnIn || q.giver);
     if (e.type === 'talk' && e.npc) return pnj(e.npc);
-    // Un lieu de l'île (une sous-zone) : le milieu de son contour.
     if (e.type === 'visit' && e.map) {
       const def = World.mapDef(e.map), c = def && def.contour;
       if (!c || (def.plateau && w.plateau && def.plateau !== w.plateau.id)) return { raison: 'Ce lieu est sur une autre carte' };
@@ -171,13 +154,10 @@ Object.assign(Hud.prototype, {
     return { raison: 'Cette étape ne se rejoint pas' };
   },
 
-  // « Montrer le chemin » : les marques au sol jusqu'à l'objectif, tenues à jour pendant la marche,
-  // effacées à l'arrivée (3 u), en combat, en quittant le plateau ou quand le guide reprend la main.
   cheminQuete(id) {
     const o = this.objectifQuete(id), R = this.renderer, g = this.guide;
     if (!o || !o.point || !R || !g || !g.traceVers) { this.toast((o && o.raison) || 'Rien à rejoindre pour cette étape.'); return false; }
     clearInterval(this.cheminT);
-    // Sur l'île, passer d'une sous-zone à l'autre change de carte, pas de plateau.
     const w = this.world, plateau = w.plateau && w.plateau.id;
     const poser = () => {
       const p = w.player, b = o.point;
@@ -194,7 +174,6 @@ Object.assign(Hud.prototype, {
     poser();
     this.cheminT = setInterval(poser, 400);
     this.toast(`Le chemin jusqu'à ${o.nom}.`);
-    // Au téléphone, la fenêtre se ferme pour laisser voir le chemin.
     if (Fenetres.compact || (typeof innerHeight === 'number' && innerHeight <= 500)) this.fen.close('quetes');
     return true;
   },

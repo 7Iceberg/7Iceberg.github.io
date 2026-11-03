@@ -1,12 +1,3 @@
-/* ==========================================================================
-   Veylan : le guide et les dialogues (js/guide.js, js/dialogues.js)
-   --------------------------------------------------------------------------
-   La boîte du guide (grand portrait debout sur une boîte claire, bandeau du nom), la bulle d'un
-   PNJ au-dessus de sa tête et la boîte de réponses, le projecteur et la main qui touche, le geste
-   de glisser, les rappels du mode court, les rubans (« Prépare-toi ! », « À toi de jouer ! »,
-   « Niveau supérieur ! »). Les bulles de dialogue sont le seul panneau clair de l'interface
-   (docs/DIRECTION-ARTISTIQUE.md) : calcaire d'Orsane, texte à l'encre, jamais de trait noir.
-   ========================================================================== */
 
 :root {
   --vy-bulle: #efe6d4;
@@ -15,7 +6,6 @@
   --vy-bulle-bord: rgba(142, 113, 68, 0.85);
 }
 
-/* ----- Les mots mis en avant : gras, ou en couleur (PA, PM, PV, cristal, or, voile) ----- */
 .vy-mot { font-weight: 700; color: #262b45; }
 .vy-mot--pa, .vy-mot--or { color: #8a5f12; }
 .vy-mot--pm { color: #3f6e3a; }
@@ -24,9 +14,6 @@
 .vy-mot--voile { color: #7440c8; }
 .vy-parole__reste { visibility: hidden; }
 
-/* ----- La boîte du guide ----- */
-/* Sur ordinateur, en exploration, le bloc vital et les raccourcis tiennent le bas de la scène et
-   la discussion son coin : la boîte et les réponses se posent au-dessus (--guide-bas). */
 #app.mode-explore { --guide-bas: 104px; }
 .vy-guide {
   --portrait-l: 132px;
@@ -108,7 +95,6 @@
   background: var(--vy-or-sombre); clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 .vy-guide.attend .vy-guide__suite { opacity: 1; animation: vy-suite 1s ease-in-out infinite; }
-/* Le dialogue de quête : la même boîte, plus large, et le nom de la quête dans le bandeau. */
 .vy-guide--dialogue { width: min(520px, calc(100% - 20px)); z-index: 17; }
 .vy-guide--dialogue .vy-guide__nom { justify-content: flex-start; padding-left: calc(var(--portrait-l) + 12px); }
 
@@ -116,7 +102,6 @@
 @keyframes vy-portrait-respire { 50% { transform: translateY(-2px) scale(1.008); } }
 @keyframes vy-suite { 50% { transform: translateY(3px); } }
 
-/* ----- La bulle d'un PNJ, au-dessus de sa tête ----- */
 .vy-bulle-pnj {
   --queue: 40px;
   position: absolute;
@@ -155,7 +140,6 @@
 .vy-bulle-pnj.attend .vy-bulle-pnj__suite { opacity: 1; animation: vy-suite 1s ease-in-out infinite; }
 @keyframes vy-bulle-entre { from { opacity: 0; } }
 
-/* ----- La boîte de réponses, en bas au centre de la scène ----- */
 .vy-repliques {
   position: absolute;
   left: 50%;
@@ -206,7 +190,6 @@
   box-shadow: 0 1px 3px rgba(59, 66, 96, 0.4);
 }
 .vy-replique__marque--offre, .vy-replique__marque--rendre { background: radial-gradient(circle at 35% 30%, #fff1c8, var(--vy-or) 58%, #8e7144); color: #2c2110; }
-/* Un passage (la Nacelle) : la marque bleue du voyage. */
 .vy-replique__marque--passage { background: radial-gradient(circle at 35% 30%, #d6f6ff, #35b7d8 58%, #1c5f74); color: #0b2a33; }
 .vy-repliques__fermer {
   position: absolute; right: -8px; top: -10px;
@@ -220,7 +203,6 @@
 .vy-repliques__fermer svg { width: 100%; height: 100%; }
 .vy-repliques__fermer:hover { color: #fff; box-shadow: 0 0 0 1.5px var(--vy-cristal), 0 0 12px rgba(0, 194, 255, 0.4); }
 
-/* ----- Le projecteur : le reste s'assombrit, la cible s'entoure de cristal ----- */
 .vy-projecteur { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
 .vy-projecteur__trou {
   position: fixed;
@@ -230,12 +212,9 @@
   animation: vy-anneau 1.6s ease-in-out infinite;
 }
 .vy-projecteur.sans-voile .vy-projecteur__trou { box-shadow: 0 0 0 2px var(--vy-cristal), 0 0 14px 2px rgba(0, 194, 255, 0.45); }
-/* Sous le voile, la boîte du guide reste claire : c'est elle qui dit quoi toucher. */
 body.vy-voile .vy-guide--tuto { z-index: 41; }
 @keyframes vy-anneau { 50% { outline: 2px solid rgba(143, 233, 255, 0.55); outline-offset: 5px; } }
 
-/* La main qui touche : ivoire, trait à l'encre, une onde sous l'index. --sx et --sy la
-   retournent près du bord droit ou du bas (js/guide.js) ; le bout du doigt ne bouge pas. */
 .vy-main { position: fixed; width: 56px; height: 56px; overflow: visible; filter: drop-shadow(0 4px 6px rgba(5, 8, 13, 0.5)); animation: vy-toucher 1.3s ease-in-out infinite; transform-origin: 18px 12px; }
 .vy-main__doigt { fill: #f7efe0; stroke: #3b4260; stroke-width: 1.8; stroke-linejoin: round; }
 .vy-main__pli { fill: none; stroke: rgba(59, 66, 96, 0.55); stroke-width: 1.3; stroke-linecap: round; }
@@ -246,7 +225,6 @@ body.vy-voile .vy-guide--tuto { z-index: 41; }
 }
 @keyframes vy-onde { 0%, 44% { opacity: 0; transform: scale(0.4); } 50% { opacity: 1; } 100% { opacity: 0; transform: scale(1.9); } }
 
-/* Le geste de glisser pour changer de carte, au doigt : la main tire la carte. */
 .vy-geste { position: absolute; left: 50%; top: 46%; z-index: 9; width: 0; height: 0; pointer-events: none; }
 .vy-geste .vy-main { position: absolute; left: -18px; top: -12px; animation: vy-glisser 1.9s ease-in-out infinite; transform: none; }
 .vy-geste__trace {
@@ -258,7 +236,6 @@ body.vy-voile .vy-guide--tuto { z-index: 41; }
 @keyframes vy-glisser { 0%, 10% { transform: translate(0, 0); opacity: 0; } 18% { opacity: 1; } 70% { transform: translate(var(--gx), var(--gy)); opacity: 1; } 85%, 100% { transform: translate(var(--gx), var(--gy)); opacity: 0; } }
 @keyframes vy-trace { 0%, 20% { opacity: 0; } 60% { opacity: 0.9; } 90%, 100% { opacity: 0; } }
 
-/* ----- Les rappels du mode court : une ligne en haut de la scène ----- */
 .vy-rappel {
   position: absolute; left: 50%; top: 10px; z-index: 18;
   transform: translateX(-50%);
@@ -274,12 +251,10 @@ body.vy-voile .vy-guide--tuto { z-index: 41; }
   cursor: pointer;
   animation: vy-guide-entre 0.3s var(--vy-courbe);
 }
-/* Une fenêtre ouverte : le rappel ne prend pas les touchers destinés à ses boutons (il s'efface seul). */
 #app:has(#fenetres > .vy-fenetre) .vy-rappel { pointer-events: none; }
 .vy-rappel .vy-mot { color: var(--vy-or-clair); }
 .vy-rappel__point { flex: none; width: 9px; height: 9px; transform: rotate(45deg); background: var(--vy-cristal); box-shadow: 0 0 8px rgba(0, 194, 255, 0.7); }
 
-/* ----- Les rubans : nuit et or ancien, ils passent sans arrêter le jeu ----- */
 .vy-ruban {
   position: absolute; left: 50%; top: 24%; z-index: 11;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -308,7 +283,6 @@ body.vy-voile .vy-guide--tuto { z-index: 41; }
 }
 .vy-ruban__texte {
   display: block;
-  /* À la largeur de la scène (--scene-l, js/hud-jeu.js), pas de la fenêtre : le panneau en prend une part. */
   font: 800 clamp(18px, calc(var(--scene-l, 100vw) * 0.046), 30px)/1.1 var(--vy-font-titre);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -328,12 +302,10 @@ body.vy-voile .vy-guide--tuto { z-index: 41; }
   white-space: nowrap;
 }
 .vy-ruban--tour .vy-ruban__bande { padding: 7px 40px 8px; }
-/* Une sous-zone de l'île : plus haut, plus discret, la sous-zone et son niveau dessous. */
 .vy-ruban--zone { top: 16%; }
 .vy-ruban--zone .vy-ruban__bande { padding: 6px 38px 7px; }
 .vy-ruban--zone .vy-ruban__texte { font-size: clamp(15px, calc(var(--scene-l, 100vw) * 0.034), 24px); letter-spacing: 0.1em; }
 .vy-ruban--tour .vy-ruban__texte { font-size: clamp(17px, calc(var(--scene-l, 100vw) * 0.04), 26px); }
-/* Niveau supérieur : plus grand, des rayons et des éclats derrière le ruban. */
 .vy-ruban--niveau { top: 30%; }
 .vy-ruban--niveau .vy-ruban__texte { font-size: clamp(20px, calc(var(--scene-l, 100vw) * 0.044), 40px); }
 .vy-ruban--niveau .vy-ruban__bande { padding: 12px 56px 13px; box-shadow: inset 0 2px 0 var(--vy-or-clair), inset 0 -2px 0 var(--vy-or-sombre), 0 0 30px rgba(0, 194, 255, 0.3); }
@@ -362,14 +334,11 @@ body.vy-voile .vy-guide--tuto { z-index: 41; }
 @keyframes vy-rayons { to { transform: rotate(360deg); } }
 @keyframes vy-eclat { 0% { opacity: 0; transform: rotate(45deg) scale(0.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: rotate(45deg) scale(1.3) translateY(-10px); } }
 
-/* ----- Téléphone : la boîte du guide est plus petite, le portrait aussi ----- */
 @media (orientation: landscape) and (max-height: 500px) {
   #app, #app.mode-explore { --guide-bas: 6px; }
   .vy-guide { --portrait-l: 104px; --portrait-h: 120px; left: 6px; width: min(56%, 380px); }
   .vy-guide[data-cote="droite"] { right: calc(6px + var(--vy-couvert-droite, 0px)); }
   #app.mode-combat .vy-guide { width: min(calc(100% - var(--barre-tour-l, 240px) - 20px), 360px); }
-  /* Une scène étroite : la boîte du guide se pose au-dessus de la barre de tour (js/hud-jeu.js),
-     plus serrée, pour laisser voir le combat. */
   #app.mode-combat.vy-guide-dessus .vy-guide { --portrait-l: 70px; --portrait-h: 82px; bottom: calc(var(--barre-tour-h, 70px) + 6px); width: min(calc(100% - 12px), 380px); }
   #app.mode-combat.vy-guide-dessus .vy-guide[data-cote="droite"] { right: calc(6px + var(--vy-couvert-droite, 0px)); }
   #app.mode-combat.vy-guide-dessus .vy-guide__nom { min-height: 24px; }
@@ -385,8 +354,6 @@ body.vy-voile .vy-guide--tuto { z-index: 41; }
   .vy-ruban__bande { padding-left: 34px; padding-right: 34px; }
   .vy-ruban--niveau .vy-ruban__bande { padding-left: 40px; padding-right: 40px; }
 }
-/* Téléphone en portrait (« Continuer en portrait ») : au-dessus de la barre des menus et des
-   raccourcis, en bas de l'écran. */
 @media (max-width: 600px) and (orientation: portrait) {
   #app, #app.mode-explore { --guide-bas: 118px; }
   .vy-guide { --portrait-l: 96px; --portrait-h: 112px; left: 6px; width: calc(100% - 12px); }

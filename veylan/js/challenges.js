@@ -1,7 +1,3 @@
-// Les Défis : une contrainte tirée au sort au début d'un combat du monde. Réussie, elle donne un
-// bonus d'XP et de butin. Le moteur de combat appelle `event(nom, combat, ...)` aux moments clés
-// (onStart, onTurnStart, onStep, onCast, onTurnEnd, onKill, onDamage, onEnd) ; un défi raté le
-// reste jusqu'à la fin du combat.
 const Challenges = (() => {
   const isDamage = s => s.effects.some(ef => ef.type === 'damage' || ef.type === 'charge');
   const monsters = c => c.entities.filter(e => e.team === 'monster' && !e.isSummon);
@@ -63,12 +59,11 @@ const Challenges = (() => {
       this.bonus = def.bonus;
       this.desc = def.desc;
       this.state = { };
-      this.failed = null;      // la raison de l'échec, s'il y en a un
+      this.failed = null;
       this.success = false;
       this.over = false;
     }
 
-    // Retourne vrai si l'état du défi a changé (pour rafraîchir l'interface).
     event(name, combat, ...args) {
       if (this.over) return false;
       if (name === 'onStart' && this.state.desc) this.desc = this.state.desc;
@@ -94,7 +89,6 @@ const Challenges = (() => {
     }
   }
 
-  // Tire un défi au sort parmi ceux qui ont un sens pour ce combat.
   function pick(combatLike, rng) {
     const ok = LIST.filter(d => !d.eligible || d.eligible(combatLike));
     return new Challenge(ok[Math.floor(rng() * ok.length)]);

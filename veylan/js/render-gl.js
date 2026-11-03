@@ -1,15 +1,3 @@
-// Rendu WebGL (PixiJS 8) du monde et du combat : même entrée et même sortie que le rendu
-// Canvas de js/render.js (API identique, choisi dans main.js et lab.js), mais une scène éclairée :
-// le plateau et ses alentours peints (js/entourage.js) jusqu'aux bords de la vue, carte de lumière
-// des lanternes et des cristaux, lueurs additives, particules, eau animée, décors triés avec les
-// personnages, bloom et étalonnage des couleurs en haute qualité. Tout ce qui est peint vient de
-// js/paint.js et du peintre (le rendu Canvas en mode peinture seule).
-// La toile remplit la scène : le monde passe par la caméra (js/camera.js), appliquée aux conteneurs
-// du monde et des étiquettes ; le vignettage et les filtres couvrent l'écran.
-//
-// Ce que le moteur de jeu et l'interface attendent : W, H, dpr, origin, highlights, static,
-// world, onTick, camera, cellToScreen, screenToCell, canvasPoint, worldToClient, animateMove,
-// animateCast, follow.
 class RendererGL {
   static supported(params) {
     if (params && params.get && params.get('render') === 'canvas') return false;
@@ -17,9 +5,6 @@ class RendererGL {
     try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; }
   }
 
-  // Essai réel avant de choisir ce rendu : Pixi démarre sur une petite toile détachée, dessine une
-  // texture, un texte et un filtre, puis se détruit. Si quoi que ce soit échoue ou dure trop, le
-  // jeu garde le rendu Canvas. Résultat mémorisé.
   static async probe() {
     if (RendererGL._probe != null) return RendererGL._probe;
     let app = null;
@@ -46,7 +31,7 @@ class RendererGL {
       console.info('Veylan : WebGL indisponible, rendu Canvas.', e && e.message);
       RendererGL._probe = false;
     }
-    try { if (app) app.destroy(true, { children: true, texture: true }); } catch (e) { /* rien */ }
+    try { if (app) app.destroy(true, { children: true, texture: true }); } catch (e) {   }
     return RendererGL._probe;
   }
 
@@ -54,9 +39,6 @@ class RendererGL {
     this.canvas = canvas;
     this.combat = combat;
     this.world = world || null;
-    // Le peintre : le rendu Canvas en mode « peinture seule » fournit les calques fixes (le plateau
-    // et ses alentours, décor cuit, flaques de lumière), les sprites de décor et le dessin des figures. Cette
-    // classe les met en scène sur le GPU et ajoute la lumière vivante, les lueurs, les particules.
     this.painter = new Renderer(document.createElement('canvas'), combat, world, { painterOnly: true });
     this.painter.softShadow = () => {};
     this.painter.bglow = () => {};
@@ -72,16 +54,13 @@ class RendererGL {
     this.dpr = Math.min(2, Math.max(1, (typeof devicePixelRatio === 'number' && devicePixelRatio) || 1));
     this.vw = 0; this.vh = 0;
     this.uiK = 1;
-    // La toile remplit la scène ; la caméra y place le monde (le repli Canvas la partage).
     this.camera = new Camera(canvas);
-    // Le peintre règle les alentours sur cette caméra, et lui donne leurs bornes à chaque carte.
     this.painter.camera = this.camera;
     this.camera.setBounds(this.painter.cameraBounds());
     this.floats = [];
     this.fx = [];
     this.animations = [];
     this.highlights = { move: new Set(), range: new Set(), blocked: new Set(), aoe: new Set(), path: [], hover: null };
-    // Repère du guide et vue tactique : mêmes réglages que le rendu Canvas (js/render.js).
     this.guideCue = null;
     this.tactique = false;
     this.static = null;
@@ -102,8 +81,6 @@ class RendererGL {
     this.tempLights = [];
     this.floatPool = [];
     this.lastNow = performance.now();
-    // Endormi (l'île d'Ervane s'affiche en 3D, js/scene.js), ce rendu n'anime rien : un seul rendu
-    // anime les entités.
     combat.on('animMove', d => (this.suspendu ? Promise.resolve() : this.animateMove(d)));
     combat.on('animCast', d => (this.suspendu ? Promise.resolve() : this.animateCast(d)));
     combat.on('animTrap', () => (this.suspendu ? Promise.resolve() : Util.delay(180)));
@@ -115,8 +92,6 @@ class RendererGL {
     requestAnimationFrame(() => this.frame());
   }
 
-  // La toile suit la taille de la scène (fenêtre, rotation, plein écran, colonne voisine) ; le rendu
-  // Pixi prend la même taille, à la densité de l'écran (2 au plus), et se redessine aussitôt.
   watchSize() {
     const fit = () => {
       const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
@@ -124,7 +99,6 @@ class RendererGL {
       this.dpr = Math.min(2, Math.max(1, (typeof devicePixelRatio === 'number' && devicePixelRatio) || 1));
       this.painter.dpr = this.dpr;
       this.camera.setViewport(w, h);
-      // Endormi, le peintre ne repeint rien : il n'a plus de carte à cases sous les yeux.
       if (this.suspendu) return;
       this.painter.suivreDensite(this.camera.fitZoom, this.dpr);
       this.painter.suivreAlentours();
@@ -132,7 +106,7 @@ class RendererGL {
       this.vw = w; this.vh = h;
       this.app.renderer.resize(w, h, this.dpr);
       this.layoutScreen();
-      if (this.ready) { try { this.update(performance.now()); this.app.render(); } catch (e) { /* l'image suivante le dira */ } }
+      if (this.ready) { try { this.update(performance.now()); this.app.render(); } catch (e) {   } }
     };
     this.resize = fit;
     if (typeof ResizeObserver === 'function') new ResizeObserver(fit).observe(this.canvas.parentElement || this.canvas);
@@ -140,35 +114,26 @@ class RendererGL {
     fit();
   }
 
-  // Ce qui suit l'écran plutôt que le monde : le vignettage, la zone des filtres (en coordonnées de
-  // la scène, qui ne bouge pas : seul son contenu passe par la caméra).
   layoutScreen() {
     if (!this.layers) return;
     this.vignette.width = this.vw; this.vignette.height = this.vh;
     this.layers.scene.filterArea = new PIXI.Rectangle(0, 0, this.vw, this.vh);
   }
 
-  // La caméra appliquée au monde et aux étiquettes ; les étiquettes gardent une taille lisible à
-  // tout zoom (comme uiAt dans le rendu Canvas).
   applyCamera() {
     const cam = this.camera, L = this.layers;
     for (const c of [L.world, L.hud]) { c.position.set(cam.x, cam.y); c.scale.set(cam.zoom); }
     this.uiK = Math.min(1.3, Math.max(0.9, cam.zoom)) / cam.zoom;
   }
 
-  // Repli en cours de route : le rendu Canvas prend la main sur une toile posée exactement sous
-  // celle-ci (même place, même caméra), qui reste transparente pour continuer à recevoir les
-  // touchers et les clics.
   degrade(reason) {
     if (this.degraded) return;
     this.degraded = true;
     this.ready = false;
     console.warn('Veylan : rendu WebGL abandonné (' + reason + '), rendu Canvas.');
-    // Endormi sur l'île (js/scene.js), le rendu Canvas de repli attend le réveil : son constructeur
-    // lit la carte à cases, qu'il n'y a pas sur un plateau.
     if (this.suspendu) {
       this.repliAttendu = reason;
-      try { if (this.app) { this.app.destroy(false, { children: true, texture: true }); this.app = null; } } catch (e) { /* rien */ }
+      try { if (this.app) { this.app.destroy(false, { children: true, texture: true }); this.app = null; } } catch (e) {   }
       return;
     }
     this.creerRepli(reason);
@@ -186,20 +151,17 @@ class RendererGL {
     fb.tactique = !!this._tactique;
     fb.onTick = this._onTick || null;
     fb.static = null;
-    try { if (this.app) { this.app.destroy(false, { children: true, texture: true }); this.app = null; } } catch (e) { /* rien */ }
+    try { if (this.app) { this.app.destroy(false, { children: true, texture: true }); this.app = null; } } catch (e) {   }
     if (window.VEYLAN_GARDE && /^(démarrage|contexte)/.test(reason) === false) window.VEYLAN_GARDE.show('Rendu WebGL abandonné : ' + reason + '. Le jeu continue en rendu Canvas.');
   }
 
   get onTick() { return this._onTick; }
   set onTick(fn) { this._onTick = fn; if (this.fallback) this.fallback.onTick = fn; }
-  // Le repère du guide et la vue tactique suivent aussi le rendu Canvas de repli.
   get guideCue() { return this._cue; }
   set guideCue(v) { this._cue = v || null; if (this.fallback) this.fallback.guideCue = this._cue; }
   get tactique() { return !!this._tactique; }
   set tactique(v) { this._tactique = !!v; if (this.fallback) this.fallback.tactique = this._tactique; }
 
-  // Sur un téléphone ou une tablette, qualité basse par défaut (pas de filtre de bloom, moins de
-  // particules) : la peinture garde ses lueurs cuites, et ?quality=haute reste possible.
   static autoQuality() {
     const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     const cores = navigator.hardwareConcurrency || 4;
@@ -209,15 +171,10 @@ class RendererGL {
 
   get world() { return this._world; }
   set world(w) { this._world = w || null; if (this.painter) this.painter.world = this._world; if (this.fallback) { this.fallback.world = this._world; this.fallback.static = null; } }
-  // Sur un plateau (Ervane), le monde n'a pas de carte à cases : la carte du combat la remplace.
   get map() { return (this.world && this.world.map) || this.combat.map; }
   get inCombat() { return this.world ? this.world.showCombat : true; }
   get paletteId() { return this.world && this.world.zone ? this.world.zone.palette : 'lab'; }
 
-  // ----- Sommeil : l'île d'Ervane s'affiche en 3D (js/scene.js, docs/ILE-TECHNIQUE.md, 1.6) -----
-  // Endormi, ce rendu ne produit plus d'image, rend à la mémoire ses calques, ses textures et celles
-  // du peintre (qui reste prêt : l'interface et le rendu 3D peignent encore avec lui), et sa caméra
-  // se tait. La toile #board reste au-dessus, transparente : elle reçoit toujours les gestes.
   suspendre() {
     if (this.suspendu) return;
     this.suspendu = true;
@@ -235,8 +192,6 @@ class RendererGL {
     pt.static = null; pt.staticMap = null; pt.staticBloom = null; pt.lointain = []; pt.entourage = null; pt.res = null; pt.decor = [];
   }
 
-  // Le réveil : la prochaine image refait la carte. Un repli Canvas demandé pendant le sommeil
-  // (contexte de Pixi perdu) naît maintenant.
   reprendre() {
     if (!this.suspendu) return;
     this.suspendu = false;
@@ -255,24 +210,20 @@ class RendererGL {
   cellToScreen(x, y) { return Grid.toScreen(x, y, this.origin); }
   screenToCell(sx, sy) { return Grid.fromScreen(sx, sy, this.origin); }
 
-  // Coordonnées du monde sous un événement souris ou tactile, à travers la caméra.
   canvasPoint(evt) {
     const src = evt.touches && evt.touches[0] ? evt.touches[0] : (evt.changedTouches && evt.changedTouches[0] ? evt.changedTouches[0] : evt);
     return this.camera.clientToWorld(src.clientX, src.clientY);
   }
 
-  // Un point du monde en coordonnées client, pour poser un élément du DOM dessus.
   worldToClient(x, y) { return this.camera.worldToClient(x, y); }
   cameraBounds() { return this.painter.cameraBounds(); }
 
-  // ----- Animations demandées par le moteur de combat -----
 
   animateMove({ entity, to, teleport, fast }) {
     return new Promise(resolve => {
       const from = { x: entity.rx, y: entity.ry };
       const dur = teleport ? 200 : (fast ? 90 : 140);
       const start = performance.now();
-      // Un Veilleur qui marche regarde où il va ; poussé ou en repli, il garde son regard.
       if (!teleport && !fast && entity.shape === 'player') entity.facing = Grid.facing(to.x - from.x, to.y - from.y) || entity.facing;
       if (teleport) { this.burst([{ x: from.x, y: from.y }], this.palette.crystal, 300); setTimeout(() => this.burst([to], this.palette.crystal, 300), 100); }
       this.animations.push({
@@ -299,7 +250,6 @@ class RendererGL {
     return Util.delay(240);
   }
 
-  // Une explosion de lumière sur des cases : losange qui s'ouvre, halo, étincelles, lumière brève.
   burst(cells, color, dur) {
     const now = performance.now();
     for (const c of cells) {
@@ -310,11 +260,9 @@ class RendererGL {
     }
   }
 
-  // ----- Boucle -----
 
   frame() {
-    if (this.degraded) return;   // le rendu Canvas de repli a sa propre boucle
-    // Endormi (l'île en 3D) : pas d'image, pas de temps du monde ; on garde la boucle pour le réveil.
+    if (this.degraded) return;
     if (this.suspendu) { requestAnimationFrame(() => this.frame()); return; }
     const now = performance.now();
     this.watchRate(now);
@@ -324,8 +272,6 @@ class RendererGL {
     this.camera.update(now);
     if (this.ready) {
       let t0 = performance.now();
-      // Le calque fixe se refait au changement de carte, une fois : hors de la mesure, qui juge le
-      // coût d'une image ordinaire (et décide de passer en qualité basse).
       try { this.buildStatic(); t0 = performance.now(); this.update(now); this.app.render(); this.okFrames = (this.okFrames || 0) + 1; }
       catch (e) {
         console.error('Rendu WebGL :', e);
@@ -339,10 +285,6 @@ class RendererGL {
     requestAnimationFrame(() => this.frame());
   }
 
-  // La cadence réelle, rastérisation comprise : la toile remplit l'écran, et une carte graphique qui
-  // peine sur un grand écran dense ne se voit pas dans le temps du script. Sous 30 images par seconde
-  // pendant trois secondes, qualité basse (sans bloom ni étalonnage). Pas si ?quality= l'impose ; un
-  // trou de plus d'un quart de seconde (onglet caché, carte qui se construit) ne compte pas.
   watchRate(now) {
     const dt = this.prevFrame ? now - this.prevFrame : 16;
     this.prevFrame = now;
@@ -356,7 +298,6 @@ class RendererGL {
     }
   }
 
-  // Si les images sont trop longues à produire, on repasse en qualité basse.
   measure(ms) {
     this.frameEma = this.frameEma * 0.95 + ms * 0.05;
     if (++this.frames > 120 && this.quality === 'haute' && this.frameEma > 40) {
@@ -366,8 +307,6 @@ class RendererGL {
     }
   }
 
-  // Comme le rendu Canvas : la caméra garde l'acteur du moment dans le cadre quand le plateau ne
-  // tient pas en entier ; l'entrée en combat et le retour au monde recadrent le plateau.
   follow() {
     if (this.inCombat !== this.framedCombat) { this.framedCombat = this.inCombat; this.camera.fit(); }
     const focus = this.inCombat ? (this.combat.actor ? this.combat.actor.id : 0) : (this.world && this.world.player.moving ? 'marche' : 'repos');
@@ -380,17 +319,13 @@ class RendererGL {
     this.camera.follow(focus, p ? p.x : null, p ? p.y - 30 : null);
   }
 
-  // ----- Mise en place de la scène -----
 
   async initGL() {
     const app = new PIXI.Application();
-    // La taille de la scène (la toile la remplit) ; la caméra place le monde dedans.
     const w = this.canvas.clientWidth || this.W, h = this.canvas.clientHeight || this.H;
     await app.init({ canvas: this.canvas, width: w, height: h, resolution: this.dpr, autoDensity: false, antialias: false, background: '#070b14', preference: 'webgl', autoStart: false, sharedTicker: false, powerPreference: 'high-performance' });
     this.app = app;
     this.vw = w; this.vh = h;
-    // La scène reste fixe (elle porte les filtres, sur tout l'écran) ; le monde, dedans, et les
-    // étiquettes passent par la caméra ; le vignettage est entre les deux, à la taille de l'écran.
     const L = this.layers = {};
     L.scene = new PIXI.Container();
     L.world = new PIXI.Container();
@@ -421,9 +356,6 @@ class RendererGL {
       white: PIXI.Texture.WHITE,
     };
 
-    // Carte de lumière du calque proche : l'ambiance partout, puis les lumières en addition. Rendue
-    // en demi-résolution, appliquée en multiplication sur le sol ; le lointain prend l'ambiance en
-    // teinte, sans lumières.
     const K = this.painter.calque;
     this.lmW = Math.ceil(K.w / 2); this.lmH = Math.ceil(K.h / 2);
     this.lm = PIXI.RenderTexture.create({ width: this.lmW, height: this.lmH, resolution: 1 });
@@ -437,26 +369,18 @@ class RendererGL {
 
     this.gTact = new PIXI.Graphics(); this.gTact.visible = false; L.cells.addChild(this.gTact);
     this.gCells = new PIXI.Graphics(); L.cells.addChild(this.gCells);
-    // Les cases de départ du joueur, à part : elles respirent pendant le placement.
     this.gDepart = new PIXI.Graphics(); L.cells.addChild(this.gDepart);
-    // La lueur du repère, sous sa forme : dans le calque des cases, que le changement de carte
-    // ne vide pas (celui des lueurs est refait à chaque carte).
     this.cueGlow = new PIXI.Sprite(T.glow); this.cueGlow.anchor.set(0.5); this.cueGlow.blendMode = 'add'; this.cueGlow.visible = false; L.cells.addChild(this.cueGlow);
     this.gCue = new PIXI.Graphics(); L.cells.addChild(this.gCue);
     this.gHover = new PIXI.Graphics(); L.hud.addChild(this.gHover);
-    // La colonne de lumière du repère, par-dessus les figures.
     this.gBeam = new PIXI.Graphics(); this.gBeam.blendMode = 'add'; L.hud.addChild(this.gBeam);
-    // Au-delà de ce qui est peint (le temps qu'une nouvelle taille de vue soit repeinte), la couleur
-    // du lointain (updateBackdrop).
     this.backstop = new PIXI.Sprite(T.white); this.backstop.visible = false; L.sky.addChild(this.backstop);
-    // Le vignettage, étiré à la taille de l'écran (l'ovale suit sa forme).
     this.vignette = new PIXI.Sprite(this.tex(Paint.vignette(512, 512))); this.vignette.blendMode = 'multiply'; L.screen.addChild(this.vignette);
     this.floatLayer = new PIXI.Container(); L.hud.addChild(this.floatLayer);
     this.applyQuality();
     this.layoutScreen();
     this.ready = true;
     this.static = null;
-    // La scène a pu changer de taille pendant le démarrage.
     this.resize();
   }
 
@@ -476,7 +400,6 @@ class RendererGL {
 
   tex(canvas) { return PIXI.Texture.from(canvas); }
 
-  // Texture d'un peintre, en cache ; rend { texture, ax, ay, scale }.
   painted(key, make) {
     let t = this.textures.get(key);
     if (t) return t;
@@ -494,7 +417,6 @@ class RendererGL {
     return s;
   }
 
-  // ----- Les calques fixes : le sol et ses alentours, les décors, les lumières de la carte -----
 
   buildStatic() {
     const m = this.map, P = this.palette, pid = this.paletteId;
@@ -502,18 +424,13 @@ class RendererGL {
     pt.world = this.world;
     pt.setQuality('haute');
     pt.buildStatic();
-    // (Le peintre a donné à la caméra les bornes de la nouvelle carte, et l'a recadrée.)
     if (this.static && this.staticMap === m && this.staticPalette === P && this.staticCanvas === pt.static) {
-      // Une vue agrandie : seules les bandes du lointain ont été repeintes.
       if (this.lointainV !== pt.lointainV) this.buildLointain();
       return;
     }
     this.staticMap = m; this.staticPalette = P; this.staticCanvas = pt.static;
     const L = this.layers;
     this.viderCarte();
-    // Les calques fixes du peintre en textures : les bandes du lointain (les alentours jusqu'aux
-    // bords de la vue), teintées de l'ambiance, puis le proche (le plateau et ses abords), et sa
-    // couche lumineuse fixe en addition par-dessus.
     const K = pt.calque;
     this.buildLointain();
     this.groundTex = this.tex(pt.static);
@@ -525,7 +442,6 @@ class RendererGL {
       const b = new PIXI.Sprite(this.bloomTex); b.width = this.W; b.height = pt.SH; b.blendMode = 'add'; b.alpha = 0.68; L.ground.addChild(b);
     }
     this.lmCol = null;
-    // Le décor qui peut masquer quelqu'un : trié avec les figures, effacé à demi quand il le faut
     for (const d of pt.decor) {
       const c = new PIXI.Container();
       c.position.set(d.px, d.py);
@@ -543,7 +459,6 @@ class RendererGL {
       }
       this.decor.push(rec);
     }
-    // Lumières du peintre : lanternes, braseros, relais, portes
     for (const lt of pt.lights) {
       const p = this.cellToScreen(lt.x, lt.y);
       const kind = lt.k === 'Z' ? 'relais' : lt.k === 'D' ? 'porte' : 'lanterne';
@@ -552,7 +467,6 @@ class RendererGL {
       this.lights.push({ sx: p.x, sy: p.y - lt.h, r: rad, c: Paint.rgb(Paint.mix(color, '#ffffff', 0.25)).map(v => v / 255), i: 0.5 * (lt.r || 1), k: kind, seed: Paint.hash(lt.x, lt.y, 3), glow: kind === 'lanterne' ? this.addGlow(p.x, p.y - lt.h, lt.glow || color, 0.32, 0.22) : null });
     }
     for (const cs of pt.crystalSpots || []) this.lights.push({ sx: cs.x, sy: cs.y, r: 110, c: Paint.rgb(P.crystal).map(v => v / 255), i: 0.45, k: 'cristal', seed: Paint.hash(Math.round(cs.x), Math.round(cs.y), 4) });
-    // Eau et lave : miroitement par case ; la lave éclaire
     for (const w of pt.liquidCells || []) {
       const p = this.cellToScreen(w.x, w.y), n = Paint.hash(w.x, w.y, 1);
       const s = new PIXI.Sprite(this.T.diamond); s.anchor.set(0.5); s.position.set(p.x, p.y); s.scale.set(0.5); s.blendMode = 'add'; s.tint = Paint.toInt(P.waterLight); s.alpha = 0.1;
@@ -564,8 +478,6 @@ class RendererGL {
     this.static = true;
   }
 
-  // Vide les calques de la carte (figures, lointain, sol, eau, décor, lueurs) : au changement de
-  // carte, et quand le rendu s'endort.
   viderCarte() {
     const L = this.layers;
     if (!L) return;
@@ -579,8 +491,6 @@ class RendererGL {
     if (this.groundTex) { this.groundTex.destroy(true); this.groundTex = null; }
   }
 
-  // Les bandes du lointain du peintre, sous le calque proche (au fond du calque du sol), teintées de
-  // l'ambiance comme lui.
   buildLointain() {
     const pt = this.painter, L = this.layers;
     this.dropLointain();
@@ -599,8 +509,6 @@ class RendererGL {
     this.farSprites = [];
   }
 
-  // Un sprite Pixi depuis un sprite du peintre ({ cv, w, h, ax, ay } : w × h en unités du monde, le
-  // canvas à n'importe quelle densité, celle des calques ou celle d'une image d'artiste).
   sprSprite(spr) {
     let t = this.sprTex.get(spr);
     if (!t) { t = this.tex(spr.cv); this.sprTex.set(spr, t); }
@@ -610,7 +518,6 @@ class RendererGL {
     return s;
   }
 
-  // Les figures sont dessinées par le peintre dans une texture, une par apparence.
   paintFigure(s) {
     const OS = 2, cv = Paint.canvas(88 * OS, 84 * OS), c = cv.getContext('2d');
     c.scale(OS, OS); c.lineJoin = 'round'; c.lineCap = 'round';
@@ -644,7 +551,6 @@ class RendererGL {
     return g;
   }
 
-  // ----- Image -----
 
   update(now) {
     this.buildStatic();
@@ -663,7 +569,6 @@ class RendererGL {
     this.updateFloats(now);
   }
 
-  // La couleur du lointain sous les alentours, seulement si la vue montre plus que ce qui est peint.
   updateBackdrop() {
     const E = this.painter.alentours, v = this.camera.visibleWorld(), b = this.backstop;
     b.visible = !E || v.x0 < E.x || v.y0 < E.y || v.x1 > E.x + E.w || v.y1 > E.y + E.h;
@@ -680,14 +585,12 @@ class RendererGL {
     }
   }
 
-  // Surbrillances des cases : rebâties seulement quand leur contenu change.
   updateCells(now) {
     const H = this.highlights, cb = this.combat, m = this.map;
     const inCombat = this.inCombat, placement = inCombat && cb.phase === 'placement';
     const traps = inCombat ? cb.traps.filter(t => t.owner.team === 'player') : [];
     const glyphs = inCombat ? cb.glyphs || [] : [];
     const sig = [inCombat ? 1 : 0, placement ? 1 : 0, [...H.move].join(','), [...H.range].join(','), [...H.blocked].join(','), [...H.aoe].join(','), inCombat ? [...cb.temp.keys()].map(k => k + cb.temp.get(k).kind).join(',') : '', traps.map(t => t.x + ',' + t.y + t.element).join(';'), glyphs.map(g => g.affects + g.cells.map(c => c.x + ',' + c.y).join(' ')).join(';'), this.paletteId].join('|');
-    // Rochers temporaires : des sprites triés avec le reste
     if (inCombat) {
       const want = new Set();
       for (const [k, tmp] of cb.temp) if (tmp.kind === 'rock') {
@@ -715,7 +618,6 @@ class RendererGL {
       let fill = null, stroke = null, g = g0;
       if (tmp && tmp.kind === 'water') { fill = [0x2f8fe0, 0.5]; stroke = [0x9fd7ff, 0.5]; }
       if (tmp && tmp.kind === 'fente') { fill = [0x120818, 0.92]; stroke = [0xbf95ff, 0.9]; }
-      // Glyphes : turquoise pour ceux qui protègent, rouille pour ceux qui frappent (comme js/render.js).
       const gl = glyphs.length ? cb.glyphsAt(x, y) : [];
       if (gl.length) { const ally = gl.some(gg => gg.affects === 'allies'); fill = ally ? [0x46c8be, 0.32] : [0xc85a3c, 0.32]; stroke = ally ? [0xa0fff0, 0.85] : [0xffbe96, 0.85]; }
       if (placement) {
@@ -741,8 +643,6 @@ class RendererGL {
     }
   }
 
-  // Vue tactique : les alentours, les sols peints et le décor s'effacent ; le plateau reste
-  // à plat, en damier d'ardoise, les obstacles en pierre sombre (comme js/render.js, drawTactical).
   updateTactical() {
     const L = this.layers, m = this.map;
     const on = this.inCombat && this.tactique;
@@ -761,8 +661,6 @@ class RendererGL {
     }
   }
 
-  // Repère du guide : la case de cristal qui respire et ses chevrons, ou la flèche d'or posée sur
-  // la sortie. Quelques polygones redessinés à chaque image, seulement quand un repère est actif.
   updateCue(now) {
     const g = this.gCue, gb = this.gBeam, cue = this.guideCue;
     this.gDepart.alpha = this.inCombat && this.combat.phase === 'placement' ? 0.72 + 0.28 * Math.sin(now / 340) : 1;
@@ -775,7 +673,6 @@ class RendererGL {
     if (o) {
       const p = this.cellToScreen(o.rx != null ? o.rx : o.x, o.ry != null ? o.ry : o.y);
       const G = Renderer.cueGeometry(p, now);
-      // Pas de trait noir : un liseré de bleu profond sous le cristal (comme js/render.js).
       g.poly(pts(G.outer)).fill({ color: 0x00c2ff, alpha: 0.24 + 0.14 * G.t });
       g.poly(pts(G.outer)).stroke({ color: 0x0a2a4a, width: 4, alpha: 0.5, join: 'round' });
       g.poly(pts(G.outer)).stroke({ color: 0x8fe9ff, width: 2.2, join: 'round' });
@@ -788,7 +685,6 @@ class RendererGL {
       Object.assign(this.cueGlow, { visible: true, tint: 0x00c2ff, alpha: 0.32 + 0.25 * G.t });
       this.cueGlow.position.set(p.x, p.y);
       this.cueGlow.scale.set(0.42, 0.24);
-      // La colonne : des tranches de plus en plus pâles vers le haut (le dégradé de js/render.js).
       const B = Renderer.beamGeometry(p, now), N = 7;
       for (let i = 0; i < N; i++) {
         const a0 = i / N, a1 = (i + 1) / N;
@@ -811,7 +707,6 @@ class RendererGL {
     }
   }
 
-  // ----- Personnages, monstres, PNJ, nœuds -----
 
   combatSprites() {
     const cb = this.combat;
@@ -847,7 +742,6 @@ class RendererGL {
     return { fontFamily: 'Inter, system-ui, sans-serif', fontSize: size, fontWeight: weight || '600', fill, stroke: { color: '#000000', width: strokeW || 3 }, align: 'center' };
   }
 
-  // Crée les sprites d'un acteur : ombre, anneaux, corps, puis les éléments de l'interface.
   makeEnt(s) {
     const c = new PIXI.Container();
     const e = { c, kind: s.kind, bodyKey: null };
@@ -860,9 +754,6 @@ class RendererGL {
     e.body = new PIXI.Sprite(PIXI.Texture.EMPTY); c.addChild(e.body);
     e.states = new PIXI.Container(); c.addChild(e.states);
     this.layers.sorted.addChild(c);
-    // Interface au-dessus de tout : barre de vie, nom, badge, marque de quête. Elle garde une taille
-    // lisible à tout zoom : ce qui est au-dessus de la tête s'agrandit autour de la tête (uiTop), le
-    // nom autour des pieds (uiFoot).
     e.ui = new PIXI.Container(); this.layers.hud.addChild(e.ui);
     e.uiTop = new PIXI.Container(); e.uiFoot = new PIXI.Container(); e.ui.addChild(e.uiTop, e.uiFoot);
     if (s.kind === 'entity') {
@@ -923,11 +814,7 @@ class RendererGL {
         if (q) q.position.set(0, -16 + Math.sin(now / 300) * 2);
         continue;
       }
-      // Entité de combat ou du monde. Un Veilleur a une texture par apparence, genre et orientation :
-      // elle n'est peinte qu'une fois, puis reprise du cache.
       const k = s.scale;
-      // Une texture par allure de PNJ allié (look en mot, js/render.js drawNpc) ; pour un Veilleur,
-      // par apparence, genre et orientation (Renderer.heroKey).
       const hero = s.shape === 'player' ? '|' + Renderer.heroKey(s) : '';
       const allure = typeof s.look === 'string' ? s.look : '';
       this.setBody(e, `body|${pid}|${s.shape}|${allure}|${s.color}|${s.glyph || ''}|${s.motif || ''}|${s.team}|${s.flash ? 1 : 0}${hero}`, () => this.paintFigure(s));
@@ -941,16 +828,13 @@ class RendererGL {
       if (s.immune) { e.ringImmune.tint = Paint.toInt(DATA.elements[s.immune].color); e.ringImmune.scale.set(0.44 * k, 0.44 * k); }
       e.ringCurrent.visible = !!s.current;
       if (s.current) { const pulse = 0.5 + 0.5 * Math.sin(now / 180); e.ringCurrent.scale.set((0.46 + pulse * 0.05) * k, (0.46 + pulse * 0.05) * k); e.ringCurrent.alpha = 0.35 + 0.45 * pulse; e.ringCurrent.tint = 0xffffff; }
-      // Aura du Veilleur (hors combat) et aura des boss
       if (s.aura || s.boss) {
         if (!e.aura) { e.aura = new PIXI.Sprite(this.T.glow); e.aura.anchor.set(0.5); e.aura.blendMode = 'add'; this.layers.glow.addChild(e.aura); }
         e.aura.position.set(p.x, p.y - 10);
         e.aura.tint = s.boss ? Paint.toInt(s.team === 'player' ? P.crystal : '#c0266e') : Paint.toInt(P.crystal);
         e.aura.scale.set(s.boss ? 0.75 : 0.42); e.aura.alpha = (s.boss ? 0.3 : 0.22) + 0.08 * Math.sin(now / 700);
       } else if (e.aura) { e.aura.destroy(); e.aura = null; }
-      // États
       this.updateStates(e, s, now, k);
-      // Barre de vie, nom, badge
       const showHp = s.hp != null;
       e.hpBg.visible = e.hpFill.visible = showHp;
       if (showHp) {
@@ -965,7 +849,6 @@ class RendererGL {
       if (bd) { bd.position.set(18 * k, -40 * k); bd.scale.set(this.uiK); }
     }
     for (const [key, e] of this.ents) if (!used.has(key)) { this.dropEnt(e); this.ents.delete(key); }
-    // Le décor qui recouvre une figure ou une case en surbrillance s'efface à demi
     const busy = new Set();
     for (const s of sprites) if (s.kind !== 'node') busy.add(Grid.key(Math.round(s.rx), Math.round(s.ry)));
     if (inCombat) {
@@ -987,9 +870,6 @@ class RendererGL {
     }
   }
 
-  // L'insigne de faction : une lueur posée juste après la figure (le peintre du héros n'en sait
-  // rien), cuite une fois par faction, plus vive à chaque rang. Elle vit dans le conteneur de la
-  // figure, et disparaît avec lui.
   updateInsigne(e, s, now, k) {
     const ins = s.insigne;
     if (!ins) { if (e.insigne) { e.insigne.destroy(); e.insigne = null; } return; }
@@ -1043,7 +923,6 @@ class RendererGL {
     if (e.lanternGlow) e.lanternGlow.destroy();
   }
 
-  // ----- Effets de sorts, particules, chiffres qui montent -----
 
   updateFx(now) {
     if (!this.fxSprites) this.fxSprites = [];
@@ -1062,7 +941,6 @@ class RendererGL {
       fs.d.position.set(p.x, p.y); fs.d.scale.set(0.25 + 0.4 * t); fs.d.alpha = 1 - t; fs.d.tint = col;
       fs.g.position.set(p.x, p.y - 6); fs.g.scale.set(0.35 + 0.3 * t); fs.g.alpha = (1 - t) * 0.9; fs.g.tint = col;
     });
-    // Survol et chemin, dans l'interface
     const g = this.gHover, H = this.highlights, m = this.map;
     g.clear();
     const TW = Grid.TILE_W, TH = Grid.TILE_H;
@@ -1082,7 +960,6 @@ class RendererGL {
     this.particles.push({ kind, s, x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40, life: 0.5 + Math.random() * 0.4, max: 0.9, size: 0.5 + Math.random() * 0.5, ph: Math.random() * 6.28 });
   }
 
-  // Lucioles d'Orsane, braises de Kaldum, poussière de cristal : elles vivent sur le plateau.
   updateParticles(now, dt) {
     const P = this.palette, m = this.map;
     const ambientCount = this.calme ? 0 : this.maxParticles;
@@ -1110,7 +987,6 @@ class RendererGL {
     this.particles = this.particles.filter(p => { if (p.life > 0) return true; p.s.destroy(); return false; });
   }
 
-  // Carte de lumière : lanternes qui vacillent, cristaux, lave, aura, sorts, éclairs.
   updateLights(now) {
     const P = this.palette;
     const L = this.lightsNow = [];
@@ -1126,7 +1002,6 @@ class RendererGL {
     for (const t of this.tempLights) L.push({ sx: t.sx, sy: t.sy, r: t.r, c: t.c, i: t.i * (1 - (now - t.born) / t.dur) });
     if (this.inCombat) { const pl = this.combat.player; if (pl && pl.alive) { const p = this.cellToScreen(pl.rx, pl.ry); L.push({ sx: p.x, sy: p.y - 10, r: 85, c: Paint.rgb(P.crystal).map(v => v / 255), i: 0.3 }); } }
     else if (this.world) { const p = this.cellToScreen(this.world.player.rx, this.world.player.ry); L.push({ sx: p.x, sy: p.y - 10, r: 85, c: Paint.rgb(P.crystal).map(v => v / 255), i: 0.32 }); }
-    // Rendu de la carte
     const pool = this.lmLights, K = this.painter.calque;
     while (pool.children.length < L.length) { const s = new PIXI.Sprite(this.T.glowSoft); s.anchor.set(0.5); s.blendMode = 'add'; pool.addChild(s); }
     pool.children.forEach((s, i) => {
@@ -1139,7 +1014,6 @@ class RendererGL {
       s.alpha = Math.min(1, l.i * 1.3);
     });
     const amb = this.ambNow = this.ambientBase;
-    // Le fond de la carte de lumière et le lointain prennent la couleur d'ambiance.
     const col = Paint.toInt(Paint.hex(amb[0] * 255, amb[1] * 255, amb[2] * 255));
     if (col !== this.lmCol) { this.lmCol = col; this.lmBg.tint = col; for (const s of this.farSprites || []) s.tint = col; }
     this.app.renderer.render({ container: this.lmc, target: this.lm, clear: true });

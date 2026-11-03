@@ -1,5 +1,4 @@
 :root {
-  /* Les noms historiques du jeu renvoient aux tokens de la charte (css/tokens.css). */
   --bg: var(--vy-fond);
   --panel: var(--vy-surface-1);
   --panel-2: var(--vy-surface-2);
@@ -53,19 +52,13 @@ html, body {
 #brand span { margin-left: 8px; font-weight: 400; letter-spacing: 0; color: var(--muted); font-size: 12px; }
 
 #timeline { display: flex; align-items: center; gap: 5px; flex: 1; overflow: hidden; }
-/* L'ordre de jeu en bustes (js/ui.js, renderTimeline) : le liseré à droite est la jauge de PV,
-   à la couleur du camp ; celui qui joue est cerclé d'or. */
 .vy-combattant { position: relative; flex: none; width: 30px; height: 35px; border-radius: 4px; overflow: hidden; background: #0d1726; box-shadow: inset 0 0 0 1px rgba(201, 166, 107, 0.3); cursor: pointer; }
 .vy-combattant img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .vy-combattant--allie { --_camp: var(--vy-cristal); }
 .vy-combattant--ennemi { --_camp: var(--vy-braise-clair); }
-/* La jauge de vie du portrait : une barre au pied, de la couleur du camp, éclairée en haut (comme
-   les barres au-dessus des combattants, js/ile-figures.js) ; elle glisse quand les PV changent. */
 .vy-combattant__pv { position: absolute; left: 2px; right: 2px; bottom: 2px; height: 4px; border-radius: 2px; background: rgba(5, 8, 13, 0.78); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); overflow: hidden; }
 .vy-combattant__pv::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--v, 1) * 100%); border-radius: 2px; background: linear-gradient(180deg, color-mix(in srgb, var(--_camp) 70%, #fff 30%), var(--_camp) 55%, color-mix(in srgb, var(--_camp) 75%, #000 25%)); box-shadow: 0 0 5px var(--_camp); transition: width 0.35s var(--vy-courbe); }
-/* Le combattant visé (la case survolée, ou son portrait) : un liseré blanc et la lueur de son camp. */
 .vy-combattant.vise { box-shadow: 0 0 0 2px #fff, 0 0 12px var(--_camp); }
-/* Un sort choisi : les portraits sont des cibles. */
 #app.vy-sort-choisi .vy-combattant { cursor: crosshair; }
 .vy-combattant.actuel { box-shadow: 0 0 0 2px var(--vy-or-clair), 0 0 10px rgba(226, 198, 144, 0.55); overflow: visible; }
 .vy-combattant.actuel.vise { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--vy-or-clair), 0 0 12px var(--_camp); }
@@ -79,8 +72,6 @@ html, body {
 #challenge.failed { border-color: var(--line); color: var(--muted); text-decoration: line-through; }
 #challenge.success { border-color: var(--pv); color: var(--pv); }
 
-/* La scène : la toile la remplit toujours (js/camera.js y place le monde, zoom et décalage) ; elle
-   ne défile jamais. Le fond ne se voit qu'avant la première image. */
 #stage {
   position: relative;
   min-width: 0;
@@ -92,13 +83,8 @@ html, body {
 #board { cursor: crosshair; touch-action: none; -webkit-tap-highlight-color: transparent; }
 #board.glisse { cursor: grabbing; }
 #stage > .board-repli { pointer-events: none; }
-/* La photo de la vue du jeu, laissée dans la scène pendant la carte 3D de l'île (js/ile-3d.js). */
 #stage > .ile-photo { filter: saturate(0.85) brightness(0.92); }
 
-/* L'île d'Ervane en 3D (js/ile-3d.js, docs/ILE-TECHNIQUE.md, 3.1) : la toile Three.js sous #board,
-   transparente, le ciel en dégradé derrière elle (posé par le rendu, il suit la brume de la région) ;
-   #board reste au-dessus, invisible, et reçoit les gestes et les clics. Les voiles de la peinture
-   (glacis, vignette, grain) se posent sur la 3D, sous l'interface. */
 #stage > .board-3d { transition: opacity 0.3s ease; background: linear-gradient(180deg, #c2d6e4 0%, #a9c3d6 45%, #6a7f92 100%); }
 .ile-voiles { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; }
 .ile-voiles.on { opacity: 1; }
@@ -106,15 +92,9 @@ html, body {
 .ile-voiles__glacis { background: linear-gradient(180deg, rgba(255, 236, 200, 0.10) 0%, rgba(255, 236, 200, 0) 40%, rgba(40, 60, 110, 0.10) 100%); mix-blend-mode: soft-light; }
 .ile-voiles__vignette { background: radial-gradient(ellipse 75% 70% at 50% 52%, rgba(0, 0, 0, 0) 58%, rgba(18, 26, 44, 0.28) 100%); }
 .ile-voiles__grain { background-size: 256px 256px; opacity: 0.07; mix-blend-mode: overlay; }
-/* L'aperçu de nuit de l'île (js/ile-nuit.js) : un glacis bleu nuit, plus dense en haut, et une vignette
-   plus sombre ; le centre de la vue (le Veilleur et sa flaque dorée) reste clair. */
 .ile-voiles.nuit .ile-voiles__glacis { background: linear-gradient(180deg, rgba(8, 14, 44, 0.42) 0%, rgba(8, 14, 44, 0.12) 42%, rgba(6, 10, 32, 0.3) 100%); mix-blend-mode: multiply; }
 .ile-voiles.nuit .ile-voiles__vignette { background: radial-gradient(ellipse 70% 66% at 50% 54%, rgba(0, 0, 0, 0) 40%, rgba(4, 8, 26, 0.62) 100%); }
 
-/* Le voile de la bascule (js/scene.js) : pendant que la 3D se prépare, ou quand elle est tombée.
-   D'après l'écran de chargement de Duality : le fond illustré (le paysage de la planche, assombri),
-   la barre avec le pourcentage et l'étape en cours, et une phrase qui change toutes les 6 s.
-   Les bulles et les fiches accrochées à la scène se cachent : elles n'ont plus de point d'ancrage. */
 .scene-voile-boite {
   position: absolute; inset: 0; z-index: 30; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
@@ -133,13 +113,11 @@ html, body {
 .scene-voile__fil { width: min(220px, 60%); height: 2px; border-radius: 1px; background: linear-gradient(90deg, rgba(255, 138, 61, 0) 0%, #ffb37a 50%, rgba(255, 61, 127, 0) 100%); background-size: 200% 100%; animation: scene-voile-fil 1.6s ease-in-out infinite; }
 @keyframes scene-voile-fil { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
 .scene-voile__titre { margin: 0; font: 700 22px/1.25 var(--vy-font-titre); letter-spacing: 0.04em; color: #fff; text-shadow: 0 2px 18px rgba(0, 0, 0, 0.7); }
-/* La barre : la piste, le remplissage au dégradé du thème, la lueur au bout. */
 .scene-voile__barre { width: min(380px, 78%); height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); overflow: hidden; }
 .scene-voile__barre i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--v-degrade, linear-gradient(90deg, #ff8a3d, #ff3d7f)); box-shadow: 0 0 12px rgba(var(--v-b-rgb, 255, 61, 127), 0.6); }
 .scene-voile__ligne { width: min(380px, 78%); display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .scene-voile__etape { margin: 0; min-width: 0; text-align: left; font: 500 12.5px/1.45 var(--vy-font-ui); color: rgba(243, 240, 248, 0.72); min-height: 1.45em; }
 .scene-voile__pct { flex: none; font: 700 13px/1.45 var(--d-mono, ui-monospace, monospace); color: #fff; letter-spacing: 0.02em; }
-/* La phrase : une carte de verre en bas, l'étiquette (Astuce, Légende) de la couleur de son genre. */
 .scene-voile__phrase {
   position: absolute !important; left: 50%; bottom: calc(18px + var(--sc-bas, 0px)); transform: translateX(-50%);
   width: min(560px, calc(100% - 32px)); box-sizing: border-box; padding: 10px 16px; text-align: left;
@@ -153,7 +131,6 @@ html, body {
 .scene-voile__phrase p { margin: 0; font: 500 13px/1.45 var(--vy-font-ui); color: rgba(243, 240, 248, 0.9); }
 .scene-voile__phrase[data-genre="legende"] p { font-style: italic; }
 .scene-voile__phrase.change { opacity: 0; }
-/* Sans barre (la 3D perdue) ; le repli : ni barre, ni phrase, l'explication et les boutons. */
 .scene-voile-boite.sans-barre .scene-voile__barre, .scene-voile-boite.sans-barre .scene-voile__pct,
 .scene-voile-boite.repli .scene-voile__barre, .scene-voile-boite.repli .scene-voile__pct, .scene-voile-boite.repli .scene-voile__phrase { display: none; }
 .scene-voile-boite.sans-barre .scene-voile__ligne, .scene-voile-boite.repli .scene-voile__ligne { justify-content: center; width: auto; max-width: 420px; }
@@ -163,7 +140,6 @@ html, body {
 .scene-voile__boutons { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; max-width: 460px; }
 .scene-voile__boutons .vy-bouton { min-height: 44px; }
 .scene-voile__question { flex-basis: 100%; margin: 0 0 4px; font: 500 13px/1.45 var(--vy-font-ui); color: #f3f0f8; }
-/* Au téléphone couché : tout plus serré, la phrase plus courte. */
 @media (max-height: 520px) {
   .scene-voile-boite { gap: 7px; padding-bottom: 76px; }
   .scene-voile__titre { font-size: 18px; }
@@ -263,14 +239,12 @@ html, body {
 .spell.disabled { opacity: 0.4; }
 .spell .key { position: absolute; top: 2px; right: 5px; font-size: 10px; color: var(--muted); }
 .spell { overflow: hidden; }
-/* Le losange de l'élément est en bas, à côté du coût : le nom garde toute la largeur. */
 .spell .icon { position: absolute; left: 7px; bottom: 7px; width: 10px; height: 10px; transform: rotate(45deg); background: var(--el, #888); border-radius: 2px; color: transparent; }
 .spell .name { font-size: 12px; font-weight: 600; line-height: 1.22; padding-right: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .spell .cost { font-size: 11px; line-height: 1.1; color: var(--pa); padding-left: 16px; flex-shrink: 0; }
 .spell .cd { position: absolute; right: 6px; bottom: 4px; font-size: 14px; font-weight: 700; color: var(--danger); }
 
 #actions { display: flex; gap: 8px; align-items: center; }
-/* Les boutons sont habillés par css/components.css (.vy-bouton, et tout <button> d'une zone .vy-ui). */
 select {
   font: inherit;
   min-height: 36px;
@@ -304,7 +278,6 @@ select {
   #hud { grid-template-columns: 1fr; }
 }
 
-/* ===== Le jeu : exploration ===== */
 #app.mode-explore { grid-template-rows: 1fr; grid-template-columns: minmax(0, 1fr); }
 #app.mode-explore #stage { grid-row: 1; grid-column: 1; }
 #app.mode-explore #topbar, #app.mode-explore #side, #app.mode-explore #hud { display: none; }
@@ -321,8 +294,6 @@ select {
 #player-bar .pb-fils small { color: var(--muted); font-weight: 400; }
 #player-bar .pts { font-size: 11px; color: var(--vy-succes); }
 #map-name { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); padding: 6px 16px; background: rgba(11, 18, 27, 0.8); border: 1px solid var(--vy-filet-fort); border-radius: 999px; font: 700 13px/1.2 var(--font-title); letter-spacing: var(--vy-chasse-titre); color: var(--vy-texte-or); white-space: nowrap; }
-/* Fenêtre étroite (901 à 1180 px) : centré, le bandeau passait sous la barre des menus. Il se centre
-   entre la barre du personnage et les menus, ne garde que la sous-zone et se coupe s'il le faut. */
 @media (min-width: 901px) and (max-width: 1180px) {
   #map-name { left: 290px; right: 460px; transform: none; width: fit-content; max-width: calc(100% - 750px); margin: 0 auto; overflow: hidden; text-overflow: ellipsis; }
   #map-name .zone { display: none; }
@@ -337,8 +308,6 @@ select {
 .toast { padding: 8px 14px; background: rgba(11, 18, 27, 0.92); border: 1.5px solid var(--vy-filet-fort); border-radius: var(--vy-rayon-m); font-size: 13px; max-width: 80vw; transition: opacity 0.4s; }
 .toast.out { opacity: 0; }
 
-/* ===== Panneaux ===== */
-/* Le panneau est une .vy-modale (css/components.css) : seules la place et la taille sont ici. */
 #panel { position: absolute; inset: 0; z-index: 20; background: var(--vy-voile-fond); display: flex; align-items: center; justify-content: center; padding: 16px; }
 #panel-box { width: min(760px, 94vw); max-height: 92vh; }
 #panel-close { width: 40px; height: 40px; min-height: 40px; font-size: 24px; }
@@ -350,7 +319,6 @@ select {
 #panel-body .row.here { background: rgba(201, 166, 107, 0.1); }
 #panel-body .row.dim { opacity: 0.6; }
 #panel-body .btns { display: flex; gap: 6px; flex-shrink: 0; }
-/* La Banque du Fil (js/hud.js, openBanque) : le sac et le coffre côte à côte, l'un sous l'autre sur un écran étroit. */
 #panel-body .banque { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 #panel-body .banque__col { min-width: 0; }
 #panel-body .banque__col h4 { margin: 0 0 4px; }
@@ -389,7 +357,6 @@ select {
   #panel-body .cols { grid-template-columns: 1fr; }
 }
 
-/* ===== Combat sur téléphone : la barre de sorts flotte sur la carte ===== */
 @media (max-width: 900px), (max-height: 520px) {
   #app.mode-combat { grid-template-rows: 36px 1fr; grid-template-columns: minmax(0, 1fr); }
   #app.mode-combat #topbar { grid-column: 1; height: 36px; padding: 0 8px; gap: 8px; }
@@ -412,12 +379,6 @@ select {
   #app.mode-combat #round { min-width: 0; }
 }
 
-/* ===== Zones de sécurité du téléphone (encoche, barre d'accueil) et cibles tactiles ===== */
-/* Le jeu va jusqu'aux bords de l'écran (viewport-fit=cover) : la toile passe sous l'encoche et la
-   barre d'accueil, l'interface reste dans les zones de sécurité. --zs-* : celles de l'écran ;
-   --sc-* : la part que la scène doit garder elle-même (en combat, la barre du haut prend la sienne,
-   et sur grand écran la colonne et la barre de sorts aussi). L'entrée (css/accueil.css) garde les
-   siennes. */
 :root { --zs-haut: env(safe-area-inset-top, 0px); --zs-droite: env(safe-area-inset-right, 0px); --zs-bas: env(safe-area-inset-bottom, 0px); --zs-gauche: env(safe-area-inset-left, 0px); }
 #stage { --sc-haut: var(--zs-haut); --sc-droite: var(--zs-droite); --sc-bas: var(--zs-bas); --sc-gauche: var(--zs-gauche); }
 #app.mode-combat #stage { --sc-haut: 0px; --sc-droite: 0px; --sc-bas: 0px; }
@@ -446,7 +407,6 @@ select {
 #panel-body .badge { padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 10px; }
 #panel-body .badge.rare { border-color: var(--accent); color: var(--accent); }
 
-/* ===== Sac : grille au code de rareté et fiche de l'objet (css/components.css) ===== */
 #panel-body .sac { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); gap: 14px; align-items: start; margin-top: 4px; }
 #panel-body .vy-case { min-height: 0; padding: 0; }
 #panel-body .vy-objet__actions .muted { font-size: 12px; align-self: center; }

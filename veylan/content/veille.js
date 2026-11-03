@@ -1,19 +1,9 @@
-// La Veille du jour (js/veille.js) : le calendrier de 28 jours, sept jours, un par Voile, et quatre
-// semaines, une par élément (Terra, Ignis, Aqua, Aer). Chaque jour a un nom, son Voile, son
-// élément, une ligne de récit et un bonus ; la ressource demandée dépend de la tranche de niveau.
-// Format : docs/QUETES.md, « La Veille du jour ». Validation : node tools/validate-content.js
-// Les ressources, zones, donjons et monstres nommés ici sont définis dans d'autres fichiers.
 (function () {
   const C = DATA.content;
 
   C.veille = {
-    // Les semaines, dans l'ordre du cycle.
     semaines: ['terre', 'feu', 'eau', 'air'],
 
-    // Ce que le réseau des Relais demande, par tranche de niveau : des ressources courantes de la
-    // tranche (content/items.js), qui tombent ou se récoltent dans ses zones. Le jour choisit la
-    // ressource (rang du jour dans le cycle, modulo la liste) ; la quantité, de 1 à 9, fait qu'un
-    // dépôt vaut à peu près la même somme de Fils dans une tranche : 25, 35, 45, 55 puis 65.
     tranches: [
       { niveaux: [8, 12], ressources: [
         { id: 'cuir_de_grouk', n: 8 }, { id: 'soie_de_tissefil', n: 6 }, { id: 'plume_de_kavou', n: 5 },
@@ -37,7 +27,6 @@
       ] },
     ],
 
-    // Les familles que nomment les bonus d'XP : les paliers d'une même remontée, sans son boss.
     familles: {
       grouk: { nom: 'Grouks', monstres: ['grouk', 'groukin', 'grouk_cornu'] },
       molh: { nom: 'Molhs', monstres: ['molh', 'molhin', 'molh_ancien'] },
@@ -49,12 +38,7 @@
       fumerolle: { nom: 'Fumerolles', monstres: ['fumerolle', 'fumil', 'fumerolle_noire'] },
     },
 
-    // Les 28 jours. Bonus : xp_zone {zone} (+20 % d'XP en combat dans la zone), xp_famille
-    // {famille} (+50 % d'XP sur la famille), butin_donjon {donjon} (+25 % de chances de butin),
-    // atelier {atelier} (25 % de ressources en moins). Chaque donjon et chaque atelier a son jour,
-    // chaque zone aussi à partir du niveau 8 ; le bonus ne s'active qu'après le dépôt du jour.
     jours: [
-      // ----- Semaine de Terra : Durren, le Dragon-Montagne -----
       { voile: 1, element: 'terre', nom: 'Le Premier Souffle',
         recit: 'Chaque matin, Ruhani expire, et c\'est l\'aube. Les anciens des Cimes comptent les jours en souffles, et le cycle de la Veille commence au premier.',
         bonus: { type: 'xp_zone', zone: 'orsane_eboulis', pct: 20 } },
@@ -77,7 +61,6 @@
         recit: 'Le jour de la Déchirure, les mines de Kaldum ont crevé de l\'intérieur. Les galeries rouvertes depuis bourdonnent encore de scorie de Voile.',
         bonus: { type: 'xp_zone', zone: 'kaldum_galeries', pct: 20 } },
 
-      // ----- Semaine d'Ignis : Iskar, la Wyverne de Braise -----
       { voile: 1, element: 'feu', nom: 'Les Ailes de forge',
         recit: 'Quand Iskar passe au-dessus de la Fonderie, ses ailes de feu se tendent comme les voiles d\'une forge. Les fondeurs disent qu\'ils n\'ont jamais eu meilleur tirage.',
         bonus: { type: 'xp_zone', zone: 'kaldum_fonderie', pct: 20 } },
@@ -100,7 +83,6 @@
         recit: 'Vaskor a tenu le Pont de Scorie trois jours, seul d\'abord, puis avec ceux qui revenaient en le voyant tenir. Les Sarkan y gravent encore leur serment.',
         bonus: { type: 'xp_zone', zone: 'kaldum_ville', pct: 20 } },
 
-      // ----- Semaine d'Aqua : Morrha, la Grande Vouivre -----
       { voile: 1, element: 'eau', nom: 'Le Ciel sans étoiles',
         recit: 'Au-dessus de la Lisière, un trou sans étoiles garde la forme d\'Ithren, disparu le jour où le premier Voile s\'est déchiré. Le Fil le cherche encore ; la Déchirure ne dit pas tout ce qu\'elle sait.',
         bonus: { type: 'xp_zone', zone: 'kaldum_vapeurs', pct: 20 } },
@@ -123,7 +105,6 @@
         recit: 'L\'Écaille de Morrha est une goutte de verre de mer où bouge une vague. À Thessa, les Francs-Marcheurs en vendent des fausses, et les meilleures ont leur vague aussi.',
         bonus: { type: 'atelier', atelier: 'bijoutier', pct: 25 } },
 
-      // ----- Semaine d'Aer : Aïven, le Serpent à Plumes -----
       { voile: 1, element: 'air', nom: 'L\'Orage sans nuage',
         recit: 'Sur les Sentiers des Cimes, les Traqueurs comptent les rafales. Quand l\'orage gronde sans un nuage, c\'est Aïven qui passe au loin.',
         bonus: { type: 'xp_zone', zone: 'orsane_sentiers', pct: 20 } },
@@ -148,8 +129,6 @@
     ],
   };
 
-  // Les paliers de marques de Veille : des titres, jamais de puissance de combat. Les marques sont
-  // comptées comme un haut fait (counters.feats.veille, js/veille.js).
   C.achievements.push(
     { id: 'veille_7', name: 'Une semaine de Veille', desc: 'Accomplir sept Veilles, autant que de Voiles.', cond: { type: 'feat', key: 'veille', count: 7 }, rewards: { title: 'Main des Relais' } },
     { id: 'veille_28', name: 'Le cycle des Voiles', desc: 'Accomplir vingt-huit Veilles : un cycle entier, sous les quatre éléments.', cond: { type: 'feat', key: 'veille', count: 28 }, rewards: { title: 'Veilleur des sept Voiles' } },

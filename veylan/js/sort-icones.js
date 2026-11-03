@@ -1,13 +1,4 @@
-// Icônes des sorts, peintes par le code comme le reste du jeu (docs/PIPELINE-IMAGES.md) : une tuile
-// de la couleur de l'élément du sort, un motif tiré de son effet principal (lame, flèche, poing,
-// bouclier, soin, téléportation, piège, poussée, attraction, zone, invocation, bonus, marque...) et,
-// dans un coin, un détail propre au sort. Motif et détail sont choisis à la main pour les cent sorts
-// des classes (SPEC), si bien que chaque icône est unique ; un autre sort (monstre, arme) reçoit un
-// motif déduit de ses effets. Pas de contour noir : le motif ivoire se détache par une ombre douce
-// de la teinte sombre de l'élément. Chaque icône est peinte une fois par taille, gardée en data URL.
-// Se charge après js/world.js : le bot d'équilibrage, qui tourne sans navigateur, ne la lit pas.
 const SortIcones = (() => {
-  // Tuile par élément : clair, moyen, sombre (dégradé et ombre du motif), couleur du détail.
   const PALETTE = {
     feu: { hi: '#ffc58f', mid: '#e5552f', lo: '#5c1608', det: '#a8ecff' },
     eau: { hi: '#a6f0ff', mid: '#1a9fc0', lo: '#06324a', det: '#ffd27a' },
@@ -17,7 +8,6 @@ const SortIcones = (() => {
   };
   const IVOIRE = '#fff8ea';
 
-  // Formes calculées : étoile à quatre branches, étoile à n pointes, engrenage, flocon.
   const n1 = v => Math.round(v * 100) / 100;
   const star4 = (cx, cy, r) => { const k = r * 0.28; return `M${n1(cx)} ${n1(cy - r)}L${n1(cx + k)} ${n1(cy - k)}L${n1(cx + r)} ${n1(cy)}L${n1(cx + k)} ${n1(cy + k)}L${n1(cx)} ${n1(cy + r)}L${n1(cx - k)} ${n1(cy + k)}L${n1(cx - r)} ${n1(cy)}L${n1(cx - k)} ${n1(cy - k)}Z`; };
   const circle = (cx, cy, r) => `M${n1(cx - r)} ${n1(cy)}a${r} ${r} 0 1 0 ${n1(2 * r)} 0a${r} ${r} 0 1 0 ${n1(-2 * r)} 0Z`;
@@ -40,9 +30,6 @@ const SortIcones = (() => {
     return d;
   };
 
-  // Motifs, sur une grille de 24 : ['f', chemin] remplit en ivoire, ['s', chemin, épaisseur, tirets]
-  // trace en ivoire, ['d', chemin, épaisseur] trace un détail dans la teinte sombre, ['h', chemin]
-  // remplit de la teinte moyenne (un cœur de flamme, une vitre).
   const M = {
     lame: [['f', 'M7.2 14.6L17.6 4.2L20.2 3.8L19.8 6.4L9.4 16.8Z'], ['s', 'M4.8 12.4L11.6 19.2', 2.4], ['s', 'M6.2 17.8L3.6 20.4', 2.6], ['d', 'M9.6 14.4L18 6', 0.8]],
     lames: [['f', 'M7.2 14.6L17.6 4.2L20.2 3.8L19.8 6.4L9.4 16.8Z'], ['f', 'M16.8 14.6L6.4 4.2L3.8 3.8L4.2 6.4L14.6 16.8Z'], ['s', 'M4.8 12.4L11.6 19.2M19.2 12.4L12.4 19.2', 2.2], ['s', 'M6.2 17.8L3.6 20.4M17.8 17.8L20.4 20.4', 2.4]],
@@ -117,7 +104,6 @@ const SortIcones = (() => {
     jugement: [['f', 'M10.7 6H13.3V16.4L12 19.6L10.7 16.4Z'], ['s', 'M7.6 6H16.4', 2.4], ['s', 'M12 6V2', 2.4], ['s', 'M5 21.6L7.4 19.2M19 21.6L16.6 19.2M3.4 16.8H6.4M20.6 16.8H17.6', 1.6]],
   };
 
-  // Détails, dans une pastille du coin bas droit (même grille de 24).
   const D = {
     x2: [['s', 'M7.4 18L11.6 6M12.4 18L16.6 6', 3]],
     feu: [['f', M.flamme[0][1]]],
@@ -144,41 +130,29 @@ const SortIcones = (() => {
     lame: [['f', 'M6 15.4L16.6 4.8L19.6 4.4L19.2 7.4L8.6 18Z'], ['s', 'M4.6 13.4L10.6 19.4', 2.6]],
   };
 
-  // Les cent sorts des classes : [motif, détail].
   const SPEC = {
-    // Vaelith
     eclat: ['comete'], givre: ['flocon', 'pm'], bourrasque: ['pousse'], secousse: ['seisme'], pas_de_voile: ['portail'],
     lame_orage: ['eclair'], manteau: ['bouclier', 'etoile'], retour_de_voile: ['sablier', 'recul'], siphon: ['noeud', 'pa'], nova: ['nova'], attraction: ['attire'],
-    // Sarkan
     taille_franche: ['lame'], saut_delan: ['bond'], serment_jure: ['serment'], garde_de_scorie: ['garde'], lame_tournoyante: ['tourbillon'],
     defi: ['cri', 'cible'], poigne_juree: ['poing', 'chaine'], lame_de_braise: ['lame', 'zone'], ferveur: ['bonus', 'feu'], verdict: ['jugement'],
-    // Lyssar
     trait_tisse: ['fleche'], fil_tendu: ['arc', 'pousse'], collet: ['piege', 'chaine'], repli_traqueur: ['recul'], fleche_lourde: ['fleche_lourde'], balise_de_fil: ['piege', 'recul'], piege_de_reflux: ['piege', 'pousse'], glyphe_de_garde: ['bouclier', 'plus'], glyphe_pesant: ['ancre', 'moins'], lanterne_de_veille: ['lune', 'plus'], renaissance: ['soin', 'plus'], appel_du_molh: ['pierre', 'cor'], gorgee_de_cime: ['goutte', 'bouclier'],
     corde_longue: ['arc', 'plus'], marque_traqueur: ['cible'], pluie_de_fil: ['pluie'], fleche_ancre: ['ancre', 'fleche'], trait_du_veilleur: ['percant'],
-    // Oriel
     lueur: ['soin'], eclair_solaire: ['flamme'], manteau_partage: ['bouclier', 'zone'], rappel: ['etincelles'], flamme_vive: ['flamme', 'coeur'],
     benediction: ['bonus', 'pa'], aube: ['soleil'], lumiere_aveuglante: ['lanterne'], veille: ['bouclier', 'oeil'], ardeur: ['flamme', 'pousse'],
-    // Nerith
     double_entaille: ['lames'], voile_penombre: ['invisible'], piege_penombre: ['piege', 'lune'], larcin: ['main', 'pa'], pas_ombre: ['portail', 'lune'],
     coup_penombre: ['dague', 'lune'], main_leste: ['main', 'bouclier'], leurre_penombre: ['silhouette'], dernier_souffle_ombre: ['dague', 'goutte'],
-    // Kaldrin
     tourelle_de_kaldum: ['tourelle'], mur_articule: ['mur'], mine_a_fil: ['mine'], marteau: ['marteau'], surchauffe: ['vapeur'],
     reparation: ['cle'], propulseur: ['piston'], grappin: ['crochet'], detonation: ['explosion'], forge: ['enclume'],
-    // Karsh
     serment_de_sang: ['goutte', 'pa'], charge: ['ruee'], taillade: ['lame', 'feu'], dernier_souffle: ['flamme', 'x2'], hurlement: ['cri'],
     sang_pour_sang: ['goutte', 'coeur'], brulure: ['flamme', 'horloge'], lien_de_sang: ['attire', 'goutte'], colosse: ['bouclier', 'feu'], frappe_lourde: ['lame', 'pousse'], rage: ['bonus', 'goutte'],
-    // Mirel
     cadence: ['note', 'pa'], refrain: ['notes', 'pm'], dissonance: ['note', 'moins'], note_vive: ['note'], berceuse: ['lune'],
     envolee: ['aile'], choeur: ['notes', 'coeur'], cri: ['cri', 'zone'], tempo: ['sablier'], silence: ['note', 'chaine'],
-    // Thalor
     transposition: ['echange'], lancer: ['jet'], projection: ['attire', 'x2'], poigne: ['poing'], ancre: ['ancre', 'chaine'],
     bascule: ['pas', 'pousse'], mur_de_chair: ['bouclier', 'coeur'], vague: ['vague'], etreinte: ['griffe'], elan: ['pas'],
-    // Fennal
     appel_du_grouk: ['patte'], appel_du_pilou: ['plume'], rappel_sacrificiel: ['explosion', 'patte'], morsure: ['crocs'], soin_de_meute: ['soin', 'patte'],
     cri_de_ralliement: ['cor'], fleche_de_fil: ['pierre'], filet: ['filet'], eperon: ['sifflet'], traque: ['javelot'],
   };
 
-  // Un sort hors de la table : le motif de son effet principal.
   function deduce(s) {
     const t = new Set(s.effects.map(ef => ef.type));
     if (t.has('summon')) return ['patte'];
@@ -201,7 +175,6 @@ const SortIcones = (() => {
   const hex = c => { const n = parseInt(c.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
   const rgba = (c, a) => `rgba(${hex(c).join(',')},${a})`;
 
-  // Dessine une liste de tracés (grille de 24) dans le contexte déjà mis à l'échelle.
   function ops(g, list, pal, fill) {
     for (const [k, d, w, dash] of list) {
       const p = new Path2D(d);
@@ -224,7 +197,6 @@ const SortIcones = (() => {
     g.beginPath();
     if (g.roundRect) g.roundRect(0, 0, S, S, r); else Util.roundRect(g, 0, 0, S, S, r);
     g.clip();
-    // La tuile : lumière en haut à gauche, profondeur en bas à droite, un voile qui passe en biais.
     const bg = g.createRadialGradient(S * 0.3, S * 0.24, S * 0.04, S * 0.5, S * 0.55, S * 0.82);
     bg.addColorStop(0, pal.hi); bg.addColorStop(0.42, pal.mid); bg.addColorStop(1, pal.lo);
     g.fillStyle = bg; g.fillRect(0, 0, S, S);
@@ -233,7 +205,6 @@ const SortIcones = (() => {
     const vig = g.createRadialGradient(S * 0.5, S * 0.5, S * 0.4, S * 0.5, S * 0.5, S * 0.74);
     vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, rgba(pal.lo, 0.55));
     g.fillStyle = vig; g.fillRect(0, 0, S, S);
-    // Le motif, ivoire teinté de l'élément vers le bas, détaché par une ombre de la teinte sombre.
     const k = S / 24;
     const fill = g.createLinearGradient(0, S * 0.12, 0, S * 0.9);
     fill.addColorStop(0, IVOIRE); fill.addColorStop(1, pal.hi);
@@ -242,7 +213,6 @@ const SortIcones = (() => {
     g.shadowColor = rgba(pal.lo, 0.9); g.shadowBlur = S * 0.06; g.shadowOffsetY = S * 0.02;
     ops(g, M[spec[0]] || M.etincelles, pal, fill);
     g.restore();
-    // Le détail, dans une pastille de la teinte sombre.
     if (spec[1] && D[spec[1]]) {
       const cx = S * 0.79, cy = S * 0.79, rr = S * 0.19;
       g.fillStyle = rgba(pal.lo, 0.88);
@@ -254,7 +224,6 @@ const SortIcones = (() => {
       ops(g, D[spec[1]], pal, pal.det);
       g.restore();
     }
-    // Un liseré clair à l'intérieur du bord : la tuile se lit sur tous les fonds, sans contour noir.
     g.strokeStyle = rgba(pal.hi, 0.42); g.lineWidth = Math.max(1, S * 0.03);
     g.beginPath();
     if (g.roundRect) g.roundRect(g.lineWidth / 2, g.lineWidth / 2, S - g.lineWidth, S - g.lineWidth, r - g.lineWidth / 2); else Util.roundRect(g, g.lineWidth / 2, g.lineWidth / 2, S - g.lineWidth, S - g.lineWidth, r - g.lineWidth / 2);
@@ -264,17 +233,14 @@ const SortIcones = (() => {
 
   const cache = new Map();
 
-  // Motif et détail d'un sort (`spell` : le sort tel que le personnage le lance, voie comprise).
   function spec(id, spell) {
     const s = spell || DATA.spells[id];
     return SPEC[id] || (s ? deduce(s) : ['etincelles']);
   }
 
-  // L'icône en data URL, peinte à `px` pixels de côté (64 par défaut) et gardée.
   function url(id, spell, px) {
     const s = spell || DATA.spells[id];
     if (!s || typeof document === 'undefined') return '';
-    // Un sort qui a sa tuile dessinée (js/sort-tuiles.js) la prend, avec les étoiles de son rang.
     if (typeof SortTuiles === 'object' && SortTuiles.a(id)) return SortTuiles.url(id, s.rank || 0);
     px = Math.round(px || 64);
     const key = `${id}|${s.element}|${px}`;

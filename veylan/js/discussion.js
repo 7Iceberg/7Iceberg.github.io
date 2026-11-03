@@ -1,8 +1,3 @@
-// La discussion : le fil de ce qui arrive, en haut à gauche de la scène. Ouverte, un panneau
-// translucide avec ses petits onglets (Tout, Système, Quêtes, Butin, Combat, PNJ) ; repliée, les
-// trois dernières lignes flottent en bas à gauche, puis s'effacent. Elle écrit ce que racontent le
-// monde (quêtes, gains, relais, niveaux, succès), le combat (sorts lancés, PV perdus), les PNJ, et
-// toute ligne qu'un autre module lui envoie par l'événement 'veylan:chat' (detail { type, text }).
 class Discussion {
   constructor(hud) {
     this.hud = hud;
@@ -20,7 +15,6 @@ class Discussion {
     this.flottant = document.createElement('div');
     this.flottant.className = 'vy-discussion__flottant';
     this.flottant.setAttribute('aria-hidden', 'true');
-    // Hors du téléphone en paysage (où le panneau de jeu a son bouton), un bouton dans la scène.
     this.bouton = document.createElement('button');
     this.bouton.type = 'button';
     this.bouton.className = 'vy-discussion__bouton';
@@ -42,7 +36,6 @@ class Discussion {
     this.ecouter();
   }
 
-  // Les types de ligne et leur onglet ; la couleur de chacun est dans css/jeu.css.
   static get TYPES() { return [['tout', 'Tout'], ['systeme', 'Système'], ['quete', 'Quêtes'], ['butin', 'Butin'], ['combat', 'Combat'], ['pnj', 'PNJ']]; }
 
   static get ICONE() {
@@ -69,7 +62,6 @@ class Discussion {
 
   basculer() { if (this.ouverte) this.fermer(); else this.ouvrir(); }
 
-  // Une ligne : son type (systeme, quete, butin, combat, pnj) et son texte, **gras** permis.
   ajouter(type, texte) {
     if (!texte) return;
     const known = Discussion.TYPES.some(t => t[0] === type && type !== 'tout');
@@ -101,7 +93,6 @@ class Discussion {
     this.liste.scrollTop = this.liste.scrollHeight;
   }
 
-  // Repliée : la ligne flotte quelques secondes, trois au plus, puis s'efface.
   flotter(l) {
     const p = document.createElement('p');
     p.className = `vy-chat vy-chat--${l.type}`;
@@ -119,7 +110,6 @@ class Discussion {
     window.dispatchEvent(new CustomEvent('veylan:discussionNonLues', { detail: { n: this.nonLues } }));
   }
 
-  // ----- Ce que le jeu raconte -----
 
   ecouter() {
     const hud = this.hud, w = hud.world, cb = hud.combat;
@@ -146,8 +136,6 @@ class Discussion {
     });
     Bus.on('relay', () => this.ajouter('systeme', 'Position sauvegardée.'));
     Bus.on('levelUp', d => this.ajouter('systeme', `Tu passes au niveau **${d.level}** !`));
-    // Les succès arrivent par « veylan:chat » (type succes, js/hud-recompenses.js), une ligne chacun.
-    // Le combat : qui lance quoi, qui perd ou regagne des PV.
     cb.on('animCast', d => { if (w.showCombat && d && d.entity && d.spell) this.ajouter('combat', `${d.entity.name} lance **${d.spell.name}**.`); });
     cb.on('float', d => {
       if (!w.showCombat || !d || !/^[-+]\d+$/.test(String(d.text))) return;

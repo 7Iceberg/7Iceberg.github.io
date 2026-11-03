@@ -1,15 +1,6 @@
-// Écran d'accueil : la scène derrière le logo (planche de DA, « écran titre : logo héroïque,
-// fond bleu nuit, atmosphère épique »). Étoiles, rayons de lumière, éclats de cristal et poussière
-// d'or qui montent, et des éclairs cyan et violets qui jaillissent du cristal du V.
-// Tout est dessiné sur une toile plein écran, derrière le contenu. S'arrête quand l'accueil est
-// caché ; sans éclairs ni mouvement si le système demande moins d'animations. En mode `sobre`
-// (les écrans de création, js/accueil.js), il ne reste qu'étoiles, poussière d'or et éclats.
-// Le reflet animé de l'or utilise le logo comme masque CSS : il n'est actif qu'en ligne (un fichier
-// ouvert en local refuse ce masque).
 document.documentElement.classList.toggle('en-ligne', /^https?:/.test(location.protocol));
 
 class TitreFx {
-  // `canvas` : la toile du fond (derrière le logo) ; `avant` : celle des éclairs, devant le logo.
   constructor(canvas, host, avant) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
@@ -30,7 +21,6 @@ class TitreFx {
     this.start();
   }
 
-  // Halo doux précalculé (dessiné en mode additif).
   static lueur(rgb) {
     const c = document.createElement('canvas');
     c.width = c.height = 64;
@@ -90,7 +80,6 @@ class TitreFx {
     requestAnimationFrame(this.loop);
   }
 
-  // Le cristal du V, en coordonnées de l'écran : d'où partent les éclairs.
   cristal() {
     const img = this.host.querySelector('.titre-logo__image img');
     if (!img) return { x: this.w * 0.3, y: this.h * 0.2, w: 200, h: 80 };
@@ -118,7 +107,6 @@ class TitreFx {
     this.flash = Math.max(0, this.flash - dt * 3.2);
   }
 
-  // Un éclair : du cristal vers le ciel, vers un bras du V, ou au loin.
   frapper() {
     const c = this.cristal();
     const choix = Math.random();
@@ -149,7 +137,6 @@ class TitreFx {
     if (logo) { logo.classList.remove('eclair'); void logo.offsetWidth; logo.classList.add('eclair'); }
   }
 
-  // Ligne brisée par déplacement du milieu : plus fine à chaque niveau.
   static zigzag(a, b, niveaux) {
     let pts = [a, b];
     let amp = Math.hypot(b.x - a.x, b.y - a.y) * 0.22;
@@ -173,7 +160,6 @@ class TitreFx {
     g.clearRect(0, 0, w, h);
     const c = this.cristal();
 
-    // Étoiles
     g.globalCompositeOperation = 'lighter';
     for (const s of this.etoiles) {
       const a = 0.25 + 0.35 * (0.5 + 0.5 * Math.sin(now / 1000 * s.v + s.p));
@@ -181,7 +167,6 @@ class TitreFx {
       g.fillRect(s.x * w, s.y * h, s.r, s.r);
     }
 
-    // Rayons de lumière derrière le logo
     for (let i = 0; i < (this.sobre ? 0 : 4); i++) {
       const sw = this.calme ? 0 : Math.sin(now / 5200 + i * 1.7) * 0.05;
       const ang = -0.38 + i * 0.25 + sw;
@@ -199,7 +184,6 @@ class TitreFx {
       g.restore();
     }
 
-    // Halo du cristal, qui respire
     const pulse = 0.75 + 0.25 * Math.sin(now / 900) + this.flash * 0.8;
     const R = (c.w || 400) * 0.42 * pulse;
     if (!this.sobre) {
@@ -210,7 +194,6 @@ class TitreFx {
       g.globalAlpha = 1;
     }
 
-    // Poussière d'or
     for (const p of this.poussiere) {
       const a = 0.35 + 0.35 * Math.sin(now / 700 + p.p);
       const r = p.r * 5;
@@ -219,7 +202,6 @@ class TitreFx {
     }
     g.globalAlpha = 1;
 
-    // Éclats de cristal : facettes en losange étiré, face claire et face sombre
     g.globalCompositeOperation = 'source-over';
     for (const e of this.eclats) {
       const tw = 0.55 + 0.45 * Math.sin(now / 600 + e.p);
@@ -247,7 +229,6 @@ class TitreFx {
     this.dessinerEclairs();
   }
 
-  // Éclairs et lueur du ciel, sur la toile de devant : ils passent par-dessus le V.
   dessinerEclairs() {
     const g = this.actx, w = this.w, h = this.h;
     if (this.avant) { g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); g.clearRect(0, 0, w, h); }
@@ -256,7 +237,6 @@ class TitreFx {
     g.lineJoin = 'round';
     for (const b of this.eclairs) {
       const t = b.vie / b.max;
-      // Deux ou trois reprises, comme un vrai éclair qui scintille
       const reprise = t > 0.75 || (t > 0.4 && t < 0.55) || Math.random() < 0.25 ? 1 : 0.35;
       const scint = Math.min(1, t * 1.4) * reprise;
       const coeur = b.violet ? '235,220,255' : '225,248,255';
@@ -279,7 +259,6 @@ class TitreFx {
       g.globalAlpha = 1;
     }
 
-    // Lueur brève de tout le ciel
     if (this.flash > 0) {
       g.fillStyle = `rgba(110,190,255,${0.06 * this.flash})`;
       g.fillRect(0, 0, w, h);

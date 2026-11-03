@@ -1,17 +1,4 @@
-// Vue 3D de la carte du monde : le continent flottant dans le ciel, comme l'est Veylan. Three.js
-// (vendor/three.min.js, r149) n'est chargé qu'à la première ouverture (js/hud-carte.js).
-//
-// Chaque région ouverte est une île : un terrain dont le dessus porte la peinture des cartes (la
-// même qu'en 2D, js/carte-peinture.js, réunie en une texture par région), une hauteur par zone,
-// une côte au tracé irrégulier, des falaises striées et un dessous qui s'effile. L'eau est un peu
-// plus bas, translucide (la lave luit). Arbres, rochers, murs et maisons en instances, d'après le
-// plan des cartes. Soleil chaud et lumière du ciel, nuages qui dérivent, brume peinte sur ce qui
-// n'est pas exploré, régions à venir au loin, voilées, avec un cadenas et leurs niveaux.
-// Pastilles et épingles en sprites (les mêmes images qu'en 2D). Contrôle d'orbite maison, choix
-// d'une carte au toucher (rayon), bulles au survol. Rendu à la demande ; tout est libéré à la
-// fermeture.
 class Carte3D {
-  // WebGL est-il là ? On le vérifie une fois, sur un canvas jeté aussitôt (contexte libéré).
   static disponible() {
     if (Carte3D._dispo != null) return Carte3D._dispo;
     let ok = false;
@@ -44,14 +31,11 @@ class Carte3D {
     Carte3D.vivantes = (Carte3D.vivantes || 0) + 1;
   }
 
-  // ----- Construction, par étapes (une image entre chaque, pour ne pas figer l'écran) -----
 
   async construire(etape) {
     const THREE = window.THREE;
-    // Les couleurs données en hexadécimal sont en sRGB : Three.js les passe en linéaire.
     if (THREE.ColorManagement) THREE.ColorManagement.legacyMode = false;
     const image = () => new Promise(r => requestAnimationFrame(() => r()));
-    // Fond transparent : le ciel est un dégradé CSS derrière le canvas (aucun quad de fond à rendre).
     const r = this.renderer = new THREE.WebGLRenderer({ antialias: !this.telephone, alpha: true, powerPreference: 'high-performance' });
     r.setClearColor(0x000000, 0);
     r.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
@@ -63,7 +47,6 @@ class Carte3D {
     this.camera = new THREE.PerspectiveCamera(38, 1, 0.05, 260);
     this.raycaster = new THREE.Raycaster();
 
-    // Les peintures des cartes, quelques-unes par image.
     const A = Atlas.get();
     const ids = [...A.coords.keys()];
     let fait = 0;
@@ -92,8 +75,6 @@ class Carte3D {
     this.demander();
   }
 
-  // Ciel : le dégradé de crépuscule est en CSS (css/fenetres.css) ; ici, la brume qui voile le
-  // lointain, le soleil et la lumière du ciel.
   ciel() {
     const THREE = window.THREE;
     this.scene.fog = new THREE.Fog(0xb7b5cb, 18, 80);
@@ -108,13 +89,10 @@ class Carte3D {
     this.scene.add(soleil, soleil.target);
   }
 
-  // ----- Les îles -----
 
-  // Une île par région : le terrain (texture peinte), le dessous et les falaises, l'eau.
   ile(regId, D) {
     const THREE = window.THREE, K = 15, M = 1;
     const A = D.A, ix = D.ix;
-    // Les cartes de plateau (l'île d'Ervane, sans plan de cases) ne sont pas dans la vue 3D.
     const cells = [...A.coords].map(([id, [x, y]]) => ({ id, x, y, e: ix.map.get(id) })).filter(c => c.e.zone.region === regId && c.e.def.layout);
     if (!cells.length) return;
     const xs = cells.map(c => c.x), ys = cells.map(c => c.y);
@@ -131,8 +109,6 @@ class Carte3D {
       for (let ty = 0; ty < K; ty++) for (let tx = 0; tx < K; tx++) autre[((y - cy0) * K + ty) * TW + (x - cx0) * K + tx] = 1;
     }
     const T = (a, i, j) => a[Math.max(0, Math.min(TH - 1, j)) * TW + Math.max(0, Math.min(TW - 1, i))];
-    // Champ de terre aux sommets : moyenne des cases voisines, adoucie, bousculée par un bruit
-    // près de la côte ; les autres régions repoussent la côte (un bras de ciel entre les îles).
     const f = new Float32Array(VW * VH), fa = new Float32Array(VW * VH);
     for (let j = 0; j < VH; j++) for (let i = 0; i < VW; i++) {
       const v = j * VW + i;
@@ -145,8 +121,6 @@ class Carte3D {
       const v = j * VW + i, b = f[v];
       f[v] = b + (Carte3D.bruit(i / K * 2.3, j / K * 2.3, graine) - 0.5) * 0.62 * Math.min(1, 4 * b * (1 - b)) - fa[v] * 0.7;
     }
-    // Hauteurs : celle de la zone, propagée au-delà des cartes, adoucie (des pentes entre les
-    // plateaux), creusée sous l'eau, à peine bosselée.
     const file = [];
     for (let t = 0; t < hz.length; t++) if (!isNaN(hz[t])) file.push(t);
     for (let q = 0; q < file.length; q++) {
@@ -164,7 +138,6 @@ class Carte3D {
     const data = { regId, cx0, cy0, CW, CH, K, TW, TH, VW, VH, hv, f, X, Z };
     this.iles.set(regId, data);
 
-    // La texture : les peintures des cartes de la région, sur un fond de roche claire.
     const maxTex = this.renderer.capabilities.maxTextureSize || 2048;
     const px = Math.max(64, Math.min(this.telephone ? 128 : 192, Math.floor(Math.min(maxTex, 4096) / Math.max(CW, CH))));
     const atlas = document.createElement('canvas'); atlas.width = CW * px; atlas.height = CH * px;
@@ -179,7 +152,6 @@ class Carte3D {
     tex.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
     this.textures.push(tex);
 
-    // Triangulation : carrés de la grille, et carrés de côte découpés (marching squares).
     const pos = [], uv = [], idx = [], dist0 = [], cote = [];
     const vid = new Int32Array(VW * VH).fill(-1);
     const sommet = v => { if (vid[v] < 0) { vid[v] = pos.length / 3; const i = v % VW, j = (v / VW) | 0; pos.push(X(i), hv[v], Z(j)); uv.push(i / TW, 1 - j / TH); dist0.push(v); } return vid[v]; };
@@ -215,7 +187,6 @@ class Carte3D {
     this.scene.add(mDessus);
     data.dessus = mDessus;
 
-    // Distance à la côte de chaque sommet (en cases du plan), pour l'effilement du dessous.
     const dist = new Float32Array(VW * VH).fill(1e9), fileD = [];
     for (let v = 0; v < VW * VH; v++) if (f[v] <= 0.5) { dist[v] = 0; fileD.push(v); }
     for (let q = 0; q < fileD.length; q++) {
@@ -225,7 +196,6 @@ class Carte3D {
         const n = nj * VW + ni; if (dist[v] + w < dist[n]) { dist[n] = dist[v] + w; fileD.push(n); }
       }
     }
-    // Le dessous : chaque sommet du dessus, descendu d'autant plus qu'il est loin de la côte.
     const n3 = pos.length / 3, sous = new Float32Array(pos.length);
     const bande = (x, z) => 0.12 + 0.07 * Carte3D.bruit(x * 3.1, z * 3.1, graine + 9);
     for (let k = 0; k < n3; k++) {
@@ -237,7 +207,6 @@ class Carte3D {
       sous[k * 3 + 1] = y - bande(x, z) - creux;
       sous[k * 3 + 2] = z + (Carte3D.bruit(x * 5, z * 5, graine + 17) - 0.5) * j;
     }
-    // Falaises (bande de côte) et dessous, en triangles à plat : de la roche taillée, striée.
     const rp = [], rc = [];
     const strate = Carte3D.strates(regId);
     const col = (x, y, z, haut) => {
@@ -257,7 +226,6 @@ class Carte3D {
     mRoche.castShadow = false;
     this.scene.add(mRoche);
 
-    // L'eau : un plan par case d'eau, juste sous le bord ; la lave luit sans lumière.
     const pe = [], pl = [];
     for (let j = 0; j < TH; j++) for (let i = 0; i < TW; i++) {
       const t = j * TW + i;
@@ -272,14 +240,12 @@ class Carte3D {
     plan(pl, new THREE.MeshBasicMaterial({ color: 0xff7a2a, transparent: true, opacity: 0.9, depthWrite: false }));
   }
 
-  // Une carte dans la texture de son île : peinte si explorée, voilée sinon.
   peindreCase(data, id, vue) {
     const p = Atlas.coordsOf(id), g = data.atlas.getContext('2d');
     const img = vue ? CartePeinture.carte(id) : CartePeinture.brume(id);
     if (img) g.drawImage(img, (p[0] - data.cx0) * data.px, (p[1] - data.cy0) * data.px, data.px, data.px);
   }
 
-  // La hauteur du terrain sous un point du monde (0 hors des îles).
   hauteur(x, z) {
     const id = Atlas.at(Math.round(x), Math.round(z));
     const e = id && Atlas.index().map.get(id), d = e && this.iles.get(e.zone.region);
@@ -290,7 +256,6 @@ class Carte3D {
     return (h(0, 0) * (1 - fi) + h(1, 0) * fi) * (1 - fj) + (h(0, 1) * (1 - fi) + h(1, 1) * fi) * fj;
   }
 
-  // ----- Décor : arbres, rochers, colonnes de basalte, remparts et maisons, lanternes, relais -----
 
   decor() {
     const THREE = window.THREE, K = 15;
@@ -303,7 +268,6 @@ class Carte3D {
       const lay = e.def.layout, N = lay.length, R = Carte3D.hasard(id);
       const terre = (tx, ty) => { const i = (mx - d.cx0) * K + tx, j = (my - d.cy0) * K + ty; return (d.f[j * d.VW + i] + d.f[j * d.VW + i + 1] + d.f[(j + 1) * d.VW + i] + d.f[(j + 1) * d.VW + i + 1]) / 4 > 0.55; };
       const ville = !!P.ville;
-      // Murs de ville : ceux qui touchent le bord sont des remparts, les autres des maisons.
       const rempart = new Set();
       if (ville) {
         const vu = new Set();
@@ -354,7 +318,6 @@ class Carte3D {
     instances(new THREE.OctahedronGeometry(0.022, 0), new THREE.MeshBasicMaterial(), listes.cristal, false);
   }
 
-  // Une passerelle de bois entre deux îles, là où une sortie relie deux régions.
   ponts() {
     const THREE = window.THREE, ix = Atlas.index();
     const mat = new THREE.MeshLambertMaterial({ color: 0x8a6444 }), corde = new THREE.MeshLambertMaterial({ color: 0xd8c39a });
@@ -382,7 +345,6 @@ class Carte3D {
     }
   }
 
-  // ----- Le lointain : les régions à venir, îles voilées, cadenas et niveaux -----
 
   lointain() {
     const THREE = window.THREE;
@@ -390,7 +352,6 @@ class Carte3D {
     const centre = id => { const l = [...A.coords].filter(([m]) => ix.map.get(m).zone.region === id).map(([, p]) => p); return l.length ? [l.reduce((s, p) => s + p[0], 0) / l.length, l.reduce((s, p) => s + p[1], 0) / l.length] : null; };
     const ouvertes = regs.filter(r => r.open && centre(r.id));
     if (!ouvertes.length) return;
-    // Du continent de l'onglet « Monde » au monde 3D : une similitude calée sur deux îles ouvertes.
     const a0 = ouvertes[0], c0 = centre(a0.id);
     let s = 0.42, ang = 0;
     if (ouvertes[1]) {
@@ -398,7 +359,6 @@ class Carte3D {
       s = Math.hypot(vb[0], vb[1]) / Math.hypot(va[0], va[1]); ang = Math.atan2(vb[1], vb[0]) - Math.atan2(va[1], va[0]);
     }
     const versMonde = p => { const dx = p[0] - a0.at[0], dy = p[1] - a0.at[1]; return [c0[0] + s * (dx * Math.cos(ang) - dy * Math.sin(ang)), c0[1] + s * (dx * Math.sin(ang) + dy * Math.cos(ang))]; };
-    // Le centre des îles ouvertes : les régions à venir sont repoussées au loin, dans la brume.
     const cs = ouvertes.map(r => centre(r.id)), cm = [cs.reduce((a, c) => a + c[0], 0) / cs.length, cs.reduce((a, c) => a + c[1], 0) / cs.length];
     const brume = new THREE.Color(0xb7b5cb);
     for (const r of regs) {
@@ -427,7 +387,6 @@ class Carte3D {
     }
   }
 
-  // Une étiquette (nom et ligne de niveaux), en sprite.
   etiquette(nom, sous, at, larg, couleur, brume) {
     const cv = document.createElement('canvas'); cv.width = 640; cv.height = 160;
     const g = cv.getContext('2d'), T = this.hud.carteT || this.hud.themeCarte();
@@ -454,7 +413,6 @@ class Carte3D {
     return s;
   }
 
-  // ----- Nuages : ceux qui dérivent entre les îles, et la brume sur ce qui n'est pas exploré -----
 
   nuages(D) {
     const THREE = window.THREE;
@@ -485,7 +443,6 @@ class Carte3D {
     this.brume.set(id, s);
   }
 
-  // Une carte vient d'être explorée : sa peinture remplace la brume.
   majExploration() {
     const D = this.hud.donneesCarte();
     for (const id of D.seen) {
@@ -498,7 +455,6 @@ class Carte3D {
     }
   }
 
-  // ----- Pastilles et épingles : des sprites, les mêmes images qu'en 2D -----
 
   majReperes(force) {
     if (!this.scene || this.mort) return;
@@ -522,7 +478,6 @@ class Carte3D {
       this.scene.add(s); this.reperes.push(s);
       return s;
     };
-    // Pastilles, une par repère (vue proche), ou une par carte avec leur nombre (vue lointaine).
     const items = hud.reperesMonde(D);
     const parCarte = new Map();
     for (const it of items) {
@@ -536,7 +491,6 @@ class Carte3D {
       const p = Atlas.coordsOf(id), art = Carte3D.compte(l[0], l.length), h = this.hauteur(p[0], p[1]);
       ajoute(texture('g' + l[0].kind + l[0].sub + l.length, art.canvas), art.canvas, [p[0], h + 0.32, p[1]], 0.36, [0.5, 1 - art.ay / art.canvas.height], Object.assign({}, l[0], { groupe: l.length > 1 ? l : null }), 'loin');
     }
-    // Épingles : la pointe au sol ; la tienne flotte doucement.
     for (const pin of hud.epinglesMonde(D)) {
       const art = CartePeinture.epingle(pin.kind, 128), h = this.hauteur(pin.at[0], pin.at[1]);
       const s = ajoute(texture('e' + pin.kind, art.canvas), art.canvas, [pin.at[0], h, pin.at[1]], pin.kind === 'toi' ? 0.26 : 0.2, [0.5, 1 - art.ay / art.canvas.height], pin, 'epingle');
@@ -547,7 +501,6 @@ class Carte3D {
     this.demander();
   }
 
-  // Le contour d'or de la carte choisie, qui suit le relief.
   majSelection() {
     const THREE = window.THREE, id = this.hud.carte.sel;
     if (this.selection) { this.scene.remove(this.selection); this.selection.geometry.dispose(); this.selection.material.dispose(); this.selection = null; }
@@ -563,16 +516,10 @@ class Carte3D {
     this.scene.add(this.selection);
   }
 
-  // ----- Caméra : orbite autour d'une cible, amortie ; jamais sous les îles -----
 
   centrer(net) {
-    // Première vue : tout le continent ouvert, nord en haut, vu de trois quarts depuis le sud,
-    // comme une carte qu'on pose sur la table. Ensuite, « centrer » revient sur toi.
     if (!this.but) {
-      // La région où l'on se trouve, cadrée en entier selon la forme de la fenêtre.
       const ici = this.hud.donneesCarte().here, zone = ici && World.zoneOf(ici);
-      // Seules les cartes à plan ont leur île dans cette vue : sur une carte de plateau (Ervane, sautée
-      // ici), on cadre la région dessinée la plus proche plutôt que des nuages.
       const aPlan = z => z.maps.filter(m => m.layout).map(m => m.id);
       let region = zone && zone.region;
       if (zone && !DATA.content.zones.some(z => z.region === region && aPlan(z).length)) {
@@ -609,7 +556,6 @@ class Carte3D {
     u.z = Math.max(b.minY - 3, Math.min(b.maxY + 3, u.z));
   }
 
-  // Applique l'amortissement : vrai tant que la caméra n'a pas rejoint son but.
   amortir(dt) {
     this.borner();
     const k = 1 - Math.exp(-dt * 11), c = this.cam, u = this.but;
@@ -620,7 +566,6 @@ class Carte3D {
     cam.position.set(c.x + c.dist * sp * Math.sin(c.theta), ty + c.dist * Math.cos(c.phi), c.z + c.dist * sp * Math.cos(c.theta));
     if (cam.position.y < ty + 0.6) cam.position.y = ty + 0.6;
     cam.lookAt(c.x, ty, c.z);
-    // Le soleil suit la vue : ses ombres couvrent ce qu'on regarde.
     if (this.soleil) {
       this.soleil.position.set(c.x - 7, 13, c.z + 5); this.soleil.target.position.set(c.x, 0, c.z); this.soleil.target.updateMatrixWorld();
       const sc = this.soleil.shadow.camera, e = Math.min(14, 2 + c.dist * 1.1);
@@ -629,7 +574,6 @@ class Carte3D {
     return bouge;
   }
 
-  // ----- Boucle : on ne dessine que si quelque chose change -----
 
   reveil() { this.actif = performance.now(); this.demander(); }
 
@@ -645,8 +589,6 @@ class Carte3D {
     const dt = Math.min(0.1, this.dernier ? (t - this.dernier) / 1000 : 0.016);
     this.dernier = t;
     const bouge = this.amortir(dt);
-    // Animations douces, une douzaine de secondes après la dernière interaction : ton épingle
-    // flotte, les nuages dérivent. Au-delà, plus rien ne bouge et plus rien n'est dessiné.
     const vivant = this.mouvement && performance.now() - this.actif < 12000;
     if (vivant) {
       const s = t / 1000;
@@ -654,7 +596,6 @@ class Carte3D {
       for (const n of this.derive || []) { n.position.x += n.userData.vitesse * dt; if (n.position.x > this.borne.x1) n.position.x = this.borne.x0; }
     }
     this.echelles();
-    // La boussole : le nord de la carte (les y décroissants) vu depuis la caméra.
     const nord = Math.round(this.cam.theta * 180 / Math.PI);
     if (this.boussoleA !== nord) { this.boussoleA = nord; this.boussole.style.transform = `rotate(${nord}deg)`; }
     const t0 = performance.now();
@@ -665,8 +606,6 @@ class Carte3D {
     else if (vivant) this.minuterie = setTimeout(() => { this.minuterie = 0; this.demander(); }, 45);
   }
 
-  // Les repères gardent une taille lisible à toute distance ; les groupes remplacent les
-  // pastilles quand on s'éloigne.
   echelles() {
     const d = this.cam.dist, k = Math.max(0.6, Math.min(2.6, d / 6)), loin = d > 8.5;
     for (const s of this.reperes || []) {
@@ -685,7 +624,6 @@ class Carte3D {
     this.demander();
   }
 
-  // ----- Entrées : souris, toucher, molette -----
 
   ecouter() {
     const el = this.renderer.domElement, dom = this.dom;
@@ -695,7 +633,7 @@ class Carte3D {
     const pos = e => { const r = el.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
     const finAppui = () => { if (appui) { clearTimeout(appui); appui = 0; } };
     on(el, 'pointerdown', e => {
-      try { el.setPointerCapture(e.pointerId); } catch (x) { /* rien */ }
+      try { el.setPointerCapture(e.pointerId); } catch (x) {   }
       this.hud.carte.pointeur = e.pointerType;
       pts.set(e.pointerId, pos(e));
       this.reveil();
@@ -729,7 +667,6 @@ class Carte3D {
       if (!pts.has(e.pointerId)) return;
       pts.delete(e.pointerId);
       if (geste && !geste.deux && !geste.bouge && !geste.fait && e.type === 'pointerup' && geste.bouton === 0) this.toucher(pos(e), e.pointerType);
-      // Clic droit sans glisser : le drapeau (glisser du bouton droit déplace la vue).
       if (geste && !geste.deux && !geste.bouge && e.type === 'pointerup' && geste.bouton === 2) this.drapeauEcran(pos(e));
       if (!pts.size) { geste = null; dom.classList.remove('glisse'); this.glisse = false; this.reveil(); }
       else if (geste && geste.deux) geste = null;
@@ -742,14 +679,12 @@ class Carte3D {
     if (typeof ResizeObserver === 'function') { this.ro = new ResizeObserver(() => this.taille()); this.ro.observe(dom); }
   }
 
-  // Déplace la cible dans le plan du sol, selon l'orientation de la caméra.
   panoramique(dx, dy) {
     const k = this.but.dist * 0.0021 * (this.telephone ? 1.3 : 1), th = this.cam.theta;
     this.but.x -= (dx * Math.cos(th) + dy * Math.sin(th)) * k;
     this.but.z -= (-dx * Math.sin(th) + dy * Math.cos(th)) * k;
   }
 
-  // Le rayon sous un point de l'écran : un repère d'abord, sinon le dessus des îles.
   viser(p) {
     const THREE = window.THREE, el = this.renderer.domElement;
     const ndc = new THREE.Vector2((p[0] / el.clientWidth) * 2 - 1, -(p[1] / el.clientHeight) * 2 + 1);
@@ -758,7 +693,6 @@ class Carte3D {
     const vis = (this.reperes || []).filter(s => s.visible);
     const hr = this.raycaster.intersectObjects(vis, false);
     if (hr.length) {
-      // Une pastille de sprite est ronde : on garde le premier impact dans le disque.
       const s = hr.sort((a, b) => b.object.renderOrder - a.object.renderOrder)[0].object;
       return { item: s.userData.item };
     }
@@ -800,7 +734,6 @@ class Carte3D {
     if (v && v.point) this.hud.poserDrapeau([Math.round(v.point.x * 100) / 100, Math.round(v.point.z * 100) / 100]);
   }
 
-  // Le point de l'écran d'une case du monde (pour une bulle, et pour les tests).
   ecran(x, y) {
     if (!this.camera) return null;
     const THREE = window.THREE, el = this.renderer.domElement;
@@ -810,13 +743,11 @@ class Carte3D {
     return [(v.x + 1) / 2 * el.clientWidth, (1 - v.y) / 2 * el.clientHeight];
   }
 
-  // Temps moyen d'un rendu, en millisecondes (les dernières images).
   mesure() {
     const l = this.temps.slice(-60);
     return { rendu: l.length ? Math.round(l.reduce((a, b) => a + b, 0) / l.length * 10) / 10 : null, images: l.length, memoire: this.renderer ? Object.assign({}, this.renderer.info.memory) : null, triangles: this.renderer ? this.renderer.info.render.triangles : null, appels: this.renderer ? this.renderer.info.render.calls : null };
   }
 
-  // ----- Tout rendre : géométries, matériaux, textures, contexte -----
 
   dispose() {
     if (this.mort) return;
@@ -853,9 +784,7 @@ class Carte3D {
     this.scene = null; this.camera = null; this.toi = null; this.selection = null;
   }
 
-  // ----- Outils -----
 
-  // Bruit de valeur lissé, déterministe.
   static bruit(x, y, s) {
     const h = (a, b) => { let n = (Math.imul(a, 374761393) + Math.imul(b, 668265263) + Math.imul(s | 0, 974634211)) | 0; n = Math.imul(n ^ (n >>> 13), 1274126177); return ((n ^ (n >>> 16)) >>> 0) / 4294967296; };
     const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
@@ -865,7 +794,6 @@ class Carte3D {
 
   static hasard(cle) { let seed = 0; for (let i = 0; i < cle.length; i++) seed = Math.imul(seed ^ cle.charCodeAt(i), 16777619) >>> 0; return () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
-  // Flou en boîte 3 x 3, `n` passes, sur une grille.
   static flou(a, W, H, n) {
     const b = new Float32Array(a.length);
     for (let p = 0; p < n; p++) {
@@ -878,7 +806,6 @@ class Carte3D {
     }
   }
 
-  // Les strates de la roche d'une région, de la lèvre au fond : une fonction profondeur → couleur.
   static strates(regId) {
     const THREE = window.THREE;
     const pal = (Carte3D.STRATES[regId] || Carte3D.STRATES.orsane).map(h => new THREE.Color(h));
@@ -890,7 +817,6 @@ class Carte3D {
     };
   }
 
-  // Une pastille de groupe : la pastille du premier repère et le nombre de repères.
   static compte(item, n) {
     const art = CartePeinture.pastille(item.kind, 112, item.sub);
     if (n < 2) return art;
@@ -910,7 +836,6 @@ class Carte3D {
   }
 }
 
-// Strates de falaise par région (docs/DIRECTION-ARTISTIQUE.md) : calcaire d'Orsane, basalte de Kaldum.
 Carte3D.STRATES = {
   orsane: ['#ece6d8', '#d3cfc6', '#b4b4bd', '#9198ab', '#6c7390', '#4a5170', '#3b4260'],
   kaldum: ['#ab998c', '#8f7d70', '#76655a', '#5d4d45', '#4a3c36', '#3e3230', '#241a18'],

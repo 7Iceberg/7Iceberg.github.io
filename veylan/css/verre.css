@@ -1,27 +1,8 @@
-/* ==========================================================================
-   Veylan : le style « en verre » de l'interface de jeu (proposition B de docs/ANALYSE-HUD-DUALITY.md)
-   --------------------------------------------------------------------------
-   La construction des interfaces Duality (un verre sombre translucide, un liseré de 2 px en
-   dégradé, des en-têtes en pastilles, des tuiles d'icône, des tuiles de chiffres, des pastilles,
-   un anneau de vie, une annonce de succès), refaite dans la palette de Veylan : nuit, or ancien en
-   dégradé, cyan pour ce qui est actif, braise pour la vie, vert des Cimes pour les PM, violet pour
-   l'expérience ; Cinzel pour les titres, Inter pour le reste.
 
-   - Allumé par la classe .vy-verre de #app (index.html) ; ?hud=ancien l'éteint (js/hud-fenetres.js,
-     appliquerVerre) et rend les cadres de métal gravé d'avant.
-   - Les teintes suivent les thèmes d'interface du jeu (Options : Nuit, Bleu des Voiles, Braise,
-     Cimes, Ardoise claire) ; seules les variables --v-* changent d'un thème à l'autre.
-   - L'opacité des fonds (--v-alpha, de 0,4 à 1, 0,9 par défaut) se règle dans les Options.
-   - Rien ne bouge dans la mise en page : les tailles des éléments que les tests mesurent (la
-     languette de 46 px, le panneau, les fenêtres en feuille) restent celles de css/jeu.css et
-     css/fenetres.css. L'écran d'accueil garde son habillage (il n'est pas touché ici).
-   ========================================================================== */
-
-/* ----- 1. Les teintes, par thème ----- */
 #app.vy-verre {
   --v-a: #e9cf98; --v-b: #b08c52; --v-a-rgb: 233, 207, 152;
-  --v-titre: #f2e2c9;                     /* texte des titres en capitales */
-  --v-accent-texte: #e9cf98;              /* texte de l'accent (lisible sur le verre) */
+  --v-titre: #f2e2c9;                      
+  --v-accent-texte: #e9cf98;               
   --v-ligne-rgb: 201, 166, 107;
   --v-act: #3fd0ff; --v-act-rgb: 63, 208, 255;
   --v-fen-rgb: 12, 19, 29; --v-pan-rgb: 16, 26, 39; --v-carte-rgb: 24, 37, 54; --v-champ-rgb: 8, 13, 21;
@@ -51,7 +32,6 @@
   --v-texte: #e9f1e2; --v-texte-2: #9dad99; --v-discret: #687661; --v-encre: #0c190c;
   --v-pm: #b6dca8;
 }
-/* Ardoise claire : le verre devient du papier de pierre, l'encre sombre. */
 #app.vy-verre[data-ui-theme="ardoise"] {
   --v-a: #c9a66b; --v-b: #7a5f35; --v-a-rgb: 176, 140, 82; --v-titre: #2a2219; --v-accent-texte: #6b5230;
   --v-ligne-rgb: 110, 85, 48;
@@ -62,7 +42,6 @@
   --v-ombre: 0 14px 34px rgba(0, 0, 0, 0.3);
   --v-ombre-legere: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
-/* Les fenêtres d'avant lisent --fen-* : on les branche sur le verre. */
 #app.vy-verre {
   --v-degrade: linear-gradient(90deg, var(--v-a), var(--v-b));
   --v-degrade-oblique: linear-gradient(135deg, var(--v-a), var(--v-b));
@@ -78,7 +57,6 @@
   --fen-filet: rgba(var(--v-ligne-rgb), 0.16);
 }
 
-/* ----- 2. Les fenêtres : un en-tête en pastille, un corps en verre au liseré dégradé ----- */
 #app.vy-verre .vy-fenetre {
   gap: 6px;
   background: none;
@@ -125,14 +103,12 @@
 @keyframes vy-verre-pop { from { opacity: 0; transform: scale(0.97); } }
 @keyframes vy-verre-monte { from { opacity: 0; transform: translateY(10px); } }
 
-/* Les titres de section : petites capitales espacées, un filet qui file à droite. */
 #app.vy-verre .vy-fenetre__corps h3 { font: 700 14px/1.25 var(--vy-font-titre); letter-spacing: 0.06em; color: var(--v-titre); }
 #app.vy-verre .vy-fenetre__corps h4 { display: flex; align-items: center; gap: 8px; margin: 14px 0 7px; font: 700 10px/1.2 var(--vy-font-ui); letter-spacing: 0.13em; color: var(--v-texte-2); }
 #app.vy-verre .vy-fenetre__corps h4::after { content: ""; flex: 1; height: 1px; background: rgba(var(--v-ligne-rgb), 0.16); }
 #app.vy-verre .vy-sous { font: 700 10px/1.2 var(--vy-font-ui); letter-spacing: 0.13em; color: var(--v-texte-2); }
 #app.vy-verre .vy-sous::after { background: rgba(var(--v-ligne-rgb), 0.16); }
 
-/* Les lignes des fenêtres simples (Quêtes, Succès, Options) : des cartes posées sur le verre. */
 #app.vy-verre .vy-fenetre__corps .row {
   margin-bottom: 4px;
   padding: 8px 10px;
@@ -143,7 +119,6 @@
 #app.vy-verre .vy-fenetre__corps .row.here { border-color: rgba(var(--v-a-rgb), 0.5); background: rgba(var(--v-a-rgb), 0.1); }
 #app.vy-verre .vy-fenetre__corps .row.got { border-color: rgba(141, 181, 133, 0.35); }
 
-/* Boutons, onglets, champs des fenêtres simples */
 #app.vy-verre .vy-fenetre__corps button:not([class]), #app.vy-verre .vy-fenetre__corps .tab {
   min-height: 32px; padding: 5px 13px;
   border: 1px solid rgba(var(--v-ligne-rgb), 0.22);
@@ -164,7 +139,6 @@
 }
 #app.vy-verre .vy-fenetre__corps textarea { padding: 8px; }
 
-/* Les onglets : une barre segmentée, l'onglet choisi rempli du dégradé. */
 #app.vy-verre .vy-onglets {
   gap: 3px; margin: 0 0 10px; padding: 3px;
   border: 1px solid rgba(var(--v-ligne-rgb), 0.14);
@@ -176,7 +150,6 @@
 #app.vy-verre .vy-onglet.on { color: var(--v-encre); background: var(--v-degrade); box-shadow: 0 3px 10px rgba(var(--v-a-rgb), 0.22); }
 #app.vy-verre .vy-carte__onglets { padding: 3px; }
 
-/* Les boutons du jeu (pas ceux de l'accueil) : plus plats, rayon de 10, le principal en dégradé. */
 #app.vy-verre :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton {
   --_fond: rgba(var(--v-champ-rgb), 0.85);
   --_bord: rgba(var(--v-ligne-rgb), 0.24);
@@ -200,7 +173,6 @@
 #app.vy-verre :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton[aria-pressed="true"],
 #app.vy-verre :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton.est-actif { border-color: rgba(var(--v-a-rgb), 0.6); color: var(--v-accent-texte); background: rgba(var(--v-a-rgb), 0.12); }
 
-/* L'interrupteur : les cases à cocher des fenêtres (Options, Auto, Confirmer les sorts). */
 #app.vy-verre .vy-fenetre input[type="checkbox"] {
   appearance: none; -webkit-appearance: none;
   flex: none; position: relative; width: 32px; height: 18px; margin: 0;
@@ -213,12 +185,10 @@
 #app.vy-verre .vy-fenetre input[type="checkbox"]:checked::after { transform: translateX(14px); background: #fff; }
 #app.vy-verre .vy-fenetre input[type="checkbox"]:focus-visible { outline: 2px solid var(--v-act); outline-offset: 2px; }
 
-/* Le curseur de l'opacité des fonds (Options) */
 #app.vy-verre .vy-reglage { gap: 12px; }
 #app.vy-verre .vy-reglage label { flex: none; }
 #app.vy-verre .vy-reglage output { flex: none; min-width: 42px; text-align: right; font: 700 12px var(--vy-font-ui); color: var(--v-accent-texte); font-variant-numeric: tabular-nums; }
 .vy-reglage input[type="range"] { flex: 1; min-width: 80px; }
-/* Sans le verre (?hud=ancien), le réglage n'a rien à régler. */
 #app:not(.vy-verre) .vy-opacite { display: none !important; }
 #app.vy-verre .vy-reglage input[type="range"] {
   appearance: none; -webkit-appearance: none; height: 22px; margin: 0; background: none; cursor: pointer;
@@ -230,12 +200,10 @@
 #app.vy-verre .vy-reglage input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; margin-top: -5px; border-radius: 50%; background: #fff; border: 3px solid var(--v-b); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
 #app.vy-verre .vy-reglage input[type="range"]::-moz-range-thumb { width: 9px; height: 9px; border-radius: 50%; background: #fff; border: 3px solid var(--v-b); }
 
-/* Les thèmes (Options) : des pastilles, celle choisie au contour de l'accent. */
 #app.vy-verre .vy-theme { border-radius: 10px; border-color: rgba(var(--v-ligne-rgb), 0.16); background: rgba(var(--v-champ-rgb), 0.7); }
 #app.vy-verre .vy-theme.on { border-color: var(--v-a); background: rgba(var(--v-a-rgb), 0.1); }
 #app.vy-verre .vy-theme__apercu { border-radius: 7px; }
 
-/* ----- 3. Caractéristiques : la fiche du héros, les tuiles de chiffres, les lignes à tuile d'icône ----- */
 #app.vy-verre .vy-caracs__tete {
   padding: 8px 10px; margin-bottom: 6px;
   border: 1px solid rgba(var(--v-a-rgb), 0.28);
@@ -246,7 +214,6 @@
 #app.vy-verre .vy-fiche__nom { font: 700 14px/1.2 var(--vy-font-titre); letter-spacing: 0.06em; text-transform: uppercase; color: var(--v-titre); }
 #app.vy-verre .vy-caracs__xp > small { color: var(--v-xp); font-weight: 700; }
 #app.vy-verre .vy-caracs__xp .vy-jauge, #app.vy-verre .vy-panneau__xp-jauge .vy-jauge, #app.vy-verre #player-bar .vy-jauge--xp { --_remplissage: linear-gradient(90deg, var(--v-xp), #7c5cff); --_bord: transparent; }
-/* Les jauges fines : une barre de 5 px sur une piste claire, sans cadre. */
 #app.vy-verre .vy-jauge--fine { --_hauteur: 5px; border: 0; border-radius: 4px; background: rgba(var(--v-ligne-rgb), 0.14); box-shadow: none; }
 #app.vy-verre .vy-jauge--fine .vy-jauge__barre { border-radius: 4px; box-shadow: none; }
 #app.vy-verre .vy-caracs__vitaux { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
@@ -286,17 +253,9 @@
 #app.vy-verre .vy-caracs__reglage { border-radius: 11px; border-color: rgba(var(--v-ligne-rgb), 0.16); background: rgba(var(--v-champ-rgb), 0.5); }
 #app.vy-verre .vy-caracs__paliers td { border-radius: 7px; }
 
-/* ----- 4. Le téléphone en paysage : fenêtres étroites, languette, panneau, cartes ----- */
 @media (orientation: landscape) and (max-height: 500px) {
-  /* Une fenêtre étroite (Caractéristiques, Quêtes, Options, Succès...) garde sa largeur, contre le
-     bord gauche : le jeu reste visible à côté, à travers le verre. Les grandes (Inventaire, Sorts,
-     Carte) prennent toujours toute la place. */
   #app.vy-verre .vy-fenetre--etroite { right: auto; bottom: auto; max-height: calc(100% - 8px); width: min(calc((var(--largeur, 420px) + 24px) * var(--ui-z, 1)), calc(100% - 8px)); }
-  /* Une fenêtre ouverte passe sur la carte de la zone : à travers le verre, on n'en verrait que
-     des fantômes de texte. */
   #app.vy-verre:has(#fenetres > .vy-fenetre:not(.reduite)) .vy-carte-info { visibility: hidden; }
-  /* Caractéristiques, étroite : les six tuiles en trois colonnes au-dessus, les caractéristiques
-     en deux colonnes, le nom et le coût l'un sous l'autre. */
   #app.vy-verre .vy-fenetre--etroite .vy-caracs__resume { grid-template-columns: minmax(0, 1fr); gap: 6px; }
   #app.vy-verre .vy-fenetre--etroite .vy-caracs__vitaux { gap: 4px; }
   #app.vy-verre .vy-fenetre--etroite .vy-caracs__ligne { padding: 3px 8px 4px; }
@@ -309,8 +268,6 @@
 }
 
 #app.vy-verre.vy-replie .vy-languette, #app.vy-verre.vy-replie.vy-gaucher .vy-languette { gap: 7px; padding: 10px 0; background: none; }
-/* La colonne de verre, à 4 px des bords : la languette garde ses 46 px (la caméra et le panneau
-   s'en écartent d'autant). */
 #app.vy-verre.vy-replie .vy-languette::before {
   content: ""; position: absolute; inset: 5px 3px 5px 3px; z-index: -1;
   border-radius: 16px;
@@ -328,7 +285,6 @@
 }
 #app.vy-verre .vy-languette__bouton[aria-expanded="true"] { color: var(--v-encre); background: var(--v-degrade-oblique); box-shadow: 0 0 16px rgba(var(--v-a-rgb), 0.4); }
 #app.vy-verre .vy-languette__nonlu, #app.vy-verre .vy-languette__bouton .vy-badge:not(.vy-badge--point) { background: var(--v-pv); box-shadow: 0 0 0 1.5px rgb(var(--v-fen-rgb)); }
-/* L'anneau de vie : la piste, la part pleine en braise, le chiffre au milieu. */
 #app.vy-verre .vy-languette__pv { width: 38px; height: 38px; }
 .vy-anneau { transform: rotate(-90deg); overflow: visible; }
 .vy-anneau circle { fill: none; stroke-width: 3.6; }
@@ -338,9 +294,7 @@
 #app.vy-verre .vy-languette__pv-val { color: var(--v-texte); font: 800 11.5px var(--vy-font-ui); text-shadow: none; font-variant-numeric: tabular-nums; }
 #app.vy-verre .vy-languette__pv.bas .vy-anneau__vie { animation: vy-verre-pouls 1.1s ease-in-out infinite; }
 @keyframes vy-verre-pouls { 50% { stroke-width: 5.2; opacity: 0.75; } }
-/* Sans le style en verre, l'anneau garde la couleur de la vie sur fond sombre. */
 #app:not(.vy-verre) .vy-languette__pv-val { color: #fff; }
-/* PA et PM : des pastilles au contour coloré. */
 #app.vy-verre .vy-languette__pts { gap: 4px; }
 #app.vy-verre .vy-pt { width: 30px; height: 22px; border-radius: 7px; clip-path: none; padding-left: 0; }
 #app.vy-verre .vy-pt b { font: 800 11.5px var(--vy-font-ui); text-shadow: none; }
@@ -350,7 +304,6 @@
 #app.vy-verre .vy-pt--pm b { color: var(--v-pm); }
 
 @media (orientation: landscape) and (max-height: 500px) {
-  /* Le panneau de jeu : du verre plutôt que l'ardoise. */
   #app.vy-verre .vy-panneau, #app.vy-verre.vy-replie .vy-panneau, #app.vy-verre.vy-replie.vy-gaucher .vy-panneau {
     color: var(--v-texte);
     background: var(--v-degrade) top / 100% 2px no-repeat, rgba(var(--v-fen-rgb), var(--v-alpha, 0.9));
@@ -358,8 +311,6 @@
   }
   #app.vy-verre.vy-replie.vy-gaucher .vy-panneau { box-shadow: inset -1px 0 0 rgba(var(--v-ligne-rgb), 0.2), 8px 0 22px rgba(0, 0, 0, 0.32); }
 
-  /* La carte de la zone : le nom en capitales, le liseré en haut ; la quête suivie avec sa tuile
-     d'icône et sa barre d'avancement. */
   #app.vy-verre .vy-carte-info { gap: 6px; }
   #app.vy-verre .vy-carte-info__carte, #app.vy-verre .vy-carte-info__suivi {
     min-width: 176px;
@@ -386,7 +337,6 @@
   .vy-carte-info__avance > i { display: block; height: 100%; border-radius: 3px; background: var(--v-degrade, linear-gradient(90deg, #e9cf98, #b08c52)); transition: width 0.4s var(--vy-courbe); }
   #app:not(.vy-verre) .vy-carte-info__avance, #app:not(.vy-verre) .vy-carte-info__lieu { display: none; }
 
-  /* La barre de tour, en bas à droite de la scène */
   #app.vy-verre.mode-combat .vy-barre-tour {
     border: var(--v-bord);
     border-radius: 13px;
@@ -399,7 +349,6 @@
   #app.vy-verre .vy-discussion__flottant .vy-chat { border-radius: 9px; }
 }
 
-/* Le contenu du panneau : cases, boutons ronds devenus tuiles, onglets. */
 #app.vy-verre .vy-rapide, #app.vy-verre .vy-rond, #app.vy-verre .vy-panneau__emote, #app.vy-verre .vy-panneau__discussion {
   color: var(--v-accent-texte);
   background: rgba(var(--v-champ-rgb), 0.85);
@@ -425,7 +374,6 @@ body.vy-discussion-ouverte #app.vy-verre .vy-panneau__discussion { color: var(--
 #app.vy-verre .vy-panneau__page { color: var(--v-accent-texte); }
 #app.vy-verre .vy-emotes { border-radius: 14px; border: var(--v-bord); background: rgba(var(--v-fen-rgb), 0.96); box-shadow: var(--v-ombre); }
 
-/* ----- 5. Les fiches posées sur la scène : groupe de monstres, sort à confirmer, coût, quitter ----- */
 #app.vy-verre .vy-fiche-groupe, #app.vy-verre .vy-confirm-sort, #app.vy-verre .vy-confirmer {
   color: var(--v-texte);
   background: var(--v-degrade) top / 100% 2px no-repeat, rgba(var(--v-pan-rgb), max(var(--v-alpha, 0.9), 0.9));
@@ -447,7 +395,6 @@ body.vy-discussion-ouverte #app.vy-verre .vy-panneau__discussion { color: var(--
 #app.vy-verre .vy-cout-pm { border-radius: 8px; background: var(--v-verre); box-shadow: inset 0 0 0 1px rgba(141, 181, 133, 0.55), var(--v-ombre-legere); }
 #app.vy-verre .vy-cout-pm b { color: var(--v-pm); }
 
-/* ----- 6. La discussion ----- */
 #app.vy-verre .vy-discussion {
   border: var(--v-bord);
   border-radius: var(--v-rayon);
@@ -460,7 +407,6 @@ body.vy-discussion-ouverte #app.vy-verre .vy-panneau__discussion { color: var(--
 #app.vy-verre .vy-discussion__flottant .vy-chat { background: rgba(var(--v-fen-rgb), calc(var(--v-alpha, 0.9) * 0.8)); box-shadow: inset 0 0 0 1px rgba(var(--v-ligne-rgb), 0.14); }
 #app.vy-verre .vy-discussion__bouton { border-radius: 13px; color: var(--v-accent-texte); background: var(--v-verre); box-shadow: inset 0 0 0 1px rgba(var(--v-ligne-rgb), 0.2), var(--v-ombre-legere); }
 
-/* ----- 7. Les annonces : toasts, « Succès débloqué », rubans ----- */
 #app.vy-verre .toast {
   padding: 8px 14px;
   border: 1px solid rgba(var(--v-ligne-rgb), 0.24);
@@ -478,7 +424,6 @@ body.vy-discussion-ouverte #app.vy-verre .vy-panneau__discussion { color: var(--
 .toast__texte small { font: 800 9px/1.3 var(--vy-font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--v-accent-texte, #e9cf98); }
 .toast__texte b { font: 700 13.5px/1.25 var(--vy-font-titre); letter-spacing: 0.06em; text-transform: uppercase; color: var(--v-titre, #f2e2c9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .toast__gain { flex: none; padding: 3px 8px; border-radius: 7px; border: 1px solid rgba(var(--v-a-rgb, 233, 207, 152), 0.45); background: rgba(var(--v-a-rgb, 233, 207, 152), 0.1); color: var(--v-accent-texte, #e9cf98); font: 700 11px var(--vy-font-ui); white-space: nowrap; }
-/* Les rubans (tour, zone, niveau) : une bande de verre au liseré dégradé, le texte en or ciselé. */
 #app.vy-verre .vy-ruban__bande {
   padding: 8px 34px 9px;
   clip-path: none;
@@ -490,14 +435,12 @@ body.vy-discussion-ouverte #app.vy-verre .vy-panneau__discussion { color: var(--
 #app.vy-verre .vy-ruban--niveau .vy-ruban__bande { padding: 11px 44px 12px; box-shadow: var(--v-ombre), 0 0 34px rgba(var(--v-act-rgb), 0.28); }
 #app.vy-verre .vy-ruban__sous { border-radius: 8px; background: var(--v-verre); box-shadow: inset 0 0 0 1px rgba(var(--v-ligne-rgb), 0.24); color: var(--v-texte); }
 
-/* ----- 8. La boîte du guide : le bandeau du nom en verre, la page de parchemin reste ----- */
 #app.vy-verre .vy-guide__boite { border-radius: 13px; }
 #app.vy-verre .vy-guide__nom { border-radius: 13px 13px 0 0; background: var(--v-degrade) bottom / 100% 2px no-repeat, rgba(var(--v-fen-rgb), 0.96); box-shadow: none; }
 #app.vy-verre .vy-guide__qui { color: var(--v-titre); text-transform: uppercase; font-size: 12.5px; letter-spacing: 0.08em; }
 #app.vy-verre .vy-guide__passer { border-radius: 7px; }
 #app.vy-verre[data-ui-theme="ardoise"] .vy-guide__qui { color: #f2e2c9; }
 
-/* ----- 9. La modale du jeu (fin de combat, relais, boutique...) ----- */
 #app.vy-verre #panel .vy-modale {
   border: var(--v-bord);
   border-radius: 16px;
@@ -512,7 +455,6 @@ body.vy-discussion-ouverte #app.vy-verre .vy-panneau__discussion { color: var(--
 #app.vy-verre #panel .vy-modale__titre { font-size: 17px; text-transform: uppercase; letter-spacing: 0.08em; background: none; -webkit-text-fill-color: currentColor; color: var(--v-titre); filter: none; }
 #app.vy-verre #panel .vy-modale__pied { border-top-color: rgba(var(--v-ligne-rgb), 0.14); }
 
-/* ----- 10. L'ordinateur : barre de menus, vue, barre du personnage, suivi, raccourcis, mini-carte ----- */
 #app.vy-verre .vy-menus, #app.vy-verre .vy-camera, #app.vy-verre .vy-raccourcis {
   gap: 4px; padding: 5px;
   border: var(--v-bord);
@@ -525,9 +467,6 @@ body.vy-discussion-ouverte #app.vy-verre .vy-panneau__discussion { color: var(--
 #app.vy-verre .vy-menu.on, #app.vy-verre .vy-camera__bouton[aria-pressed="true"] { color: var(--v-encre); background: var(--v-degrade-oblique); border-color: transparent; box-shadow: 0 0 14px rgba(var(--v-a-rgb), 0.35); }
 #app.vy-verre .vy-menu.on kbd { color: var(--v-encre); }
 #app.vy-verre .vy-raccourcis .vy-case { border-radius: 10px; }
-/* La barre du héros n'est plus montrée (le fondateur : « inutile ») : la vie et l'XP sont dans les
-   gemmes du bloc vital, le niveau et les Fils dans les fenêtres ; les points à répartir se voient
-   sur les boutons Caractéristiques et Sorts (un point, js/hud.js). */
 #app.vy-verre #player-bar { display: none; }
 #app.vy-verre #player-bar {
   border: var(--v-bord);
@@ -547,7 +486,6 @@ body.vy-discussion-ouverte #app.vy-verre .vy-panneau__discussion { color: var(--
 #app.vy-verre .vy-minicarte { border: 1px solid rgba(var(--v-a-rgb), 0.45); border-radius: var(--v-rayon); box-shadow: var(--v-ombre-legere); }
 #app.vy-verre .vy-minicarte span { color: var(--v-titre); }
 
-/* Le combat sur ordinateur : la barre du haut, la colonne de droite, la barre des sorts. */
 #app.vy-verre #topbar { background: var(--v-degrade) bottom / 100% 2px no-repeat, rgba(var(--v-fen-rgb), 0.97); border-bottom: 0; }
 #app.vy-verre #side { background: rgba(var(--v-fen-rgb), 0.97); border-left: 1px solid rgba(var(--v-ligne-rgb), 0.16); color: var(--v-texte); }
 #app.vy-verre #inspect { border-bottom-color: rgba(var(--v-ligne-rgb), 0.14); }
@@ -562,12 +500,6 @@ body.vy-discussion-ouverte #app.vy-verre .vy-panneau__discussion { color: var(--
 #app.vy-verre .spell .cost { color: var(--v-pa); }
 #app.vy-verre .vy-combattant { border-radius: 7px; }
 
-/* ----- 11. La taille de l'interface (Options, de 80 à 130 %), pour les deux styles -----
-   Comme l'échelle de l'interface de Dofus. --ui-z est posée sur #app (js/hud-fenetres.js,
-   appliquerTaille). Ce que le CSS pose près d'un bord grandit en entier ; ce que le code place
-   lui-même (fenêtres déplaçables, languette, panneau, barre de tour, fiches, boutons de la vue,
-   annonces) grandit par son contenu, sa largeur suivant la taille : sa position et ses mesures
-   restent justes. */
 #app .vy-fenetre > *, #app .vy-languette > *, #app .vy-panneau > *, #app #toasts > *, #app .vy-barre-tour > *,
 #app .vy-camera > *, #app .vy-menus > *, #app .vy-fiche-groupe > *, #app .vy-confirm-sort > *, #app .vy-confirmer > *,
 #app .vy-guide__boite { zoom: var(--ui-z, 1); }

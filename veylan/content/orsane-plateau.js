@@ -1,7 +1,3 @@
-// content/orsane-plateau.js : généré par node tools/orsane-plateau.js, ne pas modifier à la main.
-// Le plateau d'Orsane en 3D (docs/ORSANE-3D.md) tiré de ses 26 cartes en cases : un module,
-// appliqué par personnage (js/ile.js) quand Orsane est en 3D ; il ajoute le plateau et convertit
-// les cartes sur place (elles gardent `layout` et `exits`). Éteint, rien ne change.
 (DATA.modules = DATA.modules || {}).orsanePlateau = () => {
   const C = DATA.content;
   if (C.plateaux.some(p => p.id === 'orsane')) return;
@@ -41,14 +37,10 @@
     m.plateau = 'orsane'; m.contour = c.contour; m.coords = c.coords;
     m.secteur = Object.assign({}, DATA.modules.orsanePlateau.secteurs[m.id]);
     m.npcs = c.npcs; m.nodes = c.nodes; m.relay = c.relay; m.porte = c.porte;
-    // Un groupe de plus que les cases M de la carte d'origine (les Kavous de ervaneOrsane, appliqué
-    // avant) n'a pas d'aire : il part, et le plateau est le même avec ou sans ce module.
     m.groups = (m.groups || []).slice(0, c.aires.length);
     m.groups.forEach((g, i) => { g.aire = Object.assign({}, c.aires[i]); });
   }
 };
-// Les transformations des secteurs (cases vers u, v), lisibles sans appliquer le module : js/save.js
-// ramène en cases la position d'une sauvegarde faite en 3D quand Orsane est en cases.
 DATA.modules.orsanePlateau.secteurs = {
   orsane_cimes_place: {u0:202.5,v0:72.5,k:2.6},
   orsane_cimes_terrasses: {u0:202.5,v0:34.5,k:2.6},

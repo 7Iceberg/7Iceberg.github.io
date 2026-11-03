@@ -1,37 +1,25 @@
-// Caméra du plateau : la toile remplit la scène, et le monde (les coordonnées de cellToScreen,
-// origin, W, H) y est dessiné à travers un zoom et un décalage, une seule transformation par image :
-//   écran = monde × zoom + (x, y), en pixels CSS depuis le coin haut gauche de la toile.
-// La carte est une scène pleine : autour du plateau, ses alentours peints (painted) courent au-delà
-// des bords de la vue. « Ajuster » fait remplir au plateau jouable (le cœur : toutes les cases où
-// l'on se tient) la part de la scène que l'interface ne couvre pas (insets), aussi grand que
-// possible, chaque case restant visible. Le zoom reste entre 0,75 et 2,5 fois l'ajustement, et ne
-// descend jamais au point de montrer plus que ce qui est peint ; le centre de la vue reste au-dessus
-// du cœur, et la vue ne sort jamais des alentours peints.
-// Chaque changement (zoom, déplacement, ajustement, taille) émet, au plus une fois par image,
-// l'événement « veylan:camera » sur window (detail : zoom, x, y, fitZoom, atFit, width, height) :
-// les éléments du DOM posés sur une case se replacent avec renderer.worldToClient(x, y).
 class Camera {
   constructor(el) {
-    this.el = el;                 // la toile : son coin haut gauche à l'écran sert aux coordonnées client
+    this.el = el;
     this.zoom = 1;
     this.x = 0;
     this.y = 0;
-    this.vw = 0;                  // taille de la vue, en pixels CSS
+    this.vw = 0;
     this.vh = 0;
-    this.bounds = { x: 0, y: 0, w: 1, h: 1 };          // le cœur, en coordonnées du monde
-    this.core = null;                                  // le plateau jouable, à garder hors de l'interface
-    this.painted = null;                               // les alentours peints : la vue n'en sort pas
+    this.bounds = { x: 0, y: 0, w: 1, h: 1 };
+    this.core = null;
+    this.painted = null;
     this.insets = { top: 0, right: 0, bottom: 0, left: 0 };
     this.fitZoom = 1;
     this.minK = 0.75;
     this.maxK = 2.5;
     this.margin = 0.03;
     this.atFit = true;
-    this.anim = null;             // { zoom, wx, wy, sx, sy, fit } : le point (wx, wy) du monde va en (sx, sy)
-    this.userUntil = 0;           // le joueur a bougé la vue : la caméra ne le suit pas tout de suite
+    this.anim = null;
+    this.userUntil = 0;
     this.lastFocus = null;
     this.lastStep = 0;
-    this.dirty = false;           // un changement attend son événement
+    this.dirty = false;
     this.queued = false;
     this.listeners = new Set();
     this.calme = false;
@@ -39,28 +27,22 @@ class Camera {
       const mq = matchMedia('(prefers-reduced-motion: reduce)');
       this.calme = mq.matches;
       if (mq.addEventListener) mq.addEventListener('change', e => { this.calme = e.matches; });
-    } catch (e) { /* pas de matchMedia */ }
-    // Muette (le rendu des cases dort pendant que l'île d'Ervane s'affiche en 3D, js/scene.js) : elle
-    // suit encore la taille de la vue, mais n'émet plus « veylan:camera ».
+    } catch (e) {   }
     this.muette = false;
-    // Une rotation de l'écran recadre le plateau entier, même zoomé ; la nouvelle taille suit.
     const turn = () => { if (!this.muette) this.fit(); };
     try {
       if (screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener('change', turn);
       else addEventListener('orientationchange', turn);
-    } catch (e) { /* pas d'écran */ }
+    } catch (e) {   }
   }
 
-  // ----- Cadre -----
 
-  // La part de la vue que l'interface laisse libre.
   focusRect() {
     const i = this.insets;
     const w = Math.max(1, this.vw - i.left - i.right), h = Math.max(1, this.vh - i.top - i.bottom);
     return { x: i.left, y: i.top, w, h, cx: i.left + w / 2, cy: i.top + h / 2 };
   }
 
-  // Le zoom le plus large qui ne montre que du peint.
   minPainted() {
     const P = this.painted;
     if (!P) return 0;
@@ -68,8 +50,6 @@ class Camera {
     return Math.max(r.w / P.w, r.h / P.h);
   }
 
-  // L'ajustement : le cœur aussi grand que possible dans la part libre, au milieu ; puis la vue
-  // ramenée dans les alentours peints s'il le faut.
   fitState() {
     const r = this.focusRect(), c = this.core || this.bounds;
     const m = Math.min(this.vw, this.vh) * this.margin;
@@ -77,9 +57,6 @@ class Camera {
     return this.inside({ zoom, x: r.cx - (c.x + c.w / 2) * zoom, y: r.cy - (c.y + c.h / 2) * zoom });
   }
 
-  // Une vue (zoom, x, y) ramenée dans les alentours peints ; centrée sur eux s'ils sont plus petits.
-  // La part de la vue à couvrir est la part libre de la scène (focusRect) : ce que l'interface couvre
-  // (le panneau de jeu ouvert au téléphone, 3.29) peut rester sans peinture dessous.
   inside(s) {
     const P = this.painted;
     if (!P) return s;
@@ -90,14 +67,11 @@ class Camera {
     return s;
   }
 
-  // La part libre de la scène (focusRect) en coordonnées du monde.
   visibleFocus() {
     const z = this.zoom, r = this.focusRect();
     return { x0: (r.x - this.x) / z, y0: (r.y - this.y) / z, x1: (r.x + r.w - this.x) / z, y1: (r.y + r.h - this.y) / z };
   }
 
-  // Nouvelle taille de la vue : ajustée si elle l'était ; sinon même point au centre, même zoom
-  // rapporté à l'ajustement.
   setViewport(w, h) {
     if (!(w > 0 && h > 0)) return;
     if (w === this.vw && h === this.vh) { this.changed(); return; }
@@ -113,8 +87,6 @@ class Camera {
     this.changed();
   }
 
-  // Ce qu'il faut cadrer (le cœur `b.core`, sinon b) et les alentours peints `b.painted` ;
-  // `refit` : on recadre (changement de carte).
   setBounds(b, refit) {
     const box = r => ({ x: r.x, y: r.y, w: Math.max(1, r.w), h: Math.max(1, r.h) });
     this.bounds = box(b);
@@ -126,7 +98,6 @@ class Camera {
     else { this.clamp(); this.changed(); }
   }
 
-  // La part de la scène couverte par l'interface (la barre de combat sur téléphone, par exemple).
   setInsets(ins) {
     const n = { top: Math.max(0, ins.top || 0), right: Math.max(0, ins.right || 0), bottom: Math.max(0, ins.bottom || 0), left: Math.max(0, ins.left || 0) };
     const o = this.insets;
@@ -138,7 +109,6 @@ class Camera {
     else { this.clamp(); this.changed(); }
   }
 
-  // Ajuster : le plateau jouable remplit la vue. `animate` : glissement doux (sauf mouvement réduit).
   fit(animate) {
     if (!this.vw) return;
     const f = this.fitState();
@@ -155,10 +125,7 @@ class Camera {
     this.changed();
   }
 
-  // ----- Gestes -----
 
-  // Zoom d'un facteur autour d'un point de l'écran (coordonnées client) : le point du monde sous
-  // ce point y reste. `opts.smooth` : glissement doux (molette, clavier), sauf mouvement réduit.
   zoomAt(clientX, clientY, factor, opts) {
     if (!(factor > 0) || factor === 1 || !this.vw) return;
     const s = this.clientToScreen(clientX, clientY);
@@ -173,7 +140,6 @@ class Camera {
     this.changed();
   }
 
-  // Déplace la vue de (dx, dy) pixels CSS.
   panBy(dx, dy) {
     if (!dx && !dy) return;
     this.anim = null;
@@ -184,7 +150,6 @@ class Camera {
     this.changed();
   }
 
-  // Pincement : le zoom `z`, et le point (wx, wy) du monde sous les doigts en (sx, sy).
   pinchTo(z, wx, wy, sx, sy) {
     this.anim = null;
     this.atFit = false;
@@ -195,9 +160,6 @@ class Camera {
 
   user() { this.userUntil = performance.now() + 4000; }
 
-  // Suit une cible (coordonnées du monde) quand le plateau ne tient pas en entier : elle reste dans
-  // le cadre, à distance des bords. Un nouveau focus (acteur du tour, départ en marche) reprend la
-  // main sur le dernier geste du joueur.
   follow(focus, wx, wy) {
     if (focus !== this.lastFocus) { this.lastFocus = focus; if (focus !== 'repos') this.userUntil = 0; }
     if (wx == null || !this.vw || this.anim || this.zoom <= this.fitZoom * 1.02) return;
@@ -213,7 +175,6 @@ class Camera {
     this.changed();
   }
 
-  // Une étape de glissement, à chaque image du rendu.
   update(now) {
     const dt = this.lastStep ? Math.min(0.1, Math.max(0, (now - this.lastStep) / 1000)) : 0.016;
     this.lastStep = now;
@@ -238,7 +199,6 @@ class Camera {
     return Math.max(lo, Math.min(Math.max(lo, this.fitZoom * this.maxK), z));
   }
 
-  // Le zoom dans ses bornes, le centre de la vue au-dessus du cœur, et la vue dans les alentours peints.
   clamp() {
     const r = this.focusRect(), b = this.core || this.bounds;
     const z = this.clampZoom(this.zoom);
@@ -256,7 +216,6 @@ class Camera {
     this.clamp();
   }
 
-  // ----- Conversions -----
 
   worldToScreen(wx, wy) { return { x: wx * this.zoom + this.x, y: wy * this.zoom + this.y }; }
   screenToWorld(sx, sy) { return { x: (sx - this.x) / this.zoom, y: (sy - this.y) / this.zoom }; }
@@ -265,19 +224,16 @@ class Camera {
   worldToClient(wx, wy) { const r = this.rect(); return { x: r.left + wx * this.zoom + this.x, y: r.top + wy * this.zoom + this.y }; }
   clientToWorld(cx, cy) { const r = this.rect(); return { x: (cx - r.left - this.x) / this.zoom, y: (cy - r.top - this.y) / this.zoom }; }
 
-  // Le rectangle du monde visible dans la vue.
   visibleWorld() {
     const z = this.zoom;
     return { x0: -this.x / z, y0: -this.y / z, x1: (this.vw - this.x) / z, y1: (this.vh - this.y) / z };
   }
 
-  // ----- Événement « veylan:camera » -----
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
 
   state() { return { zoom: this.zoom, x: this.x, y: this.y, fitZoom: this.fitZoom, atFit: this.atFit, width: this.vw, height: this.vh }; }
 
-  // Un changement : l'événement part à la fin de l'image du rendu (flush), ou à l'image suivante.
   changed() {
     this.dirty = true;
     if (!this.queued && typeof requestAnimationFrame === 'function') {
@@ -292,29 +248,18 @@ class Camera {
     if (this.muette) return;
     const d = this.state();
     for (const fn of this.listeners) { try { fn(d); } catch (e) { console.error(e); } }
-    try { window.dispatchEvent(new CustomEvent('veylan:camera', { detail: d })); } catch (e) { /* pas de CustomEvent */ }
+    try { window.dispatchEvent(new CustomEvent('veylan:camera', { detail: d })); } catch (e) {   }
   }
 }
 
-// Les gestes de la caméra sur la toile : molette (zoom autour du curseur), glisser avec le bouton du
-// milieu (déplacer) ou le droit (tourner la vue si la caméra sait tourner, `tourner` ; déplacer
-// sinon), deux doigts (pincer pour zoomer, glisser pour déplacer, pivoter pour tourner la vue, dès
-// 7° d'écart), touches + et - (zoom), A et E (tourner d'un huitième de tour, touches physiques Q et
-// E) et 0 (ajuster). Le clic gauche et le toucher à un doigt gardent leur sens. Un
-// glissement à un doigt déplace la vue quand elle est zoomée au-delà de l'ajustement
-// (oneFingerPan) ; sinon il reste libre (il change de carte, js/hud-jeu.js) et annule seulement
-// le toucher. Les autres gestes du plateau demandent gesturing() (deux doigts posés, vue qu'on
-// déplace) et ignoreClick() (un clic qui suit un geste n'en est pas un).
-// opts : enabled() (gestes permis), keys() (touches permises), zeroTaken(evt) (0 sert déjà, au
-// dixième sort en combat), onRightClick(evt) (clic droit sans glisser).
 class CameraControls {
   constructor(camera, el, opts) {
     this.camera = camera;
     this.el = el;
     this.opts = opts || {};
-    this.touches = new Map();         // doigts (et stylet) posés
+    this.touches = new Map();
     this.pinch = null;
-    this.pan1 = null;                 // un doigt qui déplace la vue zoomée
+    this.pan1 = null;
     this.drag = null;
     this.quietUntil = 0;
     this.tapMoved = false;
@@ -324,7 +269,6 @@ class CameraControls {
     el.addEventListener('pointermove', e => this.move(e));
     el.addEventListener('pointerup', e => this.up(e, false));
     el.addEventListener('pointercancel', e => this.up(e, true));
-    // Le bouton du milieu ne lance pas le défilement automatique ; Safari ne zoome pas la page.
     el.addEventListener('mousedown', e => { if (e.button === 1) e.preventDefault(); });
     el.addEventListener('gesturestart', e => e.preventDefault());
     addEventListener('keydown', e => this.key(e));
@@ -334,25 +278,19 @@ class CameraControls {
 
   static tactile(e) { return e.pointerType === 'touch' || e.pointerType === 'pen'; }
 
-  // Zoomée au-delà de l'ajustement, un doigt déplace la vue ; à l'ajustement (ou en deçà), son
-  // glissement reste au changement de carte.
   oneFingerPan() {
     const c = this.camera, z = c.anim ? c.anim.zoom : c.zoom;
     return this.enabled() && z > c.fitZoom * 1.02;
   }
 
-  // Un geste de la caméra est en cours : deux doigts posés, ou la vue qu'on déplace (souris, doigt).
   gesturing() { return !!this.pinch || this.touches.size >= 2 || !!(this.drag && this.drag.moved) || !!(this.pan1 && this.pan1.moved); }
 
-  // Un clic qui suit un geste (deux doigts, glisser, toucher qui a bougé) n'est pas un clic.
   ignoreClick() {
     if (this.pinch || this.touches.size >= 2) return true;
     if (performance.now() < this.quietUntil) return true;
     return (this.lastPointerType === 'touch' || this.lastPointerType === 'pen') && this.tapMoved;
   }
 
-  // La molette d'une souris (pas d'environ 100) ou le pincement d'un pavé tactile (ctrlKey, petits pas).
-  // Un glissement seulement horizontal (pavé tactile) ne fait rien, ni retour de page.
   wheel(e) {
     if (!this.enabled()) return;
     e.preventDefault();
@@ -381,7 +319,7 @@ class CameraControls {
     }
     if (e.button === 1 || e.button === 2) {
       this.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, button: e.button, moved: false, tourne: e.button === 2 && typeof this.camera.tourner === 'function' };
-      try { this.el.setPointerCapture(e.pointerId); } catch (err) { /* rien */ }
+      try { this.el.setPointerCapture(e.pointerId); } catch (err) {   }
     }
   }
 
@@ -401,7 +339,6 @@ class CameraControls {
     if (!d.moved && Math.hypot(dx, dy) < 4) return;
     if (!d.moved) { d.moved = true; this.el.classList.add('glisse'); }
     d.x = e.clientX; d.y = e.clientY;
-    // Le bouton droit tourne la vue : un tiers de tour pour 300 px.
     if (d.tourne) this.camera.tourner(dx * 0.007); else this.camera.panBy(dx, dy);
   }
 
@@ -423,12 +360,11 @@ class CameraControls {
     if (!d || d.id !== e.pointerId) return;
     this.drag = null;
     this.el.classList.remove('glisse');
-    try { this.el.releasePointerCapture(e.pointerId); } catch (err) { /* rien */ }
+    try { this.el.releasePointerCapture(e.pointerId); } catch (err) {   }
     if (d.moved) this.quietUntil = performance.now() + 250;
     else if (!cancel && d.button === 2 && this.opts.onRightClick) this.opts.onRightClick(e);
   }
 
-  // Un doigt sur la vue zoomée : le monde suit le doigt, dès qu'il a quitté la zone du toucher.
   panOne(e) {
     const p = this.pan1;
     if (!p.moved) { p.moved = true; this.el.classList.add('glisse'); }
@@ -437,9 +373,6 @@ class CameraControls {
     this.camera.panBy(dx, dy);
   }
 
-  // Deux doigts : le point du monde sous leur milieu suit le milieu, l'écart règle le zoom, et
-  // l'angle entre les doigts tourne la vue (quand la caméra sait tourner), une fois passés 7°
-  // d'écart depuis la pose : en deçà, un pincement un peu tordu ne fait que zoomer.
   startPinch() {
     const [a, b] = this.touches.values();
     const cam = this.camera, w = cam.clientToWorld((a.x + b.x) / 2, (a.y + b.y) / 2);
@@ -462,12 +395,9 @@ class CameraControls {
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
     const cam = this.camera;
-    // (Le centre de la part libre, en pixels de la page : la vue peut être sous un zoom CSS.)
     const zoom = k => { e.preventDefault(); const r = cam.rect(), f = cam.focusRect(), z = cam.vw && r.width ? r.width / cam.vw : 1; cam.zoomAt(r.left + f.cx * z, r.top + f.cy * z, k, { smooth: true }); };
     if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') zoom(1.25);
     else if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract') zoom(0.8);
-    // Une lettre déjà prise par un menu (la touche Q des Quêtes en qwerty, saisie avant nous, en
-    // capture, par js/hud-fenetres.js) ne tourne pas la vue.
     else if ((e.code === 'KeyQ' || e.code === 'KeyE') && !e.defaultPrevented && typeof cam.tournerVers === 'function') { e.preventDefault(); cam.tournerVers((cam.animAz != null ? cam.animAz : cam.azimut) + (e.code === 'KeyQ' ? -1 : 1) * Math.PI / 4); }
     else if ((e.key === '0' || e.code === 'Numpad0') && !(this.opts.zeroTaken && this.opts.zeroTaken(e))) { e.preventDefault(); cam.fit(true); }
   }

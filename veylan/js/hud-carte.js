@@ -1,21 +1,7 @@
-// Carte du monde (touche M), à la manière de Dofus : chaque carte à sa coordonnée [x, y]
-// (js/atlas.js), peinte d'après son plan (js/carte-peinture.js), une grille claire par-dessus,
-// la brume sur ce qui n'est pas exploré, les noms des zones en grand, des pastilles rondes (relais,
-// donjon, artisan, marchand, quêtes), une épingle bleue pour soi, des vertes pour les quêtes
-// suivies et un drapeau à soi (appui long ou clic droit). Glisser, zoomer, toucher une case pour
-// sa fiche ; bulles au survol (ordinateur) ou au toucher (téléphone).
-// « 3D » ouvre la vue en relief (js/carte-3d.js, Three.js chargé à la demande) ; sans WebGL, un
-// relief peint en canvas la remplace. L'onglet « Monde » montre le continent à l'échelle des
-// régions, celles à venir en îles fermées. Se charge après js/hud-fenetres.js et complète Hud.
-// Sur l'île d'Ervane en 3D, la vue par défaut est la carte 3D de l'île (docs/ILE-TECHNIQUE.md, 3.30) :
-// la scène du jeu elle-même vue d'en haut (js/ile-carte.js, CameraIle en mode carte), ses pastilles,
-// ses noms, la fiche au toucher avec « Y aller » et « Centrer » ; le plan peint et le relief restent.
 (() => {
 const I = Fenetres.ICON;
 const esc = s => Util.esc(s);
 
-// Roche, encre et lanterne de chaque région (docs/DIRECTION-ARTISTIQUE.md). « Sous le premier
-// Voile » prend une obsidienne plus profonde et le violet des Voiles.
 const REGION = {
   ervane: { roche: '#e4e6da', sombre: '#8e9aa6', encre: '#34405a', lanterne: '#f2c14e' },
   orsane: { roche: '#e8e1d3', sombre: '#9fa7b8', encre: '#3b4260', lanterne: '#f2b134' },
@@ -25,14 +11,11 @@ const REGION = {
   basvoiles: { roche: '#4a3b5c', sombre: '#1e1830', encre: '#0e0a16', lanterne: '#c0266e' },
   voile: { roche: '#3a3550', sombre: '#16121f', encre: '#0b0812', lanterne: '#a66cff' },
 };
-const BASE = 100;                // côté d'une case au zoom 1, en pixels
+const BASE = 100;
 const ZOOM = { cartes: [0.22, 2.6], monde: [0.7, 3] };
-// Routes du continent (les régions à venir en pointillé).
-// La première route est l'amarre d'Ervane (dessinée seulement quand l'île est sur la carte).
 const ROUTES = [['ervane', 'orsane'], ['orsane', 'kaldum'], ['orsane', 'thessa'], ['orsane', 'lisiere'], ['kaldum', 'lisiere'], ['thessa', 'lisiere'], ['lisiere', 'basvoiles'], ['kaldum', 'basvoiles'], ['lisiere', 'voile'], ['basvoiles', 'voile']];
 const ATELIERS = { tailleur: 'tailleur', cordonnier: 'cordonnier', bijoutier: 'bijoutier', forgeron: 'forgeron', alchimiste: 'alchimiste' };
 const DRAPEAU = 'veylan.carte.drapeau';
-// Ordre des pastilles quand elles se recouvrent : la quête d'abord.
 const PRIO = { rendre: 6, offre: 5, relais: 4, donjon: 3, banque: 3, marche: 2, dojo: 2, metiers: 2, avis: 2, temple: 2, artisan: 2, marchand: 1 };
 
 const hex = c => { const m = /^#?([0-9a-f]{6})$/i.exec(String(c || '').trim()); const n = m ? parseInt(m[1], 16) : 0x808080; return [n >> 16, (n >> 8) & 255, n & 255]; };
@@ -48,11 +31,9 @@ const inPoly = (p, poly) => { let ins = false; for (let i = 0, j = poly.length -
 const poly = (g, pts) => { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.closePath(); };
 const round = (g, x, y, w, h, r) => { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); };
 const hauteur = zone => CartePeinture.hauteur(zone);
-// La hauteur d'un bloc du relief peint : celle de sa zone, un peu variée d'une carte à l'autre.
 const hauteurCase = id => { const e = id && Atlas.index().map.get(id); return e ? hauteur(e.zone) + hash(id) * 0.6 : 0; };
 
 Object.assign(Hud.prototype, {
-  // ----- Fenêtre -----
 
   openMap() {
     const opening = !this.fen.isOpen('carte');
@@ -60,11 +41,9 @@ Object.assign(Hud.prototype, {
     if (c.drapeau === undefined) c.drapeau = this.lireDrapeau();
     if (opening) {
       c.sel = null; c.selCase = null; c.region = null; c.bulle = null;
-      // Sur l'île en 3D, la carte 3D de l'île d'abord (le plan peint et le relief restent à un bouton).
       c.vueIle = this.carteIleDispo(); c.selIle = null; c.bulleIle = null;
       if (c.vues.cartes) Object.assign(c.vues.cartes, this.carteIci());
       if (!this.carteVisibilite) {
-        // Onglet du navigateur caché : la vue 3D rend sa mémoire, et revient au retour.
         this.carteVisibilite = () => {
           if (document.hidden) { if (this.carte3d) this.fermer3D(); }
           else if (this.fen.isOpen('carte') && this.carte.vue3d && this.carte.tab === 'cartes' && !this.carte.repli3d && !this.carteIleActive()) this.ouvrir3D();
@@ -80,14 +59,12 @@ Object.assign(Hud.prototype, {
         this.fen.render('carte');
       },
       vue3d: () => {
-        // Depuis la carte de l'île : le relief.
         if (this.carteIleActive()) { c.vueIle = false; this.fermerIle(); c.vue3d = true; }
         else c.vue3d = !c.vue3d;
         c.bulle = null; this.cacherBulle();
         if (c.vue3d) { c.repli3d = false; this.ouvrir3D(); } else this.fermer3D();
         this.fen.render('carte');
       },
-      // La carte 3D de l'île, ou le plan peint.
       vueIle: () => {
         c.vueIle = !this.carteIleActive() && this.carteIleDispo();
         if (c.vueIle) this.fermer3D(); else this.fermerIle();
@@ -127,7 +104,6 @@ Object.assign(Hud.prototype, {
         this.fen.render('carte');
       },
       voyager: d => {
-        // Les règles du relais restent celles du monde (World.canTeleport).
         if (!this.world.canTeleport(d.id)) { this.toast('Il faut être à un Relais du Fil pour voyager.'); return; }
         c.depuisRelais = false;
         this.fen.close('carte');
@@ -143,14 +119,10 @@ Object.assign(Hud.prototype, {
     if (opening) this.suivreCouverture();
   },
 
-  // Sur l'île (l'aiguillage tient la 3D), la scène ne se dessine plus tant que la fenêtre de la
-  // carte la couvre presque entière (au téléphone, en plein écran) : le monde avance, l'image dort.
-  // Suivi par un ResizeObserver (« Réduire », rotation de l'écran).
   suivreCouverture() {
     const sc = this.renderer;
     if (!sc || typeof sc.pause3D !== 'function') return;
     const w = this.fen.wins.get('carte'), stage = document.getElementById('stage');
-    // Pendant la carte 3D de l'île, la scène se dessine dans la fenêtre : jamais de pause.
     const juger = this.carteJuger = () => {
       if (!this.fen.isOpen('carte') || !stage || this.carteIleActive()) { sc.pause3D('carte', false); return; }
       const a = w.box.getBoundingClientRect(), b = stage.getBoundingClientRect();
@@ -163,8 +135,6 @@ Object.assign(Hud.prototype, {
     juger();
   },
 
-  // Depuis le panneau d'un Relais du Fil : le panneau se ferme sans clore le relais, et la carte
-  // offre « Voyager » vers les relais connus. Fermer la carte clôt le relais.
   openMapFromRelay() {
     this.el.panel.classList.add('hidden');
     this.el.panel.dataset.open = '';
@@ -205,7 +175,6 @@ Object.assign(Hud.prototype, {
     </div>`;
   },
 
-  // ----- Fiches -----
 
   ficheCarte() {
     const c = this.carte, w = this.world, ch = w.ch;
@@ -225,8 +194,6 @@ Object.assign(Hud.prototype, {
     return compte + this.ficheCase(id) + legende;
   },
 
-  // Ce que la fiche dit d'une carte : monstres, récolte, relais, donjon, quêtes, habitants.
-  // `opts.titre` : un autre titre ; `opts.sansCoord` : sans la coordonnée de la case (l'île en 3D).
   ficheCase(id, opts) {
     opts = opts || {};
     const w = this.world, ch = w.ch;
@@ -283,7 +250,6 @@ Object.assign(Hud.prototype, {
     return html;
   },
 
-  // ----- Montage : le canvas 2D, la vue 3D, la bulle -----
 
   monterCarte(body) {
     const holder = body.querySelector('[data-carte-vue]');
@@ -295,8 +261,6 @@ Object.assign(Hud.prototype, {
       this.carteBulleEl.setAttribute('role', 'tooltip');
       this.carteBulleEl.hidden = true;
     }
-    // La carte 3D de l'île : la scène du jeu se pose dans la vue (ouverte une fois, gardée d'un rendu
-    // de la fenêtre à l'autre).
     if (this.carteIleActive()) {
       const hote = this.carteIleHote();
       holder.appendChild(hote);
@@ -327,7 +291,6 @@ Object.assign(Hud.prototype, {
     return c.vues[k] || (c.vues[k] = k === 'monde' ? { z: 1, cx: 46, cy: 40 } : Object.assign({ z: 1 }, this.carteIci()));
   },
 
-  // Projection de la vue : la grille à plat, le relief peint (repli sans WebGL), ou le continent.
   projCarte(W, H) {
     const c = this.carte, v = this.vueCarte();
     if (c.tab === 'monde') {
@@ -336,7 +299,6 @@ Object.assign(Hud.prototype, {
     }
     const s = BASE * v.z;
     if (!(c.vue3d && c.repli3d)) return { kind: 'plat', s, W, H, to: (x, y) => [W / 2 + (x - v.cx) * s, H / 2 + (y - v.cy) * s], from: (X, Y) => [v.cx + (X - W / 2) / s, v.cy + (Y - H / 2) / s], delta: (dx, dy) => [dx / s, dy / s] };
-    // Relief : la grille tournée d'un quart de tour par cran, puis projetée en isométrie.
     const rot = c.rot || 0;
     const R = (dx, dy) => (rot === 0 ? [dx, dy] : rot === 1 ? [-dy, dx] : rot === 2 ? [-dx, -dy] : [dy, -dx]);
     const Ri = (rx, ry) => (rot === 0 ? [rx, ry] : rot === 1 ? [ry, -rx] : rot === 2 ? [-rx, -ry] : [-ry, rx]);
@@ -350,7 +312,6 @@ Object.assign(Hud.prototype, {
     };
   },
 
-  // Zoom autour d'un point de l'écran (le centre par défaut) : ce point ne bouge pas.
   zoomCarte(f, X, Y) {
     const P = this.carteP;
     const v = this.vueCarte();
@@ -374,13 +335,12 @@ Object.assign(Hud.prototype, {
     const pos = evt => { const r = cv.getBoundingClientRect(); return [evt.clientX - r.left, evt.clientY - r.top]; };
     const finAppui = () => { if (appui) { clearTimeout(appui); appui = 0; } };
     cv.addEventListener('pointerdown', evt => {
-      try { cv.setPointerCapture(evt.pointerId); } catch (e) { /* rien */ }
+      try { cv.setPointerCapture(evt.pointerId); } catch (e) {   }
       const p = pos(evt), v = this.vueCarte();
       this.carte.pointeur = evt.pointerType;
       pts.set(evt.pointerId, p);
       if (pts.size === 1) {
         drag = { p, cx: v.cx, cy: v.cy, moved: false, fait: false };
-        // Appui long (toucher) : le drapeau.
         if (evt.pointerType !== 'mouse' && this.carte.tab === 'cartes') appui = setTimeout(() => { appui = 0; if (drag && !drag.moved && pts.size === 1) { drag.fait = true; this.poserDrapeauEcran(drag.p); } }, 560);
       } else if (pts.size === 2) { finAppui(); const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, z: v.z, mid: null }; drag = null; }
     });
@@ -424,10 +384,7 @@ Object.assign(Hud.prototype, {
     this.carteRaf = requestAnimationFrame(() => { this.carteRaf = 0; this.drawCarte(); });
   },
 
-  // ----- Toucher, survoler, la bulle -----
 
-  // Une case touchée : sa fiche et sa bulle ; une pastille ou une épingle : la sienne ; le
-  // drapeau touché s'enlève ; une île du continent : sa fiche.
   toucherCarte(p, type) {
     const c = this.carte;
     if (c.tab === 'monde') {
@@ -480,8 +437,6 @@ Object.assign(Hud.prototype, {
     return null;
   },
 
-  // Le contenu des bulles, à la manière de Dofus : « x,y », la zone, le niveau ; « Quêtes »,
-  // l'étape et la coordonnée de la cible.
   bulleCase(h) {
     if (!h.id) return `<b>${coord([h.x, h.y])}</b>`;
     const e = Atlas.index().map.get(h.id);
@@ -513,7 +468,6 @@ Object.assign(Hud.prototype, {
     }
   },
 
-  // `dessus` : au-dessus du point, centrée (la bulle d'un toucher sur la carte de l'île).
   montrerBulle(html, X, Y, dessus) {
     const b = this.carteBulleEl;
     if (!b || !b.isConnected || !html) return;
@@ -532,19 +486,18 @@ Object.assign(Hud.prototype, {
 
   cacherBulle() { if (this.carteBulleEl) this.carteBulleEl.hidden = true; },
 
-  // ----- Le drapeau du joueur : gardé dans ce navigateur -----
 
   lireDrapeau() {
-    try { const v = JSON.parse(localStorage.getItem(DRAPEAU) || 'null'); if (Array.isArray(v) && v.length === 2 && v.every(Number.isFinite)) return v; } catch (e) { /* rien */ }
+    try { const v = JSON.parse(localStorage.getItem(DRAPEAU) || 'null'); if (Array.isArray(v) && v.length === 2 && v.every(Number.isFinite)) return v; } catch (e) {   }
     return null;
   },
 
   poserDrapeau(at) {
     const c = this.carte;
     c.drapeau = at;
-    try { if (at) localStorage.setItem(DRAPEAU, JSON.stringify(at)); else localStorage.removeItem(DRAPEAU); } catch (e) { /* stockage indisponible */ }
+    try { if (at) localStorage.setItem(DRAPEAU, JSON.stringify(at)); else localStorage.removeItem(DRAPEAU); } catch (e) {   }
     this.toast(at ? `Drapeau posé en ${coord(at.map(Math.round))}.` : 'Drapeau retiré.');
-    if (navigator.vibrate && at) try { navigator.vibrate(12); } catch (e) { /* rien */ }
+    if (navigator.vibrate && at) try { navigator.vibrate(12); } catch (e) {   }
     c.bulle = null; this.cacherBulle();
     if (this.carte3d) this.carte3d.majReperes();
     if (this.fen.isOpen('carte')) this.fen.render('carte');
@@ -559,10 +512,7 @@ Object.assign(Hud.prototype, {
     this.poserDrapeau([Math.round(g[0] * 100) / 100, Math.round(g[1] * 100) / 100]);
   },
 
-  // ----- Les repères : pastilles et épingles, en coordonnées du monde -----
 
-  // Pastilles : relais et donjons des cartes explorées, ateliers et marchands, quêtes à prendre
-  // (« ! ») et à rendre (« ? »), à la case de leur PNJ.
   reperesMonde(D) {
     const items = [];
     for (const [id] of D.A.coords) {
@@ -585,7 +535,6 @@ Object.assign(Hud.prototype, {
     return items;
   },
 
-  // Épingles : toi (bleue), les cibles des quêtes suivies (vertes), ton drapeau.
   epinglesMonde(D) {
     const w = this.world, out = [];
     for (const q of D.marks.pins) out.push({ kind: 'quete', map: q.map, at: Atlas.tileToWorld(q.map, q.x, q.y), quest: q.quest, text: q.text });
@@ -603,7 +552,6 @@ Object.assign(Hud.prototype, {
     return { A: Atlas.get(), ix: Atlas.index(), seen: new Set(ch.counters.maps), relays: new Set(ch.relays), marks: Atlas.questMarks(ch, here), here };
   },
 
-  // ----- Dessin -----
 
   themeCarte() {
     const st = getComputedStyle(document.getElementById('app'));
@@ -624,8 +572,6 @@ Object.assign(Hud.prototype, {
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     const T = this.carteT = this.themeCarte();
     const P = this.carteP = this.projCarte(W, H);
-    // Le ciel sous les îles : le crépuscule de la vue 3D, et des nuages lointains qui glissent
-    // moins vite que la carte (parallaxe).
     const bg = g.createLinearGradient(0, 0, 0, H);
     bg.addColorStop(0, '#22406e'); bg.addColorStop(0.6, '#4a6797'); bg.addColorStop(1, '#7d7ea2');
     g.fillStyle = bg; g.fillRect(0, 0, W, H);
@@ -637,7 +583,6 @@ Object.assign(Hud.prototype, {
     if (this.carte.tab === 'monde') { g.fillStyle = T.fond; g.globalAlpha = 0.55; g.fillRect(0, 0, W, H); g.globalAlpha = 1; this.dessinerMonde(g, P, T, D); }
     else {
       if (P.kind === 'relief') this.dessinerRelief(g, P, T, D); else this.dessinerPlat(g, P, T, D);
-      // La bulle d'un toucher suit la carte quand on la déplace.
       const b = this.carte.bulle;
       if (b && this.carte.pointeur !== 'mouse') {
         const h = P.kind === 'relief' ? hauteurCase(Atlas.at(Math.round(b.at[0]), Math.round(b.at[1]))) : 0;
@@ -659,8 +604,6 @@ Object.assign(Hud.prototype, {
     g.restore();
   },
 
-  // Peint les cartes visibles qui ne le sont pas encore, dans un budget de temps par image ;
-  // les autres attendent l'image suivante (une couleur de zone en attendant).
   peindreVisibles(ids) {
     const t0 = performance.now();
     let reste = false;
@@ -677,8 +620,6 @@ Object.assign(Hud.prototype, {
     return D.seen.has(id) ? CartePeinture.carte(id) : CartePeinture.brume(id);
   },
 
-  // La grille vue de dessus : les cartes peintes, le flanc de l'île, la grille claire, la brume,
-  // les noms des zones, les repères.
   dessinerPlat(g, P, T, D) {
     const { A, ix, seen } = D, s = P.s;
     const vis = [];
@@ -689,7 +630,6 @@ Object.assign(Hud.prototype, {
     }
     this.peindreVisibles(vis.map(c => c.id));
     const has = (x, y) => A.cells.has(Atlas.key(x, y));
-    // 1. L'île flotte : son ombre sur le ciel, puis l'épaisseur de falaise au sud des côtes.
     g.fillStyle = 'rgba(4,8,18,0.35)';
     for (const c of vis) g.fillRect(c.x0 + s * 0.06, c.y0 + s * 0.2, c.x1 - c.x0, c.y1 - c.y0);
     for (const c of vis) {
@@ -704,14 +644,12 @@ Object.assign(Hud.prototype, {
       g.strokeStyle = rgba(Pz.rocheClaire, 0.4); g.lineWidth = 1;
       g.beginPath(); g.moveTo(c.x0, c.y1 + fh * 0.35); g.lineTo(c.x1, c.y1 + fh * 0.3); g.stroke();
     }
-    // 2. Les cartes peintes, voilées si inexplorées.
     g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
     for (const c of vis) {
       const img = this.imageCarte(c.id, D);
       if (img) g.drawImage(img, c.x0, c.y0, c.x1 - c.x0, c.y1 - c.y0);
       else { g.fillStyle = CartePeinture.couleurZone(ix.map.get(c.id).zone); g.fillRect(c.x0, c.y0, c.x1 - c.x0, c.y1 - c.y0); }
     }
-    // 3. La grille claire, une ligne par carte ; les zones en pointillé, les régions à l'encre.
     g.lineWidth = 1; g.strokeStyle = 'rgba(255,255,255,0.34)';
     g.beginPath();
     for (const c of vis) {
@@ -734,22 +672,14 @@ Object.assign(Hud.prototype, {
       }
     }
     g.setLineDash([]);
-    // 4. La brume : des nuages peints sur ce qui n'est pas exploré.
-    // (Les nuages restent dans les cases cachées : revue finale, ils débordaient sur les cases explorées.)
     this.brumeCarte(g, vis.filter(c => !seen.has(c.id)).map(c => [c.X, c.Y, c.x0, c.y0, c.x1, c.y1]), s, 1);
-    // 5. La zone survolée (ou celle de la case choisie), surlignée comme sur Dofus.
     this.zoneSurlignee(g, P, D, s);
-    // 6. Les noms des zones, en grand, à travers leur étendue.
     this.nomsZones(g, P, T, D, s);
-    // 7. La case choisie, puis les repères.
     const sel = this.carte.sel && vis.find(c => c.id === this.carte.sel);
     if (sel) { g.strokeStyle = '#ffe7a3'; g.lineWidth = 2.5; g.strokeRect(sel.x0 + 1.25, sel.y0 + 1.25, sel.x1 - sel.x0 - 2.5, sel.y1 - sel.y0 - 2.5); }
     this.dessinerReperes(g, P, D, s, () => 0);
   },
 
-  // Nuages de brume : deux par carte cachée, qui débordent un peu, pour un voile continu. Quand les
-  // entrées portent le rectangle de leur case (x0, y0, x1, y1), les nuages sont découpés à l'union
-  // de ces rectangles : ils ne couvrent jamais une case explorée.
   brumeCarte(g, centres, s, alpha) {
     if (!centres.length) return;
     g.save(); g.globalAlpha = 0.92 * alpha;
@@ -788,8 +718,6 @@ Object.assign(Hud.prototype, {
     g.stroke();
   },
 
-  // Les noms des zones, comme sur la carte de Dofus : en grand, dans la police des titres,
-  // à demi transparents, à travers l'étendue de la zone ; le niveau dessous.
   nomsZones(g, P, T, D, s) {
     if (s < 22) return;
     const byZone = new Map();
@@ -816,8 +744,6 @@ Object.assign(Hud.prototype, {
     }
   },
 
-  // Pastilles groupées quand elles se recouvrent, puis épingles ; les cibles de clic sont notées.
-  // `hDe(gx, gy)` : la hauteur du relief sous un point (0 à plat).
   dessinerReperes(g, P, D, s, hDe) {
     const dpr = this.carteDpr || 1;
     const r = clamp(s * 0.13, 10, 19);
@@ -829,8 +755,6 @@ Object.assign(Hud.prototype, {
       const gr = groupes.find(o => Math.hypot(o.X - it.X, o.Y - it.Y) < r * 1.75);
       if (gr) gr.items.push(it); else groupes.push({ X: it.X, Y: it.Y, items: [it] });
     }
-    // De près, les pastilles d'un même lieu s'écartent en grappe, comme sur Dofus ; de loin,
-    // une seule pastille porte leur nombre.
     if (s >= 60) groupes = groupes.flatMap(gr => {
       if (gr.items.length === 1 || gr.items.length > 4) return [gr];
       const n = gr.items.length, d = r * 1.05;
@@ -849,7 +773,6 @@ Object.assign(Hud.prototype, {
       }
       this.carteItems.push({ x: gr.X, y: gr.Y, r: r + 2, item: gr.items.length > 1 ? Object.assign({}, top, { groupe: gr.items }) : top });
     }
-    // Épingles : quêtes, drapeau, puis toi par-dessus tout.
     const pins = this.epinglesMonde(D);
     for (const pin of pins) {
       const [X, Y] = P.to(pin.at[0], pin.at[1], hDe(pin.at[0], pin.at[1]));
@@ -862,11 +785,7 @@ Object.assign(Hud.prototype, {
     }
   },
 
-  // ----- Relief peint, en canvas : le repli de la vue 3D sans WebGL -----
 
-  // Des blocs isométriques dont le dessus porte la peinture de la carte (une transformation
-  // affine du carré au losange), les flancs plus sombres, la hauteur selon la zone ; quatre
-  // orientations (boutons « tourner »). Repères debout au-dessus des blocs.
   dessinerRelief(g, P, T, D) {
     const { A, ix, seen } = D, s = P.s, v = this.vueCarte();
     const cells = [...A.coords].map(([id, [x, y]]) => { const [rx, ry] = P.R(x - v.cx, y - v.cy); return { id, x, y, rx, ry, e: ix.map.get(id) }; })
@@ -883,12 +802,10 @@ Object.assign(Hud.prototype, {
       c.poly = [N, E, Ed, Sd, Wd, Wp];
       this.carteHits.push({ id: c.id, x: c.x, y: c.y, poly: c.poly });
       if (Math.max(...c.poly.map(p => p[0])) < 0 || Math.min(...c.poly.map(p => p[0])) > P.W || Math.max(...c.poly.map(p => p[1])) < 0 || Math.min(...c.poly.map(p => p[1])) > P.H) continue;
-      // Flancs : roche de la région, strates.
       g.fillStyle = mix(Pz.roche, Pz.encre, 0.3); poly(g, [Wp, Sx, Sd, Wd]); g.fill();
       g.fillStyle = mix(Pz.rocheSombre, Pz.encre, 0.35); poly(g, [Sx, E, Ed, Sd]); g.fill();
       g.strokeStyle = rgba(Pz.rocheClaire, 0.25); g.lineWidth = 1;
       for (let k = 1; k < c.h; k += 1.3) { const t = k * P.u; g.beginPath(); g.moveTo(Wp[0], Wp[1] + t); g.lineTo(Sx[0], Sx[1] + t); g.lineTo(E[0], E[1] + t); g.stroke(); }
-      // Dessus : la peinture, posée sur le losange (affine : coin nord-ouest, axes x et y).
       const img = this.imageCarte(c.id, D);
       const o = P.to(c.x - 0.5, c.y - 0.5, c.h), ax = P.to(c.x + 0.5, c.y - 0.5, c.h), ay = P.to(c.x - 0.5, c.y + 0.5, c.h);
       if (img) {
@@ -897,7 +814,6 @@ Object.assign(Hud.prototype, {
         g.drawImage(img, 0, 0, S, S);
         g.restore();
       } else { g.fillStyle = CartePeinture.couleurZone(c.e.zone); poly(g, [N, E, Sx, Wp]); g.fill(); }
-      // Arêtes à l'encre de la région, jamais noires ; la grille claire sur le dessus.
       g.strokeStyle = rgba(Pz.encre, 0.55); g.lineWidth = 1;
       g.beginPath(); g.moveTo(Wp[0], Wp[1]); g.lineTo(Wd[0], Wd[1]); g.lineTo(Sd[0], Sd[1]); g.lineTo(Ed[0], Ed[1]); g.lineTo(E[0], E[1]); g.moveTo(Sx[0], Sx[1]); g.lineTo(Sd[0], Sd[1]); g.stroke();
       g.strokeStyle = 'rgba(255,255,255,0.32)'; poly(g, [N, E, Sx, Wp]); g.stroke();
@@ -909,17 +825,14 @@ Object.assign(Hud.prototype, {
     this.dessinerReperes(g, P, D, P.tw * 0.75, hDe);
   },
 
-  // ----- Vue 3D : Three.js chargé à la demande, rendu par js/carte-3d.js -----
 
-  // Charge vendor/three.min.js une seule fois, à côté de ce script (en local comme en ligne). Le
-  // chargeur partagé avec l'île d'Ervane (js/ile-charge.js) le fait quand il est là.
   chargerThree() {
     if (window.THREE) return Promise.resolve(window.THREE);
     if (typeof IleCharge === 'object') return IleCharge.three();
     if (this.promesseThree) return this.promesseThree;
     const ref = document.querySelector('script[src*="hud-carte.js"]');
     let src = 'vendor/three.min.js';
-    try { if (ref && ref.src) src = new URL('../vendor/three.min.js', ref.src).href; } catch (e) { /* chemin relatif */ }
+    try { if (ref && ref.src) src = new URL('../vendor/three.min.js', ref.src).href; } catch (e) {   }
     this.promesseThree = new Promise((ok, ko) => {
       const el = document.createElement('script');
       el.src = src; el.async = true;
@@ -937,8 +850,6 @@ Object.assign(Hud.prototype, {
     this.carte3dPromesse = this.chargerThree().then(() => {
       if (typeof Carte3D !== 'function' || !Carte3D.disponible()) throw new Error('WebGL indisponible');
       if (!this.fen.isOpen('carte') || !c.vue3d || c.tab !== 'cartes') return null;
-      // Trois contextes WebGL ne vivent pas ensemble sans pause (3.12) : l'île cesse de dessiner
-      // tant que la vue 3D de la carte existe.
       if (this.renderer && typeof this.renderer.pause3D === 'function') this.renderer.pause3D('carte3d', true);
       const vue = this.carte3d = new Carte3D(this);
       return vue.construire(etape => { this.carte3dEtape = etape; const el = document.querySelector('.vy-carte__charge small'); if (el) el.textContent = etape; }).then(() => vue);
@@ -961,7 +872,6 @@ Object.assign(Hud.prototype, {
     if (this.renderer && typeof this.renderer.pause3D === 'function') this.renderer.pause3D('carte3d', false);
   },
 
-  // Appelé par la vue 3D : une carte choisie (toucher ou clic), avec sa bulle sur téléphone.
   choisirCarte(id, x, y, html, tactile) {
     const c = this.carte;
     c.sel = id || null;
@@ -970,14 +880,12 @@ Object.assign(Hud.prototype, {
     if (html && tactile && this.carte3d) { const p = this.carte3d.ecran(x, y); if (p) this.montrerBulle(html, p[0], p[1]); }
   },
 
-  // ----- Onglet Monde : le continent à l'échelle des régions -----
 
   dessinerMonde(g, P, T, D) {
     const regs = Atlas.regions();
     const k = P.k;
     const by = new Map(regs.map(r => [r.id, r]));
     const sel = this.carte.region || (this.world.zone && this.world.zone.region);
-    // La mer : quelques houles.
     g.strokeStyle = rgba(T.texte, 0.05); g.lineWidth = 1;
     for (let i = 0; i < 16; i++) {
       const y = (i + 0.5) * P.H / 16;
@@ -985,7 +893,6 @@ Object.assign(Hud.prototype, {
       for (let x = 0; x <= P.W; x += 12) g.lineTo(x, y + Math.sin(x / 38 + i * 1.7) * 3);
       g.stroke();
     }
-    // Les routes, sous les îles.
     for (const [a, b] of ROUTES) {
       const A = by.get(a), B = by.get(b);
       if (!A || !B) continue;
@@ -997,7 +904,6 @@ Object.assign(Hud.prototype, {
       g.beginPath(); g.moveTo(pa[0], pa[1]); g.quadraticCurveTo(mx, my, pb[0], pb[1]); g.stroke();
     }
     g.setLineDash([]);
-    // Les grandes îles d'abord : une petite île (Ervane) et son cartouche passent au-dessus.
     for (const r of regs.slice().sort((a, b) => b.r - a.r)) {
       const RC = REGION[r.id];
       const [X, Y] = P.to(r.at[0], r.at[1]);
@@ -1006,7 +912,6 @@ Object.assign(Hud.prototype, {
       for (let i = 0; i < 20; i++) { const a = i / 20 * Math.PI * 2, f = 0.84 + 0.24 * hash(r.id + i); pts.push([X + Math.cos(a) * R * f * 1.18, Y + Math.sin(a) * R * f * 0.86]); }
       this.carteHits.push({ id: r.id, poly: pts });
       const path = () => { g.beginPath(); const m0 = [(pts[0][0] + pts[19][0]) / 2, (pts[0][1] + pts[19][1]) / 2]; g.moveTo(m0[0], m0[1]); for (let i = 0; i < 20; i++) { const a = pts[i], b = pts[(i + 1) % 20]; g.quadraticCurveTo(a[0], a[1], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); } g.closePath(); };
-      // Haut-fond clair autour de l'île, puis la roche.
       path(); g.strokeStyle = rgba(r.open ? RC.roche : RC.sombre, 0.22); g.lineWidth = 9; g.stroke();
       path();
       const fill = g.createLinearGradient(X - R, Y - R, X + R, Y + R);
@@ -1016,7 +921,6 @@ Object.assign(Hud.prototype, {
       g.strokeStyle = r.id === sel ? T.accent : (r.open ? RC.encre : rgba(RC.lanterne, 0.45)); g.lineWidth = r.id === sel ? 2.5 : 1.5; g.stroke();
       if (r.open) this.ileOuverte(g, r, X, Y, R, T, D);
       else {
-        // Terres fermées : hachures, et un cadenas de lanterne.
         g.save(); path(); g.clip();
         g.strokeStyle = rgba(RC.lanterne, 0.16); g.lineWidth = 1;
         for (let x = X - R * 2; x < X + R * 2; x += 7) { g.beginPath(); g.moveTo(x, Y - R); g.lineTo(x + R * 1.2, Y + R); g.stroke(); }
@@ -1024,7 +928,6 @@ Object.assign(Hud.prototype, {
         if (r.id === 'lisiere') this.dechirure(g, X, Y, R);
         this.cadenas(g, X, Y - R * 0.3, Math.max(6, R * 0.15), RC.lanterne, T);
       }
-      // Cartouche : nom, niveaux, « à venir » ; la police rétrécit pour tenir dans l'île.
       const name = DATA.regions[r.id] || r.name;
       let f1 = Math.round(clamp(R * 0.2, 11, 15)), f2 = 11, sub = `${levels(r.level)}${r.open ? '' : ' · à venir'}`, w1, w2;
       for (;;) {
@@ -1042,7 +945,6 @@ Object.assign(Hud.prototype, {
     }
   },
 
-  // Une région ouverte : ses cartes peintes en miniature, à leurs coordonnées, et où l'on est.
   ileOuverte(g, r, X, Y, R, T, D) {
     const list = [...D.A.coords].filter(([id]) => D.ix.map.get(id).zone.region === r.id);
     if (!list.length) return;
@@ -1060,7 +962,6 @@ Object.assign(Hud.prototype, {
     }
   },
 
-  // La Déchirure, au-dessus de la Lisière : une fente d'où sort la lumière des Voiles.
   dechirure(g, X, Y, R) {
     const pts = [[-0.25, -0.62], [-0.08, -0.36], [-0.2, -0.12], [0.04, 0.1], [-0.06, 0.3], [0.16, 0.52]].map(([a, b]) => [X + a * R, Y + b * R]);
     g.save();
@@ -1080,7 +981,6 @@ Object.assign(Hud.prototype, {
     g.fillStyle = rgba(T.fond, 0.9); g.beginPath(); g.arc(X, Y + r * 0.35, r * 0.24, 0, Math.PI * 2); g.fill();
   },
 
-  // ----- Mini-carte : les cartes voisines, peintes, en trois sur trois -----
 
   drawVoisins(g, W) {
     const id = Atlas.hereOf(this.world.mapId);
@@ -1100,22 +1000,12 @@ Object.assign(Hud.prototype, {
 });
 
 
-// ----- La carte 3D de l'île (docs/ILE-TECHNIQUE.md, 3.30) -----
-// La scène du jeu elle-même, vue d'en haut dans la vue de la fenêtre : js/ile-3d.js y pose sa toile
-// (Ile3D.ouvrirCarte), la caméra décolle (CameraIle, mode carte), js/ile-carte.js dessine les
-// pastilles et les noms dans la même image. Ici : les données des pastilles (les mêmes sortes et le
-// même ordre PRIO que la carte peinte), les gestes, le toucher, la bulle, la fiche avec « Y aller »
-// et « Centrer ».
 Object.assign(Hud.prototype, {
-  // Le rendu 3D de l'île, s'il dessine (sur le plateau, hors combat, hors salle).
   ile3D() { const sc = this.renderer; return sc && sc.en3D && sc.ile ? sc.ile : null; },
   carteIleDispo() { const ile = this.ile3D(); return !!(ile && typeof ile.carteDisponible === 'function' && ile.carteDisponible()); },
   carteIleActive() { const c = this.carte; return !!(c && c.tab === 'cartes' && c.vueIle && this.carteIleDispo()); },
-  // La caméra de l'île, si la carte 3D est ouverte.
   cameraIle() { const ile = this.ile3D(); return ile && ile.carteOuverte && ile.camera && ile.camera.carte ? ile.camera : null; },
 
-  // La vue de la carte de l'île : un élément gardé d'un rendu de la fenêtre à l'autre (la toile de
-  // la scène s'y pose), sa boussole (toucher : l'île entière, le nord en haut), ses gestes.
   carteIleHote() {
     if (this.carteIleEl) return this.carteIleEl;
     const el = this.carteIleEl = document.createElement('div');
@@ -1123,13 +1013,9 @@ Object.assign(Hud.prototype, {
     el.setAttribute('role', 'application');
     el.setAttribute('aria-label', 'Carte de l\'île : glisser pour se déplacer, molette ou pincement pour zoomer, clic droit ou deux doigts pour tourner, toucher une pastille, un nom ou le sol pour sa fiche.');
     el.innerHTML = '<button type="button" class="vy-carte__boussole vy-carte__nord" data-act="nord" title="L\'île entière, le nord en haut" aria-label="L\'île entière, le nord en haut"><b>N</b></button>';
-    // Les gestes de la caméra du jeu (CameraControls) : la molette, deux doigts (zoom et rotation),
-    // le bouton droit (rotation), le bouton du milieu. Un doigt ou le bouton gauche : le glisser de la
-    // carte, avec son inertie, et le toucher.
     const ctl = this.carteIleCtl = new CameraControls({ zoomAt() {}, fitZoom: Infinity, zoom: 1 }, el, { enabled: () => !!this.cameraIle(), keys: () => false });
     const pts = new Map();
     let glisse = null;
-    // En pixels de la vue (sous le zoom CSS du corps de la fenêtre au téléphone).
     const pos = e => { const r = el.getBoundingClientRect(), k = el.clientWidth && r.width ? r.width / el.clientWidth : 1; return { x: (e.clientX - r.left) / k, y: (e.clientY - r.top) / k }; };
     el.addEventListener('contextmenu', e => e.preventDefault());
     el.addEventListener('pointerdown', e => {
@@ -1138,7 +1024,7 @@ Object.assign(Hud.prototype, {
       if (this.carte) this.carte.pointeur = e.pointerType;
       if (pts.size === 1 && (e.pointerType !== 'mouse' || e.button === 0)) {
         glisse = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, bouge: false };
-        try { el.setPointerCapture(e.pointerId); } catch (err) { /* rien */ }
+        try { el.setPointerCapture(e.pointerId); } catch (err) {   }
       } else glisse = null;
     });
     el.addEventListener('pointermove', e => {
@@ -1170,12 +1056,10 @@ Object.assign(Hud.prototype, {
     return el;
   },
 
-  // Ouvre la carte 3D dans sa vue (rien si elle l'est déjà). Rend faux si l'île ne le peut pas.
   ouvrirIle(hote) {
     const ile = this.ile3D();
     if (!ile) return false;
     const sc = this.renderer, w = this.fen.wins.get('carte'), stage = document.getElementById('stage');
-    // Une fenêtre qui couvre presque toute la scène (le téléphone) : pas de photo de la vue du jeu.
     let couvre = false;
     if (w && stage) {
       const a = w.box.getBoundingClientRect(), b = stage.getBoundingClientRect();
@@ -1191,14 +1075,11 @@ Object.assign(Hud.prototype, {
     return true;
   },
 
-  // Ferme la carte 3D (la caméra redescend vers la vue du jeu).
   fermerIle() {
     const ile = this.renderer && this.renderer.ile;
     if (ile && ile.carteOuverte) ile.fermerCarte(false);
   },
 
-  // La carte s'est fermée d'elle-même (un combat commence, la scène change) : la fenêtre passe au
-  // plan peint.
   surFermetureIle() {
     const c = this.carte;
     if (!c) return;
@@ -1207,11 +1088,7 @@ Object.assign(Hud.prototype, {
     if (this.fen.isOpen('carte')) { this.fen.render('carte'); if (this.carteJuger) this.carteJuger(); }
   },
 
-  // ----- Les données des pastilles, en coordonnées du plateau -----
 
-  // Les pastilles : relais et entrée du donjon des sous-zones explorées, ateliers et marchands, quêtes
-  // à prendre (« ! ») et à rendre (« ? ») au PNJ ; les épingles des quêtes suivies (les trois
-  // premières, comme à l'écran), à leur cible précise sur l'île.
   donneesIle() {
     const w = this.world, ch = w.ch, P = w.plateau, out = [];
     if (!P) return out;
@@ -1235,8 +1112,6 @@ Object.assign(Hud.prototype, {
     return out;
   },
 
-  // La cible d'une quête suivie sur l'île : le PNJ à voir ou à qui rendre, le centre de la sous-zone
-  // à visiter, la porte du donjon, le groupe ou le nœud le plus proche du joueur ; null ailleurs.
   cibleQueteIle(q) {
     const w = this.world, ch = w.ch, P = w.plateau, st = ch.quests.active[q.id], p = w.player;
     if (!st || !P) return null;
@@ -1257,13 +1132,11 @@ Object.assign(Hud.prototype, {
     }
   },
 
-  // « La Source Claire, les Quatre Sources » : la sous-zone et la zone d'un point.
   ouIle(x, y) {
     const P = this.world.plateau, id = P && P.secteurDe(x, y), d = id && World.mapDef(id), z = id && World.zoneOf(id);
     return d ? `${d.name.charAt(0).toUpperCase() + d.name.slice(1)}${z ? ', ' + z.name.charAt(0).toLowerCase() + z.name.slice(1) : ''}` : '';
   },
 
-  // ----- Toucher, survoler, la bulle -----
 
   survolIle(p) {
     const ile = this.ile3D(), K = ile && ile.carteIle, c = this.carte;
@@ -1275,8 +1148,6 @@ Object.assign(Hud.prototype, {
     else if (!c.bulleIle) this.cacherBulle();
   },
 
-  // Un toucher (ou un clic) sur la carte : une pastille, une épingle ou un nom, sinon le sol (la
-  // sous-zone touchée, et le point lui-même pour « Y aller »). Au doigt, la bulle suit l'élément.
   toucherIle(p, type) {
     const ile = this.ile3D(), K = ile && ile.carteIle, c = this.carte, P = this.world.plateau;
     if (!K || !c || !P) return;
@@ -1300,8 +1171,6 @@ Object.assign(Hud.prototype, {
     this.majFicheIle();
   },
 
-  // Chaque image de la carte (js/ile-carte.js) : la boussole suit le cap ; la bulle d'un toucher suit
-  // son élément (déplacée seulement au-delà d'un demi-pixel).
   surImageIle(K) {
     const c = this.carte, ile = this.ile3D(), cam = ile && ile.camera;
     if (!c || !cam || !cam.carte) return;
@@ -1324,7 +1193,6 @@ Object.assign(Hud.prototype, {
     }
   },
 
-  // Le contenu des bulles de la carte de l'île.
   bulleIle(it) {
     if (!it) return '';
     if (it.groupe && it.groupe.length > 1) return it.groupe.map(x => this.bulleIle(Object.assign({}, x, { groupe: null }))).join('<hr>');
@@ -1349,15 +1217,12 @@ Object.assign(Hud.prototype, {
     }
   },
 
-  // ----- La fiche -----
 
   majFicheIle() {
     const w = this.fen.wins.get('carte'), el = w && w.box.querySelector('.vy-carte__fiche');
     if (el && this.carteIleActive()) { el.innerHTML = this.ficheIle(); el.scrollTop = 0; }
   },
 
-  // La fiche de l'élément touché (sinon de la sous-zone où l'on est), avec « Y aller » et
-  // « Centrer » ; la légende des pastilles de l'île.
   ficheIle() {
     const c = this.carte, w = this.world, ch = w.ch, P = w.plateau, s = c.selIle;
     const A = Atlas.get(), seen = new Set(ch.counters.maps);
@@ -1416,8 +1281,6 @@ Object.assign(Hud.prototype, {
     return compte + html + actions + legende;
   },
 
-  // « Y aller » : la carte se ferme, le héros marche jusqu'au point par le chemin du plateau (le plus
-  // proche praticable si le point ne l'est pas) ; surchargé, le message de surcharge habituel.
   yAllerIle() {
     const c = this.carte, s = c && c.selIle, w = this.world;
     if (!s) return;

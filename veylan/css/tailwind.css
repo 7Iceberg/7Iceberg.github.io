@@ -1,24 +1,8 @@
-/* ==========================================================================
-   Veylan : point d'entrée Tailwind (v4)
-   --------------------------------------------------------------------------
-   Pour l'interface de la version TypeScript + PixiJS + Capacitor. Le prototype actuel n'a pas
-   d'étape de build et charge directement css/tokens.css et css/components.css.
-
-   Installation : npm i -D tailwindcss @tailwindcss/vite (ou @tailwindcss/cli), puis importer
-   ce fichier comme feuille principale. Toutes les valeurs viennent de tokens.css : un token
-   modifié change à la fois les composants vy- et les utilitaires Tailwind.
-
-   Exemples d'utilitaires générés :
-     bg-nuit, bg-surface-2, text-ivoire, text-or-clair, border-or, ring-cristal,
-     font-titre, font-lecture, font-ui, text-vy-xl, rounded-vy-m, shadow-lueur-cristal,
-     border-rarete-epique, text-rarete-rare, h-cible, size-case
-   ========================================================================== */
 @import "tailwindcss";
 @import "./tokens.css";
 @import "./components.css" layer(components);
 
 @theme inline {
-  /* Couleurs de la charte */
   --color-or: var(--vy-or);
   --color-or-clair: var(--vy-or-clair);
   --color-or-sombre: var(--vy-or-sombre);
@@ -37,7 +21,6 @@
   --color-braise: var(--vy-braise);
   --color-braise-clair: var(--vy-braise-clair);
 
-  /* Rôles */
   --color-fond: var(--vy-fond);
   --color-surface-1: var(--vy-surface-1);
   --color-surface-2: var(--vy-surface-2);
@@ -52,7 +35,6 @@
   --color-succes: var(--vy-succes);
   --color-danger: var(--vy-danger);
 
-  /* Raretés */
   --color-rarete-commun: var(--vy-rarete-commun);
   --color-rarete-commun-texte: var(--vy-rarete-commun-texte);
   --color-rarete-peu-commun: var(--vy-rarete-peu-commun);
@@ -64,7 +46,6 @@
   --color-rarete-legendaire: var(--vy-rarete-legendaire);
   --color-rarete-legendaire-texte: var(--vy-rarete-legendaire-texte);
 
-  /* Typographie */
   --font-titre: var(--vy-font-titre);
   --font-lecture: var(--vy-font-lecture);
   --font-ui: var(--vy-font-ui);
@@ -78,7 +59,6 @@
   --tracking-titre: var(--vy-chasse-titre);
   --tracking-etiquette: var(--vy-chasse-label);
 
-  /* Formes, ombres, tailles */
   --radius-vy-s: var(--vy-rayon-s);
   --radius-vy-m: var(--vy-rayon-m);
   --radius-vy-l: var(--vy-rayon-l);

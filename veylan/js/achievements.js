@@ -1,18 +1,9 @@
-// Succès : conditions évaluées sur les compteurs du personnage. Un succès se débloque tout de suite,
-// avec son titre ; son XP, ses Fils et ses objets attendent que le joueur vienne les chercher
-// (fenêtre « Récompenses en attente », js/hud-recompenses.js), une fois chacun : `achClaimed`
-// garde les succès dont la récompense est remise.
 const Achievements = (() => {
   const defs = () => (DATA.content && DATA.content.achievements) || [];
   const get = id => defs().find(a => a.id === id) || null;
-  // Nombre de remontées distinctes d'une région déjà vaincues (le Carnet du Veilleur).
-  // Un personnage né sur Ervane ne croise jamais le Glymet ni le Groukin (content/ervane-orsane.js ;
-  // le Lampignon a pris la place du Groukin sur les Murets) : ils comptent pour inscrits, module
-  // appliqué ou non (une sauvegarde se valide partout de la même façon).
   const JAMAIS_CROISES = ['piouk', 'groukin'];
   const carnetCount = (ch, region) => { const k = ch.counters.kills || {}; return Object.keys(k).filter(id => DATA.monsters[id] && DATA.monsters[id].region === region && !DATA.monsters[id].summon).length
     + (region === 'orsane' && ch.origine === 'ervane' ? JAMAIS_CROISES.filter(id => DATA.monsters[id] && DATA.monsters[id].region === 'orsane' && !k[id]).length : 0); };
-  // Cartes d'une zone, et combien sont déjà visitées.
   const zoneMaps = id => { const z = ((DATA.content && DATA.content.zones) || []).find(x => x.id === id); return z ? z.maps.map(m => m.id) : []; };
   const zoneSeen = (ch, id) => zoneMaps(id).filter(m => ch.counters.maps.includes(m)).length;
 
@@ -28,9 +19,7 @@ const Achievements = (() => {
       case 'feat': return ((k.feats || {})[c.key] || 0) >= c.count;
       case 'carnet': return carnetCount(ch, c.region) >= c.count;
       case 'quests': return k.questsDone >= c.count;
-      // Une quête précise rendue (le titre d'une quête passe par un succès : js/quests.js n'en remet pas).
       case 'quest': return !!(ch.quests && Array.isArray(ch.quests.done) && ch.quests.done.includes(c.quest));
-      // Une série de quêtes, toutes faites (les succès de quêtes d'Incarnam, docs/QUETES-INCARNAM.md).
       case 'questline': return (c.quests || []).every(id => ((ch.quests || {}).done || []).includes(id));
       case 'maps': return k.maps.length >= c.count;
       case 'zone': { const n = zoneMaps(c.zone).length; return n > 0 && zoneSeen(ch, c.zone) >= n; }
@@ -42,12 +31,8 @@ const Achievements = (() => {
     }
   }
 
-  // Un succès a-t-il quelque chose à remettre (XP, Fils, objets) ? Le titre ne compte pas : il
-  // est remis au déblocage.
   const hasReward = a => { const r = a.rewards || {}; return !!(r.xp || r.fils || (r.items || []).length); };
 
-  // Débloque ce qui vient d'être atteint : le titre tout de suite, le reste attend. Retourne les
-  // succès débloqués avec ce qu'ils promettent.
   function check(ch) {
     const out = [];
     ch.achClaimed = ch.achClaimed || [];
@@ -56,20 +41,17 @@ const Achievements = (() => {
       ch.achievements.push(a.id);
       const r = a.rewards || {};
       if (r.title && !ch.titles.includes(r.title)) ch.titles.push(r.title);
-      // Rien à remettre : il n'attend pas.
       if (!hasReward(a)) ch.achClaimed.push(a.id);
       out.push({ achievement: a, xp: r.xp || 0, levels: 0, fils: r.fils || 0, title: r.title || null, pending: hasReward(a) });
     }
     return out;
   }
 
-  // Succès débloqués dont la récompense attend, dans l'ordre du déblocage.
   function pending(ch) {
     const claimed = ch.achClaimed || [];
     return ch.achievements.filter(id => !claimed.includes(id)).map(get).filter(Boolean);
   }
 
-  // Remet la récompense d'un succès débloqué, une seule fois. Retourne ce qui a été gagné, ou null.
   function claim(ch, id) {
     const a = get(id);
     if (!a || !ch.achievements.includes(id)) return null;
@@ -84,7 +66,6 @@ const Achievements = (() => {
     return got;
   }
 
-  // Catégorie affichée, déduite du type de condition (et du haut fait pour les « feat »).
   function category(a) {
     const c = a.cond || {};
     switch (c.type) {
@@ -103,7 +84,6 @@ const Achievements = (() => {
     }
   }
 
-  // Avancement lisible d'un succès, pour l'écran.
   function progress(ch, a) {
     const c = a.cond || {}, k = ch.counters;
     const pair = (v, n) => `${Math.min(v, n)}/${n}`;
@@ -128,13 +108,9 @@ const Achievements = (() => {
   return { defs, get, met, check, pending, claim, hasReward, category, progress };
 })();
 
-// Succès d'exploration, un par zone : toutes ses cartes visitées. Générés depuis le contenu, comme
-// ceux du Carnet (js/noeuds.js) ; l'XP suit modestement les niveaux de la zone (15 par niveau du
-// bas et du haut de la fourchette, arrondi à la dizaine : 60 aux Cimes, 860 à la Fonderie).
 (() => {
   const C = DATA.content;
   if (!C || !C.zones || !C.achievements) return;
-  // « les Cimes d'Orsane », « des Cimes d'Orsane », « de la Fonderie », « de Kaldum, ... ».
   const article = n => n.replace(/^(Les|La|Le) /, m => m.toLowerCase()).replace(/^L'/, 'l\'');
   const de = n => /^Les /.test(n) ? 'des ' + n.slice(4) : /^Le /.test(n) ? 'du ' + n.slice(3) : /^(La |L')/.test(n) ? 'de ' + article(n) : /^[AEIOUYÉÈÊ]/i.test(n) ? 'd\'' + n : 'de ' + n;
   for (const z of C.zones) {

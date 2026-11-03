@@ -1,24 +1,3 @@
-// L'interrupteur d'Ervane et son registre (docs/ILE-TECHNIQUE.md, 1.4 et 1.5) : décider si l'île est
-// utile sur cet appareil, charger alors ses fichiers (données, moteur, rendu : Ile.FICHIERS), appliquer
-// ses modules de contenu une fois, garder en mémoire le terrain et la navigation de chaque plateau,
-// et faire naître un personnage au Métier.
-//
-// Se charge juste après content/ervane-interrupteur.js (DATA.ile) et avant js/noeuds.js et
-// js/achievements.js, qui engendrent leurs succès d'après le contenu chargé. Une page où l'île n'est
-// pas disponible ne charge aucun autre fichier de l'île (628 Ko, 189 Ko compressés : le jeu
-// d'aujourd'hui ne les paie pas). Disponible, les fichiers sont écrits dans la page pendant son
-// analyse (document.write, synchrone et dans l'ordre), si bien que js/world.js trouve Plateau et que
-// js/main.js trouve Scene exactement comme s'ils avaient été dans index.html. Sans DOM : `location`,
-// `localStorage` et `sessionStorage` ne sont lus que s'ils existent (sous Node, seul DATA.ile.active
-// compte, et les outils chargent eux-mêmes Ile.FICHIERS puis appellent Ile.appliquer()).
-//
-// L'île est disponible (ses modules sont appliqués) si :
-//   1. DATA.ile.active ;
-//   2. en développement (fichier local, localhost ou ?dev=1) : ?ile=1, ou la case d'essai de
-//      l'accueil (localStorage « veylan.ile.essai » = « 1 ») ; ?ile=0 éteint les deux premières ;
-//   3. un personnage de l'appareil porte une trace d'Ervane (lu en brut, sans validation) ;
-//   4. un import attend dans sessionStorage (« veylan.ile.import »).
-// Elle est allumée (un nouveau personnage y naît) par les deux premières seulement.
 const Ile = (() => {
   const ORDRE = ['ervaneBestiaire', 'ervane', 'ervaneAires', 'ervaneTutoriel'];
   const appliques = new Set();
@@ -32,8 +11,6 @@ const Ile = (() => {
     for (const part of q.split('&')) { if (!part) continue; const i = part.indexOf('='); const k = decodeURIComponent(i < 0 ? part : part.slice(0, i)); out[k] = i < 0 ? '' : decodeURIComponent(part.slice(i + 1)); }
     return out;
   }
-  // La règle du développement est celle de Util.dev (js/util.js, chargé avant) ; sans Util, la même
-  // règle, écrite ici pour les contextes qui ne chargent que ce fichier.
   function enDev(p) {
     const l = lieu();
     if (!l) return false;
@@ -44,7 +21,6 @@ const Ile = (() => {
   const local = () => (typeof localStorage !== 'undefined' ? localStorage : null);
   const session = () => (typeof sessionStorage !== 'undefined' ? sessionStorage : null);
 
-  // Un personnage (JSON brut) porte-t-il une trace d'Ervane ?
   function trace(ch) {
     if (!ch || typeof ch !== 'object') return false;
     const e = s => typeof s === 'string' && s.startsWith('ervane_');
@@ -59,7 +35,6 @@ const Ile = (() => {
     if (ch.dungeon && ch.dungeon.id === 'puits_de_l_amarre') return true;
     return false;
   }
-  // Les emplacements de personnages de l'appareil, lus sans validation.
   function traces() {
     const s = local();
     if (!s) return false;
@@ -71,7 +46,7 @@ const Ile = (() => {
         try { o = JSON.parse(s.getItem(k)); } catch (e) { o = null; }
         if (o && trace(o.character)) return true;
       }
-    } catch (e) { /* pas de stockage */ }
+    } catch (e) {   }
     return false;
   }
 
@@ -89,7 +64,6 @@ const Ile = (() => {
     return disponible;
   }
 
-  // Les modules d'ajout, une fois chacun, dans l'ordre ; idempotent.
   function appliquer() {
     const M = (typeof DATA === 'object' && DATA.modules) || {};
     let fait = false;
@@ -98,8 +72,6 @@ const Ile = (() => {
     if (fait && typeof World === 'function' && World.reindexer) World.reindexer();
     return fait;
   }
-  // L'origine d'un emplacement de personnage, lue en brut (sans validation) : 'ervane', 'orsane'
-  // ou null. L'accueil s'en sert pour appliquer les changements d'Orsane avant la lecture validée.
   function origineDe(uid) {
     const s = local();
     if (!s || typeof uid !== 'string') return null;
@@ -108,9 +80,6 @@ const Ile = (() => {
     const ch = o && o.character;
     return ch && typeof ch === 'object' && typeof ch.origine === 'string' ? ch.origine : null;
   }
-  // Les changements d'Orsane, par personnage (content/ervane-orsane.js) : appliqués une fois, avant
-  // la lecture validée d'un personnage né sur Ervane et avant que le monde soit créé. Jamais pour un
-  // personnage né à Orsane (la page ne sert qu'un personnage : en changer la recharge).
   function appliquerOrsane() {
     const M = (typeof DATA === 'object' && DATA.modules) || {};
     if (appliques.has('ervaneOrsane') || typeof M.ervaneOrsane !== 'function') return false;
@@ -121,16 +90,6 @@ const Ile = (() => {
   }
   const actif = () => appliques.has('ervane');
 
-  // ----- Orsane en 3D (docs/ORSANE-3D.md) -----
-  // Le second plateau : les 26 cartes d'Orsane converties sur place en secteurs du plateau `orsane`
-  // (content/orsane-plateau.js, puis les aires cuites, content/orsane-aires.js). Par personnage,
-  // comme les changements d'Orsane : décidé d'après le personnage lu en brut, appliqué avant sa
-  // lecture validée (js/save.js convertit alors sa position) et avant que le monde soit créé.
-  // L'interrupteur : DATA.ile.orsane3d ; en développement, ?orsane3d=1 ou la clé d'essai
-  // « veylan.orsane3d.essai » = « 1 » ; ?orsane3d=0 l'éteint. Il faut en plus l'île chargée (le
-  // moteur et le rendu 3D), WebGL, un personnage qui ne joue pas un tutoriel en cases (celui de la
-  // descente, ou celui d'Orsane : leurs repères sont des cases) et qui n'a pas choisi de continuer en
-  // 2D sur cet appareil (l'écran de repli, js/scene.js : la clé « veylan.orsane2d.<uid> »).
   function orsane3dAllume() {
     const p = parametres(), dev = enDev(p);
     if (dev && p.orsane3d === '0') return false;
@@ -149,7 +108,6 @@ const Ile = (() => {
     if (typeof ch.uid === 'string' && lire(local(), PAS_EN_3D + ch.uid) === '1') return false;
     return true;
   }
-  // Le personnage d'un emplacement, lu en brut (sans validation), ou null.
   function brut(uid) {
     const s = local();
     if (!s || typeof uid !== 'string') return null;
@@ -157,7 +115,6 @@ const Ile = (() => {
     try { o = JSON.parse(s.getItem('veylan.perso.' + uid)); } catch (e) { o = null; }
     return o && o.character && typeof o.character === 'object' ? o.character : null;
   }
-  // Applique Orsane en 3D une fois (le plateau, puis ses aires cuites) ; idempotent.
   function appliquerOrsane3D() {
     const M = (typeof DATA === 'object' && DATA.modules) || {};
     if (appliques.has('orsanePlateau') || typeof M.orsanePlateau !== 'function' || typeof M.orsaneAires !== 'function') return false;
@@ -168,39 +125,29 @@ const Ile = (() => {
     if (typeof World === 'function' && World.reindexer) World.reindexer();
     return true;
   }
-  // Pour un emplacement (l'accueil) ou un personnage déjà en mémoire (une création) : applique
-  // Orsane en 3D si l'interrupteur et le personnage le permettent. Rend vrai si c'est fait.
   function appliquerOrsane3DPour(uidOuPerso) {
     const ch = typeof uidOuPerso === 'string' ? brut(uidOuPerso) : uidOuPerso;
     if (typeof uidOuPerso === 'string' && !ch) return false;
     return orsane3dPour(ch) ? (appliquerOrsane3D(), true) : false;
   }
   const orsane3D = () => appliques.has('orsanePlateau');
-  // « Continuer en 2D » (l'écran de repli d'Orsane) : ce personnage ne passe plus en 3D sur cet appareil.
   function continuerEn2D(uid) {
     const s = local();
     if (!s || typeof uid !== 'string') return false;
     try { s.setItem(PAS_EN_3D + uid, '1'); return true; } catch (e) { return false; }
   }
 
-  // ----- Le registre des plateaux -----
   const plateau = id => ((DATA.content && DATA.content.plateaux) || []).find(p => p.id === id) || null;
   function carte(mapId) {
     for (const z of (DATA.content && DATA.content.zones) || []) for (const m of z.maps || []) if (m.id === mapId) return m;
     return null;
   }
   const estPlateau = mapId => { const m = typeof mapId === 'string' ? carte(mapId) : null; return !!(m && m.plateau && plateau(m.plateau)); };
-  // Un donjon (ou une de ses salles, « id#n ») dont les salles sont en 3D : son entrée est sur un
-  // plateau, et il porte le style de ses salles (`salles3d`, le Puits de l'Amarre). Les donjons
-  // d'Orsane n'en ont pas : sur le plateau d'Orsane, leurs salles restent en cases (docs/ORSANE-3D.md).
   function donjon3D(id) {
     const did = String(id || '').split('#')[0];
     const d = ((DATA.content && DATA.content.dungeons) || []).find(x => x.id === did);
     return !!(d && d.salles3d && estPlateau(d.entryMap));
   }
-  // Le terrain et la navigation d'un plateau, construits une fois et gardés en mémoire. `seul` (le
-  // monde qui entre sur ce plateau, js/plateau.js) : les autres plateaux sont oubliés, un seul reste
-  // en mémoire (Ervane et Orsane ensemble pèseraient le double).
   function terrain(id, opts) {
     if (opts && opts.seul) for (const k of [...cache.keys()]) if (k !== id) cache.delete(k);
     if (cache.has(id)) return cache.get(id);
@@ -215,15 +162,9 @@ const Ile = (() => {
     return e;
   }
   const oublier = id => { if (id == null) cache.clear(); else cache.delete(id); };
-  // Oublie tous les plateaux sauf `id` (un donjon en cases d'Orsane garde son plateau pour le retour).
   const garderSeul = id => { for (const k of [...cache.keys()]) if (k !== id) cache.delete(k); };
-  // Le nombre de plateaux gardés en mémoire (0 à Orsane en cases après la descente : js/scene.js,
-  // oublierIle ; 1 au plus en marchant, Plateau oublie les autres en entrant sur le sien).
   const registre = () => cache.size;
 
-  // Un nouveau personnage naît au Métier du Relais des Mailles : origine, position, relais
-  // enregistré, et le tutoriel de l'île (content/tutoriel-ile.js, `jeu: 'ile'`) dans le mode
-  // choisi à la création ; sans ce jeu d'étapes, il naît sans tutoriel.
   function fairenaitre(ch) {
     const n = DATA.ile && DATA.ile.naissance;
     const m = n && carte(n.map), def = m && plateau(m.plateau);
@@ -242,17 +183,11 @@ const Ile = (() => {
     return ch;
   }
 
-  // Les fichiers de l'île, dans l'ordre où ils se chargent : les données (modules de contenu, à
-  // appliquer ensuite), le moteur sans DOM (avant js/world.js), le rendu 3D (avant js/main.js).
   const FICHIERS = {
     donnees: ['js/data-ile.js', 'content/ervane.js', 'content/ervane-aires.js', 'content/ervane-orsane.js', 'content/tutoriel-ile.js', 'content/orsane-plateau.js', 'content/orsane-aires.js'],
     moteur: ['js/ile-terrain.js', 'js/ile-nav.js', 'js/plateau.js'],
     rendu: ['js/ile-peinture.js', 'js/ile-camera.js', 'js/ile-sol.js', 'js/ile-decor.js', 'js/ile-figures.js', 'js/ile-arene.js', 'js/ile-salle.js', 'js/ile-3d.js', 'js/ile-carte.js', 'js/voile-paysage.js', 'js/voile-medaille.js', 'js/scene.js'],
   };
-  // Écrit les fichiers de l'île dans la page pendant son analyse (ce script est inséré par
-  // l'analyseur : document.write est alors synchrone), puis l'application des modules. Rend faux
-  // si la page est déjà analysée (un script injecté après coup) : l'île reste indisponible, le jeu
-  // continue comme interrupteur éteint.
   let charges = false;
   function charger() {
     if (charges) return true;
@@ -277,6 +212,4 @@ const Ile = (() => {
   };
 })();
 
-// Dans une page : l'île disponible charge ses fichiers (puis Ile.appliquer() par la page). Sous
-// Node, rien : les outils chargent Ile.FICHIERS eux-mêmes et appellent Ile.appliquer().
 if (Ile.decider() && typeof document !== 'undefined') Ile.charger();

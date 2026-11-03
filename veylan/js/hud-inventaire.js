@@ -1,13 +1,3 @@
-// Inventaire (touches I et P), à la manière de Dofus Touch dans la charte Veylan. À gauche la
-// poupée : les huit emplacements autour du personnage peint par le moteur (deux flèches pour le
-// tourner), puis les quatre Nœuds et les six Écailles des Grands Dragons (à venir) ; dessous, la
-// fiche de l'objet choisi (Effets, Conditions, Caractéristiques, Panoplie) et ses actions. À
-// droite le sac : onglets par sorte d'objet, filtre, recherche, tri, pages, Fils ; et deux vues,
-// Tenues (panoplies portées, ensembles) et Apparence (titre, cosmétiques, thème), qui reprennent
-// l'ancienne fenêtre Personnage.
-// Toucher choisit ; toucher deux fois équipe, utilise, noue ou retire ; glisser un objet sur la
-// poupée ou sur un emplacement l'équipe, glisser un objet porté vers le sac le retire ; l'appui
-// long ouvre la fiche. Se charge après js/hud-fenetres.js et complète Hud.
 (() => {
 const I = Fenetres.ICON;
 const esc = s => Util.esc(s);
@@ -29,17 +19,13 @@ const ICO = {
   pods: svg('<path d="M7 9h10l1.5 10.5h-13z"/><path d="M9.5 9V7.5a2.5 2.5 0 0 1 5 0V9"/>'),
 };
 
-// Emplacements de la poupée : le cou, les doigts, la taille à gauche ; la tête, le dos, la main,
-// les pieds à droite. Les noms viennent de js/items.js (Items.EQUIP_SLOTS).
 const LABEL = { coiffe: 'Coiffe', cape: 'Cape', amulette: 'Amulette', anneau1: 'Anneau', anneau2: 'Anneau', ceinture: 'Ceinture', bottes: 'Bottes', arme: 'Arme' };
 const KIND = slot => ({ kind: slot === 'arme' ? 'weapon' : 'equip', slot: slot.startsWith('anneau') ? 'anneau' : slot });
 const GAUCHE = ['amulette', 'anneau1', 'anneau2', 'ceinture'];
 const DROITE = ['coiffe', 'cape', 'arme', 'bottes'];
 const MAX_ENSEMBLES = 6;
-// Les six Écailles qu'un Veilleur pourra porter (docs/MONDE.md) ; celle d'Ithren est perdue.
 const ECAILLES = ['Écaille d\'Aïven', 'Écaille de Durren', 'Écaille de Morrha', 'Écaille d\'Iskar', 'Écaille de Nohra', 'Écaille d\'Aube'];
 
-// Onglets du sac : les sortes d'objets du jeu (celles de l'ancien Sac), puis les deux vues de la tenue.
 const portable = d => d.kind === 'equip' || d.kind === 'weapon';
 const ONGLETS = [
   ['tout', 'Tout', I.tout, () => true],
@@ -60,9 +46,6 @@ const FILTRES = {
   favoris: [['', 'Tous les favoris']],
 };
 const TRIS = [['recent', 'Récents'], ['type', 'Par type'], ['niveau', 'Niveau'], ['rarete', 'Rareté'], ['nom', 'Nom']];
-// « Par type » (d'après le bouton Trier de l'inventaire Duality) : les armes, l'équipement, les
-// consommables, les ressources, les Nœuds ; dans chaque sorte, par nom. Les favoris passent
-// toujours devant, quel que soit le tri (Hud.invListe).
 const ORDRE_TYPE = { weapon: 0, equip: 1, consumable: 2, resource: 3, knot: 4 };
 const TRI = {
   recent: (a, b) => b.ordre - a.ordre,
@@ -73,16 +56,13 @@ const TRI = {
 };
 const TYPE_CONSO = { pain: 'Pain', potion: 'Potion', parchemin: 'Parchemin' };
 const typeObjet = d => d.kind === 'weapon' ? ((Items.WEAPON_TYPES[d.type] || {}).label || 'Arme') : d.kind === 'equip' ? (LABEL[d.slot === 'anneau' ? 'anneau1' : d.slot] || d.slot) : d.kind === 'knot' ? 'Nœud' : d.kind === 'consumable' ? (TYPE_CONSO[d.sub] || 'Consommable') : 'Ressource';
-// L'objet va-t-il à cet emplacement ?
 const va = (d, slot) => d.kind === 'weapon' ? slot === 'arme' : d.kind === 'equip' && (d.slot === 'anneau' ? slot.startsWith('anneau') : d.slot === slot);
 const nf = n => Number(n).toLocaleString('fr-FR');
 const element = el => DATA.elements[el] || DATA.elements.neutre;
-// Pictogrammes des stats d'objet : caractéristiques, PA, PM, initiative, critique, dommages.
 const picStat = k => Hud.pic(k, 15);
 
 Object.assign(Hud.prototype, {
   initInventaire() {
-    // La taille des pages suit la place : on recompte quand la fenêtre du navigateur change.
     if (!this.invRedim) {
       this.invRedim = () => {
         if (!this.fen || !this.fen.isOpen('sac')) return;
@@ -91,7 +71,6 @@ Object.assign(Hud.prototype, {
       };
       window.addEventListener('resize', this.invRedim);
     }
-    // Tout équipement passé par le monde (fenêtre, ancien panneau) prévient les modules voisins.
     this.world.on('equip', d => {
       const def = Items.get(d.id);
       this.signal('itemEquipped', { id: d.id, slot: d.slot });
@@ -99,7 +78,6 @@ Object.assign(Hud.prototype, {
     });
   },
 
-  // L'ancien Sac et l'ancienne fenêtre Personnage mènent ici.
   openSac() { this.openInventaire(); },
   openPerso() { this.openInventaire(); },
 
@@ -107,7 +85,6 @@ Object.assign(Hud.prototype, {
     const s = this.inv = this.inv || { onglet: 'tout', filtre: '', q: '', tri: 'recent', page: 0, cols: 6, parPage: 30, sel: null, fiche: 'effets', facing: null, feuille: null };
     const ouvert = this.fen.isOpen('sac');
     if (!ouvert) s.feuille = null;
-    // Le personnage regarde du même côté que sur la carte (ou que l'indique son apparence).
     if (s.facing == null) { const f = this.world.ch.facing != null ? this.world.ch.facing : this.world.player && this.world.player.facing; s.facing = f === -1 ? -1 : 1; }
     const ch = () => this.world.ch;
     const r = () => this.fen.render('sac');
@@ -115,7 +92,6 @@ Object.assign(Hud.prototype, {
       onglet: d => { s.onglet = d.onglet; s.filtre = ''; s.page = 0; r(); },
       page: d => { s.page += Number(d.sens) || 0; r(); },
       pick: d => { if (this.invIgnore()) return; if (ch().has(d.id)) { s.sel = { de: 'sac', id: d.id }; r(); } },
-      // Un emplacement vide montre dans le sac ce qui peut y aller.
       slot: d => {
         if (this.invIgnore()) return;
         s.sel = { de: 'slot', slot: d.slot };
@@ -128,7 +104,6 @@ Object.assign(Hud.prototype, {
       noeudSlot: d => { if (this.invIgnore()) return; s.sel = { de: 'noeud', id: d.id }; r(); },
       fiche: d => { s.fiche = d.fiche; r(); },
       favori: d => { this.invFavori(d.id); r(); },
-      // Sur téléphone en portrait, la fiche se pose sur la poupée : on la referme pour la revoir.
       ficheFermer: () => { s.sel = null; r(); },
       tourner: d => { const F = [1, -1]; s.facing = F[(F.indexOf(s.facing) + Number(d.sens) + F.length * 2) % F.length]; r(); },
       equiper: d => this.invEquiper(d.id),
@@ -154,7 +129,6 @@ Object.assign(Hud.prototype, {
     this.simpleWin('sac', 'Inventaire', () => this.renderInventaire(), actions, {
       width: 900, cls: 'vy-fenetre--inventaire', onField, annonce: 'inventaire',
       after: body => this.apresInventaire(body),
-      // Échap ferme d'abord la feuille de confirmation.
       onEscape: () => { if (!s.feuille) return false; s.feuille = null; r(); return true; },
       onClose: () => { this.invFinGlisser(); this.syncMenus(); },
     });
@@ -166,8 +140,6 @@ Object.assign(Hud.prototype, {
     return `<div class="vy-inv">${this.invPoupee(ch)}${this.invFiche(ch)}${this.invSac(ch)}</div>${this.inv.feuille ? this.invFeuille(ch) : ''}`;
   },
 
-  // Le choix tient-il encore ? Un objet utilisé jusqu'au dernier disparaît ; un Nœud dénoué
-  // redevient un objet du sac.
   invVerifier(ch) {
     const s = this.inv, x = s.sel;
     if (!x) return;
@@ -175,7 +147,6 @@ Object.assign(Hud.prototype, {
     if (x.de === 'noeud' && !ch.activeKnots().includes(x.id)) s.sel = ch.has(x.id) ? { de: 'sac', id: x.id } : null;
   },
 
-  // L'objet choisi : { def, id, n, de, slot, porte, noue }, { vide: emplacement } ou null.
   invEntree(ch) {
     const x = this.inv.sel;
     if (!x) return null;
@@ -188,7 +159,6 @@ Object.assign(Hud.prototype, {
     return { def, id: x.id, n: ch.count(x.id), de: x.de, noue: ch.activeKnots().includes(x.id) };
   },
 
-  // ----- La poupée -----
 
   invPoupee(ch) {
     const s = this.inv, cls = ch.classDef;
@@ -226,9 +196,6 @@ Object.assign(Hud.prototype, {
     return `<button class="vy-case vy-inv__slot${choisi}" data-rarete="${Items.rarity(def)}" data-act="slot" data-slot="${slot}" data-depot="slot" data-glisse="slot" title="${esc(def.name)} (${LABEL[slot]}). Toucher deux fois ou glisser vers le sac : retirer." aria-label="${LABEL[slot]} : ${esc(def.name)}"><span class="vy-case__icone">${Hud.picto(def)}</span><span class="vy-case__niveau">${def.level}</span></button>`;
   },
 
-  // Le personnage, peint par le moteur (renderer.painter.drawBody) et tourné par les flèches.
-  // L'apparence, le genre et l'orientation sont transmis au peintre ; celui qui ne les connaît pas
-  // les ignore. Comme sur la carte (drawSprite), l'orientation retourne la figure.
   dessinerPoupee(body) {
     const cv = body.querySelector('.vy-inv__cv');
     if (!cv) return;
@@ -252,11 +219,10 @@ Object.assign(Hud.prototype, {
     }
     const f = this.inv.facing === -1 ? -1 : 1;
     c.save(); c.translate(W / 2, sol); c.scale(S * f, S); c.lineJoin = 'round'; c.lineCap = 'round';
-    try { painter.drawBody(c, { x: 0, y: 0 }, { shape: 'player', color: cls.color, glyph: cls.glyph, team: 'player', look: ch.look, gender: ch.gender, facing: f }); } catch (e) { /* le peintre n'est pas prêt */ }
+    try { painter.drawBody(c, { x: 0, y: 0 }, { shape: 'player', color: cls.color, glyph: cls.glyph, team: 'player', look: ch.look, gender: ch.gender, facing: f }); } catch (e) {   }
     c.restore();
   },
 
-  // ----- La fiche de l'objet choisi -----
 
   invFiche(ch) {
     const e = this.invEntree(ch);
@@ -281,8 +247,6 @@ Object.assign(Hud.prototype, {
     </section>`;
   },
 
-  // L'objet qu'un équipement du sac remplacerait : celui porté à sa place (un anneau prend la
-  // première place libre, sinon le premier anneau, comme Character.equip).
   invEnFace(ch, d) {
     if (!portable(d)) return null;
     let slot = d.kind === 'weapon' ? 'arme' : d.slot;
@@ -291,8 +255,6 @@ Object.assign(Hud.prototype, {
     return { slot, def: id && id !== d.id ? Items.get(id) : null };
   },
 
-  // Effets ; pour un équipement du sac, l'écart avec ce qui est porté à sa place (d'après
-  // l'inventaire Duality : comparer avant d'équiper, comme Dofus) : +3 en vert, -2 en rouge.
   invEffets(ch, e, court) {
     const d = e.def, L = [];
     const face = e.de === 'sac' ? this.invEnFace(ch, d) : null, autre = face && face.def;
@@ -348,9 +310,6 @@ Object.assign(Hud.prototype, {
     return `<ul class="vy-inv__liste vy-inv__conditions">${L.join('')}</ul>`;
   },
 
-  // Caractéristiques : pour une arme, ce que le moteur en fait (coût, lancers, portée, zone,
-  // critique) ; pour tout objet, sa sorte, sa provenance et sa revente. Le moteur n'a pas de bonus
-  // de critique propre à l'arme : seule la chance du personnage et le × 1,5 sont montrés.
   invCaracs(ch, e) {
     const d = e.def, L = [];
     const li = (txt, val) => `<li><span>${txt}</span><b>${val}</b></li>`;
@@ -382,7 +341,6 @@ Object.assign(Hud.prototype, {
     return `<ul class="vy-inv__liste">${L.join('')}</ul>`;
   },
 
-  // Panoplie : les pièces (portées en or) et les bonus par nombre de pièces, l'actuel en avant.
   invPanoplie(ch, e) {
     const set = Items.getSet(e.def.set);
     if (!set) return '';
@@ -396,8 +354,6 @@ Object.assign(Hud.prototype, {
       <ul class="vy-inv__liste vy-inv__pieces">${pieces}</ul><ul class="vy-inv__liste vy-inv__bonus">${bonus}</ul>`;
   },
 
-  // Actions : l'action principale (équiper, utiliser, nouer, retirer), puis vendre (chez un
-  // marchand seulement, comme aujourd'hui) et détruire.
   invActions(ch, e) {
     const d = e.def, B = [];
     const principal = (act, label, extra, off) => `<button class="vy-bouton vy-bouton--primaire vy-bouton--petit vy-inv__action" data-act="${act}" ${extra}${off ? ' disabled' : ''}>${label}</button>`;
@@ -418,8 +374,6 @@ Object.assign(Hud.prototype, {
     return B.join('');
   },
 
-  // ----- La bulle au survol (à la souris) : le nom, la rareté, le poids et les effets, avec
-  // l'écart à ce qui est porté. Posée à côté de la case, dans l'écran. -----
 
   invBulle(cell) {
     let b = document.getElementById('inv-bulle');
@@ -441,7 +395,6 @@ Object.assign(Hud.prototype, {
     b.style.top = Math.max(6, Math.min(vh - h - 6, c.top + c.height / 2 - h / 2)) + 'px';
   },
 
-  // ----- Le sac -----
 
   invSac(ch) {
     const s = this.inv;
@@ -455,7 +408,6 @@ Object.assign(Hud.prototype, {
     return `<section class="vy-inv__sac" data-depot="sac" aria-label="Sac"><nav class="vy-inv__onglets" role="tablist" aria-label="Catégories du sac">${tabs}</nav>${corps}</section>`;
   },
 
-  // Sous-catégorie choisie dans le filtre.
   invFiltre(ch, d) {
     const f = this.inv.filtre;
     if (!f) return true;
@@ -470,7 +422,6 @@ Object.assign(Hud.prototype, {
     }
   },
 
-  // Les objets de l'onglet, filtrés, cherchés et triés.
   invListe(ch) {
     const s = this.inv, fav = this.invFavoris();
     const garde = s.onglet === 'favoris' ? (d => fav.has(d.id)) : (ONGLETS.find(o => o[0] === s.onglet) || ONGLETS[0])[3];
@@ -481,8 +432,6 @@ Object.assign(Hud.prototype, {
     return list.sort((a, b) => (fav.has(b.id) ? 1 : 0) - (fav.has(a.id) ? 1 : 0) || tri(a, b));
   },
 
-  // Les favoris : une étoile sur un objet (d'après l'inventaire Duality), rangée dans ce navigateur,
-  // pour chaque personnage. Ils passent devant dans le sac et ont leur onglet.
   invFavoris() {
     const ch = this.world.ch, cle = 'veylan.favoris.' + ((ch && (ch.uid || ch.name)) || '');
     if (!this.favoris || this.favoris.cle !== cle) {
@@ -495,7 +444,7 @@ Object.assign(Hud.prototype, {
   invFavori(id) {
     const f = this.invFavoris();
     if (f.has(id)) f.delete(id); else f.add(id);
-    try { localStorage.setItem(this.favoris.cle, JSON.stringify([...f])); } catch (e) { /* rien */ }
+    try { localStorage.setItem(this.favoris.cle, JSON.stringify([...f])); } catch (e) {   }
     return f.has(id);
   },
 
@@ -517,7 +466,6 @@ Object.assign(Hud.prototype, {
     const filtres = (FILTRES[s.onglet] || []).map(([v, l]) => `<option value="${v}"${s.filtre === v ? ' selected' : ''}>${l}</option>`).join('');
     const tris = TRIS.map(([v, l]) => `<option value="${v}"${s.tri === v ? ' selected' : ''}>${l}</option>`).join('');
     const total = Object.values(ch.inventory).reduce((a, n) => a + n, 0);
-    // Les pods (le poids porté, comme Dofus) : la jauge passe à l'ambre à 90 %, au rouge au-delà.
     const pods = ch.pods(), max = ch.derived().podsMax, part = pods / Math.max(1, max);
     const etatPods = part > 1 ? ' surcharge' : part >= 0.9 ? ' plein' : '';
     return `<div class="vy-inv__outils">
@@ -527,12 +475,11 @@ Object.assign(Hud.prototype, {
       <div class="vy-inv__grille" role="listbox" aria-label="Contenu du sac" style="--cols:${s.cols}">${cells.join('')}${list.length ? '' : `<p class="vy-inv__rien">${s.q.trim() || s.filtre ? 'Aucun objet ne correspond.' : 'Rien ici pour l\'instant.'}</p>`}</div>
       <footer class="vy-inv__pied">
         <span class="vy-inv__pages"><button class="vy-inv__page" data-act="page" data-sens="-1" ${s.page > 0 ? '' : 'disabled'} aria-label="Page précédente">${ICO.precedent}</button><b>${s.page + 1} / ${pages}</b><button class="vy-inv__page" data-act="page" data-sens="1" ${s.page < pages - 1 ? '' : 'disabled'} aria-label="Page suivante">${ICO.suivant}</button></span>
-        <span class="vy-inv__pods${etatPods}" title="Pods : ${nf(pods)} sur ${nf(max)} (1000, plus 5 par point de Terra). ${total} objet${total > 1 ? 's' : ''}.${part > 1 ? ' Surchargé : tu ne peux plus marcher.' : ''}" role="meter" aria-label="Pods" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${pods}">${ICO.pods}<span class="vy-inv__pods-jauge"><i style="width:${Math.min(100, part * 100).toFixed(1)}%"></i></span><b>${nf(pods)}</b><small>/ ${nf(max)}</small></span>
+        <span class="vy-inv__pods${etatPods}" title="Poids : ${nf(pods)} sur ${nf(max)} (1000, plus 5 par point de Terra). ${total} objet${total > 1 ? 's' : ''}.${part > 1 ? ' Surchargé : tu ne peux plus marcher.' : ''}" role="meter" aria-label="Poids" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${pods}">${ICO.pods}<span class="vy-inv__pods-jauge"><i style="width:${Math.min(100, part * 100).toFixed(1)}%"></i></span><b>${nf(pods)}</b><small>/ ${nf(max)}</small></span>
         <span class="vy-inv__fils" title="Les Fils, la monnaie de Veylan">${ICO.fils}<b>${nf(ch.fils)}</b> Fils</span>
       </footer>`;
   },
 
-  // Tenues : les panoplies portées (bonus actuel et suivant) et les ensembles enregistrés.
   invTenues(ch) {
     const dd = ch.derived();
     const sets = Object.keys(dd.setCount).map(id => Items.getSet(id)).filter(Boolean).map(set => {
@@ -551,7 +498,6 @@ Object.assign(Hud.prototype, {
     </div>`;
   },
 
-  // Apparence : le titre affiché, les cosmétiques (à venir) et le thème de l'interface.
   invApparence(ch) {
     const titres = ch.titles.length
       ? `<select id="inv-titre" aria-label="Titre affiché"><option value="">aucun</option>${ch.titles.map(t => `<option ${ch.title === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`
@@ -566,8 +512,6 @@ Object.assign(Hud.prototype, {
     </div>`;
   },
 
-  // Détruire : une feuille de confirmation, avec la quantité s'il y en a plusieurs, et un mot si
-  // une quête en cours se sert de l'objet.
   invFeuille(ch) {
     const f = this.inv.feuille, d = Items.get(f.id), n = ch.count(f.id);
     if (!d || !n) { this.inv.feuille = null; return ''; }
@@ -588,26 +532,22 @@ Object.assign(Hud.prototype, {
       </section>`;
   },
 
-  // La feuille prend le focus (clavier, lecteur d'écran) : Annuler d'abord, rien ne part par erreur.
   invFocusFeuille() {
     const w = this.fen.wins.get('sac'), b = w && w.body.querySelector('.vy-feuille__pied [data-act="fNon"]');
     if (b) b.focus({ preventScroll: true });
   },
 
-  // ----- Les gestes -----
 
   invGarde() {
     if (this.world.state === 'combat') { this.toast('Pas pendant un combat.'); return false; }
     return true;
   },
 
-  // Un marchand est-il ouvert ? On ne vend qu'à lui, comme dans sa boutique (js/hud.js).
   invMarchand() {
     const n = this.world.talkNpc;
     return !!(n && n.def && n.def.shop && this.world.state !== 'combat');
   },
 
-  // Équipe depuis le sac ; `slot` : l'emplacement visé (objet glissé dessus).
   invEquiper(id, slot) {
     const d = Items.get(id);
     if (!d || !portable(d) || !this.invGarde()) return false;
@@ -634,7 +574,6 @@ Object.assign(Hud.prototype, {
     return this.world.useItem(id);
   },
 
-  // Noue ou dénoue ; `veut` : seulement nouer (vrai) ou seulement dénouer (faux).
   invNouer(id, veut) {
     const ch = this.world.ch, noue = ch.activeKnots().includes(id);
     if (veut === true && noue) return false;
@@ -667,7 +606,6 @@ Object.assign(Hud.prototype, {
     return true;
   },
 
-  // Montre dans le sac la page où se trouve cet objet.
   invAllerA(id) {
     const s = this.inv, d = Items.get(id);
     const onglet = ONGLETS.find(o => o[0] === s.onglet);
@@ -677,14 +615,12 @@ Object.assign(Hud.prototype, {
     if (i >= 0) s.page = Math.floor(i / s.parPage);
   },
 
-  // Après chaque rendu : la poupée, la taille des pages, les gestes (posés une fois).
   apresInventaire(body) {
     this.dessinerPoupee(body);
     this.invMesurer(body);
     if (!body.invGestes) {
       body.invGestes = true;
       body.addEventListener('pointerdown', evt => { this.invBulle(null); this.invAppui(evt, body); });
-      // La bulle de comparaison, à la souris seulement (au doigt, la fiche suffit).
       body.addEventListener('pointerover', evt => {
         if (evt.pointerType !== 'mouse' || (this.invGlisse && this.invGlisse.parti)) return;
         const c = evt.target.closest('.vy-inv__case[data-id]');
@@ -692,12 +628,10 @@ Object.assign(Hud.prototype, {
       });
       body.addEventListener('pointerleave', () => this.invBulle(null));
     }
-    // Rendue de nouveau : la bulle d'une case disparue s'en va.
     if (this.bulleId && !body.querySelector(`.vy-inv__case[data-id="${this.bulleId}"]:hover`)) this.invBulle(null);
     if (this.invGlisse && this.invGlisse.parti) this.invMarquer(body);
   },
 
-  // Autant de cases que la grille en montre sans défiler : les pages font le reste.
   invMesurer(body) {
     const g = body.querySelector('.vy-inv__grille');
     if (!g || this.invMesure) return;
@@ -718,7 +652,6 @@ Object.assign(Hud.prototype, {
   invIgnore() { return performance.now() < (this.invSansClic || 0); },
   invIgnorerClic() { this.invSansClic = performance.now() + 380; },
 
-  // Appui sur un objet (sac, emplacement, Nœud) : glisser, toucher deux fois, appui long.
   invAppui(evt, body) {
     const src = evt.target.closest('[data-glisse]');
     if (!src || !body.contains(src) || this.inv.feuille || (evt.pointerType === 'mouse' && evt.button !== 0)) return;
@@ -727,7 +660,6 @@ Object.assign(Hud.prototype, {
     if (g.kind === 'slot') g.id = this.world.ch.equipment[g.slot];
     if (!g.id) return;
     this.invGlisse = g;
-    // Appui long (doigt, stylet) : la fiche de l'objet.
     if (evt.pointerType !== 'mouse') g.appui = setTimeout(() => { g.appui = 0; if (this.invGlisse === g && !g.parti) { g.long = true; this.invAppuiLong(g); } }, 480);
     const bouge = e => this.invBouge(e, g);
     const fin = e => { if (e.pointerId === g.pointerId) { g.off(); this.invLache(e, g); } };
@@ -747,7 +679,6 @@ Object.assign(Hud.prototype, {
       this.invDebutGlisser(g);
     }
     if (evt.cancelable) evt.preventDefault();
-    // Au doigt, l'objet se montre au-dessus du doigt qui le cacherait.
     if (g.fantome) g.fantome.style.transform = `translate(${g.x}px, ${g.y - (g.type === 'mouse' ? 0 : 36)}px)`;
     const c = this.invCibleSous(g.x, g.y, g);
     const w = this.fen.wins.get('sac');
@@ -767,9 +698,6 @@ Object.assign(Hud.prototype, {
     }
     this.invGlisse = null;
     if (g.long) { this.invIgnorerClic(); return; }
-    // Toucher deux fois : équiper, utiliser, nouer, retirer.
-    // Au doigt, deux touchers à 520 ms au plus (420 à la souris) : un téléphone lent ou un pouce
-    // hésitant restent dans la fenêtre (revue finale, l'étape « equiper » du tutoriel de l'île).
     const t = performance.now(), cle = `${g.kind}:${g.slot || g.id}`, avant = this.invDernier, fenetre = evt.pointerType === 'touch' ? 520 : 420;
     if (evt.type === 'pointerup' && avant && avant.cle === cle && t - avant.t < fenetre && Math.hypot(evt.clientX - avant.x, evt.clientY - avant.y) < 26) {
       this.invDernier = null;
@@ -792,7 +720,7 @@ Object.assign(Hud.prototype, {
   },
 
   invAppuiLong(g) {
-    try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) { /* rien */ }
+    try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {   }
     const s = this.inv;
     s.sel = g.kind === 'slot' ? { de: 'slot', slot: g.slot } : g.kind === 'noeud' ? { de: 'noeud', id: g.id } : { de: 'sac', id: g.id };
     s.fiche = 'effets';
@@ -801,7 +729,6 @@ Object.assign(Hud.prototype, {
     if (f) { f.classList.add('vy-inv__fiche--eclat'); if (f.scrollIntoView) f.scrollIntoView({ block: 'nearest' }); }
   },
 
-  // Où peut-on poser ce qu'on glisse ?
   invDepotValide(g, depot, slot) {
     const d = Items.get(g.id);
     if (!d) return false;
@@ -832,7 +759,6 @@ Object.assign(Hud.prototype, {
     if (w) { w.box.classList.add('vy-inv--glisse'); this.invMarquer(w.body); }
   },
 
-  // Pendant un glissement : les cases où l'objet peut aller, et sa case de départ.
   invMarquer(body) {
     const g = this.invGlisse;
     if (!g) return;

@@ -1,39 +1,11 @@
-// La carte 3D de l'île d'Ervane (docs/ILE-TECHNIQUE.md, 3.30 ; docs/ANALYSE-MAP-DUALITY.md, 4.2) :
-// la scène du jeu elle-même, vue d'en haut par la caméra de l'île en mode « carte » (CameraIle,
-// js/ile-camera.js), dans la fenêtre « Carte » (js/hud-carte.js). Ce module n'ajoute à la scène que
-// ce qui fait d'elle une carte, et le reprend toujours des données et de la scène du jeu :
-//
-// - les marqueurs (pastilles des relais, de l'entrée du donjon, des artisans, des marchands, des PNJ
-//   qui ont une quête à donner ou à rendre ; épingles des quêtes suivies ; l'épingle du joueur, son
-//   anneau qui respire et la flèche de son cap) et les noms (les zones, les sous-zones selon leur
-//   surface, les lieux de près), dessinés par une seule InstancedMesh de quads ancrés sur le monde,
-//   à taille constante à l'écran, sans test de profondeur : dans la même image que la caméra, jamais
-//   un élément du DOM replacé après coup. Les images des pastilles et des épingles sont celles de la
-//   carte peinte (CartePeinture.pastille, CartePeinture.epingle), rangées dans un atlas ;
-//   les pastilles qui se recouvrent se regroupent sous la plus importante (l'ordre PRIO de la carte)
-//   avec un « +N », ou s'écartent en rangée de près ; les noms se placent du plus important au moins
-//   important, un nom qui en chevaucherait un autre (ou un marqueur) n'est pas dessiné ;
-// - le niveau de détail du survol : de haut, les tuiles du sol, du décor et du monde modelé sont
-//   réunies par matière en quelques maillages (copies des mêmes géométries, faites une fois, par
-//   tranches d'images), ce qui dépasse à peine du sol (herbes, fleurs, cailloux) en moins : le budget
-//   du téléphone tient l'île entière en vue.
-//
-// Les réglages des noms sont des rapports de D0 (la distance qui montre l'île entière).
 const IleCarte = (() => {
   const MAX = 192;
-  // Les noms : les zones de 0,46 × D0 et au-delà (en fondu dès 0,36) ; les sous-zones selon leur
-  // surface (u²) en deçà d'un seuil ; les lieux en deçà de 0,36 × D0.
   const NOMS = { zones: [0.36, 0.46], sousZones: [[1500, 0.95], [700, 0.72], [0, 0.52]], lieux: [0.30, 0.36] };
-  // Les figures du monde (PNJ, groupes, le héros) ne se dessinent plus au-delà de cette largeur de
-  // sol vue (u), le champ le plus large du jeu : de plus haut, ce sont des points ; les marqueurs les
-  // remplacent.
   const FIGURES_MAX = 60;
-  // Le survol passe aux maillages réunis au-delà de cette largeur de sol vue (u), selon la qualité.
   const PROCHE = { haute: 78, moyenne: 62, basse: 50 };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const lisse = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 
-  // ----- L'atlas : une toile, des rangées, des images à leur ancre -----
 
   class Atlas {
     constructor(THREE, w, h) {
@@ -57,7 +29,6 @@ const IleCarte = (() => {
       this.rangs = [];
       this.sale = true;
     }
-    // Une place de w × h pixels : la première rangée assez haute, sinon une rangée neuve.
     place(w, h) {
       for (const r of this.rangs) if (h <= r.h && h >= r.h * 0.6 && r.x + w <= this.w) { const p = { x: r.x, y: r.y }; r.x += w + 2; return p; }
       const last = this.rangs[this.rangs.length - 1], y = last ? last.y + last.h + 2 : 0;
@@ -66,16 +37,12 @@ const IleCarte = (() => {
       this.rangs.push({ y, h: hh, x: w + 2 });
       return { x: 0, y };
     }
-    // L'image d'une clé : `peindre()` rend { canvas, ax, ay } (l'ancre en pixels de la toile) la
-    // première fois ; rend { u0, v0, du, dv, w, h, ax, ay } en pixels de l'atlas.
     obtenir(cle, peindre) {
       let c = this.cases.get(cle);
       if (c) return c;
       const art = peindre();
       if (!art || !art.canvas) return null;
       const w = art.canvas.width, h = art.canvas.height;
-      // Plus de place : rien cette image (les cases de l'image en cours restent justes), tout est
-      // repeint à la suivante (Carte.maj vide l'atlas plein).
       const p = this.place(w, h);
       if (!p) { this.plein = true; return null; }
       this.g.drawImage(art.canvas, p.x, p.y);
@@ -89,11 +56,9 @@ const IleCarte = (() => {
     liberer() { this.tex.dispose(); this.toile.width = 0; this.toile.height = 0; }
   }
 
-  // ----- Les peintures propres à la carte -----
 
   const toile = (w, h) => { const c = document.createElement('canvas'); c.width = Math.max(1, Math.ceil(w)); c.height = Math.max(1, Math.ceil(h)); return c; };
 
-  // Un nom : `sorte` 'zone' (le titre, la police des titres, le niveau dessous), 'sousZone', 'lieu'.
   function peindreNom(sorte, texte, sous, ech, theme) {
     const titre = (theme && theme.titre) || 'serif', ui = (theme && theme.ui) || 'sans-serif';
     const S = { zone: [`700 ${19 * ech}px ${titre}`, 'rgba(255,250,236,0.96)', 'rgba(18,24,40,0.7)', 3.4], sousZone: [`700 ${12.5 * ech}px ${ui}`, '#fff4dc', 'rgba(14,18,30,0.82)', 3.2], lieu: [`italic 600 ${11 * ech}px ${ui}`, '#f6eedc', 'rgba(14,18,30,0.76)', 2.8] }[sorte] || [`600 ${12 * ech}px ${ui}`, '#fff', '#000', 3];
@@ -120,7 +85,6 @@ const IleCarte = (() => {
     return { canvas: c, ax: cx, ay: c.height / 2 };
   }
 
-  // Le « +N » d'un groupe de pastilles : un disque sombre cerclé de blanc.
   function peindreBadge(texte, px) {
     const c = toile(px + 4, px + 4), g = c.getContext('2d'), r = px / 2, x = c.width / 2;
     g.fillStyle = '#1d1712'; g.beginPath(); g.arc(x, x, r, 0, Math.PI * 2); g.fill();
@@ -130,7 +94,6 @@ const IleCarte = (() => {
     return { canvas: c, ax: x, ay: x };
   }
 
-  // L'anneau qui respire autour du joueur (bleu, comme son épingle) ; l'anneau d'or de la sélection.
   function peindreAnneau(px, couleur, plein) {
     const c = toile(px, px), g = c.getContext('2d'), x = px / 2;
     const gr = g.createRadialGradient(x, x, px * 0.18, x, x, px * 0.5);
@@ -142,7 +105,6 @@ const IleCarte = (() => {
     return { canvas: c, ax: x, ay: x };
   }
 
-  // La flèche du cap : un chevron qui pointe vers le haut de l'image (tourné par le shader).
   function peindreFleche(px) {
     const c = toile(px, px), g = c.getContext('2d'), x = px / 2;
     g.beginPath(); g.moveTo(x, px * 0.08); g.lineTo(px * 0.86, px * 0.84); g.lineTo(x, px * 0.62); g.lineTo(px * 0.14, px * 0.84); g.closePath();
@@ -151,7 +113,6 @@ const IleCarte = (() => {
     return { canvas: c, ax: x, ay: x };
   }
 
-  // La cible posée au toucher d'un sol : un petit anneau d'or et son point.
   function peindreCible(px) {
     const c = toile(px, px), g = c.getContext('2d'), x = px / 2;
     g.strokeStyle = 'rgba(20,16,10,0.55)'; g.lineWidth = px * 0.16; g.beginPath(); g.arc(x, x, px * 0.34, 0, Math.PI * 2); g.stroke();
@@ -160,7 +121,6 @@ const IleCarte = (() => {
     return { canvas: c, ax: x, ay: x };
   }
 
-  // ----- Le shader des quads ancrés sur le monde, à taille constante à l'écran -----
 
   const VS = `
 attribute vec3 ancre;
@@ -191,15 +151,7 @@ void main() {
   #include <encodings_fragment>
 }`;
 
-  // ----- Les maillages réunis du survol -----
 
-  // Réunit des maillages qui partagent leurs matières et leurs attributs en un seul. Deux cas :
-  // - des morceaux d'un même maillage (les tuiles du monde modelé : un index par tuile sur des
-  //   attributs partagés, une même matrice) : seuls les index se réunissent, les attributs restent
-  //   ceux de la scène (une seule copie sur le GPU), la matrice va au maillage ;
-  // - sinon, les sommets utiles passent dans le repère du monde (positions par la matrice, normales
-  //   par sa rotation), recopiés une fois ; `garder(ax, ay, az, bx, ..., cz)` écarte des triangles.
-  // Les index sont rangés par matière (groupes). Rend { geo, matrice, octets }, ou null si rien ne reste.
   function fusionner(THREE, liste, garder) {
     const g0 = liste[0].geo, noms = Object.keys(g0.attributes);
     const groupesDe = g => (g.groups && g.groups.length ? g.groups : [{ start: 0, count: g.index ? g.index.count : g.attributes.position.count, materialIndex: 0 }]);
@@ -235,7 +187,6 @@ void main() {
             if (!A) { const k = n === 'position' || n === 'normal' ? 3 : g0.attributes[n].itemSize; for (let c = 0; c < k; c++) o.push(0); continue; }
             if (n === 'position') o.push(wp[i * 3], wp[i * 3 + 1], wp[i * 3 + 2]);
             else if (n === 'normal') { v.fromBufferAttribute(A, i).applyMatrix3(nm).normalize(); o.push(v.x, v.y, v.z); }
-            // Les autres tels quels (même type et même normalisation dans tout le seau, voir `ajoute`).
             else for (let c = 0; c < A.itemSize; c++) o.push(A.array[i * A.itemSize + c]);
           }
           return remap[i];
@@ -249,8 +200,6 @@ void main() {
           }
         }
       }
-      // Les positions en flottants, les normales sur un octet par composante (comme le monde modelé,
-      // IleGlb), les autres dans le type de leur source (couleurs et UV normalisées).
       for (const n of noms) {
         const A0 = g0.attributes[n];
         let at;
@@ -275,7 +224,6 @@ void main() {
     return { geo, matrice: partage ? liste[0].m : null, octets };
   }
 
-  // ======================================================================
 
   class Carte {
     constructor(THREE, ile) {
@@ -284,18 +232,18 @@ void main() {
       this.ouverte = false;
       this.alpha = 0;
       this.opts = {};
-      this.reperes = [];      // les pastilles et les épingles des quêtes (données de la fenêtre)
+      this.reperes = [];
       this.donneesA = 0;
-      this.items = [];        // ce qui est dessiné à cette image, pour le toucher : { x, y, r, item }
-      this.noms = [];         // les noms dessinés à cette image
-      this.sel = null;        // la clé de l'élément choisi
-      this.survole = null;    // la clé de l'élément survolé
-      this.cible = null;      // le point du sol choisi : { x, y }
-      this.cap = null;        // le cap du joueur, en radians dans le plan (u, v)
+      this.items = [];
+      this.noms = [];
+      this.sel = null;
+      this.survole = null;
+      this.cible = null;
+      this.cap = null;
       this.prec = null;
-      this.lieux = null;      // les noms à placer, calculés une fois par plateau
-      this.lod = null;        // les maillages réunis : { meshes, sources, pret }
-      this.tache = null;      // la construction des maillages réunis, par tranches d'images
+      this.lieux = null;
+      this.lod = null;
+      this.tache = null;
       this.echelle = 1;
       this.densite = 1;
       this.atlas = null;
@@ -320,9 +268,7 @@ void main() {
       this._v = new THREE.Vector3(); this._f = new THREE.Vector3();
     }
 
-    // ----- Ouvrir, fermer -----
 
-    // `opts` : { donnees() → [{ cle, kind, sub, x, y, prio, epingle }], theme: { titre, ui }, surImage() }.
     ouvrir(opts) {
       this.opts = opts || {};
       this.ouverte = true;
@@ -332,12 +278,7 @@ void main() {
     }
     fermer() { this.ouverte = false; this.survole = null; }
 
-    // ----- Les noms à placer : zones, sous-zones, lieux -----
 
-    // D'après la grille du terrain : chaque sous-zone (le secteur de chaque u de terre ferme) et sa
-    // zone, leur surface (u²), leur barycentre ramené sur l'échantillon le plus proche qui leur
-    // appartient (une zone en fer à cheval garde son nom sur elle) ; les lieux nommés du plateau
-    // (places et eaux qui portent un `nom`).
     calculerLieux() {
       const ile = this.ile, T = ile.T, def = ile.def || {};
       const out = { zones: [], sousZones: [], lieux: [] };
@@ -359,8 +300,6 @@ void main() {
         return best || [bx, by];
       };
       const niv = l => (l ? (l[0] === l[1] ? `niv. ${l[0]}` : `niv. ${l[0]} à ${l[1]}`) : '');
-      // Une zone garde aussi quatre autres points à elle, vers ses bords (à mi-chemin du barycentre et
-      // de ses extrêmes) : son nom s'y pose si les marqueurs couvrent son centre (le village).
       const autres = s => {
         const bx = s.su / s.n, by = s.sv / s.n;
         let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
@@ -374,8 +313,6 @@ void main() {
         const [x, y] = pose(s);
         out.sousZones.push({ cle: 's:' + id, sorte: 'sousZone', nom: d.name.charAt(0).toUpperCase() + d.name.slice(1), x, y, aire: s.n, map: id });
       }
-      // Un lieu qui porte le nom de sa sous-zone (la Place du Relais, la Source Claire) ne fait pas un
-      // second nom : de près, celui de la sous-zone se pose sur lui.
       const parNom = new Map(out.sousZones.map(n => [n.nom.toLowerCase(), n]));
       for (const l of [].concat(def.places || [], def.eaux || [])) {
         if (!l.nom) continue;
@@ -390,17 +327,9 @@ void main() {
       return out;
     }
 
-    // ----- Les maillages réunis du survol -----
 
-    // Les sources : les tuiles lointaines du sol (un sommet pour 2 u) et les silhouettes du décor
-    // dessiné par code ; les maillages du monde modelé (pas ses InstancedMesh). Réunis par matière et
-    // par attributs ; le semis du monde modelé perd ce qui dépasse le sol de moins de 0,9 u (herbes,
-    // fleurs, cailloux : invisibles d'en haut, la moitié de ses triangles) ; les détails (agrafes,
-    // fils blancs, pavés) ne restent qu'en qualité haute. Une tranche par image, 6 ms au plus.
     preparerLod() {
       const ile = this.ile, THREE = this.THREE, seaux = new Map(), sources = [];
-      // Les attributs de position partagés par plusieurs maillages (les tuiles d'un même maillage du
-      // monde modelé) : leurs morceaux se réunissent à part, par leurs seuls index.
       const usages = new Map(), ids = new Map();
       if (ile.monde) for (const o of ile.monde.children) if (o.isMesh && o.geometry && o.geometry.attributes.position) { const P = o.geometry.attributes.position; usages.set(P, (usages.get(P) || 0) + 1); }
       const idDe = P => { if (!ids.has(P)) ids.set(P, ids.size + 1); return ids.get(P); };
@@ -434,7 +363,6 @@ void main() {
       if (!this.tache.length) this.lod.pret = true;
       void THREE;
     }
-    // Une tranche de la construction (6 ms au plus) ; rend vrai quand tout est prêt.
     avancerLod() {
       const L = this.lod, ile = this.ile, THREE = this.THREE;
       if (!L || L.pret) return !!(L && L.pret);
@@ -457,8 +385,6 @@ void main() {
       L.ms += performance.now() - t0; L.tranches++;
       return L.pret;
     }
-    // De haut : les maillages réunis à la place de leurs sources. `oui` faux : les sources reprennent
-    // (leur visibilité est reposée par l'image du jeu).
     survolLod(oui) {
       const L = this.lod;
       if (!L) return;
@@ -467,13 +393,10 @@ void main() {
     }
     seuilProche() { return PROCHE[this.ile.qualite] || PROCHE.moyenne; }
 
-    // ----- Chaque image -----
 
-    // Les marqueurs et les noms de cette image, d'après la caméra (le survol `vol` de CameraIle).
     maj(now, vol) {
       const ile = this.ile, cam = ile.camera;
       const cible = this.ouverte && vol && vol.carte ? 1 : 0;
-      // Les marqueurs paraissent en 350 ms une fois arrivés ; ils partent en 150 ms.
       const dt = this._tA ? clamp((now - this._tA) / 1000, 0, 0.1) : 0.016;
       this._tA = now;
       const arrive = vol && vol.carte && !vol.vol ? (CameraIle.calme() ? 1 : clamp((now - (vol.arrivee || 0)) / 350, 0, 1)) : 0;
@@ -500,8 +423,6 @@ void main() {
       const dedans = (p, m) => p.devant && p.x > -m && p.x < W + m && p.y > -m && p.y < H + m;
       const inst = [];
       const pose = (a, x, h, y, ox, oy, w, hh, alpha, rot) => { if (a) inst.push([x, h, y, ox, oy, w, hh, a.u0, a.v0, a.du, a.dv, alpha, rot || 0]); };
-      // Une image de l'atlas posée à l'ancre (x, h, y) : son ancre de peinture sur le point, à
-      // l'échelle `k` (pixels d'écran par pixel de peinture), décalée de (dx, dy) pixels.
       const image = (a, x, h, y, k, alpha, dx, dy, rot) => {
         if (!a) return;
         const w = a.w * k, hh = a.h * k;
@@ -511,9 +432,6 @@ void main() {
       const libre = R => occ.every(o => R.x1 < o.x0 || R.x0 > o.x1 || R.y1 < o.y0 || R.y0 > o.y1);
       const mesHaut = 1 / densite;
 
-      // 1. Les pastilles : à 1,5 u au-dessus du sol, à l'échelle de la profondeur (60 % à 100 %),
-      // regroupées quand elles se recouvrent (la plus importante dessus, « +N »), écartées en rangée
-      // de près quand elles sont d'un même lieu.
       const Dp = Math.round(28 * ech);
       const pts = [];
       for (const it of this.reperes) {
@@ -530,8 +448,6 @@ void main() {
         const g = groupes.find(o => Math.hypot(o.p.x - q.p.x, o.p.y - q.p.y) < (o.R + R) * 0.85);
         if (g) g.membres.push(q); else groupes.push({ p: q.p, R, s: q.s, h: q.h, x: q.it.x, y: q.it.y, membres: [q] });
       }
-      // De près (sous 0,36 × D0), un petit groupe d'un même lieu (moins de 1,5 u entre eux) s'écarte
-      // en rangée au lieu de se cacher.
       const poses = [];
       for (const g of groupes) {
         const n = g.membres.length;
@@ -559,8 +475,6 @@ void main() {
         this.items.push({ x: g.p.x + g.dx, y: g.p.y, r: R + 2, cle: top.cle, item: top, groupe: g.membres.map(m => m.it) });
       }
 
-      // 2. Les épingles des quêtes suivies (vertes), puis le joueur : l'anneau qui respire au sol,
-      // la flèche de son cap au bord de l'anneau, son épingle bleue par-dessus tout.
       const Ep = Math.round(30 * ech);
       for (const it of this.reperes) {
         if (!it.epingle) continue;
@@ -578,7 +492,6 @@ void main() {
       const w = ile.world, pj = w && w.player;
       if (pj) {
         const x = pj.rx, y = pj.ry, h = ile.hauteur(x, y) + 0.1, p = proj(x, h, y);
-        // Le cap : la marche, sinon la dernière orientation de la figure (les quatre diagonales des cases).
         const pr = this.prec;
         if (pr && Math.hypot(x - pr.x, y - pr.y) > 0.02) this.cap = Math.atan2(y - pr.y, x - pr.x);
         else if (this.cap == null) { const F = { se: [1, 0], sw: [0, 1], nw: [-1, 0], ne: [0, -1] }[pj.facing] || [0, 1]; this.cap = Math.atan2(F[1], F[0]); }
@@ -601,17 +514,13 @@ void main() {
           }
         }
       }
-      // La cible choisie au sol.
       if (this.cible) {
         const c = this.cible, h = ile.hauteur(c.x, c.y) + 0.1, p = proj(c.x, h, c.y);
         if (dedans(p, 20)) { const a = A.obtenir(`c:${densite}`, () => peindreCible(Math.round(26 * densite))); if (a) sous.push([a, c.x, h, c.y, 26 * ech / a.w, this.alpha, 0, 0]); }
       }
 
-      // 3. Les noms : les zones, puis les sous-zones, puis les lieux, chacun seulement s'il ne
-      // chevauche ni un marqueur ni un nom déjà placé (les plus grands d'abord).
       const L = this.lieux || { zones: [], sousZones: [], lieux: [] };
       const textes = [];
-      // Un nom se pose sur son point, sinon juste au-dessus, au-dessous ou à côté s'il y a la place.
       const essai = (n, a) => {
         if (a < 0.04) return;
         const art = A.obtenir(`n:${n.sorte}:${n.nom}:${n.sous || ''}:${ech.toFixed(2)}:${densite}`, () => peindreNom(n.sorte, n.nom, n.sorte === 'zone' ? n.sous : '', ech * densite, theme));
@@ -641,7 +550,6 @@ void main() {
       const aLieu = 1 - lisse(NOMS.lieux[0], NOMS.lieux[1], r);
       for (const n of L.lieux) essai(n, aLieu);
 
-      // L'ordre du dessin : les noms, ce qui est sous les marqueurs (anneaux), les marqueurs.
       for (const t of textes.concat(sous, dessus)) image(t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8]);
       const n = Math.min(MAX, inst.length);
       for (let i = 0; i < n; i++) {
@@ -659,8 +567,6 @@ void main() {
       if (this.opts.surImage) { try { this.opts.surImage(this); } catch (e) { console.error(e); } }
     }
 
-    // Ce qu'il y a sous un point de la vue (pixels) : le dernier dessiné d'abord ; au doigt, la
-    // cible s'agrandit à 22 px. Les noms passent après les marqueurs.
     sous(x, y, doigt) {
       const it = this.items;
       for (let i = it.length - 1; i >= 0; i--) {
@@ -674,12 +580,10 @@ void main() {
       }
       return null;
     }
-    // La position à l'écran d'un élément dessiné à cette image (sa bulle la suit), ou null.
     ecranDe(cle) { const h = this.items.find(i => i.cle === cle); return h ? { x: h.x, y: h.y, r: h.r } : null; }
 
     octets() { return (this.atlas ? this.atlas.octets() : 0); }
 
-    // Pour les tests : ce qui est dessiné.
     etat() {
       return {
         ouverte: this.ouverte, alpha: this.alpha, instances: this.geo.instanceCount,

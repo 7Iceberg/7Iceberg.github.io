@@ -1,20 +1,8 @@
-// Les gemmes du HUD, dessinées en SVG, à la manière des pierres du HUD de Dofus : le cœur des PV (un
-// cœur de verre facetté, serti, où la vie est un liquide rouge qui baisse) et les pierres en losange
-// (PV, PA, PM, XP), facettées et serties, où un liquide de couleur monte et descend. Chaque gemme a
-// un serti sombre (le contour élargi), un liseré clair sur le haut du serti, des facettes éclairées
-// d'en haut à gauche, un reflet. Le niveau du liquide suit la surface remplie, pas la hauteur : un
-// cœur ou un losange à 18 % ne paraît pas vide. Les chiffres sont posés en HTML par-dessus.
-// Le bloc des gemmes (Gemmes.bloc) a deux styles, au choix dans les Options (« Bloc vital ») :
-// « Cœur et losanges » (le cœur de verre, puis les losanges des PA, de l'XP et des PM) et « Grappe »
-// (le grand losange des PV, les petits serrés sur son flanc). Utilisé par le bloc vital
-// (js/hud-fenetres.js) et la barre de combat (js/hud-jeu.js) ; mise en page dans css/fenetres.css.
 const Gemmes = (() => {
   let n = 0;
   const f = v => v.toFixed(1);
   const pts = a => a.map(p => f(p[0]) + ',' + f(p[1])).join(' ');
-  // Un polygone rapproché de son centre `c` d'un facteur `k` (la gemme dans son serti).
   const serre = (o, c, k) => o.map(p => [c[0] + (p[0] - c[0]) * k, c[1] + (p[1] - c[1]) * k]);
-  // La lumière d'une facette : d'en haut à gauche ; > 0 éclaircit, < 0 assombrit.
   const lumiere = (c, a, b) => {
     const mx = (a[0] + b[0]) / 2 - c[0], my = (a[1] + b[1]) / 2 - c[1], L = Math.hypot(mx, my) || 1;
     return (mx / L) * -0.55 + (my / L) * -0.83;
@@ -22,10 +10,8 @@ const Gemmes = (() => {
   const voile = s => s > 0 ? `fill="#fff" fill-opacity="${f(0.04 + 0.36 * s)}"` : `fill="#000" fill-opacity="${f(0.05 + 0.4 * -s)}"`;
   const eventail = (c, o) => o.map((p, i) => { const q = o[(i + 1) % o.length]; return `<polygon points="${pts([c, p, q])}" ${voile(lumiere(c, p, q))}/>`; }).join('');
   const aretes = (c, o, op) => `<path d="${o.map(p => `M${f(c[0])} ${f(c[1])}L${f(p[0])} ${f(p[1])}`).join('')}" stroke="#fff" stroke-opacity="${op}" stroke-width=".8"/>`;
-  // Le serti : le contour sombre, un liseré clair sur son bord haut.
   const serti = (o, id) => `<polygon points="${pts(o)}" fill="url(#${id}s)" stroke="#0b0710" stroke-width="2.4" stroke-linejoin="round"/>`;
   const defsSerti = id => `<linearGradient id="${id}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a4456"/><stop offset=".45" stop-color="#211c29"/><stop offset="1" stop-color="#0f0b14"/></linearGradient>`;
-  // La surface d'un polygone, et la part de ce polygone sous la ligne y = L (y vers le bas).
   const aire = o => Math.abs(o.reduce((s, p, i) => { const q = o[(i + 1) % o.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
   const sous = (o, L) => {
     const r = [];
@@ -36,20 +22,17 @@ const Gemmes = (() => {
     });
     return r;
   };
-  // Une forme à remplir : son haut, son bas, et la surface remplie pour 41 hauteurs de liquide.
   const forme = o => {
     const haut = Math.min(...o.map(p => p[1])), bas = Math.max(...o.map(p => p[1])), A = aire(o), tab = [];
     for (let k = 0; k <= 40; k++) tab.push(aire(sous(o, bas - (bas - haut) * k / 40)) / A);
     return { haut, bas, tab };
   };
-  // La hauteur du liquide (de 0 à 1, depuis le bas) qui remplit la part `p` de la surface.
   const hauteur = (F, p) => {
     const t = F.tab;
     for (let k = 1; k < t.length; k++) if (t[k] >= p) return (k - 1 + (p - t[k - 1]) / Math.max(1e-6, t[k] - t[k - 1])) / (t.length - 1);
     return 1;
   };
 
-  // ----- Le cœur : 100 × 92, la pointe en bas. Le liquide (.vy-gem__liquide) remplit le cœur intérieur.
   const COEUR = [[50, 89], [7, 47], [2, 28], [11, 9], [30, 2], [44, 8], [50, 17], [56, 8], [70, 2], [89, 9], [98, 28], [93, 47]];
   const CC = [50, 42], COEUR_IN = serre(COEUR, CC, 0.84);
   function coeur() {
@@ -72,8 +55,6 @@ const Gemmes = (() => {
       <ellipse cx="29" cy="21" rx="10" ry="4.4" transform="rotate(-26 29 21)" fill="#fff" fill-opacity=".42"/>
       <ellipse cx="40" cy="14.5" rx="2.6" ry="1.6" fill="#fff" fill-opacity=".55"/></svg>`;
   }
-  // ----- Les pierres en losange : 100 × 100, une table au centre, quatre pans, sertie ; le liquide
-  // (.vy-gem__liquide) remplit le verre. Teintes : clair, milieu, sombre, la surface.
   const LOS = [[50, 2], [98, 50], [50, 98], [2, 50]], LC = [50, 50], LOS_IN = serre(LOS, LC, 0.84), LOS_T = serre(LOS, LC, 0.4);
   const TEINTES = {
     pv: ['#ff8a7a', '#e01f35', '#6d0414', '#ffc0b5'], pa: ['#a6dcff', '#3f95f2', '#123f96', '#d8f0ff'],
@@ -104,8 +85,6 @@ const Gemmes = (() => {
   }
 
   const FORMES = { coeur: forme(COEUR_IN), pierre: forme(LOS_IN) };
-  // Le niveau du liquide d'un cœur ou d'une pierre : `pct` de 0 à 1 de sa surface (le liquide
-  // glisse ; sa surface reste dessus).
   function remplir(svg, pct) {
     if (!svg) return;
     const F = svg.classList.contains('vy-gem--coeur') ? FORMES.coeur : FORMES.pierre;
@@ -116,8 +95,6 @@ const Gemmes = (() => {
     svg.querySelectorAll('.vy-gem__surface').forEach(s => { s.style.display = p >= 0.995 ? 'none' : ''; });
   }
 
-  // ----- Le bloc des gemmes : le style ('coeur' ou 'grappe') et, si `xp`, la pierre de l'XP (le
-  // bloc vital ; la barre de combat s'en passe).
   const STYLES = [['coeur', 'Cœur et losanges'], ['grappe', 'Grappe']];
   const styleSur = s => (STYLES.some(x => x[0] === s) ? s : STYLES[0][0]);
   function bloc(style, xp) {
@@ -127,8 +104,6 @@ const Gemmes = (() => {
       `<span class="vy-gemmes__pv" role="img" aria-label="Points de vie">${s === 'grappe' ? pierre('pv') : coeur()}<b></b></span>` +
       `<span class="vy-gemmes__trio">${pt('pa', 'Points d\'action')}${xp ? pt('xp', 'Expérience') : ''}${pt('pm', 'Points de mouvement')}</span></div>`;
   }
-  // Les valeurs du bloc : { hp, hpMax, pa, paMax, pm, pmMax, xp (de 0 à 1), xpTexte, xpTitre }.
-  // Les PA et PM se vident au fil du tour ; la vie sous 30 % luit (classe « bas »).
   function maj(el, v) {
     if (!el) return;
     const pct = Math.max(0, Math.min(1, v.hp / Math.max(1, v.hpMax)));
@@ -151,7 +126,6 @@ const Gemmes = (() => {
       if (v.xpTitre) x.title = v.xpTitre;
     }
   }
-  // Un aperçu figé du style (les Options) : 82 PV sur 106, 6 PA, 3 PM, 34 % d'XP.
   function apercu(style) {
     const t = document.createElement('div');
     t.innerHTML = bloc(style, true);

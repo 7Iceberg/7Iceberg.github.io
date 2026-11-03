@@ -1,15 +1,4 @@
-/* ==========================================================================
-   Veylan : l'interface de jeu du téléphone (js/hud-jeu.js, js/discussion.js, js/ui.js)
-   --------------------------------------------------------------------------
-   En paysage sur téléphone (500 pixels de haut ou moins) : la scène à gauche, le panneau de jeu
-   dans une colonne à part à droite (jamais posé sur la scène), la carte d'infos et la quête suivie
-   en haut à gauche, la barre de tour en bas à droite en combat. Ailleurs (ordinateur, tablette),
-   la disposition en fenêtres reste ; la discussion, la fiche des groupes, la confirmation des
-   sorts et les rubans servent partout. Nuit, or ancien, cristal pour ce qui est actif, violet des
-   Voiles en accent, jamais de contour noir.
-   ========================================================================== */
 
-/* ----- La discussion : panneau translucide, lignes colorées par type ----- */
 .vy-chat { margin: 0; }
 .vy-chat--systeme { --c: #f2a65a; }
 .vy-chat--quete { --c: #9fd08f; }
@@ -58,7 +47,6 @@
 .vy-discussion__lignes .vy-chat { padding: 2px 0; color: var(--c); font: 500 12.5px/1.4 var(--vy-font-ui); }
 .vy-discussion__lignes time { margin-right: 4px; color: var(--vy-texte-2); font-size: 10.5px; font-variant-numeric: tabular-nums; opacity: 0.7; }
 
-/* Repliée : les dernières lignes flottent en bas à gauche, puis s'effacent. */
 .vy-discussion__flottant {
   position: absolute;
   left: 10px;
@@ -108,7 +96,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 }
 .vy-discussion__compte[hidden], .vy-panneau__nonlu[hidden] { display: none; }
 
-/* ----- La fiche d'un groupe de monstres ----- */
 .vy-fiche-groupe {
   position: absolute; left: 0; top: 0; z-index: 19;
   width: 232px;
@@ -133,10 +120,8 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-fiche-groupe__nom { color: #b9e08f; }
 .vy-fiche-groupe__liste small { color: var(--vy-texte-2); font-weight: 500; }
 .vy-fiche-groupe__liste b { margin-left: auto; color: var(--vy-texte-or); font-variant-numeric: tabular-nums; }
-/* Sur l'île : résistances et faiblesses d'un monstre, sous son nom, aux couleurs des éléments. */
 .vy-fiche-groupe__liste .vy-fiche-groupe__resist { flex-wrap: wrap; gap: 2px 6px; margin: -1px 0 3px 16px; font: 600 11.5px/1.3 var(--vy-font-ui); }
 .vy-fiche-groupe__resist span { color: color-mix(in srgb, var(--c) 78%, #fff); }
-/* La leçon des Sources (js/guide.js, groupeFaible) : le Glym à viser, celui qui résiste. */
 .vy-fiche-groupe__liste li.vy-faible { background: color-mix(in srgb, var(--vy-or-clair) 22%, transparent); box-shadow: inset 3px 0 0 var(--vy-or-clair); border-radius: 4px; }
 .vy-fiche-groupe__liste li.vy-resiste { opacity: 0.55; }
 .vy-fiche-groupe__resist small + span, .vy-fiche-groupe__resist span + small { margin-left: 2px; }
@@ -151,7 +136,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-fiche-groupe__attaquer { flex: 1; min-height: 44px; font: 800 15px/1 var(--vy-font-titre); letter-spacing: 0.08em; text-transform: uppercase; }
 @keyframes vy-fiche-entre { from { opacity: 0; } }
 
-/* ----- La confirmation d'un sort, le coût d'un déplacement ----- */
 .vy-confirm-sort {
   position: absolute; left: 0; top: 0; z-index: 13;
   min-width: 168px;
@@ -186,7 +170,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 }
 .vy-cout-pm b { color: var(--vy-cimes-clair); font-size: 13px; }
 
-/* ----- La barre de tour (téléphone en paysage, en combat) ----- */
 .vy-barre-tour { display: none; }
 .vy-barre-tour__tete { position: absolute; left: 10px; bottom: 100%; display: flex; }
 .vy-barre-tour__chrono {
@@ -207,7 +190,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-barre-tour__tour { text-align: center; color: var(--vy-texte); font: 600 12.5px var(--vy-font-ui); white-space: nowrap; }
 .vy-barre-tour__action { min-height: 36px; padding: 0 12px; font-size: 13px; white-space: nowrap; }
 
-/* ----- Le panneau de jeu et sa languette : cachés hors du téléphone en paysage ----- */
 .vy-panneau { display: none; }
 .vy-languette { display: none; }
 .vy-carte-info { display: none; }
@@ -217,7 +199,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-badge--point { min-width: 0; width: 9px; height: 9px; padding: 0; right: 0; top: 0; font-size: 0; background: var(--vy-cristal); box-shadow: 0 0 8px rgba(0, 194, 255, 0.8); }
 .vy-menu { position: relative; }
 
-/* ----- Quitter le combat : une confirmation au milieu de la scène ----- */
 .vy-confirmer {
   position: absolute; left: 50%; top: 40%; z-index: 21;
   transform: translate(-50%, -50%);
@@ -235,7 +216,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-confirmer__boutons { display: flex; justify-content: center; gap: 10px; }
 .vy-confirmer__boutons .vy-bouton { min-height: 40px; min-width: 96px; }
 
-/* ----- Les émotes : une bulle au-dessus du personnage ----- */
 .vy-emote-bulle {
   position: absolute; left: 0; top: 0; z-index: 12;
   width: 40px; height: 40px; padding: 8px;
@@ -251,7 +231,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-emote-bulle.sort { opacity: 0; transition: opacity 0.35s ease; }
 @keyframes vy-emote { 0% { opacity: 0; scale: 0.4; } 70% { scale: 1.12; } 100% { opacity: 1; scale: 1; } }
 
-/* ----- « Tourne ton téléphone » ----- */
 .vy-tourne {
   position: fixed; inset: 0; z-index: 60;
   display: grid; place-items: center;
@@ -274,7 +253,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-tourne__lien { margin-top: 10px; padding: 8px 10px; border: 0; background: none; color: var(--vy-cristal); font: 600 14px var(--vy-font-ui); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 @keyframes vy-tourne { 0%, 25% { transform: rotate(0); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
 
-/* ===== Le téléphone en paysage ===== */
 @media (orientation: landscape) and (max-height: 500px) {
   #app, #app.mode-explore, #app.mode-combat {
     --panneau-l: calc(clamp(214px, 30vw, 300px) * var(--ui-z, 1));
@@ -282,17 +260,11 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
     grid-template-rows: minmax(0, 1fr);
   }
   #app.vy-gaucher, #app.vy-gaucher.mode-explore, #app.vy-gaucher.mode-combat { grid-template-columns: var(--panneau-l) minmax(0, 1fr); }
-  /* Les règles du téléphone d'avant (css/style.css) posent la scène sous une barre en combat. */
   #app #stage, #app.mode-explore #stage, #app.mode-combat #stage { grid-row: 1; grid-column: 1; }
   #app.vy-gaucher #stage, #app.vy-gaucher.mode-explore #stage, #app.vy-gaucher.mode-combat #stage { grid-column: 2; }
   #app #topbar, #app #side, #app #hud { display: none; }
-  /* Les fenêtres s'ouvrent sur la scène ; le panneau reste visible à côté. Placé hors du flux,
-     un élément de la grille prend la case nommée pour bloc conteneur : début et fin explicites
-     (une fin « auto » irait jusqu'au bord de #app). */
   #app .vy-fenetres { grid-row: 1 / 2; grid-column: 1 / 2; inset: var(--zs-haut) 0 var(--zs-bas) var(--zs-gauche); }
   #app.vy-gaucher .vy-fenetres { grid-column: 2 / 3; inset: var(--zs-haut) var(--zs-droite) var(--zs-bas) 0; }
-  /* La carte du monde prend tout l'écran, panneau compris, comme sur Dofus Touch : en position fixe,
-     elle sort de la colonne de la scène (la couche des fenêtres passe déjà au-dessus du panneau). */
   #app .vy-fenetre--carte {
     position: fixed;
     left: calc(4px + var(--zs-gauche)) !important; top: calc(4px + var(--zs-haut)) !important;
@@ -302,9 +274,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   #app .vy-fenetre--carte .vy-carte__corps { grid-template-columns: minmax(0, 1fr) 270px; }
   #explore-hud, #toasts, #banner { position: absolute; }
   #explore-hud { inset: var(--sc-haut) var(--sc-droite) var(--sc-bas) var(--sc-gauche); }
-  /* Les annonces en haut à droite de la scène : le bas garde le coffre des récompenses, les
-     lignes de la discussion et les réponses aux PNJ. */
-  /* À gauche de la colonne des boutons de la vue (.vy-camera, 54 px avec sa marge). */
   #toasts { top: calc(8px + var(--sc-haut)); right: calc(58px + var(--sc-droite)); bottom: auto; left: auto; transform: none; align-items: flex-end; max-width: 58%; }
   #toasts .toast { max-width: 100%; }
   #app #recompenses-btn { bottom: 10px; }
@@ -312,13 +281,9 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   #banner { top: 16%; padding: 8px 22px; font-size: 17px; }
   #player-bar, #map-name, #lieu, #tracker, #bas-centre, #minicarte, #app .vy-menus, .vy-discussion__bouton { display: none !important; }
 
-  /* La toile remplit la scène (js/camera.js y cadre le plateau, css/style.css), en combat aussi
-     (plus de barres autour). La scène touche le haut, le bas et son côté de l'écran, pas celui du
-     panneau : l'encoche passe sur le ciel, l'interface de la scène s'en écarte (--sc-*). */
   #app #stage, #app.mode-combat #stage { --sc-haut: var(--zs-haut); --sc-droite: 0px; --sc-bas: var(--zs-bas); }
   #app.vy-gaucher #stage, #app.vy-gaucher.mode-combat #stage { --sc-gauche: 0px; --sc-droite: var(--zs-droite); }
 
-  /* ----- Carte d'infos et quête suivie ----- */
   .vy-carte-info { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; position: absolute; left: 6px; top: 6px; max-width: min(66%, 330px); }
   .vy-carte-info__carte, .vy-carte-info__suivi {
     display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
@@ -343,32 +308,21 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   .vy-carte-info__suivi small { font: 500 11px/1.25 var(--vy-font-ui); color: var(--vy-texte-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .vy-carte-info__suivi.fini > svg { color: var(--vy-cimes-clair); }
   #app.vy-sans-suivi .vy-carte-info__suivi, #app.vy-degage .vy-carte-info { display: none; }
-  /* Le repère du guide sous le bloc (js/guide.js, degagerInfo) : le bloc s'efface, le doigt passe. */
   #app.vy-info-sous-repere .vy-carte-info { opacity: 0.2; transition: opacity 0.2s; }
   #app.vy-info-sous-repere .vy-carte-info, #app.vy-info-sous-repere .vy-carte-info * { pointer-events: none; }
-  /* Le coffre des récompenses ne se cache pas sous la boîte du guide : il passe du côté libre. */
   body.vy-guide-visible #app #recompenses-btn { left: auto; right: 12px; transform: none; animation-name: recompenses-pouls-cote; }
-  /* Le battement sans le translateX(-50%) du coffre centré (sinon il glisse de 29 px à chaque battement). */
   @keyframes recompenses-pouls-cote { 50% { transform: scale(1.06); } }
   body.vy-guide-visible #app #recompenses-btn:active { transform: scale(0.96); }
   body.vy-guide-visible #stage:has(> .vy-guide--tuto[data-cote="droite"]) #recompenses-btn { right: auto; left: 12px; }
-  /* Les rappels du mode court, en exploration : en bas à droite de la scène, au-dessus du coffre
-     (en haut, ils couvraient le nom de la carte ; à gauche, les lignes de la discussion). */
   #app.mode-explore .vy-rappel { left: auto; right: 10px; top: auto; bottom: 72px; transform: none; max-width: calc(58% - 20px); }
-  /* Une fenêtre ouverte : le rappel remonte en haut, sur sa barre de titre, et laisse passer le doigt
-     (en bas, il couvrait ses boutons, « Tout accepter » des récompenses par exemple). */
   #app.mode-explore:has(#fenetres > .vy-fenetre) .vy-rappel { left: 50%; right: auto; top: 10px; bottom: auto; transform: translateX(-50%); }
 
-  /* ----- La discussion et ses lignes flottantes ----- */
   .vy-discussion { left: calc(6px + var(--sc-gauche)); top: calc(6px + var(--sc-haut)); width: min(340px, calc(100% - 12px)); height: min(230px, 62%); }
   #app.mode-combat .vy-discussion { top: calc(6px + var(--sc-haut)); }
   .vy-discussion__onglet { padding: 3px 6px; letter-spacing: 0; }
-  /* La discussion ouverte prend la place de la carte d'infos. */
   body.vy-discussion-ouverte .vy-carte-info { display: none; }
-  /* Le milieu du bas de la scène reste libre (le bouton des récompenses, un autre chantier). */
   .vy-discussion__flottant { left: calc(6px + var(--sc-gauche)); bottom: calc(8px + var(--sc-bas)); max-width: min(330px, 42%); }
 
-  /* ----- La barre de tour, en bas à droite de la scène ----- */
   #app.mode-combat .vy-barre-tour {
     display: block;
     position: absolute; right: calc(6px + var(--sc-droite)); bottom: calc(6px + var(--sc-bas)); z-index: 8;
@@ -382,7 +336,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   .vy-barre-tour .vy-combattant { width: 34px; height: 40px; border-radius: 5px; }
   .vy-barre-tour .vy-combattant.invoc { width: 28px; height: 33px; }
 
-  /* ----- L'indice du placement ----- */
   #app.mode-combat .vy-indice:not(.hidden) {
     display: block; position: absolute; left: 50%; top: 8px; z-index: 9; transform: translateX(-50%);
     max-width: calc(100% - 24px);
@@ -391,7 +344,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
     color: var(--vy-texte); font: 600 12px/1.3 var(--vy-font-ui); white-space: nowrap; pointer-events: none;
   }
 
-  /* ----- Fiches des combattants : la fiche de l'inspecté, posée sur la scène ----- */
   #app.vy-fiches.mode-combat #side {
     display: flex !important;
     position: absolute; grid-row: 1 / 2; grid-column: 1 / 2; top: 6px; right: 6px; z-index: 9;
@@ -403,12 +355,9 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   #app.vy-fiches #log { display: none; }
   #app.vy-fiches #inspect { border: 0; padding: 8px 10px; font-size: 12px; }
   #app.vy-fiches #inspect h3 { font-size: 14px; }
-  /* Les boutons de la vue (css/fenetres.css) : dans le ciel, au-dessus de la pointe droite du
-     plateau (au milieu du bord, ils la couvriraient) ; à gauche quand la fiche occupe la droite. */
   #app .vy-camera, #app.mode-combat .vy-camera { top: 25%; bottom: auto; transform: translateY(-50%); }
   #app.vy-fiches.mode-combat .vy-camera { right: auto; left: calc(10px + var(--sc-gauche)); }
 
-  /* ----- Le panneau ----- */
   #app .vy-panneau {
     --case: 38px;
     display: flex;
@@ -425,18 +374,12 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   }
   #app.vy-gaucher .vy-panneau { grid-column: 1; padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: 6px; box-shadow: inset -1.5px 0 0 var(--vy-filet-fort), 6px 0 18px rgba(5, 8, 13, 0.35); }
 
-  /* ----- Le panneau replié (3.29) : la scène prend toute la largeur ; une languette d'icônes sur
-     le bord droit de la scène ouvre le panneau, qui glisse par-dessus la scène, à gauche de la
-     languette (sous la couche des fenêtres, comme avant). L'interface de la scène s'écarte de ce
-     qui la couvre (--sc-droite), la caméra aussi (main.js, HudJeu.insetDroite). ----- */
   #app.vy-replie, #app.vy-replie.mode-explore, #app.vy-replie.mode-combat, #app.vy-replie.vy-gaucher, #app.vy-replie.vy-gaucher.mode-explore, #app.vy-replie.vy-gaucher.mode-combat {
     --panneau-l: calc(clamp(206px, 27vw, 280px) * var(--ui-z, 1));
     --languette-l: calc(46px * var(--ui-z, 1));
     grid-template-columns: minmax(0, 1fr);
   }
   #app.vy-replie #stage, #app.vy-replie.mode-explore #stage, #app.vy-replie.mode-combat #stage, #app.vy-replie.vy-gaucher #stage, #app.vy-replie.vy-gaucher.mode-explore #stage, #app.vy-replie.vy-gaucher.mode-combat #stage { grid-column: 1; }
-  /* Les fenêtres gardent la part libre de la scène : jamais sur la languette ni sur le panneau
-     ouvert (la carte du monde, en position fixe, prend tout l'écran comme avant). */
   #app.vy-replie .vy-fenetres, #app.vy-replie.vy-gaucher .vy-fenetres { grid-column: 1 / 2; inset: var(--zs-haut) calc(var(--languette-l) + var(--zs-droite)) var(--zs-bas) 0; }
   #app.vy-replie.vy-panneau-ouvert .vy-fenetres { right: calc(var(--languette-l) + var(--panneau-l) + var(--zs-droite)); }
   #app.vy-replie.vy-gaucher .vy-fenetres { inset: var(--zs-haut) 0 var(--zs-bas) calc(var(--languette-l) + var(--zs-gauche)); }
@@ -495,7 +438,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   .vy-pt { position: relative; display: grid; place-content: center; width: 30px; height: 24px; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; }
   .vy-pt b { color: #fff; font: 800 13px var(--vy-font-ui); text-shadow: 0 1px 2px rgba(20, 12, 4, 0.8); }
   .vy-pt small { display: none; }
-  /* PA : un hexagone d'or ; PM : un chevron de marche, vert des Cimes. */
   .vy-pt--pa { clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); background: radial-gradient(circle at 40% 30%, #f6dc9a, #b0873f 62%, #7a5a28); }
   .vy-pt--pm { clip-path: polygon(0 0, 66% 0, 100% 50%, 66% 100%, 0 100%, 24% 50%); background: linear-gradient(135deg, #a9d79c, #4f8a4a 65%, #2d5530); padding-left: 4px; }
 
@@ -527,7 +469,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   .vy-panneau__page:disabled { opacity: 0.25; cursor: default; }
   .vy-panneau__num { color: var(--vy-texte-2); font: 700 11px var(--vy-font-ui); }
 
-  /* Une case de la grille : le losange du sort à la couleur de son élément, ou l'objet. */
   .vy-slot {
     position: relative; min-width: 0; height: var(--case); padding: 0;
     border: 0; border-radius: 6px;
@@ -625,7 +566,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   .vy-emotes button:hover { box-shadow: 0 0 0 1.5px var(--vy-cristal); }
 }
 
-/* Petites hauteurs : la grille et les menus se serrent. */
 @media (orientation: landscape) and (max-height: 400px) {
   #app .vy-panneau { --case: 34px; gap: 4px; }
   .vy-panneau__pv { width: 40px; height: 46px; }
@@ -637,7 +577,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   .vy-panneau__xp { display: none; }
 }
 
-/* ===== Téléphone en portrait (après « Continuer en portrait ») ===== */
 @media (max-width: 600px) and (orientation: portrait) {
   .vy-discussion { left: 6px; top: 60px; width: calc(100% - 12px); }
   .vy-discussion__flottant { left: 6px; bottom: 118px; max-width: calc(100% - 70px); }
@@ -649,12 +588,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   .vy-panneau__grille.libre .vy-slot, .vy-panneau__pv.bas .vy-panneau__pv-bord { animation: none !important; }
 }
 
-/* ===== La barre de combat, à la manière de Dofus (js/hud-jeu.js) : le cœur des PV, l'étoile des
-   PA, le losange des PM ; les sorts ; l'anneau du temps et « Prêt » ou « Fin du tour ». Au
-   téléphone en paysage, elle tient le bas de la scène et la barre de tour devient la frise des
-   combattants en haut ; sur ordinateur (style verre), elle remplace la barre du bas, et la frise
-   se pose juste au-dessus d'elle. La caméra cadre l'aire entre les deux (HudJeu.insetHaut,
-   insetBas). ===== */
 .vy-barre-sorts { display: none; }
 .vy-barre-sorts__boite {
   position: relative; pointer-events: auto; zoom: var(--ui-z, 1);
@@ -665,7 +598,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   background: var(--v-degrade, linear-gradient(90deg, #e9cf98, #b08c52)) top / 100% 2px no-repeat, rgba(var(--v-fen-rgb, 12, 19, 29), var(--v-alpha, 0.9));
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
-/* Les effets en cours (l'Affût, la Fureur, les bonus) : une pastille au-dessus du coin droit. */
 .vy-barre-sorts__etats {
   position: absolute; right: 10px; bottom: calc(100% + 5px); max-width: calc(100% - 20px);
   padding: 3px 10px; border-radius: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -673,11 +605,9 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   background: rgba(var(--v-fen-rgb, 12, 19, 29), 0.92); border: 1px solid rgba(var(--v-a-rgb, 233, 207, 152), 0.35);
 }
 .vy-barre-sorts__etats[hidden] { display: none; }
-/* Les gemmes des PV, PA et PM (le bloc de css/fenetres.css, plus petit) */
 .vy-barre-sorts__vie { flex: none; display: flex; align-items: center; }
 .vy-barre-sorts__vie .vy-gemmes { --u: 28px; }
 .vy-barre-sorts__vie .vy-gemmes--grappe { --u: 28px; }
-/* Les sorts */
 .vy-barre-sorts__sorts { min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 3px; padding: 0 8px; border-left: 1px solid rgba(var(--v-ligne-rgb, 201, 166, 107), 0.16); border-right: 1px solid rgba(var(--v-ligne-rgb, 201, 166, 107), 0.16); }
 .vy-barre-sorts__titre { display: none; font: 700 9px var(--vy-font-ui); letter-spacing: 0.18em; text-transform: uppercase; color: var(--v-texte-2, #a79f8f); text-align: center; }
 .vy-barre-sorts__liste { min-width: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 7px 4px 2px; margin-top: -5px; }
@@ -694,7 +624,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-barre-sorts .vy-sort__pa { position: absolute; right: -5px; top: -7px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 5px; font: 800 9.5px/16px var(--vy-font-ui); font-style: normal; text-align: center; color: #17110a; background: var(--v-pa, #e9cf98); box-shadow: 0 0 0 1.5px rgb(var(--v-fen-rgb, 12, 19, 29)); }
 .vy-barre-sorts .vy-sort__touche { position: absolute; left: 3px; bottom: 1px; font: 700 8.5px var(--vy-font-ui); font-style: normal; color: rgba(255, 255, 255, 0.9); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9); pointer-events: none; }
 .vy-barre-sorts .vy-sort__cd { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 9px; background: rgba(10, 17, 27, 0.66); color: #ff9b82; font: 800 15px var(--vy-font-ui); }
-/* Une tuile dessinée (js/sort-tuiles.js) porte déjà son cadre : elle prend toute la case. */
 .vy-barre-sorts .vy-sort--tuile { border-color: transparent; background: none; }
 .vy-barre-sorts .vy-sort--tuile .vy-sort__icone { inset: 0; width: 100%; height: 100%; border-radius: 0; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45)); }
 .vy-barre-sorts .vy-sort--tuile .vy-sort__touche { left: 5px; bottom: 3px; }
@@ -703,7 +632,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-barre-sorts .vy-sort.choisi { border-color: var(--v-act, #3fd0ff); box-shadow: 0 0 0 1px var(--v-act, #3fd0ff), 0 0 14px rgba(var(--v-act-rgb, 63, 208, 255), 0.5); }
 .vy-barre-sorts .vy-sort:hover:not(.indispo) { border-color: rgba(var(--v-a-rgb, 233, 207, 152), 0.7); }
 .vy-barre-sorts .vy-sort:active { transform: translateY(1px); }
-/* Le temps du tour, « Fin du tour » */
 .vy-barre-sorts__fin { flex: none; display: flex; align-items: center; gap: 7px; }
 .vy-barre-sorts__chrono { position: relative; flex: none; width: 36px; height: 36px; display: grid; place-items: center; }
 .vy-barre-sorts__chrono svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
@@ -715,19 +643,15 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-barre-sorts__chrono.vide { visibility: hidden; }
 .vy-barre-sorts__action { flex: none; min-height: 40px; padding: 0 14px; white-space: nowrap; }
 .vy-barre-sorts__action[hidden] { display: none; }
-/* La frise : chaque combattant porte son rang dans l'ordre du tour (comme Dofus). */
 .vy-combattant__n { position: absolute; left: 1px; top: 1px; min-width: 12px; height: 12px; padding: 0 2px; border-radius: 4px; font: 800 8.5px/12px var(--vy-font-ui); font-style: normal; text-align: center; color: #fff; background: rgba(5, 8, 13, 0.72); pointer-events: none; }
 .vy-combattant.actuel .vy-combattant__n { color: #17110a; background: var(--v-pa, #e9cf98); }
 
-/* ----- Au téléphone en paysage ----- */
 @media (orientation: landscape) and (max-height: 500px) {
   #app.vy-barre-sorts-on .vy-barre-sorts {
     display: flex; justify-content: center;
     position: absolute; left: calc(6px + var(--sc-gauche)); right: calc(6px + var(--sc-droite)); bottom: calc(6px + var(--sc-bas)); z-index: 8;
     pointer-events: none;
   }
-  /* La frise des tours : la barre de tour, en haut, au milieu de la part libre de la scène (son
-     temps est dans la barre, son bouton aussi). */
   #app.mode-combat.vy-barre-sorts-on .vy-barre-tour {
     top: calc(6px + var(--sc-haut)); bottom: auto; right: auto;
     left: calc(var(--sc-gauche) + (100% - var(--sc-gauche) - var(--sc-droite)) / 2);
@@ -746,14 +670,11 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   #app.vy-barre-sorts-on .vy-barre-tour .vy-combattants { order: 1; padding: 2px; align-items: center; }
   #app.vy-barre-sorts-on .vy-barre-tour .vy-combattant { width: 30px; height: 35px; }
   #app.vy-barre-sorts-on .vy-barre-tour .vy-combattant.actuel::after { display: none; }
-  /* Ce qui se posait en haut descend sous la frise ; la boîte du guide monte au-dessus de la barre. */
   #app.vy-barre-sorts-on.mode-combat .vy-indice:not(.hidden) { top: calc(var(--sc-haut) + 62px); }
   #app.vy-barre-sorts-on { --guide-bas: 70px; }
   #app.vy-barre-sorts-on .vy-discussion { top: calc(var(--sc-haut) + 62px); }
 }
 
-/* ----- Sur ordinateur (style verre) : la barre au bas de la scène, à la place de la barre du
-   bas ; les sorts sur deux lignes ; la frise juste au-dessus ; les menus remontent en haut. ----- */
 @media (min-width: 901px) and (min-height: 521px) {
   #app.vy-verre.mode-combat.vy-barre-sorts-on #hud { display: none; }
   #app.vy-verre.mode-combat.vy-barre-sorts-on #timeline { visibility: hidden; }
@@ -774,7 +695,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   #app.vy-verre .vy-barre-sorts__chrono { width: 42px; height: 42px; }
   #app.vy-verre .vy-barre-sorts__chrono b { font-size: 14px; }
   #app.vy-verre .vy-barre-sorts__action { min-height: 40px; min-width: 128px; font-size: 14px; }
-  /* La frise des combattants, juste au-dessus de la barre */
   #app.vy-verre.mode-combat.vy-barre-sorts-on .vy-barre-tour {
     display: flex; align-items: center; gap: 10px;
     position: absolute; left: 50%; right: auto; top: auto; z-index: 8;
@@ -796,8 +716,6 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   #app.vy-verre.vy-barre-sorts-on .vy-barre-tour .vy-combattant { width: 38px; height: 46px; border-radius: 6px; }
   #app.vy-verre.vy-barre-sorts-on .vy-barre-tour .vy-combattant.actuel { width: 44px; height: 52px; }
   #app.vy-verre.vy-barre-sorts-on .vy-barre-tour .vy-combattant.actuel::after { display: none; }
-  /* Les effets en cours au-dessus du coin droit de la barre : la frise monte d'autant. */
   #app.vy-verre.mode-combat.vy-barre-sorts-on.vy-etats-on .vy-barre-tour { bottom: calc(44px + var(--barre-sorts-h, 110px) * var(--ui-z, 1)); }
-  /* La boîte du guide monte au-dessus de la frise ; la discussion aussi. */
   #app.vy-verre.mode-combat.vy-barre-sorts-on { --guide-bas: calc(var(--barre-sorts-h, 110px) * var(--ui-z, 1) + 86px); }
 }

@@ -1,29 +1,13 @@
-// Le monde d'Ervane modelé dans Blender (tools/blender/monde/ervane.py, exporté en GLB dans
-// assets/monde/ervane.glb), posé dans le jeu à la place du sol et du décor dessinés par le code :
-// derrière l'interrupteur ?monde=glb (ou DATA.ile.monde = 'glb'). Le GLB est exporté en Y vers le
-// haut : son repère est celui de la scène (X = u, Y = h, Z = v), rien à tourner.
-//
-// Un lecteur de GLB minimal, pour nos propres fichiers (ni textures, ni peaux, ni animations) : les
-// noeuds et leurs matrices, les maillages (position, normale, couleur de sommet, indices), les
-// matières (couleur de base, émission, transparence de l'eau). Les noeuds qui partagent un maillage
-// (le semis : herbes, fleurs, arbres...) deviennent une InstancedMesh : un appel de dessin par
-// forme. Le terrain, la navigation, les combats, les figures ne changent pas : le GLB vient du même
-// terrain que le jeu, à la même place.
 const IleGlb = (() => {
-  // Le monde d'un plateau (`rendu.monde` de sa définition, assets/monde/ervane.glb pour Ervane) à
-  // côté des scripts, en local comme en ligne ; l'empreinte de version du script (?v=..., posée par
-  // tools/make-online.sh) suit le fichier : un cache ne sert plus un vieux monde.
   function source(fichier) {
     let src = fichier || 'assets/monde/ervane.glb';
     try {
       const ref = document.querySelector('script[src*="ile-charge.js"]') || document.querySelector('script[src*="ile-3d.js"]');
       if (ref && ref.src) { const u = new URL(ref.src); src = new URL('../' + src, u).href + u.search; }
-    } catch (e) { /* chemin relatif */ }
+    } catch (e) {   }
     return src;
   }
 
-  // Le fichier, par fetch ; en local (file:), par XMLHttpRequest, que fetch refuse. Aussi pour les
-  // textures précuites (IleModeles.lireKtx).
   function octets(url) {
     if (!/^file:/.test(url)) return fetch(url).then(r => { if (!r.ok) throw new Error('GLB introuvable : ' + r.status); return r.arrayBuffer(); });
     return new Promise((ok, ko) => {
@@ -40,7 +24,6 @@ const IleGlb = (() => {
     return analyser(await octets(url));
   }
 
-  // Les deux morceaux d'un GLB : le JSON et le binaire.
   function analyser(buf) {
     const dv = new DataView(buf);
     if (dv.getUint32(0, true) !== 0x46546C67) throw new Error('pas un GLB');
@@ -59,7 +42,6 @@ const IleGlb = (() => {
   const TYPES = { 5120: Int8Array, 5121: Uint8Array, 5122: Int16Array, 5123: Uint16Array, 5125: Uint32Array, 5126: Float32Array };
   const N = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT4: 16 };
 
-  // Un accesseur : un tableau typé contigu (les vues entrelacées sont recopiées).
   function accesseur(G, bin, idx) {
     const a = G.accessors[idx], bv = G.bufferViews[a.bufferView];
     const Comp = TYPES[a.componentType], n = N[a.type];
@@ -74,11 +56,6 @@ const IleGlb = (() => {
     return { array: out, n, normalized: !!a.normalized };
   }
 
-  // Les attributs compacts (la passe de mémoire, 3.32) : les normales sur un octet par composante,
-  // les couleurs sur deux (sans palier visible dans les ombres, en lumière linéaire), tous normalisés
-  // (Three les ramène à leurs valeurs, getX compris) et sur quatre composantes : un pas de 4 ou 8
-  // octets, que Metal (Safari) prend tel quel. 4 octets par sommet au lieu de 12 pour une normale,
-  // 8 au lieu de 12 pour une couleur.
   function normalesCompactes(THREE, a, k = 3) {
     const n = Math.floor(a.length / k), N = new Int8Array(n * 4);
     for (let i = 0; i < n; i++) {
@@ -87,7 +64,6 @@ const IleGlb = (() => {
     }
     return new THREE.BufferAttribute(N, 4, true);
   }
-  // Les couleurs entre 0 et 1 seulement (sinon null : l'attribut reste tel quel).
   function couleursCompactes(THREE, a, k = 3) {
     const n = Math.floor(a.length / k), C = new Uint16Array(n * 4);
     for (let i = 0; i < n * k; i++) if (!(a[i] >= 0 && a[i] <= 1.0001)) return null;
@@ -118,17 +94,11 @@ const IleGlb = (() => {
     return compacter(THREE, geo);
   }
 
-  // Une matière de Three pour une matière du GLB : Lambert (la lumière du jeu), la couleur de base
-  // (linéaire, telle quelle), l'émission, les couleurs par sommet du sol, l'eau et la glace
-  // translucides, la toile et les feuillages sur les deux faces.
   function matiere(THREE, G, idx, aCouleurs, cache, teinte) {
     const cle = idx + ':' + (aCouleurs ? 'c' : 'u') + (teinte ? 't' : '');
     if (cache.has(cle)) return cache.get(cle);
     const m = (G.materials || [])[idx] || {};
     const pbr = m.pbrMetallicRoughness || {};
-    // Les matières dont la couleur vient d'un noeud (le feuillage teinté par objet, l'herbe, les
-    // fleurs) n'ont pas de facteur dans le GLB : leur couleur de base, par nom (sRGB vers linéaire) ;
-    // quand la teinte vient de l'instance (le GLB du jeu), la matière reste blanche.
     const lin = h => [1, 3, 5].map(i => { const v = parseInt(h.slice(i, i + 2), 16) / 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }).concat([1]);
     const DEFAUT = { mo_feuillage: '#5f9a56', mo_herbe: '#7fb06a', mo_fleur: '#e0c8e8', mo_bruyere: '#8a6f8a', mo_nuages: '#f4f6fb', mo_toile: '#ece6d6', mo_sol: '#d9d9d9', mo_objets_cuits: '#ffffff' };
     const base = teinte ? [1, 1, 1, 1] : (pbr.baseColorFactor || (DEFAUT[m.name] ? lin(DEFAUT[m.name]) : [0.8, 0.8, 0.8, 1]));
@@ -151,8 +121,6 @@ const IleGlb = (() => {
     return mat;
   }
 
-  // Les matrices du monde de chaque noeud, par maillage : { indexMaillage: [Matrix4, ...] } ; la
-  // teinte d'une instance (extras.teinte, linéaire) est accrochée à sa matrice.
   function instances(THREE, G) {
     const par = new Map();
     const visiter = (idx, parent) => {
@@ -177,15 +145,9 @@ const IleGlb = (() => {
     return par;
   }
 
-  // La découpe par tuile (u, v en unités du jeu) : Three.js ne dessine que ce qui entre dans le
-  // champ, tuile par tuile ; sans elle, une InstancedMesh (jamais écartée dans Three r149) et un
-  // grand maillage (sa sphère couvre l'île) sont dessinés en entier à chaque image.
   const TUILE = 60;
   const tuileDe = (x, z) => Math.floor(x / TUILE) + ':' + Math.floor(z / TUILE);
 
-  // Un grand maillage découpé par tuile : un index par tuile (les attributs partagés), la sphère
-  // englobante de chaque tuile calculée sur ses propres sommets (computeBoundingSphere prendrait
-  // tout l'attribut de position).
   function parTuiles(THREE, geo, seuil) {
     const idx = geo.index, pos = geo.getAttribute('position');
     const nTri = Math.floor((idx ? idx.count : pos.count) / 3);
@@ -213,9 +175,6 @@ const IleGlb = (() => {
     return out;
   }
 
-  // Les instances d'une forme groupées par tuile : une InstancedMesh par tuile, écartée du champ
-  // par sa propre sphère (le centre des instances, le rayon jusqu'à la plus lointaine plus la forme
-  // à son échelle), portée par une copie de la géométrie (Three lit la sphère de la géométrie).
   function instancesParTuiles(THREE, geo, mat, mats, teintable, nom) {
     const groupes = new Map();
     for (const m of mats) { const k = tuileDe(m.elements[12], m.elements[14]); if (!groupes.has(k)) groupes.set(k, []); groupes.get(k).push(m); }
@@ -238,7 +197,6 @@ const IleGlb = (() => {
       liste.forEach((m, k) => o.setMatrixAt(k, m));
       o.instanceMatrix.needsUpdate = true;
       if (teintable) {
-        // La couleur d'instance multiplie la matière (blanche pour le semis teinté).
         const c = new THREE.Color();
         liste.forEach((m, k) => { const t = m.teinte || [1, 1, 1]; c.setRGB(t[0], t[1], t[2]); o.setColorAt(k, c); });
         if (o.instanceColor) o.instanceColor.needsUpdate = true;
@@ -250,11 +208,6 @@ const IleGlb = (() => {
     return out;
   }
 
-  // Le semis fusionné par tuile : chaque instance d'une forme est cuite (ses sommets transformés par
-  // sa matrice, ses normales par la rotation, sa teinte ou la couleur de sa matière en couleur par
-  // sommet) dans le maillage de sa tuile et de son genre (feuillage à deux faces, ou le reste) : un
-  // appel de dessin par tuile et par genre au lieu d'un par forme (une InstancedMesh par forme et
-  // par tuile faisait 77 appels par image ; les formes du semis sont petites, la copie coûte peu).
   function fusionner(THREE, G, prim, geo, mats, teintable, nomMat, fusion) {
     const pos = geo.getAttribute('position'), nrm = geo.getAttribute('normal'), col = geo.getAttribute('color'), idx = geo.index;
     const m = (G.materials || [])[prim.material] || {};
@@ -289,7 +242,6 @@ const IleGlb = (() => {
     }
   }
 
-  // Les maillages du semis fusionné, un par tuile et par genre, avec leur sphère.
   function maillagesFusionnes(THREE, fusion) {
     const out = [];
     for (const [k, f] of fusion) {
@@ -308,16 +260,7 @@ const IleGlb = (() => {
     return out;
   }
 
-  // Le semis Meshy (js/ile-modeles.js, 3.32) : chaque instance d'une forme de base remplacée devient
-  // le modèle choisi pour elle (selon son genre, sa teinte et un hasard fixe tiré de sa place),
-  // tourné au hasard, à la hauteur de la forme, un peu enfoncé (pas de jour sous le pied sur une
-  // pente), cuit dans le maillage de sa tuile : positions, normales, UV de l'atlas. Rend le nombre de
-  // triangles posés (0 : la forme reste telle qu'exportée).
   const hache = (x, z, k) => { const v = Math.sin(x * 12.9898 + z * 78.233 + k * 37.719) * 43758.5453; return v - Math.floor(v); };
-  // Cuit un modèle dans le maillage de sa tuile : ses sommets tournés de `a` autour de Y, mis à
-  // l'échelle `k`, enfoncés de `enf`, puis portés par la matrice `e` (colonnes, comme Matrix4).
-  // `kx` : un étirement le long de l'axe x du modèle (les segments d'un muret ajustés à leur tronçon) ;
-  // `ky` = -1 retourne le modèle tête en bas (les cristaux pendus sous le rebord de l'île).
   function cuire(fusionS, M, e, a, k, enf, kx = 1, ky = 1) {
     const ca = Math.cos(a), sa = Math.sin(a), cle = tuileDe(e[12], e[14]) + '|' + (M.atlas || 0);
     let f = fusionS.get(cle);
@@ -339,8 +282,6 @@ const IleGlb = (() => {
     return M.idx.length / 3;
   }
 
-  // Les instances d'une forme remplacée : rend { tri, restes } (les instances gardées telles
-  // qu'exportées, quand le genre en laisse).
   function semerMeshy(G, mesh, mats, S, genre, fusionS) {
     const g = S.genres[genre], restes = [];
     if (!g) return { tri: 0, restes: mats };
@@ -352,7 +293,6 @@ const IleGlb = (() => {
       const e = m.elements, x = e[12], z = e[14];
       const nom = g.modele(m.teinte, hache(x, z, 1), x, z), M = nom && S.modeles[nom];
       if (!M) { restes.push(m); continue; }
-      // La hauteur voulue : en u (`absolu`, l'échelle de l'instance défaite) ou celle de la forme.
       const sy = Math.hypot(e[4], e[5], e[6]) || 1, abs = g.absolu && g.absolu[nom];
       const k = abs ? abs / (M.hauteur * sy) : haut / M.hauteur * (g.facteur || 1);
       tri += cuire(fusionS, M, e, hache(x, z, 2) * Math.PI * 2, k, -0.06 * (abs ? abs / sy : haut));
@@ -360,7 +300,6 @@ const IleGlb = (() => {
     return { tri, restes };
   }
 
-  // Les objets posés (IleModeles.poses) : { nom, x, y, z, a, k }.
   function poserMeshy(S, fusionS, compte) {
     let tri = 0;
     const e = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
@@ -374,16 +313,9 @@ const IleGlb = (() => {
     return tri;
   }
 
-  // Les maillages du semis Meshy, un ou plusieurs par tuile (65 535 sommets au plus : des index sur
-  // 16 bits), avec la matière de l'atlas ; nommés « semis » (la portée du semis, la carte de l'île qui
-  // les réunit d'en haut, la vue tactique qui les cache). Les sommets sont compacts : les positions
-  // sur deux octets par composante autour du centre du morceau (sa matrice les remet à l'échelle :
-  // un millième d'unité près), les normales sur un octet, les UV de l'atlas sur deux (un trentième de
-  // pixel), 16 octets par sommet au lieu de 32.
   function maillagesMeshy(THREE, fusionS, mats) {
     const out = [];
     for (const [k, f] of fusionS) {
-      // Un morceau réunit des instances entières (leurs triangles ne touchent que leurs sommets).
       const morceaux = [], b = f.bornes.concat([[f.n, f.idx.length]]);
       let v0 = 0, i0 = 0;
       for (let q = 1; q < b.length; q++) {
@@ -423,12 +355,6 @@ const IleGlb = (() => {
     return out;
   }
 
-  // Le groupe de Three du GLB : les grands maillages uniques en Mesh par tuile, le semis fusionné
-  // par tuile et par genre, les formes qui émettent (les lucioles) en InstancedMesh par tuile.
-  // `opts.teinte(u, v, nomMaillage, teinte)` : un style peut reteindre une instance avant la cuisson
-  // des couleurs (le feuillage d'automne des Mailles du style Lisière, 3.25) ; rend la nouvelle
-  // teinte (linéaire) ou null. `opts.cacher(u, v)` : vrai là où une instance du semis de l'export
-  // (`base_*`) n'a plus sa place (sous une parcelle posée après l'export, T.closA).
   function construire(THREE, glb, opts) {
     const { json: G, bin } = glb;
     const groupe = new THREE.Group();
@@ -446,7 +372,6 @@ const IleGlb = (() => {
         if (!mats.length) continue;
       }
       if (opts && opts.teinte) for (const m of mats) { const t = m.teinte ? opts.teinte(m.elements[12], m.elements[14], mesh.name || '', m.teinte) : null; if (t) m.teinte = t; }
-      // Le semis Meshy (opts.semis, js/ile-modeles.js) : la forme remplacée par son modèle.
       const genre = opts && opts.semis && opts.semis.formes[mesh.name];
       if (genre) {
         const r = semerMeshy(G, mesh, mats, opts.semis, genre, fusionS);
@@ -457,17 +382,12 @@ const IleGlb = (() => {
       for (const prim of mesh.primitives || []) {
         const geo = geometrie(THREE, G, bin, prim);
         if (!geo) continue;
-        // Une matière du semis (feuillage, herbe, fleur, bruyère) prend la teinte de l'instance
-        // (extras.teinte) sur une base blanche ; les autres (le tronc) gardent leur couleur.
         const nomMat = ((G.materials || [])[prim.material] || {}).name || '';
         const teintable = mats.some(m => m.teinte) && /feuillage|herbe|fleur|bruyere/.test(nomMat);
         const mat = matiere(THREE, G, prim.material, !!geo.getAttribute('color'), cache, teintable);
         const nTri = (geo.index ? geo.index.count : geo.getAttribute('position').count) / 3;
         const nom = mesh.name || ('maillage_' + mi);
         if (mats.length === 1 && !teintable) {
-          // Un maillage unique posé par sa matrice ; les grands (plus de 2 000 triangles) par tuile.
-          // Les sommets sont lus dans le repère du maillage : la découpe vaut pour une matrice
-          // identité ou une translation (le cas de nos exports) ; sinon, le maillage entier.
           const e = mats[0].elements;
           const simple = Math.abs(e[0] - 1) < 1e-6 && Math.abs(e[5] - 1) < 1e-6 && Math.abs(e[10] - 1) < 1e-6 && Math.abs(e[1]) + Math.abs(e[2]) + Math.abs(e[4]) + Math.abs(e[6]) + Math.abs(e[8]) + Math.abs(e[9]) < 1e-6;
           const morceaux = simple ? parTuiles(THREE, geo, 2000) : [geo];
@@ -507,10 +427,6 @@ const IleGlb = (() => {
     return groupe;
   }
 
-  // Pose le monde modelé dans la scène de l'île et retire le sol, le décor, l'eau, les falaises et
-  // le dessous dessinés par le code (la boucle d'images ne touche plus qu'à des objets hors scène).
-  // `opts.semis` : le semis Meshy (IleModeles.chargerSemis), qui remplace les arbres, rochers et
-  // buissons de l'export.
   async function poser(THREE, ile, scene, url, opts) {
     const src = url || source();
     const glb = await lire(src);
@@ -518,11 +434,7 @@ const IleGlb = (() => {
     const T = ile.T, cacher = T && typeof T.closA === 'function' ? (u, v) => T.closA(u, v) : null;
     const groupe = construire(THREE, glb, { semis, cacher, teinte: ile.nuit && typeof ile.nuit.teinteGlb === 'function' ? (u, v, nom, t) => ile.nuit.teinteGlb(u, v, nom, t) : null });
     groupe.userData.source = src;
-    // La mémoire de la scène (Ile3D.stats) : le semis Meshy cuit et son atlas.
     if (semis && groupe.userData.semisMeshy) { ile.octetsGeo = (ile.octetsGeo || 0) + groupe.userData.semisMeshy.octets; ile.octetsTex = (ile.octetsTex || 0) + semis.octets.tex; }
-    // Et le reste du monde modelé (le sol, les objets, les lignes, les agrafes, les fils, le semis de
-    // l'export), compté depuis la passe de mémoire (3.32) : une fois par tampon, les tuiles d'un même
-    // maillage partageant leurs attributs.
     {
       const vus = new Set();
       let n = 0;
@@ -543,9 +455,6 @@ const IleGlb = (() => {
     retirer(ile.eau);
     for (const m of ile.decorFixe || []) retirer(m);
     retirer(ile.meshEscarpement); retirer(ile.meshFalaise); retirer(ile.meshChute);
-    // Le sol, le décor, l'eau, la falaise et le dessous dessinés par le code ne servent plus : leurs
-    // tampons quittent la carte graphique et leur poids sort de la mémoire de la scène (Ile3D.stats),
-    // qui les avait comptés (Ile3D.construire). La chute et les herbes, non comptées, restent telles.
     if (typeof Ile3D === 'function' && Ile3D.octetsGeo) {
       const geos = new Set();
       const prendre = o => { if (o) o.traverse(x => { if (x.geometry) geos.add(x.geometry); }); };
@@ -557,13 +466,6 @@ const IleGlb = (() => {
       for (const g of geos) { libere += Ile3D.octetsGeo(g); g.dispose(); }
       ile.octetsGeo = Math.max(0, (ile.octetsGeo || 0) - libere);
       groupe.userData.libere = libere;
-      // Leurs textures aussi (la passe de mémoire, 3.32) : celles du sol peint (les matières, les
-      // cartes de poids, la teinte, le grain), de l'eau, de la falaise, des rochers et des feuillages du
-      // code. Aucune matière de la scène ne s'en sert plus ; les salles du Puits font les leurs, la
-      // lueur (les combats), les nuages, les bancs et le halo restent. Les uniformes qui les tenaient
-      // sont vidés, pour que la mémoire du navigateur les rende aussi.
-      // Le poids, compté comme à leur création (Ile3D.construire) : les toiles avec leurs mipmaps, les
-      // cartes de données selon les leurs.
       const tex = ile.tex || {}, toiles = ['eau', 'touchesLin', 'falaise', 'touches', 'feuilles'], libres = new Set();
       let libereTex = 0;
       for (const k of ['matieres', 'poids1', 'poids2', 'teinte', 'grain', ...toiles]) {
@@ -588,10 +490,6 @@ const IleGlb = (() => {
     }
     scene.add(groupe);
     ile.monde = groupe;
-    // La grille du combat (5.4) sur le sol, les pavés et les lignes (sentiers, murets, haies) du
-    // monde modelé : les cases de l'aire se dessinent dans la matière, avec les uniformes du sol de
-    // l'île (IleSol.grille). Les lignes partagent la matière cuite des objets : elles en reçoivent
-    // une copie, les objets restent sans grille (revue : un sentier couvrait les cases de départ).
     if (typeof IleSol === 'object' && IleSol.grille && ile.mats && ile.mats.uSol) {
       const vues = new Map();
       for (const o of groupe.children) {
@@ -609,17 +507,11 @@ const IleGlb = (() => {
     return groupe;
   }
 
-  // La vue tactique du combat (ile-3d.js) : le semis, l'eau, les objets posés, les fils et les
-  // agrafes se cachent (comme le décor dessiné par le code) ; le sol, la falaise et les lignes
-  // (murets, haies, sentiers) restent, le damier des cases se dessine par-dessus.
   function tactique(groupe, on) {
     if (!groupe) return;
     for (const o of groupe.children) o.visible = !on || /^mo_(sol|falaise|lignes)/.test(o.name);
   }
 
-  // Le sol mouillé du style Lisière (3.25) : le sol et les lignes du monde modelé assombris d'un
-  // facteur f (1 : sec) ; les matières sont partagées entre les tuiles, chacune n'est touchée qu'une
-  // fois, sa couleur sèche gardée.
   function mouiller(groupe, f) {
     if (!groupe) return;
     const vues = new Set();
@@ -632,22 +524,13 @@ const IleGlb = (() => {
     }
   }
 
-  // Les portées depuis le point visé c = {x, y} (en u) : les tuiles dont la sphère est tout entière
-  // au-delà ne se dessinent plus. `p.sol` pour le sol (la brume du style Lisière l'a pris au-delà de
-  // `solMax`), `p.semis` pour le semis fusionné (la portée des silhouettes du décor dessiné par le
-  // code), `p.reste` pour les objets, les lignes, l'eau, les agrafes et les fils ; Infinity rend tout.
-  // La caméra basse du style Lisière voit loin : sans ces portées, elle dessinait tout le GLB dans
-  // la brume.
   function portee(groupe, c, p) {
     if (!groupe) return;
     for (const o of groupe.children) {
       const s0 = o.geometry && o.geometry.boundingSphere;
       if (!s0) continue;
-      // La sphère dans le repère du monde (le semis Meshy est mis à l'échelle par sa matrice),
-      // calculée une fois : ces maillages ne bougent pas.
       let s = o.userData.sphereMonde;
       if (!s) { s = o.userData.sphereMonde = s0.clone().applyMatrix4(o.matrix); }
-      // La falaise : une fois et demie la portée du sol (la brume l'a prise bien avant).
       const max = /^mo_sol/.test(o.name) ? p.sol : /^semis /.test(o.name) ? p.semis : /^mo_falaise/.test(o.name) ? (Number.isFinite(p.sol) ? p.sol * 1.5 : Infinity) : p.reste;
       o.visible = !Number.isFinite(max) || Math.hypot(s.center.x - c.x, s.center.z - c.y) - s.radius < max;
     }

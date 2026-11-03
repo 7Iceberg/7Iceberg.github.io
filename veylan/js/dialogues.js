@@ -1,14 +1,7 @@
-// Les dialogues : le texte balisé et son écriture lettre à lettre (Parole), la boîte au grand
-// portrait (GuideBoite, celle du guide et des dialogues de quête), la bulle d'un PNJ au-dessus de
-// sa tête et la boîte de réponses (BullePnj), et la conversation avec un PNJ (Conversation, ouverte
-// par js/hud.js quand le monde émet 'dialogue'). Tout ce qui s'ancre au monde passe par
-// UI.cellClient (js/ui.js) et suit la caméra.
 
-// ----- Le texte des bulles : **gras**, {style|mot en couleur}, et l'écriture lettre à lettre -----
 const Parole = {
   STYLES: ['pa', 'pm', 'pv', 'cristal', 'or', 'voile', 'braise'],
 
-  // Découpe un texte balisé en segments { text, gras, style }.
   segments(markup) {
     const out = [];
     const re = /\*\*(.+?)\*\*|\{([a-z]+)\|([^}]*)\}/g;
@@ -17,7 +10,6 @@ const Parole = {
     while ((m = re.exec(src))) {
       if (m.index > last) out.push({ text: src.slice(last, m.index) });
       if (m[1] != null) {
-        // Un mot en couleur peut se trouver dans du gras : {pv|...} reste lisible.
         const inner = /^\{([a-z]+)\|([^}]*)\}$/.exec(m[1]);
         out.push(inner ? { text: inner[2], gras: true, style: Parole.STYLES.includes(inner[1]) ? inner[1] : null } : { text: m[1], gras: true });
       } else out.push({ text: m[3], style: Parole.STYLES.includes(m[2]) ? m[2] : null, gras: true });
@@ -27,10 +19,8 @@ const Parole = {
     return out;
   },
 
-  // Texte brut, sans balises (pour les lecteurs d'écran et la discussion).
   brut(markup) { return Parole.segments(markup).map(s => s.text).join(''); },
 
-  // HTML complet d'un texte balisé.
   html(markup) {
     return Parole.segments(markup).map(s => {
       const t = Util.esc(s.text);
@@ -39,14 +29,12 @@ const Parole = {
     }).join('');
   },
 
-  // Écrit le texte lettre à lettre dans `el` ; un toucher l'achève. Retourne { fini, finir, arreter }.
   ecrire(el, markup, opts) {
     opts = opts || {};
     const segs = Parole.segments(markup);
     el.setAttribute('aria-label', Parole.brut(markup));
     el.innerHTML = segs.map(s => {
       const cls = s.gras || s.style ? `vy-mot${s.style ? ' vy-mot--' + s.style : ''}` : '';
-      // La part encore cachée garde sa place : le texte ne bouge pas en s'écrivant.
       return `<span class="${cls}" aria-hidden="true"><span class="vy-parole__vu"></span><span class="vy-parole__reste">${Util.esc(s.text)}</span></span>`;
     }).join('');
     const parts = [...el.children].map((sp, i) => ({ vu: sp.firstChild, reste: sp.lastChild, text: segs[i].text }));
@@ -88,10 +76,6 @@ const Parole = {
     return { fini: () => done, finir: finish, arreter: () => { if (raf) cancelAnimationFrame(raf); raf = null; done = true; } };
   },
 
-  // Le buste d'un PNJ, peint en grand par le peintre vectoriel (js/render.js, drawNpc) : net à
-  // toute taille. Une lueur de lanterne derrière la tête, et le visage, là où le peintre ne met
-  // que deux points : yeux, sourcils, nez, bouche, joues, et le col. `humeur` : 'neutre', 'joie',
-  // 'grave'.
   portrait(canvas, def, painter, humeur) {
     const css = canvas.getBoundingClientRect();
     const w = Math.max(40, Math.round(css.width || canvas.clientWidth || 150));
@@ -103,7 +87,6 @@ const Parole = {
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, w, h);
     if (!painter || typeof painter.drawNpc !== 'function') return;
-    // Le buste tient de la plume du casque (42 + 15) au bas du torse (8) : 50 unités du plateau.
     const S = Math.min(h / 50, w / 30);
     const look = (def && def.look) || 'marcheur';
     const small = look === 'enfant' ? 0.82 : 1;
@@ -115,11 +98,9 @@ const Parole = {
     c.translate(w / 2, h + 10 * S);
     c.scale(S, S);
     c.lineJoin = 'round'; c.lineCap = 'round';
-    try { painter.drawNpc(c, { x: 0, y: 0 }, { look, phase: 0 }, 0); } catch (e) { /* le peintre n'est pas prêt */ }
+    try { painter.drawNpc(c, { x: 0, y: 0 }, { look, phase: 0 }, 0); } catch (e) {   }
     c.scale(small, small);
     const top = -42, ink = '#2a2433';
-    // Les yeux en amande, par-dessus les deux points du peintre : le regard vers la boîte, un
-    // point de lumière, la paupière à l'encre. Puis les joues et le nez.
     for (const sx of [-1, 1]) {
       const ex = 3.2 * sx, ey = top + 3.4;
       c.save();
@@ -146,7 +127,6 @@ const Parole = {
     else if (humeur === 'joie') { c.moveTo(-2.6, top + 6.4); c.quadraticCurveTo(0, top + 9, 2.6, top + 6.4); }
     else { c.moveTo(-1.8, top + 6.7); c.quadraticCurveTo(0, top + 7.7, 1.8, top + 6.7); }
     c.stroke();
-    // Le col, cousu d'or : le Fil, chez tous ceux qui le servent (la barbe de l'ancien le cache).
     if (look !== 'ancien') {
       c.fillStyle = 'rgba(239, 230, 212, 0.95)';
       c.beginPath();
@@ -159,9 +139,6 @@ const Parole = {
   },
 };
 
-// ----- La boîte du guide : grand portrait debout sur une boîte claire, bandeau du nom -----
-// Elle sert au guide du tutoriel et aux dialogues de quête (js/hud.js). opts : { onTap(k) où k vaut
-// 'suite', 'passer' ou 'fermer' ; passer : bouton « Passer » ; cls : classe en plus }.
 class GuideBoite {
   constructor(host, opts) {
     opts = opts || {};
@@ -202,8 +179,6 @@ class GuideBoite {
 
   get visible() { return !this.el.classList.contains('hidden'); }
 
-  // o : { npc (définition), texte (balisé), note (petite ligne), suite (vrai : on attend un toucher),
-  // choix: [{ label, act, primaire, action }], humeur, painter, passer, fermer, instant }
   montrer(o) {
     const n = o.npc || {};
     const choix = o.choix || [];
@@ -244,12 +219,10 @@ class GuideBoite {
     if (this.ecriture) this.ecriture.arreter();
   }
 
-  // Le côté de la scène : 'gauche' (par défaut) ou 'droite', pour ne pas cacher un repère.
   cote(c) { this.el.dataset.cote = c === 'droite' ? 'droite' : 'gauche'; }
   rect() { return this.visible ? this.q('.vy-guide__boite').getBoundingClientRect() : null; }
 }
 
-// ----- La bulle d'un PNJ au-dessus de sa tête, et la boîte de réponses en bas de la scène -----
 class BullePnj {
   constructor(host, renderer) {
     this.renderer = renderer;
@@ -278,7 +251,6 @@ class BullePnj {
 
   get ouverte() { return !this.rep.classList.contains('hidden') || !this.bulle.classList.contains('hidden'); }
 
-  // npc : { x, y, def } du monde ; texte balisé ; suite : une ligne de plus à lire.
   dire(npc, texte, suite) {
     this.npc = npc;
     this.bulle.classList.remove('hidden');
@@ -290,7 +262,6 @@ class BullePnj {
     this.placer();
   }
 
-  // Réponses : [{ label, marque: '?' | '!', data: { cle: valeur }, action }] ; info : une ligne au-dessus.
   repondre(choix, info) {
     this.choix = choix || [];
     this.rep.classList.remove('hidden');
@@ -305,7 +276,6 @@ class BullePnj {
     }).join('');
   }
 
-  // La bulle suit la tête du PNJ (caméra comprise) et reste dans la scène.
   placer() {
     if (!this.npc || this.bulle.classList.contains('hidden')) return;
     const host = this.bulle.offsetParent;
@@ -341,11 +311,6 @@ class BullePnj {
   }
 }
 
-// ----- La conversation avec un PNJ -----
-// La bulle au-dessus de sa tête dit ses répliques, ou la ligne de la quête qu'il a confiée ; la
-// boîte de réponses, en bas de la scène, offre ses quêtes (marquées « ! »), celles à lui rendre,
-// sa boutique et son atelier. Le texte d'une quête (l'offre, la fin) passe dans la grande boîte au
-// portrait, ligne par ligne. Fermer la boîte de réponses termine le dialogue.
 class Conversation {
   constructor(hud) {
     this.hud = hud;
@@ -368,12 +333,10 @@ class Conversation {
     this.ctx = ctx;
     this.ligne = 0;
     this.page = null;
-    // La page sait qu'un dialogue est ouvert (les lignes flottantes de la discussion s'effacent).
     document.body.classList.add('vy-dialogue-ouvert');
     this.parler();
   }
 
-  // La quête que ce PNJ a confiée et qui n'est pas finie : il en redit la ligne d'avancement.
   repliques() {
     const enCours = this.enCours()[0];
     const prog = enCours && enCours.quest.dialogue && enCours.quest.dialogue.progress;
@@ -392,7 +355,6 @@ class Conversation {
     this.bulle.repondre(this.choix(), this.info());
   }
 
-  // Une ligne dite par le PNJ passe aussi dans la discussion, une seule fois de suite.
   dire(texte) {
     const d = this.hud.discussion, line = `${this.ctx.npc.def.name} : ${texte}`;
     if (d && this.dernier !== line) d.ajouter('pnj', line);
@@ -402,11 +364,9 @@ class Conversation {
   choix() {
     const ctx = this.ctx, hud = this.hud;
     const out = [];
-    // Une étape de choix (le serment, le reniement) se joue dans le grand panneau (js/hud-faction.js).
     for (const a of ctx.answers || []) out.push({ label: `${a.quest.name} : ${a.step.text}`, marque: '?', data: { repondre: a.quest.id }, action: () => this.ailleurs(() => hud.openAnswerPanel(ctx.npc, a.quest.id)) });
     for (const q of ctx.offers) out.push({ label: q.name, marque: '!', data: { quete: q.id }, action: () => this.offre(q) });
     for (const a of ctx.active) if (a.done && !this.enChoix(a)) out.push({ label: `Rendre : ${a.quest.name}`, marque: '?', rendre: true, data: { rendre: a.quest.id }, action: () => this.rendre(a.quest) });
-    // Un passage (la Nacelle, js/world.js) : le PNJ emmène ailleurs ; le monde ferme lui-même le dialogue.
     if (ctx.passage) out.push({ label: ctx.passage.texte, marque: '>', passage: true, data: { passage: ctx.passage.vers }, action: () => this.ailleurs(() => { if (!hud.world.passage()) hud.world.endDialogue(); }) });
     if (ctx.shop) out.push({ label: 'Voir tes marchandises.', action: () => this.ailleurs(() => hud.openShop(ctx)) });
     if (ctx.workshop) out.push({ label: 'Utiliser ton atelier.', action: () => this.ailleurs(() => hud.openWorkshop(ctx)) });
@@ -424,11 +384,9 @@ class Conversation {
     return this.enCours().map(a => `<b>${Util.esc(a.quest.name)}</b> : ${Util.esc(a.text)}`).join('<br>');
   }
 
-  // Les quêtes de ce PNJ qui ne se rendent pas encore ici, hors étapes de choix (elles ont leur réponse).
   enCours() { return this.ctx.active.filter(a => !a.done && !this.enChoix(a)); }
   enChoix(a) { return (this.ctx.answers || []).some(x => x.quest === a.quest); }
 
-  // Une boutique, un atelier : leur panneau prend la place (le dialogue se termine en le fermant).
   ailleurs(fn) {
     this.bulle.fermer();
     this.boite.cacher();
@@ -477,7 +435,6 @@ class Conversation {
   accepter(q) {
     this.hud.world.acceptQuest(q.id);
     this.ctx = this.hud.world.dialogueContext(this.ctx.npc);
-    // Une quête qui commence par un choix auprès de ce PNJ (le serment) s'ouvre tout de suite.
     if ((this.ctx.answers || []).some(a => a.quest.id === q.id)) {
       const npc = this.ctx.npc;
       this.ailleurs(() => this.hud.openAnswerPanel(npc, q.id));
@@ -486,7 +443,6 @@ class Conversation {
     this.retour();
   }
 
-  // Retour à la bulle et aux réponses (la quête vient d'être prise, ou on la remet à plus tard).
   retour() {
     if (!this.ctx) return;
     this.page = null;
@@ -507,7 +463,6 @@ class Conversation {
     this.hud.world.endDialogue();
   }
 
-  // « 48 XP, 15 Fils, 2 Pain de Cime » : ce qu'une quête promet ou ce qu'elle a donné.
   static recompense(r) {
     const parts = [];
     if (r.xp) parts.push(`${r.xp} XP`);

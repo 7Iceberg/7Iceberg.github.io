@@ -1,30 +1,14 @@
-// L'aiguillage du rendu (docs/ILE-TECHNIQUE.md, 1.6, 1.8 et 5.8) : le HUD, l'interface de combat,
-// les dialogues et le guide gardent une seule référence au rendu, prise à leur construction. Sur
-// l'île d'Ervane, il faut pourtant passer du rendu des cases (RendererGL ou Renderer, endormi
-// pendant ce temps, jamais modifié dans ce qu'il dessine) au rendu 3D (Ile3D, js/ile-3d.js), et
-// revenir. Scene est cet objet stable : il présente au HUD le contrat du rendu et le transmet au
-// rendu actif.
-//
-// Il n'existe que si l'île est disponible sur l'appareil (js/ile.js) : éteint, js/main.js garde le
-// rendu des cases et rien ne change.
-//
-// La bascule suit l'événement `map` du monde : un plateau (ou une salle d'un donjon dont l'entrée
-// est sur un plateau, étape c) demande la 3D ; une carte à cases la rend. Un changement de
-// sous-zone en marchant (`secteur`) ne change rien ; un voyage sur le même plateau fait sauter la
-// caméra. Pendant le chargement, un voile cache la scène ; si la 3D tombe (Three.js absent ou trop
-// lent, exception, contexte WebGL perdu), le voile de repli propose de réessayer ou de rejoindre
-// Orsane.
 class Scene {
   constructor(opts) {
-    this.cases = opts.cases;              // le rendu des cases (RendererGL ou Renderer)
-    this.controls = opts.controls || null; // l'unique CameraControls (js/camera.js)
+    this.cases = opts.cases;
+    this.controls = opts.controls || null;
     this.combat = opts.combat || this.cases.combat;
-    this.ile = null;                      // Ile3D, créé à la première entrée sur un plateau
-    this.actif = this.cases;              // le rendu qui dessine
-    this.support = null;                  // ce que montre la 3D : 'plateau:ervane'
-    this.voulu = null;                    // le support que la bascule en cours prépare
-    this.generation = 0;                  // une bascule rattrapée par une autre s'abandonne
-    this.highlights = this.cases.highlights;   // un seul objet de surbrillances, partagé
+    this.ile = null;
+    this.actif = this.cases;
+    this.support = null;
+    this.voulu = null;
+    this.generation = 0;
+    this.highlights = this.cases.highlights;
     this._cue = null;
     this._tactique = false;
     this._onTick = null;
@@ -32,8 +16,6 @@ class Scene {
     this.stage = document.getElementById('stage');
     this.voileEl = null;
     this.echecs = [];
-    // Les images de la médaille, chargées et décodées tout de suite (pendant l'accueil) : le premier
-    // voile les a déjà, sans noir le temps qu'elles arrivent.
     const anime = Scene.fondAnime(Scene.fondVoile());
     this.prechargees = anime ? anime.IMAGES.map(src => {
       const img = new Image();
@@ -44,7 +26,6 @@ class Scene {
     }) : [];
   }
 
-  // ----- Ce que les deux rendus partagent -----
 
   get world() { return this._world; }
   set world(w) { this._world = w || null; this.cases.world = this._world; if (this.ile) this.ile.world = this._world; }
@@ -57,25 +38,18 @@ class Scene {
   get static() { return this.cases.static; }
   set static(v) { this.cases.static = v; }
 
-  // Toujours #board : la surface des gestes, au-dessus de la scène 3D.
   get canvas() { return this.cases.canvas; }
   get W() { return this.cases.W; }
   get H() { return this.cases.H; }
   get origin() { return this.cases.origin; }
   get map() { return this.cases.map; }
   get dpr() { return this.cases.dpr; }
-  // Le peintre du rendu des cases, prêt même endormi : bustes, portraits, figures de la 3D.
   get painter() { return this.cases.painter || this.cases; }
   get en3D() { return this.actif === this.ile && !!this.ile; }
-  // Le voile est là : la 3D se prépare (ou est tombée), plus rien ne se dessine.
   get voile() { return !!this.voulu && !this.en3D; }
-  // La caméra du rendu actif ; pendant le voile, celle du rendu des cases (muette).
   get camera() { return this.en3D ? this.ile.camera : this.cases.camera; }
 
-  // ----- Le contrat du rendu (5.8) -----
 
-  // 3D : un « point de scène » dans les coordonnées du support (x = u, y = v sur un plateau), rendu
-  // tel quel ; worldToClient le projette. Pendant le voile, des valeurs finies.
   cellToScreen(x, y) {
     if (this.en3D) return { x, y };
     if (this.voile) return { x: 0, y: 0 };
@@ -86,7 +60,6 @@ class Scene {
     if (this.voile) return this.centre();
     return this.cases.worldToClient(x, y);
   }
-  // 3D : les coordonnées client de l'événement ; screenToCell fait la sélection (3.10).
   canvasPoint(evt) {
     if (this.en3D || this.voile) {
       const src = evt.touches && evt.touches[0] ? evt.touches[0] : (evt.changedTouches && evt.changedTouches[0] ? evt.changedTouches[0] : evt);
@@ -99,7 +72,6 @@ class Scene {
     if (this.voile) return null;
     return this.cases.screenToCell(px, py);
   }
-  // Pixels d'écran par pixel de peinture au pied d'une figure (UI.cellScale) ; rien hors de la 3D.
   echelleFigure(x, y) { return this.en3D ? this.ile.echelleFigure(x, y) : undefined; }
   cameraBounds() { return this.cases.cameraBounds ? this.cases.cameraBounds() : null; }
 
@@ -108,9 +80,7 @@ class Scene {
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   }
 
-  // ----- La bascule -----
 
-  // Le monde est créé : la bascule suit ses changements de carte (avant le HUD, qui écoute aussi).
   brancher(world) {
     this.world = world;
     world.on('map', d => this.surCarte(d));
@@ -126,23 +96,16 @@ class Scene {
 
   surCarte(d) {
     const voulu = this.supportVoulu();
-    // Même support : un changement de sous-zone ne fait rien ; un voyage sur le même plateau fait
-    // sauter la caméra (pas de glissement à travers l'île) ; le retour d'un combat gagné sur le
-    // terrain (`apresCombat`) laisse la caméra revenir d'elle-même au Veilleur, sans saut.
     if (voulu && voulu === (this.voulu || this.support)) {
       if (this.en3D && voulu === this.support && !(d && (d.secteur || d.apresCombat))) this.ile.sauter();
       return;
     }
-    // Déjà sur les cases, éveillées et sans voile : rien à faire.
     if (!voulu && !this.voulu && this.actif === this.cases && !this.cases.suspendu && !this.voileEl) return;
     const gen = ++this.generation;
     if (voulu) this.vers3D(voulu, gen);
     else this.versCases();
   }
 
-  // Vers la 3D : le rendu des cases s'endort tout de suite (la prochaine image tenterait de peindre
-  // une carte sans plan), le voile se pose, Three.js se charge (déjà en cache le plus souvent), la
-  // scène se construit par étapes, puis s'active.
   async vers3D(voulu, gen) {
     this.voulu = voulu;
     this.cases.suspendre();
@@ -162,8 +125,6 @@ class Scene {
         this.ile.tactique = this._tactique;
         if (this.pauses && this.pauses.size) this.ile.endormirDessin(true);
       }
-      // Un garde-fou : une construction qui n'aboutit pas en 45 s (la page figée une fois à l'entrée
-      // du Puits, revue finale) tombe sur le voile de repli au lieu d'attendre sans fin.
       const t0 = performance.now();
       let minuterie = null;
       const garde = new Promise((ok, ko) => { minuterie = setTimeout(() => ko(new Error('la scène met trop de temps à se construire (45 s)')), 45000); });
@@ -180,8 +141,6 @@ class Scene {
     }
   }
 
-  // Le titre du voile de chargement : le plateau (« On recoud Ervane... », « On recoud Orsane... »),
-  // ou la salle du donjon (« On descend dans le Puits... »).
   static titreVoile(voulu) {
     const [genre, id] = String(voulu || '').split(/:(.*)/);
     if (genre === 'salle') {
@@ -191,7 +150,6 @@ class Scene {
     const pl = typeof Ile === 'object' && Ile.plateau(id);
     return `On recoud ${pl && pl.name ? pl.name : 'Ervane'}...`;
   }
-  // Le nom du plateau du support voulu ou montré (« Ervane », « Orsane »).
   nomSupport(voulu) {
     const v = String(voulu || this.support || this.voulu || this.supportVoulu() || '');
     if (v.startsWith('plateau:')) { const pl = typeof Ile === 'object' && Ile.plateau(v.slice(8)); return pl && pl.name ? pl.name : 'Ervane'; }
@@ -211,19 +169,11 @@ class Scene {
     ile.camera.changed();
   }
 
-  // Vers les cases : la 3D se désactive (et rend sa mémoire si l'on quitte le plateau ; le
-  // contexte reste pour un retour, sauf après la descente : à Orsane, plus rien de l'île ne reste,
-  // toile et contexte compris ; un retour par la Nacelle refait tout), le rendu des cases se réveille.
   versCases() {
     this.voulu = null;
     if (this.ile) {
       if (this.en3D) this.ile.camera.muette = true;
       this.ile.desactiver();
-      // Tout part (contexte compris) après la descente, et aussi quand la bascule vient du voile de
-      // repli (« Descendre », « Recommencer à Orsane » : `repliDemande`) : un joueur dont la 3D vient
-      // de tomber ne garde pas un contexte malade à Orsane. Un repli plus ancien ne compte pas.
-      // Orsane en 3D (docs/ORSANE-3D.md) : vers Kaldum (en cases), tout part de même ; vers les
-      // salles en cases d'un donjon d'Orsane, le terrain d'Orsane reste pour le retour.
       const total = this.descenteFaite() || !!this.repliDemande;
       this.ile.liberer(total);
       if (total) this.oublierIle(this.repliDemande ? null : this.plateauDuDonjon());
@@ -235,29 +185,23 @@ class Scene {
     this.cases.reprendre();
   }
 
-  // Après la descente (ou un repli) : le terrain et la navigation du registre (Ile.terrain, environ
-  // 9 Mo), les vues d'ensemble peintes (carte du monde, mini-carte) sont rendus. Un retour par la
-  // Nacelle reconstruit tout.
   oublierIle(garder) {
     if (typeof Ile === 'object' && Ile.oublier) { if (garder && Ile.garderSeul) Ile.garderSeul(garder); else Ile.oublier(); }
     if (typeof IlePeinture === 'object' && IlePeinture.oublierVues) IlePeinture.oublierVues();
     if (typeof CartePeinture === 'object' && CartePeinture.oublierPlateaux) CartePeinture.oublierPlateaux();
-    try { window.dispatchEvent(new CustomEvent('veylan:ile-oubliee')); } catch (e) { /* pas de CustomEvent */ }
+    try { window.dispatchEvent(new CustomEvent('veylan:ile-oubliee')); } catch (e) {   }
   }
 
-  // Le plateau de l'entrée du donjon où l'on est (une salle en cases d'un donjon d'Orsane en 3D), ou null.
   plateauDuDonjon() {
     const dg = this.world && this.world.ch && this.world.ch.dungeon, d = dg && World.dungeonDef(dg.id), m = d && World.mapDef(d.entryMap);
     return m && m.plateau ? m.plateau : null;
   }
 
-  // La descente d'Ervane est faite : le personnage vit à Orsane, l'île n'est plus qu'une visite.
   descenteFaite() {
     const ch = this.world && this.world.ch;
     return !!(ch && ch.quests && Array.isArray(ch.quests.done) && ch.quests.done.includes('ervane_descente'));
   }
 
-  // La 3D est tombée en cours de route (contexte perdu, Ile3D le signale) : le voile, et la suite.
   perte(texte) {
     if (!this.en3D && !this.voulu) return;
     const voulu = this.support || this.voulu;
@@ -267,16 +211,12 @@ class Scene {
     if (this.controls) this.controls.camera = this.cases.camera;
     this.montrerVoile(texte || `${this.nomSupport(voulu)} se recoud...`, '');
   }
-  // Le contexte revient : on reconstruit tout depuis les caches (Ile.terrain).
   retour() {
     if (!this.voulu) return;
     const gen = ++this.generation;
     this.vers3D(this.voulu, gen);
   }
 
-  // Le dessin de la 3D s'endort tant qu'une fenêtre couvre la scène ou que la carte du monde en
-  // 3D vit à côté (3.12) : `raison` ('carte', 'carte3d'...) ; le dessin reprend quand plus aucune
-  // raison ne tient. Sans effet sur les cases.
   pause3D(raison, oui) {
     this.pauses = this.pauses || new Set();
     if (oui) this.pauses.add(raison); else this.pauses.delete(raison);
@@ -284,12 +224,7 @@ class Scene {
   }
   get dessinEndormi() { return !!(this.ile && this.ile.dessinEndormi); }
 
-  // ----- Les voiles -----
 
-  // Le voile de chargement, d'après l'écran de chargement de Duality : le fond illustré, la barre
-  // avec le pourcentage et l'étape en cours, et des phrases qui défilent (astuces, légendes).
-  // Les étapes, dans l'ordre où Ile3D.preparer et preparerSalle les annoncent (js/ile-3d.js) ;
-  // une étape absente (le monde modelé, le héros) est sautée, la barre ne recule jamais.
   static get ETAPES() {
     return {
       outils: 'Le métier à tisser',
@@ -300,8 +235,8 @@ class Scene {
   static get PHRASES() {
     return [
       ['astuce', 'Les objets marqués d\'une étoile restent en tête du sac.'],
-      ['astuce', 'Trop chargé, tu ne peux plus avancer : surveille la jauge de pods en bas du sac.'],
-      ['astuce', 'Chaque point de Terra ajoute 5 pods à ce que tu peux porter.'],
+      ['astuce', 'Trop chargé, tu ne peux plus avancer : surveille la jauge de poids en bas du sac.'],
+      ['astuce', 'Chaque point de Terra ajoute 5 au poids que tu peux porter.'],
       ['astuce', 'Chaque point de Sagesse ajoute 1 % à l\'expérience gagnée.'],
       ['astuce', 'Avant d\'attaquer un groupe, ouvre sa fiche : elle donne les résistances de chaque monstre.'],
       ['astuce', 'La Veille du jour change chaque jour : apporte la ressource demandée pour gagner son bonus.'],
@@ -320,9 +255,6 @@ class Scene {
     ];
   }
 
-  // Le fond du voile : le paysage de la planche animé (js/voile-paysage.js, par défaut), ou la
-  // médaille du V animée (js/voile-medaille.js), gardée en réserve (?chargement=medaille, ou
-  // veylan.chargement = 'medaille' dans ce navigateur).
   static fondVoile() {
     try {
       const q = new URLSearchParams(location.search).get('chargement');
@@ -330,13 +262,11 @@ class Scene {
       return localStorage.getItem('veylan.chargement') === 'medaille' ? 'medaille' : 'paysage';
     } catch (e) { return 'paysage'; }
   }
-  // Le module qui anime ce fond, s'il est chargé (sans lui, le paysage reste immobile).
   static fondAnime(fond) {
     if (fond === 'medaille') return typeof VoileMedaille === 'object' ? VoileMedaille : null;
     return typeof VoilePaysage === 'object' ? VoilePaysage : null;
   }
 
-  // `liste` : 'ile' ou 'salle' pour la barre ; sans liste (la 3D perdue, le repli), pas de barre.
   montrerVoile(titre, etape, liste) {
     if (!this.stage) return;
     if (!this.voileEl) {
@@ -378,7 +308,6 @@ class Scene {
     const el = this.voileEl, c = this.chargeVoile;
     const e = el && el.querySelector('.scene-voile__etape');
     if (e) e.textContent = etape || '';
-    // La barre : le début de l'étape, puis elle glisse doucement vers la suivante.
     if (!el || !c || !c.liste) return;
     const i = c.liste.indexOf(etape), n = c.liste.length;
     if (i < 0) return;
@@ -398,7 +327,6 @@ class Scene {
     if (this.fondAnime) this.fondAnime.progres(el, c.p);
   }
 
-  // Une phrase au hasard, puis les autres dans un ordre mêlé ; elle change toutes les 6 s.
   voilePhrase() {
     const el = this.voileEl, c = this.chargeVoile;
     const boite = el && el.querySelector('.scene-voile__phrase');
@@ -414,16 +342,12 @@ class Scene {
     boite.querySelector('p').textContent = texte;
   }
 
-  // Sur l'horloge, pas sur le nombre de tours : pendant la construction, la page est très occupée
-  // et la minuterie prend du retard.
   voileTic() {
     const el = this.voileEl, c = this.chargeVoile;
     if (!el || !c) { clearInterval(this.voileMinuterie); return; }
     const t = performance.now(), dt = Math.min(2000, t - c.t);
     c.t = t;
-    // La barre glisse vers la fin de l'étape en cours (63 % du chemin en 4 s).
     if (c.liste && c.cible > c.p) { c.p += (c.cible - c.p) * (1 - Math.exp(-dt / 4000)); this.voileBarre(); }
-    // Toutes les 6 s : la phrase s'efface (0,4 s), change, revient.
     const boite = el.querySelector('.scene-voile__phrase');
     if (!boite) return;
     if (!c.efface && t - c.phrase >= 6000) { c.efface = true; boite.classList.add('change'); }
@@ -438,14 +362,10 @@ class Scene {
     if (this.stage) this.stage.classList.remove('scene-voile');
   }
 
-  // Le voile de repli (1.8) : « Réessayer », puis rejoindre Orsane selon l'avancement.
   repli() {
     const ch = this.world && this.world.ch;
     if (!ch) return;
-    // Ni plateau à l'écran ni bascule en cours (le joueur est à Orsane) : pas de voile.
     if (!this.voulu && !this.en3D && !this.supportVoulu()) return;
-    // Orsane en 3D (docs/ORSANE-3D.md) : « Réessayer », ou « Continuer en 2D » (le personnage est
-    // marqué sur cet appareil et la page se recharge sans le module d'Orsane en 3D).
     if (this.nomSupport() !== 'Ervane') { this.repliOrsane(ch); return; }
     const descendre = (ch.quests.done || []).includes('ervane_descente') || ch.level >= 8;
     this.montrerVoile('Ervane ne s\'affiche pas sur cet appareil.', '');
@@ -474,7 +394,6 @@ class Scene {
     el.setAttribute('role', 'alertdialog');
     const boutons = document.createElement('div');
     boutons.className = 'scene-voile__boutons';
-    // Une partie d'invité n'est jamais écrite : recharger la perdrait, elle ne peut que réessayer.
     boutons.innerHTML = '<button type="button" class="vy-bouton vy-bouton--primaire" data-voile="reessayer">Réessayer</button>' +
       (ch.invite ? '' : '<button type="button" class="vy-bouton" data-voile="continuer2d">Continuer en 2D</button>');
     el.appendChild(boutons);
@@ -486,8 +405,6 @@ class Scene {
     const w = this.world;
     if (!w) return;
     if (act === 'continuer2d') {
-      // Le personnage ne passe plus en 3D à Orsane sur cet appareil ; sa position est sauvegardée en
-      // u, v et se relit en cases au rechargement (js/save.js). L'accueil offre de continuer.
       const ch = w.ch;
       if (ch.invite || !ch.uid || typeof Ile !== 'object' || !Ile.continuerEn2D(ch.uid)) return;
       delete ch.fight;
@@ -502,11 +419,9 @@ class Scene {
       if (!voulu) { this.cacherVoile(); return; }
       this.vers3D(voulu, ++this.generation);
     } else if (act === 'descendre') {
-      // Le passage de Kolm, lu dans le contenu (content/ervane.js : la seule source), construit comme
-      // World.passage le construit, avec le même événement ; le changement de carte rend les cases.
       const kolm = World.npcDef('kolm'), p = kolm && kolm.passage;
       const arrivee = World.arriveePassage(p);
-      this.repliDemande = true;   // la bascule (synchrone, sur l'événement map) rend tout
+      this.repliDemande = true;
       try {
         if (p && w.enter(p.vers, arrivee)) w.emit('passage', { vers: p.vers, npc: 'kolm', repli: true });
         else w.enter(World.firstMap(w.ch), { relay: true });
@@ -526,24 +441,14 @@ class Scene {
       this.repliDemande = true;
       try { w.enter(World.firstMap(w.ch), { relay: true }); } finally { this.repliDemande = false; }
       w.emit('save');
-      // La page garde l'Orsane du module ervaneOrsane (cartes et quêtes au niveau 8) : un personnage
-      // d'Orsane se recharge (la page ne sert qu'un personnage, 1.4), sans ?reset (développement).
-      // Une partie d'invité n'est jamais écrite : elle reste dans la page.
       if (!w.ch.invite) { const u = new URL(location.href); u.searchParams.delete('reset'); location.replace(u.href); }
     }
   }
 
-  // Un personnage d'Ervane devient un personnage d'Orsane (1.8) : il garde son niveau, ses objets et
-  // ses Fils ; ses quêtes d'Ervane en cours sont retirées, ses relais d'Ervane oubliés.
   static versOrsane(ch) {
     const e = s => typeof s === 'string' && s.startsWith('ervane_');
     ch.origine = 'orsane';
-    // Le tutoriel de l'île n'a pas de sens à Orsane : celui d'Orsane, du début, dans le même mode
-    // (un tutoriel fini reste fini). Fini pour un invité, qui reste dans la page, où Orsane est celle
-    // d'un personnage d'Ervane (« L'arrivée sur les Cimes » y demande « La descente » et le niveau 8).
     if (ch.tuto && ch.tuto.jeu) { const mode = ['guide', 'court', 'off'].includes(ch.tuto.mode) ? ch.tuto.mode : 'guide'; ch.tuto = { mode, step: 0, done: mode === 'off' || !!ch.tuto.done || !!ch.invite }; }
-    // Un combat sur le terrain d'Ervane, interrompu par le repli : annulé, pas perdu (js/main.js le
-    // compterait comme abandonné au rechargement).
     delete ch.fight;
     for (const id of Object.keys(ch.quests.active || {})) if (e(id)) delete ch.quests.active[id];
     if (Array.isArray(ch.relays)) ch.relays = ch.relays.filter(id => !e(id));
@@ -554,6 +459,5 @@ class Scene {
     return ch;
   }
 
-  // ----- Pour les tests et le budget -----
   stats() { return this.ile ? this.ile.stats() : null; }
 }

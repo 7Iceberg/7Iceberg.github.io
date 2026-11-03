@@ -1,21 +1,11 @@
-// Fenêtre « Veille du jour » (js/veille.js) : la carte du jour (nom, Voile, élément, récit, dépôt
-// demandé, bonus) et son bouton « Déposer », puis le cycle de 28 jours, la réserve, les marques et
-// leurs paliers. On l'ouvre depuis le panneau d'un Relais du Fil (bouton « Veille du jour », marqué
-// d'un point quand elle reste à faire), par la touche V, ou par toggleWin('veille') depuis un menu.
-// Sur window : « veylan:windowOpen » { id: 'veille' } à l'ouverture (annoncé par js/fenetres.js),
-// « veylan:chat » { type: 'systeme', text } à chaque dépôt. Se charge après js/hud-fenetres.js et complète Hud.
 (() => {
 const esc = s => Util.esc(s);
-// Une page de calendrier cousue d'un losange.
 const ICONE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4"/><path d="M12 12l2 2.5-2 2.5-2-2.5z"/></svg>';
 const element = el => DATA.elements[el] || { label: el, stat: el, color: '#c9a66b' };
-// « Semaine de Terra », « Semaine d'Ignis » : l'élision devant une voyelle.
 const semaine = el => { const s = element(el).stat; return /^[AEIOUaeiou]/.test(s) ? `Semaine d'${s}` : `Semaine de ${s}`; };
 const ETATS = { fait: 'déposée', manque: 'manquée', avenir: 'à venir', avant: 'avant ta première Veille', aujourdhui: 'à faire' };
-const emettre = (type, detail) => { try { window.dispatchEvent(new CustomEvent(type, { detail })); } catch (e) { /* événements indisponibles */ } };
+const emettre = (type, detail) => { try { window.dispatchEvent(new CustomEvent(type, { detail })); } catch (e) {   } };
 
-// La fenêtre se pilote aussi par son identifiant, comme les autres : toggleWin('veille') (barre de
-// menus, menu du téléphone).
 const toggleWin = Hud.prototype.toggleWin;
 Hud.prototype.toggleWin = function (id) {
   if (id !== 'veille') return toggleWin.call(this, id);
@@ -25,8 +15,6 @@ Hud.prototype.toggleWin = function (id) {
 };
 
 Object.assign(Hud.prototype, {
-  // Appelé par le constructeur : le message de chaque dépôt (écran et chat), et la touche V tant
-  // qu'aucune entrée de la barre de menus ne la prend.
   initVeille() {
     this.world.on('veille', r => {
       const text = `${r.rattrapage ? 'Veille rattrapée' : 'Veille du jour accomplie'} : +${r.xp} XP, une marque de Veille.`;
@@ -45,14 +33,11 @@ Object.assign(Hud.prototype, {
     }, true);
   },
 
-  // Le bouton du panneau d'un Relais, avec un point tant que la Veille du jour reste à faire.
   veilleBouton() {
     const dot = Veille.badge(this.world.ch);
     return `<button data-act="relayVeille"${dot ? ' aria-label="Veille du jour, à faire aujourd\'hui"' : ''}>Veille du jour${dot ? '<span class="vy-veille-point" aria-hidden="true"></span>' : ''}</button>`;
   },
 
-  // Depuis le panneau d'un Relais : le panneau se cache sans clore le relais (le dépôt reste
-  // possible) ; fermer la fenêtre clôt le relais, comme la carte du monde.
   openVeilleFromRelay() {
     this.el.panel.classList.add('hidden');
     this.el.panel.dataset.open = '';
@@ -91,7 +76,6 @@ Object.assign(Hud.prototype, {
     </div>`;
   },
 
-  // La carte du jour : page du calendrier, nom, Voile et élément, récit, dépôt, bonus, action.
   veilleCarte(ch, s) {
     const e = s.entree, el = element(e.element);
     const b = Veille.texteBonus(e.bonus);
@@ -113,7 +97,6 @@ Object.assign(Hud.prototype, {
       <div class="vy-veille__action">${this.veilleAction(ch, s)}</div>`;
   },
 
-  // Le bouton « Déposer », actif seulement au Relais et avec ce qu'il faut ; sinon, ce qui manque.
   veilleAction(ch, s) {
     const gain = `${s.xp} XP et une marque de Veille`;
     if (!s.ouverte) return `<p class="vy-veille__note">${esc(s.raison)} Tu es niveau ${ch.level} : d'ici là, le calendrier se lit, sans dépôt.</p>`;
@@ -128,8 +111,6 @@ Object.assign(Hud.prototype, {
     return `<button class="vy-bouton vy-bouton--primaire" data-act="deposer">Déposer</button><p class="vy-veille__note">${quoi}</p>`;
   },
 
-  // Le suivi : la grille du cycle (sept Voiles, quatre semaines), la réserve, les marques et les
-  // paliers (des titres, jamais de puissance de combat).
   veilleSuivi(ch, s) {
     const cases = Veille.grille(ch);
     const tete = '<span></span>' + Veille.ROMAINS.map((r, i) => `<span class="vy-veille__col" title="${esc(Veille.VOILES[i])} Voile">${r}</span>`).join('');
@@ -159,6 +140,5 @@ Object.assign(Hud.prototype, {
       <p class="muted vy-note">Des titres, jamais de puissance de combat.</p>`;
   },
 });
-// L'icône de la fenêtre, reprise par le menu du téléphone (js/hud-jeu.js).
 Hud.VEILLE_ICONE = ICONE;
 })();

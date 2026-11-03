@@ -1,14 +1,4 @@
-/* ==========================================================================
-   Veylan : l'interface du HUD réglable (js/hud-interface.js)
-   --------------------------------------------------------------------------
-   Le lieu au-dessus de la mini-carte et la boussole autour d'elle (sur ordinateur, à la place
-   du bandeau du lieu du haut) ; les blocs déplacés, agrandis ou cachés ; l'éditeur (les cadres
-   pointillés sur les blocs, le panneau à gauche). Dans les teintes du thème (--v-*), avec un
-   repli aux couleurs de Duality.
-   ========================================================================== */
 
-/* ----- Le lieu et la boussole : sur ordinateur seulement (au téléphone, la mini-carte est
-   repliée et le nom du lieu est dans la carte d'information) ----- */
 .vy-lieu { display: none; }
 .vy-boussole__p { display: none; }
 @media (min-width: 721px) and (min-height: 501px) {
@@ -19,7 +9,6 @@
     display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
     max-width: 260px; text-align: right; pointer-events: none;
   }
-  /* La mini-carte : un cadre lumineux ; elle laisse dépasser les lettres de la boussole. */
   #app.vy-verre #minicarte {
     overflow: visible;
     box-shadow: 0 0 0 3px rgba(14, 12, 20, 0.92), 0 0 0 4.5px rgba(var(--v-a-rgb, 255, 138, 61), 0.6), 0 0 22px rgba(var(--v-b-rgb, 255, 61, 127), 0.32), var(--v-ombre-legere, 0 8px 22px rgba(0, 0, 0, 0.4));
@@ -51,18 +40,14 @@
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
-/* ----- Les blocs réglés : leur taille grandit depuis leur coin d'ancrage ; un bloc caché garde
-   sa place (les voisins ne bougent pas) ----- */
 #vital, #raccourcis { transform-origin: 50% 100%; }
 #minicarte, #lieu { transform-origin: 100% 100%; }
 #menus, #tracker { transform-origin: 100% 0; }
 #app .vy-hud-cache { visibility: hidden !important; pointer-events: none !important; }
 #app.vy-edition .vy-hud-cache { visibility: visible !important; opacity: 0.3; }
-/* Sans l'alerte de vie basse : la pierre des PV ne luit ni ne bat. */
 #app.vy-sans-alerte .vy-gemmes.bas .vy-gemmes__pv .vy-gem { filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.55)); }
 #app.vy-sans-alerte .vy-gemmes.bas .vy-gem__liquide { animation: none; }
 
-/* ----- L'éditeur ----- */
 .vy-editeur { position: absolute; inset: 0; z-index: 40; pointer-events: none; font-family: var(--vy-font-ui, "Poppins", sans-serif); color: var(--v-texte, #f3f0f8); }
 .vy-editeur__zones { position: absolute; inset: 0; }
 .vy-editeur__zone {

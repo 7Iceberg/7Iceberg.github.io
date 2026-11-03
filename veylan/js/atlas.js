@@ -1,12 +1,3 @@
-// Atlas du monde : une coordonnée [x, y] par carte, comme sur la carte de Dofus, déduite des
-// sorties (n : y - 1, s : y + 1, e : x + 1, w : x - 1). Les salles de donjon n'y sont pas : leur
-// porte est sur la carte d'entrée. Ne touche pas au DOM (testable sous Node, voir
-// tools/validate-content.js) ; la fenêtre « Carte du monde » (js/hud-carte.js) le dessine.
-//
-// Repères facultatifs dans le contenu, quand deux morceaux du monde ne sont reliés par aucune
-// sortie (un voyage en bateau, par exemple) : `coords: [x, y]` sur une carte la fixe, `origin:
-// [x, y]` sur une zone fixe sa première carte. Sans repère, un morceau isolé est posé à droite
-// des autres, avec deux cases de mer entre eux.
 const Atlas = (() => {
   const STEP = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
   const OPP = { n: 's', s: 'n', e: 'w', w: 'e' };
@@ -14,8 +5,6 @@ const Atlas = (() => {
   const pair = v => Array.isArray(v) && v.length === 2 && Number.isInteger(v[0]) && Number.isInteger(v[1]);
   const txt = c => `[${c[0]},${c[1]}]`;
 
-  // Calcule l'atlas d'une liste de zones. Retourne { coords: Map id → [x, y], cells: Map « x,y »
-  // → id, conflicts: [{ type, text, ... }], parts: [{ seed, maps, pinned }], bounds }.
   function compute(zones) {
     const maps = new Map();
     for (const z of zones || []) for (const m of z.maps || []) maps.set(m.id, { def: m, zone: z });
@@ -27,11 +16,9 @@ const Atlas = (() => {
     };
     const coords = new Map(), cells = new Map(), conflicts = [], parts = [];
     const ids = [...maps.keys()];
-    // Les cartes fixées d'abord, puis l'ordre du contenu : la première carte du jeu est en [0,0].
     const seeds = ids.filter(id => pinOf(id)).concat(ids.filter(id => !pinOf(id)));
     for (const seed of seeds) {
       if (coords.has(seed)) continue;
-      // Parcours en largeur dans un repère local, puis décalage.
       const local = new Map([[seed, [0, 0]]]);
       const queue = [seed];
       while (queue.length) {
@@ -65,7 +52,6 @@ const Atlas = (() => {
       }
       parts.push({ seed, maps: [...local.keys()], pinned: !!pin });
     }
-    // Chaque sortie doit mener à la case voisine, dans le bon sens.
     for (const [id, e] of maps) {
       const ex = e.def.exits || {};
       for (const dir of ['n', 'e', 's', 'w']) {
@@ -85,7 +71,6 @@ const Atlas = (() => {
     return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
   }
 
-  // L'atlas du contenu chargé, calculé une fois (comme World.index).
   let cache = null, cacheZones = null, cacheCount = -1;
   function get() {
     const zones = (typeof DATA !== 'undefined' && DATA.content && DATA.content.zones) || [];
@@ -96,13 +81,9 @@ const Atlas = (() => {
   const coordsOf = id => get().coords.get(id) || null;
   const at = (x, y) => get().cells.get(key(x, y)) || null;
 
-  // L'identifiant d'un PNJ d'une carte : une chaîne sur une carte à cases, un objet { id, u, v }
-  // sur une carte de plateau (l'île d'Ervane).
   const idPnj = n => (n && typeof n === 'object' ? n.id : n);
-  // De même pour un nœud de récolte : sa ressource, ou { resource, u, v } sur un plateau.
   const idRes = n => (n && typeof n === 'object' ? n.resource : n);
 
-  // Index des cartes : zone, PNJ, donjons ; pour la fenêtre et les marques de quêtes.
   function index() {
     const a = get();
     if (a.index) return a.index;
@@ -120,14 +101,11 @@ const Atlas = (() => {
     return ix;
   }
 
-  // Les cases marquées d'une carte, lues dans son plan comme le fait js/grid.js : PNJ, nœuds de
-  // récolte, groupes, porte, relais, lanternes, dans l'ordre de lecture. Gardées en cache.
   function spots(id) {
     const ix = index();
     ix.spots = ix.spots || new Map();
     if (ix.spots.has(id)) return ix.spots.get(id);
     const e = ix.map.get(id);
-    // Une carte de plateau (l'île d'Ervane) n'a pas de plan de cases : rien de marqué.
     const out = { npcs: [], nodes: [], groups: [], door: null, relay: null, lanterns: [], size: e && e.def.layout ? e.def.layout.length : 15 };
     if (e && e.def.layout) e.def.layout.forEach((row, y) => {
       for (let x = 0; x < row.length; x++) {
@@ -144,8 +122,6 @@ const Atlas = (() => {
     return out;
   }
 
-  // Une case du plan d'une carte, en coordonnées du monde : le centre de la carte [x, y] est
-  // au milieu de son plan, chaque carte fait une unité de côté.
   function tileToWorld(id, tx, ty) {
     const p = coordsOf(id);
     if (!p) return null;
@@ -153,7 +129,6 @@ const Atlas = (() => {
     return [p[0] - 0.5 + (tx + 0.5) / n, p[1] - 0.5 + (ty + 0.5) / n];
   }
 
-  // La carte du monde où se trouve le personnage : la carte elle-même, ou l'entrée de son donjon.
   function hereOf(mapId) {
     if (!mapId) return null;
     if (!String(mapId).includes('#')) return get().coords.has(mapId) ? mapId : null;
@@ -161,7 +136,6 @@ const Atlas = (() => {
     return d && get().coords.has(d.entryMap) ? d.entryMap : null;
   }
 
-  // Ce qu'on trouve sur une carte : monstres (avec leurs niveaux), ressources, relais, donjons, PNJ.
   function mapInfo(id) {
     const e = index().map.get(id);
     if (!e) return null;
@@ -182,11 +156,6 @@ const Atlas = (() => {
     };
   }
 
-  // Marques de quêtes par carte, pour un personnage : « ! » (quête à prendre), « ? » (quête à
-  // rendre) et cibles des étapes en cours (carte à visiter, PNJ à voir, monstres, récolte, donjon).
-  // Par PNJ aussi (giveNpc, turnInNpc), et `pins` : la cible précise des quêtes suivies (les trois
-  // premières du suivi, comme à l'écran), une case du plan ; pour des monstres ou une récolte,
-  // la carte la plus proche de `hereId`.
   function questMarks(ch, hereId) {
     const ix = index();
     const give = new Map(), turnIn = new Map(), targets = new Map(), giveNpc = new Map(), turnInNpc = new Map();
@@ -204,15 +173,11 @@ const Atlas = (() => {
       else if (s.type === 'answer') push(targets, ix.npcMap.get(Quests.answerNpc(q, s)), q);
       else if (s.type === 'dungeon') { const d = (DATA.content.dungeons || []).find(x => x.id === s.dungeon); if (d) push(targets, d.entryMap, q); }
       else if (s.type === 'kill') { for (const [mid, e] of ix.map) if ((e.def.groups || []).some(g => g.monsters.includes(s.monster))) push(targets, mid, q); }
-      // Une étape `kills` (plusieurs monstres, dans l'ordre qu'on veut) : les cartes de chacun
-      // d'eux tant que sa ligne n'est pas pleine.
       else if (s.type === 'kills') { const c = Quests.compteurs(st, s); s.kills.forEach((k, i) => { if (c[i] >= k.count) return; for (const [mid, e] of ix.map) if ((e.def.groups || []).some(g => g.monsters.includes(k.monster))) push(targets, mid, q); }); }
       else if (s.type === 'gather') { for (const [mid, e] of ix.map) if ((e.def.nodes || []).some(n => idRes(n) === s.resource)) push(targets, mid, q); }
     }
-    // Épingles des quêtes suivies.
     const here = hereId && coordsOf(hereId);
     const near = list => list.sort((a, b) => here ? Math.hypot(coordsOf(a.map)[0] - here[0], coordsOf(a.map)[1] - here[1]) - Math.hypot(coordsOf(b.map)[0] - here[0], coordsOf(b.map)[1] - here[1]) : 0)[0] || null;
-    // Sur une carte de plateau (sans plan), un PNJ, un groupe ou un nœud épingle le milieu de la case.
     const plateau = m => { const e = ix.map.get(m); return !!(e && e.def.plateau); };
     const npcSpot = npc => { const m = ix.npcMap.get(npc); if (m && plateau(m)) return { map: m, x: 7, y: 7 }; const sp = m && spots(m).npcs.find(n => n.id === npc); return m && sp ? { map: m, x: sp.x, y: sp.y } : null; };
     const groupeSpot = (mid, monster) => {
@@ -251,14 +216,7 @@ const Atlas = (() => {
     return { give, turnIn, targets, giveNpc, turnInNpc, pins };
   }
 
-  // Le premier continent, à l'échelle des régions (docs/MONDE.md, docs/DONJONS-ET-COMBATS.md).
-  // Une région est ouverte dès que le contenu a des zones à elle ; ses niveaux viennent alors des
-  // zones. `at` place l'île sur la carte du continent (unités libres, 100 de large).
   const REGIONS = [
-    // Ervane, l'île de l'Éveil (selon l'interrupteur : la région n'existe que si son module est
-    // appliqué, js/ile.js ; éteinte, la carte du monde ne la nomme pas).
-    // Écartée d'Orsane (son disque va de 27 à 53) : au-dessus et à gauche, dans la vue (x de -2 à 94,
-    // y de 0 à 80, js/hud-carte.js) ; l'onglet Monde dessine les petites îles après les grandes.
     { id: 'ervane', name: 'Ervane, l\'île de l\'Éveil', level: [1, 8], at: [15, 10], r: 7, desc: 'L\'île où s\'éveillent les Veilleurs, au bout de l\'amarre, au-dessus des Cimes.' },
     { id: 'orsane', name: 'Orsane, les Cimes', level: [1, 20], at: [40, 15], r: 13, desc: 'La capitale, sur les Cimes, tout en hauteur et en lumière. Siège du Fil.' },
     { id: 'kaldum', name: 'Kaldum', level: [20, 40], at: [74, 27], r: 12, desc: 'Mines, forges, roche chaude. Terre des Kaldrin.' },

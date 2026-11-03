@@ -1,15 +1,3 @@
-// L'interface de jeu à la manière des grands tactiques sur téléphone, dans la charte Veylan : le
-// panneau de droite (cristal de vie, PA et PM, boutons rapides, grille de sorts et d'objets en
-// pages, menus ronds, discussion et émotes), la carte d'infos en haut à gauche avec la quête
-// suivie, la fiche d'un groupe de monstres, le glissé pour changer de carte, le compte à rebours
-// du placement, les badges des menus, « Niveau supérieur ! », et l'invitation à tourner le
-// téléphone. Le panneau est replié (3.29) : la scène prend toute la largeur, une languette d'icônes
-// sur son bord droit (cristal de vie, PA et PM en combat, sorts et objets, menus, discussion,
-// émotes) l'ouvre par-dessus la scène ; il s'ouvre seul au début d'un combat et se replie à la
-// fin ; un toucher sur la scène le replie hors combat. La caméra (js/camera.js) remplit #stage et
-// garde le panneau ouvert ou la languette hors de sa part libre (`insetDroite`). css/jeu.css
-// décide quand le panneau et la languette se montrent (téléphone en paysage, 500 pixels de haut ou
-// moins) ; sur ordinateur et tablette, la disposition en fenêtres reste.
 class HudJeu {
   constructor(hud) {
     this.hud = hud;
@@ -19,7 +7,7 @@ class HudJeu {
     this.renderer = hud.renderer;
     this.app = document.getElementById('app');
     this.stage = document.getElementById('stage');
-    this.onglet = null;            // 'sorts' | 'objets', null : celui du mode
+    this.onglet = null;
     this.page = 0;
     this.verrou = true;
     this.vueDegagee = false;
@@ -56,11 +44,7 @@ class HudJeu {
     w.on('fight', () => {
       this.page = 0;
       this.onglet = null;
-      // Le panneau reste replié : la barre de sorts du bas suffit au combat (il s'ouvre toujours
-      // depuis la languette, pour les objets ou l'ordre des sorts).
       this.basculerPanneau(false);
-      // Le placement a son compte à rebours : à zéro, le combat commence seul (le tutoriel
-      // peut l'éteindre pour son premier combat, js/guide.js).
       this.ui.armerPlacement(UI.PLACEMENT_SECONDES);
       this.rafraichir();
     });
@@ -70,27 +54,23 @@ class HudJeu {
     Bus.on('levelUp', d => { this.niveauEnAttente = d.level; this.annoncerNiveau(); });
     window.addEventListener('veylan:discussionNonLues', e => this.compterDiscussion(e.detail && e.detail.n));
     window.addEventListener('resize', () => { this.mesurer(); this.rafraichir(); });
-    // Les badges, le niveau en attente et l'indice de placement suivent l'état du jeu.
     setInterval(() => this.tic(), 400);
     this.mesurer();
     this.rafraichir();
   }
 
   static lire(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-  static ecrire(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { /* stockage indisponible */ } }
+  static ecrire(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {   } }
 
   get ch() { return this.world.ch; }
   get enCombat() { return !!this.world.showCombat; }
   get ongletActif() { return this.onglet || (this.enCombat ? 'sorts' : 'objets'); }
 
-  // ----- Le panneau de droite -----
 
   construirePanneau() {
     const p = this.panneau = document.getElementById('panneau');
     const I = Fenetres.ICON, J = HudJeu.ICON;
     const menus = (Hud.MENUS || []).map(([id, label, key, icon]) => `<button type="button" class="vy-rond" data-win="${id}" aria-label="${label} (${key})" title="${label}">${icon}<span class="vy-badge" hidden></span></button>`).join('');
-    // La Veille du jour (js/hud-veille.js) se pilote par toggleWin('veille') ; un point tant que le
-    // dépôt du jour reste à faire (rafraichirBadges).
     const veille = typeof Veille !== 'undefined' ? `<button type="button" class="vy-rond" data-win="veille" aria-label="Veille du jour (V)" title="Veille du jour">${Hud.VEILLE_ICONE || J.veille}<span class="vy-badge" hidden></span></button>` : '';
     const bientot = HudJeu.BIENTOT.map(([id, label]) => `<button type="button" class="vy-rond vy-rond--bientot" data-bientot="${id}" aria-disabled="true" aria-label="${label} : bientôt" title="${label} : bientôt">${J[id]}</button>`).join('');
     p.innerHTML =
@@ -119,13 +99,11 @@ class HudJeu {
     this.grille = p.querySelector('.vy-panneau__grille');
     this.q = s => p.querySelector(s);
     p.addEventListener('click', evt => this.clic(evt));
-    // Glisser pour réordonner la grille, quand elle est déverrouillée.
     this.grille.addEventListener('pointerdown', evt => this.debutGlisser(evt));
     this.grille.addEventListener('contextmenu', evt => evt.preventDefault());
     this.verrou = HudJeu.lire('veylan.grille.libre') !== '1';
   }
 
-  // ----- La languette (3.29) : le panneau replié derrière des icônes, sur le bord droit de la scène -----
 
   construireLanguette() {
     const J = HudJeu.ICON;
@@ -134,7 +112,6 @@ class HudJeu {
     l.setAttribute('role', 'toolbar');
     l.setAttribute('aria-label', 'Jeu');
     l.innerHTML =
-      // La vie en anneau (style en verre, css/verre.css) : la part pleine suit les PV.
       '<button type="button" class="vy-languette__pv" data-languette="panneau" aria-label="Points de vie"><svg class="vy-anneau" viewBox="0 0 40 40" aria-hidden="true">' +
       '<circle class="vy-anneau__piste" cx="20" cy="20" r="16.5"/><circle class="vy-anneau__vie" cx="20" cy="20" r="16.5" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="0"/>' +
       '</svg><b class="vy-languette__pv-val"></b></button>' +
@@ -156,14 +133,11 @@ class HudJeu {
       else if (id === 'emote') { this.basculerPanneau(true); this.basculerEmotes(true); }
       b.blur();
     });
-    // Un toucher sur la scène replie le panneau hors combat (en combat, on y touche les cases).
     this.stage.addEventListener('pointerdown', evt => {
       if (this.panneauOuvert && !this.enCombat && !evt.target.closest('.vy-languette')) this.basculerPanneau(false);
     }, { capture: true });
   }
 
-  // Ouvre ou replie le panneau par-dessus la scène ; la caméra reprend sa part libre (main.js
-  // écoute « resize » pour les marges de la caméra).
   basculerPanneau(on) {
     const ouvert = on != null ? !!on : !this.panneauOuvert;
     if (ouvert === this.panneauOuvert) return;
@@ -174,11 +148,9 @@ class HudJeu {
     this.mesurer();
     this.rafraichirGrille();
     this.publierCouverture();
-    try { window.dispatchEvent(new Event('resize')); } catch (e) { /* rien */ }
+    try { window.dispatchEvent(new Event('resize')); } catch (e) {   }
   }
 
-  // Ce qui couvre les bords de la scène, en variables sur le corps de la page (--vy-couvert-droite,
-  // --vy-couvert-gauche) : les éléments posés hors de #stage (la boîte du guide) s'en écartent.
   publierCouverture() {
     const d = this.insetDroite(), g = this.insetGauche();
     if (this.couvertSig === `${d}|${g}`) return;
@@ -187,8 +159,6 @@ class HudJeu {
     document.body.style.setProperty('--vy-couvert-gauche', g + 'px');
   }
 
-  // La part de la scène que le panneau ouvert ou la languette couvre à droite (0 hors du téléphone
-  // en paysage, ou à gauche pour un gaucher : `insetGauche`).
   insetDroite() { return this.gaucher ? 0 : this.couverture(); }
   insetGauche() { return this.gaucher ? this.couverture() : 0; }
   couverture() {
@@ -218,7 +188,6 @@ class HudJeu {
     if (t.closest('.vy-panneau__discussion')) { this.hud.discussion.basculer(); return; }
   }
 
-  // La grille prend la place libre : autant de rangées de cinq que la hauteur en permet.
   mesurer() {
     const z = this.q('.vy-panneau__grille-zone');
     if (!z || !z.clientHeight) { this.rangees = 3; return; }
@@ -237,7 +206,6 @@ class HudJeu {
     this.mesurerScene();
   }
 
-  // Après chaque rafraîchissement de l'interface de combat (js/ui.js) : PA, PM, PV, sorts.
   rafraichirCombat() {
     if (!this.enCombat) return;
     this.rafraichirVie();
@@ -247,8 +215,6 @@ class HudJeu {
     this.mesurerScene();
   }
 
-  // La largeur de la scène règle la taille des rubans ; celle de la barre de tour (en bas à
-  // droite, en combat) dit où se pose la boîte du guide : à côté, ou au-dessus si la place manque.
   mesurerScene() {
     this.publierCouverture();
     const app = this.app, b = this.ui.el.turnBar, sl = this.stage.clientWidth;
@@ -277,7 +243,6 @@ class HudJeu {
       this.q('.vy-pt--pa b').textContent = p.pa;
       this.q('.vy-pt--pm b').textContent = p.pm;
     }
-    // La languette : le même cristal en petit, PA et PM en combat.
     const L = this.languette;
     if (L) {
       L.querySelector('.vy-anneau__vie').setAttribute('stroke-dashoffset', (100 * (1 - pct)).toFixed(1));
@@ -297,7 +262,6 @@ class HudJeu {
     j.title = ch.level >= Character.MAX_LEVEL ? 'Niveau maximum' : `Expérience : ${xp} %`;
   }
 
-  // ----- Boutons rapides : en exploration, en combat -----
 
   rafraichirRapides() {
     const J = HudJeu.ICON, I = Fenetres.ICON;
@@ -327,7 +291,6 @@ class HudJeu {
     if (b && b.isConnected) b.blur();
   }
 
-  // Quitter le combat : une confirmation au milieu de la scène, le combat compte comme perdu.
   demanderQuitter() {
     if (this.confirmQuitter) return;
     const box = this.confirmQuitter = document.createElement('div');
@@ -348,14 +311,6 @@ class HudJeu {
     if (this.confirmQuitter) { this.confirmQuitter.remove(); this.confirmQuitter = null; }
   }
 
-  // ----- La barre de combat, à la manière de Dofus -----
-  // En bas de la scène, au téléphone en paysage comme sur ordinateur (style verre) : les gemmes
-  // des PV, PA et PM dans le style du bloc vital (js/gemmes.js ; elles se vident) ; les sorts dans
-  // l'ordre de la grille (la tuile du sort, son coût, sa touche, sa relance ; le sort armé en
-  // cyan), sur deux lignes sur ordinateur ; puis le temps du tour en anneau et « Prêt » ou « Fin
-  // du tour ». Au-dessus, les effets en cours (l'Affût, la Fureur...). La barre de tour devient la
-  // frise des combattants : en haut au téléphone, juste au-dessus de la barre sur ordinateur
-  // (css/jeu.css).
   construireBarreSorts() {
     const b = this.barreSorts = document.createElement('div');
     b.className = 'vy-barre-sorts';
@@ -373,9 +328,7 @@ class HudJeu {
       if (s) { this.toucherSlot(s); return; }
       if (evt.target.closest('.vy-barre-sorts__action')) { if (this.combat.phase === 'placement') this.ui.ready(); else this.ui.endTurn(); }
     });
-    // Hors de son tour : un appui long montre la fiche du sort (comme la grille).
     b.addEventListener('contextmenu', evt => { const s = evt.target.closest('[data-spell]'); if (s) { evt.preventDefault(); this.infoSort(s, s.dataset.spell); } });
-    // À la souris : la fiche du sort au survol, tant que la souris reste sur sa tuile (comme Dofus).
     b.addEventListener('pointerover', evt => {
       if (evt.pointerType !== 'mouse') return;
       const s = evt.target.closest('[data-spell]');
@@ -387,7 +340,6 @@ class HudJeu {
       this.sortSurvole = null;
       this.ui.el.tooltip.classList.add('hidden');
     });
-    // Le temps du tour, à chaque battement du compte à rebours (js/ui.js, updateTimer).
     this.ui.apresChrono = (reste, total) => this.majChrono(reste, total);
   }
 
@@ -396,12 +348,10 @@ class HudJeu {
     if (!b) return;
     const on = this.enCombat && !!cb.player;
     if (on !== this.barreOn) { this.barreOn = on; this.app.classList.toggle('vy-barre-sorts-on', on); if (!on) this.app.classList.remove('vy-etats-on'); }
-    // Les marges de la caméra suivent la frise et la barre (mesurées une fois posées : au premier
-    // passage, la frise n'est pas encore à sa place).
     const boite = b.querySelector('.vy-barre-sorts__boite');
     if (on && boite.offsetHeight) this.app.style.setProperty('--barre-sorts-h', boite.offsetHeight + 'px');
     const marges = on ? `${this.insetHaut()}|${this.insetBas()}` : '';
-    if (marges !== this.margesCombat) { this.margesCombat = marges; try { window.dispatchEvent(new Event('resize')); } catch (e) { /* rien */ } }
+    if (marges !== this.margesCombat) { this.margesCombat = marges; try { window.dispatchEvent(new Event('resize')); } catch (e) {   } }
     if (!on) return;
     const p = cb.player, tour = this.ui.isPlayerTurn() && !cb.busy;
     const ids = this.contenu('sorts');
@@ -415,7 +365,6 @@ class HudJeu {
     const liste = b.querySelector('.vy-barre-sorts__liste');
     liste.innerHTML = cases;
     liste.style.setProperty('--colonnes', Math.max(1, Math.ceil(ids.length / 2)));
-    // Les PA et PM se vident au fil du tour : le plein est ce que le tour donne (maximum et effets).
     const plein = k => Math.max(p[k], (k === 'pa' ? p.paMax : p.pmMax) + (p.modifier ? p.modifier(k) : 0));
     Gemmes.maj(b.querySelector('.vy-gemmes'), { hp: p.hp, hpMax: p.hpMax, pa: p.pa, paMax: plein('pa'), pm: p.pm, pmMax: plein('pm') });
     const etats = b.querySelector('.vy-barre-sorts__etats');
@@ -426,7 +375,6 @@ class HudJeu {
     if (act) { a.textContent = act.textContent; a.disabled = act.disabled; a.dataset.ui = act.dataset.ui || 'pret'; a.hidden = act.classList.contains('hidden'); }
   }
 
-  // Le style du bloc vital a changé (Options) : les gemmes de la barre suivent.
   majStyleVital() {
     const v = this.barreSorts && this.barreSorts.querySelector('.vy-barre-sorts__vie');
     if (!v) return;
@@ -435,8 +383,6 @@ class HudJeu {
     this.rafraichirBarreSorts(true);
   }
 
-  // Le temps du tour (ou du placement) : l'anneau se vide, les secondes au milieu, en braise à la
-  // fin. Rien à compter : l'anneau s'efface.
   majChrono(reste, total) {
     const c = this.barreSorts && this.barreSorts.querySelector('.vy-barre-sorts__chrono');
     if (!c) return;
@@ -450,7 +396,6 @@ class HudJeu {
     c.classList.toggle('urgent', reste <= 5);
   }
 
-  // Une case de la barre : l'icône du sort, son coût, sa touche, sa relance.
   caseBarre(id, p, tour, rang) {
     const ch = this.ch, cb = this.combat;
     const s = cb.spellOf(id, p);
@@ -466,8 +411,6 @@ class HudJeu {
       `${fond}<em class="vy-sort__pa">${s.pa}</em>${rang < 9 ? `<i class="vy-sort__touche">${rang + 1}</i>` : ''}${cd ? `<span class="vy-sort__cd">${cd}</span>` : ''}</button>`;
   }
 
-  // Les marges du haut et du bas de la scène en combat (la frise des tours, la barre de sorts) :
-  // la caméra cadre l'aire entre les deux (main.js, coverHud).
   insetHaut() {
     const t = this.ui.el.turnBar;
     if (!this.barreOn || !t || !t.offsetWidth) return 0;
@@ -479,17 +422,12 @@ class HudJeu {
     if (!this.barreOn || !b || !b.offsetWidth) return 0;
     const s = this.stage.getBoundingClientRect();
     let haut = b.getBoundingClientRect().top;
-    // Sur ordinateur, la frise des combattants se pose juste au-dessus de la barre.
     const t = this.ui.el.turnBar;
     if (t && t.offsetWidth) { const r = t.getBoundingClientRect(); if (r.top > s.top + s.height * 0.4) haut = Math.min(haut, r.top); }
     return Math.max(0, Math.round(s.bottom - haut + 4));
   }
 
-  // ----- La grille : sorts ou objets, en pages, réordonnable -----
 
-  // Les sorts : l'arme d'abord (première case), puis ceux de la classe ; en exploration, les sorts
-  // connus. Les objets : les consommables, puis l'équipement du sac. Un ordre choisi par le joueur
-  // (glisser, grille déverrouillée) est gardé dans ce navigateur.
   contenu(onglet) {
     const ch = this.ch, cb = this.combat;
     let ids;
@@ -584,7 +522,6 @@ class HudJeu {
     else this.world.equip(id);
   }
 
-  // Hors de son tour ou hors combat : la fiche du sort dans l'infobulle, un instant.
   infoSort(b, id, garder) {
     const ch = this.ch, t = this.ui.el.tooltip;
     let html;
@@ -605,7 +542,6 @@ class HudJeu {
     if (!garder) this.infoT = setTimeout(() => t.classList.add('hidden'), 2600);
   }
 
-  // Glisser une case sur une autre les échange (grille déverrouillée seulement).
   debutGlisser(evt) {
     if (this.verrou || evt.button > 0) return;
     const src = evt.target.closest('[data-slot]');
@@ -650,7 +586,6 @@ class HudJeu {
     window.addEventListener('pointercancel', fin);
   }
 
-  // ----- Carte d'infos et quête suivie, en haut à gauche de la scène -----
 
   rafraichirCarte() {
     const w = this.world, def = w.mapDef;
@@ -660,7 +595,6 @@ class HudJeu {
     const pos = !room && typeof Atlas === 'object' ? Atlas.coordsOf(w.mapId) : null;
     const lv = room ? ((World.dungeonDef(def.dungeonId) || {}).level || (w.zone && w.zone.level)) : def.level;
     const niveau = Array.isArray(lv) ? (lv[0] === lv[1] ? `Niveau ${lv[0]}` : `Niveau ${lv[0]} à ${lv[1]}`) : '';
-    // La quête suivie (le journal, js/hud-quetes.js), sinon la première du suivi.
     const tous = Quests.tracker(this.ch), suivie = this.hud && this.hud.quetesSuivie ? this.hud.quetesSuivie() : null;
     const t = (suivie && tous.find(x => x.quest.id === suivie)) || tous[0];
     const html = `<button type="button" class="vy-carte-info__carte" data-act="carte" aria-label="${Util.esc(zone)}, ${Util.esc(def.name)} : ouvrir la carte du monde">` +
@@ -671,8 +605,6 @@ class HudJeu {
     if (this.carteInfo.dataset.html !== html) { this.carteInfo.dataset.html = html; this.carteInfo.innerHTML = html; }
   }
 
-  // ----- Badges des menus : « + » pour des points à placer, « ! » pour une quête à rendre, un point
-  // pour la Veille du jour à faire -----
 
   rafraichirBadges() {
     const ch = this.ch;
@@ -692,15 +624,12 @@ class HudJeu {
       badge.classList.toggle('vy-badge--plus', m === '+');
       badge.classList.toggle('vy-badge--point', m === '•');
     }
-    // Le menu d'une fenêtre ouverte s'allume, comme dans la barre des menus (Hud.syncMenus).
     const fen = this.hud.fen;
     for (const b of this.panneau.querySelectorAll('.vy-rond[data-win]')) b.classList.toggle('on', !!(fen && fen.isOpen(b.dataset.win)));
-    // La languette : un point sur « Menus » dès qu'un menu a quelque chose à dire.
     const pt = this.languette && this.languette.querySelector('[data-languette="menus"] .vy-badge');
     if (pt) pt.hidden = !Object.values(marks).some(Boolean);
   }
 
-  // « Bientôt » : une fonction prévue, montrée grisée, qui ne prétend pas marcher.
   bulleBientot(b) {
     const t = this.ui.el.tooltip;
     t.innerHTML = `<b>${Util.esc(b.title.replace(/ : bientôt$/, ''))}</b><br><span class="muted">Bientôt.</span>`;
@@ -720,7 +649,6 @@ class HudJeu {
     }
   }
 
-  // ----- Émotes : une bulle au-dessus du personnage, rien n'est envoyé -----
 
   basculerEmotes(on) {
     const box = this.q('.vy-emotes'), b = this.q('.vy-panneau__emote');
@@ -762,7 +690,6 @@ class HudJeu {
     }, 2600);
   }
 
-  // ----- Le rythme : badges, niveau en attente, indice de placement -----
 
   tic() {
     this.rafraichirBadges();
@@ -771,8 +698,6 @@ class HudJeu {
     this.mesurerScene();
   }
 
-  // « Niveau supérieur ! » : tout de suite si rien n'est ouvert, sinon après l'écran de fin de
-  // combat ou le dialogue.
   annoncerNiveau() {
     if (this.niveauEnAttente == null) return;
     const panel = document.getElementById('panel');
@@ -782,7 +707,6 @@ class HudJeu {
     this.ui.ruban('Niveau supérieur !', { sorte: 'niveau', ms: 2600, sous: `Niveau ${lv}` });
   }
 
-  // Pendant le placement, une ligne rappelle quoi faire (sauf quand le guide le dit déjà).
   rafraichirIndice() {
     const cb = this.combat;
     const on = this.enCombat && cb.phase === 'placement' && !document.body.classList.contains('vy-guide-visible');
@@ -801,12 +725,9 @@ class HudJeu {
   }
 }
 
-// Les fonctions prévues, grisées dans les menus.
 HudJeu.BIENTOT = [['metiers', 'Métiers'], ['familiers', 'Familiers'], ['montures', 'Montures'], ['guilde', 'Guilde'], ['boutique', 'Boutique cosmétique']];
 HudJeu.EMOTES = [['salut', 'Saluer'], ['joie', 'Se réjouir'], ['merci', 'Remercier'], ['doute', 'S\'interroger'], ['repos', 'Se reposer']];
 
-// L'avancement d'une quête suivie, de 0 à 1 : les étapes faites, plus la part de l'étape en cours
-// (monstres, récoltes, objets réunis). Rendue, elle est pleine.
 HudJeu.avancement = (ch, t) => {
   if (t.done) return 1;
   const q = t.quest, st = Quests.state(ch, q.id), n = (q.steps || []).length;
@@ -818,7 +739,6 @@ HudJeu.avancement = (ch, t) => {
   return Math.max(0, Math.min(1, (st.step + part) / n));
 };
 
-// Pictogrammes du panneau : un trait, lisibles en 18 pixels, comme ceux des fenêtres.
 HudJeu.ICON = (() => {
   const s = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
   return {
@@ -848,7 +768,6 @@ HudJeu.ICON = (() => {
   };
 })();
 
-// ----- La fiche d'un groupe de monstres, près du groupe touché -----
 class FicheGroupe {
   constructor(jeu) {
     this.jeu = jeu;
@@ -870,15 +789,12 @@ class FicheGroupe {
       }
       if (b.dataset.act === 'fermer') this.cacher(true);
     });
-    // Toucher ailleurs (la carte, un autre groupe) referme la fiche ; pas la bulle du guide.
     jeu.stage.addEventListener('pointerdown', evt => { if (this.d && !this.el.contains(evt.target) && !evt.target.closest('.vy-guide, .vy-rappel')) this.cacher(true); }, true);
     window.addEventListener('keydown', evt => { if (evt.key === 'Escape' && this.d) this.cacher(true); });
-    // Sur l'île, marcher d'une sous-zone à l'autre (`secteur`) ne referme pas la fiche.
     jeu.world.on('map', d => { if (!(d && d.secteur)) this.cacher(false); });
     jeu.world.on('fight', () => this.cacher(false));
   }
 
-  // « Résiste : Feu 30 % · Faible : Eau 50 % » (rien si le monstre n'a ni l'une ni l'autre).
   static ligneResistances(def) {
     const r = def.resist || {}, el = DATA.elements || {};
     const nom = k => (el[k] && el[k].label) || k;
@@ -892,7 +808,6 @@ class FicheGroupe {
     return { facile: 'Facile', mesure: 'À ta mesure', difficile: 'Difficile', danger: 'Dangereux' };
   }
 
-  // d : { group, xp, difficulty } (World.inspectGroup).
   montrer(d) {
     this.d = d;
     const g = d.group;
@@ -902,12 +817,9 @@ class FicheGroupe {
       const l = lignes.find(x => x.id === m.id && x.level === m.level);
       if (l) l.n++; else lignes.push({ id: m.id, level: m.level, n: 1 });
     }
-    // Sur l'île d'Ervane, chaque monstre montre aussi ses résistances et ses faiblesses : c'est la
-    // leçon des Glyms (un élément contre l'autre).
     const ile = !!this.jeu.world.plateau;
     const liste = lignes.map(l => {
       const def = DATA.monsters[l.id] || { name: l.id, color: '#aaa' };
-      // `data-monstre` : le guide de l'île y met en avant le Glym qui craint et celui qui résiste.
       return `<li data-monstre="${Util.esc(l.id)}"><span class="vy-pastille" style="--c:${def.color}"></span><span class="vy-fiche-groupe__nom">${Util.esc(def.name)}</span><small>niv. ${l.level}</small>${def.recherche ? '<small class="vy-fiche-groupe__recherche">recherché</small>' : ''}${l.n > 1 ? `<b>×${l.n}</b>` : ''}</li>` +
         (ile ? FicheGroupe.ligneResistances(def) : '');
     }).join('');
@@ -924,8 +836,6 @@ class FicheGroupe {
     this.placer();
   }
 
-  // Près du groupe (sa position animée), dans la scène : au-dessus, sinon à droite, à gauche ou
-  // dessous, là où la fiche cache le moins le groupe et la boîte du guide (ou d'un dialogue).
   placer() {
     if (!this.d) return;
     const g = this.d.group, R = this.jeu.renderer;
@@ -952,7 +862,6 @@ class FicheGroupe {
 
   get ouverte() { return !!this.d; }
 
-  // `relacher` : le groupe reprend sa marche (on n'attaque pas).
   cacher(relacher) {
     if (!this.d) return;
     if (relacher) this.jeu.world.releaseGroup(this.d.group);
@@ -962,11 +871,6 @@ class FicheGroupe {
   }
 }
 
-// ----- Glisser l'écran d'un doigt pour changer de carte -----
-// Comme on tourne une page : glisser vers la droite amène la carte de gauche (la sortie du côté
-// opposé au geste). Un deuxième doigt annule le geste : les gestes à deux doigts sont ceux de la
-// caméra. Zoomée au-delà de l'ajustement, la vue se déplace d'un doigt (js/camera.js) : le geste
-// ne change pas de carte. Toucher le bord marche toujours (js/world.js).
 class Glisse {
   constructor(jeu) {
     this.jeu = jeu;
@@ -979,11 +883,9 @@ class Glisse {
     c.addEventListener('pointermove', e => this.bouge(e));
     c.addEventListener('pointerup', e => this.haut(e));
     c.addEventListener('pointercancel', e => this.annuler(e));
-    // Le clic qui suit un glissé ne doit pas faire marcher le Veilleur.
     window.addEventListener('click', e => { if (e.target === c && Date.now() < this.avalerJusqua) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
   }
 
-  // La distance à parcourir : 56 pixels, ou un dixième de la scène si elle est grande.
   seuil() {
     const r = this.jeu.stage.getBoundingClientRect();
     return Math.max(56, Math.min(r.width, r.height) * 0.1);
@@ -1021,7 +923,6 @@ class Glisse {
     if (this.glisser(dx, dy)) this.avalerJusqua = Date.now() + 450;
   }
 
-  // Un geste (dx, dy) à l'écran : la sortie opposée, s'il y en a une de ce côté. Vrai s'il part.
   glisser(dx, dy) {
     const w = this.jeu.world;
     if (w.state !== 'explore' || w.showCombat) return false;
@@ -1031,7 +932,6 @@ class Glisse {
   }
 }
 
-// ----- « Tourne ton téléphone » : le jeu se joue en paysage -----
 class Tourne {
   constructor() {
     this.el = document.createElement('div');
@@ -1043,7 +943,7 @@ class Tourne {
       '<button type="button" class="vy-tourne__lien">Continuer en portrait</button></div>';
     document.body.appendChild(this.el);
     this.el.querySelector('.vy-tourne__lien').addEventListener('click', () => {
-      try { sessionStorage.setItem('veylan.portrait', '1'); } catch (e) { /* stockage indisponible */ }
+      try { sessionStorage.setItem('veylan.portrait', '1'); } catch (e) {   }
       this.verifier();
     });
     this.mq = typeof matchMedia === 'function' ? matchMedia('(orientation: portrait) and (max-width: 600px)') : null;
@@ -1054,7 +954,7 @@ class Tourne {
 
   verifier() {
     let ignore = false;
-    try { ignore = sessionStorage.getItem('veylan.portrait') === '1'; } catch (e) { /* stockage indisponible */ }
+    try { ignore = sessionStorage.getItem('veylan.portrait') === '1'; } catch (e) {   }
     const on = !!(this.mq && this.mq.matches) && !ignore;
     this.el.classList.toggle('hidden', !on);
   }

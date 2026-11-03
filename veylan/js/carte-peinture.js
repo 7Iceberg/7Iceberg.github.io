@@ -1,36 +1,22 @@
-// Peinture de la carte du monde, vue de dessus : chaque carte du monde peinte d'après son plan
-// (docs/SPEC-CONTENU.md : sol, chemins, herbe, eau, murs, arbres, décors, sorties), une seule
-// fois, dans un canvas hors écran. Aussi : la version voilée des cartes inexplorées, les nuages
-// du brouillard, les pastilles (relais, donjon, artisan, marchand, quêtes) et les épingles. La
-// carte en 2D (js/hud-carte.js) et la vue 3D (js/carte-3d.js) se servent des mêmes images.
-//
-// Rendu « peint » : taches de couleur douces pour le sol, masques adoucis (bords fondus des
-// chemins, écume des rives, lèvre claire autour du vide), ombre de contact au pied des murs et
-// des rochers, ombres portées floues sous les arbres. Lumière en haut à gauche, comme le jeu.
 const CartePeinture = (() => {
-  const T = 16;                       // pixels par case du plan : une carte de 15 cases fait 240 px
+  const T = 16;
   const cartes = new Map(), brumes = new Map(), arts = new Map();
 
   const canvas = (w, h) => { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; };
   const scratch = {};
-  // Canvas de travail réutilisés : un masque, son flou, un calque.
   const travail = (k, w, h) => { let c = scratch[k]; if (!c || c.width !== w || c.height !== (h || w)) c = scratch[k] = canvas(w, h || w); return c; };
 
-  // ----- Hasard déterministe et bruit -----
   const hashStr = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return h >>> 0; };
   const rng = seed => () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const h2 = (x, y, s) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 974634211)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
   const vnoise = (x, y, s) => { const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy); const a = h2(xi, yi, s), b = h2(xi + 1, yi, s), c = h2(xi, yi + 1, s), d = h2(xi + 1, yi + 1, s); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; };
   const fbm = (x, y, s, o) => { let v = 0, a = 0.5, f = 1, n = 0; for (let k = 0; k < (o || 4); k++) { v += a * vnoise(x * f, y * f, s + k * 31); n += a; a *= 0.5; f *= 2; } return v / n; };
 
-  // ----- Couleurs -----
   const rgb = h => { const n = parseInt(String(h).slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
   const mix = (a, b, t) => { const A = rgb(a), B = rgb(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
   const rgba = (h, a) => { const [r, g, b] = rgb(h); return `rgba(${r},${g},${b},${a})`; };
 
-  // ----- Palettes vues du ciel : la roche des régions (docs/DIRECTION-ARTISTIQUE.md), en plein jour -----
   const REGIONS = {
-    // Orsane : calcaire des Cimes, herbes pastel, toits d'ardoise bleue, or des lanternes.
     orsane: {
       herbe: ['#a2c97a', '#8cba66', '#b8d98a', '#7ead5c', '#98c270'], herbeOmbre: '#456f3e',
       touffe: '#5f8f4a', touffeClaire: '#d6eba6', fleurs: ['#fff6dc', '#f6d36b', '#eab8dc', '#bcd8ff'], tauxFleurs: 0.07, tauxCailloux: 0.05, tauxBuissons: 0.05,
@@ -43,7 +29,6 @@ const CartePeinture = (() => {
       vide: '#16224a', videProfond: '#070c1c', videBord: '#ede6d6', etoile: '#d6e6ff',
       lanterne: '#f2b134', lueur: '#ffe7a3', cristal: '#3fc8e9', cristalClair: '#b8f0ff', or: '#e2c690', brume: '#d3dbea',
     },
-    // Kaldum : basalte et scorie, poussière chaude, toits de brique, lave et braises.
     kaldum: {
       herbe: ['#8a7b6f', '#7a6c61', '#988878', '#6e6158', '#837468'], herbeOmbre: '#3d322c',
       touffe: '#5e4f45', touffeClaire: '#c29a78', fleurs: ['#ff8a4a', '#ffb37a', '#ffd27a'], tauxFleurs: 0.02, tauxCailloux: 0.1, tauxBuissons: 0.015,
@@ -57,12 +42,9 @@ const CartePeinture = (() => {
       lanterne: '#ff6a2b', lueur: '#ffb37a', cristal: '#3fc8e9', cristalClair: '#b8f0ff', or: '#ffb37a', brume: '#ddd0c6',
     },
   };
-  // Les régions à venir reprennent le calcaire d'Orsane, teinté de leur roche, en attendant leur contenu.
   for (const [id, roche, sombre, encre, lanterne] of [['thessa', '#b9c7b4', '#5f7a74', '#22403d', '#35d6c8'], ['lisiere', '#b5aeb4', '#5c5466', '#2a2432', '#d08cff'], ['basvoiles', '#4a3b5c', '#1e1830', '#0e0a16', '#c0266e']]) {
     REGIONS[id] = Object.assign({}, REGIONS.orsane, { roche, rocheSombre: sombre, rocheClaire: mix(roche, '#ffffff', 0.5), encre, lanterne, lueur: mix(lanterne, '#ffffff', 0.5), herbe: REGIONS.orsane.herbe.map(c => mix(c, roche, 0.35)) });
   }
-  // Une nuance par zone : la ville et ses dalles, les prés en fleurs, l'alpage caillouteux, les
-  // Toiles et leurs fils, les Éboulis, les galeries sombres, les vapeurs, la fonderie.
   const ZONES = {
     orsane_cimes: { ville: true, herbe: ['#a9d084', '#94c270', '#bfdf96', '#87b565', '#a3cb7c'], tauxFleurs: 0.06, tauxBuissons: 0.03 },
     orsane_clairieres: { herbe: ['#9bd06a', '#84bf56', '#b4de7c', '#74b04b', '#9ccd66'], tauxFleurs: 0.16, tauxBuissons: 0.07 },
@@ -75,14 +57,11 @@ const CartePeinture = (() => {
     kaldum_fonderie: { herbe: ['#8f6a58', '#81604f', '#9c7764', '#735446', '#896553'], braises: true },
   };
   const palette = zone => Object.assign({}, REGIONS[zone && zone.palette] || REGIONS[zone && zone.region] || REGIONS.orsane, (zone && ZONES[zone.id]) || {});
-  // Hauteur de chaque zone, pour le relief et la vue 3D : les Cimes tout en haut, les Galeries
-  // de Kaldum au ras de la roche (unités libres, 6 au plus).
   const HAUTEURS = { orsane_cimes: 6, orsane_clairieres: 2, orsane_sentiers: 4.4, orsane_toiles: 3.6, orsane_eboulis: 3, kaldum_ville: 2.4, kaldum_galeries: 1.2, kaldum_vapeurs: 1.7, kaldum_fonderie: 2.6 };
   const hauteur = zone => (zone && HAUTEURS[zone.id]) || 2;
 
   const TYPE = { '#': 'roc', 'T': 'arbre', '~': 'eau', 'o': 'vide', ',': 'chemin', 'n': 'chemin', 's': 'chemin', 'e': 'chemin', 'w': 'chemin' };
 
-  // Grain de peinture : un motif de bruit gris, posé en lumière douce.
   let grainCv = null;
   function grain(c, S, alpha, mode) {
     if (!grainCv) {
@@ -100,7 +79,6 @@ const CartePeinture = (() => {
     c.restore();
   }
 
-  // Le sol : un champ de taches de couleur, petit et agrandi en douceur, pour des teintes fondues.
   function champ(c, S, couleurs, seed) {
     const n = 30, m = travail('champ', n), g = m.getContext('2d'), img = g.createImageData(n, n), d = img.data;
     const cols = couleurs.map(rgb);
@@ -116,8 +94,6 @@ const CartePeinture = (() => {
     c.restore();
   }
 
-  // Masque d'un type de case : un disque par case, des ponts vers les voisines du même type, puis
-  // un adoucissement (réduction puis agrandissement) pour des bords fondus. `test` borne lui-même.
   function masque(N, test, r, flou) {
     const S = N * T, m = travail('masque', S), c = m.getContext('2d');
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, S, S); c.fillStyle = '#fff';
@@ -135,7 +111,6 @@ const CartePeinture = (() => {
     return adoucir(m, flou);
   }
 
-  // Adoucit un masque : réduit puis agrandi, les bords se fondent sur quelques pixels.
   function adoucir(m, flou) {
     if (!flou) return m;
     const S = m.width, c = m.getContext('2d');
@@ -145,7 +120,6 @@ const CartePeinture = (() => {
     return m;
   }
 
-  // Masque d'un tracé : des lignes à bouts ronds, adoucies.
   function masqueTrace(S, lignes, largeur, flou) {
     const m = travail('masque', S), c = m.getContext('2d');
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, S, S);
@@ -154,12 +128,8 @@ const CartePeinture = (() => {
     return adoucir(m, flou);
   }
 
-  // Lissage d'une ligne brisée (Chaikin) : des coudes arrondis, comme tracés à la main.
   const chaikin = pts => { if (pts.length < 3) return pts; const o = [pts[0]]; for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1]; o.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]); } o.push(pts[pts.length - 1]); return o; };
 
-  // Sentiers : de chaque sortie au cœur de la carte (relais, porte, ou la case libre la plus
-  // centrale), par le plus court chemin praticable, un peu tremblé puis lissé. Ils relient les
-  // cartes voisines d'une case à l'autre. Renvoie les lignes et les cases traversées.
   function sentiers(N, kAt, ty, R) {
     const libre = (x, y) => x >= 0 && y >= 0 && x < N && y < N && !['roc', 'arbre', 'eau', 'vide'].includes(ty(x, y));
     let hub = null, best = 1e9;
@@ -171,7 +141,6 @@ const CartePeinture = (() => {
     }
     const cases = new Set(), lignes = [];
     if (!hub) return { lignes, cases };
-    // Plus court chemin pondéré par un bruit : le sentier serpente au lieu de filer droit.
     const graine = Math.floor(R() * 1000), cout = (x, y) => 1 + 2.4 * fbm(x / 3.2, y / 3.2, graine, 2);
     const dist = new Map([[hub[0] + ',' + hub[1], 0]]), prev = new Map([[hub[0] + ',' + hub[1], null]]), ouverts = [hub];
     while (ouverts.length) {
@@ -205,7 +174,6 @@ const CartePeinture = (() => {
     return { lignes, cases };
   }
 
-  // Pose un calque masqué : `peint(ctx)` remplit le calque, le masque découpe, on compose.
   function calque(c, S, m, peint, alpha, dx, dy) {
     const l = travail('calque', S), g = l.getContext('2d');
     g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.clearRect(0, 0, S, S);
@@ -216,7 +184,6 @@ const CartePeinture = (() => {
 
   const poly = (c, pts) => { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); };
 
-  // ----- Petits peintres -----
 
   function rocher(c, x, y, r, P, R) {
     const pts = [];
@@ -232,7 +199,6 @@ const CartePeinture = (() => {
     if (P.mousse && !P.lave && R() < 0.35) { c.fillStyle = rgba(P.mousse, 0.65); c.beginPath(); c.ellipse(x - r * 0.3, y - r * 0.35, r * 0.35, r * 0.2, -0.4, 0, Math.PI * 2); c.fill(); }
   }
 
-  // Colonne de basalte vue de dessus : un hexagone et son flanc, parfois une veine de braise.
   function basalte(c, x, y, r, P, R) {
     const hexa = (cx, cy, rr) => { const pts = []; for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + (i * Math.PI) / 3; pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]); } return pts; };
     c.fillStyle = mix(P.rocheSombre, P.encre, 0.3); poly(c, hexa(x + r * 0.16, y + r * 0.26, r)); c.fill();
@@ -244,13 +210,11 @@ const CartePeinture = (() => {
     if (R() < 0.22) { c.save(); c.strokeStyle = rgba(P.lanterne, 0.75); c.lineWidth = 0.9; c.beginPath(); c.moveTo(x - r * 0.4, y - r * 0.1); c.lineTo(x, y + r * 0.1); c.lineTo(x + r * 0.35, y - r * 0.2); c.stroke(); c.restore(); }
   }
 
-  // Un arbre vu de dessus : une couronne de lobes, éclairée en haut à gauche, des touches de feuilles.
   function couronne(c, x, y, r, P, R) {
     const n = 6 + Math.floor(R() * 3);
     const lobes = [];
     for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2 + R() * 0.4, d = r * (0.42 + R() * 0.14); lobes.push([x + Math.cos(a) * d, y + Math.sin(a) * d, r * (0.48 + R() * 0.12)]); }
     const forme = e => { c.beginPath(); c.arc(x, y, r * 0.72 + e, 0, Math.PI * 2); for (const [lx, ly, lr] of lobes) { c.moveTo(lx + lr + e, ly); c.arc(lx, ly, lr + e, 0, Math.PI * 2); } };
-    // Le liseré : la même forme un peu plus grande, dans l'encre du feuillage (jamais noire).
     c.fillStyle = rgba(mix(P.feuillageSombre, P.encre, 0.45), 0.75); forme(0.9); c.fill();
     const g = c.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r * 1.15);
     g.addColorStop(0, P.feuillageClair); g.addColorStop(0.55, P.feuillage); g.addColorStop(1, P.feuillageSombre);
@@ -268,8 +232,6 @@ const CartePeinture = (() => {
     }
   }
 
-  // Une maison vue de dessus : ombre portée, bande de mur sous l'avant-toit, toit à quatre pans
-  // (un faîtage selon la grande longueur), rangs de tuiles et faîtage d'or.
   function maison(c, x0, y0, w, h, P, R) {
     const bande = Math.min(h * 0.22, T * 0.22), hh = h - bande;
     c.fillStyle = rgba(P.encre, 0.3); c.fillRect(x0 + T * 0.14, y0 + T * 0.2, w, h);
@@ -285,7 +247,6 @@ const CartePeinture = (() => {
       ? [[[tl, tr, b, a], P.toitClair], [[bl, br, b, a], P.toitSombre], [[tl, a, bl], P.toit], [[tr, b, br], mix(P.toit, P.toitSombre, 0.55)]]
       : [[[tl, bl, b, a], P.toitClair], [[tr, br, b, a], P.toitSombre], [[tl, a, tr], P.toit], [[bl, b, br], mix(P.toit, P.toitSombre, 0.55)]];
     for (const [pts, col] of faces) { c.fillStyle = col; poly(c, pts); c.fill(); }
-    // Rangs de tuiles : des traits parallèles au bord, sur chaque pan.
     c.save(); poly(c, [tl, tr, br, bl]); c.clip();
     c.strokeStyle = rgba(P.encre, 0.16); c.lineWidth = 0.7;
     const pas = 2.6;
@@ -299,7 +260,6 @@ const CartePeinture = (() => {
     if (R() < 0.5) { const cx = a[0] + (b[0] - a[0]) * 0.7 + 2, cy = a[1] - 3; c.fillStyle = P.murSombre; c.fillRect(cx, cy, 3, 3); c.fillStyle = rgba(P.encre, 0.4); c.fillRect(cx + 0.6, cy + 0.6, 1.8, 1.8); }
   }
 
-  // Rempart : bloc de pierre taillée, joints, et merlons du côté de la ville.
   function rempart(c, x, y, P, R, interieur) {
     const g = c.createLinearGradient(x, y, x + T, y + T);
     g.addColorStop(0, mix(P.mur, '#ffffff', 0.25)); g.addColorStop(1, P.murSombre);
@@ -365,19 +325,16 @@ const CartePeinture = (() => {
       if (P.lave) { for (const [dx, dy, r] of [[-0.15, 0.05, 0.22], [0.16, -0.06, 0.2]]) basalte(c, x + dx * T, y + dy * T, r * T, P, R); }
       else for (const [dx, dy, r] of [[-0.16, 0.08, 0.2], [0.15, 0.1, 0.17], [0, -0.13, 0.19]]) rocher(c, x + dx * T, y + dy * T, r * T, P, R);
     } else if (P.lave) {
-      // Lichen de scorie : une plaque rousse et verte, granuleuse.
       c.fillStyle = rgba('#c7742a', 0.75); c.beginPath(); c.ellipse(x, y, T * 0.42, T * 0.3, R(), 0, Math.PI * 2); c.fill();
       c.fillStyle = rgba('#8a9a3a', 0.7); c.beginPath(); c.ellipse(x - T * 0.1, y - T * 0.05, T * 0.22, T * 0.15, R(), 0, Math.PI * 2); c.fill();
       c.fillStyle = rgba('#ffd27a', 0.8); for (let i = 0; i < 5; i++) { c.beginPath(); c.arc(x + (R() - 0.5) * T * 0.6, y + (R() - 0.5) * T * 0.4, 0.8, 0, Math.PI * 2); c.fill(); }
     } else {
-      // Herbe de veille : une touffe claire et ses clochettes bleues.
       c.fillStyle = rgba(P.herbeOmbre, 0.35); c.beginPath(); c.ellipse(x + 1.5, y + 2, T * 0.4, T * 0.26, 0, 0, Math.PI * 2); c.fill();
       for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2; c.fillStyle = i % 2 ? '#7fbf6a' : '#a6d98a'; c.beginPath(); c.ellipse(x + Math.cos(a) * T * 0.18, y + Math.sin(a) * T * 0.14, T * 0.18, T * 0.08, a, 0, Math.PI * 2); c.fill(); }
       c.fillStyle = '#cfe4ff'; for (let i = 0; i < 4; i++) { c.beginPath(); c.arc(x + (R() - 0.5) * T * 0.5, y + (R() - 0.5) * T * 0.4, 1.3, 0, Math.PI * 2); c.fill(); }
     }
   }
 
-  // ----- La peinture d'une carte -----
 
   function peindre(def, zone) {
     const N = def.layout.length, S = N * T;
@@ -389,7 +346,6 @@ const CartePeinture = (() => {
     const out = canvas(S, S), c = out.getContext('2d');
     c.lineCap = 'round'; c.lineJoin = 'round';
 
-    // 1. Le sol : taches de couleur, coups de pinceau, grain.
     champ(c, S, P.herbe, seed);
     const marche = (x, y) => ty(x, y) === 'sol' || kAt(x, y) === ',';
     for (let i = 0; i < 1100; i++) {
@@ -403,8 +359,6 @@ const CartePeinture = (() => {
     }
     grain(c, S, 0.42, 'soft-light');
 
-    // 2. Les variations du sol (« , ») : dallage en ville, gravier au pied des rochers, herbe
-    // fleurie à l'orée des arbres, sinon terre battue ; les sorties sont des chemins.
     const autour = (x, y, t) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && ty(x + dx, y + dy) === t) return true; return false; };
     const variante = (x, y) => {
       const k = kAt(x, y);
@@ -443,7 +397,6 @@ const CartePeinture = (() => {
       calque(c, S, masque(N, est('dalle'), 0.6, 1), g => {
         g.fillStyle = P.dalle; g.fillRect(0, 0, S, S);
         grain(g, S, 0.5, 'soft-light');
-        // Dalles en quinconce, joints fins, quelques dalles plus claires.
         g.strokeStyle = rgba(P.dalleJoint, 0.55); g.lineWidth = 0.7;
         const d = T / 2;
         for (let y = 0; y < S; y += d) { g.beginPath(); g.moveTo(0, y); g.lineTo(S, y); g.stroke(); for (let x = ((y / d) % 2) * (d * 0.7); x < S; x += d * 1.4) { g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + d); g.stroke(); } }
@@ -451,7 +404,6 @@ const CartePeinture = (() => {
         for (let i = 0; i < 90; i++) g.fillRect(Math.floor((R() * S) / 8) * 8 + 1, Math.floor((R() * S) / 8) * 8 + 1, 6, 3);
       });
     }
-    // Les sentiers, d'une sortie à l'autre par le cœur de la carte.
     const tr = sentiers(N, kAt, ty, R);
     if (tr.lignes.length) {
       calque(c, S, masqueTrace(S, tr.lignes, T * 0.86, 2), P.ville ? P.dalleJoint : P.cheminBord, 0.42);
@@ -459,7 +411,6 @@ const CartePeinture = (() => {
       calque(c, S, masqueTrace(S, tr.lignes, T * 0.18, 1), P.cheminClair, 0.3);
     }
 
-    // Kaldum : la scorie se fend ; près de la lave, les fentes rougeoient.
     if (P.lave) {
       for (let i = 0; i < 7; i++) {
         let x = R() * S, y = R() * S, a = R() * Math.PI * 2;
@@ -470,7 +421,6 @@ const CartePeinture = (() => {
       }
     }
 
-    // Touffes, fleurs, cailloux et buissons sur l'herbe, hors des sentiers.
     const buissons = [];
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
       const k = kAt(x, y);
@@ -498,7 +448,6 @@ const CartePeinture = (() => {
       if (!proche && R() < P.tauxBuissons) buissons.push({ x: cx + (R() - 0.5) * T * 0.4, y: cy + (R() - 0.5) * T * 0.4, r: T * (0.3 + R() * 0.12) });
     }
 
-    // 3. Le vide entre les îles : une lèvre de roche claire, le ciel profond, des étoiles.
     if (tiles('vide').length) {
       const vide = is('vide');
       calque(c, S, masque(N, vide, 0.86, 1), P.videBord, 0.95);
@@ -507,11 +456,9 @@ const CartePeinture = (() => {
         g.fillStyle = gr; g.fillRect(0, 0, S, S);
         for (let i = 0; i < 70; i++) { g.fillStyle = rgba(P.etoile, 0.4 + R() * 0.5); g.beginPath(); g.arc(R() * S, R() * S, 0.4 + R() * 0.8, 0, Math.PI * 2); g.fill(); }
       });
-      // L'ombre de la falaise tombe dans le vide, au nord des trous.
       calque(c, S, masque(N, vide, 0.66, 1), g => { g.fillStyle = 'rgba(0,0,0,0.45)'; g.fillRect(0, 0, S, S); }, 0.6, 0, -T * 0.25);
     }
 
-    // 4. L'eau (ou la lave) : écume claire, eau peu profonde, fond plus sombre, reflets.
     if (tiles('eau').length) {
       const eau = is('eau');
       const profond = (x, y) => eau(x, y) && eau(x + 1, y) && eau(x - 1, y) && eau(x, y + 1) && eau(x, y - 1);
@@ -535,21 +482,17 @@ const CartePeinture = (() => {
         }
       }
       if (P.lave) {
-        // La lave rougeoie sur ses berges.
         c.save(); c.globalCompositeOperation = 'lighter';
         for (const [x, y] of tiles('eau')) { const cx = (x + 0.5) * T, cy = (y + 0.5) * T, g = c.createRadialGradient(cx, cy, 0, cx, cy, T * 1.2); g.addColorStop(0, rgba(P.lanterne, 0.16)); g.addColorStop(1, rgba(P.lanterne, 0)); c.fillStyle = g; c.fillRect(cx - T * 1.2, cy - T * 1.2, T * 2.4, T * 2.4); }
         c.restore();
       }
     }
 
-    // 5. Ombre de contact au pied des murs et des rochers (occlusion ambiante), et des arbres.
     const roc = is('roc');
     if (tiles('roc').length) calque(c, S, masque(N, roc, 1.0, 2), P.herbeOmbre, 0.42, T * 0.12, T * 0.18);
 
-    // 6. Murs, maisons, remparts ou rochers.
     if (tiles('roc').length) {
       if (P.ville) {
-        // Composantes de murs : celles qui touchent le bord sont des remparts, les autres des maisons.
         const vu = new Set();
         for (const [sx, sy] of tiles('roc')) {
           if (vu.has(sx + ',' + sy)) continue;
@@ -562,7 +505,6 @@ const CartePeinture = (() => {
               rempart(c, x * T, y * T, P, R, inner || null);
             }
           } else {
-            // Une maison par rangée de la composante : des toits qui se touchent comme un pâté.
             const rows = new Map();
             for (const [x, y] of comp) (rows.get(y) || rows.set(y, []).get(y)).push(x);
             for (const [y, xs] of [...rows].sort((a, b) => a[0] - b[0])) {
@@ -588,7 +530,6 @@ const CartePeinture = (() => {
       }
     }
 
-    // 7. Arbres : ombres portées floues, puis les couronnes, du nord au sud.
     const arbres = tiles('arbre').map(([x, y]) => ({ x: (x + 0.5 + (R() - 0.5) * 0.3) * T, y: (y + 0.5 + (R() - 0.5) * 0.3) * T, r: T * (0.66 + R() * 0.2) })).concat(buissons);
     if (arbres.length) {
       const o = travail('ombres', S), g = o.getContext('2d');
@@ -602,7 +543,6 @@ const CartePeinture = (() => {
       for (const a of arbres) couronne(c, a.x, a.y, a.r, P, R);
     }
 
-    // 8. Ce qui est posé au sol : lanternes, relais, porte, nœuds de récolte.
     let ni = 0;
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
       const k = kAt(x, y), cx = (x + 0.5) * T, cy = (y + 0.5) * T;
@@ -612,7 +552,6 @@ const CartePeinture = (() => {
       else if (k === 'G') { const id = (def.nodes || [])[ni++]; noeud(c, cx, cy, ((DATA.content && DATA.content.resources) || []).find(r => r.id === id), P, R); }
     }
 
-    // 9. Ce qui fait la zone : les fils des Toiles, les vapeurs, les braises.
     if (P.toiles) {
       c.strokeStyle = 'rgba(244,240,250,0.5)'; c.lineWidth = 0.6;
       for (let i = 0; i < arbres.length; i++) {
@@ -637,12 +576,10 @@ const CartePeinture = (() => {
       }
     }
 
-    // 10. Un dernier grain, pour l'unité de la touche.
     grain(c, S, 0.16, 'overlay');
     return out;
   }
 
-  // ----- Cache -----
 
   const zoneOf = id => (typeof World === 'function' ? World.zoneOf(id) : null);
   const defOf = id => (typeof World === 'function' ? World.mapDef(id) : null);
@@ -652,16 +589,12 @@ const CartePeinture = (() => {
     return cv;
   }
 
-  // Une carte de plateau (l'île d'Ervane) n'a pas de plan de cases : sa case est découpée dans la
-  // vue d'ensemble de l'île (js/ile-peinture.js), au rectangle de son contour, à la taille d'une
-  // carte peinte ; le vide reste transparent (le ciel de la carte du monde passe dessous).
   const vues = new Map();
   function peindrePlateau(def, zone) {
     const S = 15 * T, out = canvas(S, S), c = out.getContext('2d');
     const e = typeof Ile === 'object' && def.plateau ? Ile.terrain(def.plateau) : null;
     const pts = def.contour || [];
     if (!e || typeof IlePeinture !== 'object' || pts.length < 3) { c.fillStyle = couleurZone(zone); c.fillRect(0, 0, S, S); return out; }
-    // À 4 px par u (revue finale : à 2, les cases de l'onglet Cartes étaient pixelisées).
     const k = 4;
     let vue = vues.get(def.plateau);
     if (!vue) { vue = IlePeinture.vueEnsemble(e.terrain, k); vues.set(def.plateau, vue); }
@@ -669,7 +602,6 @@ const CartePeinture = (() => {
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const [u, v] of pts) { x0 = Math.min(x0, u); y0 = Math.min(y0, v); x1 = Math.max(x1, u); y1 = Math.max(y1, v); }
     x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(T2.largeur, x1); y1 = Math.min(T2.hauteur, y1);
-    // Le carré qui couvre le rectangle, centré.
     const cote = Math.max(1, Math.min(x1 - x0, y1 - y0)), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
     c.imageSmoothingEnabled = true;
     c.drawImage(vue, (cx - cote / 2) * k, (cy - cote / 2) * k, cote * k, cote * k, 0, 0, S, S);
@@ -678,7 +610,6 @@ const CartePeinture = (() => {
   }
   const estPeinte = id => cartes.has(id);
 
-  // La carte inexplorée : décolorée, voilée de brume (les nuages viennent par-dessus).
   function brume(id) {
     let cv = brumes.get(id);
     if (cv) return cv;
@@ -694,10 +625,8 @@ const CartePeinture = (() => {
     return cv;
   }
 
-  // Couleur moyenne d'une zone, pour une case pas encore peinte.
   const couleurZone = zone => { const P = palette(zone); return mix(P.herbe[0], P.herbe[2], 0.4); };
 
-  // ----- Nuages peints : des boules douces, une ombre bleutée dessous -----
   function nuage(i) {
     const key = 'nuage' + (i % 3);
     if (arts.has(key)) return arts.get(key);
@@ -713,14 +642,11 @@ const CartePeinture = (() => {
     return cv;
   }
 
-  // ----- Pastilles : un disque coloré à liseré clair, un pictogramme -----
   const PASTILLES = {
     relais: ['#6fd8f2', '#1f97c4', '#0d5a80'],
     donjon: ['#b996ff', '#7a4fd0', '#43258a'],
     artisan: ['#f3aa72', '#c06a34', '#773916'],
     marchand: ['#8ad884', '#3f9a4a', '#215a29'],
-    // Les services de la Cité des Cimes (docs/CITE-DES-CIMES.md) : la banque (or), le Marché
-    // (sarcelle), le Dojo (rouge), l'Hôtel des Métiers (violet).
     banque: ['#ffe08a', '#d9a93a', '#8a6416'],
     marche: ['#7fe0d0', '#2f9e8e', '#155c52'],
     dojo: ['#ff9a8a', '#c23a3a', '#6e1a1a'],
@@ -746,33 +672,27 @@ const CartePeinture = (() => {
       c.strokeStyle = '#215a29'; c.lineWidth = s * 0.13; c.beginPath(); c.moveTo(-s * 0.22, -s * 0.32); c.lineTo(s * 0.22, -s * 0.32); c.stroke();
       c.fillStyle = '#e2b13c'; c.beginPath(); c.arc(0, s * 0.35, s * 0.26, 0, Math.PI * 2); c.fill();
     } else if (kind === 'banque') {
-      // Un coffre : le corps, le couvercle bombé, la serrure d'or.
       c.fillStyle = blanc; c.fillRect(-s * 0.85, -s * 0.15, s * 1.7, s * 0.95);
       c.beginPath(); c.moveTo(-s * 0.85, -s * 0.2); c.quadraticCurveTo(0, -s * 0.95, s * 0.85, -s * 0.2); c.closePath(); c.fill();
       c.fillStyle = '#8a6416'; c.fillRect(-s * 0.85, -s * 0.24, s * 1.7, s * 0.12);
       c.fillStyle = '#f2c14e'; c.fillRect(-s * 0.17, -s * 0.3, s * 0.34, s * 0.42);
     } else if (kind === 'marche') {
-      // Une balance : le fléau, le pied, deux plateaux.
       c.strokeStyle = blanc; c.fillStyle = blanc; c.lineWidth = s * 0.14;
       c.beginPath(); c.moveTo(0, -s * 0.85); c.lineTo(0, s * 0.75); c.moveTo(-s * 0.4, s * 0.8); c.lineTo(s * 0.4, s * 0.8); c.moveTo(-s * 0.75, -s * 0.55); c.lineTo(s * 0.75, -s * 0.55); c.stroke();
       for (const k of [-1, 1]) { c.beginPath(); c.moveTo(k * s * 0.75, -s * 0.55); c.lineTo(k * s * 0.75 - s * 0.32, s * 0.05); c.lineTo(k * s * 0.75 + s * 0.32, s * 0.05); c.closePath(); c.fill(); }
     } else if (kind === 'dojo') {
-      // Un mannequin : la tête, le corps, les bras en croix, le poteau.
       c.fillStyle = blanc; c.beginPath(); c.arc(0, -s * 0.62, s * 0.26, 0, Math.PI * 2); c.fill();
       c.fillRect(-s * 0.3, -s * 0.34, s * 0.6, s * 0.8); c.fillRect(-s * 0.85, -s * 0.24, s * 1.7, s * 0.2); c.fillRect(-s * 0.08, s * 0.4, s * 0.16, s * 0.5);
       c.fillStyle = '#c23a3a'; c.fillRect(-s * 0.3, -s * 0.02, s * 0.6, s * 0.14);
     } else if (kind === 'avis') {
-      // Un avis cloué : la feuille, le clou, deux lignes.
       c.fillStyle = blanc; c.fillRect(-s * 0.7, -s * 0.8, s * 1.4, s * 1.6);
       c.fillStyle = '#1f2f5a'; c.beginPath(); c.arc(0, -s * 0.58, s * 0.13, 0, Math.PI * 2); c.fill();
       c.fillRect(-s * 0.45, -s * 0.15, s * 0.9, s * 0.14); c.fillRect(-s * 0.45, s * 0.2, s * 0.9, s * 0.14);
     } else if (kind === 'temple') {
-      // Un fronton sur trois colonnes, sur une marche.
       c.fillStyle = blanc; c.beginPath(); c.moveTo(-s * 0.95, -s * 0.35); c.lineTo(0, -s * 0.95); c.lineTo(s * 0.95, -s * 0.35); c.closePath(); c.fill();
       for (const k of [-1, 0, 1]) c.fillRect(k * s * 0.6 - s * 0.12, -s * 0.3, s * 0.24, s * 0.85);
       c.fillRect(-s * 0.95, s * 0.6, s * 1.9, s * 0.22);
     } else if (kind === 'metiers') {
-      // Un livre ouvert (le registre des métiers).
       c.fillStyle = blanc; c.beginPath(); c.moveTo(0, -s * 0.45); c.quadraticCurveTo(-s * 0.5, -s * 0.75, -s * 0.9, -s * 0.5); c.lineTo(-s * 0.9, s * 0.6); c.quadraticCurveTo(-s * 0.5, s * 0.4, 0, s * 0.7); c.quadraticCurveTo(s * 0.5, s * 0.4, s * 0.9, s * 0.6); c.lineTo(s * 0.9, -s * 0.5); c.quadraticCurveTo(s * 0.5, -s * 0.75, 0, -s * 0.45); c.closePath(); c.fill();
       c.strokeStyle = '#40306a'; c.lineWidth = s * 0.08; c.beginPath(); c.moveTo(0, -s * 0.45); c.lineTo(0, s * 0.68); c.stroke();
     } else if (kind === 'artisan') {
@@ -791,7 +711,6 @@ const CartePeinture = (() => {
         c.beginPath(); c.moveTo(-s * 0.2, -s * 0.9); c.lineTo(s * 0.2, -s * 0.9); c.lineTo(s * 0.2, -s * 0.25); c.arc(0, s * 0.3, s * 0.62, -Math.PI * 0.32, Math.PI * 1.32); c.closePath(); c.fill();
         c.fillStyle = '#7bd389'; c.beginPath(); c.arc(0, s * 0.38, s * 0.42, 0.1, Math.PI - 0.1); c.closePath(); c.fill();
       } else {
-        // Forgeron, et tout autre atelier : marteau.
         c.save(); c.rotate(-0.6);
         c.fillRect(-s * 0.12, -s * 0.2, s * 0.24, s * 1.2);
         c.fillRect(-s * 0.62, -s * 0.72, s * 1.24, s * 0.55);
@@ -810,7 +729,6 @@ const CartePeinture = (() => {
     c.restore();
   }
 
-  // `px` : diamètre du disque en pixels ; la marge porte l'ombre. Renvoie le canvas et son ancre.
   function pastille(kind, px, sub) {
     px = Math.max(8, Math.round(px / 2) * 2);
     const key = 'p:' + kind + ':' + (sub || '') + ':' + px;
@@ -833,7 +751,6 @@ const CartePeinture = (() => {
     return art;
   }
 
-  // ----- Épingles en goutte : bleue à étoile (toi), verte (quête), braise à drapeau (le tien) -----
   const EPINGLES = { toi: ['#86c9ff', '#2a86e0', '#124c94'], quete: ['#aef08a', '#4cb43e', '#256a1f'], drapeau: ['#ffa587', '#e0533a', '#8a2715'] };
   function epingle(kind, px) {
     px = Math.max(12, Math.round(px / 2) * 2);
@@ -868,14 +785,11 @@ const CartePeinture = (() => {
   }
 
   function vider() { cartes.clear(); brumes.clear(); }
-  // Après la descente d'Ervane (js/scene.js, oublierIle) : les cartes de plateau peintes et leur vue
-  // d'ensemble sont rendues ; elles se repeignent à la prochaine ouverture de la carte.
   function oublierPlateaux() {
     vues.clear();
     for (const id of [...cartes.keys()]) { const d = defOf(id); if (d && d.plateau) { cartes.delete(id); brumes.delete(id); } }
   }
 
-  // Une image (data URL) d'une pastille ou d'une épingle, pour la légende en HTML.
   const urls = new Map();
   function url(kind, sub) {
     const k = kind + ':' + (sub || '');

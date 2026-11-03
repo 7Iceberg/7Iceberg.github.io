@@ -1,15 +1,3 @@
-// Les notifications, d'après esx_notify (le relais des notifications du serveur Duality) :
-//  - typées : information, succès, attention, erreur (une icône et une couleur par type, un petit
-//    titre) ; le type vient de l'appel (Hud.toast(texte, type)) ou se déduit du texte ;
-//  - les gains : une carte par gain (le butin d'un combat, la récompense d'une quête, une
-//    récolte, un achat, une fabrication), les Fils en grand ; l'XP en bulles « +45 XP » qui
-//    montent sur le côté ; le niveau supérieur garde son ruban (js/hud-jeu.js) ;
-//  - les réglages, dans Options › Notifications : la position (huit places, ou celle du jeu), la
-//    durée, le nombre à l'écran, la taille, le style (Verre, Minimal, Ruban), les bulles d'XP ;
-//    rangés dans ce navigateur (veylan.notifs) ;
-//  - pas de doublon : le même texte arrivé deux fois en 1,5 s ne s'affiche qu'une fois.
-// Les sons restent pour plus tard (le jeu n'en a pas encore). Mise en page : css/notifs.css.
-// Tests : F81 à F84 (tests/fenetres.js).
 (() => {
   const CLE = 'veylan.notifs';
   const DEFAUT = { pos: 'auto', duree: 3, max: 4, taille: 100, style: 'verre', xp: true };
@@ -26,7 +14,6 @@
     erreur: svg('<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>'),
     gain: svg('<path d="M12 3.5l2.4 5 5.4.8-3.9 3.8.9 5.4L12 16l-4.8 2.5.9-5.4L4.2 9.3l5.4-.8z"/>'),
   };
-  // Le type d'un message dont l'appel ne le dit pas, d'après sa tournure.
   const ERREUR = /^(Impossible|Pas assez|Pas pendant|Trop loin|Il manque|Il faut|Aucun|Aucune|Rien à|Plus d'|Choisis)|ne (va|peut) pas|illisible|invalide|est fermée?\b|fermé pour/i;
   const ATTENTION = /^Attention|surcharg|abandonné|corrigée|marquée/i;
   const SUCCES = /^(Code copié|Sauvegardé|Relais du Fil enregistré|Position sauvegardée|Ensemble|Caractéristiques enregistrées|Succès)|vendu :|terminé, à rendre|est arrivé|enregistrée?\.$/i;
@@ -57,7 +44,7 @@
       return r;
     },
     garderNotifs() {
-      try { localStorage.setItem(CLE, JSON.stringify(this.notifs)); } catch (e) { /* rien */ }
+      try { localStorage.setItem(CLE, JSON.stringify(this.notifs)); } catch (e) {   }
     },
     appliquerNotifs() {
       const r = this.notifs || (this.notifs = Object.assign({}, DEFAUT)), t = this.el.toasts;
@@ -68,7 +55,6 @@
       while (t.children.length > r.max) t.firstChild.remove();
     },
 
-    // Pose une carte : au plus `max` à l'écran (les plus anciennes partent), retirée après `ms`.
     poserNotif(el, ms) {
       const r = this.notifs || DEFAUT, t = this.el.toasts;
       t.appendChild(el);
@@ -76,7 +62,6 @@
       setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, ms);
     },
 
-    // Un message : le type donné ou déduit ; le même texte en 1,5 s ne s'affiche qu'une fois.
     toast(text, type) {
       const texte = String(text == null ? '' : text);
       if (this.pushJournal) this.pushJournal('evenements', texte);
@@ -97,8 +82,6 @@
       return t;
     },
 
-    // Un gain : une carte (les Fils en grand, les objets en dessous) ; l'XP en bulle sur le côté
-    // (ou dans la carte, si les bulles sont coupées).
     annoncerGain(d) {
       if (!d || !this.el.toasts) return;
       const r = this.notifs || DEFAUT;
@@ -122,7 +105,6 @@
       this.poserNotif(t, (r.duree + 1.2) * 1000);
     },
 
-    // « +45 XP » qui monte et s'efface sur le côté de la scène.
     bulleXp(xp) {
       const stage = document.getElementById('stage');
       if (!stage) return;
@@ -136,7 +118,6 @@
       setTimeout(() => b.remove(), 2200);
     },
 
-    // Options › Notifications.
     optionsNotifs() {
       const r = this.notifs || DEFAUT;
       const pos = POSITIONS.map(([v, l]) => `<option value="${v}"${r.pos === v ? ' selected' : ''}>${l}</option>`).join('');
@@ -150,7 +131,6 @@
         ${curseur('notif-taille', 'Taille', r.taille, 80, 130, 5, ' %')}
         <div class="row"><label class="vy-coche"><input type="checkbox" id="notif-xp" ${r.xp ? 'checked' : ''}> Bulles d'XP</label><button data-act="notifEssai">Essayer</button></div>`;
     },
-    // Un champ des Options a changé : vrai s'il était à nous.
     champNotifs(el, kind) {
       const r = this.notifs || (this.notifs = Object.assign({}, DEFAUT));
       const id = el.id;
@@ -175,7 +155,7 @@
       this.notifsVues = new Map();
       this.toast('Position sauvegardée.', 'succes');
       this.toast('Le chemin passe par la Porte des Clairières.', 'info');
-      this.toast('Tu approches de tes pods maximum.', 'attention');
+      this.toast('Tu approches du poids que tu peux porter.', 'attention');
       this.toast('Pas pendant un combat.', 'erreur');
       this.annoncerGain({ source: 'combat', xp: 45, fils: 120, items: [{ id: 'plume_de_pilou', count: 2 }] });
     },

@@ -1,6 +1,3 @@
-// content/orsane-aires.js : généré par node tools/cuire-aires.js, ne pas modifier à la main.
-// Les plans des aires de combat du plateau « orsane » (docs/ORSANE-3D.md) : 15 lignes de 15 cases par
-// groupe, rangées par « carte#index du groupe ». Un module, appliqué après celui du plateau.
 (DATA.modules = DATA.modules || {}).orsaneAires = () => {
   const AIRES = {
     'orsane_cimes_porte#0': [

@@ -1,26 +1,8 @@
-// L'aperçu de nuit de l'île d'Ervane (docs/ILE-TECHNIQUE.md, 3.24) : une ambiance faite par le code
-// seul (ciel étoilé, lune, brume bleu nuit, clé froide de la lune, flaque de lumière dorée qui suit
-// le Veilleur, lucioles, lanternes et fenêtres plus vives) et un décor plus dense au village (les
-// Mailles) et dans le Bois Cousu, fait de modèles libres (Kenney, CC0 : assets/libres/LICENSE)
-// recolorés à la palette de l'île, et de pièces du code (buissons, courges, fanions).
-//
-// Chargé à la demande (IleCharge.nuit) quand l'adresse porte ?ambiance=nuit ou que la copie de
-// l'aperçu pose DATA.ile.ambiance = 'nuit' (tools/make-online.sh --nuit) ; sinon jamais, et le jeu ne
-// change pas. Rien ici ne touche au moteur : la navigation, la grille de marche, les aires de combat
-// et le semis restent ceux du jour. Le décor ajouté entre dans les morceaux fusionnés du décor
-// (IleDecor.construire, `ajouts`) : pas d'appel de dessin de plus ; il ne pose rien qui bloque, sauf
-// là où la navigation est déjà fermée (les grands sapins), et rien sur les sentiers, les places et
-// les aires. Les touffes d'herbe des modèles suivent la mécanique de l'herbe proche (Ile3D.semisProche).
-//
-// Repère : X = u, Y = h, Z = v (comme js/ile-decor.js). Three.js est chargé avant.
 const IleNuit = (() => {
   const M = () => IleTerrain.M;
   const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
 
-  // ----- Les modèles libres (assets/libres/modeles-libres.js), décodés une fois -----
 
-  // Les classes de couleur des modèles de Kenney (sRGB 0 à 255, la couleur d'une face) : on sépare
-  // un modèle en parties pour les recolorer chacune à la palette de l'île.
   const CLASSES = {
     vert: (r, g, b) => g > r + 25 && g >= b - 12,
     rouge: (r, g, b) => r > 180 && r > g * 1.45 && r > b * 1.45,
@@ -33,7 +15,6 @@ const IleNuit = (() => {
     for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
     return u8;
   }
-  // Un modèle brut : positions, normales, couleurs sRGB, indices.
   function brut(nom) {
     if (decodes.has(nom)) return decodes.get(nom);
     const D = typeof window !== 'undefined' && window.MODELES_LIBRES && window.MODELES_LIBRES[nom];
@@ -50,10 +31,6 @@ const IleNuit = (() => {
     decodes.set(nom, r);
     return r;
   }
-  // Une partie d'un modèle (`partie` : une classe, 'reste:a,b' pour ce qui n'est dans aucune, ou 'tout') en
-  // BufferGeometry : la base au sol (y = 0), des coordonnées de texture planes (la trame des
-  // frondaisons), et en couleur des sommets la luminance relative de chaque face (le modelé à
-  // facettes du modèle reste ; la teinte vient de la palette de l'île, par la pièce).
   const geos = new Map();
   function modele(THREE, nom, partie) {
     const cle = nom + '|' + partie;
@@ -97,10 +74,8 @@ const IleNuit = (() => {
     geos.set(cle, g);
     return g;
   }
-  // La hauteur d'un modèle (pour le mettre à l'échelle voulue).
   const hauteurModele = nom => { const B = brut(nom); return B ? B.max[1] - B.min[1] : 1; };
 
-  // Une courge, faite par le code : dix côtes, aplatie (80 triangles). Sa base à y = 0.
   let geoCourge = null;
   function courge(THREE) {
     if (geoCourge) return geoCourge;
@@ -116,7 +91,6 @@ const IleNuit = (() => {
     return g;
   }
 
-  // ----- Le ciel : un dégradé bleu nuit, une lune, des étoiles peintes sur une petite toile -----
 
   let urlEtoiles = null;
   function etoiles() {
@@ -137,7 +111,6 @@ const IleNuit = (() => {
     return urlEtoiles;
   }
 
-  // La sprite d'une luciole est calculée dans le fragment (un disque doux) : pas de texture.
   const VS_LUCIOLE = `
 attribute float phase;
 uniform float temps; uniform float echelle; uniform float ortho; uniform float taille;
@@ -163,7 +136,6 @@ void main() {
   gl_FragColor = vec4(c * a, a);
 }`;
 
-  // ======================================================================
 
   class Nuit {
     constructor(THREE, ile) {
@@ -175,28 +147,20 @@ void main() {
       this.compte = { arbres: 0, sapins: 0, buissons: 0, courges: 0, fanions: 0, touffes: 0, halos: 0 };
     }
 
-    // ----- Le décor ajouté (dans IleDecor.construire) -----
-    // `A` : les outils de la construction (L, seau, piece, sol, solPlat, palette, zone, G, matrice,
-    // coul, melange, fois). Rend rien : les pièces partent dans les morceaux.
     ajouts(A) {
       const THREE = this.THREE, ile = this.ile, T = ile.T, nav = ile.world && ile.world.plateau && ile.world.plateau.nav;
       const { L, seau, piece, sol, solPlat, palette, zone, G, matrice, coul, melange, fois } = A;
       const R = M().hasard(M().cle('nuit-decor'));
       const tel = this.telephone, q = this.qualite;
-      // La densité suit la qualité (le budget du téléphone, 3.9).
       const dens = q === 'haute' ? 1 : q === 'basse' ? 0.4 : tel ? 0.5 : 0.8;
-      // Les modèles de Kenney coûtent leurs triangles (un sapin : 330) : au téléphone, moins de sapins
-      // et de bosquets, autant de buissons et de fougères (le budget de 3.9).
       const kArbres = tel ? 0.6 : 1;
 
-      // Les lanternes, les feux, les fenêtres et les cristaux luisent plus fort la nuit.
       for (const h of G.halos) {
         const chaud = /^#ff[9a-f]|^#ffc|^#ffd|^#f[0-9a-f]c/i.test(h.couleur);
         h.opacite = Math.min(1, (h.opacite == null ? 0.6 : h.opacite) * (chaud ? 1.3 : 1.12));
         h.taille *= chaud ? 1.35 : 1.15;
       }
 
-      // ----- Les règles de pose : rien sur les sentiers, les places, les aires, l'eau, le vide -----
       const W = T.W, H = T.H;
       const dSentier = (u, v) => T.distSentier[clamp(Math.round(v), 0, H - 1) * W + clamp(Math.round(u), 0, W - 1)];
       const aires = T.aires || [];
@@ -207,7 +171,6 @@ void main() {
       const presPoint = (u, v, m) => T.pnjs.some(p => Math.hypot(p.u - u, p.v - v) < m) || T.noeuds.some(n => Math.hypot(n.u - u, n.v - v) < m * 0.8)
         || T.relais.some(r => Math.hypot(r.u - u, r.v - v) < m + 2) || T.portes.some(r => Math.hypot(r.u - u, r.v - v) < m + 2)
         || Object.values(T.lieux || {}).some(l => Array.isArray(l) && Math.hypot(l[0] - u, l[1] - v) < m + 1);
-      // Le décor du semis, rangé par cases de 4 u : on garde l'espace de chaque pièce.
       const grille = new Map(), CEL = 4;
       const ranger = (u, v, r, sorte) => { const k = Math.floor(u / CEL) + ',' + Math.floor(v / CEL); let l = grille.get(k); if (!l) grille.set(k, l = []); l.push({ u, v, r, sorte }); };
       for (const e of T.decor) if (!['herbe', 'fleurs', 'galet', 'fil'].includes(e.sorte)) ranger(e.u, e.v, e.sorte === 'arbre' ? Math.max(0.5, e.rayon * 0.35) : e.rayon * 0.8, e.sorte);
@@ -218,7 +181,6 @@ void main() {
       };
       const espace = (u, v, r) => voisins(u, v, r).every(e => Math.hypot(e.u - u, e.v - v) >= (e.r + r) * 0.85);
       const ouvert = (u, v) => { if (!nav) return true; const c = nav.caseDe(u, v); return c >= 0 && nav.ouvertStatique(c); };
-      // Fermé sur tout un disque : la navigation n'y passe déjà pas.
       const ferme = (u, v, r) => { for (let a = 0; a < 8; a++) for (const d of [0, r * 0.5, r]) if (ouvert(u + Math.cos(a * 0.785) * d, v + Math.sin(a * 0.785) * d)) return false; return true; };
       const plat = (u, v, r) => {
         const h0 = T.hauteurA(u, v);
@@ -230,8 +192,6 @@ void main() {
       const posable = (u, v, r, marge) => terre(u, v) && plat(u, v, r) && !dansAire(u, v, 1.5) && !surPlace(u, v, 0.8) && dSentier(u, v) >= marge && !presObjet(u, v, r + 0.6) && !presPoint(u, v, 1.6) && espace(u, v, r);
 
       const TRONC = coul('#4a3a30'), TRONC_CLAIR = coul('#6a4e3a');
-      // Un sapin des modèles libres (le sapin de Kenney) : le tronc au bois de l'île, la frondaison à
-      // la palette de la zone, dégradée comme les houppiers de l'île (sombre dessous, claire dessus).
       const sapin = (u, v, hauteur, opts) => {
         const y = sol(u, v);
         if (!Number.isFinite(y)) return false;
@@ -248,8 +208,6 @@ void main() {
         this.compte.sapins++;
         return true;
       };
-      // Un bosquet des modèles libres (trois ou quatre petits arbres serrés) : grand là où l'on ne
-      // passe pas, petit (une touffe de jeunes pousses, qu'on traverse comme un buisson) ailleurs.
       const bosquet = (u, v, taille) => {
         const y = sol(u, v);
         if (!Number.isFinite(y)) return false;
@@ -266,18 +224,15 @@ void main() {
         this.compte.arbres++;
         return true;
       };
-      // Un buisson de l'île (deux lobes, comme le semis), qu'on traverse comme les autres.
       const buisson = (u, v, r) => {
         const y = sol(u, v), s = seau(u, v), pal = palette(u, v);
         const f = (pal.feuillages || ['#5f8f4f']).map(coul);
-        // Un vert plus jaune que la frondaison de la zone : sous la lune bleue, il reste vert.
         const c = melange(melange(f[0], f[1] || f[0], R()), coul(R() < 0.5 ? '#4f8a3e' : '#5f9444'), 0.45);
         piece(s, 'fronde', L.lobes[Math.floor(R() * 8)], matrice(u, y + r * 0.4, v, 0, R() * 6, 0, r * 1.15, r * 0.95, r * 1.15), { c, fronde: true, grain: 0.12 });
         if (r > 0.5 && !tel) piece(s, 'fronde', L.lobes[Math.floor(R() * 8)], matrice(u + r * 0.55, y + r * 0.3, v + r * 0.35, 0, 0, 0, r * 0.7, r * 0.6, r * 0.7), { c: melange(c, f[1] || c, 0.5), fronde: true });
         ranger(u, v, r, 'buisson');
         this.compte.buissons++;
       };
-      // Une fougère (le semis du Bois), six feuilles.
       const fougere = (u, v, r) => {
         const y = sol(u, v), s = seau(u, v), pal = palette(u, v);
         const c = melange(coul('#3f7a52'), coul((pal.feuillages || ['#3d7060'])[0]), 0.4);
@@ -285,7 +240,6 @@ void main() {
         for (let k = 0; k < n; k++) piece(s, 'fronde', L.feuille, matrice(u, y + 0.02, v, -0.9 - R() * 0.4, a0 + k / n * 6.283, 0, r, r, r), { c: fois(c, 0.85 + R() * 0.3), bas: 0.6, haut: 1.15 });
         ranger(u, v, r * 0.7, 'fougere');
       };
-      // Une courge (le potager des Mailles), orange ou paille, parfois deux.
       const COURGES = ['#d9782b', '#e08a2e', '#c9652a', '#e2a14a', '#cf8a3c'].map(coul);
       const uneCourge = (u, v, r) => {
         const y = sol(u, v);
@@ -293,12 +247,10 @@ void main() {
         const s = seau(u, v);
         piece(s, 'acc', courge(THREE), matrice(u, y - r * 0.08, v, 0, R() * 6.28, 0, r, r * (0.8 + R() * 0.25), r), { c: fois(COURGES[Math.floor(R() * COURGES.length)], 0.92 + R() * 0.16), bas: 0.72, haut: 1.06, grain: 0.06 });
         piece(s, 'acc', L.cyl(5), matrice(u, y + r * 1.25, v, (R() - 0.5) * 0.5, 0, (R() - 0.5) * 0.5, r * 0.12, r * 0.45, r * 0.12), { c: coul('#5a6a3a') });
-        // Une feuille à côté, une fois sur trois.
         if (R() < 0.35) piece(s, 'fronde', L.lobes[Math.floor(R() * 8)], matrice(u + r * 0.9, y + 0.05, v - r * 0.4, 0, R() * 6, 0, r * 0.8, r * 0.22, r * 0.6), { c: coul('#4f7a3a'), fronde: true });
         ranger(u, v, r, 'courge');
         this.compte.courges++;
       };
-      // Un fanion (le drapeau des modèles libres) : la hampe de bois, l'étoffe d'une des toiles des Mailles.
       const TOILES = ['#c9584a', '#3f6f9a', '#e0a63a', '#8a4a3a', '#5f8a52'].map(coul);
       const fanion = (u, v, y, rot, hauteur, k) => {
         const s = seau(u, v), e = hauteur / hauteurModele('fanion');
@@ -309,17 +261,13 @@ void main() {
         this.compte.fanions++;
       };
 
-      // ----- Le Bois Cousu : un sous-bois serré -----
       const arbresBois = T.decor.filter(e => e.sorte === 'arbre' && zone(e.u, e.v) === 'ervane_bois');
-      // De jeunes sapins au pied des grands arbres (où l'on ne passe guère : le tronc est là).
       for (const e of arbresBois) {
         if (R() > (0.42 * dens + 0.05) * kArbres) continue;
         const a = R() * 6.283, d = 0.95 + R() * 0.5, u = e.u + Math.cos(a) * d, v = e.v + Math.sin(a) * d;
         if (!terre(u, v) || dansAire(u, v, 1) || dSentier(u, v) < 1.2 || presPoint(u, v, 1.4) || !plat(u, v, 0.3)) continue;
         sapin(u, v, 1.6 + R() * 1.4);
       }
-      // Le reste du sous-bois, sur une grille tirée au hasard : jeunes sapins, buissons, fougères,
-      // loin des sentiers (2 u au moins) ; là où la navigation est fermée, des bosquets.
       const pas = 2.4 / Math.sqrt(dens);
       for (let v = pas / 2; v < T.hauteur; v += pas) for (let u = pas / 2; u < T.largeur; u += pas) {
         const x = u + (R() - 0.5) * pas, z = v + (R() - 0.5) * pas, t = R();
@@ -331,8 +279,6 @@ void main() {
           continue;
         }
         if (zn === 'ervane_mailles') {
-          // Le village : des buissons, quelques jeunes sapins et des carrés de courges dans l'herbe,
-          // loin des ruelles et de la place.
           const marge = 1.8 + R();
           if (t < 0.08) { if (posable(x, z, 0.45, marge + 1)) sapin(x, z, 1.5 + R() * 1.3, { clair: true }); }
           else if (t < 0.34) { const r = 0.4 + R() * 0.3; if (posable(x, z, r, marge)) buisson(x, z, r); }
@@ -348,7 +294,6 @@ void main() {
         else if (t < 0.85) { const r = 0.5 + R() * 0.35; if (posable(x, z, r * 0.7, marge - 0.5)) fougere(x, z, r); }
       }
 
-      // ----- Les Mailles : potagers, fanions, bannières, fenêtres -----
       let k = 0;
       for (const o of T.objets) {
         if (zone(o.u, o.v) !== 'ervane_mailles') continue;
@@ -357,16 +302,12 @@ void main() {
         if (o.sorte === 'maison') {
           const t = o.taille || [6, 5], hm = 2.5 + (o.index % 3) * 0.25, y = solPlat(o.u, o.v);
           const larg = t[1] / 2 + 0.5, haut = larg * 0.55;
-          // Un fanion au bout du faîte, côté caméra ; un second sur les grandes maisons.
           for (const cote of t[0] >= 6 ? [1, -1] : [1]) {
             const [px, pz] = loc(cote * (t[0] / 2 + 0.35), 0);
             fanion(px, pz, y + hm + haut - 0.1, r3 + (cote > 0 ? 0 : Math.PI), 1.5, k++);
           }
-          // La fenêtre luit dans la nuit : un halo devant elle, un autre sur le pignon.
           { const [px, pz] = loc(t[0] * 0.22, t[1] / 2 + 0.25); G.halos.push({ x: px, y: y + 1.0, z: pz, couleur: '#ffc46b', taille: 2.6, opacite: 0.55 }); this.compte.halos++; }
           { const [px, pz] = loc(t[0] / 2 + 0.25, 0); G.halos.push({ x: px, y: y + 1.0, z: pz, couleur: '#ffb85a', taille: 2.1, opacite: 0.45 }); this.compte.halos++; }
-          // Le potager, du côté de la caméra : des courges au coin de la façade (loin de la porte, du
-          // tonneau et de la jardinière) et le long du pignon est, quelques buissons au pied.
           const n = Math.round((4 + R() * 3) * Math.max(0.6, dens));
           for (let q = 0; q < n; q++) {
             const cote = R() < 0.45 ? 'coin' : 'pignon';
@@ -377,8 +318,6 @@ void main() {
           }
         }
       }
-      // Des fanions sur de hautes hampes autour de la place du Métier : là où un sentier entre, on
-      // n'en pose pas.
       for (const p of T.places || []) {
         if (zone(p.centre[0], p.centre[1]) !== 'ervane_mailles') continue;
         const n = Math.max(6, Math.round(p.rayon * 0.7));
@@ -389,8 +328,6 @@ void main() {
           fanion(u, v, solPlat(u, v) - 0.05, -a, 3.0, i);
         }
       }
-      // Les touffes d'herbe des modèles libres : sur l'herbe du village et le sous-bois, hors des
-      // sentiers, rangées pour l'herbe proche (Ile3D.semisProche).
       const mats = [], cols = [];
       const m4 = new THREE.Matrix4(), qu = new THREE.Quaternion(), eu = new THREE.Euler(0, 0, 0, 'YXZ'), po = new THREE.Vector3(), sc = new THREE.Vector3(), C = new THREE.Color(), C2 = new THREE.Color();
       const pasT = (tel ? 1.25 : q === 'haute' ? 0.9 : 1.05);
@@ -416,26 +353,17 @@ void main() {
       this.compte.touffes = cols.length / 3;
     }
 
-    // La touffe des modèles libres, en une géométrie (la teinte vient de l'instance) ; et l'herbe
-    // proche qui la porte, refaite autour du point visé comme l'herbe de l'île.
     preparerTouffes(rampe) {
       const THREE = this.THREE, ile = this.ile;
       const g = modele(THREE, 'touffe', 'tout');
       if (!g || !this.touffes || !this.touffes.cols.length) return null;
-      // Le vent de l'herbe (Ile3D.matHerbe) suit la hauteur locale : la touffe est mise à la taille
-      // d'une touffe de l'île (0,5 u) avant l'instance.
       const max = this.telephone ? 120 : this.qualite === 'haute' ? 600 : 400;
       const H = ile.semisProche(THREE, g, ile.matHerbe(THREE, rampe), this.touffes.mats, this.touffes.cols, max);
       this.touffes = null;
       return H;
     }
 
-    // ----- Les lumières, la brume, le ciel, les eaux -----
 
-    // `L` : les lumières du jour (Ile3D.lumieres). La lune remplace le soleil : froide, plus basse,
-    // au même azimut (les ombres cuites restent justes) ; l'hémisphère s'éteint presque ; le
-    // contre-jour bleu détache les silhouettes ; la lumière ponctuelle devient la flaque dorée du
-    // Veilleur ; en qualité haute, une seconde lumière va à la lanterne la plus proche.
     lumieres(scene, L) {
       const THREE = this.THREE;
       L.hemi.color.set('#3a4f8e'); L.hemi.groundColor.set('#121220'); L.hemi.intensity = 0.3;
@@ -449,34 +377,25 @@ void main() {
         scene.add(this.lanterne);
       }
     }
-    // La couleur de la brume d'une région, la nuit : un bleu nuit, à peine teinté par la région.
     brume(couleurRegion) {
       const c = this.c('#101a35');
       return c.lerp(this.c(couleurRegion), 0.1);
     }
-    // Le ciel derrière la toile : la lune en haut à gauche (d'où vient sa lumière), les étoiles, le
-    // dégradé du zénith à l'horizon brumeux.
     ciel(brumeSRGB) {
       const h = '#' + brumeSRGB.getHexString();
       const url = etoiles();
       const lune = 'radial-gradient(circle at 16% 13%, rgba(246,248,255,0.95) 0, rgba(232,238,255,0.92) 1.6%, rgba(170,190,255,0.3) 2.6%, rgba(120,150,255,0.1) 6%, rgba(0,0,0,0) 13%)';
       return `${lune}, ${url ? `url(${url}) 0 0 / 512px 512px repeat, ` : ''}linear-gradient(180deg, #060b1e 0%, #0c1636 38%, ${h} 100%)`;
     }
-    // Les matériaux qui ne voient pas les lumières (l'eau, la chute, les nuages, les figures) prennent
-    // la nuit eux-mêmes ; la lueur du sol (flaques des lanternes, fentes, fil d'or) monte.
     materiaux() {
       const ile = this.ile, THREE = this.THREE;
       if (ile.mats && ile.mats.uSol) ile.mats.uSol.forceLueur.value = 1.7;
-      // La flaque dorée peinte au sol, autour du Veilleur : elle s'ajoute à la lumière ponctuelle (qui
-      // éclaire aussi le décor proche) et reste dorée sur le calcaire clair comme sur la mousse.
       this.uFlaque = { value: new THREE.Vector4(0, 0, 0, 6.5) };
       this.uFlaqueCouleur = { value: new THREE.Color('#ffb43c') };
       if (ile.mats) for (const m of [ile.mats.sol, ile.mats.solBord]) this.flaqueSol(m);
       const e = ile.matEauRef;
       if (e) { e.uniforms.profonde.value.set('#0b1d33'); e.uniforms.claire.value.set('#1f4a66'); e.uniforms.ecume.value.set('#a8bee0'); }
       if (ile.matChute) ile.matChute.color.set('#5d7396');
-      // La mer de nuages s'éclaircit en voile : sous l'île et autour d'elle, on voit le ciel étoilé
-      // (l'île flotte dans la nuit).
       for (const b of ile.bancs || []) { b.material.color.setRGB(0.2, 0.25, 0.42); b.material.opacity *= 0.42; }
       if (ile.bouffees) {
         const a = ile.bouffees.attributes.teinte;
@@ -484,20 +403,14 @@ void main() {
         a.needsUpdate = true;
       }
       if (ile.uBrumeBas) ile.uBrumeBas.value.set('#101a33');
-      // Le liseré de lune : les bords des frondaisons et des rochers prennent un reflet bleu (les
-      // silhouettes se détachent du sous-bois sombre ; pas les murs, que le reflet blanchirait) ; les
-      // frondaisons perdent un peu de leur bleu pour rester vertes sous la lune.
       if (ile.mats) {
         for (const nom of ['fronde', 'roche']) this.lisere(ile.mats[nom], nom);
         if (ile.mats.fronde) ile.mats.fronde.color.setRGB(0.8, 0.9, 0.72);
       }
-      // Les figures ne sont pas éclairées : un voile froid, léger (elles restent lisibles).
       if (ile.figures && ile.figures.mat && ile.figures.mat.uniforms.lumiereFig) ile.figures.mat.uniforms.lumiereFig.value.setRGB(0.8, 0.84, 0.98);
       void THREE;
     }
 
-    // Un liseré de lune sur un matériau en aplats (MeshToonMaterial) : une lumière émise sur les faces
-    // vues de biais, de la couleur de la face, posée après les autres retouches du matériau.
     lisere(m, nom) {
       if (!m) return;
       const THREE = this.THREE, prec = m.onBeforeCompile, cle = m.customProgramCacheKey;
@@ -517,7 +430,6 @@ void main() {
       m.needsUpdate = true;
     }
 
-    // La flaque sur le matériau du sol (js/ile-sol.js : il porte déjà `vMonde`, le point du monde).
     flaqueSol(m) {
       if (!m) return;
       const prec = m.onBeforeCompile, cle = m.customProgramCacheKey, U = this.uFlaque, C = this.uFlaqueCouleur;
@@ -536,10 +448,6 @@ void main() {
       m.needsUpdate = true;
     }
 
-    // ----- Les lucioles -----
-    // Des points en mélange additif, un disque doux calculé dans le fragment, qui dérivent et
-    // clignotent ; seulement autour du point visé (une boîte qui le suit : une luciole sortie d'un
-    // côté revient de l'autre). Environ 120 en qualité moyenne.
     lucioles(scene) {
       const THREE = this.THREE;
       const n = this.qualite === 'haute' ? 220 : this.qualite === 'basse' ? 50 : 120;
@@ -562,7 +470,6 @@ void main() {
       this.points = pts;
       return pts;
     }
-    // Une luciole reprend place dans la boîte autour de (cx, cz).
     reposer(i, cx, cz, rayon, partout) {
       const L = this.lu, R = L.R, T = this.ile.T;
       let x, z;
@@ -574,13 +481,9 @@ void main() {
       }
       const h = T ? T.marcheA(x, z) : 0;
       L.foyer[i * 3] = x; L.foyer[i * 3 + 2] = z;
-      // Au-dessus du vide ou de l'eau profonde : la luciole dort (sous l'île, hors de vue).
       L.foyer[i * 3 + 1] = Number.isFinite(h) && (!T || T.profondeurA(x, z) < 0.6) ? h + 0.35 + R() * 1.9 : -9999;
     }
 
-    // ----- Chaque image -----
-    // La flaque dorée suit le Veilleur (au-dessus de sa tête), la lanterne proche a sa lumière en
-    // qualité haute, les lucioles dérivent ; dans la vue tactique, elles se taisent.
     maj(now, temps, joueur, hj, cam, tact) {
       const ile = this.ile;
       if (this.flaque) {

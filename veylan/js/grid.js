@@ -1,21 +1,16 @@
-// Grille isométrique : carte, conversions écran/case, distances, ligne de vue, zones, chemins.
-// Les coordonnées de case sont (x, y) ; les déplacements se font en 4 directions, comme dans
-// les jeux tactiques classiques. La distance est la distance de Manhattan.
 const Grid = (() => {
   const TILE_W = 64;
   const TILE_H = 32;
   const FLOOR = 0;
-  const ROCK = 1;   // bloque le déplacement et la ligne de vue
-  const HOLE = 2;   // bloque le déplacement seulement
-  const WATER = 3;  // bloque le déplacement seulement (eau, lave)
-  const TREE = 4;   // bloque le déplacement et la ligne de vue (arbre, pilier)
+  const ROCK = 1;
+  const HOLE = 2;
+  const WATER = 3;
+  const TREE = 4;
 
-  // Légende des cartes (docs/SPEC-CONTENU.md). Tout ce qui n'est pas listé est du sol.
   const KIND = { '#': ROCK, 'T': TREE, '~': WATER, 'o': HOLE };
   const SPOTS = { P: 'npcs', G: 'nodes', M: 'groups', D: 'door', Z: 'relay', B: 'playerStarts', R: 'monsterStarts' };
   const EXITS = { n: 'n', s: 's', e: 'e', w: 'w' };
 
-  // Carte du laboratoire de combat : '.' sol · '#' rocher · 'o' trou · 'R' départ des monstres · 'B' départ du joueur
   const LAB_LAYOUT = [
     '...R.R.R.R.....',
     '..R.R.R.R.R....',
@@ -34,9 +29,6 @@ const Grid = (() => {
     '.....B.B.B.B...',
   ];
 
-  // Construit une carte depuis 15 lignes de caractères. `map.kind[y][x]` garde le caractère
-  // d'origine pour le rendu (variantes de sol, lanternes) ; `map.spots` liste les cases spéciales
-  // dans l'ordre de lecture ; `map.exits` les cases de sortie par direction.
   function create(layout) {
     layout = layout || LAB_LAYOUT;
     const h = layout.length;
@@ -60,7 +52,6 @@ const Grid = (() => {
         if (EXITS[ch]) exits[ch].push({ x, y });
       }
     }
-    // Compatibilité avec le laboratoire : starts.player / starts.monster.
     const starts = { player: spots.playerStarts, monster: spots.monsterStarts };
     return { w, h, cells, kind, spots, exits, starts, layout };
   }
@@ -74,8 +65,6 @@ const Grid = (() => {
   const inLine = (a, b) => a.x === b.x || a.y === b.y;
   const kindAt = (map, x, y) => (inBounds(map, x, y) ? map.kind[y][x] : '#');
 
-  // Ligne de vue entre deux cases. On échantillonne le segment entre les deux centres ;
-  // toute case intermédiaire qui bloque la vue ou qui est occupée (selon `occupied`) bloque.
   function hasLineOfSight(map, from, to, occupied) {
     const d = dist(from, to);
     if (d <= 1) return true;
@@ -91,9 +80,6 @@ const Grid = (() => {
     return true;
   }
 
-  // Parcours en largeur limité à maxSteps pas. `blocked(x, y)` signale les cases occupées ;
-  // `walkableFn(x, y)` remplace la règle de terrain par défaut (obstacles temporaires, vers qui
-  // traversent les rochers).
   function reachable(map, start, maxSteps, blocked, walkableFn) {
     const canWalk = walkableFn || ((x, y) => walkable(map, x, y));
     const distances = new Map();
@@ -120,7 +106,6 @@ const Grid = (() => {
     return { dist: distances, parent };
   }
 
-  // Chemin (liste de cases, départ exclu) vers `target` d'après un résultat de `reachable`.
   function pathTo(reach, target) {
     const k = key(target.x, target.y);
     if (!reach.dist.has(k) || reach.dist.get(k) === 0) return null;
@@ -133,7 +118,6 @@ const Grid = (() => {
     return path;
   }
 
-  // Cases voisines (4 directions) de `c`, dans les limites de la carte.
   function neighbors(map, c) {
     const out = [];
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -142,7 +126,6 @@ const Grid = (() => {
     return out;
   }
 
-  // Cases couvertes par une zone d'effet centrée sur `center`. `origin` est le lanceur (pour les lignes).
   function aoeCells(map, shape, size, center, origin) {
     const out = [];
     if (shape === 'cross' || shape === 'circle') {
@@ -170,7 +153,6 @@ const Grid = (() => {
     return [{ x: center.x, y: center.y }];
   }
 
-  // Direction de poussée de `from` vers `to` : on suit l'axe dominant.
   function pushDirection(from, to) {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
@@ -179,14 +161,10 @@ const Grid = (() => {
     return { x: 0, y: Math.sign(dy) };
   }
 
-  // Centre d'une case à l'écran. Les coordonnées de case peuvent être fractionnaires (animations).
   function toScreen(x, y, origin) {
     return { x: origin.x + (x - y) * (TILE_W / 2), y: origin.y + (x + y) * (TILE_H / 2) };
   }
 
-  // Orientation d'une figure après un pas de (dx, dy) cases : l'une des quatre diagonales de
-  // l'écran. x+ descend vers la droite (se), y+ vers la gauche (sw), x- monte vers la gauche (nw),
-  // y- monte vers la droite (ne). Rien pour un pas nul.
   function facing(dx, dy) {
     if (!dx && !dy) return null;
     if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? 'se' : 'nw';

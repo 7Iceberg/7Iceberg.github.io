@@ -1,11 +1,3 @@
-// L'entrée dans le jeu, de l'accueil au personnage créé, en écrans successifs :
-//   Accueil (actualités, journal des mises à jour, réglages, « Continuer », partie d'invité)
-//   → Personnages (cinq emplacements) → Choix du monde (avant le premier personnage)
-//   → « As-tu déjà joué à Veylan ? » (trois questions pour qui commence) → Classe → Apparence → le jeu.
-// Contrat avec js/main.js : new Accueil({ onStart, painter, rendu }), show(), hide() ; onStart(personnage).
-// Retour : bouton en haut à gauche ou Échap. Les illustrations sont peintes par js/accueil-art.js.
-// Mémorisé (localStorage, toujours sous try/catch) : le monde choisi, les couleurs récentes, le rendu,
-// le thème ; sessionStorage garde l'écran où revenir après « Changer de personnage » en jeu.
 const Accueil = (() => {
 class Accueil {
   constructor(opts) {
@@ -19,7 +11,6 @@ class Accueil {
     this.ecran = null;
     this.actuIndex = 0;
     this.b = null;
-    // La scène (fond, éclats, éclairs) est posée une fois ; les écrans glissent par-dessus.
     this.el.innerHTML = '<div class="titre-scene" aria-hidden="true"><div class="titre-fond"></div><canvas class="titre-fx"></canvas><div class="titre-brume"></div></div>' +
       '<div class="entree-teinte" aria-hidden="true"></div><div class="entree" role="application" aria-roledescription="accueil"><div class="entree-vue"></div><div class="entree-toast" role="status" aria-live="polite"></div></div>' +
       '<canvas class="titre-fx-avant" aria-hidden="true"></canvas>';
@@ -43,20 +34,11 @@ class Accueil {
     }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.redessiner());
     this.boucle = this.boucle.bind(this);
-    // Après « Changer de personnage » en jeu, on revient directement à la liste. Le premier écran
-    // ne prend pas le focus : rien ne s'allume avant le premier geste.
     let retour = null;
-    try { retour = sessionStorage.getItem('veylan.entree'); sessionStorage.removeItem('veylan.entree'); } catch (e) { /* rien */ }
+    try { retour = sessionStorage.getItem('veylan.entree'); sessionStorage.removeItem('veylan.entree'); } catch (e) {   }
     this.premier = true;
     this.aller(retour === 'personnages' && Save.list().length ? 'personnages' : 'accueil', { racine: true });
-    // L'île d'Ervane disponible (js/ile.js) : Three.js se charge pendant qu'on choisit, pour que la
-    // bascule vers la 3D n'attende pas le réseau (docs/ILE-TECHNIQUE.md, 1.5).
-    // Seulement si la 3D peut servir : WebGL, et un personnage de l'appareil déjà sur l'île ; une
-    // création le demande à son tour (commencerCreation).
-    // (Un personnage d'Orsane qui garde une trace d'Ervane, après « Recommencer à Orsane », n'y remonte pas.)
     if (typeof Ile === 'object' && Ile.raisons.includes('personnage') && Save.list().some(p => Ile.origineDe(p.uid) === 'ervane')) Accueil.prechargerIle();
-    // Un import qui attendait que l'île soit chargée (js/save.js, docs/ILE-TECHNIQUE.md, 7.3) :
-    // le code reprend ici tout seul, une fois.
     let attente = null;
     try { attente = sessionStorage.getItem('veylan.ile.import'); if (attente) sessionStorage.removeItem('veylan.ile.import'); } catch (e) { attente = null; }
     if (attente) setTimeout(() => this.reprendreImport(attente), 0);
@@ -64,7 +46,6 @@ class Accueil {
 
   reprendreImport(code) {
     const r = Save.importText(code);
-    // La clé a été lue et effacée : l'île est disponible ici, le moteur ne redemande pas de recharge.
     if (!r.ch) { this.toast(r.error || 'Code invalide.'); return; }
     if (!Save.write(r.ch)) { this.toast('Impossible d\'enregistrer ce personnage ici.'); return; }
     this.choix = r.ch.uid;
@@ -72,25 +53,16 @@ class Accueil {
     this.afficher('personnages', 1);
   }
 
-  // En développement (fichier local, localhost, ?dev=1) : les réglages montrent les essais.
-  // La règle du développement est celle de Util.dev (js/util.js), la même partout.
   static dev() {
     try { return Util.dev(); } catch (e) { return false; }
   }
-  // La case « Naître sur Ervane (essai) » : en développement, quand l'île est disponible, que
-  // l'adresse en parle (?ile=) ou que la case est déjà cochée. Ailleurs, les réglages ne changent
-  // pas de hauteur (ils tiennent dans l'écran du téléphone sans défiler).
   static essaiIle() {
-    // Allumée par la source (DATA.ile.active, depuis le basculement), l'île n'a plus d'essai à offrir.
     if (!Accueil.dev() || typeof Ile !== 'object' || (DATA.ile && DATA.ile.active)) return false;
     let adresse = false;
-    try { adresse = new URLSearchParams(location.search).has('ile'); } catch (e) { /* rien */ }
+    try { adresse = new URLSearchParams(location.search).has('ile'); } catch (e) {   }
     return Ile.disponible || adresse || Accueil.lire('veylan.ile.essai') === '1';
   }
 
-  // ----- Visibilité -----
-  // Tant que l'entrée est là, la page ne défile pas : le jeu derrière (plus large que l'écran sur
-  // téléphone) ne doit pas pouvoir glisser sous le doigt.
   hide() {
     document.documentElement.classList.remove('entree-ouverte');
     this.el.classList.add('hidden');
@@ -108,7 +80,6 @@ class Accueil {
     requestAnimationFrame(this.boucle);
   }
 
-  // Une seule boucle d'animation : le globe, le socle tournant, les particules de la classe.
   boucle(t) {
     if (this.el.classList.contains('hidden')) return;
     if (this.anime && !document.hidden) this.anime(t);
@@ -123,7 +94,6 @@ class Accueil {
     this.toastFin = setTimeout(() => t.classList.remove('on'), 2600);
   }
 
-  // ----- Navigation -----
   aller(id, o) {
     o = o || {};
     if (o.racine) this.pile = [];
@@ -139,7 +109,6 @@ class Accueil {
     else if (this.ecran !== 'accueil') this.afficher('accueil', -1);
   }
 
-  // Dessine l'écran `id` ; l'ancien s'efface en glissant (un fondu seul si le système le demande).
   afficher(id, sens) {
     const old = this.vue.querySelector('.ecran:not(.ecran--sortie)');
     this.ecran = id;
@@ -165,14 +134,11 @@ class Accueil {
     this.premier = false;
   }
 
-  // Teinte du fond aux couleurs de la classe (ou aucune). --classe sert aussi au bandeau de la
-  // classe et glisse d'une couleur à l'autre (css/accueil.css).
   teinter(col) {
     if (col) this.el.style.setProperty('--classe', col);
     this.teinte.classList.toggle('on', !!col);
   }
 
-  // Après le rendu HTML d'un écran : toiles, écouteurs, animations.
   monter(id) {
     const m = { accueil: () => this.monterAccueil(), personnages: () => this.monterPersonnages(), monde: () => this.monterMonde(), deja: () => this.monterDeja(), classe: () => this.monterClasse(), apparence: () => this.monterApparence() }[id];
     if (m) m();
@@ -188,7 +154,6 @@ class Accueil {
     if (this.anime && this.calme) this.anime(performance.now());
   }
 
-  // Le clic : un seul écouteur pour tout ce qui porte data-act.
   clic(evt, force) {
     const b = force ? evt.target : evt.target.closest('[data-act]');
     if (!b || !this.racine.contains(b) || b.disabled) return;
@@ -210,7 +175,6 @@ class Accueil {
     }
   }
 
-  // ----- Le brouillon de personnage -----
   nouveauBrouillon(invite) {
     const id = DATA.defaultClass;
     this.b = { classId: id, gender: 'f', voie: null, look: apparenceDeClasse(id, 'f'), lookTouche: false, name: '', tuto: 'court', recommandee: null, invite: !!invite, facing: 'se' };
@@ -219,24 +183,19 @@ class Accueil {
 
   couleurClasse() { return this.b && DATA.classes[this.b.classId] ? DATA.classes[this.b.classId].color : null; }
 
-  // La figure du brouillon, pour le peintre.
   figureBrouillon(o) {
     const b = this.b;
     return AccueilArt.figure(b.classId, Object.assign({ gender: b.gender, look: b.look, facing: b.facing }, o || {}));
   }
 
-  // Les étapes de la création en cours (affichées dans l'en-tête).
   etapes() {
     return this.parcours || ['classe', 'apparence'];
   }
 
-  // Three.js se charge pendant qu'on choisit (docs/ILE-TECHNIQUE.md, 1.5), seulement là où l'île s'affiche.
   static prechargerIle() {
-    if (typeof Ile === 'object' && Ile.actif() && typeof IleCharge === 'object' && IleCharge.webgl()) setTimeout(() => IleCharge.three().catch(() => { /* le voile de repli s'en chargera */ }), 1200);
+    if (typeof Ile === 'object' && Ile.actif() && typeof IleCharge === 'object' && IleCharge.webgl()) setTimeout(() => IleCharge.three().catch(() => {   }), 1200);
   }
 
-  // Commence une création : le monde avant le tout premier personnage (s'il n'a pas déjà été choisi),
-  // la question « As-tu déjà joué ? » quand aucun personnage n'existe encore ou pour un invité.
   commencerCreation(invite) {
     if (!invite && Save.free() <= 0) { this.toast('Plus d\'emplacement libre : supprime d\'abord un personnage.'); return; }
     if (typeof Ile === 'object' && Ile.allumee) Accueil.prechargerIle();
@@ -248,14 +207,12 @@ class Accueil {
     this.aller(this.parcours[0]);
   }
 
-  // Passe à l'étape suivante de la création.
   suite(apres) {
     const p = this.etapes();
     const i = p.indexOf(apres);
     this.aller(p[i + 1] || 'apparence');
   }
 
-  // ----- En-tête des écrans -----
   tete(titre, sous, retour) {
     const p = this.etapes(), i = p.indexOf(this.ecranVise);
     const NOMS = { monde: 'Monde', deja: 'Expérience', classe: 'Classe', apparence: 'Apparence' };
@@ -272,9 +229,6 @@ class Accueil {
     return n === 0 ? 'aucun emplacement libre' : `${n} emplacement${n > 1 ? 's' : ''} libre${n > 1 ? 's' : ''}`;
   }
 
-  // =====================================================================
-  // Accueil
-  // =====================================================================
   ecran_accueil() {
     const persos = Save.list();
     const dernier = Save.lastUid();
@@ -339,8 +293,6 @@ class Accueil {
   monterAccueil() {
     this.dessinerActu(true);
     this.dessinerBusteContinuer();
-    // Défilement des actualités : toutes les 8 secondes, suspendu au survol, à l'écran caché, ou
-    // si le système demande moins d'animations ; le doigt les fait glisser.
     const vue = this.ecranEl.querySelector('.actus__vue');
     if (!vue) return;
     this.pause = false;
@@ -356,7 +308,6 @@ class Accueil {
     if (!this.calme) this.minuteur = setInterval(() => { if (!this.pause && !document.hidden && !this.calqueEl) this.changerActu(1); }, 8000);
   }
 
-  // L'actualité en cours, dans la toile de devant ; la précédente s'efface derrière.
   dessinerActu(surPlace) {
     const vue = this.ecranEl && this.ecranEl.querySelector('.actus__vue');
     if (!vue) return;
@@ -387,9 +338,6 @@ class Accueil {
     if (cv && d) AccueilArt.buste(cv, AccueilArt.figure(d.classId, { look: d.look, gender: d.gender }), { w: 48, h: 48 });
   }
 
-  // =====================================================================
-  // Personnages : les cinq emplacements
-  // =====================================================================
   ecran_personnages() {
     this.ecranVise = 'personnages';
     const persos = Save.list();
@@ -434,9 +382,6 @@ class Accueil {
     });
   }
 
-  // =====================================================================
-  // Choix du monde
-  // =====================================================================
   ecran_monde() {
     this.ecranVise = 'monde';
     const corps = this.mondeTable
@@ -474,17 +419,14 @@ class Accueil {
   }
 
   static mondeChoisi() { try { return localStorage.getItem('veylan.monde'); } catch (e) { return null; } }
-  static oublierMonde() { try { localStorage.removeItem('veylan.monde'); } catch (e) { /* rien */ } }
+  static oublierMonde() { try { localStorage.removeItem('veylan.monde'); } catch (e) {   } }
   choisirMonde(mode) {
-    try { localStorage.setItem('veylan.monde', JSON.stringify({ id: 'local', mode, t: Date.now() })); } catch (e) { /* rien */ }
+    try { localStorage.setItem('veylan.monde', JSON.stringify({ id: 'local', mode, t: Date.now() })); } catch (e) {   }
     this.mondeTable = false;
     this.toast('Monde : Veylan, monde local.');
     this.suite('monde');
   }
 
-  // =====================================================================
-  // « As-tu déjà joué à Veylan ? »
-  // =====================================================================
   ecran_deja() {
     this.ecranVise = 'deja';
     return `<section class="ecran ecran--deja" aria-label="As-tu déjà joué à Veylan ?">
@@ -507,9 +449,6 @@ class Accueil {
 
   monterDeja() { this.ecranEl.querySelectorAll('.deja-toile').forEach(cv => AccueilArt.moitie(cv, cv.dataset.kind)); }
 
-  // =====================================================================
-  // Classe
-  // =====================================================================
   ecran_classe() {
     this.ecranVise = 'classe';
     const b = this.b;
@@ -548,7 +487,6 @@ class Accueil {
     </section>`;
   }
 
-  // Le bandeau de la classe : rôles, nom et épithète, description, difficulté.
   infosClasse() {
     const b = this.b, c = DATA.classes[b.classId], P = PROFILS[c.id] || { difficulte: 2, roles: [] };
     const roles = P.roles.map(r => { const R = ROLES[r]; return `<span class="classe-role" style="--r:${R[2]}" title="${R[0]}"><span class="classe-role__losange">${R[1]}</span><span class="classe-role__nom">${R[0]}</span></span>`; }).join('');
@@ -568,8 +506,6 @@ class Accueil {
     this.monterTournant();
   }
 
-  // Le socle tournant s'arrête au-dessus du bandeau de la classe, quelle que soit sa hauteur
-  // (une description de deux ou trois lignes, la mention « Recommandée pour toi »).
   calerTournant() {
     const el = this.ecranEl, scene = el && el.querySelector('.classe-scene'), infos = el && el.querySelector('.classe-infos');
     if (!scene || !infos) return;
@@ -577,7 +513,6 @@ class Accueil {
     scene.style.setProperty('--bandeau', Math.round(Math.max(0, Math.min(dessous + 6, scene.offsetHeight * 0.58))) + 'px');
   }
 
-  // Une classe choisie : le fond, l'illustration, le socle et le bandeau suivent.
   choisirClasse(id) {
     const b = this.b;
     if (!DATA.classes[id] || id === b.classId) return;
@@ -607,8 +542,6 @@ class Accueil {
     });
   }
 
-  // La grande illustration : l'image de la graphiste si elle existe (posée sur la peinture du code,
-  // qui reste dessous et la remplace sur téléphone debout), sinon la peinture seule.
   dessinerIllustration() {
     const box = this.ecranEl.querySelector('.classe-illu');
     if (!box) return;
@@ -623,17 +556,13 @@ class Accueil {
     });
   }
 
-  // =====================================================================
-  // Le socle tournant (classe et apparence)
-  // =====================================================================
   monterTournant() {
     const scene = this.ecranEl;
     const cv = scene.querySelector('.tournant__toile');
     const part = scene.querySelector('.classe-particules');
     const list = AccueilArt.particules(this.calme ? 0 : 36, 9);
-    // tourner au doigt : un glissé d'une cinquantaine de pixels fait un quart de tour
     let x0 = null;
-    cv.addEventListener('pointerdown', e => { x0 = e.clientX; try { cv.setPointerCapture(e.pointerId); } catch (er) { /* rien */ } });
+    cv.addEventListener('pointerdown', e => { x0 = e.clientX; try { cv.setPointerCapture(e.pointerId); } catch (er) {   } });
     cv.addEventListener('pointermove', e => { if (x0 == null) return; const dx = e.clientX - x0; if (Math.abs(dx) > 50) { this.tourner(dx > 0 ? -1 : 1); x0 = e.clientX; } });
     cv.addEventListener('pointerup', () => { x0 = null; });
     cv.addEventListener('pointercancel', () => { x0 = null; });
@@ -658,16 +587,12 @@ class Accueil {
     AccueilArt.tournant(cv, this.figureBrouillon(), { t: t == null ? performance.now() : t, calme: this.calme, part: this.ecran === 'apparence' ? 0.64 : 0.6 });
   }
 
-  // Un quart de tour : se → sw → nw → ne (sens des aiguilles), ou l'inverse.
   tourner(sens) {
     const F = ['se', 'sw', 'nw', 'ne'];
     this.b.facing = F[(F.indexOf(this.b.facing) + (sens > 0 ? 1 : 3)) % 4];
     this.dessinerTournant();
   }
 
-  // =====================================================================
-  // Apparence
-  // =====================================================================
   ecran_apparence() {
     this.ecranVise = 'apparence';
     const b = this.b;
@@ -734,7 +659,6 @@ class Accueil {
     });
   }
 
-  // Les couleurs récentes (huit au plus), gardées d'une création à l'autre.
   static recents() { try { const r = JSON.parse(localStorage.getItem('veylan.couleurs') || '[]'); return Array.isArray(r) ? r.filter(c => /^#[0-9a-f]{6}$/.test(c)).slice(0, 8) : []; } catch (e) { return []; } }
   recentsHtml() {
     const r = Accueil.recents();
@@ -742,12 +666,11 @@ class Accueil {
   }
   retenirCouleur(c) {
     const r = [c].concat(Accueil.recents().filter(x => x !== c)).slice(0, 8);
-    try { localStorage.setItem('veylan.couleurs', JSON.stringify(r)); } catch (e) { /* rien */ }
+    try { localStorage.setItem('veylan.couleurs', JSON.stringify(r)); } catch (e) {   }
     const box = this.ecranEl.querySelector('.app-recents');
     if (box) box.innerHTML = this.recentsHtml();
   }
 
-  // Le sélecteur TSV : un carré teinte × saturation, une réglette de luminosité, au doigt comme à la souris.
   monterSelecteur() {
     const el = this.ecranEl;
     const carre = el.querySelector('.app-carre'), lum = el.querySelector('.app-lum');
@@ -755,7 +678,7 @@ class Accueil {
     const suivre = (zone, fn) => {
       zone.addEventListener('pointerdown', e => {
         e.preventDefault();
-        try { zone.setPointerCapture(e.pointerId); } catch (er) { /* rien */ }
+        try { zone.setPointerCapture(e.pointerId); } catch (er) {   }
         fn(e);
         const move = ev => fn(ev);
         const up = () => { zone.removeEventListener('pointermove', move); zone.removeEventListener('pointerup', up); zone.removeEventListener('pointercancel', up); this.retenirCouleur(this.b.look.couleurs[this.slot]); };
@@ -773,7 +696,6 @@ class Accueil {
       this.hsv.v = Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / r.height));
       this.appliquerHsv();
     });
-    // Au clavier : les flèches déplacent le curseur du carré ou de la réglette.
     carre.tabIndex = 0; lum.tabIndex = 0;
     carre.addEventListener('keydown', e => {
       const d = { ArrowLeft: [-6, 0], ArrowRight: [6, 0], ArrowUp: [0, 0.05], ArrowDown: [0, -0.05] }[e.key];
@@ -793,7 +715,6 @@ class Accueil {
     const cv = el.querySelector('.app-carre__toile'), lv = el.querySelector('.app-lum__toile');
     if (!cv || !this.hsv) return;
     const { h, s, v } = this.hsv;
-    // carré : l'arc-en-ciel en haut, vers le blanc en bas, assombri selon la luminosité
     const A = AccueilArt.prepare(cv);
     const g = A.c.createLinearGradient(0, 0, A.w, 0);
     for (let i = 0; i <= 6; i++) g.addColorStop(i / 6, `hsl(${i * 60},100%,50%)`);
@@ -801,7 +722,6 @@ class Accueil {
     const w = A.c.createLinearGradient(0, 0, 0, A.h); w.addColorStop(0, 'rgba(255,255,255,0)'); w.addColorStop(1, 'rgba(255,255,255,1)');
     A.c.fillStyle = w; A.c.fillRect(0, 0, A.w, A.h);
     A.c.fillStyle = `rgba(0,0,0,${1 - v})`; A.c.fillRect(0, 0, A.w, A.h);
-    // réglette : de la couleur pleine (haut) au noir (bas)
     const B = AccueilArt.prepare(lv);
     const l = B.c.createLinearGradient(0, 0, 0, B.h); l.addColorStop(0, hsvHex(h, s, 1)); l.addColorStop(1, '#000000');
     B.c.fillStyle = l; B.c.fillRect(0, 0, B.w, B.h);
@@ -812,7 +732,6 @@ class Accueil {
 
   appliquerHsv() { this.poserCouleur(hsvHex(this.hsv.h, this.hsv.s, this.hsv.v), false, true); }
 
-  // Pose une couleur sur la case en cours. `hex` vient du champ hexadécimal (pas de réécriture du champ).
   poserCouleur(c, depuisHex, depuisHsv) {
     const b = this.b;
     b.look = { tete: b.look.tete, couleurs: b.look.couleurs.map((x, i) => (i === this.slot ? c : x)) };
@@ -829,7 +748,6 @@ class Accueil {
     this.tetesAttente = requestAnimationFrame(() => this.dessinerTetes());
   }
 
-  // L'apparence entière change (aléatoire, réinitialisation) : cases, tête, sélecteur, socle.
   majApparence() {
     const el = this.ecranEl, b = this.b;
     el.querySelectorAll('.app-case').forEach(x => x.style.setProperty('--k', b.look.couleurs[Number(x.dataset.i)]));
@@ -841,8 +759,6 @@ class Accueil {
     this.dessinerTournant();
   }
 
-  // Une palette au hasard, accordée à la classe : la lanterne garde la couleur de la classe (c'est
-  // elle qui dit la classe), la tenue tourne autour de sa teinte, la cape lui répond.
   paletteAleatoire() {
     const R = Math.random, pick = a => a[Math.floor(R() * a.length)];
     const cl = DATA.classes[this.b.classId], H = hexHsv(cl.color).h;
@@ -861,21 +777,15 @@ class Accueil {
 
   erreur(t) { const e = this.ecranEl && this.ecranEl.querySelector('.app-erreur'); if (e) e.textContent = fines(t); }
 
-  // Crée le personnage (ou la partie d'invité) et lance le jeu.
   creerPersonnage() {
     const b = this.b;
     const champ = this.ecranEl.querySelector('#entree-nom');
     const nom = (champ ? champ.value : b.name).replace(/\s+/g, ' ').trim().slice(0, 16);
     if (!nom) { this.erreur('Donne un nom à ton personnage.'); if (champ) champ.focus(); return; }
     const ch = Character.create(b.classId, nom, b.gender, b.voie, { look: b.look, tuto: b.tuto });
-    // L'île allumée (l'interrupteur, docs/ILE-TECHNIQUE.md, 1.4) et la 3D possible : le personnage
-    // naît au Métier d'Ervane, avec le tutoriel de l'île dans le mode choisi.
     if (typeof Ile === 'object' && Ile.allumee && typeof Ile3D === 'function' && Ile3D.disponible() && Ile.fairenaitre(ch)) Ile.appliquerOrsane();
-    // Orsane en 3D (docs/ORSANE-3D.md) : l'interrupteur allumé, le nouveau personnage la verra en
-    // 3D (la page ne sert que lui). Né à Orsane, son tutoriel en cases l'en garde.
     if (typeof Ile === 'object' && Ile.appliquerOrsane3DPour) Ile.appliquerOrsane3DPour(ch);
     if (b.invite) {
-      // Une partie d'invité n'écrit jamais rien : ni à la création, ni en jeu.
       Object.defineProperty(ch, 'invite', { value: true });
       Save.suspend();
     } else if (!Save.write(ch)) { this.erreur('Impossible d\'enregistrer : plus d\'emplacement libre, ou stockage refusé par le navigateur.'); return; }
@@ -887,9 +797,6 @@ class Accueil {
     this.onStart(ch);
   }
 
-  // =====================================================================
-  // Calques : réglages, journal, article, recommandation, suppression, import
-  // =====================================================================
   ouvrirCalque(id, titre, corps, opts) {
     this.fermerCalque(true);
     opts = opts || {};
@@ -905,8 +812,6 @@ class Accueil {
     this.racine.appendChild(fond);
     this.calqueEl = fond;
     this.ecranEl.inert = true;
-    // Pas d'éclair par-dessus une fenêtre ouverte : plus de nouvel éclair, et la toile de devant
-    // (les éclairs qui frappent le logo) s'efface le temps du calque.
     if (this.fx) this.fx.sobre = true;
     this.el.classList.add('calque-ouvert');
     const f = fond.querySelector('[data-focus]') || fond.querySelector('.vy-modale__corps button, .vy-modale__corps textarea, .vy-modale__pied button') || fond.querySelector('button');
@@ -958,15 +863,12 @@ class Accueil {
   }
 
   static lire(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-  // Un personnage lu pour être joué : s'il est né sur Ervane, les changements d'Orsane s'appliquent
-  // avant sa lecture validée (content/ervane-orsane.js ; sa quête « Le Glym Ancestral » existe alors).
-  // Orsane en 3D de même (docs/ORSANE-3D.md) : appliquée avant la lecture, qui convertit sa position.
   static lirePersonnage(uid) {
     if (typeof Ile === 'object' && Ile.actif() && Ile.origineDe(uid) === 'ervane') Ile.appliquerOrsane();
     if (typeof Ile === 'object' && Ile.appliquerOrsane3DPour) Ile.appliquerOrsane3DPour(uid);
     return Save.read(uid);
   }
-  static ecrire(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* rien */ } }
+  static ecrire(k, v) { try { localStorage.setItem(k, v); } catch (e) {   } }
 
   ouvrirJournal() {
     const J = DATA.journal || [];
@@ -984,7 +886,6 @@ class Accueil {
     requestAnimationFrame(() => AccueilArt.actu(f.querySelector('.article__toile'), a.art));
   }
 
-  // La recommandation : trois questions, une classe. `apres` : ce qui suit la réponse.
   ouvrirQuiz() {
     this.quiz = { i: 0, rep: [] };
     this.ouvrirCalque('quiz', 'Trouvons ta classe', this.quizHtml(), { classe: 'entree-modale--quiz' });
@@ -1034,7 +935,6 @@ class Accueil {
   }
 }
 
-// ----- Les actions, par nom (data-act) -----
 Accueil.prototype.actions = {
   retour() { this.retour(); },
   reglages() { this.ouvrirReglages(); },
@@ -1048,14 +948,14 @@ Accueil.prototype.actions = {
   },
   rendu(b) {
     const v = b.dataset.rendu === 'canvas' ? 'canvas' : 'webgl';
-    if (v === 'webgl') { try { localStorage.removeItem('veylan.rendu'); } catch (e) { /* rien */ } } else Accueil.ecrire('veylan.rendu', v);
+    if (v === 'webgl') { try { localStorage.removeItem('veylan.rendu'); } catch (e) {   } } else Accueil.ecrire('veylan.rendu', v);
     this.calqueEl.querySelectorAll('.reglages__seg-btn[data-rendu]').forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
     const r = this.calqueEl.querySelector('.reglages__relancer'); if (r) r.hidden = Accueil.lire('veylan.rendu.vu') === v;
   },
   relancer() { location.reload(); },
   'ile-essai'(b) {
     const on = b.getAttribute('aria-pressed') !== 'true';
-    if (on) Accueil.ecrire('veylan.ile.essai', '1'); else { try { localStorage.removeItem('veylan.ile.essai'); } catch (e) { /* rien */ } }
+    if (on) Accueil.ecrire('veylan.ile.essai', '1'); else { try { localStorage.removeItem('veylan.ile.essai'); } catch (e) {   } }
     b.setAttribute('aria-pressed', String(on));
     const r = this.calqueEl.querySelector('[data-ile-relancer]'); if (r) r.hidden = false;
   },
@@ -1101,7 +1001,6 @@ Accueil.prototype.actions = {
     const zone = this.calqueEl.querySelector('.entree-zone');
     const r = Save.importText(zone.value);
     const err = this.calqueEl.querySelector('.entree-calque__erreur');
-    // Un personnage d'Ervane sur une page sans l'île : le code attend, la page se recharge (js/save.js).
     if (r.recharge) { err.textContent = fines(r.error); setTimeout(() => location.reload(), 50); return; }
     if (!r.ch) { err.textContent = fines(r.error || 'Code invalide.'); return; }
     if (!Save.write(r.ch)) { err.textContent = 'Impossible d\'enregistrer ce personnage ici.'; return; }
@@ -1173,11 +1072,6 @@ Accueil.prototype.actions = {
   'creer-perso'() { this.creerPersonnage(); },
 };
 
-// ----- Tables -----
-// Profil de chaque classe pour l'écran de choix : difficulté (1 à 3, d'après le kit : contrôle et
-// invocation plus exigeants), trois rôles, les réponses du questionnaire qui la désignent, et
-// l'apparence de départ d'un nouveau personnage (coiffure de la Veilleuse, du Veilleur, peau,
-// cheveux ; la tenue, la cape et la lanterne restent aux couleurs de la classe).
 const PROFILS = {
   vaelith: { difficulte: 3, roles: ['controle', 'distance', 'placement'], quiz: ['distance', 'controler', 'exigeant'], look: [4, 0, '#f2d9bf', '#2b2d42'] },
   sarkan: { difficulte: 1, roles: ['melee', 'endurance', 'degats'], quiz: ['contact', 'proteger', 'simple'], look: [5, 2, '#d8a982', '#5a3a24'] },
@@ -1190,16 +1084,13 @@ const PROFILS = {
   thalor: { difficulte: 3, roles: ['placement', 'controle', 'endurance'], quiz: ['contact', 'controler', 'exigeant'], look: [5, 7, '#8a5536', '#1c1410'] },
   fennal: { difficulte: 3, roles: ['invocation', 'controle', 'soutien'], quiz: ['distance', 'controler', 'exigeant'], look: [1, 0, '#f6dcc4', '#7a4a2a'] },
 };
-// L'apparence de départ d'une classe pour un genre (Character.defaultLook pour une classe sans profil).
 function apparenceDeClasse(id, g) {
   const base = Character.defaultLook(id), P = PROFILS[id];
   if (!P || !P.look) return base;
   return { tete: g === 'm' ? P.look[1] : P.look[0], couleurs: [P.look[2], P.look[3]].concat(base.couleurs.slice(2)) };
 }
-// Classes des saisons à venir (docs/MONDE.md) : une couleur et un glyphe pour leur case verrouillée.
 const FUTURES = { kaelum: { color: '#7a3b5e', glyph: 'Ka' }, lheth: { color: '#4b5a8a', glyph: 'Lh' } };
 
-// Les rôles : nom, pictogramme, couleur du losange.
 const ROLES = (() => {
   const s = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
   return {
@@ -1222,7 +1113,6 @@ const ROLES = (() => {
   };
 })();
 
-// Le questionnaire de recommandation : trois questions courtes.
 const QUIZ = [
   { q: 'En combat, où aimes-tu te tenir ?', r: [
     { id: 'contact', label: 'Au contact', aide: 'Je fonce et je tiens la ligne.', icone: 'lame' },
@@ -1238,9 +1128,7 @@ const QUIZ = [
     { id: 'exigeant', label: 'Exigeant', aide: 'J\'aime les plans en trois tours et les combinaisons.', icone: 'engrenage' },
   ] },
 ];
-// Ordre de préférence quand deux classes répondent aussi bien : les classes de l'alpha d'abord.
 const ORDRE_RECO = ['sarkan', 'lyssar', 'nerith', 'oriel', 'karsh', 'vaelith', 'mirel', 'thalor', 'kaldrin', 'fennal'];
-// La classe qui répond le mieux : le rôle compte double, la distance une fois et demie.
 function recommander(rep) {
   const poids = [1.5, 2, 1];
   let best = null, score = -1;
@@ -1256,7 +1144,6 @@ function recommander(rep) {
 const TETES = ['Mèche balayée', 'Queue haute', 'Hérissés', 'Chignon', 'Longs', 'Tresse', 'Capuche', 'Rasé, bandeau d\'or'];
 const COULEURS_NOMS = ['Peau', 'Cheveux', 'Tunique', 'Chausses', 'Cape', 'Lanterne'];
 
-// « Tisseur des Voiles » devient « Le Tisseur des Voiles », « Lame d'Ombre » « La Lame d'Ombre ».
 function epithete(t) {
   const mot = String(t).split(/[\s-]/)[0];
   if (/^[aeiouyhéèêâ]/i.test(t)) return 'L\'' + t;
@@ -1264,12 +1151,9 @@ function epithete(t) {
 }
 
 function esc(s) { return Util.esc(s); }
-// Typographie française : une espace insécable avant « : ; ! ? » » et après « « », pour qu'aucune
-// ligne ne commence par un deux-points ou un guillemet fermant.
 function fines(texte) { return String(texte).replace(/ ([:;!?»])/g, ' $1').replace(/« /g, '« '); }
 function dateFr(d) { return String(d || '').split('-').reverse().join('/'); }
 
-// Depuis quand : « à l'instant », « il y a 5 min », « hier », « le 12/10/2026 ».
 function depuis(t) {
   if (!t) return 'jamais';
   const s = Math.max(0, (Date.now() - t) / 1000);
@@ -1282,7 +1166,6 @@ function depuis(t) {
   return 'le ' + new Date(t).toLocaleDateString('fr-FR');
 }
 
-// Couleurs : TSV (teinte 0 à 360, saturation et valeur 0 à 1) et « #rrggbb ».
 function hsvHex(h, s, v) {
   h = ((h % 360) + 360) % 360;
   const f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
@@ -1297,7 +1180,6 @@ function hexHsv(hex) {
   return { h: (h + 360) % 360, s: max ? d / max : 0, v: max };
 }
 
-// Pictogrammes de l'entrée : un trait, comme ceux des fenêtres (js/fenetres.js).
 const ICONES = (() => {
   const s = (p, w) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w || 1.8}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
   return {
@@ -1328,7 +1210,6 @@ const ICONES = (() => {
   };
 })();
 
-// L'apparence de départ d'une classe, aussi pour les peintures de l'accueil (js/accueil-art.js).
 Accueil.apparenceDeClasse = apparenceDeClasse;
 
 return Accueil;

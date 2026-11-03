@@ -1,67 +1,30 @@
-// Rendu du plateau sur un canvas 2D, pour l'exploration et le combat. Tout est dessiné par le code,
-// d'après la planche de direction artistique : fantasy épique au crépuscule, or ancien et cristal.
-//
-// Organisation :
-//  - la toile remplit la scène ; tout se dessine en coordonnées du monde (cellToScreen, origin, W, H)
-//    à travers la caméra (js/camera.js), une seule transformation par image ;
-//  - la carte est une scène pleine, à la manière d'une carte de Dofus Touch : autour du plateau
-//    jouable, ses alentours (js/entourage.js) continuent le sol de la zone dans toutes les
-//    directions, avec leur décor, les chemins qui sortent par les bords, des parois de roche et
-//    l'obscurité sous terre, une terrasse ou une vallée au bord d'un vide. La caméra ne montre
-//    jamais au-delà de ce qui est peint : ni ciel, ni falaise d'île ;
-//  - des calques fixes, refaits à chaque changement de carte (et exécutés tout de suite) : le
-//    proche (this.static, le plateau et ses abords à la densité des calques : sols peints, flaques
-//    de lumière, décor cuit) et, sous lui, les bandes du lointain (this.lointain, les alentours
-//    autour de lui jusqu'aux bords de ce que la vue peut montrer, moins denses) ;
-//  - des sprites de décor précalculés (arbres, rochers, murs, lanternes, relais), triés avec les
-//    personnages à chaque image : l'avant cache l'arrière, et s'efface s'il masque une figure ;
-//  - une couche lumineuse à demi-résolution (bloom), floutée puis ajoutée en mode additif ;
-//  - ce qui vit : eau et lave, lucioles, éclats de cristal, braises, sorts ;
-//  - le vignettage, à la taille de l'écran, puis les étiquettes, à une taille lisible à tout zoom.
-// Deux réglages de qualité : « haute », et « basse » (sans bloom, moins de particules, 30 images
-// par seconde). Le réglage se choisit d'après l'appareil, se force avec ?qualite=haute|basse et
-// redescend tout seul si le dessin d'une image devient trop lent.
 class Renderer {
-  // `opts.painterOnly` : le rendu ne s'abonne à rien et ne dessine pas ; il sert de peintre au
-  // rendu WebGL (js/render-gl.js), qui lui demande le calque fixe, les décors et les figures.
   constructor(canvas, combat, world, opts) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.combat = combat;
     this.world = world || null;
     const m = this.map;
-    // Le monde : le rectangle du plateau (W × H). La case (0, h-1) est la plus à gauche : son centre
-    // doit y tenir. Les alentours débordent de ce rectangle de tous les côtés.
     this.origin = { x: (m.h - 1) * (Grid.TILE_W / 2) + Grid.TILE_W / 2 + 8, y: 84 };
     this.W = (m.w + m.h) * (Grid.TILE_W / 2) + 16;
     this.H = (m.w + m.h) * (Grid.TILE_H / 2) + 110 + Renderer.CLIFF;
-    // La hauteur des calques du plateau (couche lumineuse, bloom) : le rectangle W × H suffit, aucune
-    // falaise ne pend plus sous le plateau.
     this.SH = this.H;
-    // Le calque proche (this.calque : le plateau et ses abords) et ce que la caméra peut montrer
-    // (this.alentours : le proche et les bandes du lointain autour de lui), en coordonnées du monde.
     this.calque = { x: -Renderer.ABORDS, y: -Renderer.ABORDS, w: this.W + 2 * Renderer.ABORDS, h: this.H + 2 * Renderer.ABORDS };
     this.alentours = null;
     this.lointain = [];
     this.dpr = Math.min(2, Math.max(1, (typeof devicePixelRatio === 'number' && devicePixelRatio) || 1));
-    // Densité des calques en cache (plateau, décors) : deux pixels par unité du monde (les textures
-    // de sol n'ont pas plus de détail), trois sur un grand écran dense (densite). Le lointain suit
-    // l'ajustement de plus près (densiteLointain).
     this.cs = 2;
     this.co = 1;
     this.floats = [];
     this.fx = [];
     this.animations = [];
     this.highlights = { move: new Set(), range: new Set(), blocked: new Set(), aoe: new Set(), path: [], hover: null };
-    // Repère du guide (js/guide.js) : { cell } | { group } | { entity } | { edge: 'n'|'s'|'e'|'w' }.
     this.guideCue = null;
-    // Vue tactique du combat : plateau à plat, sans décor ni alentours (bouton du panneau de jeu).
     this.tactique = false;
     this.static = null;
     this.staticKey = null;
     this.lights = [];
     this.decor = [];
-    // Qualité, mouvement réduit et vie du décor.
     this.forcedQuality = Renderer.qualityParam();
     this.quality = this.forcedQuality || Renderer.detectQuality();
     this.reducedMotion = false;
@@ -69,7 +32,7 @@ class Renderer {
       const mq = matchMedia('(prefers-reduced-motion: reduce)');
       this.reducedMotion = mq.matches;
       if (mq.addEventListener) mq.addEventListener('change', e => { this.reducedMotion = e.matches; });
-    } catch (e) { /* pas de matchMedia */ }
+    } catch (e) {   }
     this.particles = [];
     this.sparks = [];
     this.shots = [];
@@ -79,12 +42,9 @@ class Renderer {
     this.perf = { samples: new Float32Array(90), i: 0, n: 0, avg: 0, slow: 0 };
     this.painterOnly = !!(opts && opts.painterOnly);
     if (this.painterOnly) return;
-    // La toile remplit la scène ; la caméra y place le monde (le repli du rendu WebGL partage la sienne).
     this.camera = (opts && opts.camera) || new Camera(canvas);
     this.camera.setBounds(this.cameraBounds());
     this.watchSize();
-    // Endormi (l'île d'Ervane s'affiche en 3D, js/scene.js), ce rendu n'anime rien : un seul rendu
-    // anime les entités.
     combat.on('animMove', d => (this.suspendu ? Promise.resolve() : this.animateMove(d)));
     combat.on('animCast', d => (this.suspendu ? Promise.resolve() : this.animateCast(d)));
     combat.on('animTrap', () => (this.suspendu ? Promise.resolve() : Util.delay(180)));
@@ -93,9 +53,6 @@ class Renderer {
     requestAnimationFrame(() => this.frame());
   }
 
-  // ----- Sommeil : l'île d'Ervane s'affiche en 3D (js/scene.js, docs/ILE-TECHNIQUE.md, 1.6) -----
-  // Endormi, ce rendu ne dessine plus, rend ses calques à la mémoire et sa caméra se tait ; sa toile
-  // reste en place, transparente.
   suspendre() {
     if (this.suspendu) return;
     this.suspendu = true;
@@ -115,23 +72,16 @@ class Renderer {
   }
 
   static get CLIFF() { return 40; }
-  // Les abords du plateau peints dans le calque proche, au-delà du rectangle W × H, et la largeur
-  // du fondu de son bord dans le lointain (en unités du monde).
   static get ABORDS() { return 64; }
   static get FONDU() { return 44; }
 
-  // Le plus petit rectangle qui contient a et b.
   static union(a, b) {
     const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
     return { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y };
   }
 
-  // ----- Veilleurs : apparence et orientation -----
-  // Les quatre diagonales de l'écran, comme Grid.facing les nomme.
   static get FACINGS() { return ['se', 'sw', 'nw', 'ne']; }
 
-  // L'apparence à dessiner : celle du personnage si elle est complète, sinon celle de sa classe
-  // (gardée par couleur : le rendu Canvas la demande à chaque image).
   static heroLook(s) {
     const L = s.look;
     if (L && Number.isInteger(L.tete) && Array.isArray(L.couleurs) && L.couleurs.length === 6) return L;
@@ -141,20 +91,14 @@ class Renderer {
     return d;
   }
 
-  // La clé d'une figure de Veilleur pour les textures du rendu WebGL : apparence, genre, orientation.
   static heroKey(s) {
     const L = Renderer.heroLook(s);
     return `${L.tete}${L.couleurs.join('')}|${s.gender === 'm' ? 'm' : 'f'}|${Renderer.FACINGS.includes(s.facing) ? s.facing : 'se'}`;
   }
 
-  // Le retournement horizontal d'une figure : un monstre garde son ±1 ; un Veilleur porte une
-  // diagonale et se retourne lui-même (drawHero).
   static flipOf(s) { return typeof s.facing === 'number' ? s.facing : 1; }
-  // Le côté vers lequel regarde la figure : ±1 pour un monstre ; pour un Veilleur, -1 quand sa
-  // diagonale regarde vers la gauche (sw, nw). L'insigne de faction le suit.
   static sideOf(s) { return typeof s.facing === 'number' ? s.facing : (s.facing === 'sw' || s.facing === 'nw' ? -1 : 1); }
 
-  // Avant son premier pas d'un combat, un Veilleur regarde l'ennemi le plus proche.
   static faceFoe(cb, e) {
     let best = null, d = Infinity;
     for (const m of cb.entities) {
@@ -165,11 +109,9 @@ class Renderer {
     return (best && Grid.facing(best.x - e.x, best.y - e.y)) || 'se';
   }
 
-  // Sur un plateau (Ervane), le monde n'a pas de carte à cases : la carte du combat la remplace.
   get map() { return (this.world && this.world.map) || this.combat.map; }
   get inCombat() { return this.world ? this.world.showCombat : true; }
 
-  // ----- Qualité -----
 
   static qualityParam() {
     try {
@@ -178,15 +120,13 @@ class Renderer {
     } catch (e) { return null; }
   }
 
-  // Haute qualité par défaut ; basse sur un petit écran à peu de cœurs ou à très forte densité,
-  // et sur les appareils les plus modestes.
   static detectQuality() {
     const nav = typeof navigator !== 'undefined' ? navigator : {};
     const cores = nav.hardwareConcurrency || 4;
     const mem = nav.deviceMemory || 4;
     const dpr = (typeof devicePixelRatio === 'number' && devicePixelRatio) || 1;
     let side = 1024;
-    try { side = Math.min(screen.width, screen.height); } catch (e) { /* pas d'écran */ }
+    try { side = Math.min(screen.width, screen.height); } catch (e) {   }
     if (cores <= 2 || mem <= 2) return 'basse';
     if (side <= 540 && (cores <= 4 || dpr >= 3)) return 'basse';
     return 'haute';
@@ -199,7 +139,6 @@ class Renderer {
 
   get maxParticles() { return this.quality === 'haute' ? 72 : 24; }
 
-  // Temps moyen de draw() sur les dernières images ; en qualité automatique, on redescend si c'est lent.
   measure(ms) {
     const P = this.perf;
     P.samples[P.i] = ms; P.i = (P.i + 1) % P.samples.length; P.n = Math.min(P.samples.length, P.n + 1);
@@ -212,8 +151,6 @@ class Renderer {
     }
   }
 
-  // Cadence réelle (images par seconde), qui compte aussi la rastérisation : si elle reste sous
-  // 24 images par seconde pendant trois secondes, on passe en basse qualité.
   watchRate(now) {
     const P = this.perf;
     if (P.prev) {
@@ -227,9 +164,7 @@ class Renderer {
     P.prev = now;
   }
 
-  // ----- Palettes -----
 
-  // Les couleurs historiques (light, dark, ink, lantern, glow, floorA...) et l'ambiance de chaque région.
   static get PALETTES() {
     if (Renderer._palettes) return Renderer._palettes;
     const orsane = {
@@ -328,7 +263,6 @@ class Renderer {
 
   get palette() { return Renderer.PALETTES[this.paletteId]; }
 
-  // Le genre de lieu décide des matières : ville (pavés et dalles veinées d'or), donjon, ou nature.
   get site() {
     const w = this.world;
     if (!w || !w.mapDef) return 'sauvage';
@@ -340,23 +274,15 @@ class Renderer {
   cellToScreen(x, y) { return Grid.toScreen(x, y, this.origin); }
   screenToCell(sx, sy) { return Grid.fromScreen(sx, sy, this.origin); }
 
-  // Un sommet de la grille (coin de case), en coordonnées de case : (0, 0) est le coin du haut.
   vx(u, v) { return { x: this.origin.x + (u - v) * (Grid.TILE_W / 2), y: this.origin.y - Grid.TILE_H / 2 + (u + v) * (Grid.TILE_H / 2) }; }
 
-  // Coordonnées du monde sous un événement souris ou tactile, à travers la caméra : screenToCell
-  // les prend telles quelles.
   canvasPoint(evt) {
     const src = evt.touches && evt.touches[0] ? evt.touches[0] : (evt.changedTouches && evt.changedTouches[0] ? evt.changedTouches[0] : evt);
     return this.camera.clientToWorld(src.clientX, src.clientY);
   }
 
-  // Un point du monde en coordonnées client (de la fenêtre), pour poser un élément du DOM dessus ;
-  // l'événement « veylan:camera » dit quand le replacer.
   worldToClient(x, y) { return this.camera.worldToClient(x, y); }
 
-  // Ce que la caméra cadre (js/camera.js) : le cœur, toutes les cases où l'on peut se tenir, avec la
-  // place d'une figure au-dessus de la plus haute (« ajuster » le fait tenir dans la part libre de
-  // la scène, aussi grand que possible) ; et les alentours peints, que la vue ne quitte jamais.
   cameraBounds() {
     const core = this.coreBox();
     return { x: core.x, y: core.y, w: core.w, h: core.h, core, painted: this.alentours || null };
@@ -371,22 +297,16 @@ class Renderer {
       x0 = Math.min(x0, p.x - TW); x1 = Math.max(x1, p.x + TW); y0 = Math.min(y0, p.y - TH); y1 = Math.max(y1, p.y + TH);
     }
     if (x0 === Infinity) { const t = this.vx(0, 0), r = this.vx(m.w, 0), b = this.vx(m.w, m.h), l = this.vx(0, m.h); x0 = l.x; x1 = r.x; y0 = t.y; y1 = b.y; }
-    // Une figure debout dépasse sa case d'une cinquantaine d'unités ; son nom, un peu plus.
     return { x: x0 - 6, y: y0 - 58, w: x1 - x0 + 12, h: y1 - y0 + 58 + 8 };
   }
 
-  // Les alentours qu'il faut peindre pour la vue : de quoi couvrir la scène au zoom le plus large
-  // que la caméra permet (minK fois l'ajustement), où que l'ajustement la pose, centré sur le cœur.
-  // Sur un écran tactile, on compte aussi la barre de combat qui couvre le bas de la scène (le cœur
-  // remonte au-dessus d'elle). Arrondi au pas de 64 unités : une petite variation de taille ne
-  // repeint rien.
   wantedSurroundings() {
     const cam = this.camera, core = this.coreBox();
     const cx = core.x + core.w / 2, cy = core.y + core.h / 2;
     let hx = core.w / 2 + 160, hy = core.h / 2 + 160;
     if (cam && cam.vw) {
       let coarse = false;
-      try { coarse = matchMedia('(pointer: coarse)').matches; } catch (e) { /* pas de matchMedia */ }
+      try { coarse = matchMedia('(pointer: coarse)').matches; } catch (e) {   }
       const ins = cam.insets, cases = [ins];
       if (coarse) cases.push({ top: ins.top, right: ins.right, left: ins.left, bottom: Math.max(ins.bottom, cam.vh * 0.24) });
       const m = Math.min(cam.vw, cam.vh) * cam.margin;
@@ -401,9 +321,6 @@ class Renderer {
     return { x: Math.floor(cx - hx), y: Math.floor(cy - hy), w: 2 * hx, h: 2 * hy };
   }
 
-  // La densité du lointain : ce que l'ajustement en montre à l'écran (entre 0,75 et 1,5 pixel par
-  // unité du monde), sans dépasser 4096 pixels de côté (textures WebGL) ni 8 millions de pixels
-  // pour ses bandes.
   densiteLointain(E, bandes) {
     const cam = this.camera;
     const z = cam && cam.vw ? cam.fitZoom * this.dpr : 1;
@@ -413,9 +330,6 @@ class Renderer {
     return Math.max(0.25, Math.min(k, Math.sqrt(8e6 / Math.max(1, aire))));
   }
 
-  // Les bandes du lointain : ce que la caméra peut montrer (E) moins l'intérieur du calque proche,
-  // qui les recouvre (son bord fondu passe au-dessus d'elles). Elles se chevauchent de quelques
-  // unités : pas de couture entre elles.
   bandes(E) {
     const K = this.calque, f = Renderer.FONDU, o = 4;
     const kx0 = K.x + f, ky0 = K.y + f, kx1 = K.x + K.w - f, ky1 = K.y + K.h - f;
@@ -430,9 +344,6 @@ class Renderer {
     return out;
   }
 
-  // La toile suit la taille de la scène (fenêtre, rotation, plein écran, colonne voisine) : sa
-  // mémoire d'image vaut sa taille CSS fois la densité de l'écran (2 au plus). Redessinée tout de
-  // suite, pour ne jamais montrer une toile vidée par le changement de taille.
   watchSize() {
     const fit = () => {
       const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
@@ -442,7 +353,6 @@ class Renderer {
       const sized = this.canvas.width !== bw || this.canvas.height !== bh;
       if (sized) { this.canvas.width = bw; this.canvas.height = bh; }
       this.camera.setViewport(w, h);
-      // Endormi, rien ne se repeint : il n'y a plus de carte à cases sous les yeux.
       if (this.suspendu) return;
       this.suivreDensite(this.camera.fitZoom, this.dpr);
       this.suivreAlentours();
@@ -454,13 +364,9 @@ class Renderer {
     fit();
   }
 
-  // La densité des calques en cache suit l'ajustement, jamais le zoom du moment : un zoom ne repeint
-  // rien. Trois pixels par unité du monde quand l'ajustement en montre plus de 2,2 (écran rétine,
-  // grande fenêtre) ; deux sur téléphone et tablette (mémoire). Avant le premier calque, la densité
-  // se prend tout de suite ; ensuite, le calque fixe est refait une fois la taille posée.
   static densite(fitZoom, dpr) {
     let coarse = false;
-    try { coarse = matchMedia('(pointer: coarse)').matches; } catch (e) { /* pas de matchMedia */ }
+    try { coarse = matchMedia('(pointer: coarse)').matches; } catch (e) {   }
     return !coarse && fitZoom * dpr > 2.2 ? 3 : 2;
   }
 
@@ -472,10 +378,6 @@ class Renderer {
     this.densiteTimer = setTimeout(() => { this.cs = want; this.static = null; }, 500);
   }
 
-  // Les alentours suivent la taille de la scène : si la vue peut montrer plus que ce qui est peint
-  // (rotation, fenêtre agrandie, barre de combat), ou si le lointain est bien moins dense que l'écran,
-  // on repeint ses bandes une fois la taille posée (le calque proche ne change pas). En attendant, la
-  // caméra ne sort pas de ce qui est peint.
   suivreAlentours() {
     clearTimeout(this.alentoursTimer);
     const E = this.alentours;
@@ -486,12 +388,9 @@ class Renderer {
     this.alentoursTimer = setTimeout(() => this.refaireLointain(), 300);
   }
 
-  // De nouvelles bandes du lointain pour la vue du moment (le hasard des alentours tient à la
-  // position : ce qui était peint ne change pas), puis la caméra prend leurs bornes.
   refaireLointain() {
     if (!this.static || !this.entourage || this.staticMap !== this.map) return;
     const old = this.alentours, want = this.wantedSurroundings();
-    // On ne rétrécit pas : une vue qui revient à sa taille garde ce qui est déjà peint.
     const E = old && want.x >= old.x && want.y >= old.y && want.x + want.w <= old.x + old.w && want.y + want.h <= old.y + old.h ? old : want;
     this.alentours = E;
     const zone = Renderer.union(E, this.calque), g = this.entourage.zone;
@@ -500,13 +399,11 @@ class Renderer {
     if (this.camera) this.camera.setBounds(this.cameraBounds());
   }
 
-  // Le lointain : les alentours en bandes autour du calque proche, à la densité du lointain.
   paintLointain() {
     const E = this.alentours, ent = this.entourage, list = this.bandes(E);
     const co = this.co = this.densiteLointain(E, list);
     this.lointain = list.map(b => {
       const cv = Renderer.canvas(b.w * co, b.h * co), f = cv.getContext('2d');
-      // La bande mesure exactement sa toile : pas de demi-pixel étiré.
       b.w = cv.width / co; b.h = cv.height / co;
       f.setTransform(co, 0, 0, co, -b.x * co, -b.y * co);
       ent.paintGround(f, b);
@@ -519,7 +416,6 @@ class Renderer {
     this.lointainV = (this.lointainV || 0) + 1;
   }
 
-  // La caméra : le monde mis à l'échelle et décalé dans la toile.
   worldTransform(c) {
     const cam = this.camera, k = cam.zoom * this.dpr;
     c.setTransform(k, 0, 0, k, cam.x * this.dpr, cam.y * this.dpr);
@@ -530,7 +426,6 @@ class Renderer {
       const from = { x: entity.rx, y: entity.ry };
       const dur = teleport ? 200 : (fast ? 90 : 140);
       const start = performance.now();
-      // Un Veilleur qui marche regarde où il va ; poussé ou en repli, il garde son regard.
       if (!teleport && !fast && entity.shape === 'player') entity.facing = Grid.facing(to.x - from.x, to.y - from.y) || entity.facing;
       if (teleport) this.burst(from.x, from.y, '#8fe9ff', 6);
       this.animations.push({
@@ -551,7 +446,6 @@ class Renderer {
     });
   }
 
-  // Un projectile lumineux part du lanceur, puis les cases touchées s'allument à son arrivée.
   animateCast({ spell, cells, entity }) {
     const color = DATA.elements[spell.element].color;
     const now = performance.now();
@@ -571,7 +465,6 @@ class Renderer {
   }
 
   frame() {
-    // Endormi (l'île en 3D) : pas d'image, pas de temps du monde ; on garde la boucle pour le réveil.
     if (this.suspendu) { requestAnimationFrame(() => this.frame()); return; }
     const now = performance.now();
     this.watchRate(now);
@@ -579,16 +472,11 @@ class Renderer {
     this.animations = this.animations.filter(a => !a.tick(now));
     this.follow();
     const moving = this.camera.update(now) || this.camera.dirty;
-    // En basse qualité, on dessine une image sur deux : 30 images par seconde suffisent (pas pendant
-    // un zoom ou un déplacement de la vue, qui restent fluides).
     if (moving || this.quality !== 'basse' || now - this.lastDraw >= 30) { this.lastDraw = now; this.draw(now); }
     this.camera.flush();
     requestAnimationFrame(() => this.frame());
   }
 
-  // Quand le plateau ne tient pas en entier (zoom), la caméra garde l'acteur du moment dans le cadre.
-  // Un nouvel acteur, ou le personnage qui se met en marche, rend la main à la caméra. L'entrée en
-  // combat et le retour au monde recadrent le plateau entier.
   follow() {
     if (this.inCombat !== this.framedCombat) { this.framedCombat = this.inCombat; this.camera.fit(); this.suivreAlentours(); }
     const focus = this.inCombat ? (this.combat.actor ? this.combat.actor.id : 0) : (this.world && this.world.player.moving ? 'marche' : 'repos');
@@ -601,7 +489,6 @@ class Renderer {
     this.camera.follow(focus, p ? p.x : null, p ? p.y - 30 : null);
   }
 
-  // ----- Outils -----
 
   static canvas(w, h) {
     const c = document.createElement('canvas');
@@ -609,15 +496,10 @@ class Renderer {
     return c;
   }
 
-  // Le navigateur garde les ordres de dessin d'une toile et ne les exécute qu'à la première lecture
-  // (pour le rendu WebGL, à l'envoi de la texture, dans la première image qui suit). Un calque
-  // fixe se peint au changement de carte : on le fait exécuter tout de suite, pour que ce coût reste
-  // celui du changement de carte et ne retombe pas sur une image ordinaire.
   static flush(cv) {
-    try { cv.getContext('2d').getImageData(0, 0, 1, 1); } catch (e) { /* toile illisible */ }
+    try { cv.getContext('2d').getImageData(0, 0, 1, 1); } catch (e) {   }
   }
 
-  // Bruit déterministe par case, pour varier les sols sans les rendre bruyants.
   static noise(x, y) {
     let h = (x * 374761393 + y * 668265263) ^ 0x5bd1e995;
     h = Math.imul(h ^ (h >>> 13), 1274126177);
@@ -630,7 +512,6 @@ class Renderer {
     return h >>> 0;
   }
 
-  // Générateur pseudo-aléatoire à graine (mulberry32) : le décor est le même à chaque visite.
   static prng(seed) {
     let a = seed >>> 0;
     return () => {
@@ -641,7 +522,6 @@ class Renderer {
     };
   }
 
-  // Bruit de valeur multi-octaves sur une grille w × h ; `wrap` le rend raccordable (texture en mosaïque).
   static fbm(w, h, cell, octaves, seed, wrap) {
     const out = new Float32Array(w * h);
     let amp = 1, tot = 0, cs = cell;
@@ -668,7 +548,6 @@ class Renderer {
     return out;
   }
 
-  // Bruit de valeur en un point quelconque (plusieurs octaves), pour les motifs en perspective.
   static vnoise(x, y, octaves, seed) {
     let amp = 1, tot = 0, v = 0;
     for (let o = 0; o < octaves; o++) {
@@ -714,7 +593,6 @@ class Renderer {
     return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${a})`;
   }
 
-  // Une lueur radiale dessinée une fois, réutilisée pour toutes les lanternes de la carte.
   static glowSprite(color) {
     const off = Renderer.canvas(92, 92);
     const g2 = off.getContext('2d');
@@ -724,7 +602,6 @@ class Renderer {
     return off;
   }
 
-  // Un point de lumière doux (cœur plein, bord nul), en cache par couleur : particules, halos, impacts.
   static dot(color) {
     const cache = Renderer._dots || (Renderer._dots = new Map());
     let cv = cache.get(color);
@@ -740,7 +617,6 @@ class Renderer {
     return cv;
   }
 
-  // L'ombre portée douce des figures et des objets.
   static shadowSprite() {
     if (!Renderer._shadow) {
       const cv = Renderer.canvas(64, 64), c = cv.getContext('2d');
@@ -770,8 +646,6 @@ class Renderer {
     return Renderer._canFilter;
   }
 
-  // Floute `src` dans le contexte `dst` (même taille). Sans ctx.filter, on passe par une réduction
-  // puis un agrandissement lissé : le lissage bilinéaire fait office de flou.
   static blurInto(dst, src, radius, alpha) {
     const w = src.width, h = src.height;
     dst.save();
@@ -811,7 +685,6 @@ class Renderer {
     path.moveTo(cx, cy - h); path.lineTo(cx + w, cy); path.lineTo(cx, cy + h); path.lineTo(cx - w, cy); path.closePath();
   }
 
-  // Un polygone aux coins arrondis, pour les corps « roulés comme un galet ».
   static roundPoly(pts, r) {
     const path = new Path2D();
     const n = pts.length;
@@ -826,7 +699,6 @@ class Renderer {
     return path;
   }
 
-  // ----- Textures procédurales (une fois par palette, en cache) -----
 
   static texture(P, kind) {
     const cache = Renderer._tex || (Renderer._tex = new Map());
@@ -835,7 +707,6 @@ class Renderer {
     if (cv) return cv;
     const T = 512;
     cv = Renderer.canvas(T, kind === 'falaise' ? 512 : T);
-    // texture lue et réécrite (grain) : on la garde en mémoire centrale, c'est bien plus rapide
     const c = cv.getContext('2d', { willReadFrequently: true });
     const seed = Renderer.hashStr(key);
     const rnd = Renderer.prng(seed);
@@ -893,7 +764,6 @@ class Renderer {
     return cv;
   }
 
-  // Lavis : un bruit multi-octaves basse résolution, colorié par la rampe et agrandi en douceur.
   static wash(c, T, ramp, seed, cell, contrast) {
     const n = 128;
     const f = Renderer.fbm(n, n, cell, 4, seed, true);
@@ -916,7 +786,6 @@ class Renderer {
     c.drawImage(s, -k, -k, T + 2 * k, T + 2 * k);
   }
 
-  // Coups de pinceau : des ellipses translucides, raccordées sur les bords de la mosaïque.
   static dabs(c, T, ramp, count, rmin, rmax, amin, amax, rnd, stretch) {
     for (let i = 0; i < count; i++) {
       const x = rnd() * T, y = rnd() * T, r = rmin + rnd() * (rmax - rmin), a = rnd() * Math.PI;
@@ -977,7 +846,6 @@ class Renderer {
     c.putImageData(img, 0, 0);
   }
 
-  // Dalles (une par case, ou des pavés) : ton variable, biseau, fêlures veinées d'or.
   static slabs(c, T, ramp, vein, rnd, o) {
     const size = 64 / o.per, n = T / size;
     c.fillStyle = Renderer.mix(ramp[0], '#000000', 0.35); c.fillRect(0, 0, T, T);
@@ -996,7 +864,6 @@ class Renderer {
           c.save(); c.clip(path);
           c.drawImage(wash, 0, 0);
           c.fillStyle = Renderer.rgba(ramp[1 + Math.floor(rnd() * (ramp.length - 1))], 0.35 + rnd() * 0.3); c.fillRect(px, py, pw, ph);
-          // biseau : lumière en haut à gauche, ombre en bas à droite
           c.lineWidth = 3.5;
           c.strokeStyle = 'rgba(255,250,235,0.22)'; c.beginPath(); c.moveTo(px + g, py + ph - g); c.lineTo(px + g, py + g); c.lineTo(px + pw - g, py + g); c.stroke();
           c.strokeStyle = 'rgba(0,0,0,0.32)'; c.beginPath(); c.moveTo(px + pw - g, py + g); c.lineTo(px + pw - g, py + ph - g); c.lineTo(px + g, py + ph - g); c.stroke();
@@ -1013,7 +880,6 @@ class Renderer {
     }
   }
 
-  // Une fêlure remplie d'or (la « pierre fissurée veinée d'or » de la planche).
   static vein(c, px, py, pw, ph, vein, rnd) {
     const horiz = rnd() < 0.5;
     const pts = [];
@@ -1055,11 +921,9 @@ class Renderer {
     }
   }
 
-  // La roche de la falaise : des colonnes taillées à facettes, des strates, des corniches et des fissures.
   static strata(c, T, ramp, seed, rnd) {
     const H = 512;
     c.fillStyle = ramp[2]; c.fillRect(0, 0, T, H);
-    // colonnes verticales, éclairées à gauche, ombrées à droite
     let x = 0;
     while (x < T - 4) {
       const w = Math.min(T - x, 16 + rnd() * 44);
@@ -1078,7 +942,6 @@ class Renderer {
       }
       x += w;
     }
-    // strates horizontales translucides
     let y = 0;
     while (y < H) {
       const h = 6 + rnd() * 18, k = 1 + Math.floor(rnd() * 3), ph = rnd() * 6.3;
@@ -1088,7 +951,6 @@ class Renderer {
       c.lineTo(T, y + h); c.lineTo(0, y + h); c.closePath(); c.fill();
       y += h;
     }
-    // corniches courtes : arête claire, ombre portée dessous
     for (let i = 0; i < 46; i++) {
       const x0 = rnd() * T, yy = rnd() * H, len = 20 + rnd() * 70;
       c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,0.4)';
@@ -1110,7 +972,6 @@ class Renderer {
     Renderer.grain(c, T, H, 16, rnd);
   }
 
-  // ----- Calques fixes : le plateau et ses alentours, leur lumière ; puis décor et couche lumineuse -----
 
   buildStatic() {
     const m = this.map;
@@ -1118,7 +979,6 @@ class Renderer {
     const site = this.site;
     if (this.static && this.staticMap === m && this.staticPalette === P && this.staticSite === site) return;
     const t0 = performance.now();
-    // Le premier calque d'un rendu de repli garde la vue du rendu WebGL ; ensuite, une autre carte recadre.
     const newMap = !!this.staticMap && this.staticMap !== m;
     this.staticMap = m;
     this.staticPalette = P;
@@ -1134,17 +994,14 @@ class Renderer {
     const R = this.resources(P, site);
     this.res = R;
     step('ressources');
-    // Couche des lumières fixes du plateau, à demi-résolution, floutée une fois pour toutes.
     this.emitCanvas = Renderer.canvas(this.W / 2, this.SH / 2);
     this.emit = this.emitCanvas.getContext('2d');
     this.emit.setTransform(0.5, 0, 0, 0.5, 0, 0);
     this.emit.globalCompositeOperation = 'lighter';
-    // Ce qu'il faut peindre autour : de quoi couvrir la vue au zoom le plus large.
     const E = this.alentours = this.wantedSurroundings();
     const K = this.calque;
     const ent = this.entourage = new Entourage(this, P, R, Renderer.union(E, K));
     step('alentours');
-    // Le calque proche : le plateau et ses abords, à la densité des calques.
     const cs = this.cs;
     const off = Renderer.canvas(K.w * cs, K.h * cs);
     const c = off.getContext('2d');
@@ -1160,26 +1017,19 @@ class Renderer {
     this.paintShadows(c);
     this.paintLight(c, P);
     step('lumiere');
-    // Le décor qui ne peut masquer ni figure ni case jouable est cuit dans le calque fixe, trié en
-    // profondeur avec celui des alentours.
     ent.paintDecor(c, K, this.decor.filter(d => d.baked));
     this.decor = this.decor.filter(d => !d.baked);
     ent.paintAir(c, K);
     ent.feather(off, cs);
     Renderer.flush(off);
     step('proche');
-    // Le lointain : les mêmes alentours, en bandes autour du proche, jusqu'au bord de ce que la
-    // caméra peut montrer.
     this.paintLointain();
     step('lointain');
-    // Couche lumineuse fixe (lanternes, cristaux, lave) : floutée à demi-résolution, ajoutée à chaque
-    // image en mode additif par-dessus le plateau. En basse qualité, pas de bloom.
     this.staticBloom = null;
     if (this.quality === 'haute') this.finishBloom();
     step('bloom');
     this.static = off;
     this.buildPaths();
-    // Une nouvelle carte : la caméra recadre le plateau.
     if (this.camera) this.camera.setBounds(this.cameraBounds(), newMap);
     this.buildMs = performance.now() - t0;
   }
@@ -1193,7 +1043,6 @@ class Renderer {
     const o = out.getContext('2d');
     Renderer.blurInto(o, this.emitCanvas, 3, 0.9);
     Renderer.blurInto(o, this.emitCanvas, 11, 1);
-    // Bords fondus : une lueur ne s'arrête pas net au bord du rectangle du plateau.
     o.globalCompositeOperation = 'destination-in';
     const w = out.width, h = out.height, e = 16, t = 44;
     let g = o.createLinearGradient(0, 0, w, 0);
@@ -1206,7 +1055,6 @@ class Renderer {
     this.staticBloom = out;
   }
 
-  // Ce que la carte contient : le vide d'un bord (terrasse ou vallée), les matières, les lumières, les cases libres.
   analyse(P, site) {
     const m = this.map;
     const vd = [];
@@ -1223,9 +1071,6 @@ class Renderer {
       }
     }
     this.voidMap = vd;
-    // Ce que le vide d'une carte devient dans la scène : une terrasse (le plateau surplombe d'un mur
-    // bas un contrebas qui continue tout autour) quand l'avant du plateau (bords +x et +y, ceux qu'on
-    // voit tomber) y donne pour une bonne part ; sinon une vallée, loin derrière le bord.
     let avant = 0, vide = 0, any = false;
     for (let i = 0; i < m.w; i++) { avant++; if (vd[m.h - 1][i]) vide++; }
     for (let j = 0; j < m.h - 1; j++) { avant++; if (vd[j][m.w - 1]) vide++; }
@@ -1251,7 +1096,6 @@ class Renderer {
         else if (t === Grid.HOLE) mat = 'trou';
         else if (site === 'donjon') mat = k === ',' ? 'dalle' : 'sol';
         else if (site === 'ville') mat = t === Grid.TREE && P.ground !== 'ardoise' ? 'herbe' : (k === ',' ? 'dalle' : 'pave');
-        // Une case de sortie prend la matière du chemin qui en part (js/entourage.js).
         else if (P.ground === 'ardoise') mat = k === ',' || 'nsew'.includes(k) ? 'gravier' : 'ardoise';
         else mat = k === ',' || 'nsew'.includes(k) ? 'terre' : 'herbe';
         row.push(mat);
@@ -1266,9 +1110,6 @@ class Renderer {
     }
   }
 
-  // Le vide d'une carte. Hors de la carte, les alentours continuent le bord le plus proche : le vide
-  // en contrebas, la terre ferme en terre ferme. Au-delà d'une sortie percée dans le bord d'une
-  // terrasse, le contrebas continue aussi : un escalier y descend (js/entourage.js).
   isVoid(x, y) {
     const m = this.map;
     if (Grid.inBounds(m, x, y)) return this.voidMap[y][x];
@@ -1282,14 +1123,11 @@ class Renderer {
   }
   matAt(x, y) { return Grid.inBounds(this.map, x, y) ? this.mat[y][x] : 'vide'; }
 
-  // Les ressources d'une palette : sprites du décor, du plateau et de ses alentours, gardés en cache
-  // (deux palettes au plus).
   resources(P, site) {
     const key = [P.id, site, this.cs, this.W, this.H].join('|');
     const cache = Renderer._res || (Renderer._res = new Map());
     if (cache.has(key)) return cache.get(key);
     if (cache.size >= 2) {
-      // on libère la plus ancienne palette, et ses textures si plus personne ne s'en sert
       const old = cache.keys().next().value;
       cache.delete(old);
       const keep = new Set([...cache.keys()].map(k => k.split('|')[0]).concat(P.id));
@@ -1317,7 +1155,6 @@ class Renderer {
     return R;
   }
 
-  // Un sprite : un petit canvas à la densité des calques (this.cs) ; (0, 0) est le point d'ancrage au sol.
   spr(w, h, ax, ay, fn, tint) {
     const dpr = this.cs;
     w = Math.ceil(w); h = Math.ceil(h); ax = Math.round(ax); ay = Math.round(ay);
@@ -1337,7 +1174,6 @@ class Renderer {
     this.emit.globalAlpha = 1;
   }
 
-  // ----- Sols : matières en mosaïque isométrique, bords organiques, eau, lave et puits -----
 
   isoPattern(c, P, kind) {
     const pat = c.createPattern(Renderer.texture(P, kind), 'repeat');
@@ -1345,7 +1181,6 @@ class Renderer {
     return pat;
   }
 
-  // Polygone d'une case en coordonnées de case. Les bords qui touchent une autre matière ondulent.
   cellPoly(x, y, same, amp) {
     const corners = [[x, y], [x + 1, y], [x + 1, y + 1], [x, y + 1]];
     const nbs = [[x, y - 1], [x + 1, y], [x, y + 1], [x - 1, y]];
@@ -1373,11 +1208,9 @@ class Renderer {
     return { pts, edges };
   }
 
-  // Chemins (remplissage et bordure seule) pour une matière.
   matPaths(kind, amp) {
     const m = this.map, fill = new Path2D(), edge = new Path2D();
     let any = false;
-    // Le bord du plateau n'en est pas un pour une matière : les alentours la continuent.
     const same = (nx, ny) => this.matAt(nx, ny) === kind || (kind !== 'eau' && kind !== 'lave' && (this.isVoid(nx, ny) || !Grid.inBounds(m, nx, ny)));
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
       if (this.mat[y][x] !== kind) continue;
@@ -1414,17 +1247,14 @@ class Renderer {
         c.lineWidth = 5; c.strokeStyle = 'rgba(10,8,4,0.22)'; c.stroke(paths.edge);
         c.restore();
       } else {
-        // bordure de pierre : un filet sombre puis un filet clair, comme une margelle
         c.lineWidth = 2.6; c.strokeStyle = 'rgba(8,8,14,0.45)'; c.stroke(paths.edge);
         c.lineWidth = 1; c.strokeStyle = Renderer.rgba(kind === 'herbe' ? P.stone[3] : P.stone[4], 0.4); c.stroke(paths.edge);
       }
     }
-    // Eau et lave.
     for (const kind of ['eau', 'lave']) {
       const paths = this.matPaths(kind, 0.2);
       if (!paths) continue;
       this.liquid = { kind, fill: paths.fill, edge: paths.edge };
-      // berge : une bande humide et sombre autour
       c.lineWidth = 7; c.strokeStyle = kind === 'lave' ? 'rgba(20,6,2,0.65)' : 'rgba(6,12,20,0.35)'; c.stroke(paths.edge);
       c.fillStyle = this.isoPattern(c, P, kind); c.fill(paths.fill);
       c.save(); c.clip(paths.fill);
@@ -1444,7 +1274,6 @@ class Renderer {
         this.emit.fillStyle = Renderer.rgba(P.lava[3], 0.75); this.emit.fill(paths.fill);
       }
     }
-    // Puits : des trous dans le sol, aux parois de roche qui plongent dans le noir.
     const tex = Renderer.texture(P, 'falaise');
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
       if (this.mat[y][x] !== 'trou') continue;
@@ -1468,7 +1297,6 @@ class Renderer {
     }
   }
 
-  // Touches au pinceau, à pleine résolution : brins d'herbe, fleurs, cailloux, braises, lèvre d'un bord.
   paintDetails(c, P, R) {
     const m = this.map;
     const rnd = Renderer.prng(this.seed ^ 0xde7a);
@@ -1500,7 +1328,6 @@ class Renderer {
           c.fillStyle = (mat === 'terre' ? P.dirt : P.gravel)[3]; c.beginPath(); c.ellipse(p.x, p.y, r, r * 0.6, 0, 0, Math.PI * 2); c.fill();
         }
       } else if (mat === 'ardoise' && P.lava && rnd() < 0.16 && t === Grid.FLOOR) {
-        // une fêlure de braise qui court dans l'ardoise, avec une branche
         const u0 = 0.15 + rnd() * 0.3, v0 = 0.15 + rnd() * 0.7, ang = (rnd() - 0.5) * 0.9;
         const line = [], branch = [];
         for (let k = 0; k <= 6; k++) {
@@ -1516,7 +1343,6 @@ class Renderer {
         for (let i = 0; i < 4; i++) { const p = pt(x, y, 0.1, 0.9); c.fillStyle = Renderer.rgba(P.moss[1 + (i % 2)], 0.55); c.beginPath(); c.ellipse(p.x, p.y, 2 + rnd() * 2.5, 1 + rnd(), 0, 0, Math.PI * 2); c.fill(); }
       }
     }
-    // Touffes le long des chemins, pour casser la ligne.
     if (this.matEdges.terre || this.matEdges.gravier) {
       for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
         if (this.mat[y][x] !== 'herbe' || m.cells[y][x] !== Grid.FLOOR) continue;
@@ -1533,7 +1359,6 @@ class Renderer {
         }
       }
     }
-    // La lèvre d'une corniche : filet de lumière froide, pli d'ombre, herbe qui déborde.
     for (const F of this.faceList || []) {
       c.lineWidth = 2.2; c.strokeStyle = 'rgba(2,3,10,0.5)';
       c.beginPath(); c.moveTo(F.top[0].x, F.top[0].y + 1.5); c.lineTo(F.top[6].x, F.top[6].y + 1.5); c.stroke();
@@ -1548,14 +1373,12 @@ class Renderer {
         }
       }
     }
-    // Liseré du bord arrière d'une corniche, éclairé par l'horizon.
     c.lineWidth = 1.4; c.strokeStyle = Renderer.rgba(P.sky.glow, 0.45);
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
       if (this.isVoid(x, y)) continue;
       if (this.isVoid(x - 1, y)) { const a = this.vx(x, y), b = this.vx(x, y + 1); c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke(); }
       if (this.isVoid(x, y - 1)) { const a = this.vx(x, y), b = this.vx(x + 1, y); c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke(); }
     }
-    // Petits cristaux au sol, au bord d'une corniche et des puits (pas sur une terrasse de la ville).
     const vallee = this.chute === 'vallee';
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
       if (m.cells[y][x] !== Grid.FLOOR || this.isVoid(x, y)) continue;
@@ -1568,7 +1391,6 @@ class Renderer {
       this.emitDot(p.x, p.y - 6, 14, P.crystal[3], 0.5);
       this.crystalSpots.push({ x: p.x, y: p.y - 6 });
     }
-    // Sorties : chevrons d'or vers l'extérieur ; le chemin continue dans les alentours.
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
       const k = m.kind[y][x];
       if (!'nsew'.includes(k)) continue;
@@ -1583,7 +1405,6 @@ class Renderer {
       }
       this.emitDot(p.x + dir.x * 12, p.y + dir.y * 12, 18, '#f2c25a', 0.35);
     }
-    // Dais du relais : une estrade ronde incrustée d'or, au cœur cyan.
     for (const L of this.lights) {
       if (L.k !== 'Z') continue;
       const p = this.cellToScreen(L.x, L.y);
@@ -1600,7 +1421,6 @@ class Renderer {
     }
   }
 
-  // Ombres douces au pied du décor (la lumière du ciel vient d'en haut à gauche).
   paintShadows(c) {
     for (const d of this.decor) {
       const p = this.cellToScreen(d.x, d.y);
@@ -1609,9 +1429,7 @@ class Renderer {
     }
   }
 
-  // Lumière : ton de crépuscule bleu, brume au fond, flaques chaudes des lanternes.
   paintLight(c, P) {
-    // Le ton du crépuscule, sur le plateau comme sur ses abords (js/entourage.js).
     this.entourage.gradeGround(c, this.calque);
     c.save();
     c.globalCompositeOperation = 'lighter';
@@ -1635,7 +1453,6 @@ class Renderer {
     c.restore();
   }
 
-  // Le vignettage de la vue : un carré étiré à la taille de l'écran (l'ovale suit sa forme).
   static vignette() {
     if (Renderer._vignette) return Renderer._vignette;
     const N = 256, cv = Renderer.canvas(N, N), c = cv.getContext('2d');
@@ -1646,11 +1463,8 @@ class Renderer {
     return cv;
   }
 
-  // Les chemins réutilisés à chaque image : la grille de combat.
   buildPaths() {
     const m = this.map;
-    // La grille de combat : chaque ligne de sommets tracée d'un seul trait sur les cases au sol,
-    // pour que chaque arête ne soit dessinée qu'une fois.
     const grid = new Path2D();
     const floor = (x, y) => Grid.inBounds(m, x, y) && m.cells[y][x] === Grid.FLOOR && !this.isVoid(x, y);
     for (let i = 0; i <= m.w; i++) {
@@ -1672,7 +1486,6 @@ class Renderer {
     this.gridPath = grid;
   }
 
-  // ----- Sprites du décor -----
 
   treeSprite(P, rnd, scale, variant) {
     if (P.tree === 'basalte') return this.columnSprite(P, rnd, variant % 2 === 1, true);
@@ -1714,7 +1527,6 @@ class Renderer {
       : [[-9, 2, 0.85, 0], [9, 1, 0.85, 0], [0, -5, 1, 1], [-4, 6, 0.9, 2], [6, 6, 0.85, 2]];
     const cl = layout.map(([dx, dy, k, layer]) => ({ x: lean + dx * s + (rnd() - 0.5) * 3, y: -h + dy * s + (rnd() - 0.5) * 3 + (s < 0.9 ? h * 0.75 : 0), r: R * k * (0.88 + rnd() * 0.24), layer }));
     this.paintFoliage(c, P, rnd, cl, L, ink);
-    // les buissons d'Orsane fleurissent : quelques touches ivoire, rose ou or
     if (s < 0.9 && P.tree === 'feuillu' && rnd() < 0.8) {
       const cols = ['#f2e2c9', '#f0a8c8', '#f2c25a', '#c8b0ff'], col = cols[Math.floor(rnd() * cols.length)];
       for (let i = 0; i < 7; i++) {
@@ -1726,7 +1538,6 @@ class Renderer {
     }
   }
 
-  // Le feuillage en couches : silhouette d'encre, masse sombre, touches de lumière, liseré.
   paintFoliage(c, P, rnd, cl, L, ink) {
     c.fillStyle = ink;
     for (const q of cl) { c.beginPath(); c.arc(q.x, q.y, q.r + 1.8, 0, Math.PI * 2); c.fill(); }
@@ -1745,13 +1556,11 @@ class Renderer {
         c.fillStyle = L[Math.floor(v * L.length)];
         c.beginPath(); c.ellipse(q.x + lx, q.y + ly, 2.2 + rnd() * 1.8, 1.5 + rnd() * 1.1, rnd() * Math.PI, 0, Math.PI * 2); c.fill();
       }
-      // ombre propre en bas à droite de chaque touffe
       const g = c.createRadialGradient(q.x - q.r * 0.35, q.y - q.r * 0.4, q.r * 0.3, q.x - q.r * 0.2, q.y - q.r * 0.2, q.r * 1.25);
       g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(4,12,20,0.5)');
       c.fillStyle = g; c.fillRect(q.x - q.r, q.y - q.r, q.r * 2, q.r * 2);
       c.restore();
     }
-    // liseré de lumière froide sur les bords exposés en haut à gauche
     c.strokeStyle = P.rim; c.lineWidth = 1.4;
     for (const q of cl) {
       for (let a = Math.PI * 0.95; a < Math.PI * 1.7; a += 0.12) {
@@ -1804,7 +1613,6 @@ class Renderer {
     branch(0, 0, -Math.PI / 2 + (rnd() - 0.5) * 0.2, h * 0.45, 5 * s, 3);
   }
 
-  // Colonne : fût de pierre et chapiteau doré (donjon), ou orgue de basalte et brasero (Kaldum).
   columnSprite(P, rnd, withFire, basalt) {
     basalt = basalt || P.column === 'basalte';
     const h = basalt ? 40 + rnd() * 12 : 48;
@@ -1823,7 +1631,6 @@ class Renderer {
         }
         c.fillStyle = P.rock[4]; c.beginPath(); pts.forEach((p, i) => (i ? c.lineTo(p[0], p[1] - h) : c.moveTo(p[0], p[1] - h))); c.closePath(); c.fill();
         c.strokeStyle = ink; c.lineWidth = 1.4; c.stroke();
-        // cerclage de fer et rivets
         c.fillStyle = '#26232a'; c.fillRect(-11, -h * 0.72 - 3, 22, 5);
         c.fillStyle = 'rgba(255,200,150,0.5)'; for (let x = -8; x <= 8; x += 4) c.fillRect(x, -h * 0.72 - 1.5, 1.2, 1.2);
         c.strokeStyle = ink; c.lineWidth = 1.6;
@@ -1853,7 +1660,6 @@ class Renderer {
     return sp;
   }
 
-  // Rocher à facettes, veiné d'or (ou de braise), avec mousse ou cristaux.
   rockSprite(P, rnd, crystals) {
     return this.spr(70, 70, 35, 50, c => {
       const n = 7 + Math.floor(rnd() * 3);
@@ -1872,7 +1678,6 @@ class Renderer {
         sides.push({ i, j, mid, depth: B[i].y + B[j].y });
       }
       sides.sort((a, b) => a.depth - b.depth);
-      // contour d'encre : l'enveloppe de tous les points
       const all = B.concat(T);
       const hull = Renderer.hull(all);
       c.beginPath(); hull.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); c.closePath();
@@ -1886,7 +1691,6 @@ class Renderer {
       c.fillStyle = Renderer.ramp(P.rock, 0.86);
       c.beginPath(); T.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); c.closePath(); c.fill();
       c.strokeStyle = Renderer.rgba(P.rock[5], 0.5); c.lineWidth = 1; c.stroke();
-      // veine : une fêlure de métal ou de braise qui descend une facette
       const s0 = sides[Math.floor(sides.length / 2)];
       if (s0 && !crystals) {
         const a = T[s0.i], b = B[s0.j];
@@ -1919,7 +1723,6 @@ class Renderer {
     return lo.concat(up);
   }
 
-  // Grappe de cristaux bleus facettés, pointes blanches.
   crystalSprite(P, rnd, size) {
     const C = P.crystal;
     return this.spr(44 * size + 8, 50 * size + 8, 22 * size + 4, 44 * size + 4, c => {
@@ -1946,7 +1749,6 @@ class Renderer {
     });
   }
 
-  // Bloc de mur maçonné : calcaire clair et filet d'or (Orsane), pierre froide et fer (Kaldum).
   wallSprite(P, rnd, h) {
     const kald = P.wall === 'fer';
     const S = kald ? P.cobble : P.stone;
@@ -1959,7 +1761,6 @@ class Renderer {
       c.lineWidth = 3.6; c.strokeStyle = ink; c.stroke(sil);
       c.fillStyle = S[kald ? 3 : 3]; c.fill(left);
       c.fillStyle = S[1]; c.fill(right);
-      // assises de pierres : joints horizontaux, joints verticaux décalés, tons variés
       const course = 9;
       for (const [face, sx] of [[left, -1], [right, 1]]) {
         c.save(); c.clip(face);
@@ -1982,7 +1783,6 @@ class Renderer {
       tg.addColorStop(0, S[4]); tg.addColorStop(1, S[2]);
       c.fillStyle = tg; c.fill(top);
       c.strokeStyle = Renderer.rgba(ink, 0.5); c.lineWidth = 0.9; c.stroke(top);
-      // filet d'or (ou de fer) sous la couvertine
       c.strokeStyle = kald ? '#3a3640' : P.vein[1]; c.lineWidth = kald ? 2.6 : 1.8;
       c.beginPath(); c.moveTo(-32, -h + 3.5); c.lineTo(0, 16 - h + 3.5); c.lineTo(32, -h + 3.5); c.stroke();
       if (kald) { c.fillStyle = 'rgba(255,190,140,0.55)'; for (let x = -28; x <= 28; x += 7) c.fillRect(x - 0.6, (x < 0 ? (x + 32) * 0.5 : 16 - x * 0.5) - h + 2.8, 1.2, 1.2); }
@@ -1991,7 +1791,6 @@ class Renderer {
     }, P.tint);
   }
 
-  // Rempart de roche brute : un bloc taillé dans la falaise, au sommet irrégulier (moussu ou fêlé de braise).
   rampartSprite(P, rnd, h) {
     const tex = Renderer.texture(P, 'falaise');
     return this.spr(76, h + 48, 38, h + 28, c => {
@@ -2024,7 +1823,6 @@ class Renderer {
         }
         for (let i = 0; i < 5; i++) { const x = -30 + rnd() * 28, y = (x + 32) * 0.5 - h + 4; c.strokeStyle = P.moss[1]; c.lineWidth = 1.2; c.beginPath(); c.moveTo(x, y); c.lineTo(x + (rnd() - 0.5) * 3, y + 6 + rnd() * 8); c.stroke(); }
       } else if (P.lava && rnd() < 0.4) {
-        // une veine de braise qui descend une face, différente à chaque bloc
         const sx = rnd() < 0.5 ? -1 : 1, x0 = sx * (6 + rnd() * 20);
         const yTop = (sx < 0 ? (x0 + 32) * 0.5 : 16 - x0 * 0.5) - h + 5;
         const pts = [[x0, yTop]];
@@ -2034,7 +1832,6 @@ class Renderer {
     }, P.tint);
   }
 
-  // Lanterne de fer à verre chaud (Orsane), ou brasero sur trépied (Kaldum).
   lampSprite(P) {
     return this.spr(40, 70, 20, 60, c => {
       const ink = P.ink;
@@ -2054,7 +1851,6 @@ class Renderer {
       c.strokeStyle = '#4a5068'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(-0.6, -6); c.lineTo(-0.6, -40); c.stroke();
       c.strokeStyle = ink; c.lineWidth = 1.5;
       c.beginPath(); c.arc(-3.5, -31, 3, -Math.PI * 0.2, Math.PI * 1.1); c.arc(3.5, -31, 3, Math.PI * 1.9, Math.PI * 0.8, true); c.stroke();
-      // cage
       c.fillStyle = ink; c.beginPath(); c.moveTo(-7.5, -50); c.lineTo(0, -56); c.lineTo(7.5, -50); c.closePath(); c.fill();
       const g = c.createLinearGradient(0, -50, 0, -39);
       g.addColorStop(0, '#fff6d0'); g.addColorStop(0.5, P.lantern); g.addColorStop(1, Renderer.mix(P.lantern, '#7a3a08', 0.4));
@@ -2066,7 +1862,6 @@ class Renderer {
     }, P.tint);
   }
 
-  // Entrée de donjon : arche de pierre à filet d'or, clef de cristal, portail du Voile.
   doorSprite(P) {
     return this.spr(80, 96, 40, 76, c => {
       const ink = P.ink, S = P.stone;
@@ -2097,7 +1892,6 @@ class Renderer {
     }, P.tint);
   }
 
-  // Relais : obélisque de pierre cerclé d'or ; le cristal qui flotte au-dessus est animé à part.
   relaySprite(P) {
     return this.spr(50, 60, 25, 44, c => {
       const ink = P.ink, S = P.stone;
@@ -2112,7 +1906,6 @@ class Renderer {
     }, P.tint);
   }
 
-  // La liste du décor qui se trie avec les figures, et les cases qu'il peut masquer.
   buildDecor(P, R) {
     const m = this.map, site = this.site;
     const rnd = Renderer.prng(this.seed ^ 0xdec0);
@@ -2143,7 +1936,6 @@ class Renderer {
       if (!spr) continue;
       const p = this.cellToScreen(x, y);
       const d = { x, y, depth: x + y - 0.01, spr, kind, foot, fade: 1, isDecor: true, px: p.x, py: p.y };
-      // Cases derrière ce décor, que son sprite recouvre : on l'efface s'il y a quelqu'un ou une surbrillance.
       d.cover = [];
       const L = p.x - spr.w * 0.36, Rr = p.x + spr.w * 0.36, T = p.y - spr.ay * 0.92, B = p.y - 6;
       for (let cy = y - 4; cy <= y; cy++) for (let cx = x - 4; cx <= x; cx++) {
@@ -2153,7 +1945,6 @@ class Renderer {
       }
       this.decor.push(d);
     }
-    // Ce qui ne recouvre que de la roche, des arbres ou le vide ne masquera jamais rien : on le cuit.
     this.decor.sort((a, b) => a.depth - b.depth);
     const at = new Map(this.decor.map(d => [Grid.key(d.x, d.y), d]));
     for (const d of this.decor) {
@@ -2168,18 +1959,14 @@ class Renderer {
     }
   }
 
-  // ----- Image -----
 
   draw(now) {
     const c = this.ctx;
-    // Le calque fixe se refait au changement de carte, une fois : hors de la mesure, qui juge le coût
-    // d'une image ordinaire.
     this.buildStatic();
     const t0 = performance.now();
     const dt = Math.min(0.1, Math.max(0, (now - this.lastNow) / 1000));
     this.lastNow = now;
     const high = this.quality === 'haute';
-    // Les étiquettes gardent une taille lisible à tout zoom (uiAt).
     const z = this.camera.zoom;
     this.uiK = Math.min(1.3, Math.max(0.9, z)) / z;
     c.setTransform(1, 0, 0, 1, 0, 0);
@@ -2203,7 +1990,6 @@ class Renderer {
     this.drawGuideCue(c, now);
     this.drawGroundFx(c, now);
 
-    // Les figures et le décor, du fond vers l'avant.
     const sprites = inCombat ? this.combatSprites(now) : this.worldSprites(now);
     this.drawScene(c, now, dt, sprites, inCombat);
 
@@ -2235,7 +2021,6 @@ class Renderer {
     this.measure(performance.now() - t0);
   }
 
-  // ----- Couche lumineuse (bloom) -----
 
   bloomBegin(high) {
     if (!high) { this.bl = null; return; }
@@ -2279,9 +2064,6 @@ class Renderer {
     c.restore();
   }
 
-  // Les alentours puis le plateau : les bandes du lointain sous le calque proche. Au-delà de ce qui
-  // est peint (seulement le temps qu'une nouvelle taille de vue soit repeinte), la couleur du
-  // lointain.
   drawSurroundings(c) {
     const E = this.alentours, K = this.calque, v = this.camera.visibleWorld();
     if (!E || v.x0 < E.x || v.y0 < E.y || v.x1 > E.x + E.w || v.y1 > E.y + E.h) {
@@ -2292,15 +2074,12 @@ class Renderer {
     c.drawImage(this.static, K.x, K.y, K.w, K.h);
   }
 
-  // Le vignettage, à la taille de l'écran : les bords de la vue s'assombrissent doucement.
   drawVignette(c) {
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.drawImage(Renderer.vignette(), 0, 0, this.canvas.width, this.canvas.height);
     this.worldTransform(c);
   }
 
-  // Une étiquette (barre de vie, nom, marque de quête, chiffre qui monte) garde une taille lisible
-  // quel que soit le zoom : on la met à l'échelle autour de son point d'attache.
   uiAt(c, x, y, fn) {
     const k = this.uiK || 1;
     if (Math.abs(k - 1) < 0.01) { fn(); return; }
@@ -2309,7 +2088,6 @@ class Renderer {
     c.restore();
   }
 
-  // ----- Eau et lave animées -----
 
   drawLiquid(c, now) {
     const L = this.liquid;
@@ -2318,7 +2096,6 @@ class Renderer {
     c.save();
     c.clip(L.fill);
     if (L.kind === 'eau') {
-      // vaguelettes qui glissent, et des éclats de ciel qui scintillent
       c.lineWidth = 1.1;
       for (const q of this.liquidCells) {
         const p = this.cellToScreen(q.x, q.y), n = Renderer.noise(q.x, q.y);
@@ -2332,7 +2109,6 @@ class Renderer {
         if (g > 0.75) { c.fillStyle = `rgba(255,255,255,${(g - 0.75) * 3})`; c.fillRect(p.x + (n - 0.5) * 30, p.y + (Renderer.noise(q.y, q.x) - 0.5) * 12, 2.2, 1); }
       }
     } else {
-      // lave : la croûte respire, la chaleur pulse
       c.globalCompositeOperation = 'lighter';
       for (const q of this.liquidCells) {
         const p = this.cellToScreen(q.x, q.y), n = Renderer.noise(q.x, q.y);
@@ -2345,7 +2121,6 @@ class Renderer {
     c.restore();
   }
 
-  // Sorties qui pulsent, relais qui respire.
   drawGroundLife(c, now) {
     if (this.inCombat || !this.exitCells || !this.exitCells.length) return;
     c.globalCompositeOperation = 'lighter';
@@ -2359,7 +2134,6 @@ class Renderer {
     c.globalCompositeOperation = 'source-over';
   }
 
-  // ----- Surbrillances de combat : lisibles avant tout -----
 
   static get HL() {
     return {
@@ -2376,7 +2150,6 @@ class Renderer {
     };
   }
 
-  // Hachures claires de la zone d'effet : elles se lisent sur tous les sols, même sur la lave.
   stripes(c) {
     if (!this._stripes) {
       const cv = Renderer.canvas(12, 12), g = cv.getContext('2d');
@@ -2404,7 +2177,6 @@ class Renderer {
           let st = null;
           if (tmp && tmp.kind === 'water') st = 'eau';
           if (tmp && tmp.kind === 'fente') { st = 'fente'; fentes.push({ x, y }); }
-          // Glyphes : turquoise pour ceux qui protègent, rouille pour ceux qui frappent.
           const gl = inCombat && cb.glyphsAt ? cb.glyphsAt(x, y) : [];
           if (gl.length) st = gl.some(g => g.affects === 'allies') ? 'glyphe' : 'glypheE';
           if (placement) {
@@ -2425,7 +2197,6 @@ class Renderer {
       for (const st of ['eau', 'fente', 'glyphe', 'glypheE', 'departJ', 'departM', 'move', 'range', 'blocked', 'aoe']) {
         const path = groups[st];
         if (!path) continue;
-        // La zone d'effet bat vite ; les cases de départ du joueur respirent pendant le placement.
         const pulse = st === 'aoe' ? 0.85 + 0.15 * Math.sin(now / 200) : st === 'departJ' ? 0.72 + 0.28 * Math.sin(now / 340) : 1;
         c.globalAlpha = pulse;
         c.fillStyle = S[st].fill; c.fill(path);
@@ -2437,7 +2208,6 @@ class Renderer {
       for (const f of fentes) { const p = this.cellToScreen(f.x, f.y); this.bglow(p.x, p.y, 26, '#a66cff', 0.5); }
     }
 
-    // Les pièges de l'équipe du joueur sont visibles pour lui ; ceux des monstres restent cachés.
     if (inCombat) {
       for (const tr of this.combat.traps) {
         if (tr.owner.team !== 'player') continue;
@@ -2450,7 +2220,6 @@ class Renderer {
       }
     }
 
-    // Chemin prévu.
     for (let i = 0; i < H.path.length; i++) {
       const s = H.path[i];
       const p = this.cellToScreen(s.x, s.y);
@@ -2474,7 +2243,6 @@ class Renderer {
     }
   }
 
-  // Les cases touchées par un sort : un losange qui s'ouvre et un anneau, en lumière additive.
   drawGroundFx(c, now) {
     this.fx = this.fx.filter(f => now - f.born < f.dur);
     if (!this.fx.length) return;
@@ -2499,10 +2267,7 @@ class Renderer {
     c.globalCompositeOperation = 'source-over';
   }
 
-  // ----- Repères du guide (js/guide.js) : la case qui brille et la flèche de sortie -----
 
-  // Formes partagées avec js/render-gl.js, en coordonnées du plateau. La case : un losange de
-  // cristal qui respire, un losange intérieur, quatre chevrons qui pointent vers le centre.
   static cueGeometry(p, now) {
     const t = 0.5 + 0.5 * Math.sin(now / 280);
     const W = Grid.TILE_W / 2, H = Grid.TILE_H / 2;
@@ -2514,12 +2279,10 @@ class Renderer {
       [[p.x - s * 1.3, p.y - H * d], [p.x, p.y - H * d + s * 0.6], [p.x + s * 1.3, p.y - H * d]],
       [[p.x - s * 1.3, p.y + H * d], [p.x, p.y + H * d - s * 0.6], [p.x + s * 1.3, p.y + H * d]],
     ];
-    // Une onde part de la case et s'élargit en s'effaçant.
     const r = (now % 1500) / 1500;
     return { t, outer: dia(0.97), inner: dia(0.5), chevrons, ripple: dia(1 + 0.42 * r), rippleA: 0.75 * (1 - r) * (1 - r) };
   }
 
-  // La colonne de lumière qui monte du repère, et trois éclats qui y glissent vers le haut.
   static beamGeometry(p, now) {
     const H = 84, sparks = [];
     for (let i = 0; i < 3; i++) {
@@ -2529,8 +2292,6 @@ class Renderer {
     return { x: p.x, y0: p.y, y1: p.y - H, w0: 15, w1: 5, a: 0.34 + 0.12 * Math.sin(now / 280), sparks };
   }
 
-  // La flèche de sortie, posée à plat sur la case de sortie du côté `side` et pointée vers
-  // l'extérieur ; elle avance et recule d'un souffle.
   static arrowGeometry(map, origin, side, now) {
     const cells = map && map.exits && map.exits[side];
     if (!cells || !cells.length) return null;
@@ -2563,7 +2324,6 @@ class Renderer {
       c.globalAlpha = 0.35 + 0.3 * G.t;
       c.drawImage(Renderer.dot('#00c2ff'), p.x - 54, p.y - 30, 108, 60);
       c.restore();
-      // Pas de trait noir : le bord se lit sur un liseré de bleu profond, puis le cristal.
       poly(G.outer); c.closePath();
       c.fillStyle = `rgba(0,194,255,${0.24 + 0.14 * G.t})`; c.fill();
       c.lineWidth = 4; c.strokeStyle = 'rgba(10,42,74,0.5)'; c.stroke();
@@ -2596,7 +2356,6 @@ class Renderer {
     }
   }
 
-  // La colonne de lumière du repère, par-dessus les figures (elle se voit derrière un arbre).
   drawGuideBeam(c, now) {
     const at = this.cuePoint(this.guideCue);
     if (!at) return;
@@ -2615,8 +2374,6 @@ class Renderer {
     c.restore();
   }
 
-  // Vue tactique : un fond de nuit, les cases de sol en damier d'ardoise, les obstacles en pierre
-  // sombre, l'eau et les trous à plat. Le décor n'est plus dessiné (drawScene).
   drawTactical(c) {
     const m = this.map;
     if (this.tactKey !== m) {
@@ -2631,7 +2388,6 @@ class Renderer {
     }
     const P = this.tactPaths;
     c.save();
-    // Le fond couvre toute la vue, zoom et déplacement compris (js/camera.js).
     const v = this.camera.visibleWorld();
     const g = c.createLinearGradient(0, v.y0, 0, v.y1);
     g.addColorStop(0, '#0b111b'); g.addColorStop(1, '#070a11');
@@ -2645,7 +2401,6 @@ class Renderer {
     c.restore();
   }
 
-  // ----- La scène : décor et figures triés en profondeur -----
 
   drawScene(c, now, dt, sprites, inCombat) {
     const H = this.highlights;
@@ -2659,7 +2414,6 @@ class Renderer {
       if (H.hover) busy.add(Grid.key(H.hover.x, H.hover.y));
     }
     const items = [];
-    // En vue tactique, le décor disparaît : le plateau à plat suffit à lire les obstacles.
     for (const d of inCombat && this.tactique ? [] : this.decor) {
       const target = d.cover.some(k => busy.has(k)) ? (inCombat ? 0.38 : 0.55) : 1;
       d.fade += (target - d.fade) * Math.min(1, dt * 9);
@@ -2697,7 +2451,6 @@ class Renderer {
     c.globalCompositeOperation = 'lighter';
     c.globalAlpha = 0.5 * d.fade;
     c.drawImage(Renderer.dot('#00c2ff'), x - 26, y - 26, 52, 52);
-    // un mince rayon qui monte, comme le grand rayon de la planche
     const g = c.createLinearGradient(0, y - 140, 0, y);
     g.addColorStop(0, 'rgba(143,233,255,0)'); g.addColorStop(1, 'rgba(143,233,255,0.35)');
     c.fillStyle = g; c.fillRect(x - 1.5, y - 140, 3, 140);
@@ -2724,7 +2477,6 @@ class Renderer {
     c.restore();
   }
 
-  // ----- Lumières vivantes : flammes, halos -----
 
   drawLights(c, now) {
     if (!this.lights.length) return;
@@ -2742,7 +2494,6 @@ class Renderer {
       c.globalAlpha = 0.85 * fl;
       c.drawImage(Renderer.dot(L.glow), p.x - 9, y - 9, 18, 18);
       if (L.k === 'B' || P.lamp === 'brasero') {
-        // petites flammes qui dansent au-dessus du foyer
         for (let k = 0; k < 3; k++) {
           const ph = now / 160 + k * 2.1 + i;
           const fx = p.x + (k - 1) * 4 + Math.sin(ph) * 1.5, fh = 9 + 4 * Math.sin(ph * 1.3);
@@ -2755,7 +2506,6 @@ class Renderer {
     c.restore();
   }
 
-  // ----- Particules : lucioles, éclats de cristal, braises, poussière de lumière -----
 
   updateParticles(now, dt) {
     const P = this.palette, max = this.maxParticles;
@@ -2807,7 +2557,6 @@ class Renderer {
     this.particles.push(p);
   }
 
-  // Une gerbe d'étincelles qui retombent, à la case donnée (coordonnées de case).
   burst(cx, cy, color, n) {
     const p = this.cellToScreen(cx, cy);
     this.burstAt(p.x, p.y, color, n, 1);
@@ -2849,7 +2598,6 @@ class Renderer {
     c.restore();
   }
 
-  // Projectiles des sorts : un orbe lumineux en arc, avec sa traînée.
   drawShots(c, now) {
     if (!this.shots.length) return;
     this.shots = this.shots.filter(s => now - s.born < s.dur);
@@ -2871,7 +2619,6 @@ class Renderer {
     c.restore();
   }
 
-  // ----- Figures -----
 
   combatSprites(now) {
     const cb = this.combat;
@@ -2909,8 +2656,6 @@ class Renderer {
     return out;
   }
 
-  // Une figure au sol : ombre, anneau de camp, reflet, corps. Avec `bodyOnly`, sans les étiquettes,
-  // qui se dessinent ensuite par-dessus la lumière (drawOverlays).
   drawSprite(s, now, bodyOnly) {
     const c = this.ctx;
     const p = this.cellToScreen(s.rx, s.ry);
@@ -2932,10 +2677,6 @@ class Renderer {
     if (!bodyOnly) this.drawOverlay(c, s, now);
   }
 
-  // L'insigne de faction, posé par-dessus la figure du Veilleur (le peintre du héros n'en sait
-  // rien) : le Fil, un fil d'or cousu en auréole ; la Déchirure, une lueur violette qui sort de la
-  // cape par une déchirure. Plus vif à chaque rang (docs/MONDE.md). Avec `full`, pleine intensité
-  // et sans mouvement : le rendu WebGL en cuit une texture.
   drawInsigne(c, p, s, now, full) {
     const ins = s.insigne;
     const a = full ? 1 : Math.min(1, 0.3 + 0.06 * ins.rank);
@@ -2960,11 +2701,9 @@ class Renderer {
       c.globalAlpha = a * 0.75 * flick;
       c.drawImage(Renderer.dot('#a66cff'), cx - 15, cy - 19, 30, 38);
       c.globalAlpha = a * flick;
-      // la déchirure : un trait violet, et son cœur pâle
       const fente = () => { c.beginPath(); c.moveTo(cx + 2.5, cy - 11); c.lineTo(cx - 1.5, cy - 5); c.lineTo(cx + 1.5, cy - 0.5); c.lineTo(cx - 2, cy + 5); c.lineTo(cx + 0.5, cy + 11); c.stroke(); };
       c.lineWidth = 3.2; c.strokeStyle = 'rgba(150,90,255,0.9)'; fente();
       c.lineWidth = 1.1; c.strokeStyle = '#efe4ff'; fente();
-      // deux lambeaux de lumière qui s'échappent
       c.lineWidth = 1; c.strokeStyle = '#b98cff';
       const drift = still ? 0 : (now / 900) % 1;
       for (const [dx, dy] of [[-5, -4], [-6, 4]]) {
@@ -2982,7 +2721,6 @@ class Renderer {
     return this.matAt(x + 1, y) === 'eau' || this.matAt(x, y + 1) === 'eau' || this.matAt(x + 1, y + 1) === 'eau';
   }
 
-  // Le reflet inversé d'une figure dans l'eau voisine.
   drawReflection(c, p, s) {
     c.save();
     c.clip(this.liquid.fill);
@@ -2992,7 +2730,6 @@ class Renderer {
     c.restore();
   }
 
-  // Anneau de camp (bleu cristal pour les alliés, braise pour les ennemis), lisible sur tout sol.
   drawRings(c, p, s, now) {
     const k = s.scale;
     const col = s.team === 'player' ? '74,196,255' : '255,86,70';
@@ -3023,7 +2760,6 @@ class Renderer {
     }
   }
 
-  // Les états qui se voient : sonné (étoiles), invulnérable (bulle), armure (écu), lanterne volée.
   drawStates(c, p, s, now) {
     const k = s.scale || 1;
     const top = p.y - 42 * k;
@@ -3070,7 +2806,6 @@ class Renderer {
     }
   }
 
-  // Les étiquettes par-dessus la lumière : barres de vie, états, noms, nombre de monstres, quêtes.
   drawOverlays(c, now, sprites) {
     for (const s of sprites) this.drawOverlay(c, s, now);
   }
@@ -3126,7 +2861,6 @@ class Renderer {
     c.globalAlpha = 1;
   }
 
-  // Une étiquette sur une plaque sombre à filet d'or : lisible sur tous les sols.
   label(c, text, x, y, enemy) {
     c.font = '600 11px Inter, "Segoe UI", system-ui, sans-serif'; c.textAlign = 'center';
     const w = c.measureText(text).width + 12;
@@ -3136,7 +2870,6 @@ class Renderer {
     c.fillStyle = '#f2e2c9'; c.fillText(text, x, y);
   }
 
-  // Le motif qui distingue une famille de monstres, d'après son identifiant.
   static motifOf(id) {
     const M = { pilou: 'bird', piouk: 'bird', sivr: 'bird', harpide: 'bird', grouk: 'horn', groukin: 'horn', grand_grouk: 'horn', vulk: 'horn', korvath: 'horn',
       tissefil: 'legs', tisseuse: 'legs', vrill: 'legs', veilloche: 'lamp', ferrel: 'lamp', lampignon: 'cap', lampignard: 'shaman', tholou: 'lamp', brimbe: 'pebble', molh: 'pebble', thane: 'pebble',
@@ -3226,8 +2959,6 @@ class Renderer {
     }
   }
 
-  // Le corps d'une figure, en volume : contour d'encre, liseré de lumière (cyan pour les alliés,
-  // or pour les ennemis), dégradé du clair vers l'ombre, terminateur fondu, reflet.
   drawBody(c, p, s) {
     const color = s.flash ? '#ffffff' : s.color;
     const top = p.y - 42;
@@ -3238,7 +2969,6 @@ class Renderer {
       case 'player':
         return this.drawHero(c, p, s, color, ink, rim, top);
       case 'pnj':
-        // Un PNJ qui combat aux côtés du joueur (le guide du premier combat) garde son allure.
         return this.drawNpc(c, p, { look: s.look || 'garde', phase: s.phase || 0 }, 0);
       case 'triangle':
         path = Renderer.roundPoly([[p.x, top], [p.x + 16, p.y - 4], [p.x - 16, p.y - 4]], 4.5);
@@ -3265,7 +2995,6 @@ class Renderer {
     }
     this.shadeBody(c, path, box, color, ink, rim);
     if (s.shape === 'diamond' || s.shape === 'hex') {
-      // facettes : la moitié droite dans l'ombre, comme une pierre taillée
       c.save(); c.clip(path);
       c.fillStyle = 'rgba(10,14,30,0.18)'; c.fillRect(p.x, box[1], box[2] - p.x, box[3] - box[1]);
       c.strokeStyle = 'rgba(255,255,255,0.18)'; c.lineWidth = 1; c.beginPath(); c.moveTo(p.x, box[1]); c.lineTo(p.x, box[3]); c.stroke();
@@ -3274,7 +3003,6 @@ class Renderer {
     if (eyesAt) this.eyes(c, eyesAt[0], eyesAt[1], eyesAt[2]);
   }
 
-  // `T` règle l'épaisseur du contour (1 par défaut ; plus fin quand la figure est peinte en grand).
   shadeBody(c, path, box, color, ink, rim, T) {
     const [x0, y0, x1, y1] = box, w = x1 - x0, h = y1 - y0;
     const lit = Renderer.mix(color, '#ffffff', 0.42), dark = Renderer.mix(color, '#141a33', 0.55);
@@ -3288,7 +3016,6 @@ class Renderer {
     g.addColorStop(0, lit); g.addColorStop(0.42, color); g.addColorStop(1, dark);
     c.fillStyle = g; c.fill(path);
     c.translate(-1.7, -1.5);
-    // terminateur fondu et occlusion au pied
     const r = Math.max(w, h);
     const g2 = c.createRadialGradient(x0 + w * 0.32, y0 + h * 0.3, r * 0.2, x0 + w * 0.32, y0 + h * 0.3, r * 1.02);
     g2.addColorStop(0, 'rgba(8,10,24,0)'); g2.addColorStop(0.6, 'rgba(8,10,24,0.06)'); g2.addColorStop(1, 'rgba(8,10,24,0.42)');
@@ -3298,13 +3025,6 @@ class Renderer {
     c.restore();
   }
 
-  // Le Veilleur : bottes, cape à filet d'or, bras, torse en volume, ceinture, tête et coiffure,
-  // glyphe de classe, et la lanterne de classe (une gemme qui luit à la main).
-  // s.look = { tete: 0 à 7, couleurs: [peau, cheveux, tenue, tenue2, cape, lanterne] } (à défaut,
-  // l'apparence de la classe : Util.defaultLook), s.gender 'f' ou 'm' (épaules, taille, cils),
-  // s.facing l'une des quatre diagonales : deux vues de trois quarts (face, dos), retournées pour
-  // les deux autres (docs/DIRECTION-ARTISTIQUE.md). s.trait (1 par défaut) affine le trait d'encre
-  // quand la figure est peinte en grand (portraits, écrans d'accueil).
   drawHero(c, p, s, color, ink, rim, top) {
     const L = Renderer.heroLook(s);
     const [skin, , tenue, tenue2, capeC, lantern] = L.couleurs;
@@ -3319,7 +3039,6 @@ class Renderer {
     c.save();
     if (flip) { c.translate(2 * X, 0); c.scale(-1, 1); }
     c.lineJoin = 'round'; c.lineCap = 'round';
-    // Un bras : un trait d'encre, la manche par-dessus ; la main au bout.
     const arm = (x0, y0, x1, y1, x2, y2, col) => {
       c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(x1, y1, x2, y2);
       c.lineWidth = 3.4 + lw(1.9); c.strokeStyle = ink; c.stroke();
@@ -3327,13 +3046,10 @@ class Renderer {
     };
     const hand = (x, y) => { c.beginPath(); c.arc(x, y, 2.1, 0, Math.PI * 2); c.lineWidth = lw(1.3); c.strokeStyle = ink; c.stroke(); c.fillStyle = skin; c.fill(); };
     const sleeve = Renderer.mix(body, '#0a0d18', 0.22);
-    // De face, la cape et le dos de la coiffure passent derrière tout le reste.
     if (!back) {
       this.heroCape(c, X, Y, top, capeC, ink, rim, lw);
       this.heroHair(c, 'arriere', L, hx, hy, ink, rim, T);
     }
-    // Jambes et bottes : la chausse éclairée de face, la botte et sa pointe vers l'avant (de dos,
-    // le talon seul), un revers et un reflet.
     const boot = Renderer.mix(tenue2, '#07080e', 0.55);
     for (const x of [X - 7, X + 2]) {
       Util.roundRect(c, x, Y - 15, 5, 14, 2);
@@ -3349,9 +3065,7 @@ class Renderer {
       c.fillStyle = Renderer.mix(boot, '#ffffff', 0.2); c.fillRect(x - 0.4, Y - 6.8, 5.8, 1.3);
       c.fillStyle = 'rgba(255,255,255,0.15)'; c.beginPath(); c.ellipse(x + 1.8, Y - 3.4, 0.8, 1.6, 0, 0, Math.PI * 2); c.fill();
     }
-    // Bras lointain, derrière le torse
     if (!back) { arm(X - 8, by + 3, X - 11, by + 9.5, X - 10.8, by + 16, sleeve); hand(X - 10.8, by + 16.6); }
-    // Torse : épaules plus larges pour un Veilleur ; taille marquée et tunique évasée pour une Veilleuse.
     const sw = fem ? 9.2 : 10.4, ww = fem ? 7.4 : 9, hw = fem ? 10.6 : 10;
     const tp = new Path2D();
     tp.moveTo(X - sw + 2.6, by); tp.lineTo(X + sw - 2.6, by);
@@ -3368,12 +3082,10 @@ class Renderer {
     const half = Math.max(sw, hw);
     this.shadeBody(c, tp, [X - half, by, X + half, by + 24], body, ink, rim, T);
     if (back) {
-      // De dos : la cape couvre le torse, les bras sortent de ses bords.
       this.heroCapeDos(c, X, Y, by, capeC, ink, rim, lw);
       arm(X - 8.4, by + 3.4, X - 11.6, by + 9.5, X - 11.6, by + 15.6, sleeve); hand(X - 11.6, by + 16.2);
       arm(X + 8.4, by + 3.4, X + 11.6, by + 9.5, X + 11.8, by + 15.2, sleeve); hand(X + 11.8, by + 15.8);
     } else {
-      // Bras proche, col, ceinture et boucle, couture d'or à l'épaule (le Fil tient la figure).
       arm(X + 8, by + 3, X + 11.6, by + 8.5, X + 12.6, by + 13.6, body);
       c.fillStyle = Renderer.mix(body, '#ffffff', 0.25);
       c.beginPath(); c.moveTo(X - 5.2, by + 0.5); c.lineTo(X + 0.6, by + 4.4); c.lineTo(X + 6.2, by + 0.5); c.closePath(); c.fill();
@@ -3383,7 +3095,6 @@ class Renderer {
       c.beginPath(); c.moveTo(X + sw - 5.6, by + 0.9); c.lineTo(X + sw - 1.2, by + 4); c.stroke();
       c.setLineDash([]);
     }
-    // Cou, oreille (du côté de la nuque), tête
     c.fillStyle = Renderer.mix(skin, '#6a3424', 0.3); c.fillRect(hx - 2.4, hy + 6.4, 4.8, 4.6);
     if (!back) {
       c.beginPath(); c.ellipse(hx - 8.4, hy + 1.8, 1.7, 2.3, -0.2, 0, Math.PI * 2);
@@ -3395,11 +3106,9 @@ class Renderer {
     c.lineWidth = lw(3.6); c.strokeStyle = ink; c.stroke(); c.fillStyle = hg; c.fill();
     if (back) this.heroHair(c, 'dos', L, hx, hy, ink, rim, T);
     else { this.heroFace(c, hx, hy, L, fem); this.heroHair(c, 'avant', L, hx, hy, ink, rim, T); }
-    // L'objet de classe, puis la main proche qui le tient
     this.drawProp(c, p, s, top, by, ink, lantern, T, back);
     if (!back) hand(X + 12.6, by + 14);
     c.restore();
-    // Glyphe de classe, ivoire sur la poitrine (jamais retourné)
     if (!back) {
       const glyph = s.glyph || 'V', gx = X + (flip ? -0.6 : 0.6);
       c.font = `800 ${glyph.length > 1 ? 9.5 : 11.5}px Cinzel, Georgia, serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
@@ -3409,7 +3118,6 @@ class Renderer {
     }
   }
 
-  // La cape de face : elle tombe de l'épaule lointaine, ourlée d'or.
   heroCape(c, X, Y, top, capeC, ink, rim, lw) {
     const k = new Path2D();
     k.moveTo(X - 9, top + 11); k.bezierCurveTo(X - 15, top + 20, X - 18, Y - 14, X - 16, Y - 5);
@@ -3421,7 +3129,6 @@ class Renderer {
     c.strokeStyle = '#c9a66b'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(X - 16, Y - 5); c.quadraticCurveTo(X - 6, Y - 1, X + 3, Y - 7); c.stroke();
   }
 
-  // La cape de dos : des deux épaules à mi-mollet, ourlet d'or et couture du Fil au milieu.
   heroCapeDos(c, X, Y, by, capeC, ink, rim, lw) {
     const k = new Path2D();
     k.moveTo(X - 9, by + 0.6);
@@ -3444,8 +3151,6 @@ class Renderer {
     c.setLineDash([]);
   }
 
-  // Le visage de trois quarts : joues, yeux en amande (l'œil lointain plus étroit) avec leur point
-  // de lumière, sourcils de la couleur des cheveux (l'expression passe par eux), cils, bouche.
   heroFace(c, x, y, L, fem) {
     const skin = L.couleurs[0], hair = L.couleurs[1];
     const ex = x + 0.6, ey = y + 1.6;
@@ -3466,21 +3171,16 @@ class Renderer {
     c.beginPath(); c.moveTo(ex - 1.3, y + 5.7); c.quadraticCurveTo(ex, y + 6.4, ex + 1.3, y + 5.7); c.stroke();
   }
 
-  // Les huit coiffures, lisibles à 45 pixels comme en grand : 0 mèche balayée (l'allure d'origine),
-  // 1 queue haute, 2 hérissée, 3 chignon, 4 longs, 5 tresse, 6 capuche, 7 rasée à bandeau d'or.
-  // `part` : 'arriere' (derrière la tête vue de face), 'avant' (sur la tête vue de face), 'dos'.
   heroHair(c, part, L, x, y, ink, rim, T) {
     const hair = L.couleurs[1], tenue = L.couleurs[2], capeC = L.couleurs[4], lantern = L.couleurs[5];
     const lw = w => w * T, t = L.tete;
     const light = Renderer.mix(hair, '#ffffff', 0.32), dark = Renderer.mix(hair, '#06050a', 0.42);
-    // Une masse de cheveux : contour d'encre, puis le dégradé du clair (haut gauche) vers l'ombre.
     const mass = (k, outline) => {
       if (outline !== false) { c.lineWidth = lw(outline || 2.2); c.strokeStyle = ink; c.stroke(k); }
       const g = c.createLinearGradient(x - 9, y - 13, x + 7, y + 12);
       g.addColorStop(0, light); g.addColorStop(0.45, hair); g.addColorStop(1, dark);
       c.fillStyle = g; c.fill(k);
     };
-    // Le capuchon, dans la couleur de la cape.
     const hood = (k, outline) => {
       c.lineWidth = lw(outline || 2.4); c.strokeStyle = ink; c.stroke(k);
       const g = c.createLinearGradient(x - 11, y - 13, x + 9, y + 10);
@@ -3493,13 +3193,12 @@ class Renderer {
     };
     const poly = pts => { const k = new Path2D(); pts.forEach(([a, b], i) => (i ? k.lineTo(x + a, y + b) : k.moveTo(x + a, y + b))); k.closePath(); return k; };
     const rimArc = () => { c.strokeStyle = Renderer.rgba(rim, 0.7); c.lineWidth = 1.2; c.beginPath(); c.arc(x, y - 0.5, 9.2, Math.PI * 1.1, Math.PI * 1.45); c.stroke(); };
-    // La calotte vue de dos : tout le crâne jusqu'à la nuque.
     const nape = () => {
       const k = new Path2D(); k.moveTo(x - 9.4, y + 3); k.arc(x, y - 0.4, 9.6, Math.PI * 0.94, Math.PI * 2.06);
       k.quadraticCurveTo(x + 7, y + 7.6, x + 1, y + 6.4); k.quadraticCurveTo(x - 5, y + 7.8, x - 9.4, y + 3); k.closePath();
       mass(k, false);
     };
-    const tail = () => { // queue haute vue de dos
+    const tail = () => {
       const k = new Path2D(); k.moveTo(x - 3, y - 5.6);
       k.bezierCurveTo(x - 4.6, y + 4, x - 3.6, y + 11.4, x - 1, y + 16.4);
       k.quadraticCurveTo(x + 2, y + 8.6, x + 2.6, y - 5.2); k.closePath();
@@ -3510,7 +3209,6 @@ class Renderer {
       const k = new Path2D(); k.arc(bx, bh, r, 0, Math.PI * 2); mass(k, 1.8);
       c.strokeStyle = Renderer.rgba(dark, 0.75); c.lineWidth = 0.7;
       c.beginPath(); c.arc(bx, bh, r * 0.55, Math.PI * 0.9, Math.PI * 2.3); c.stroke();
-      // épingle d'or, un éclat de lanterne au bout
       c.strokeStyle = '#c9a66b'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(bx - r - 1.6, bh - 2.4); c.lineTo(bx + r + 0.6, bh + 1.8); c.stroke();
       c.fillStyle = lantern; c.beginPath(); c.arc(bx - r - 1.6, bh - 2.4, 1.1, 0, Math.PI * 2); c.fill();
     };
@@ -3624,7 +3322,6 @@ class Renderer {
       return;
     }
 
-    // De dos
     switch (t) {
       case 2: mass(poly([[-9.6, 2.6]].concat(SPIKES, [[9.6, 2.6], [5, 7], [0, 7.8], [-5, 7]])), 1.8); break;
       case 4: {
@@ -3644,8 +3341,6 @@ class Renderer {
     if (t !== 6) rimArc();
   }
 
-  // L'objet de classe, porteur de la seule couleur vive de la figure (sa « lanterne »), dans la
-  // couleur choisie à la création. De dos, la hotte du Kaldrin se porte sur la cape.
   drawProp(c, p, s, top, by, ink, col, T, back) {
     col = col || s.color; T = T || 1;
     const light = Renderer.mix(col, '#ffffff', 0.55);
@@ -3658,7 +3353,7 @@ class Renderer {
     };
     const line = (pts, w, color) => { c.lineWidth = w; c.strokeStyle = color; c.beginPath(); pts.forEach((q, i) => (i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]))); c.stroke(); };
     switch (s.glyph) {
-      case 'L': { // arc de bois doré, cristal à la pointe
+      case 'L': {
         const x = p.x + 14;
         const arc = () => { c.beginPath(); c.moveTo(x, top + 2); c.quadraticCurveTo(x + 11, top + 22, x, top + 42); };
         arc(); c.lineWidth = ow(2.2, 4.4); c.strokeStyle = ink; c.stroke();
@@ -3667,7 +3362,7 @@ class Renderer {
         glow(x, top + 2, 8); gem(x, top + 1, 2.4, 3.8);
         break;
       }
-      case 'O': { // bâton à lanterne
+      case 'O': {
         const x = p.x + 14;
         line([[x, p.y - 1], [x, top - 6]], ow(2.2, 4.2), ink); line([[x, p.y - 1], [x, top - 6]], 2.2, '#8a6a46');
         glow(x, top - 12, 11);
@@ -3676,7 +3371,7 @@ class Renderer {
         c.fillStyle = '#c9a66b'; c.fillRect(x - 5.5, top - 19.5, 11, 2.2); c.fillRect(x - 5.5, top - 7, 11, 2);
         break;
       }
-      case 'Kr': case 'N': { // lame levée (Karsh : fêlures de sang ; Nerith : lame courte)
+      case 'Kr': case 'N': {
         const len = s.glyph === 'Kr' ? 26 : 17, x0 = p.x + 11, y0 = by + 14;
         const x1 = x0 + len * 0.42, y1 = y0 - len;
         line([[x0, y0], [x1, y1]], ow(3.2, 5.4), ink); line([[x0, y0], [x1, y1]], 3.2, '#d8dee8');
@@ -3686,7 +3381,7 @@ class Renderer {
         else glow(x0 + len * 0.2, y0 - len * 0.5, 7);
         break;
       }
-      case 'S': { // dalle de pierre au bras, arêtes de la couleur de classe
+      case 'S': {
         Util.roundRect(c, p.x - 19, by + 2, 10, 20, 2.5);
         c.lineWidth = ow(1.4, 3.4); c.strokeStyle = ink; c.stroke();
         c.fillStyle = '#8f8a80'; c.fill();
@@ -3694,7 +3389,7 @@ class Renderer {
         c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(p.x - 16, by + 6); c.lineTo(p.x - 13, by + 12); c.lineTo(p.x - 15, by + 18); c.stroke();
         break;
       }
-      case 'K': { // hotte à foyer, dans le dos
+      case 'K': {
         const hx = back ? p.x - 4.5 : p.x - 17, hy = back ? by + 1 : by - 1;
         Util.roundRect(c, hx, hy, 9, 17, 2);
         c.lineWidth = ow(1.2, 3); c.strokeStyle = ink; c.stroke(); c.fillStyle = '#4a3a30'; c.fill();
@@ -3709,7 +3404,6 @@ class Renderer {
     }
   }
 
-  // Yeux en cabochons : blanc chaud serti d'ombre, pupille sombre, point de lumière.
   eyes(c, x, y, gap) {
     c.fillStyle = 'rgba(8,10,22,0.6)';
     c.beginPath(); c.arc(x - gap, y, 4, 0, Math.PI * 2); c.arc(x + gap, y, 4, 0, Math.PI * 2); c.fill();
@@ -3805,7 +3499,6 @@ class Renderer {
     c.globalAlpha = 1;
   }
 
-  // Rocher posé à la case p (rocher temporaire d'un sort, ou décor dessiné à la demande).
   drawRock(c, p, P, n, temp) {
     const R = this.res;
     if (!R) return;

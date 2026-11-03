@@ -1,5 +1,3 @@
-// Interface DOM : choix de classe et de rencontre, barre de sorts, ordre des tours, compteurs,
-// journal, infobulles, surbrillances.
 class UI {
   constructor(combat, renderer) {
     this.combat = combat;
@@ -16,11 +14,8 @@ class UI {
     this.inspected = null;
     this.bannerTimer = null;
     this.spellButtons = {};
-    // Compte à rebours du placement (armerPlacement, posé par le monde ; le laboratoire n'en a pas).
     this.placementEndsAt = 0;
     this.turnStartedAt = Date.now();
-    // Le jeu (js/hud-jeu.js) allume les rubans et la barre de tour ; le laboratoire garde la
-    // bannière d'avant, ses feuilles de style n'ont pas les nouveaux éléments.
     this.jeu = false;
     this.el.endTurn.dataset.ui = 'fin-tour';
     this.el.ready.dataset.ui = 'pret';
@@ -53,7 +48,7 @@ class UI {
       if (this.lastActor === combat.player && e !== combat.player) Bus.emit('turnEnd', {});
       this.lastActor = e;
       this.refresh();
-      this.updateHighlights();   // la portée du sort ne reste pas affichée pendant le tour des autres
+      this.updateHighlights();
       if (e === combat.player) {
         if (this.jeu) { this.hideBanner(); this.ruban('À toi de jouer !', { sorte: 'tour', ms: 1100 }); } else this.banner('À toi de jouer', 900);
         Bus.emit('turnStart', {});
@@ -72,7 +67,6 @@ class UI {
       this.banner(d.victory ? 'VICTOIRE' : 'DÉFAITE', 2200);
     });
 
-    // Les listes de classe et de rencontre n'existent que dans le laboratoire de combat.
     if (this.el.cls && this.el.encounter) {
       for (const id in DATA.classes) {
         const c = DATA.classes[id];
@@ -96,14 +90,12 @@ class UI {
       this.el.encounter.addEventListener('change', () => this.restart());
     }
     if (this.el.restart) this.el.restart.addEventListener('click', () => this.restart());
-    // La frise du laboratoire (et des cartes à cases) : les mêmes gestes que la barre de tour du jeu.
     if (this.el.timeline) this.brancherFrise(this.el.timeline);
     this.el.ready.addEventListener('click', () => this.ready());
     this.el.endTurn.addEventListener('click', () => this.endTurn());
     setInterval(() => this.updateTimer(), 200);
   }
 
-  // Lancer le combat (bouton « Prêt », compte à rebours du placement, touche Entrée).
   ready() {
     if (this.combat.phase !== 'placement') return;
     this.hideBanner();
@@ -111,26 +103,18 @@ class UI {
     this.combat.start();
   }
 
-  // Le placement a son compte à rebours dans le monde : à zéro, le combat commence seul.
   armerPlacement(seconds) {
     this.placementEndsAt = seconds > 0 && this.combat.phase === 'placement' ? Date.now() + seconds * 1000 : 0;
     this.placementSeconds = seconds > 0 ? seconds : 0;
     this.updateTimer();
   }
 
-  // ----- Positions à l'écran des points du monde -----
 
-  // Coordonnées client d'une case (fractions permises) : son point du monde (cellToScreen), puis le
-  // même chemin que boardClient. Tout ce qui s'ancre au monde passe par ici : fiche d'un groupe,
-  // confirmation d'un sort, bulles des PNJ, repères.
   static cellClient(renderer, x, y) {
     const p = renderer.cellToScreen(x, y);
     return UI.boardClient(renderer, p.x, p.y);
   }
 
-  // Un point du monde (le plateau en pixels : une forme du rendu, la flèche de sortie) à l'écran :
-  // par la caméra du rendu (renderer.worldToClient, zoom et déplacement compris), sinon d'après la
-  // taille affichée du canvas.
   static boardClient(renderer, px, py) {
     if (renderer && typeof renderer.worldToClient === 'function') {
       const q = renderer.worldToClient(px, py);
@@ -140,18 +124,13 @@ class UI {
     return { x: r.left + px * r.width / renderer.W, y: r.top + py * r.height / renderer.H };
   }
 
-  // Pixels à l'écran par pixel du plateau, mesurés entre deux cases voisines (zoom compris).
   static cellScale(renderer, x, y) {
-    // L'île en 3D (js/scene.js) donne elle-même l'échelle d'une figure à cet endroit, perspective
-    // comprise ; ailleurs, rien (undefined) et la mesure entre deux cases sert.
     const e = renderer && typeof renderer.echelleFigure === 'function' ? renderer.echelleFigure(x, y) : undefined;
     if (Number.isFinite(e) && e > 0) return e;
     const a = UI.cellClient(renderer, x, y), b = UI.cellClient(renderer, x + 1, y);
     return Math.hypot(b.x - a.x, b.y - a.y) / Math.hypot(Grid.TILE_W / 2, Grid.TILE_H / 2) || 1;
   }
 
-  // Un élément ancré au monde se replace à chaque image tant qu'il est là, et quand la caméra
-  // bouge (événement 'veylan:camera') ou que la fenêtre change de taille. Rend la fonction qui le détache.
   static ancrer(fn) {
     const A = UI._ancres || (UI._ancres = new Set());
     A.add(fn);
@@ -166,45 +145,34 @@ class UI {
     return () => A.delete(fn);
   }
 
-  // Option « Confirmer les sorts » : au doigt par défaut, pas à la souris (Options).
   static confirmerSorts(touch) {
     let v = null;
-    try { v = localStorage.getItem('veylan.confirmerSorts'); } catch (e) { /* stockage indisponible */ }
+    try { v = localStorage.getItem('veylan.confirmerSorts'); } catch (e) {   }
     if (v === '1') return true;
     if (v === '0') return false;
     return touch != null ? !!touch : UI.tactile();
   }
 
-  // Un écran qu'on touche du doigt (téléphone, tablette) plutôt qu'à la souris.
   static tactile() { return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches; }
 
-  // Les réglages d'affichage du combat (Options, rubrique Combat ; UI.REGLAGES donne les défauts) :
-  // la grille de l'aire, les cases de déplacement (vert), la portée du sort choisi (bleu), le coût du
-  // chemin en PM au survol, les barres de vie au-dessus des combattants. Lus souvent (chaque survol,
-  // chaque image) : gardés en mémoire, invalidés par regler().
   static reglage(nom) {
     const M = UI._reglages || (UI._reglages = {});
     if (nom in M) return M[nom];
     let v = null;
-    try { v = localStorage.getItem('veylan.combat.' + nom); } catch (e) { /* stockage indisponible */ }
+    try { v = localStorage.getItem('veylan.combat.' + nom); } catch (e) {   }
     return (M[nom] = v === '0' ? false : v === '1' ? true : !!UI.REGLAGES[nom]);
   }
   static regler(nom, on) {
-    try { localStorage.setItem('veylan.combat.' + nom, on ? '1' : '0'); } catch (e) { /* stockage indisponible */ }
+    try { localStorage.setItem('veylan.combat.' + nom, on ? '1' : '0'); } catch (e) {   }
     if (UI._reglages) delete UI._reglages[nom];
   }
 
-  // L'ordre des sorts dans la barre : l'arme équipée d'abord (première case), puis ceux de la
-  // classe. Les touches 1 à 9 suivent le même ordre.
   static ordreSorts(e) {
     const list = (e && e.spells) || [];
     return list.includes('arme') ? ['arme'].concat(list.filter(id => id !== 'arme')) : list.slice();
   }
 
-  // ----- Rubans : « Prépare-toi ! », « À toi de jouer ! », « Niveau supérieur ! » -----
 
-  // Un ruban de nuit à liseré d'or, qui entre, reste un instant et repart sans bloquer le jeu.
-  // opts : { sorte: 'tour' | 'placement' | 'niveau', ms, sous (une ligne sous le ruban) }.
   ruban(texte, opts) {
     opts = opts || {};
     const stage = this.el.stage;
@@ -245,7 +213,6 @@ class UI {
     return c.phase === 'battle' && c.actor === c.player;
   }
 
-  // ----- Barre de sorts -----
 
   buildSpellBar() {
     this.el.spells.innerHTML = '';
@@ -256,7 +223,6 @@ class UI {
       b.className = 'spell';
       b.dataset.spell = id;
       b.style.setProperty('--el', DATA.elements[s.element].color);
-      // L'icône peinte du sort (js/sort-icones.js) prend la place du losange de l'élément.
       const icone = typeof SortIcones === 'object' ? SortIcones.url(id, s, 48) : '';
       if (icone) b.classList.add('avec-icone');
       b.innerHTML = `<span class="key">${(i + 1) % 10}</span><span class="icon" style="--el:${DATA.elements[s.element].color}">${icone ? `<img src="${icone}" alt="">` : s.name.charAt(0)}</span><span class="name">${s.name}</span><span class="cost">${s.pa} PA</span><span class="cd"></span>`;
@@ -264,7 +230,6 @@ class UI {
       b.addEventListener('mouseenter', () => this.showTooltip(b, id));
       b.addEventListener('mouseleave', () => this.hideTooltip());
       let press = null;
-      // Appui long : l'infobulle, sans lancer le sort au lever du doigt.
       b.addEventListener('touchstart', () => { press = setTimeout(() => { this.showTooltip(b, id); this.tooltipUntil = Date.now() + 3000; this.suppressClick = Date.now() + 800; }, 450); }, { passive: true });
       for (const evt of ['touchend', 'touchmove', 'touchcancel']) b.addEventListener(evt, () => { clearTimeout(press); }, { passive: true });
       this.el.spells.appendChild(b);
@@ -283,7 +248,6 @@ class UI {
     this.hideMoveCost();
     this.armed = null;
     if (s.target === 'self') {
-      // Les sorts sur soi partent tout de suite, pas besoin de viser.
       Bus.emit('spellSelect', { spell: id });
       this.selectedSpell = null;
       const r = await c.cast(c.actor, id, c.actor.pos);
@@ -299,7 +263,6 @@ class UI {
     this.updateHighlights();
   }
 
-  // Les jets et valeurs au rang du sort (DATA.rankShown : `mult` appliqué, arrondis).
   effectLine(ef) {
     const v = DATA.rankShown(ef);
     switch (ef.type) {
@@ -398,7 +361,6 @@ class UI {
     this.el.tooltip.classList.add('hidden');
   }
 
-  // ----- Interaction avec le plateau -----
 
   hover(cell) {
     this.hoverCell = cell;
@@ -408,8 +370,6 @@ class UI {
       e = c.entityAt(cell.x, cell.y);
       if (e && e !== this.inspected && c.canSee(c.player, e)) { this.inspected = e; this.renderInspect(); }
     }
-    // À la souris, sans sort choisi : le coût du chemin en PM près de la case survolée (comme l'option
-    // de Dofus) ; au doigt, c'est tapCell qui le montre au premier toucher (armed).
     if (!this.armed && !UI.tactile()) {
       if (cell && !this.selectedSpell && !e && UI.reglage('cout')) this.showMoveCost(cell); else this.hideMoveCost();
     }
@@ -417,9 +377,6 @@ class UI {
     this.updateHighlights();
   }
 
-  // Le combattant visé (la case survolée sur la grille, ou son portrait survolé dans la frise) : son
-  // portrait s'allume dans la frise, et la grille cerne sa case (H.cible). Comme Dofus (2.3), dans
-  // les deux sens.
   majVise(e) {
     const id = e ? String(e.id) : null;
     if (this.viseId === id) return;
@@ -429,10 +386,6 @@ class UI {
     if (id) for (const el of document.querySelectorAll('.vy-combattant[data-id="' + id + '"]')) el.classList.add('vise');
   }
 
-  // Un portrait de la frise touché (toucherPortrait) ou survolé à la souris (viserPortrait) : avec un
-  // sort choisi, pendant son tour, le sort part sur ce combattant sans passer par la grille (Dofus :
-  // le clic sur le portrait, l'anti « miss-clic ») ; au doigt avec « Confirmer les sorts », la fiche
-  // de confirmation s'ouvre près de lui ; hors de portée, la raison s'affiche. Sans sort : sa fiche.
   toucherPortrait(e, touch) {
     const c = this.combat;
     if (!e || !e.alive || !c.canSee(c.player, e)) return;
@@ -460,13 +413,8 @@ class UI {
     this.hover(e ? { x: e.x, y: e.y } : null);
   }
 
-  // Les portraits d'une frise (#timeline du laboratoire, la barre de tour du jeu) : le toucher et le
-  // survol à la souris.
   brancherFrise(liste) {
     const trouver = evt => { const b = evt.target.closest('[data-id]'); return b ? this.combat.entities.find(x => String(x.id) === b.dataset.id) : null; };
-    // Le genre du pointeur, noté aux événements pointer (qui précèdent les événements souris) ; le
-    // survol se lit sur mouseover et mouseout, qui viennent après le mouseleave du canvas (celui-ci
-    // efface le survol de la grille : avec pointerover, la visée du portrait était effacée aussitôt).
     for (const n of ['pointerover', 'pointerdown']) liste.addEventListener(n, evt => { this.pointeurFrise = evt.pointerType; }, { passive: true });
     liste.addEventListener('click', evt => { const e = trouver(evt); if (e) this.toucherPortrait(e, this.pointeurFrise ? this.pointeurFrise !== 'mouse' : UI.tactile()); });
     liste.addEventListener('mouseover', evt => { if (this.pointeurFrise && this.pointeurFrise !== 'mouse') return; const e = trouver(evt); if (e) this.viserPortrait(e); });
@@ -478,11 +426,6 @@ class UI {
     });
   }
 
-  // Un sort choisi : avec l'option « Confirmer les sorts » (au doigt par défaut), la case visée ouvre
-  // une petite fiche près de la cible (nom, coût en PA, annuler, lancer), la zone restant allumée ;
-  // sans elle, le sort part. Au doigt, sans sort, un premier toucher montre le chemin et son coût
-  // en PM, un second toucher sur la même case fait marcher ; une entité touchée montre sa fiche.
-  // À la souris, rien ne change : le survol montre, le clic agit.
   tapCell(cell, touch) {
     const c = this.combat;
     this.hideCastConfirm();
@@ -509,7 +452,6 @@ class UI {
     this.showMoveCost(cell);
   }
 
-  // ----- Confirmation d'un sort et coût d'un déplacement, près de la case visée -----
 
   showCastConfirm(cell) {
     const c = this.combat, id = this.selectedSpell;
@@ -575,7 +517,6 @@ class UI {
     this.moveCell = null;
   }
 
-  // Place un élément de la scène au-dessus d'une case (centré), sans sortir de la scène.
   placeNear(el, cell, lift) {
     if (!cell || !this.el.stage) return;
     const hr = this.el.stage.getBoundingClientRect();
@@ -601,8 +542,6 @@ class UI {
       if (!r.ok) this.banner(r.reason, 900);
       else {
         Bus.emit('spellCast', { spell: id, ennemi: !!(target && target.team !== c.player.team) });
-        // Le sort part : il se désarme (comme Dofus, où il faut le reprendre pour le relancer) ; la
-        // grille revient aux cases de déplacement.
         if (this.selectedSpell === id) this.selectedSpell = null;
       }
       this.refresh();
@@ -620,7 +559,6 @@ class UI {
     }
   }
 
-  // Une bulle au-dessus du plateau avec l'essentiel d'une entité (utile sans panneau latéral).
   showEntityCard(e) {
     const t = this.el.tooltip;
     const res = Object.entries(e.resist).filter(([, v]) => v).map(([k, v]) => `${DATA.elements[k].label} ${v > 0 ? '+' : ''}${v} %`).join(', ');
@@ -659,15 +597,12 @@ class UI {
     H.move.clear(); H.range.clear(); H.blocked.clear(); H.aoe.clear();
     H.path = [];
     H.hover = this.hoverCell;
-    // Le combattant visé (la case survolée, ou son portrait) : vu, vivant, en combat.
     const vise = this.hoverCell && c.phase === 'battle' ? c.entityAt(this.hoverCell.x, this.hoverCell.y) : null;
     H.cible = vise && vise.alive && c.canSee(c.player, vise) ? vise.id : null;
     if (!this.isPlayerTurn()) return;
     const a = c.actor;
     if (this.selectedSpell) {
       const s = c.spellOf(this.selectedSpell, a);
-      // La portée (bleu) et les cases sans ligne de vue : selon le réglage « Portée des sorts » ; la
-      // zone d'effet au survol reste (c'est la conséquence du clic).
       if (UI.reglage('portee')) {
         const tc = c.targetCells(a, this.selectedSpell);
         for (const cell of tc.cells) H.range.add(Grid.key(cell.x, cell.y));
@@ -678,7 +613,6 @@ class UI {
       }
     } else if (!c.busy) {
       const reach = c.reachFor(a);
-      // Les cases de déplacement (vert) : selon le réglage ; le chemin au survol se trace toujours.
       if (UI.reglage('deplacement')) for (const [k, d] of reach.dist) if (d > 0) H.move.add(k);
       if (this.hoverCell) {
         const p = Grid.pathTo(reach, this.hoverCell);
@@ -687,9 +621,7 @@ class UI {
     }
   }
 
-  // ----- Panneaux -----
 
-  // La pastille du défi dans la barre du haut : nom, bonus, et son état.
   renderChallenge(ch) {
     const el = this.el.challenge;
     if (!el) return;
@@ -720,7 +652,6 @@ class UI {
         return `${names[f.name] || f.name} (${t})`;
       }
       case 'pm': if (f.value <= -10) return `enraciné (${t})`;
-      // un malus de PM ordinaire s'affiche comme les PA
       default: return `${f.value > 0 ? '+' : ''}${f.value} ${f.type.toUpperCase()} (${t})`;
     }
   }
@@ -733,20 +664,16 @@ class UI {
 
     this.el.round.textContent = c.phase === 'battle' ? `Tour ${c.round}` : (c.phase === 'ended' ? 'Combat terminé' : 'Placement');
     this.renderTimeline();
-    // Les PV du joueur baissent : le guide peut prévenir (js/guide.js).
     if (c.phase === 'battle' && p && this.lastHp != null && p.hp < this.lastHp) Bus.emit('hpLoss', { hp: p.hp, max: p.hpMax });
     this.lastHp = p ? p.hp : null;
 
-    // Ressources du kit (Fureur du Sarkan, Affût du Lyssar, Sang Versé du Karsh, Kaldrin armé), puis les effets en cours.
     const kit = [];
     if (p.kit && p.kit.fury) kit.push(`Fureur ${p.fury} / ${p.kit.fury.max}`);
     if (c.isAffut(p)) kit.push('à l\'affût');
     if (p.kit && p.kit.blood) kit.push(`Sang Versé ${c.bloodOf(p)} %`);
     if (c.isArmed(p)) kit.push(`armé (−${p.kit.armed.reduction} % subis)`);
     const effects = kit.concat(p.effects.map(f => this.describeEffect(f))).join(', ');
-    this.effetsTexte = effects;   // la barre de combat les montre aussi (js/hud-jeu.js)
-    // Les cases de stats sont construites une fois, puis mises à jour : la jauge de vie glisse
-    // et garde un instant la trace des PV perdus.
+    this.effetsTexte = effects;
     if (!this.statEls || !this.el.stats.contains(this.statEls.hp)) {
       this.el.stats.innerHTML =
         `<div class="stat hp"><b></b><small></small>${Util.jauge('vie', p.hp, p.hpMax, null, 'Points de vie')}</div>` +
@@ -776,7 +703,6 @@ class UI {
       const cd = p.cooldowns[id] || 0;
       b.querySelector('.cd').textContent = cd > 0 ? cd : '';
     }
-    // Un sort choisi : les portraits de la frise deviennent des cibles (le curseur le dit).
     const app = typeof document !== 'undefined' ? document.getElementById('app') : null;
     if (app) app.classList.toggle('vy-sort-choisi', !!this.selectedSpell && playerTurn);
 
@@ -794,12 +720,9 @@ class UI {
       tb.querySelector('.vy-barre-tour__tour').textContent = c.phase === 'battle' ? `Tour : ${c.round}` : (placement ? 'Placement' : 'Fin du combat');
     }
     this.renderInspect();
-    // Le panneau de jeu du téléphone suit (js/hud-jeu.js) : PA, PM, PV, état des sorts.
     if (this.apresRefresh) this.apresRefresh();
   }
 
-  // Le compte à rebours : celui du tour en cours (le tien vient du moteur, celui des autres est
-  // compté depuis le début de leur tour), ou celui du placement dans le monde.
   updateTimer() {
     const c = this.combat;
     const now = Date.now();
@@ -822,7 +745,6 @@ class UI {
       if (ch.textContent !== txt) ch.textContent = txt;
       ch.classList.toggle('urgent', left != null && left <= 5);
     }
-    // L'anneau du temps dans la barre de combat (js/hud-jeu.js) : le reste et le total du tour.
     if (this.apresChrono) {
       const total = c.phase === 'placement' ? (this.placementEndsAt && this.placementSeconds) || null : c.phase === 'battle' ? c.turnSeconds : null;
       this.apresChrono(left, total);
@@ -832,11 +754,7 @@ class UI {
 
   static chrono(s) { return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
 
-  // ----- L'ordre de jeu en bustes -----
 
-  // La barre de tour du téléphone en paysage : compte à rebours en tête, bustes dans l'ordre du
-  // tour, puis « Tour : N » et « Prêt » ou « Fin du tour ». Posée dans la scène par le jeu
-  // (js/hud-jeu.js), montrée par css/jeu.css quand la disposition s'y prête.
   buildTurnBar() {
     if (!this.el.stage || this.el.turnBar) return;
     const tb = this.el.turnBar = document.createElement('div');
@@ -848,15 +766,12 @@ class UI {
       '<div class="vy-barre-tour__cote"><span class="vy-barre-tour__tour"></span>' +
       '<button type="button" class="vy-bouton vy-bouton--primaire vy-barre-tour__action" data-ui="pret">Prêt</button></div></div>';
     tb.querySelector('.vy-barre-tour__action').addEventListener('click', () => { if (this.combat.phase === 'placement') this.ready(); else this.endTurn(); });
-    // Toucher un buste : le sort choisi part sur lui, sinon sa fiche ; le survol le vise.
     this.brancherFrise(tb.querySelector('.vy-barre-tour__liste'));
     this.el.stage.appendChild(tb);
     this.timelineHtml = null;
     if (this.combat.player) this.refresh();
   }
 
-  // Les combattants vivants, dans l'ordre du tour (invocations comprises) : buste, liseré de
-  // camp, jauge de PV ; celui qui joue est cerclé d'or. Les vaincus quittent la file.
   renderTimeline() {
     const c = this.combat, p = c.player;
     const order = (c.phase === 'placement' ? c.entities.slice().sort((a, b) => b.initiative - a.initiative) : c.order).filter(e => e.alive);
@@ -873,12 +788,10 @@ class UI {
     this.timelineHtml = html;
     this.el.timeline.innerHTML = html;
     if (this.el.turnBar) this.el.turnBar.querySelector('.vy-barre-tour__liste').innerHTML = html;
-    // Les portraits sont refaits : le combattant visé garde sa marque.
     const id = this.viseId; this.viseId = null;
     if (id) this.majVise(c.entities.find(x => String(x.id) === id) || null);
   }
 
-  // Le buste d'un combattant, peint une fois par apparence puis gardé en image.
   static buste(painter, e) {
     const key = [e.shape, e.color, e.glyph || '', e.team, e.def && e.def.look || '', e.team === 'monster' && typeof Renderer === 'function' ? Renderer.motifOf(e.def.id) || '' : ''].join('|');
     const cache = UI._bustes || (UI._bustes = new Map());
@@ -900,7 +813,7 @@ class UI {
       g.translate(W / 2, H + 12);
       g.scale(1.12, 1.12);
       g.lineJoin = 'round'; g.lineCap = 'round';
-      try { painter.drawBody(g, { x: 0, y: 0 }, s); if (s.motif) painter.drawMotif(g, { x: 0, y: 0 }, s); } catch (err) { /* peintre pas prêt */ }
+      try { painter.drawBody(g, { x: 0, y: 0 }, s); if (s.motif) painter.drawMotif(g, { x: 0, y: 0 }, s); } catch (err) {   }
       g.restore();
     }
     const url = cv.toDataURL('image/png');
@@ -958,14 +871,10 @@ class UI {
   }
 }
 
-// Le compte à rebours du placement, dans le monde : à zéro, le combat commence.
 UI.PLACEMENT_SECONDES = 30;
 
-// Les réglages d'affichage du combat et leurs défauts (UI.reglage, Options, rubrique Combat).
 UI.REGLAGES = { grille: true, deplacement: true, portee: true, cout: true, barres: true };
 
-// Pictogrammes de la confirmation d'un sort : annuler, lancer, et le badge des PA (un hexagone
-// d'or, la forme des PA dans toute l'interface).
 UI.ICON = {
   non: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>',
   oui: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',

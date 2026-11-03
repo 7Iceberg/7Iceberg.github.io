@@ -1,16 +1,4 @@
-/* ==========================================================================
-   Veylan : le thème « Duality » de l'interface (Options, thème par défaut)
-   --------------------------------------------------------------------------
-   La direction artistique de duality_skills, telle quelle : un anthracite violacé presque noir,
-   un accent en dégradé orange vers rose, des blocs à coins de 14 px au filet blanc à 7 %, des
-   titres de bloc en Rajdhani capitales espacées précédés d'une pastille dégradée, des tuiles de
-   chiffres (étiquette en capitales, gros chiffre coloré), des jauges fines dégradées qui luisent,
-   les nombres en JetBrains Mono, le texte en Poppins ; vert, rouge, ambre, bleu pour les valeurs.
-   Rien ne change dans le jeu ni dans la disposition des fenêtres : seulement les teintes, les
-   polices et l'habillage (couche posée sur css/verre.css, chargée après lui).
-   ========================================================================== */
 
-/* ----- Les teintes et les polices ----- */
 #app.vy-verre[data-ui-theme="duality"] {
   --v-a: #ff8a3d; --v-b: #ff3d7f; --v-a-rgb: 255, 138, 61; --v-b-rgb: 255, 61, 127;
   --v-titre: #f3f0f8; --v-accent-texte: #ff9a55;
@@ -32,14 +20,11 @@
   --vy-font-ui: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
   --vy-font-lecture: "Poppins", system-ui, sans-serif;
   font-family: var(--vy-font-ui);
-  --fen-z: 0.9;   /* les fenêtres un peu plus petites que la taille de l'interface */
+  --fen-z: 0.9;    
 }
 
-/* ----- Les fenêtres réduites : leur contenu et leur largeur suivent --fen-z (css/verre.css, 11) ----- */
 #app.vy-verre[data-ui-theme="duality"] .vy-fenetre > * { zoom: calc(var(--ui-z, 1) * var(--fen-z, 1)); }
 #app.vy-verre[data-ui-theme="duality"] .vy-fenetre { width: min(calc(var(--largeur, 420px) * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 16px)); }
-/* Les fenêtres à hauteur fixe, sur ordinateur, raccourcissent d'autant (au téléphone, elles
-   prennent déjà la hauteur de leur contenu). */
 @media (min-width: 721px) and (min-height: 481px), (min-width: 1001px) {
   #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--caracs:not(.reduite) { height: min(calc(690px * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 72px)); }
   #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--inventaire:not(.reduite) { height: min(calc(640px * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 72px)); }
@@ -50,8 +35,6 @@
   #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite { width: min(calc((var(--largeur, 420px) + 24px) * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 8px)); }
 }
 
-/* ----- Les fenêtres : l'en-tête de duality_skills (la marque en carré dégradé, le titre en
-   capitales espacées), le corps anthracite au liseré dégradé ----- */
 #app.vy-verre[data-ui-theme="duality"] .vy-fenetre__tete {
   min-height: 40px; padding: 4px 5px 4px 6px;
   background: rgba(var(--v-pan-rgb), var(--v-alpha, 0.96));
@@ -68,7 +51,6 @@
 }
 #app.vy-verre[data-ui-theme="duality"] .vy-fen-pied, #app.vy-verre[data-ui-theme="duality"] .vy-caracs__pied { border-top-color: var(--d-ligne); background: rgba(255, 255, 255, 0.02); }
 
-/* ----- Les titres de bloc : capitales espacées, une pastille dégradée qui luit ----- */
 #app.vy-verre[data-ui-theme="duality"] .vy-sous,
 #app.vy-verre[data-ui-theme="duality"] .vy-fenetre__corps h4,
 #app.vy-verre[data-ui-theme="duality"] .lbl {
@@ -79,14 +61,12 @@
 #app.vy-verre[data-ui-theme="duality"] .vy-sous::after { background: transparent; }
 #app.vy-verre[data-ui-theme="duality"] .vy-fenetre__corps h3 { font: 700 18px/1.15 var(--vy-font-titre); letter-spacing: 1.6px; text-transform: uppercase; }
 
-/* ----- Les onglets : capitales espacées, le soulignement dégradé qui luit (comme Aperçu, Arbre) ----- */
 #app.vy-verre[data-ui-theme="duality"] .vy-onglets { gap: 4px; padding: 0 0 6px; border: 0; border-bottom: 1px solid var(--d-ligne); border-radius: 0; background: none; }
 #app.vy-verre[data-ui-theme="duality"] .vy-onglet { position: relative; padding: 6px 10px; border-radius: 8px; background: none; font: 700 13px/1.1 var(--vy-font-titre); letter-spacing: 2.2px; text-transform: uppercase; color: rgba(243, 240, 248, 0.42); }
 #app.vy-verre[data-ui-theme="duality"] .vy-onglet:hover { color: rgba(243, 240, 248, 0.68); background: none; }
 #app.vy-verre[data-ui-theme="duality"] .vy-onglet.on { color: #fff; background: none; box-shadow: none; }
 #app.vy-verre[data-ui-theme="duality"] .vy-onglet.on::after { content: ""; position: absolute; left: 22%; right: 22%; bottom: -7px; height: 2px; border-radius: 2px; background: var(--v-degrade); box-shadow: 0 0 14px rgba(var(--v-a-rgb), 0.8); }
 
-/* ----- Les boutons : le plein en dégradé, le simple sur fond clair à 3,5 %, en capitales ----- */
 #app.vy-verre[data-ui-theme="duality"] :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton {
   border-radius: 10px; border: 1px solid var(--d-ligne2); background: var(--d-carte2); color: rgba(243, 240, 248, 0.68);
   font: 700 13px/1.1 var(--vy-font-titre); letter-spacing: 1.6px; text-transform: uppercase;
@@ -96,7 +76,6 @@
 #app.vy-verre[data-ui-theme="duality"] :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton--primaire:hover:not(:disabled, [aria-disabled="true"]) { color: #fff; filter: brightness(1.1); }
 #app.vy-verre[data-ui-theme="duality"] :is(#stage, #panneau, #fenetres, #panel, #hud, #side) .vy-bouton--fantome { border-color: transparent; background: none; }
 
-/* ----- Les jauges : 5 px, piste à 7 %, le dégradé qui luit ; l'XP aussi ----- */
 #app.vy-verre[data-ui-theme="duality"] .vy-jauge--fine { --_hauteur: 5px; background: rgba(255, 255, 255, 0.07); }
 #app.vy-verre[data-ui-theme="duality"] .vy-caracs__xp .vy-jauge,
 #app.vy-verre[data-ui-theme="duality"] .vy-panneau__xp-jauge .vy-jauge,
@@ -104,7 +83,6 @@
 #app.vy-verre[data-ui-theme="duality"] .vy-jauge--fine .vy-jauge__barre,
 #app.vy-verre[data-ui-theme="duality"] .vy-caracs__xp .vy-jauge__barre { box-shadow: 0 0 10px rgba(var(--v-a-rgb), 0.6); }
 
-/* ----- Les blocs : coins de 14 px, fond anthracite, filet blanc à 7 % ----- */
 #app.vy-verre[data-ui-theme="duality"] .vy-caracs__tete {
   padding: 9px 11px; border: 1px solid var(--d-ligne); border-radius: 14px; background: var(--d-carte);
 }
@@ -114,7 +92,6 @@
   #app.vy-verre[data-ui-theme="duality"] .vy-caracs__tete .vy-fiche__portrait { width: 38px; height: 42px; font-size: 16px; }
   #app.vy-verre[data-ui-theme="duality"] .vy-fiche__nom { font-size: 17px; }
 }
-/* Le portrait de la classe en hexagone au contour dégradé, comme le niveau du personnage. */
 #app.vy-verre[data-ui-theme="duality"] .vy-fiche__portrait {
   position: relative; width: 40px; height: 44px; border-radius: 0; background: var(--v-degrade); box-shadow: none; color: #fff;
   clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
@@ -127,7 +104,6 @@
 #app.vy-verre[data-ui-theme="duality"] .vy-caracs__xp > span { font: 700 9.5px var(--vy-font-titre); letter-spacing: 1.6px; text-transform: uppercase; color: rgba(243, 240, 248, 0.42); }
 #app.vy-verre[data-ui-theme="duality"] .vy-caracs__xp > small { font: 700 11px var(--d-mono); color: #f3f0f8; }
 
-/* Les tuiles de chiffres : l'étiquette en capitales, le gros chiffre coloré. */
 #app.vy-verre[data-ui-theme="duality"] .vy-caracs__vitaux { gap: 6px; }
 #app.vy-verre[data-ui-theme="duality"] .vy-caracs__ligne,
 #app.vy-verre[data-ui-theme="duality"] .vy-caracs__ligne:nth-child(odd) {
@@ -139,7 +115,6 @@
 #app.vy-verre[data-ui-theme="duality"] .vy-caracs__ligne[data-k="prospection"] > b { color: var(--d-ambre); }
 #app.vy-verre[data-ui-theme="duality"] .vy-caracs__ligne[data-k="invocations"] > b { color: #b78bff; }
 
-/* Les lignes : une tuile d'icône teintée, le nom, la valeur en Mono, le « + » dégradé. */
 #app.vy-verre[data-ui-theme="duality"] .vy-caracs__stat,
 #app.vy-verre[data-ui-theme="duality"] .vy-caracs__stat:nth-child(even) {
   border: 1px solid var(--d-ligne); border-radius: 12px; background: var(--d-carte2);
@@ -154,12 +129,10 @@
 #app.vy-verre[data-ui-theme="duality"] .vy-caracs__plus:not(:disabled):hover { color: #fff; box-shadow: 0 4px 18px rgba(var(--v-a-rgb), 0.6); }
 #app.vy-verre[data-ui-theme="duality"] .vy-caracs__reste, #app.vy-verre[data-ui-theme="duality"] .vy-sorts__capital b { font-family: var(--d-mono); }
 
-/* Les points à répartir, l'interrupteur : la pastille et le dégradé. */
 #app.vy-verre[data-ui-theme="duality"] .vy-points b { font: 700 18px var(--vy-font-titre); }
 #app.vy-verre[data-ui-theme="duality"] .vy-points.on b { color: var(--v-a); }
 #app.vy-verre[data-ui-theme="duality"] .vy-coche input[type="checkbox"]:checked { background: var(--v-degrade); border-color: transparent; }
 
-/* ----- La fenêtre Sorts : les lignes en blocs Duality, la ligne choisie en dégradé ----- */
 #app.vy-verre[data-ui-theme="duality"] .vy-sorts__classe b { font: 700 14px var(--vy-font-titre); letter-spacing: 2.4px; color: #fff; }
 #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--sorts .vy-sort { border-color: var(--d-ligne); border-radius: 12px; background: linear-gradient(90deg, color-mix(in srgb, var(--el, #e4e4e4) 9%, transparent), transparent 55%), var(--d-carte2); box-shadow: none; }
 #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--sorts .vy-sort.on { border-color: rgba(var(--v-a-rgb), 0.55); background: linear-gradient(90deg, rgba(var(--v-a-rgb), 0.22), rgba(var(--v-b-rgb), 0.08) 70%), var(--d-carte2); box-shadow: 0 0 22px rgba(var(--v-a-rgb), 0.14), inset 3px 0 0 var(--v-a); }
@@ -177,21 +150,16 @@
 #app.vy-verre[data-ui-theme="duality"] .vy-rang { border-color: var(--d-ligne); background: var(--d-carte2); border-radius: 9px; }
 #app.vy-verre[data-ui-theme="duality"] .vy-rang b { font-family: var(--d-mono); }
 
-/* ----- Le HUD : les chiffres en Mono, les titres en capitales ----- */
 #app.vy-verre[data-ui-theme="duality"] .vy-gemmes b, #app.vy-verre[data-ui-theme="duality"] .vy-barre-sorts__chrono b { font-family: var(--vy-font-titre); font-weight: 700; }
 
 #app.vy-verre[data-ui-theme="duality"] .vy-barre-sorts__titre, #app.vy-verre[data-ui-theme="duality"] .vy-barre-tour__tour { font-family: var(--vy-font-titre); letter-spacing: 2px; }
 
-/* ----- Le HUD d'exploration : la barre du héros, le bandeau du lieu, les raccourcis ----- */
-/* --font-title est posé sur :root (css/style.css) : on le repose ici pour qu'il suive le thème. */
 #app.vy-verre[data-ui-theme="duality"] { --font-title: var(--vy-font-titre); }
 #app.vy-verre[data-ui-theme="duality"] #player-bar { border-color: var(--d-ligne); border-radius: 14px; background: rgba(var(--v-pan-rgb), var(--v-alpha, 0.96)); }
 #app.vy-verre[data-ui-theme="duality"] #player-bar .portrait { color: #fff; background: var(--v-degrade); border-radius: 10px; box-shadow: 0 6px 20px rgba(var(--v-a-rgb), 0.35); font-family: var(--vy-font-titre); }
 #app.vy-verre[data-ui-theme="duality"] #player-bar .pb-name { font: 700 17px/1.1 var(--vy-font-titre); letter-spacing: 2px; }
 #app.vy-verre[data-ui-theme="duality"] #player-bar .pb-name small { font: 500 11px var(--vy-font-ui); letter-spacing: 0.5px; color: rgba(243, 240, 248, 0.42); }
 #app.vy-verre[data-ui-theme="duality"] #map-name { font: 700 14px/1.2 var(--vy-font-titre); letter-spacing: 2.6px; border-color: var(--d-ligne); border-radius: 12px; }
-/* Le coffre des récompenses : la tuile en dégradé des icônes du thème, l'icône blanche, le compte
-   en pastille sombre cerclée de dégradé, l'onde orange. */
 #app.vy-verre[data-ui-theme="duality"] #recompenses-btn {
   width: 50px; height: 50px; padding: 11px; border: 0; border-radius: 14px; color: #fff;
   background: linear-gradient(135deg, var(--v-a), var(--v-b));
@@ -207,8 +175,6 @@
 #app.vy-verre[data-ui-theme="duality"] #recompenses-btn::after { inset: -4px; border-color: rgba(var(--v-a-rgb), 0.75); border-radius: 17px; }
 #app.vy-verre[data-ui-theme="duality"] .vy-raccourcis { border-color: var(--d-ligne); border-radius: 12px; background: rgba(var(--v-pan-rgb), var(--v-alpha, 0.96)); }
 
-/* ----- Au téléphone : les fenêtres étroites gardent la compacité qui les fait tenir à l'écran
-   (css/verre.css, fenêtres en feuille), dans les teintes et les polices du thème ----- */
 @media (orientation: landscape) and (max-height: 500px) {
   #app.vy-verre[data-ui-theme="duality"] .vy-fenetre__tete { min-height: 34px; }
   #app.vy-verre[data-ui-theme="duality"] .vy-fenetre__icone { width: 24px; height: 24px; padding: 5px; border-radius: 8px; }
@@ -227,12 +193,9 @@
   #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-caracs__ligne > span { font-size: 8.5px; letter-spacing: 1.2px; }
   #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-caracs__ligne > b { font-size: 15px; margin-top: 0; }
   #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--etroite .vy-sous { font-size: 10.5px; letter-spacing: 1.8px; }
-  /* Les « + » des sorts restent assez grands pour le doigt (28 px au moins, une fois réduits). */
   #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--sorts .vy-sort__rang button { width: 34px; height: 34px; }
 }
 
-/* ----- La bulle d'un PNJ : une carte sombre, le nom en capitales espacées sur un liseré dégradé ;
-   un peu plus serrée, pour tenir au-dessus de sa tête comme avant ----- */
 #app.vy-verre[data-ui-theme="duality"] .vy-bulle-pnj {
   max-width: min(270px, 72%); color: #f3f0f8; background: rgba(20, 18, 27, 0.97); border-radius: 12px;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 10px 24px rgba(0, 0, 0, 0.5);
@@ -243,15 +206,10 @@
 #app.vy-verre[data-ui-theme="duality"] .vy-bulle-pnj__texte { padding: 5px 11px 7px; font: 400 12px/1.4 var(--vy-font-ui); }
 #app.vy-verre[data-ui-theme="duality"] .vy-bulle-pnj__suite { background: var(--v-a); }
 
-/* ----- La barre de combat et la frise : des hauteurs qui ne dépendent pas des polices (la caméra
-   cadre l'aire d'après elles ; une police chargée en retard ne doit pas la faire bouger) ----- */
 #app.vy-verre[data-ui-theme="duality"] .vy-barre-sorts__titre { height: 12px; line-height: 12px; overflow: hidden; }
 #app.vy-verre[data-ui-theme="duality"] .vy-barre-tour__tour { line-height: 14px; }
 #app.vy-verre[data-ui-theme="duality"] .vy-barre-sorts__action { height: 40px; line-height: 1; }
 
-/* ----- L'inventaire, le journal des quêtes, la carte du monde : les derniers restes cyan et bleus
-   de l'habillage d'origine passent aux teintes du thème (le fondateur : D, « un autre écran ») ----- */
-/* La poupée : un fond anthracite, une lueur orange derrière le personnage, rose à ses pieds. */
 #app.vy-verre[data-ui-theme="duality"] .vy-inv__poupee {
   border-color: var(--d-ligne); border-radius: 14px;
   background: radial-gradient(60% 52% at 50% 40%, rgba(var(--v-a-rgb), 0.11), transparent 72%), radial-gradient(55% 40% at 50% 88%, rgba(var(--v-b-rgb), 0.08), transparent 70%), var(--d-carte);
@@ -261,16 +219,13 @@
 #app.vy-verre[data-ui-theme="duality"] .vy-inv__nom { font-family: var(--vy-font-titre); letter-spacing: 1.6px; text-transform: uppercase; }
 #app.vy-verre[data-ui-theme="duality"] .vy-inv__rangee { border-top-color: var(--d-ligne); }
 #app.vy-verre[data-ui-theme="duality"] .vy-inv__groupe > small { font: 700 10px var(--vy-font-titre); letter-spacing: 1.8px; color: rgba(243, 240, 248, 0.55); }
-/* Les catégories du sac : la catégorie choisie en tuile dégradée, comme un menu ouvert. */
 #app.vy-verre[data-ui-theme="duality"] .vy-inv__onglet { border-color: var(--d-ligne); border-radius: 10px; background: rgba(255, 255, 255, 0.03); color: rgba(243, 240, 248, 0.6); }
 #app.vy-verre[data-ui-theme="duality"] .vy-inv__onglet:hover { border-color: var(--d-ligne2); color: #fff; }
 #app.vy-verre[data-ui-theme="duality"] .vy-inv__onglet.on { color: #fff; border-color: transparent; background: var(--v-degrade-oblique); box-shadow: 0 0 14px rgba(var(--v-a-rgb), 0.35); }
-/* La case choisie : un anneau dégradé qui luit, à la place de l'or. */
 #app.vy-verre[data-ui-theme="duality"] .vy-case[aria-selected="true"], #app.vy-verre[data-ui-theme="duality"] .vy-case.est-choisie {
   border-color: var(--v-a); box-shadow: 0 0 0 1px rgba(var(--v-b-rgb), 0.55), 0 0 14px rgba(var(--v-b-rgb), 0.4), inset 0 -8px 14px rgba(0, 0, 0, 0.35);
 }
 #app.vy-verre[data-ui-theme="duality"] .vy-case__nombre, #app.vy-verre[data-ui-theme="duality"] .vy-case__niveau { font-family: var(--d-mono); font-weight: 700; }
-/* La fiche de l'objet : le nom en Rajdhani, la rareté en pastille, les onglets soulignés. */
 #app.vy-verre[data-ui-theme="duality"] .vy-fenetre__corps .vy-inv__fiche-nom { font: 700 17px/1.1 var(--vy-font-titre); letter-spacing: 1.4px; text-transform: uppercase; }
 #app.vy-verre[data-ui-theme="duality"] .vy-inv__fiche-niv { font: 700 11px var(--d-mono); color: rgba(243, 240, 248, 0.6); }
 #app.vy-verre[data-ui-theme="duality"] .vy-badge-rarete { border-radius: 999px; font-family: var(--vy-font-titre); letter-spacing: 1.2px; }
@@ -289,20 +244,15 @@
 #app.vy-verre[data-ui-theme="duality"] .vy-inv__degats > b { color: var(--d-ambre); }
 #app.vy-verre[data-ui-theme="duality"] .vy-inv__liste li.neg > b, #app.vy-verre[data-ui-theme="duality"] .vy-inv__conditions li.ko > b { color: var(--d-rouge); }
 #app.vy-verre[data-ui-theme="duality"] .vy-inv__conditions li.ok svg { color: var(--d-vert); }
-/* Le pied du sac : les nombres en mono, les Fils en ambre. */
 #app.vy-verre[data-ui-theme="duality"] .vy-inv__pages b, #app.vy-verre[data-ui-theme="duality"] .vy-inv__compte { font-family: var(--d-mono); font-size: 12px; }
 #app.vy-verre[data-ui-theme="duality"] .vy-inv__fils svg { color: var(--d-ambre); }
 #app.vy-verre[data-ui-theme="duality"] .vy-inv__fils b { font: 700 14px var(--d-mono); color: var(--d-ambre); }
-/* La carte du monde : « Tu es ici. » dans l'accent du thème. */
 #app.vy-verre[data-ui-theme="duality"] .vy-carte__ici {
   padding: 5px 10px; border: 0; border-left: 3px solid var(--v-a); border-radius: 8px;
   background: linear-gradient(90deg, rgba(var(--v-a-rgb), 0.16), rgba(var(--v-b-rgb), 0.05)); color: #fff;
   font: 700 12px var(--vy-font-titre); letter-spacing: 1.2px; text-transform: uppercase;
 }
-/* Le journal des quêtes : la tuile de la quête en dégradé, comme les en-têtes des fenêtres. */
 #app.vy-verre[data-ui-theme="duality"] .vy-q-tuile { color: #fff; background: var(--v-degrade-oblique); box-shadow: 0 6px 18px rgba(var(--v-b-rgb), 0.3); }
-/* La rareté en bande sous la case (d'après l'inventaire Duality) : un cadre neutre, un trait de
-   couleur qui luit en bas ; rien pour un objet commun. */
 #app.vy-verre[data-ui-theme="duality"] .vy-case[data-rarete] {
   border-color: var(--d-ligne2); background: linear-gradient(180deg, #1d1a26, #121019);
 }

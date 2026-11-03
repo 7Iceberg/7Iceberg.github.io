@@ -1,14 +1,3 @@
-// L'interface du HUD réglable, à la manière de duality_hud (le fondateur a choisi ces deux
-// propositions) :
-//  - le lieu au-dessus de la mini-carte (la pastille des coordonnées, le nom, la zone) et la
-//    boussole autour d'elle (N, E, S, O, placés selon la projection de la mini-carte : le nord, -y,
-//    tombe en haut à droite du losange) ; le bandeau du lieu du haut s'efface sur ordinateur ;
-//  - l'éditeur (Options › Personnaliser l'interface) : chaque bloc (la vie, les raccourcis, la
-//    mini-carte, le lieu, les menus, les quêtes suivies) se déplace à la souris ou au doigt, un
-//    double-clic le remet ; par onglet, l'afficher ou non, sa taille, et pour la vie le style des
-//    gemmes, la pierre de l'XP et l'alerte de vie basse ; Réinitialiser, Terminé.
-// Rangé dans ce navigateur (veylan.hud). Sur ordinateur : au téléphone ces blocs sont repliés.
-// Mise en page : css/interface.css. Tests : F73 à F76 (tests/fenetres.js).
 (() => {
   const CLE = 'veylan.hud';
   const BLOCS = [
@@ -35,8 +24,6 @@
     epingle: SVG('<path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/>'),
     fermer: SVG('<path d="M6 6l12 12M18 6L6 18"/>'),
   };
-  // La direction, sur la mini-carte, de chaque point cardinal : la carte est en losange (un pas
-  // vers le nord, -y, monte d'une demi-case vers la droite), comme le plateau de l'île.
   const CARDINAUX = [['n', 'N', 1, -0.5], ['e', 'E', 1, 0.5], ['s', 'S', -1, 0.5], ['o', 'O', -1, -0.5]];
 
   Object.assign(Hud.prototype, {
@@ -71,15 +58,13 @@
       return r;
     },
     garderInterface() {
-      try { localStorage.setItem(CLE, JSON.stringify(this.ihud)); } catch (e) { /* rien */ }
+      try { localStorage.setItem(CLE, JSON.stringify(this.ihud)); } catch (e) {   }
     },
     blocHud(id) {
       const r = this.ihud || (this.ihud = defaut());
       return r.blocs[id] || (r.blocs[id] = { dx: 0, dy: 0, cache: false, taille: 100 });
     },
 
-    // Pose les réglages : le décalage (translate), la taille (scale), caché ou non ; puis, si
-    // `rentrer`, ramène dans la scène un bloc qu'un écran plus petit aurait poussé dehors.
     appliquerInterface(rentrer) {
       const r = this.ihud || (this.ihud = defaut());
       for (const b of BLOCS) {
@@ -95,7 +80,6 @@
       app.classList.toggle('vy-sans-alerte', r.alerte === false);
       app.classList.toggle('vy-sans-boussole', r.boussole === false);
     },
-    // Combien de pixels d'écran pour un pixel de décalage (la taille de l'interface, les zooms).
     pasEcran(el) {
       const r0 = el.getBoundingClientRect();
       if (!r0.width) return 1;
@@ -115,7 +99,6 @@
       el.style.translate = `${Math.round(+m[1] + ex / k)}px ${Math.round(+m[2] + ey / k)}px`;
     },
 
-    // ----- Le lieu et la boussole -----
 
     majLieu(d) {
       const el = document.getElementById('lieu');
@@ -131,8 +114,6 @@
       el.setAttribute('aria-label', `Lieu : ${nom}${zone && zone.name ? ', ' + zone.name : ''}${pos ? `, [${pos[0]},${pos[1]}]` : ''}`);
       if (this.editeur) this.majZones();
     },
-    // Les lettres sur le bord de la mini-carte, là où le rayon parti du centre dans la direction du
-    // point cardinal sort du cadre.
     placerBoussole() {
       const mc = document.getElementById('minicarte');
       if (!mc) return;
@@ -140,14 +121,13 @@
       for (const [k, , dx, dy] of CARDINAUX) {
         const i = mc.querySelector(`.vy-boussole__p[data-p="${k}"]`);
         if (!i) continue;
-        const px = dx * W / 2, py = dy * W / 2;   // dans les pixels de la carte (le losange 2:1)
+        const px = dx * W / 2, py = dy * W / 2;
         const t = Math.min((W / 2) / Math.abs(px), (H / 2) / Math.abs(py));
         i.style.left = (50 + (px * t) / W * 100).toFixed(2) + '%';
         i.style.top = (50 + (py * t) / H * 100).toFixed(2) + '%';
       }
     },
 
-    // ----- L'éditeur -----
 
     ouvrirEditeur() {
       if (this.world.state === 'combat') { this.toast('Pas pendant un combat.'); return false; }
@@ -182,8 +162,6 @@
       if (this.editeur) { this.rendreEditeur(); this.majZones(); }
     },
 
-    // Les cadres pointillés posés sur chaque bloc visible (ou caché, en pâle), avec leur nom ; les
-    // cadres sont gardés d'une mise à jour à l'autre (le double-clic garde sa cible).
     majZones() {
       const ed = this.editeur;
       if (!ed) return;
@@ -266,7 +244,6 @@
         this.majZones();
       });
       pan.addEventListener('change', evt => { if (evt.target.dataset.act === 'taille') this.garderInterface(); });
-      // Glisser un cadre déplace son bloc ; il reste dans la scène. Double-clic : le bloc revient.
       const zones = ov.querySelector('.vy-editeur__zones');
       zones.addEventListener('pointerdown', evt => {
         const z = evt.target.closest('.vy-editeur__zone');

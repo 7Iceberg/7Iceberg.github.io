@@ -1,13 +1,3 @@
-// Le combat sur le terrain d'Ervane, en 3D (docs/ILE-TECHNIQUE.md, 5.4 et 5.5) : l'aire du combat
-// posée sur le relief (son coin x0, y0 : la case (x, y) du combat est le carré [x0 + x, x0 + x + 1]
-// × [y0 + y, y0 + y + 1] du monde), l'état de ses cases dans une texture lue par le shader du sol
-// (js/ile-sol.js), les figures du combat (leurs anneaux, leurs barres de vie, leurs états), les
-// rochers temporaires, les animations et les effets que le moteur de combat demande (animMove,
-// animCast, animTrap, fx, float), avec les durées de RendererGL.
-//
-// Le moteur de combat ne sait rien de tout ceci : il travaille sur la carte de l'aire (Grid.create)
-// et ses cases, comme sur une carte à cases. Ile3D crée l'arène une fois, l'ouvre quand le combat
-// commence sur son plateau, la ferme au retour.
 const IleArene = (() => {
   const N = 15;
   const octet = v => Math.max(0, Math.min(255, Math.round(v)));
@@ -15,8 +5,6 @@ const IleArene = (() => {
   const rgbHex = h => { const n = parseInt(String(h).replace('#', ''), 16) || 0; return rgb(n); };
   const CRISTAL = '#7fe3ff';
 
-  // Les textures des effets, peintes une fois : une lueur ronde, un anneau rond (pied des
-  // figures), un anneau carré (l'éclat d'une case), une étincelle.
   function toile(w, h, peindre) {
     const c = document.createElement('canvas'); c.width = w; c.height = h;
     peindre(c.getContext('2d'), w, h);
@@ -38,8 +26,6 @@ const IleArene = (() => {
     }),
   };
 
-  // Les effets sont peints en mélange ordinaire (pas en addition) : sur l'herbe claire et le
-  // calcaire d'Ervane, une lueur additive se perdrait dans le sol.
   const VS_PANNEAU = `
 attribute vec3 centre;
 attribute vec4 couleur;
@@ -53,7 +39,6 @@ void main() {
   vUv = uv;
   vCol = couleur;
 }`;
-  // Le même quad couché au sol (les éclats carrés des cases).
   const VS_SOL = `
 attribute vec3 centre;
 attribute vec4 couleur;
@@ -78,13 +63,8 @@ void main() {
 }`;
 
 
-  // Les effets propres à certains sorts (spell.fx), en plus du trait et de l'éclat : la couleur du
-  // trait, puis des particules au départ (de : le lanceur, hde : la hauteur du départ, vers : le
-  // centre de la zone, points du monde) et sur chaque case touchée.
   const hasard = (a, b) => a + Math.random() * (b - a);
   const FX_SORTS = {
-    // La Bouffée de spores du Lampignon : un nuage cyan qui part de la coiffe et flotte, puis s'ouvre
-    // en boule sur la case.
     spores: {
       couleur: '#8ff6ff',
       depart(A, de, hde, vers) {
@@ -96,8 +76,6 @@ void main() {
         A.semer(14, (i, n) => { const a = i / n * Math.PI * 2 + hasard(-0.3, 0.3), v = hasard(0.35, 1.0); return { x: p.u, h: h + hasard(0.25, 0.7), z: p.v, vx: Math.cos(a) * v, vy: hasard(0.15, 0.55), vz: Math.sin(a) * v, vie: hasard(0.9, 1.4), max: 1.4, g: -0.22, couleur: ['#8ff6ff', '#d2fff7', '#bdf3e6'][i % 3], taille: hasard(0.32, 0.6) }; });
       },
     },
-    // Le Bâton gluant du Lampignard : la bave verte jaillit de la crosse abattue et éclabousse la case
-    // (des gouttes lourdes qui retombent, une flaque).
     bave: {
       couleur: '#a6ea52',
       depart(A, de, hde, vers) {
@@ -115,26 +93,22 @@ void main() {
     constructor(THREE, ile) {
       this.THREE = THREE;
       this.ile = ile;
-      this.etat = null;           // null, 'ouverte' (le combat), 'fermeture' (le retour, la grille s'efface)
+      this.etat = null;
       this.map = null;
       this.x0 = 0; this.y0 = 0;
       this.sig = null;
       this.anims = [];
-      this.eclats = [];           // { x, y, couleur, ne, duree } : des cases du combat
-      this.projectiles = [];      // { de, a, couleur, ne, duree } : des points du monde
-      this.etincelles = [];       // { x, h, z, vx, vy, vz, vie, max, couleur, g (la pesanteur, facultative) }
-      this.chiffres = [];         // { x, y, texte, couleur, ne }
-      this.entrees = new Map();   // numéro du combattant -> l'instant de son arrivée (les modèles qui ont leurs gestes)
-      this.rochers = new Map();   // clé de case -> numéro d'instance
-      // La texture de l'état des cases (4 texels par case, 16 cases par ligne ; le troisième porte
-      // le genre, les drapeaux et la hauteur de la case, lue aussi par la trame des obstacles).
+      this.eclats = [];
+      this.projectiles = [];
+      this.etincelles = [];
+      this.chiffres = [];
+      this.entrees = new Map();
+      this.rochers = new Map();
       this.donnees = new Uint8Array(64 * 16 * 4);
       const t = this.texCases = new THREE.DataTexture(this.donnees, 64, 16, THREE.RGBAFormat, THREE.UnsignedByteType);
       t.minFilter = t.magFilter = THREE.NearestFilter; t.generateMipmaps = false; t.flipY = false; t.needsUpdate = true;
       const tex = this.tex = {};
       for (const k of Object.keys(PEINTURES)) { const c = new THREE.CanvasTexture(PEINTURES[k]()); c.flipY = false; tex[k] = c; }
-      // Deux maillages instanciés : les éclats carrés couchés au sol, et les lueurs, projectiles et
-      // étincelles, des panneaux tournés vers la caméra.
       const q = new THREE.PlaneGeometry(1, 1);
       const instances = (max, carte, vs, ordre, test) => {
         const geo = new THREE.InstancedBufferGeometry();
@@ -151,7 +125,6 @@ void main() {
       this.air = instances(160, tex.lueur, VS_PANNEAU, 12, true);
       this.carres = this.sol.mesh; this.panneaux = this.air.mesh;
       this.matCarres = this.sol.mat; this.matPanneaux = this.air.mat;
-      // Les rochers que des sorts posent pour quelques tours.
       const L = IleDecor.bibliotheque(!!ile.telephone);
       this.matRocher = new THREE.MeshToonMaterial({ color: new THREE.Color('#9a958a'), gradientMap: ile.rampe || null });
       this.rocs = new THREE.InstancedMesh(L.blocs[3], this.matRocher, 12);
@@ -164,10 +137,7 @@ void main() {
 
     get ouverte() { return this.etat === 'ouverte'; }
 
-    // ----- Ouvrir, fermer -----
 
-    // Le combat commence sur la carte `map` (map.ancre : { plateau, x0, y0 }). Rend l'aire pour la
-    // caméra : { x0, y0, w, h, hMin, hMax, hMoy }.
     ouvrir(map) {
       this.finirAnimations();
       this.map = map;
@@ -186,18 +156,14 @@ void main() {
       for (let y = 0; y < map.h; y++) for (let x = 0; x < map.w; x++) if (map.cells[y][x] === Grid.FLOOR) { const h = H(this.x0 + x + 0.5, this.y0 + y + 0.5); if (Number.isFinite(h)) { s += h; n++; } }
       if (!Number.isFinite(hMin)) { hMin = 0; hMax = 0; }
       const hMoy = this.hMoy = n ? s / n : (hMin + hMax) / 2;
-      // La texture repart de zéro, avec ce qui ne change pas pendant le combat (genre et hauteur des
-      // cases), lu dès la première image par la trame des obstacles (Ile3D.fonduHouppiers).
       this.donnees.fill(0);
       for (let y = 0; y < map.h && y < 16; y++) for (let x = 0; x < map.w && x < 16; x++) this.ecrireFixe(x, y);
       this.texCases.needsUpdate = true;
-      // Les quatre coins du carré (haut, droite, gauche, bas à l'écran) à la hauteur de leur sol.
       const coin = (u, v) => { const h = H(u, v); return [u, v, Number.isFinite(h) ? h : hMoy]; };
       const X1 = this.x0 + map.w, Y1 = this.y0 + map.h;
       return { x0: this.x0, y0: this.y0, w: map.w, h: map.h, hMin, hMax, hMoy, coins: [coin(this.x0, this.y0), coin(X1, this.y0), coin(this.x0, Y1), coin(X1, Y1)] };
     }
 
-    // Le combat est fini : plus de figures du combat ; la grille s'efface pendant le passage.
     fermer() {
       if (!this.etat) return;
       this.finirAnimations();
@@ -208,28 +174,18 @@ void main() {
       this.texCases.needsUpdate = true;
       this.sig = null;
     }
-    // Le passage fini : plus rien.
     eteindre() { this.etat = null; this.map = null; this.carres.geometry.instanceCount = 0; this.panneaux.geometry.instanceCount = 0; this.rocs.count = 0; }
 
-    // Les animations en cours se terminent tout de suite (rendu désactivé, fin du combat) : le
-    // moteur de combat n'attend jamais une image qui ne viendra pas.
     finirAnimations() {
       const a = this.anims;
       this.anims = [];
       for (const x of a) { try { x.finir(); } catch (e) { console.error(e); } }
     }
 
-    // ----- Repères -----
 
-    // Le centre d'une case du combat (fractions permises), en u du monde.
     versMonde(x, y) { return { u: this.x0 + x + 0.5, v: this.y0 + y + 0.5 }; }
-    // La case du combat sous un point du monde.
     caseSous(u, v) { return { x: Math.floor(u - this.x0), y: Math.floor(v - this.y0) }; }
 
-    // Ce qu'une case garde toute la durée du combat dans la texture : son genre (texel 2, rouge) et
-    // la hauteur de son centre par rapport à la moyenne de l'aire (texel 2, bleu : 128 au niveau
-    // moyen, 32 pas par u, soit plus ou moins 4 u), que la trame des obstacles lit pour ramener un
-    // fragment au sol le long de la caméra.
     ecrireFixe(x, y) {
       const D = this.donnees, o = (y * 64 + x * 4) * 4;
       D[o + 8] = this.map.cells[y][x];
@@ -238,14 +194,7 @@ void main() {
       D[o + 11] = 0;
     }
 
-    // ----- L'état des cases -----
 
-    // Les surbrillances de l'interface et l'état du combat dans la texture lue par le sol : même
-    // priorité et mêmes couleurs que RendererGL.updateCells. Refaite seulement quand sa signature
-    // change. Le texel 2 porte, en vert, les drapeaux de la case (1 le survol, 2 le chemin, 4 la
-    // respiration, 8 l'arrivée du chemin, 16 à 128 les côtés du chemin vers +x, -x, +y, -y) et, en
-    // alpha, la ligne de vue coupée (1) et la cible visée (2) : le sol trace le chemin en fil continu
-    // depuis les pieds de l'acteur, hachure les cases sans ligne de vue, cerne la cible d'un anneau.
     majCases(H, cb) {
       if (this.etat !== 'ouverte') return;
       const m = this.map, placement = cb.phase === 'placement';
@@ -259,7 +208,6 @@ void main() {
       this.sig = sig;
       const D = this.donnees;
       D.fill(0);
-      // Les côtés du chemin : chaque case et ses voisines sur le chemin ; la dernière est l'arrivée.
       const cotes = new Map();
       for (let i = 0; i < chemin.length; i++) {
         const p = chemin[i], k = Grid.key(p.x, p.y);
@@ -278,8 +226,6 @@ void main() {
         if (tmp && tmp.kind === 'fente') { fill = [0x120818, 0.92]; stroke = [0xbf95ff, 0.9]; }
         if (placement) {
           if (cb.isStartCell('player', x, y)) { fill = [0x3f8fff, 0.55]; stroke = [0x9fd7ff, 0.95]; respire = true; }
-          // Le rouge des cases des monstres : un peu plus franc que sur les cartes à cases (0xe04a4a à 0,45),
-          // qui tournait au brun sur l'herbe claire.
           else if (cb.isStartCell('monster', x, y)) { fill = [0xe83a3a, 0.56]; stroke = [0xffa0a0, 0.9]; }
         }
         if (H.move.has(k)) { fill = [0x3fd47f, 0.4]; stroke = [0xbaffd3, 0.8]; respire = false; }
@@ -300,7 +246,6 @@ void main() {
       this.texCases.needsUpdate = true;
     }
 
-    // Les rochers temporaires : des blocs de pierre posés sur leur case, tant qu'ils durent.
     majRochers(cb) {
       const voulu = [];
       for (const [k, tmp] of cb.temp) if (tmp.kind === 'rock') voulu.push(k);
@@ -321,18 +266,13 @@ void main() {
       this.rocs.instanceMatrix.needsUpdate = true;
     }
 
-    // ----- Les figures du combat -----
 
-    // Les combattants vivants et vus, à la manière de RendererGL.combatSprites : leur case (rx, ry
-    // interpolés par animMove) posée sur le relief, leurs anneaux, leur barre de vie, leurs états.
     sprites(cb, now, fig, telephone) {
       if (this.etat !== 'ouverte') return [];
       const out = [], Hc = this.ile.highlights;
       for (const e of cb.entities) {
         if (!e.alive || !cb.canSee(cb.player, e)) continue;
         const p = this.versMonde(e.rx, e.ry), h = this.ile.hauteur(p.u, p.v);
-        // La trace des PV qui viennent de partir (la barre de vie) : elle reste un instant au niveau
-        // d'avant le coup, puis fond vers les PV ; elle rejoint tout de suite une vie qui remonte.
         const hpF = Math.max(0, Math.min(1, e.hp / e.hpMax));
         if (e._trace == null || hpF >= e._trace) e._trace = hpF;
         else {
@@ -343,8 +283,6 @@ void main() {
         const s = {
           kind: 'entity', shape: e.shape, color: e.color, glyph: e.glyph, name: e.name, look: e.def.look, gender: e.def.gender,
           team: e.team, flash: now < (e.flashUntil || 0), motif: e.team === 'monster' ? Renderer.motifOf(e.def.id) : null, noyau: e.def.noyau || null,
-          // Au téléphone, les monstres grandissent (1,3 : un Krobbet fait alors 8 % de la hauteur de
-          // l'écran, revue finale) ; le Veilleur et ses alliés un peu (1,12).
           scale: (e.boss ? 1.3 : (e.isSummon && !e.ally ? 0.8 : 1)) * (telephone ? (e.team === 'monster' ? 1.3 : 1.12) : 1),
           alpha: (e.alpha == null ? 1 : e.alpha) * (e.hasState('invisible') ? 0.45 : 1),
           facing: e.shape === 'player' ? e.facing || Renderer.faceFoe(cb, e) : 1,
@@ -358,13 +296,11 @@ void main() {
             lanterne: e.effects.some(f => f.type === 'state' && f.farDodge),
           },
         };
-        // Le modèle 3D d'un monstre qui en a un (derrière l'interrupteur du Glym modelé).
         if (fig.modeles && e.team === 'monster' && fig.modeles.prend(e.def.id)) {
           s.modele = e.def.id; s.modeleCle = 'combat|' + e.id;
           const D = fig.modeles.durees(e.def.id);
           if (D) this.gesteFigure(s, e, D, now, cb);
         } else if (fig.heros && e === cb.player) {
-          // Le héros modelé (3.27) : les figures le posent à la place du panneau du joueur.
           s.heros = true;
           this.gesteHeros(s, e, now, cb);
         }
@@ -374,10 +310,6 @@ void main() {
       return out;
     }
 
-    // Le geste d'un monstre modelé qui en a (js/modele-lampignon.js) : son arrivée la première fois
-    // qu'on le voit (il tombe à sa place ; au placement, les uns après les autres), puis le geste en
-    // cours que les animations lui ont donné (sort, saut, poussée), sinon le coup reçu quand il
-    // s'éclaire.
     gesteFigure(s, e, D, now, cb) {
       let a = this.entrees.get(e.id);
       if (a == null) { a = now + (cb.phase === 'placement' ? Math.min(6, this.entrees.size) * 110 : 0); this.entrees.set(e.id, a); }
@@ -387,9 +319,6 @@ void main() {
       if (g && g.debut != null && now < g.debut + g.duree) { s.geste = { type: g.type, t: (now - g.debut) / g.duree }; if (g.vers) s.vers = g.vers; return; }
       if (now < (e.flashUntil || 0)) s.geste = { type: 'coup', t: 1 - (e.flashUntil - now) / 250 };
     }
-    // Le geste du héros modelé (js/ile-heros.js) : celui que les animations lui ont donné (le tir,
-    // tourné vers sa cible ; le pas ; la poussée), sinon le coup reçu quand il s'éclaire ; au repos,
-    // il fait face au monstre vivant le plus proche.
     gesteHeros(s, e, now, cb) {
       const g = e.geste;
       if (g && g.debut != null && now < g.debut + g.duree) { s.geste = { type: g.type, t: (now - g.debut) / g.duree }; if (g.vers) s.vers = g.vers; return; }
@@ -402,8 +331,6 @@ void main() {
       }
       if (proche) s.vers = this.versMonde(proche.rx, proche.ry);
     }
-    // Les durées des gestes d'un combattant modelé qui en a (un monstre modelé, le héros modelé
-    // quand les figures le portent), sinon null.
     gestesDe(e) {
       const F = this.ile.figures;
       if (!e || !F) return null;
@@ -413,10 +340,7 @@ void main() {
       return P && e.team === 'monster' && P.prend(e.def.id) ? P.durees(e.def.id) : null;
     }
 
-    // ----- Les animations du moteur de combat -----
 
-    // Un pas, une poussée ou une téléportation : 140, 90 ou 200 ms ; rx, ry glissent d'une case à
-    // l'autre avec un petit saut, ou la figure s'efface et reparaît (téléportation, avec éclats).
     animMove({ entity, to, teleport, fast }) {
       return new Promise(resolve => {
         const from = { x: entity.rx, y: entity.ry };
@@ -428,7 +352,6 @@ void main() {
         }
         let debut = null;
         const finir = () => { entity.rx = to.x; entity.ry = to.y; entity.alpha = 1; entity.hop = 0; resolve(); };
-        // Un monstre modelé saute d'une case à l'autre (tourné vers elle), ou part en arrière, poussé.
         const D = teleport ? null : this.gestesDe(entity);
         this.anims.push({
           finir,
@@ -454,11 +377,6 @@ void main() {
       });
     }
 
-    // Un sort : un trait de lumière de la couleur de l'élément va du lanceur aux cases touchées
-    // (180 ms), puis un éclat sur chaque case ; la promesse se résout à 240 ms. Un monstre modelé qui
-    // a ses gestes joue d'abord son sort (tourné vers sa cible) : le trait part à son lâcher (le coup
-    // de coiffe, le bâton abattu), et le reste suit d'autant ; l'effet propre au sort (spell.fx : des
-    // spores, de la bave) s'ajoute au départ et à l'impact.
     animCast({ entity, spell, cells }) {
       const fx = FX_SORTS[spell.fx] || null;
       const couleur = fx ? fx.couleur : DATA.elements[spell.element] ? DATA.elements[spell.element].color : '#ffffff';
@@ -496,7 +414,6 @@ void main() {
       });
     }
 
-    // Une poignée de particules (les étincelles) : n fois la fonction f(i) qui rend une particule.
     semer(n, f) {
       if (this.etat !== 'ouverte') return;
       const k = this.ile.qualite === 'haute' ? 1 : 0.6;
@@ -504,7 +421,6 @@ void main() {
       if (this.etincelles.length > 160) this.etincelles.splice(0, this.etincelles.length - 160);
     }
 
-    // Un piège qui se déclenche : 180 ms (l'éclat vient du moteur, par `fx`).
     animTrap() {
       return new Promise(resolve => {
         let debut = null;
@@ -515,7 +431,6 @@ void main() {
     fx(d) { this.eclater(d.cells || [], d.color || '#ffffff', 420); }
     float(d) { this.chiffres.push({ x: d.x, y: d.y, texte: String(d.text), couleur: d.color || '#ffffff', ne: null }); if (this.chiffres.length > 24) this.chiffres.shift(); }
 
-    // Un éclat sur des cases : un anneau carré qui s'ouvre au sol, une lueur, des étincelles.
     eclater(cells, couleur, duree) {
       if (this.etat !== 'ouverte') return;
       for (const c of cells) {
@@ -530,16 +445,12 @@ void main() {
       if (this.etincelles.length > 120) this.etincelles.splice(0, this.etincelles.length - 120);
     }
 
-    // ----- Chaque image -----
 
-    // Les animations avancent (même quand le dessin dort : le combat ne les attend jamais en vain).
     avancer(now) {
       if (!this.anims.length) return;
       this.anims = this.anims.filter(a => { try { return !a.tick(now); } catch (e) { console.error(e); a.finir(); return false; } });
     }
 
-    // Les éclats, projectiles et étincelles dans leurs maillages ; rend les chiffres qui montent,
-    // pour l'atlas des textes des figures : [{ x, y, z, dy, sorte, texte, couleur, a, k }].
     majEffets(now, dt) {
       const poser = (I, liste) => {
         const m = Math.min(I.max, liste.length);
@@ -553,7 +464,6 @@ void main() {
         for (const a of Object.values(I.at)) a.needsUpdate = true;
         I.mesh.geometry.instanceCount = m;
       };
-      // Les éclats : un carré qui s'ouvre au sol, une lueur au-dessus de la case.
       this.eclats = this.eclats.filter(f => { if (f.ne == null) f.ne = now; return now - f.ne < f.duree; });
       const sol = [], lueurs = [];
       for (const f of this.eclats) {
@@ -562,7 +472,6 @@ void main() {
         lueurs.push({ x: p.u, h: h + 0.5, z: p.v, couleur: f.couleur, a: (1 - t) * 0.8, taille: (0.55 + 0.5 * t) * 2.6 });
         lueurs.push({ x: p.u, h: h + 0.5, z: p.v, couleur: '#ffffff', a: (1 - t) * (1 - t) * 0.85, taille: 0.8 + 0.5 * t });
       }
-      // Les projectiles : une lueur de l'élément, un cœur blanc, une traîne, sur un arc.
       this.projectiles = this.projectiles.filter(q => { if (q.ne == null) q.ne = now; return now - q.ne < q.duree; });
       for (const q of this.projectiles) {
         const L = Math.hypot(q.a.u - q.de.u, q.a.v - q.de.v), haut = Math.min(1.2, 0.25 * L);
@@ -573,7 +482,6 @@ void main() {
         lueurs.push(Object.assign({}, c, { couleur: q.couleur, a: 0.95, taille: 1.3 }));
         lueurs.push(Object.assign({}, c, { couleur: '#ffffff', a: 0.95, taille: 0.46 }));
       }
-      // Les étincelles : lancées vers le haut, retombent.
       const g = 3.2;
       this.etincelles = this.etincelles.filter(e => (e.vie -= dt) > 0);
       for (const e of this.etincelles) {
@@ -583,8 +491,6 @@ void main() {
       }
       poser(this.sol, sol);
       poser(this.air, lueurs);
-      // Les chiffres qui montent (900 ms) : au-dessus de la barre de vie, 30 px plus haut à la fin,
-      // effacés, gonflés au départ.
       this.chiffres = this.chiffres.filter(c => { if (c.ne == null) c.ne = now; return now - c.ne < 900; });
       return this.chiffres.map(c => {
         const k = (now - c.ne) / 900, p = this.versMonde(c.x, c.y), h = this.ile.hauteur(p.u, p.v);
