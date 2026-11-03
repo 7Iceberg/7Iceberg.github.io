@@ -74,6 +74,8 @@ class Combat {
     this.placementCells = null;
     this.phase = 'placement';
     this.round = 0;
+    this.vagues = null;
+    this.epreuveDojo = null;
     this.turnIndex = -1;
     this.actor = null;
     this.emit('setup');
@@ -235,8 +237,25 @@ class Combat {
   checkEnd() {
     if (this.phase !== 'battle') return true;
     if (!this.alivePlayers().length) { this.finish(false); return true; }
-    if (!this.aliveMonsters().length) { this.finish(true); return true; }
+    if (!this.aliveMonsters().length) { if (this.lancerVagues(true)) return false; this.finish(true); return true; }
     return false;
+  }
+
+  lancerVagues(force) {
+    if (!this.vagues || !this.vagues.length) return false;
+    const dues = force ? [this.vagues[0]] : this.vagues.filter(v => v.round <= this.round);
+    if (!dues.length) return false;
+    this.vagues = this.vagues.filter(v => !dues.includes(v));
+    const ref = this.entities.find(e => e.team === 'monster' && !e.isSummon);
+    const niveau = ref ? ref.level : (this.player ? this.player.level : 1);
+    const starts = (this.placementCells && this.placementCells.monster) || (this.map.starts && this.map.starts.monster) || [];
+    let n = 0;
+    for (const v of dues) for (const id of v.monstres) {
+      const near = starts.length ? starts[Math.floor(this.rng() * starts.length)] : (ref ? ref.pos : this.player.pos);
+      if (this.spawn(id, 'monster', near, null, null, false, niveau)) n++;
+    }
+    if (n) this.log('Une nouvelle vague entre sur la cour.', 'system');
+    return n > 0;
   }
 
   finish(victory) {
@@ -260,6 +279,7 @@ class Combat {
           if (tmp.owner && !tmp.owner.alive && isFinite(tmp.turnsLeft) && --tmp.turnsLeft <= 0) this.temp.delete(k);
         }
         this.emit('round');
+        this.lancerVagues();
       }
       const e = this.order[this.turnIndex];
       if (e.alive) { this.beginTurn(e); return; }

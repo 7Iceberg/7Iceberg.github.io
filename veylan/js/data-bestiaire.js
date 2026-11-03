@@ -19,11 +19,11 @@ DATA.spells.m_etouffement = S('m_etouffement', { name: 'Étouffement', element: 
 DATA.spells.m_clou = S('m_clou', { name: 'Clou', element: 'terre', pa: 3, range: [1, 3], line: true, target: 'enemy', effects: [dmg(5, 7)] });
 DATA.spells.m_masse = S('m_masse', { name: 'Masse', element: 'terre', pa: 4, range: [1, 1], target: 'enemy', effects: [dmg(12, 15), push(1)], cooldown: 1 });
 
-DATA.spells.m_soupir_eau = S('m_soupir_eau', { name: 'Soupir bleu', element: 'eau', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(5, 7)] });
-DATA.spells.m_soupir_feu = S('m_soupir_feu', { name: 'Soupir roux', element: 'feu', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(5, 7)] });
-DATA.spells.m_soupir_terre = S('m_soupir_terre', { name: 'Soupir ocre', element: 'terre', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(5, 7)] });
-DATA.spells.m_soupir_air = S('m_soupir_air', { name: 'Soupir blanc', element: 'air', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(5, 7)] });
-DATA.spells.m_soupir_pourpre = S('m_soupir_pourpre', { name: 'Soupir pourpre', element: 'neutre', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(7, 9), pa(-1, 1)], maxPerTurn: 1 });
+DATA.spells.m_soupir_eau = S('m_soupir_eau', { name: 'Soupir de brume', element: 'eau', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(5, 7)] });
+DATA.spells.m_soupir_feu = S('m_soupir_feu', { name: 'Soupir de braise', element: 'feu', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(5, 7)] });
+DATA.spells.m_soupir_terre = S('m_soupir_terre', { name: 'Soupir de mousse', element: 'terre', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(5, 7)] });
+DATA.spells.m_soupir_air = S('m_soupir_air', { name: 'Soupir de vent', element: 'air', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(5, 7)] });
+DATA.spells.m_soupir_pourpre = S('m_soupir_pourpre', { name: 'Soupir ancien', element: 'neutre', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(7, 9), pa(-1, 1)], maxPerTurn: 1 });
 
 DATA.spells.m_giclee = S('m_giclee', { name: 'Giclée', element: 'terre', pa: 3, range: [1, 2], target: 'enemy', effects: [dmg(4, 6)] });
 DATA.spells.m_boue = S('m_boue', { name: 'Boue', element: 'terre', pa: 3, range: [1, 2], target: 'enemy', effects: [dmg(8, 11), pm(-1, 1)] });
@@ -43,6 +43,21 @@ const thelkTriggers = [{ when: 'hitByElement', element: 'feu', do: [{ act: 'buff
 
 DATA.monsters.mannequin = M('mannequin', { name: 'Mannequin du Dojo', region: 'dojo', level: 'au tien', shape: 'square', color: '#d8c27a', hp: 70, dmgMult: 0, pa: 0, pm: 0, initiative: 1, spells: [], ai: 'inert', entrainement: true,
   desc: 'De la paille serrée sur un poteau. Il ne rend pas les coups.' });
+for (const [cid, c] of Object.entries(DATA.classes)) {
+  const purs = (c.spells || []).filter(s => { const d = DATA.spells[s]; return d && d.target === 'enemy' && (d.effects || []).length && d.effects.every(e => e.type === 'damage'); });
+  const sorts = purs.slice(0, 2);
+  if (!sorts.length && c.spells && c.spells[0]) sorts.push(c.spells[0]);
+  const loin = sorts.some(s => (DATA.spells[s].range || [1, 1])[1] >= 3);
+  DATA.monsters['reflet_' + cid] = M('reflet_' + cid, { name: 'Reflet de ' + c.name, region: 'dojo', level: '1 à 30', shape: 'player', classId: cid, glyph: c.glyph, color: c.color, gender: 'm',
+    hp: Math.round((c.hp || 90) * 1.25), dmgMult: 1.0, pa: 6, pm: 3, initiative: c.initiative || 100, resist: Object.assign({}, c.resist || {}), spells: sorts, ai: loin ? 'ranged' : 'melee', epreuve: true,
+    desc: `Ton propre geste, renvoyé par le miroir de la cour : la Voie ${c.title}, telle que le Temple la garde.` });
+}
+DATA.spells.m_baton_du_dojo = S('m_baton_du_dojo', { name: 'Bâton de bois', element: 'neutre', pa: 3, range: [1, 1], target: 'enemy', effects: [dmg(6, 9)] });
+DATA.spells.m_balayage = S('m_balayage', { name: 'Balayage', element: 'neutre', pa: 4, range: [1, 2], target: 'enemy', effects: [dmg(9, 13), pm(-1, 1)] });
+DATA.monsters.eleve_du_dojo = M('eleve_du_dojo', { name: 'Élève du Dojo', region: 'dojo', level: '1 à 30', shape: 'square', color: '#c9a66b', hp: 32, dmgMult: 0.9, pa: 6, pm: 3, initiative: 80, spells: ['m_baton_du_dojo'], ai: 'melee', epreuve: true,
+  desc: 'Un élève de Saya, bâton de bois en main. Il frappe pour de vrai.' });
+DATA.monsters.maitre_d_armes = M('maitre_d_armes', { name: 'Maître d\'armes du Dojo', region: 'dojo', level: '1 à 30', shape: 'square', color: '#e2c690', hp: 80, dmgMult: 1.3, pa: 7, pm: 3, initiative: 110, resist: { neutre: 15 }, spells: ['m_baton_du_dojo', 'm_balayage'], ai: 'melee', epreuve: true,
+  desc: 'Le bras droit de Saya. Son balayage retire 1 PM.' });
 DATA.monsters.brask = M('brask', { name: 'Brask Corne-Lasse', region: 'avis', recherche: true, level: '3 à 20', shape: 'triangle', color: '#7a5a2a', hp: 80, dmgMult: 1.25, pa: 6, pm: 3, initiative: 62, resist: { terre: 20 }, spells: ['m_charge'], ai: 'melee',
   desc: 'Un vieux Grouk qui a pris les Clairières pour son pré. Il charge les charrettes, et les fermiers avec.' });
 DATA.monsters.meche_folle = M('meche_folle', { name: 'Mèche-Folle', region: 'avis', recherche: true, level: '6 à 10', shape: 'circle', color: '#ff9a3c', hp: 80, dmgMult: 1.7, pa: 6, pm: 3, initiative: 78, resist: { eau: -50, feu: 25 }, spells: ['m_etincelle'], ai: 'ranged',

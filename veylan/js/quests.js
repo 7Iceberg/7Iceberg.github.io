@@ -19,6 +19,7 @@ const Quests = (() => {
   function requirementsMet(ch, q) {
     const r = q.requires || {};
     if (r.level && ch.level < r.level) return false;
+    if (r.classe && ch.classId !== r.classe) return false;
     for (const id of r.quests || []) if (!ch.quests.done.includes(id)) return false;
     if ((r.faction || r.notFaction || r.factionRank) && !Factions.requirementsMet(ch, r)) return false;
     return true;
@@ -219,6 +220,8 @@ const Quests = (() => {
     for (const it of r.items || []) { ch.addItem(it.id, it.count || 1); out.items.push(it); }
     if (r.faction && Factions.requirementsMet(ch, q.requires || {})) out.events.push(...Factions.addPoints(ch, r.faction));
     if (r.marcheurs) out.events.push(...Factions.addMarcheurs(ch, r.marcheurs));
+    if (r.spellPoints) { ch.spellPoints = (ch.spellPoints || 0) + r.spellPoints; out.spellPoints = r.spellPoints; }
+    if (r.title && Array.isArray(ch.titles) && !ch.titles.includes(r.title)) { ch.titles.push(r.title); out.title = r.title; }
     return out;
   }
 

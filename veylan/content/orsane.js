@@ -883,7 +883,7 @@ DATA.content.npcs.push({
 });
 DATA.content.npcs.push({
   id: 'saya', name: 'Saya', title: 'Maîtresse du Dojo', look: 'marcheur', dojo: true,
-  dialogue: ['Le Dojo du Fil est ouvert à tous. Les mannequins de la cour ne rendent pas les coups : essaie tes sorts sur eux avant de les essayer sur un Grouk.', 'Un Veilleur qui ne s\'entraîne pas apprend sur le terrain. Le terrain, lui, n\'est pas patient.'],
+  dialogue: ['Le Dojo du Fil est ouvert à tous. Les mannequins de la cour ne rendent pas les coups : essaie tes sorts sur eux avant de les essayer sur un Grouk.', 'Un Veilleur qui ne s\'entraîne pas apprend sur le terrain. Le terrain, lui, n\'est pas patient.', 'L\'épreuve du jour, c\'est mes élèves au bâton, par vagues, et le maître d\'armes pour finir. Tiens en huit tours et la Garde te doit un Sceau. Une fois par jour, pas deux.'],
 });
 DATA.content.npcs.push({
   id: 'hessa', name: 'Hessa', title: 'Capitaine de la Garde', look: 'garde', avis: true,
@@ -891,7 +891,7 @@ DATA.content.npcs.push({
 });
 DATA.content.npcs.push({
   id: 'ismere', name: 'Ismère', title: 'Gardienne du Temple des Voies', look: 'ancien', temple: true,
-  dialogue: ['Dix statues, dix Voies. Chacune a commencé par un geste, et chacune a fini par un serment.', 'La Garde paie ses primes en Sceaux. Ici, un Sceau vaut une page de ce que les Voies ont appris.'],
+  dialogue: ['Dix statues, dix Voies. Chacune a commencé par un geste, et chacune a fini par un serment.', 'La Garde paie ses primes en Sceaux. Ici, un Sceau vaut une page de ce que les Voies ont appris.', 'Les maîtres des Voies se tiennent près de leur statue. Ils ne parlent pas aux Veilleurs : ils les regardent, et c\'est moi qui transmets.'],
 });
 DATA.content.resources.push({ id: 'sceau_de_la_garde', name: 'Sceau de la Garde', monnaie: true, drops: [], node: null, price: 8,
   lore: 'Un jeton de cire bleue frappé de la tour des Cimes. La Garde le donne pour chaque bête ramenée ; le Temple le reprend contre ses pages.' });
@@ -2186,3 +2186,38 @@ DATA.content.quests.push({
   },
   rewards: { xp: 315, fils: 25, items: [{ id: 'pain_de_cime', count: 3 }] },
 });
+
+{
+const MAITRES = {
+  vaelith: ['Orwenn', 'Trame éprouvée', 'tisser avant de frapper'],
+  sarkan: ['Dagrel', 'Lame éprouvée', 'tenir la garde avant de la lever'],
+  lyssar: ['Ilvane', 'Œil éprouvé', 'viser avant de tirer'],
+  oriel: ['Maelle', 'Lueur éprouvée', 'éclairer avant de soigner'],
+  nerith: ['Sorrel', 'Ombre éprouvée', 'disparaître avant de frapper'],
+  kaldrin: ['Brakka', 'Rouage éprouvé', 'poser avant d\'armer'],
+  karsh: ['Vorn', 'Sang éprouvé', 'saigner avant de frapper'],
+  mirel: ['Elisse', 'Voix éprouvée', 'chanter avant de se taire'],
+  thalor: ['Gorm', 'Bras éprouvé', 'porter avant de pousser'],
+  fennal: ['Hesk', 'Meute éprouvée', 'appeler avant de courir'],
+};
+for (const [cid, c] of Object.entries(DATA.classes)) {
+  const m = MAITRES[cid];
+  if (!m || c.season) continue;
+  const [maitre, titre, geste] = m;
+  DATA.content.quests.push({
+    id: 'voie_' + cid + '_1', name: 'Le geste : ' + c.title, level: 10, main: false, category: 'classe',
+    giver: 'ismere', turnIn: 'ismere', requires: { level: 9, classe: cid },
+    steps: [
+      { type: 'talk', npc: 'saya', text: 'Demander à Saya la cour du Dojo' },
+      { type: 'kill', monster: 'reflet_' + cid, count: 1, text: 'Vaincre son Reflet sur la cour du Dojo' },
+      { type: 'talk', npc: 'ismere', text: 'Revenir au Temple des Voies' },
+    ],
+    dialogue: {
+      offer: [`${maitre}, qui tient la statue de ${c.name}, t\'a vu passer. Le geste de ta Voie, dit-il, c\'est ${geste}. Il veut savoir si tu le tiens.`, 'Monte au Dojo. Saya te prêtera la cour, et le miroir du Temple te renverra ton propre geste. Bats-le, et reviens me voir.'],
+      progress: ['Le Reflet t\'attend sur la cour du Dojo, sur les Terrasses. Demande-la à Saya.', `Ton Reflet frappe comme toi. ${maitre} dit que c\'est là toute la difficulté.`],
+      done: [`${maitre} a regardé le combat depuis la statue. Il dit que le geste est là, et que le reste viendra.`, `Le Temple te reconnaît : ${titre}. Et une page de ce que les Voies ont appris est à toi.`],
+    },
+    rewards: { xp: 955, fils: 80, spellPoints: 1, title: titre },
+  });
+}
+}

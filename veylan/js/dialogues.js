@@ -373,6 +373,8 @@ class Conversation {
     if (ctx.marche) out.push({ label: 'Voir l\'étal du jour.', action: () => this.ailleurs(() => hud.openMarche(ctx)) });
     if (ctx.metiers) out.push({ label: 'Voir le tableau des métiers.', action: () => this.ailleurs(() => hud.openMetiers(ctx)) });
     if (ctx.dojo) out.push({ label: 'M\'entraîner contre les mannequins.', action: () => this.ailleurs(() => { hud.world.endDialogue && hud.world.endDialogue(); hud.world.entrainement(); }) });
+    if (ctx.epreuve) out.push({ label: 'Affronter mon Reflet sur la cour.', marque: '!', action: () => this.ailleurs(() => { hud.world.endDialogue && hud.world.endDialogue(); hud.world.epreuveVoie(); }) });
+    if (ctx.epreuveDojo) out.push({ label: 'Tenter l\'épreuve du jour.', action: () => this.ailleurs(() => { hud.world.endDialogue && hud.world.endDialogue(); hud.world.epreuveDojo(); }) });
     if (ctx.avis) out.push({ label: 'Voir les avis de recherche.', action: () => this.ailleurs(() => hud.openAvis(ctx)) });
     if (ctx.temple) out.push({ label: 'Échanger des Sceaux de la Garde.', action: () => this.ailleurs(() => hud.openTemple(ctx)) });
     if (ctx.banque) out.push({ label: 'Ouvrir ton coffre.', action: () => this.ailleurs(() => hud.openBanque(ctx)) });

@@ -28,7 +28,7 @@ const Save = (() => {
   const seqOf = uid => Number(get(SEQ + uid)) || 0;
 
   const isInt = (v, min, max) => Number.isInteger(v) && v >= (min == null ? -Infinity : min) && v <= (max == null ? Infinity : max);
-  const ALLOWED = new Set(['classId', 'name', 'gender', 'level', 'xp', 'statPoints', 'stats', 'equipment', 'inventory', 'fils', 'hp', 'titles', 'title', 'quests', 'counters', 'achievements', 'achClaimed', 'veille', 'pos', 'relay', 'relays', 'dungeon', 'coffre', 'marche', 'avis', 'autoStats', 'playTime', 'knots', 'ensembles', 'fight', 'mapTimers', 'flags', 'v', 'uid', 'voie', 'scrolls', 'faction', 'tuto']);
+  const ALLOWED = new Set(['classId', 'name', 'gender', 'level', 'xp', 'statPoints', 'stats', 'equipment', 'inventory', 'fils', 'hp', 'titles', 'title', 'quests', 'counters', 'achievements', 'achClaimed', 'veille', 'pos', 'relay', 'relays', 'dungeon', 'coffre', 'marche', 'avis', 'dojo', 'autoStats', 'playTime', 'knots', 'ensembles', 'fight', 'mapTimers', 'flags', 'v', 'uid', 'voie', 'scrolls', 'faction', 'tuto']);
   for (const k of ['spellRanks', 'spellPoints', 'autoSpells']) ALLOWED.add(k);
   ALLOWED.add('look');
   ALLOWED.add('origine');
@@ -156,6 +156,11 @@ const Save = (() => {
       for (const [k, j] of Object.entries(a.rendus && typeof a.rendus === 'object' ? a.rendus : {})) if (connus.has(k) && isInt(j, -100000, 1000000)) rendus[k] = j;
       if (pris.length !== (Array.isArray(a.pris) ? a.pris.length : 0) || captures.length !== (Array.isArray(a.captures) ? a.captures.length : 0)) bad('avis de recherche');
       o.avis = { pris, captures, rendus };
+    }
+    if (o.dojo != null) {
+      const dj = o.dojo && typeof o.dojo === 'object' && isInt(o.dojo.jour, -100000, 1000000) ? { jour: o.dojo.jour } : null;
+      if (!dj) bad('épreuve du Dojo');
+      o.dojo = dj;
     }
     if (o.marche != null) {
       const m = o.marche && typeof o.marche === 'object' ? o.marche : {}, vendus = {};

@@ -9,8 +9,8 @@ const ICO = {
   retour: svg('<path d="M15 6l-6 6 6 6"/>'),
   recherche: svg('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>'),
 };
-const CATS = [['main', 'Principales'], ['region', 'Région'], ['faction', 'Faction'], ['donjon', 'Donjons'], ['autre', 'Secondaires']];
-const catDe = q => q.main ? 'main' : ['region', 'faction', 'donjon'].includes(q.category) ? q.category : 'autre';
+const CATS = [['main', 'Principales'], ['region', 'Région'], ['classe', 'Voie'], ['faction', 'Faction'], ['donjon', 'Donjons'], ['autre', 'Secondaires']];
+const catDe = q => q.main ? 'main' : ['region', 'classe', 'faction', 'donjon'].includes(q.category) ? q.category : 'autre';
 const sansAccents = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const anneau = (pct, fini) => {
   const v = Math.round(pct * 100);

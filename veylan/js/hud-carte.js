@@ -1262,7 +1262,7 @@ Object.assign(Hud.prototype, {
       for (const x of items) {
         if (x.kind === 'banque') html += `<div class="vy-sous"><span>Banque du Fil</span></div><p class="vy-note">${esc(x.npc.name)} : ton coffre, objets et Fils.</p>`;
         if (x.kind === 'marche') html += `<div class="vy-sous"><span>Marché des Cimes</span></div><p class="vy-note">${esc(x.npc.name)} : l'étal du jour.</p>`;
-        if (x.kind === 'dojo') html += `<div class="vy-sous"><span>Dojo du Fil</span></div><p class="vy-note">${esc(x.npc.name)} : l'entraînement contre les mannequins.</p>`;
+        if (x.kind === 'dojo') html += `<div class="vy-sous"><span>Dojo du Fil</span></div><p class="vy-note">${esc(x.npc.name)} : l'entraînement contre les mannequins, l'épreuve du jour dès le niveau 5.</p>`;
         if (x.kind === 'metiers') html += `<div class="vy-sous"><span>Hôtel des Métiers</span></div><p class="vy-note">${esc(x.npc.name)} : les métiers et leurs ateliers.</p>`;
         if (x.kind === 'avis') html += `<div class="vy-sous"><span>Garde des Cimes</span></div><p class="vy-note">${esc(x.npc.name)} : les avis de recherche.</p>`;
         if (x.kind === 'temple') html += `<div class="vy-sous"><span>Temple des Voies</span></div><p class="vy-note">${esc(x.npc.name)} : les Sceaux de la Garde, la statue vers Ervane.</p>`;

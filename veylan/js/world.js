@@ -477,6 +477,8 @@ class World {
       dojo: !!npc.def.dojo,
       avis: !!npc.def.avis,
       temple: !!npc.def.temple,
+      epreuve: this.epreuveVoieDispo(npc),
+      epreuveDojo: !!npc.def.dojo && this.epreuveDojoDispo(),
       metiers: !!npc.def.metiers,
       marche: Marche.genreDe(npc),
       passage: this.passageDe(npc),
@@ -531,7 +533,9 @@ class World {
     const touched = Quests.onEvent(this.ch, { type: 'inventory' });
     this.afterEvents(touched);
     this.emit('quest', { type: 'complete', id, rewards: r });
-    if (r.first) this.emit('reward', { title: `Quête terminée : ${r.quest.name}`, xp: r.xp, fils: r.fils, items: r.items, levels: r.levels });
+    if (r.first) this.emit('reward', { title: `Quête terminée : ${r.quest.name}`, xp: r.xp, fils: r.fils, items: r.items, levels: r.levels, spellPoints: r.spellPoints || 0, titre: r.title || null });
+    if (r.spellPoints) this.toast(`+${r.spellPoints} point${r.spellPoints > 1 ? 's' : ''} de sort (fenêtre Sorts).`);
+    if (r.title) this.toast(`Titre reçu : ${r.title}.`);
     this.emit('gain', { source: 'quete', xp: r.xp, fils: r.fils, items: r.items.map(it => ({ id: it.id, count: it.count || 1 })) });
     if (r.levels) this.emit('levelUp', { level: this.ch.level, levels: r.levels });
     this.factionEvents(r.events);
@@ -925,6 +929,38 @@ class World {
     return this.startFight(g) !== false;
   }
 
+  groupeEpreuve(monstres, genre) {
+    const g = this.groups.filter(x => this.estDojo(x)).sort((a, b) => Math.hypot(a.x - this.player.x, a.y - this.player.y) - Math.hypot(b.x - this.player.x, b.y - this.player.y))[0];
+    if (!g) return null;
+    return Object.assign({}, g, { monsters: monstres.map(id => ({ id, level: this.ch.level })), level: this.ch.level, tpl: Object.assign({}, g.tpl, { dojo: false, epreuve: genre }), hold: false });
+  }
+  queteVoie() {
+    const q = Quests.get('voie_' + this.ch.classId + '_1'), st = q && Quests.state(this.ch, q.id);
+    return q && st && q.steps[st.step] && q.steps[st.step].type === 'kill' ? q : null;
+  }
+  epreuveVoieDispo(npc) { return !!(npc && npc.def && npc.def.dojo && this.queteVoie()); }
+  epreuveVoie() {
+    if (this.state !== 'explore' && this.state !== 'dialogue' && this.state !== 'panel') return false;
+    if (!this.queteVoie()) return false;
+    const g = this.groupeEpreuve(['reflet_' + this.ch.classId], 'voie');
+    if (!g) { this.toast('La cour du Dojo n\'est pas libre.'); return false; }
+    if (this.state !== 'explore') { this.talkNpc = null; this.state = 'explore'; }
+    return this.startFight(g) !== false;
+  }
+  static jourDojo() { return typeof Veille === 'object' && Veille.jour ? Veille.jour() : Math.floor(Date.now() / 86400000); }
+  epreuveDojoDispo() { const d = this.ch.dojo; return this.ch.level >= World.NIVEAU_EPREUVE && !(d && d.jour === World.jourDojo()); }
+  epreuveDojo() {
+    if (this.state !== 'explore' && this.state !== 'dialogue' && this.state !== 'panel') return false;
+    if (!this.epreuveDojoDispo()) return false;
+    const g = this.groupeEpreuve(['eleve_du_dojo', 'eleve_du_dojo'], 'dojo');
+    if (!g) { this.toast('La cour du Dojo n\'est pas libre.'); return false; }
+    if (this.state !== 'explore') { this.talkNpc = null; this.state = 'explore'; }
+    if (this.startFight(g) === false) return false;
+    this.combat.vagues = [{ round: 3, monstres: ['eleve_du_dojo', 'eleve_du_dojo'] }, { round: 5, monstres: ['maitre_d_armes'] }];
+    this.combat.epreuveDojo = { limite: World.TOURS_EPREUVE };
+    return true;
+  }
+
   startFight(group) {
     const arene = this.plateau ? this.plateau.arene(group) : null;
     if (this.plateau && !arene) { if (group) group.hold = false; this.toast('Ce combat n\'est pas prêt.'); return false; }
@@ -996,6 +1032,14 @@ class World {
         result.quests.push(...Quests.onEvent(ch, { type: 'kill', monster: e.def.id }));
       }
       result.xp = Math.round(result.xp * (1 + bonus / 100));
+      if (this.combat.epreuveDojo) {
+        const tours = this.combat.round || 1, limite = this.combat.epreuveDojo.limite;
+        const prime = { tours, limite, xp: Math.round(40 * Math.pow(ch.level, 1.3)), fils: 30 + 5 * ch.level, sceaux: tours <= limite ? 1 : 0 };
+        result.epreuveDojo = prime;
+        result.xp += prime.xp; result.fils += prime.fils;
+        if (prime.sceaux) { const found = result.drops.find(x => x.id === 'sceau_de_la_garde'); if (found) found.count += prime.sceaux; else result.drops.push({ id: 'sceau_de_la_garde', count: prime.sceaux }); }
+        ch.dojo = { jour: World.jourDojo() };
+      }
       result.avis = Avis.victoire(ch, monsters.map(e => e.def.id)).map(a => ({ id: a.id, nom: DATA.monsters[a.monstre].name }));
       const g = ch.gainXp(result.xp);
       result.gained = g.gained; result.levels = g.levels;
@@ -1004,7 +1048,7 @@ class World {
       if (!g.levels) ch.hp = Math.max(1, this.combat.player.hp);
       if (g.levels) result.quests.push(...Quests.onEvent(ch, { type: 'level', level: ch.level }));
       result.quests.push(...Quests.onEvent(ch, { type: 'inventory' }));
-      if (this.currentGroup) {
+      if (this.currentGroup && !(this.currentGroup.tpl && this.currentGroup.tpl.epreuve)) {
         const carte = this.currentGroup.carte || this.mapId;
         const st = this.mapStates[carte] || (this.mapStates[carte] = { dead: {}, used: {} });
         st.dead[this.currentGroup.idx] = this.time + (this.currentGroup.tpl.respawn || 45);
@@ -1148,3 +1192,6 @@ class World {
     this.emit('save');
   }
 }
+
+World.NIVEAU_EPREUVE = 5;
+World.TOURS_EPREUVE = 8;
