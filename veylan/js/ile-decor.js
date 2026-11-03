@@ -1076,7 +1076,9 @@ const IleDecor = (() => {
         // Une case fleurie (Sources, Mailles, Bois) ou caillouteuse (Murets, Amarre).
         const fleurie = z === 'ervane_sources' || z === 'ervane_mailles' || z === 'ervane_bois';
         const cols = z === 'ervane_sources' ? ['#ffb347', '#a6f0e4', '#dcd6ff', '#c9f06a'] : z === 'ervane_bois' ? ['#e8f0ff', '#bcd8ff', '#f6f1e2'] : ['#fff6dc', '#f6d36b', '#eab8dc', '#bcd8ff'];
-        const n = fleurie ? 4 + Math.floor(R() * 3) : 3 + Math.floor(R() * 3);
+        // Au téléphone, moins de pièces par case : ces cases sont nombreuses (une sur dix de chaque
+        // aire, près de 2 000 sur Orsane) et leurs pièces fusionnées pèsent sur la mémoire.
+        const n = ctx.telephone ? (fleurie ? 2 + Math.floor(R() * 2) : 1 + Math.floor(R() * 2)) : fleurie ? 4 + Math.floor(R() * 3) : 3 + Math.floor(R() * 3);
         for (let q = 0; q < n; q++) {
           const fx = u + (R() - 0.5) * 0.8, fz = v + (R() - 0.5) * 0.8, fy = sol(fx, fz);
           if (!Number.isFinite(fy)) continue;

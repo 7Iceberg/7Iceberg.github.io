@@ -246,14 +246,20 @@ const IleModeles = (() => {
   // une fleur prend la couleur de la source la plus proche (au Rond des Quatre, l'une des quatre), un
   // galet devient une dalle.
   const SOURCES = [['eau', 160, 148], ['feu', 130, 125], ['terre', 140, 166], ['air', 105, 120], [null, 92, 164]];
-  const dansSources = (x, z) => x >= 70 && x <= 170 && z >= 92 && z <= 190;
+  // Le plateau qu'on habille (poses, cartes, sol : leur T) : les lieux ci-dessous sont ceux d'Ervane et
+  // ne valent qu'à Ervane ; ailleurs (Orsane en 3D, docs/ORSANE-3D.md), la zone du point décide.
+  let ICI = null;
+  const ici = T => { if (T) ICI = T; return ICI; };
+  const ervane = () => !ICI || ICI.id === 'ervane';
+  const zoneIci = (x, z) => (ICI && typeof ICI.zoneA === 'function' ? ICI.zoneA(x, z) : null);
+  const dansSources = (x, z) => ervane() && x >= 70 && x <= 170 && z >= 92 && z <= 190;
   // Les Murets : le plateau au nord-est, au-dessus du village.
-  const dansMurets = (x, z) => x > 110 && z < 80;
+  const dansMurets = (x, z) => ervane() && x > 110 && z < 80;
   // Le Bois Cousu : le nord-ouest, à l'ouest du ravin du Ru Clair (qui descend de (146, 52) à (121, 2)) ;
   // plus au sud, jusqu'à la Lisière Cousue (sa cabane, (118,5 ; 60,5)).
-  const dansBois = (x, z) => z < 95 && (z > 55 ? x <= 125 : x < 120 + z * 0.45);
+  const dansBois = (x, z) => (ervane() ? z < 95 && (z > 55 ? x <= 125 : x < 120 + z * 0.45) : zoneIci(x, z) === 'orsane_toiles');
   // L'Amarre : la pointe sud-ouest, à l'ouest de la haie des Bornes (x = 80).
-  const dansAmarre = (x, z) => z >= 95 && x < 80;
+  const dansAmarre = (x, z) => (ervane() ? z >= 95 && x < 80 : /^orsane_(sentiers|eboulis|toiles)$/.test(zoneIci(x, z) || ''));
   const elementA = (x, z, h) => {
     let m = null, d = 1e9;
     for (const s of SOURCES) { const e = Math.hypot(x - s[1], z - s[2]); if (e < d) { d = e; m = s[0]; } }
@@ -284,7 +290,7 @@ const IleModeles = (() => {
   // aligne son grand côté. tools/meshy/retirer-objets.py a retiré leur forme de l'export.
   const OBJETS = {
     // La maison du Bois Cousu est sa cabane de bois sombre au toit de mousse ; les autres, celles des Mailles.
-    maison: { modele: o => (dansBois(o.u, o.v) ? 'b-cabane' : 'm-maison'), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 6 }) },
+    maison: { modele: o => (ervane() && dansBois(o.u, o.v) ? 'b-cabane' : 'm-maison'), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 6 }) },
     arbre_bobine: { modele: 'b-bobine', taille: () => ({ l: 9, p: 9, h: 18 }) },
     pieu: { modele: 'b-pieux', taille: () => ({ l: 2.6, p: 2.6, h: 2 }) },
     comptoir: { modele: 'm-etal', taille: o => ({ l: (o.taille || [5, 2])[0], p: (o.taille || [5, 2])[1], h: 3.6 }) },
@@ -309,8 +315,8 @@ const IleModeles = (() => {
     puits_sec: { modele: 'mu-puits', taille: () => ({ l: 2.6, p: 2.6, h: 3.2 }) },
     // Les Murets : les maisons sans toit du hameau (la porte du côté de la brèche de l'empreinte, d'où
     // l'angle du monde du code), le four, le terrier (sa jupe plate enfoncée).
-    ruine: { modele: o => (dansMurets(o.u, o.v) ? 'mu-ruine' : dansAmarre(o.u, o.v) ? 'a-mur' : null), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 4.5 }), angle: o => -(o.rot || 0),
-      murs: o => dansAmarre(o.u, o.v) },
+    ruine: { modele: o => (dansMurets(o.u, o.v) ? 'mu-ruine' : ervane() && dansAmarre(o.u, o.v) ? 'a-mur' : null), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 4.5 }), angle: o => -(o.rot || 0),
+      murs: o => ervane() && dansAmarre(o.u, o.v) },
     four: { modele: 'mu-four', taille: () => ({ l: 2.6, p: 2.6, h: 3 }) },
     terrier: { modele: 'mu-terrier', taille: () => ({ l: 3.6, p: 3.6, h: 9 }), enfonce: () => 0.12, angle: o => -(o.rot || 0) },
     // L'Amarre : l'arcade brisée de calcaire (le long de l'axe de ses deux piliers), la ruine de
@@ -326,6 +332,7 @@ const IleModeles = (() => {
   // Les poses des objets d'un plateau : { nom, x, y, z, a (angle autour de Y), k (échelle) }, pour la
   // cuisson du semis (IleGlb.construire). `S.modeles` donne la taille de chaque modèle.
   function poses(S, T, hauteur) {
+    ici(T);
     const out = [];
     for (const o of (T && T.objets) || []) {
       const d = OBJETS[o.sorte], nom = d && (typeof d.modele === 'function' ? d.modele(o, T) : d.modele), M = nom && S.modeles[nom];
@@ -472,6 +479,17 @@ const IleModeles = (() => {
       ['arbuste', 0.01, [0.55, 0.75], ['v-fleurs-lavande']], ['rocher', 0.012, [0.8, 1.3], ['v-rochers']]],
     ervane_amarre: [['arbre', 0.008, [2.8, 3.8], ['jt-rouille']], ['buisson', 0.01, [0.8, 1.2], ['v-buisson']], ['rocher', 0.012, [0.8, 1.3], ['v-rochers']]],
     ervane_bois: [['amanite', 0.025, [0.45, 0.65], ['v-amanites']], ['buisson', 0.006, [0.9, 1.2], ['v-buisson']]],
+    // Orsane en 3D : la Cité (peu d'arbres, des arbustes fleuris), les prés des Clairières (comme les
+    // Sources), les Sentiers et les Éboulis (des rochers, l'arbre rouille), la forêt morte des Toiles.
+    // Orsane a trois fois la surface d'Ervane, et tout son semis est cuit en mémoire : des densités
+    // plus basses, et les variantes légères (le jeune arbre ambre, 1 140 sommets, plutôt que le vert,
+    // 2 051 ; l'arbuste blanc, 1 131, plutôt que la lavande, 2 542).
+    orsane_cimes: [['arbre', 0.004, [3.0, 4.0], ['jt-ambre']], ['buisson', 0.006, [0.9, 1.2], ['v-buisson']], ['arbuste', 0.006, [0.55, 0.75], ['v-fleurs-blanc']]],
+    orsane_clairieres: [['arbre', 0.009, [3.0, 4.4], ['jt-ambre', 'jt-ambre', 'jt-vert']], ['buisson', 0.008, [0.9, 1.4], ['v-buisson']],
+      ['arbuste', 0.006, [0.55, 0.8], ['v-fleurs-blanc', 'v-fleurs-blanc', 'v-fleurs-lavande']], ['rocher', 0.003, [0.8, 1.2], ['v-rochers']], ['amanite', 0.002, [0.45, 0.6], ['v-amanites']]],
+    orsane_sentiers: [['arbre', 0.004, [2.8, 4.0], ['jt-ambre', 'jt-rouille']], ['buisson', 0.006, [0.9, 1.3], ['v-buisson']], ['rocher', 0.008, [0.8, 1.3], ['v-rochers']]],
+    orsane_toiles: [['amanite', 0.008, [0.45, 0.65], ['v-amanites']], ['buisson', 0.004, [0.9, 1.2], ['v-buisson']], ['rocher', 0.003, [0.8, 1.1], ['v-rochers']]],
+    orsane_eboulis: [['arbre', 0.002, [2.8, 3.8], ['jt-rouille']], ['buisson', 0.004, [0.8, 1.2], ['v-buisson']], ['rocher', 0.011, [0.8, 1.4], ['v-rochers']]],
   };
   // Les cartes : [genre, densité par u², hauteurs, carte] ; les sols où elles poussent (T.sol : 0 l'herbe,
   // 1 la lande, 2 la terre, 3 le calcaire, 4 la roche, 5 le sous-bois).
@@ -481,6 +499,11 @@ const IleModeles = (() => {
     ervane_murets: [['doree', 0.55, [0.75, 1.1], 1], ['herbe', 0.15, [0.7, 1.0], 0]],
     ervane_amarre: [['doree', 0.3, [0.7, 1.0], 1], ['herbe', 0.12, [0.7, 1.0], 0]],
     ervane_bois: [['herbe', 0.3, [0.7, 1.05], 0]],
+    orsane_cimes: [['herbe', 0.25, [0.7, 1.0], 0], ['fleurs', 0.04, [0.45, 0.6], 2]],
+    orsane_clairieres: [['herbe', 0.5, [0.75, 1.15], 0], ['fleurs', 0.05, [0.45, 0.62], 2]],
+    orsane_sentiers: [['doree', 0.35, [0.75, 1.1], 1], ['herbe', 0.12, [0.7, 1.0], 0]],
+    orsane_toiles: [['herbe', 0.2, [0.7, 1.0], 0]],
+    orsane_eboulis: [['doree', 0.25, [0.7, 1.0], 1], ['herbe', 0.08, [0.7, 1.0], 0]],
   };
   const SOLS_CARTES = { herbe: [0, 1, 5], doree: [1, 0, 2], fleurs: [0, 5] };
   // Un bruit de valeurs doux (pour les grappes), déterministe.
@@ -582,7 +605,10 @@ const IleModeles = (() => {
     ilots: [[60, -20, 2, 8], [150, -24, 6, 9], [215, -16, -2, 7], [-22, 58, 4, 8], [-20, 140, -4, 7], [258, 70, 3, 8], [258, 150, -5, 9], [120, 194, -3, 8], [40, 192, 4, 7]],
     pont: { hauteur: 1.4, tablier: 0.2 },
   };
+  // Orsane en 3D : rien près des escaliers de la Cité et du Pont du Vide ; ses îlots, autour du continent.
+  const BORDS_ORSANE = { loin: [[220, 141], [289, 92], [372, 56], [404, 56], [388, 40]], ilots: [[-24, 150, 3, 9], [462, 130, -2, 8], [230, 352, -4, 9], [110, -26, 4, 7], [400, -24, 2, 8], [470, 280, 0, 7], [-20, 270, -3, 8]] };
   function posesBords(S, T, hauteur, out) {
+    const ICIB = T && T.id && T.id !== 'ervane' ? Object.assign({}, BORDS, T.id === 'orsane' ? BORDS_ORSANE : { loin: [], ilots: [] }) : BORDS;
     const R = S.modeles['br-racines'], C = S.modeles['br-cristaux'], I = S.modeles['br-ilot'], P = S.modeles['br-pont'];
     if (!T || typeof T.videA !== 'function') return;
     let pair = 0;
@@ -598,7 +624,7 @@ const IleModeles = (() => {
           let nx = -dz / L, nz = dx / L;
           if (!T.videA(x + nx * 3, z + nz * 3)) { nx = -nx; nz = -nz; }
           if (!T.videA(x + nx * 3, z + nz * 3) || T.videA(x - nx * 3, z - nz * 3)) continue;
-          if (BORDS.loin.some(([u, v]) => Math.hypot(u - x, v - z) < 8)) continue;
+          if (ICIB.loin.some(([u, v]) => Math.hypot(u - x, v - z) < 8)) continue;
           const y = hauteur(x - nx * 1.5, z - nz * 1.5);
           if (!Number.isFinite(y)) continue;
           if (pair++ % 2 === 0) {
@@ -612,7 +638,7 @@ const IleModeles = (() => {
         reste = ((reste - L) % BORDS.pas + BORDS.pas) % BORDS.pas;
       }
     }
-    if (I) for (const [x, z, y, h] of BORDS.ilots) out.push({ nom: 'br-ilot', x, y, z, a: hacheSimple(x, z) * Math.PI * 2, k: h / I.hauteur });
+    if (I) for (const [x, z, y, h] of ICIB.ilots) out.push({ nom: 'br-ilot', x, y, z, a: hacheSimple(x, z) * Math.PI * 2, k: h / I.hauteur });
     // Le Pont de cordes (au-dessus du vide) ; la passerelle de planches du ravin garde sa forme.
     if (P) for (const p of (T.ponts || []).filter(q => q.matiere === 'corde')) {
       const cum = [0];
@@ -694,6 +720,7 @@ const IleModeles = (() => {
   const VENT = { value: 0 };
   async function cartes(THREE, ile) {
     const T = ile && ile.T;
+    ici(T);
     if (!T || !T.FX || !ile.monde) return null;
     for (const rg of Object.values(CARTES_DENSES)) for (const r of rg) r.sols = SOLS_CARTES[r[0]];
     const pts = semerDense(T, CARTES_DENSES, 0.9, 1, 777).concat(cartesParcelles(T));
@@ -944,6 +971,8 @@ const IleModeles = (() => {
   const TYPES_SOL = { vert: [0.1133, 0.2848, 0.11], dalles: [0.7406, 0.7182, 0.6209], terre: [0.3876, 0.3046, 0.1296], roche: [0.3487, 0.3233, 0.3142] };
   // Les villages (u, v, rayon, force) : des plaques de dalles dans l'herbe. Les Mailles et le Hameau Vide.
   const VILLAGES = [[210, 104, 36, 1], [175, 28, 14, 0.7]];
+  // Par plateau : la zone du village (des plaques de dalles dans l'herbe) et ses centres.
+  const VILLAGES_PLATEAU = { ervane: { zone: 'ervane_mailles', centres: VILLAGES }, orsane: { zone: 'orsane_cimes', centres: [[222, 92, 62, 1]] } };
   // `etc` : le GPU lit ETC2, le sol précuit (jeu-<nom>.ktx, retourné comme flipY) d'abord.
   async function texSol(THREE, nom, etc) {
     const m = SOLS[nom].moyenne, moyenne = new THREE.Vector3(m[0], m[1], m[2]);
@@ -995,6 +1024,7 @@ const IleModeles = (() => {
   // dalles), b le village (des plaques de dalles dans l'herbe), a les places de terre. Des distances,
   // en douceur : le shader en tire des bords nets au bruit.
   function carteSol(THREE, T) {
+    const VIL = VILLAGES_PLATEAU[T.id] || { zone: null, centres: [] };
     const W = T.W, H = T.H, data = new Uint8Array(W * H * 4);
     const pres = (u, v, pts, demi) => {
       let m = Infinity;
@@ -1020,8 +1050,8 @@ const IleModeles = (() => {
       }
       data[i * 4] = val(dS); data[i * 4 + 1] = val(dR); data[i * 4 + 3] = val(dT);
       const z = T.regionsZone && T.region ? T.regionsZone[T.region[i]] : null;
-      vil[i] = z === 'ervane_mailles' ? 1 : 0;
-      for (const V of VILLAGES) { const d = Math.hypot(u - V[0], v - V[1]); if (d < V[2]) vil[i] = Math.max(vil[i], V[3] * Math.min(1, (V[2] - d) / (V[2] * 0.3))); }
+      vil[i] = z === VIL.zone ? 1 : 0;
+      for (const V of VIL.centres) { const d = Math.hypot(u - V[0], v - V[1]); if (d < V[2]) vil[i] = Math.max(vil[i], V[3] * Math.min(1, (V[2] - d) / (V[2] * 0.3))); }
     }
     // Le village en douceur (deux passes de flou de 3 u) : les plaques s'éclaircissent vers ses bords.
     const flou = (src) => { const out = new Float32Array(W * H); for (let v = 0; v < H; v++) for (let u = 0; u < W; u++) { let s = 0, n = 0; for (let dv = -3; dv <= 3; dv++) for (let du = -3; du <= 3; du++) { const x = u + du, y = v + dv; if (x < 0 || y < 0 || x >= W || y >= H) continue; s += src[y * W + x]; n++; } out[v * W + u] = s / n; } return out; };

@@ -10,13 +10,14 @@
 // forme. Le terrain, la navigation, les combats, les figures ne changent pas : le GLB vient du même
 // terrain que le jeu, à la même place.
 const IleGlb = (() => {
-  // assets/monde/ervane.glb à côté des scripts, en local comme en ligne ; l'empreinte de version du
-  // script (?v=..., posée par tools/make-online.sh) suit le fichier : un cache ne sert plus un vieux monde.
-  function source() {
-    let src = 'assets/monde/ervane.glb';
+  // Le monde d'un plateau (`rendu.monde` de sa définition, assets/monde/ervane.glb pour Ervane) à
+  // côté des scripts, en local comme en ligne ; l'empreinte de version du script (?v=..., posée par
+  // tools/make-online.sh) suit le fichier : un cache ne sert plus un vieux monde.
+  function source(fichier) {
+    let src = fichier || 'assets/monde/ervane.glb';
     try {
       const ref = document.querySelector('script[src*="ile-charge.js"]') || document.querySelector('script[src*="ile-3d.js"]');
-      if (ref && ref.src) { const u = new URL(ref.src); src = new URL('../assets/monde/ervane.glb', u).href + u.search; }
+      if (ref && ref.src) { const u = new URL(ref.src); src = new URL('../' + src, u).href + u.search; }
     } catch (e) { /* chemin relatif */ }
     return src;
   }
@@ -511,10 +512,12 @@ const IleGlb = (() => {
   // `opts.semis` : le semis Meshy (IleModeles.chargerSemis), qui remplace les arbres, rochers et
   // buissons de l'export.
   async function poser(THREE, ile, scene, url, opts) {
-    const glb = await lire(url || source());
+    const src = url || source();
+    const glb = await lire(src);
     const semis = opts && opts.semis;
     const T = ile.T, cacher = T && typeof T.closA === 'function' ? (u, v) => T.closA(u, v) : null;
     const groupe = construire(THREE, glb, { semis, cacher, teinte: ile.nuit && typeof ile.nuit.teinteGlb === 'function' ? (u, v, nom, t) => ile.nuit.teinteGlb(u, v, nom, t) : null });
+    groupe.userData.source = src;
     // La mémoire de la scène (Ile3D.stats) : le semis Meshy cuit et son atlas.
     if (semis && groupe.userData.semisMeshy) { ile.octetsGeo = (ile.octetsGeo || 0) + groupe.userData.semisMeshy.octets; ile.octetsTex = (ile.octetsTex || 0) + semis.octets.tex; }
     // Et le reste du monde modelé (le sol, les objets, les lignes, les agrafes, les fils, le semis de

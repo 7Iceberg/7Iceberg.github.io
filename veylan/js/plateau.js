@@ -15,13 +15,17 @@ class Plateau {
     this.def = def;
     this.id = def.id;
     this.world = world;
-    const c = Ile.terrain(def.id);
+    // Un seul plateau en mémoire : entrer sur celui-ci oublie l'autre (Ervane ou Orsane).
+    const c = Ile.terrain(def.id, { seul: true });
     this.terrain = c.terrain;
     this.nav = c.nav;
     this.cartes = [];          // [{ def, zone }] : les sous-zones du plateau
     this.relais = [];          // [{ carte, x, y }]
     this.portes = [];          // [{ carte, x, y, dungeon }]
     this.panneaux = [];        // [{ x, y, texte }]
+    // Les sorties vers une carte hors du plateau (la Passe d'Orsane vers Kaldum, en cases) :
+    // [{ carte, cote, vers, arrivee, x, y, rayon }], au lieu nommé de chacune.
+    this.sorties = (def.sorties || []).map(s => { const p = (def.lieux || {})[s.lieu]; return p ? { carte: s.carte, cote: s.cote, vers: s.vers, arrivee: s.arrivee, x: p[0], y: p[1], rayon: s.rayon || 3 } : null; }).filter(Boolean);
     this.marque = null;        // la marque de destination { x, y }, posée à l'image du toucher
     this.recherche = null;     // la recherche de chemin en cours, découpée par images
     // Le travail de fond de l'A* par image (3.9), compté en cases explorées et non en millisecondes,
@@ -32,7 +36,8 @@ class Plateau {
     this.horloges = { zone: 0, reapparition: 0, position: 0, trajet: 0 };
     this.cellulesAires = new Map();
     this.centres = this.centresSecteurs();
-    const met = (def.lieux || {}).metier;
+    // La composante principale : celle du départ du plateau (`depart`, le Métier sur Ervane).
+    const met = Plateau.depart(def);
     const p = met && this.nav.plusProche(met[0], met[1], 6, { statique: true });
     this.compPrincipale = p ? this.nav.composanteA(p[0], p[1]) : 0;
     // Une barrière se rouvre quand sa quête se termine. L'écouteur est rendu par liberer().
@@ -49,6 +54,8 @@ class Plateau {
   }
 
   static dist(a, b) { const dx = a.x - b.x, dy = a.y - b.y; return Math.sqrt(dx * dx + dy * dy); }
+  // Le point de départ d'un plateau : son lieu `depart`, sinon le Métier (Ervane), ou null.
+  static depart(def) { const l = (def && def.lieux) || {}; return l.depart || l.metier || null; }
   static arrondi(x) { return Math.round(x * 100) / 100; }
 
   // Le centre de chaque sous-zone : la moyenne de ses échantillons de terre ferme.
@@ -106,8 +113,9 @@ class Plateau {
     return this.secteurDe(p[0], p[1]) || mapId;
   }
 
-  // Où poser le Veilleur : { x, y } (ou le plus proche praticable), { lieu }, sinon le relais de
-  // la sous-zone, sa porte de donjon, le relais du plateau le plus proche de son centre, le Métier.
+  // Où poser le Veilleur : { x, y } (ou le plus proche praticable), { lieu }, { side } (le lieu de
+  // la sortie de ce côté de la sous-zone : qui revient de Kaldum par la Passe), sinon le relais de
+  // la sous-zone, sa porte de donjon, le relais du plateau le plus proche de son centre, le départ.
   pointArrivee(mapId, a) {
     const T = this.terrain, lieux = this.def.lieux || {};
     // D'abord une case libre des groupes (on n'arrive pas figure sur figure, revue finale), sinon la
@@ -115,6 +123,8 @@ class Plateau {
     const proche = (x, y, r) => (Number.isFinite(x) && Number.isFinite(y) && T.dans(x, y) ? (this.nav.plusProche(x, y, r, { comp: this.compPrincipale }) || this.nav.plusProche(x, y, r, { statique: true, comp: this.compPrincipale })) : null);
     if (a.x != null && a.y != null) { const p = proche(a.x, a.y, 6); if (p) return this.nav.libre(a.x, a.y) && this.nav.composanteA(a.x, a.y) === this.compPrincipale ? [a.x, a.y] : p; }
     if (a.lieu && lieux[a.lieu]) { const p = proche(lieux[a.lieu][0], lieux[a.lieu][1], 6); if (p) return p; }
+    const so = a.side && this.sorties.find(s => s.carte === mapId && s.cote === a.side);
+    if (so) { const p = proche(so.x, so.y, 6); if (p) return p; }
     const ici = this.relais.find(r => r.carte === mapId);
     if (ici) { const p = proche(ici.x, ici.y, 4); if (p) return p; }
     const porte = this.portes.find(r => r.carte === mapId);
@@ -124,7 +134,7 @@ class Plateau {
       const r = this.relais.slice().sort((a1, b1) => Plateau.dist({ x: c[0], y: c[1] }, a1) - Plateau.dist({ x: c[0], y: c[1] }, b1))[0];
       const p = proche(r.x, r.y, 4); if (p) return p;
     }
-    const m = lieux.metier || [T.largeur / 2, T.hauteur / 2];
+    const m = Plateau.depart(this.def) || [T.largeur / 2, T.hauteur / 2];
     return proche(m[0], m[1], 12) || m;
   }
 
@@ -271,6 +281,8 @@ class Plateau {
     const w = this.world;
     if (this.recherche) this.poursuivre(false);
     this.marcher(dt);
+    // Arrivé à une sortie, le Veilleur a quitté le plateau (pour Kaldum, en cases) : plus rien ici.
+    if (w.plateau !== this) return;
     for (const g of w.groups) this.errer(g, dt);
     if (w.state === 'combat') return;
     this.verifierSecteur();
@@ -346,7 +358,29 @@ class Plateau {
     const fn = p.onArrive;
     p.onArrive = null;
     w.emit('arrive', { map: w.mapId, x: p.x, y: p.y });
+    const depuis = this.departTrajet;
+    this.departTrajet = null;
     if (fn) fn();
+    // Arrivé sans but au bout d'une sortie (à son rayon), en venant d'au-delà : on passe sur l'autre
+    // carte, comme sur la case de sortie d'une carte en cases. Celui qu'on y pose en arrivant (de
+    // Kaldum) ne repart pas en faisant un pas : il faut y revenir de plus loin.
+    else { const s = this.sortieProche(); if (s && (!depuis || Plateau.dist(depuis, s) > s.rayon)) w.sortirPlateau(s); }
+  }
+
+  // La sortie à portée du Veilleur (à son rayon), ou null.
+  sortieProche(marge) {
+    const p = this.world.player;
+    return this.sorties.find(s => Plateau.dist(p, s) <= s.rayon + (marge || 0)) || null;
+  }
+  // Les côtés de la sous-zone qui ont une sortie hors du plateau.
+  cotesSortie(mapId) { return this.sorties.filter(s => s.carte === mapId).map(s => s.cote); }
+  // Marcher jusqu'à la sortie de ce côté de la sous-zone, puis passer (le geste vers le bord de
+  // l'écran, js/hud-jeu.js). Faux s'il n'y en a pas.
+  allerSortie(mapId, cote) {
+    const s = this.sorties.find(x => x.carte === mapId && x.cote === cote);
+    if (!s) return false;
+    const etat = this.approcher(s, 0.5, () => this.world.sortirPlateau(s), s.rayon);
+    return etat !== 'impossible';
   }
 
   // On ne change de sous-zone qu'une fois entré de 1 u dans la nouvelle.
@@ -392,6 +426,8 @@ class Plateau {
     for (const r of this.relais) voir('relais', r, 1.6);
     for (const r of this.portes) voir('porte', r, 2.0);
     for (const r of this.panneaux) voir('panneau', r, 1.0);
+    // Une sortie se vise de loin : qui s'y tient (il vient d'arriver de Kaldum) marche autour.
+    for (const r of this.sorties) if (Plateau.dist(w.player, r) > r.rayon) voir('sortie', r, 2.0);
     cands.sort((a, b) => a.n - b.n);
     return cands[0] ? { type: cands[0].type, ref: cands[0].ref } : null;
   }
@@ -414,6 +450,7 @@ class Plateau {
         if (d) w.emit('dungeonPrompt', d); else w.toast('Cette porte est fermée pour l\'instant.');
       }, 3);
       case 'panneau': return this.approcher(ref, 1.5, () => w.emit('panneau', { texte: ref.texte, x: ref.x, y: ref.y }), 3);
+      case 'sortie': return this.approcher(ref, 0.5, () => w.sortirPlateau(ref), ref.rayon);
       default: return this.allerA(t.x, t.y, null);
     }
   }
@@ -429,6 +466,7 @@ class Plateau {
       case 'relais': return parId(this.relais, x => x.carte === r);
       case 'porte': return parId(this.portes, x => x.carte === r);
       case 'panneau': return parId(this.panneaux, x => x.texte === r);
+      case 'sortie': return parId(this.sorties, x => x.vers === r);
       default: return null;
     }
   }
@@ -511,6 +549,9 @@ class Plateau {
     for (let k = 1; k < points.length; k++) cum.push(cum[k - 1] + Plateau.dist(points[k - 1], points[k]));
     const longueur = cum[cum.length - 1];
     p.onArrive = action || null;
+    // D'où part le trajet (un trajet recalculé en route garde son départ) : une sortie ne prend que
+    // qui vient d'au-delà de son rayon (arriver).
+    if (!garderVitesse || !this.departTrajet) this.departTrajet = { x: p.x, y: p.y };
     if (longueur < 0.02) { p.x = points[points.length - 1].x; p.y = points[points.length - 1].y; p.rx = p.x; p.ry = p.y; this.arriver(); return; }
     p.chemin = { pts: points, cum, longueur, s: 0, k: 0, kPath: 0, but: but || points[points.length - 1] };
     if (!garderVitesse) { p.course = longueur > 6; p.vitesse = 0; }

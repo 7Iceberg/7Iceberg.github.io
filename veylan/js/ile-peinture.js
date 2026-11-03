@@ -357,7 +357,8 @@ function fabriqueIlePeinture() {
   const ACCENTS = { braise: [1.38, 0.78, 0.55], mousse: [0.8, 1.3, 0.66], herbe_blanche: [1.25, 1.22, 1.1] };
 
   function teinte(T, def) {
-    const k = 3, W = Math.round(T.largeur * k), H = Math.round(T.hauteur * k);
+    // Trois texels par u ; deux sur un grand plateau (Orsane, trois fois Ervane : la mémoire du téléphone).
+    const k = T.largeur * T.hauteur > 100000 ? 2 : 3, W = Math.round(T.largeur * k), H = Math.round(T.hauteur * k);
     // La teinte des régions, au treillis, floutée sur 3 u : les zones se fondent les unes dans les autres.
     const NW = T.W, NH = T.H;
     const tr = [new Float32Array(NW * NH), new Float32Array(NW * NH), new Float32Array(NW * NH)];

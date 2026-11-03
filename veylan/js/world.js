@@ -73,8 +73,14 @@ class World {
     if (this.plateauxPermis || typeof Ile !== 'object' || typeof mapId !== 'string') return true;
     if (!(mapId.includes('#') ? Ile.donjon3D(mapId) : Ile.estPlateau(mapId))) return true;
     // Un seul mot par instant du monde (le départ essaie la carte sauvegardée, puis le Métier).
-    if (this.refusA !== this.time) { this.refusA = this.time; this.toast('Ervane ne s\'affiche pas encore sur cet appareil.'); }
+    if (this.refusA !== this.time) { this.refusA = this.time; this.toast(`${World.nomPlateau(mapId)} ne s'affiche pas encore sur cet appareil.`); }
     return false;
+  }
+  // Le nom du plateau d'une carte ou d'une salle de donjon (« Ervane », « Orsane »).
+  static nomPlateau(mapId) {
+    const id = String(mapId || ''), d = id.includes('#') ? World.dungeonDef(id.split('#')[0]) : null;
+    const m = World.mapDef(d ? d.entryMap : id), pl = m && m.plateau && typeof Ile === 'object' ? Ile.plateau(m.plateau) : null;
+    return pl && pl.name ? pl.name : 'Ervane';
   }
   // Quitter le plateau courant : il rend son écouteur au monde.
   libererPlateau() {
@@ -416,7 +422,9 @@ class World {
   // Glisser l'écran (js/hud-jeu.js) : le Veilleur marche jusqu'à la case de sortie la plus proche
   // de ce côté, puis change de carte comme s'il l'avait touchée. Faux s'il n'y a pas de sortie.
   exitToward(side) {
-    if (this.plateau) return false;
+    // Sur un plateau : seulement une sortie hors du plateau (la Passe vers Kaldum), de ce côté de la
+    // sous-zone ; on y marche, puis on passe.
+    if (this.plateau) return this.state === 'explore' && this.plateau.allerSortie(this.mapId, side);
     if (this.state !== 'explore' || !this.mapDef || !this.mapDef.exits || !this.mapDef.exits[side]) return false;
     const reach = this.reach();
     const cells = (this.map.exits[side] || []).filter(c => reach.dist.has(Grid.key(c.x, c.y)));
@@ -447,9 +455,18 @@ class World {
 
   // Les côtés de la carte courante qui mènent quelque part.
   openSides() {
-    if (this.plateau) return [];
+    if (this.plateau) return this.plateau.cotesSortie(this.mapId);
     const ex = (this.mapDef && this.mapDef.exits) || {};
     return ['n', 'e', 's', 'w'].filter(d => ex[d] && (this.map.exits[d] || []).length);
+  }
+
+  // Le Veilleur passe une sortie d'un plateau (js/plateau.js) : il entre sur la carte d'à côté, hors
+  // du plateau, par le côté opposé (la Passe d'Orsane mène à la Porte de Kaldum, par son ouest).
+  sortirPlateau(s) {
+    if (!s || !s.vers || this.state !== 'explore' || !this.plateau) return false;
+    if (!this.enter(s.vers, { side: s.arrivee })) return false;
+    this.emit('save');
+    return true;
   }
 
   // Pose le Veilleur sur une case libre de la carte courante (le début du tutoriel).
@@ -556,13 +573,23 @@ class World {
   passage() {
     const npc = this.talkNpc, p = this.passageDe(npc);
     if (!p || this.state !== 'dialogue') return false;
-    const a = p.arrivee || {};
-    const arrivee = a.lieu ? { lieu: a.lieu } : (a.x != null && a.y != null ? { x: a.x, y: a.y } : { relay: true });
+    const arrivee = World.arriveePassage(p);
     this.endDialogue();
     if (!this.enter(p.vers, arrivee)) { this.toast('Le passage est fermé pour l\'instant.'); return false; }
     this.emit('passage', { vers: p.vers, npc: npc.id });
     this.emit('save');
     return true;
+  }
+
+  // L'arrivée d'un passage, selon ce qu'est la carte d'arrivée : sur un plateau, le lieu (la Nacelle
+  // d'Orsane en 3D) ; sur une carte en cases, la case (la Place du Relais en cases) ; sinon le relais.
+  // Le passage de Kolm porte les deux (content/ervane.js) : Orsane peut être l'un ou l'autre.
+  static arriveePassage(p) {
+    const a = (p && p.arrivee) || {};
+    const plateau = typeof Ile === 'object' && Ile.estPlateau(p && p.vers);
+    const cases = a.x != null && a.y != null;
+    if (a.lieu && (plateau || !cases)) return { lieu: a.lieu };
+    return cases ? { x: a.x, y: a.y } : { relay: true };
   }
 
   endDialogue() {

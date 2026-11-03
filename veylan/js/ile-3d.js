@@ -217,10 +217,14 @@ class Ile3D {
     // Le style Lisière (3.25) : ?style=lisiere ou DATA.ile.style ; il prend la place de la nuit (il
     // en reprend le décor ajouté et les lucioles) et règle le ciel, la brume et les lumières à
     // l'heure et au temps qu'il fait. Un échec laisse l'île comme avant.
-    if (IleCharge.style && IleCharge.style() === 'lisiere') {
+    // Le rendu propre à chaque plateau (`rendu` : le monde modelé, le style, l'aperçu de nuit, les
+    // modèles Meshy ; docs/ORSANE-3D.md) : ce que l'interrupteur et l'adresse demandent ne vient que
+    // sur le plateau qui l'a. Ervane les a tous ; Orsane aucun pour l'instant, dessinée par le code.
+    const rendu = Ile3D.renduDe(plateau.def);
+    if (rendu.style === 'lisiere' && IleCharge.style && IleCharge.style() === 'lisiere') {
       try { await IleCharge.lisiere(); if (typeof IleLisiere === 'object') this.nuit = new IleLisiere.Lisiere(THREE, this); } catch (e) { console.warn('Ervane : style Lisière indisponible', e); this.nuit = null; }
     }
-    if (!this.nuit && IleCharge.ambiance && IleCharge.ambiance() === 'nuit') {
+    if (!this.nuit && rendu.nuit && IleCharge.ambiance && IleCharge.ambiance() === 'nuit') {
       try { await IleCharge.nuit(); if (typeof IleNuit === 'object') this.nuit = new IleNuit.Nuit(THREE, this); } catch (e) { console.warn('Ervane : aperçu de nuit indisponible', e); this.nuit = null; }
     }
     if (this.voiles) this.voiles.classList.toggle('nuit', !!this.nuit);
@@ -455,16 +459,16 @@ class Ile3D {
     // Le monde modelé dans Blender (tools/blender/monde, assets/monde/ervane.glb) à la place du sol
     // et du décor dessinés par le code : ?monde=glb ou DATA.ile.monde. Un échec laisse l'île comme
     // avant.
-    if (IleCharge.monde && IleCharge.monde() === 'glb') {
+    if (rendu.monde && IleCharge.monde && IleCharge.monde() === 'glb') {
       etape('Le monde modelé');
       await pause();
       // Le semis Meshy (js/ile-modeles.js, 3.32) : les arbres, rochers et buissons du kit de décor à
       // la place des formes de l'export ; sans lui (échec, ?modeles=0), le monde tel qu'exporté.
       let semis = null;
-      if (IleCharge.modeles && IleCharge.modeles()) {
+      if (rendu.modeles && IleCharge.modeles && IleCharge.modeles()) {
         try { await IleCharge.modelesScript(); if (typeof IleModeles === 'object') { semis = await IleModeles.chargerSemis(THREE, this.renderer); semis.poses = IleModeles.poses(semis, this.T, (u, v) => this.hauteur(u, v)); } } catch (e) { console.warn('Ervane : semis Meshy indisponible', e); semis = null; }
       }
-      try { await IleCharge.glb(); if (typeof IleGlb === 'object') await IleGlb.poser(THREE, this, scene, null, { semis }); } catch (e) { console.warn('Ervane : monde modelé indisponible', e); }
+      try { await IleCharge.glb(); if (typeof IleGlb === 'object') await IleGlb.poser(THREE, this, scene, IleGlb.source(rendu.monde), { semis }); } catch (e) { console.warn('Ervane : monde modelé indisponible', e); }
       this.semisMeshy = !!(semis && this.monde && this.monde.userData.semisMeshy);
       // Le grain des sols de Meshy sur le sol du monde modelé (3.32).
       if (semis && this.monde) { try { this.octetsTex += await IleModeles.habillerSol(THREE, this); } catch (e) { console.warn('Ervane : sols Meshy indisponibles', e); } }
@@ -475,7 +479,7 @@ class Ile3D {
     }
     // Les modèles Meshy sur le monde modelé (js/ile-modeles.js, 3.31) : le Relais du Fil. Un échec
     // laisse le monde tel qu'exporté.
-    if (this.monde && IleCharge.modeles && IleCharge.modeles()) {
+    if (this.monde && rendu.modeles && IleCharge.modeles && IleCharge.modeles()) {
       try { await IleCharge.modelesScript(); if (typeof IleModeles === 'object') this.modeles = await IleModeles.poser(THREE, this); } catch (e) { console.warn('Ervane : modèles Meshy indisponibles', e); }
     }
     // Le héros modelé (js/ile-heros.js) à la place du panneau du Veilleur.
@@ -727,6 +731,10 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
   // L'empreinte du code qui peint et du contenu qu'il lit (la clé du cache des peintures) : le
   // texte entier de la fabrique d'IlePeinture, les outils de bruit, les ombres du décor ; les
   // régions, sols et eaux du plateau. Le code ne change pas pendant la page : gardée.
+  // Le rendu d'un plateau (`def.rendu`) : { monde: chemin du GLB, style: 'lisiere', nuit, modeles },
+  // tout absent par défaut (le monde dessiné par le code, sans style).
+  static renduDe(def) { const r = def && def.rendu; return r && typeof r === 'object' ? r : {}; }
+
   static empreintePeinture(def) {
     const M = IleTerrain.M;
     if (!Ile3D._codePeinture) {
@@ -1397,7 +1405,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this.contextePerdu = true;
     clearTimeout(this.minuteriePerte);
     if (!enJeu || !sc) return;
-    sc.perte('Ervane se recoud...');
+    // « Ervane se recoud... » ou « Orsane se recoud... », selon le plateau montré (js/scene.js).
+    sc.perte();
     this.minuteriePerte = setTimeout(() => { if (sc.en3D || sc.voulu) sc.repli(); }, 5000);
   }
   surRetour() {

@@ -56,7 +56,10 @@
         // ----- 3. Les formes tissées : trois Grouks sur une carte qui atteint 10 -----
         if (apres[1] >= 10 && g.monsters.length === 3 && g.monsters.every(id => id === 'grouk')) g.monsters = ['grouk_cornu', 'grouk', 'grouk'];
       }
-      const k = KAVOUS[m.id];
+      // Sur le plateau d'Orsane en 3D (docs/ORSANE-3D.md), pas de Kavous ajoutés : leur aire n'est
+      // pas dans le terrain, qui reste le même avec ou sans ce module (appliqué avant le plateau, le
+      // groupe ajouté part avec la conversion ; après, il n'est pas ajouté).
+      const k = !m.plateau && KAVOUS[m.id];
       if (k) {
         const [x, y] = k.case;
         if (!m.layout || !m.layout[y] || m.layout[y][x] !== '.') throw new Error(`ervaneOrsane : la case ${x},${y} de ${m.id} n'est pas un sol libre`);

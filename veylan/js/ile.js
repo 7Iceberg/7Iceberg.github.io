@@ -121,6 +121,68 @@ const Ile = (() => {
   }
   const actif = () => appliques.has('ervane');
 
+  // ----- Orsane en 3D (docs/ORSANE-3D.md) -----
+  // Le second plateau : les 26 cartes d'Orsane converties sur place en secteurs du plateau `orsane`
+  // (content/orsane-plateau.js, puis les aires cuites, content/orsane-aires.js). Par personnage,
+  // comme les changements d'Orsane : décidé d'après le personnage lu en brut, appliqué avant sa
+  // lecture validée (js/save.js convertit alors sa position) et avant que le monde soit créé.
+  // L'interrupteur : DATA.ile.orsane3d ; en développement, ?orsane3d=1 ou la clé d'essai
+  // « veylan.orsane3d.essai » = « 1 » ; ?orsane3d=0 l'éteint. Il faut en plus l'île chargée (le
+  // moteur et le rendu 3D), WebGL, un personnage qui ne joue pas un tutoriel en cases (celui de la
+  // descente, ou celui d'Orsane : leurs repères sont des cases) et qui n'a pas choisi de continuer en
+  // 2D sur cet appareil (l'écran de repli, js/scene.js : la clé « veylan.orsane2d.<uid> »).
+  function orsane3dAllume() {
+    const p = parametres(), dev = enDev(p);
+    if (dev && p.orsane3d === '0') return false;
+    if (dev && (p.orsane3d === '1' || lire(local(), 'veylan.orsane3d.essai') === '1')) return true;
+    return !!(typeof DATA === 'object' && DATA.ile && DATA.ile.orsane3d);
+  }
+  const PAS_EN_3D = 'veylan.orsane2d.';
+  function orsane3dPour(ch) {
+    if (!orsane3dAllume() || !actif()) return false;
+    const M = (typeof DATA === 'object' && DATA.modules) || {};
+    if (typeof M.orsanePlateau !== 'function' || typeof M.orsaneAires !== 'function') return false;
+    if (typeof IleCharge === 'object' && IleCharge.webgl && !IleCharge.webgl()) return false;
+    if (!ch || typeof ch !== 'object') return true;
+    const t = ch.tuto;
+    if (t && typeof t === 'object' && !t.done && t.mode !== 'off' && t.jeu !== 'ile') return false;
+    if (typeof ch.uid === 'string' && lire(local(), PAS_EN_3D + ch.uid) === '1') return false;
+    return true;
+  }
+  // Le personnage d'un emplacement, lu en brut (sans validation), ou null.
+  function brut(uid) {
+    const s = local();
+    if (!s || typeof uid !== 'string') return null;
+    let o = null;
+    try { o = JSON.parse(s.getItem('veylan.perso.' + uid)); } catch (e) { o = null; }
+    return o && o.character && typeof o.character === 'object' ? o.character : null;
+  }
+  // Applique Orsane en 3D une fois (le plateau, puis ses aires cuites) ; idempotent.
+  function appliquerOrsane3D() {
+    const M = (typeof DATA === 'object' && DATA.modules) || {};
+    if (appliques.has('orsanePlateau') || typeof M.orsanePlateau !== 'function' || typeof M.orsaneAires !== 'function') return false;
+    M.orsanePlateau();
+    appliques.add('orsanePlateau');
+    M.orsaneAires();
+    appliques.add('orsaneAires');
+    if (typeof World === 'function' && World.reindexer) World.reindexer();
+    return true;
+  }
+  // Pour un emplacement (l'accueil) ou un personnage déjà en mémoire (une création) : applique
+  // Orsane en 3D si l'interrupteur et le personnage le permettent. Rend vrai si c'est fait.
+  function appliquerOrsane3DPour(uidOuPerso) {
+    const ch = typeof uidOuPerso === 'string' ? brut(uidOuPerso) : uidOuPerso;
+    if (typeof uidOuPerso === 'string' && !ch) return false;
+    return orsane3dPour(ch) ? (appliquerOrsane3D(), true) : false;
+  }
+  const orsane3D = () => appliques.has('orsanePlateau');
+  // « Continuer en 2D » (l'écran de repli d'Orsane) : ce personnage ne passe plus en 3D sur cet appareil.
+  function continuerEn2D(uid) {
+    const s = local();
+    if (!s || typeof uid !== 'string') return false;
+    try { s.setItem(PAS_EN_3D + uid, '1'); return true; } catch (e) { return false; }
+  }
+
   // ----- Le registre des plateaux -----
   const plateau = id => ((DATA.content && DATA.content.plateaux) || []).find(p => p.id === id) || null;
   function carte(mapId) {
@@ -128,14 +190,19 @@ const Ile = (() => {
     return null;
   }
   const estPlateau = mapId => { const m = typeof mapId === 'string' ? carte(mapId) : null; return !!(m && m.plateau && plateau(m.plateau)); };
-  // Un donjon (ou une de ses salles, « id#n ») dont l'entrée est sur un plateau.
+  // Un donjon (ou une de ses salles, « id#n ») dont les salles sont en 3D : son entrée est sur un
+  // plateau, et il porte le style de ses salles (`salles3d`, le Puits de l'Amarre). Les donjons
+  // d'Orsane n'en ont pas : sur le plateau d'Orsane, leurs salles restent en cases (docs/ORSANE-3D.md).
   function donjon3D(id) {
     const did = String(id || '').split('#')[0];
     const d = ((DATA.content && DATA.content.dungeons) || []).find(x => x.id === did);
-    return !!(d && estPlateau(d.entryMap));
+    return !!(d && d.salles3d && estPlateau(d.entryMap));
   }
-  // Le terrain et la navigation d'un plateau, construits une fois et gardés en mémoire.
-  function terrain(id) {
+  // Le terrain et la navigation d'un plateau, construits une fois et gardés en mémoire. `seul` (le
+  // monde qui entre sur ce plateau, js/plateau.js) : les autres plateaux sont oubliés, un seul reste
+  // en mémoire (Ervane et Orsane ensemble pèseraient le double).
+  function terrain(id, opts) {
+    if (opts && opts.seul) for (const k of [...cache.keys()]) if (k !== id) cache.delete(k);
     if (cache.has(id)) return cache.get(id);
     const def = plateau(id);
     if (!def) return null;
@@ -148,7 +215,10 @@ const Ile = (() => {
     return e;
   }
   const oublier = id => { if (id == null) cache.clear(); else cache.delete(id); };
-  // Le nombre de plateaux gardés en mémoire (0 à Orsane après la descente : js/scene.js, oublierIle).
+  // Oublie tous les plateaux sauf `id` (un donjon en cases d'Orsane garde son plateau pour le retour).
+  const garderSeul = id => { for (const k of [...cache.keys()]) if (k !== id) cache.delete(k); };
+  // Le nombre de plateaux gardés en mémoire (0 à Orsane en cases après la descente : js/scene.js,
+  // oublierIle ; 1 au plus en marchant, Plateau oublie les autres en entrant sur le sien).
   const registre = () => cache.size;
 
   // Un nouveau personnage naît au Métier du Relais des Mailles : origine, position, relais
@@ -175,7 +245,7 @@ const Ile = (() => {
   // Les fichiers de l'île, dans l'ordre où ils se chargent : les données (modules de contenu, à
   // appliquer ensuite), le moteur sans DOM (avant js/world.js), le rendu 3D (avant js/main.js).
   const FICHIERS = {
-    donnees: ['js/data-ile.js', 'content/ervane.js', 'content/ervane-aires.js', 'content/ervane-orsane.js', 'content/tutoriel-ile.js'],
+    donnees: ['js/data-ile.js', 'content/ervane.js', 'content/ervane-aires.js', 'content/ervane-orsane.js', 'content/tutoriel-ile.js', 'content/orsane-plateau.js', 'content/orsane-aires.js'],
     moteur: ['js/ile-terrain.js', 'js/ile-nav.js', 'js/plateau.js'],
     rendu: ['js/ile-peinture.js', 'js/ile-camera.js', 'js/ile-sol.js', 'js/ile-decor.js', 'js/ile-figures.js', 'js/ile-arene.js', 'js/ile-salle.js', 'js/ile-3d.js', 'js/ile-carte.js', 'js/voile-paysage.js', 'js/voile-medaille.js', 'js/scene.js'],
   };
@@ -200,7 +270,8 @@ const Ile = (() => {
   }
 
   return {
-    decider, appliquer, appliquerOrsane, origineDe, actif, plateau, terrain, oublier, registre, estPlateau, donjon3D, fairenaitre, trace, charger, FICHIERS,
+    decider, appliquer, appliquerOrsane, origineDe, actif, plateau, terrain, oublier, garderSeul, registre, estPlateau, donjon3D, fairenaitre, trace, charger, FICHIERS,
+    orsane3dAllume, orsane3dPour, appliquerOrsane3D, appliquerOrsane3DPour, orsane3D, continuerEn2D,
     get disponible() { return disponible; }, get allumee() { return allumee; }, get raisons() { return raisons.slice(); },
     get charges() { return charges; },
   };

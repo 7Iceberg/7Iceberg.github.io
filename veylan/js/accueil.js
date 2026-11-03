@@ -871,6 +871,9 @@ class Accueil {
     // L'île allumée (l'interrupteur, docs/ILE-TECHNIQUE.md, 1.4) et la 3D possible : le personnage
     // naît au Métier d'Ervane, avec le tutoriel de l'île dans le mode choisi.
     if (typeof Ile === 'object' && Ile.allumee && typeof Ile3D === 'function' && Ile3D.disponible() && Ile.fairenaitre(ch)) Ile.appliquerOrsane();
+    // Orsane en 3D (docs/ORSANE-3D.md) : l'interrupteur allumé, le nouveau personnage la verra en
+    // 3D (la page ne sert que lui). Né à Orsane, son tutoriel en cases l'en garde.
+    if (typeof Ile === 'object' && Ile.appliquerOrsane3DPour) Ile.appliquerOrsane3DPour(ch);
     if (b.invite) {
       // Une partie d'invité n'écrit jamais rien : ni à la création, ni en jeu.
       Object.defineProperty(ch, 'invite', { value: true });
@@ -957,8 +960,10 @@ class Accueil {
   static lire(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   // Un personnage lu pour être joué : s'il est né sur Ervane, les changements d'Orsane s'appliquent
   // avant sa lecture validée (content/ervane-orsane.js ; sa quête « Le Glym Ancestral » existe alors).
+  // Orsane en 3D de même (docs/ORSANE-3D.md) : appliquée avant la lecture, qui convertit sa position.
   static lirePersonnage(uid) {
     if (typeof Ile === 'object' && Ile.actif() && Ile.origineDe(uid) === 'ervane') Ile.appliquerOrsane();
+    if (typeof Ile === 'object' && Ile.appliquerOrsane3DPour) Ile.appliquerOrsane3DPour(uid);
     return Save.read(uid);
   }
   static ecrire(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* rien */ } }

@@ -266,9 +266,9 @@ class Guide {
     this.entrer();
   }
 
-  // La descente : à la première carte à cases d'Orsane d'un personnage né sur Ervane, le petit jeu
-  // d'étapes de la descente (DATA.tutorielDescente) remplace celui de l'île, une fois (ch.tuto.jeu
-  // passe à 'descente', fini ou non). Un tutoriel éteint reste éteint.
+  // La descente : à la première carte d'Orsane d'un personnage né sur Ervane, le petit jeu d'étapes
+  // de la descente (DATA.tutorielDescente) remplace celui de l'île, une fois (ch.tuto.jeu passe à
+  // 'descente', fini ou non) ; Orsane en 3D, il est passé. Un tutoriel éteint reste éteint.
   descente(d) {
     const ch = this.ch, t = ch.tuto;
     // Un personnage d'Ervane devenu personnage d'Orsane (« Recommencer à Orsane », Scene.versOrsane) :
@@ -282,8 +282,22 @@ class Guide {
     }
     if (!t || t.jeu !== 'ile' || ch.origine !== 'ervane' || typeof DATA !== 'object' || !DATA.tutorielDescente) return false;
     const mapId = d && (d.mapId || d.map);
-    if (!mapId || this.world.plateau || (d.def && d.def.room) || !String(mapId).startsWith('orsane_')) return false;
+    if (!mapId || (d.def && d.def.room) || !String(mapId).startsWith('orsane_')) return false;
     const mode = ['guide', 'court', 'off'].includes(t.mode) ? t.mode : 'guide';
+    // Orsane en 3D (docs/ORSANE-3D.md) : les étapes de la descente parlent de cases et de bords de
+    // carte ; sur le plateau d'Orsane, le tutoriel de l'île s'arrête là, celui de la descente est
+    // passé (fini).
+    if (this.world.plateau) {
+      if (this.world.plateau.id === 'ervane') return false;
+      ch.tuto = { mode, step: 0, done: true, jeu: 'descente' };
+      this.data = Guide.donnees(ch);
+      this.etapes = (this.data.etapes || []).filter(Boolean);
+      this.reprise = null;
+      this.started = true;
+      this.sauver();
+      this.toutCacher();
+      return true;
+    }
     ch.tuto = { mode, step: 0, done: mode === 'off', jeu: 'descente' };
     this.data = Guide.donnees(ch);
     this.etapes = (this.data.etapes || []).filter(Boolean);

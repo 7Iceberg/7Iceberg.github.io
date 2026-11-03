@@ -29,6 +29,11 @@
   C.plateaux.push({
     id: 'ervane', name: 'Ervane', graine: 1207,
     taille: [240, 180],
+    // Le rendu propre à ce plateau (js/ile-3d.js, Ile3D.renduDe ; docs/ORSANE-3D.md) : le monde
+    // modelé dans Blender, le style Lisière, l'aperçu de nuit et les modèles Meshy, que
+    // l'interrupteur (DATA.ile) et l'adresse allument. Un plateau sans `rendu` (Orsane) est dessiné
+    // par le code, sans eux.
+    rendu: { monde: 'assets/monde/ervane.glb', style: 'lisiere', nuit: true, modeles: true },
     camera: {
       azimut: 45,
       exploration: { ouverture: 20, elevation: [35, 45] },
@@ -523,9 +528,11 @@
       dialogue: ['Écoute. Ce craquement, c\'est l\'île. Quelque chose mange notre fil.', 'Le Relais de l\'Amarre est à toi. Si l\'île te secoue trop, c\'est ici que tu reviendras.'] },
     // Kolm offre le passage de la Nacelle vers la Place du Relais d'Orsane, une fois « La descente »
     // rendue (docs/ILE-TECHNIQUE.md, 2.9) ; la Nacelle d'Orsane remonte (content/ervane-orsane.js).
+    // L'arrivée : la case 7, 9 de la Place en cases, ou le lieu « nacelle » du plateau d'Orsane quand
+    // Orsane est en 3D (World.arriveePassage, docs/ORSANE-3D.md).
     { id: 'kolm', name: 'Kolm', title: 'Passeur de la Nacelle', look: 'marcheur',
       dialogue: ['Tiens-toi au bord, ne regarde pas en bas. Enfin si, regarde : c\'est Orsane.', 'La Nacelle descend quand le Fil le dit. Pour l\'instant, il dit d\'attendre.'],
-      passage: { vers: 'orsane_cimes_place', arrivee: { x: 7, y: 9 }, texte: 'Descendre par la Nacelle', quete: 'ervane_descente' } },
+      passage: { vers: 'orsane_cimes_place', arrivee: { x: 7, y: 9, lieu: 'nacelle' }, texte: 'Descendre par la Nacelle', quete: 'ervane_descente' } },
   );
   // La Nacelle d'Orsane : Varek (content/orsane.js) remonte sur Ervane celui qui a rendu « La
   // descente ». Dans ce module, et non dans celui d'Orsane par personnage : une sauvegarde doit se

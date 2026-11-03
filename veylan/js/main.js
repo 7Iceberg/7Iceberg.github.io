@@ -50,6 +50,9 @@
     // Un personnage né sur Ervane voit l'Orsane du module ervaneOrsane (content/ervane-orsane.js) :
     // l'accueil l'a appliqué avant la lecture validée ; ici, le filet pour tout autre chemin.
     if (character.origine === 'ervane' && typeof Ile === 'object' && Ile.actif()) Ile.appliquerOrsane();
+    // Orsane en 3D (docs/ORSANE-3D.md) : l'accueil l'a appliquée avant la lecture ; ici, le filet
+    // (un personnage donné tout fait), qui ramène sa position et son relais en u, v.
+    if (typeof Ile === 'object' && Ile.appliquerOrsane3DPour && !Ile.orsane3D() && Ile.appliquerOrsane3DPour(character)) Save.accorder(character);
     // Les cartes de plateau (Ervane) demandent l'aiguillage du rendu 3D (js/scene.js) : sans lui,
     // le monde les refuse et le personnage repart à Orsane (docs/ILE-TECHNIQUE.md, journal).
     world = new World({ character, combat, rng, plateaux: !!scene });

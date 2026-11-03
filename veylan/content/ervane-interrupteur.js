@@ -14,4 +14,6 @@
 // de mémoire au plus), qui garde le jeu dessiné par le code (3.28). heros: false : aucun héros
 // modelé (le modèle de Lyssar est retiré, 3.27) ; le joueur garde sa figure dessinée, et le jeu ne
 // charge pas js/ile-heros.js. ?heros=<classe> force un modèle quand une classe en aura un.
-DATA.ile = { active: true, plateau: 'ervane', naissance: { map: 'ervane_mailles_place', lieu: 'eveil' }, modeleGlym: 'tous', monde: 'glb', style: 'lisiere', heure: 'cycle', heureDepart: 9.5, meteo: 'clair', heros: false };
+// orsane3d: false : Orsane reste en cases ; allumé, ses 26 cartes deviennent le second plateau, par
+// personnage (docs/ORSANE-3D.md, js/ile.js) ; ?orsane3d=1 l'essaie en développement, ?orsane3d=0 l'éteint.
+DATA.ile = { active: true, plateau: 'ervane', naissance: { map: 'ervane_mailles_place', lieu: 'eveil' }, modeleGlym: 'tous', monde: 'glb', style: 'lisiere', heure: 'cycle', heureDepart: 9.5, meteo: 'clair', heros: false, orsane3d: false };

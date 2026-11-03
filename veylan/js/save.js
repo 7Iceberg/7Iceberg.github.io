@@ -69,6 +69,52 @@ const Save = (() => {
   // Une position continue sur un plateau : des nombres finis dans l'île, arrondis au centième.
   const dansPlateau = (pl, x, y) => typeof x === 'number' && typeof y === 'number' && Number.isFinite(x) && Number.isFinite(y) && x >= 0 && y >= 0 && x <= pl.taille[0] && y <= pl.taille[1];
 
+  // Les cartes doubles (Orsane, docs/ORSANE-3D.md) : en cases, ou secteurs d'un plateau quand le
+  // module qui les convertit est appliqué pour ce personnage. Une sauvegarde faite dans un mode se lit
+  // dans l'autre, sans marque : une case devient le point u, v de son centre, un point redevient sa
+  // case. La transformation d'une carte (`secteur` : { u0, v0, k }) vient de la carte convertie, ou,
+  // module non appliqué, de la table du module (content/orsane-plateau.js, chargé avec l'île).
+  const secteurDe = id => {
+    const m = typeof World === 'function' && World.mapDef(id);
+    if (!m) return null;
+    if (m.secteur) return m.secteur;
+    for (const f of Object.values((typeof DATA === 'object' && DATA.modules) || {})) if (typeof f === 'function' && f.secteurs && f.secteurs[id]) return f.secteurs[id];
+    return null;
+  };
+  const caseValide = (x, y) => isInt(x, 0, 14) && isInt(y, 0, 14);
+  const r2 = x => Math.round(x * 100) / 100;
+  // Une position { map, x, y } d'une carte double, ramenée au mode de la carte : rend la position
+  // convertie, ou celle donnée si rien n'est à faire.
+  function versMode(pos) {
+    const m = pos && World.mapDef(pos.map), sec = m && secteurDe(pos.map);
+    if (!sec || !Array.isArray(m.layout)) return pos;
+    const fini = typeof pos.x === 'number' && typeof pos.y === 'number' && Number.isFinite(pos.x) && Number.isFinite(pos.y);
+    if (!fini) return pos;
+    if (m.plateau) return caseValide(pos.x, pos.y) ? { map: pos.map, x: r2(sec.u0 + (pos.x + 0.5) * sec.k), y: r2(sec.v0 + (pos.y + 0.5) * sec.k) } : pos;
+    if (caseValide(pos.x, pos.y)) return pos;
+    const c = v => Math.max(0, Math.min(14, Math.floor(v)));
+    return { map: pos.map, x: c((pos.x - sec.u0) / sec.k), y: c((pos.y - sec.v0) / sec.k) };
+  }
+  // Le point de retour d'une carte double : le relais de la carte dans son mode (en cases, la case Z).
+  function relaisMode(r) {
+    const m = r && World.mapDef(r.map), sec = m && secteurDe(r.map);
+    if (!sec || !Array.isArray(m.layout)) return r;
+    if (m.plateau) return m.relay && caseValide(r.x, r.y) ? { map: r.map, x: m.relay.u, y: m.relay.v } : r;
+    if (caseValide(r.x, r.y)) return r;
+    const y = m.layout.findIndex(l => typeof l === 'string' && l.includes('Z'));
+    return y >= 0 ? { map: r.map, x: m.layout[y].indexOf('Z'), y } : r;
+  }
+
+  // Un personnage déjà lu (en mémoire), ramené au mode des cartes doubles après coup : sa position
+  // et son point de retour (le filet de js/main.js, quand Orsane en 3D s'applique après la lecture).
+  function accorder(ch) {
+    if (!ch || typeof ch !== 'object') return ch;
+    if (ch.pos && typeof ch.pos === 'object') ch.pos = versMode(ch.pos);
+    if (ch.relay && typeof ch.relay === 'object') ch.relay = relaisMode(ch.relay);
+    if (ch.dungeon && ch.dungeon.retour && !plateauDe(ch.dungeon.retour.map)) delete ch.dungeon.retour;
+    return ch;
+  }
+
   // Rangs des sorts : des sorts de la classe seulement, des rangs entiers de 1 à 5, un rang 2 ou plus
   // sur un sort débloqué, chaque rang au niveau qu'il demande (le 5 au niveau 50), et l'invariant
   // points placés + points restants = niveau − 1. Une sauvegarde d'avant les rangs n'a ni l'un ni
@@ -250,12 +296,14 @@ const Save = (() => {
     o.relays = (Array.isArray(o.relays) ? o.relays : []).filter(id => typeof id === 'string' && World.mapDef(id));
     // Le point de retour : sur une carte à cases, une case ; sur un plateau, exactement le relais de
     // sa carte dans le contenu.
+    if (o.relay && typeof o.relay === 'object') o.relay = relaisMode(o.relay);
     if (o.relay) {
       const pr = o.relay.map && plateauDe(o.relay.map), rd = pr && World.mapDef(o.relay.map).relay;
       const ok = pr ? !!(rd && o.relay.x === rd.u && o.relay.y === rd.v) : !!(o.relay.map && World.mapDef(o.relay.map) && isInt(o.relay.x, 0, 99) && isInt(o.relay.y, 0, 99));
       if (!ok) o.relay = null;
     }
     if (o.pos && !(o.pos.map && (World.mapDef(o.pos.map) || String(o.pos.map).includes('#')))) o.pos = null;
+    if (o.pos) o.pos = versMode(o.pos);
     // Une position sur un plateau : continue, dans l'île, au centième ; sinon oubliée, sans marque
     // (le personnage repart de son relais, comme après une carte disparue).
     if (o.pos) {
@@ -499,5 +547,5 @@ const Save = (() => {
 
   // KEY : l'ancienne clé unique, gardée pour le code qui la lit encore ; elle désigne maintenant
   // l'emplacement du dernier personnage joué.
-  return { MAX, LEGACY_KEY, keyOf, list, read, write, remove, lastUid, free, clear, exportText, importText, suspend, validate, get KEY() { return keyOf(lastUid() || ''); } };
+  return { MAX, LEGACY_KEY, keyOf, list, read, write, remove, lastUid, free, clear, exportText, importText, suspend, validate, accorder, get KEY() { return keyOf(lastUid() || ''); } };
 })();

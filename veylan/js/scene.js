@@ -150,7 +150,7 @@ class Scene {
     this.support = null;
     if (this.controls) this.controls.camera = this.cases.camera;
     const salle = voulu.startsWith('salle:');
-    this.montrerVoile(salle ? 'On descend dans le Puits...' : 'On recoud Ervane...', Scene.ETAPES.outils, salle ? 'salle' : 'ile');
+    this.montrerVoile(Scene.titreVoile(voulu), Scene.ETAPES.outils, salle ? 'salle' : 'ile');
     try {
       await IleCharge.three();
       if (gen !== this.generation) return;
@@ -180,6 +180,24 @@ class Scene {
     }
   }
 
+  // Le titre du voile de chargement : le plateau (« On recoud Ervane... », « On recoud Orsane... »),
+  // ou la salle du donjon (« On descend dans le Puits... »).
+  static titreVoile(voulu) {
+    const [genre, id] = String(voulu || '').split(/:(.*)/);
+    if (genre === 'salle') {
+      const d = World.dungeonDef(String(id).split('#')[0]);
+      return d && d.id !== 'puits_de_l_amarre' ? `On descend dans ${d.name.replace(/^L[ea] /, m => m.toLowerCase())}...` : 'On descend dans le Puits...';
+    }
+    const pl = typeof Ile === 'object' && Ile.plateau(id);
+    return `On recoud ${pl && pl.name ? pl.name : 'Ervane'}...`;
+  }
+  // Le nom du plateau du support voulu ou montré (« Ervane », « Orsane »).
+  nomSupport(voulu) {
+    const v = String(voulu || this.support || this.voulu || this.supportVoulu() || '');
+    if (v.startsWith('plateau:')) { const pl = typeof Ile === 'object' && Ile.plateau(v.slice(8)); return pl && pl.name ? pl.name : 'Ervane'; }
+    return World.nomPlateau(v.replace(/^salle:/, ''));
+  }
+
   activer(voulu) {
     const ile = this.ile;
     const ins = this.cases.camera.insets;
@@ -204,9 +222,11 @@ class Scene {
       // Tout part (contexte compris) après la descente, et aussi quand la bascule vient du voile de
       // repli (« Descendre », « Recommencer à Orsane » : `repliDemande`) : un joueur dont la 3D vient
       // de tomber ne garde pas un contexte malade à Orsane. Un repli plus ancien ne compte pas.
+      // Orsane en 3D (docs/ORSANE-3D.md) : vers Kaldum (en cases), tout part de même ; vers les
+      // salles en cases d'un donjon d'Orsane, le terrain d'Orsane reste pour le retour.
       const total = this.descenteFaite() || !!this.repliDemande;
       this.ile.liberer(total);
-      if (total) this.oublierIle();
+      if (total) this.oublierIle(this.repliDemande ? null : this.plateauDuDonjon());
     }
     this.actif = this.cases;
     this.support = null;
@@ -218,11 +238,17 @@ class Scene {
   // Après la descente (ou un repli) : le terrain et la navigation du registre (Ile.terrain, environ
   // 9 Mo), les vues d'ensemble peintes (carte du monde, mini-carte) sont rendus. Un retour par la
   // Nacelle reconstruit tout.
-  oublierIle() {
-    if (typeof Ile === 'object' && Ile.oublier) Ile.oublier();
+  oublierIle(garder) {
+    if (typeof Ile === 'object' && Ile.oublier) { if (garder && Ile.garderSeul) Ile.garderSeul(garder); else Ile.oublier(); }
     if (typeof IlePeinture === 'object' && IlePeinture.oublierVues) IlePeinture.oublierVues();
     if (typeof CartePeinture === 'object' && CartePeinture.oublierPlateaux) CartePeinture.oublierPlateaux();
     try { window.dispatchEvent(new CustomEvent('veylan:ile-oubliee')); } catch (e) { /* pas de CustomEvent */ }
+  }
+
+  // Le plateau de l'entrée du donjon où l'on est (une salle en cases d'un donjon d'Orsane en 3D), ou null.
+  plateauDuDonjon() {
+    const dg = this.world && this.world.ch && this.world.ch.dungeon, d = dg && World.dungeonDef(dg.id), m = d && World.mapDef(d.entryMap);
+    return m && m.plateau ? m.plateau : null;
   }
 
   // La descente d'Ervane est faite : le personnage vit à Orsane, l'île n'est plus qu'une visite.
@@ -239,7 +265,7 @@ class Scene {
     this.support = null;
     this.voulu = voulu;
     if (this.controls) this.controls.camera = this.cases.camera;
-    this.montrerVoile(texte || 'Ervane se recoud...', '');
+    this.montrerVoile(texte || `${this.nomSupport(voulu)} se recoud...`, '');
   }
   // Le contexte revient : on reconstruit tout depuis les caches (Ile.terrain).
   retour() {
@@ -418,6 +444,9 @@ class Scene {
     if (!ch) return;
     // Ni plateau à l'écran ni bascule en cours (le joueur est à Orsane) : pas de voile.
     if (!this.voulu && !this.en3D && !this.supportVoulu()) return;
+    // Orsane en 3D (docs/ORSANE-3D.md) : « Réessayer », ou « Continuer en 2D » (le personnage est
+    // marqué sur cet appareil et la page se recharge sans le module d'Orsane en 3D).
+    if (this.nomSupport() !== 'Ervane') { this.repliOrsane(ch); return; }
     const descendre = (ch.quests.done || []).includes('ervane_descente') || ch.level >= 8;
     this.montrerVoile('Ervane ne s\'affiche pas sur cet appareil.', '');
     clearInterval(this.voileMinuterie);
@@ -435,9 +464,39 @@ class Scene {
     if (e) e.textContent = descendre ? 'Tu peux réessayer, ou descendre par la Nacelle jusqu\'à la Place du Relais d\'Orsane.' : 'Tu peux réessayer, ou recommencer à Orsane : tu gardes ton niveau, tes objets et tes Fils.';
   }
 
+  repliOrsane(ch) {
+    const nom = this.nomSupport();
+    this.montrerVoile(`${nom} ne s'affiche pas en 3D sur cet appareil.`, '');
+    clearInterval(this.voileMinuterie);
+    this.voileMinuterie = null;
+    const el = this.voileEl;
+    el.classList.add('repli');
+    el.setAttribute('role', 'alertdialog');
+    const boutons = document.createElement('div');
+    boutons.className = 'scene-voile__boutons';
+    // Une partie d'invité n'est jamais écrite : recharger la perdrait, elle ne peut que réessayer.
+    boutons.innerHTML = '<button type="button" class="vy-bouton vy-bouton--primaire" data-voile="reessayer">Réessayer</button>' +
+      (ch.invite ? '' : '<button type="button" class="vy-bouton" data-voile="continuer2d">Continuer en 2D</button>');
+    el.appendChild(boutons);
+    const e = el.querySelector('.scene-voile__etape');
+    if (e) e.textContent = ch.invite ? 'Tu peux réessayer.' : `Tu peux réessayer, ou continuer avec ${nom} en cases sur cet appareil : tu gardes tout, et la partie reprend au même endroit.`;
+  }
+
   actionVoile(act) {
     const w = this.world;
     if (!w) return;
+    if (act === 'continuer2d') {
+      // Le personnage ne passe plus en 3D à Orsane sur cet appareil ; sa position est sauvegardée en
+      // u, v et se relit en cases au rechargement (js/save.js). L'accueil offre de continuer.
+      const ch = w.ch;
+      if (ch.invite || !ch.uid || typeof Ile !== 'object' || !Ile.continuerEn2D(ch.uid)) return;
+      delete ch.fight;
+      w.emit('save');
+      const u = new URL(location.href);
+      u.searchParams.delete('reset');
+      location.replace(u.href);
+      return;
+    }
     if (act === 'reessayer') {
       const voulu = this.voulu || this.supportVoulu();
       if (!voulu) { this.cacherVoile(); return; }
@@ -446,8 +505,7 @@ class Scene {
       // Le passage de Kolm, lu dans le contenu (content/ervane.js : la seule source), construit comme
       // World.passage le construit, avec le même événement ; le changement de carte rend les cases.
       const kolm = World.npcDef('kolm'), p = kolm && kolm.passage;
-      const a = (p && p.arrivee) || {};
-      const arrivee = a.lieu ? { lieu: a.lieu } : (a.x != null && a.y != null ? { x: a.x, y: a.y } : { relay: true });
+      const arrivee = World.arriveePassage(p);
       this.repliDemande = true;   // la bascule (synchrone, sur l'événement map) rend tout
       try {
         if (p && w.enter(p.vers, arrivee)) w.emit('passage', { vers: p.vers, npc: 'kolm', repli: true });
