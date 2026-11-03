@@ -167,8 +167,16 @@ class Ile3D {
       // Le Lampignard, son grand frère, reprend ses outils : il vient après lui, et seulement avec lui.
       if (typeof ModeleLampignon === 'object') await charger('modele-lampignard.js', () => typeof ModeleLampignard === 'object').catch(e => console.warn('Lampignard modelé : ' + e.message));
       const parc = new ModeleGlym.Parc(THREE, { telephone: this.telephone, qualite: this.qualite, mode });
-      this.figures.modeles = parc;
       scene.add(parc.groupe);
+      // Les monstres à peau Meshy (js/ile-peau.js, 3.38 : le Filin) : leur parc réuni à celui des Glyms.
+      // (Pas en qualité basse : le jeu dessiné par le code garde ses panneaux, et son budget de mémoire.)
+      let peaux = null;
+      if (this.qualite !== 'basse') try {
+        await IleCharge.peauScript();
+        if (typeof IlePeau === 'object') peaux = await IlePeau.parc(THREE, { telephone: this.telephone, qualite: this.qualite });
+      } catch (e) { console.warn('Peaux Meshy : ' + e.message); }
+      if (peaux) scene.add(peaux.groupe);
+      this.figures.modeles = peaux ? IlePeau.composer([parc, peaux]) : parc;
     } catch (e) { console.warn('Glym modelé : ' + e.message); }
   }
 
@@ -184,15 +192,22 @@ class Ile3D {
     if (!classe) return false;
     etape('Le héros modelé');
     try {
-      await IleCharge.herosScript();
-      if (typeof IleHeros === 'object' && IleHeros.FICHIERS[classe]) this.heros = await IleHeros.charger(THREE, null, classe);
+      // Une peau animée de Meshy (js/ile-peau.js, 3.38 : Nerith) avant un héros modelé par nous.
+      if (this.qualite !== 'basse') await IleCharge.peauScript();
+      if (this.qualite !== 'basse' && typeof IlePeau === 'object' && IlePeau.PEAUX[classe]) this.heros = await IlePeau.chargerHeros(THREE, classe);
+      else {
+        await IleCharge.herosScript();
+        if (typeof IleHeros === 'object' && IleHeros.FICHIERS[classe]) this.heros = await IleHeros.charger(THREE, null, classe);
+      }
     } catch (e) { console.warn('Ervane : héros modelé indisponible', e); this.heros = null; }
     return true;
   }
   // Les figures portent le héros (IleHeros.porteur) : posé à la place du panneau de la figure
   // marquée `heros`, dans le groupe des figures (il suit leur scène).
   porterHeros(THREE) {
-    if (this.heros && this.figures && typeof IleHeros === 'object') this.figures.heros = IleHeros.porteur(THREE, this.heros, this.figures.groupe);
+    if (!this.heros || !this.figures) return;
+    if (this.heros.porteur) this.figures.heros = this.heros.porteur(THREE, this.figures.groupe);
+    else if (typeof IleHeros === 'object') this.figures.heros = IleHeros.porteur(THREE, this.heros, this.figures.groupe);
   }
 
   // ----- La construction, par étapes, sous le voile -----

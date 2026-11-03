@@ -382,7 +382,7 @@ void main() {
       const F = this.ile.figures;
       if (!e || !F) return null;
       const cb = this.ile.combat;
-      if (F.heros && typeof IleHeros === 'object' && (cb ? e === cb.player : e.shape === 'player' && e.team === 'player')) return IleHeros.DUREES;
+      if (F.heros && (cb ? e === cb.player : e.shape === 'player' && e.team === 'player')) return F.heros.durees ? F.heros.durees() : (typeof IleHeros === 'object' ? IleHeros.DUREES : null);
       const P = F.modeles;
       return P && e.team === 'monster' && P.prend(e.def.id) ? P.durees(e.def.id) : null;
     }

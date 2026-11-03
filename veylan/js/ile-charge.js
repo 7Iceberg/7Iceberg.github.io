@@ -230,6 +230,10 @@ const IleCharge = (() => {
   function herosScript() {
     return glb().then(() => (typeof IleHeros === 'object' ? null : script('js/ile-heros.js')));
   }
+  // Les peaux animées de Meshy (js/ile-peau.js, assets/peaux/, 3.38) : le Filin et Nerith.
+  function peauScript() {
+    return glb().then(() => (typeof IlePeau === 'object' ? null : script('js/ile-peau.js')));
+  }
 
-  return { three, webgl, ambiance, vignette, style, lisiere, script, nuit, monde, glb, heros, herosScript, modeles, modelesScript, faible, cache: { lire, ecrire, vider }, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
+  return { three, webgl, ambiance, vignette, style, lisiere, script, nuit, monde, glb, heros, herosScript, peauScript, modeles, modelesScript, faible, cache: { lire, ecrire, vider }, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
 })();
