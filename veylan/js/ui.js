@@ -329,7 +329,7 @@ class UI {
     if (s.affutBonus) lines.push(`+${s.affutBonus} % à l'Affût`);
     if (s.keepsAffut) lines.push('Ne casse pas l\'Affût');
     if (s.telefrag) lines.push(`Sur une créature : téléfrag, les places s'échangent, +${s.telefrag} PA une fois par tour`);
-    if (s.purse) lines.push(`Bourse : +${s.purse} % de Fils et de butin si la cible meurt`);
+    if (s.purse) lines.push(`Bourse : +${s.purse} % de Dragmes et de butin si la cible meurt`);
     if (s.onKill) lines.push(`Si la cible meurt : ${s.onKill.map(x => this.effectLine(x).toLowerCase()).join(', ')}`);
     const limits = [];
     if (s.cooldown) limits.push(`relance : ${s.cooldown} tours`);

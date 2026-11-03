@@ -114,7 +114,7 @@
     varek.dialogue = ['Tu descends de la Nacelle ? Alors tu as déjà vu plus de Glyms que la moitié des gardes d\'ici. Le Relais est à toi : touche-le, il te ramènera toujours sur cette place.', 'Les Glyms des Clairières ne sont pas ceux des Sources : plus vieux, plus vifs, et ils volent nos lanternes.'];
   }
   if (orvak) orvak.dialogue = ['Au-delà de cette porte, les Clairières. Au-delà des Clairières, tout le reste.', 'On m\'a dit qu\'un Veilleur était descendu d\'Ervane. Les Glyms d\'ici piquent les lanternes et les cachent dans les arbres : tu verras la différence avec tes Glyms des Sources.'];
-  if (kelthar) kelthar.dialogue = ['Ervane... J\'y suis monté, il y a longtemps. Le fil d\'or chantait, à l\'époque. Il grince, maintenant, à ce qu\'on dit.', 'Les lanternes du Fil tiennent les remontées à distance. Quand elles s\'éteignent, le monde descend d\'un cran.'];
+  if (kelthar) kelthar.dialogue = ['Ervane... J\'y suis monté, il y a longtemps. Le fil d\'or chantait, à l\'époque. Il grince, maintenant, à ce qu\'on dit.', 'Les lanternes de l\'Aube tiennent les bêtes à distance. Quand elles s\'éteignent, le monde descend d\'un cran.'];
 
 
   const champs = C.quests.find(q => q.id === 'porte_champs_de_bataille');

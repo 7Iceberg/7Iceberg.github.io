@@ -597,7 +597,7 @@ class World {
     const shop = this.talkNpc && this.talkNpc.def.shop;
     if (!shop || !shop.includes(id)) return false;
     const cost = d.price * n;
-    if (this.ch.fils < cost) { this.toast('Pas assez de Fils.'); return false; }
+    if (this.ch.fils < cost) { this.toast('Pas assez de Dragmes.'); return false; }
     this.ch.fils -= cost;
     this.ch.addItem(id, n);
     this.emit('gain', { source: 'achat', items: [{ id, count: n }] });
@@ -665,7 +665,7 @@ class World {
     const g = this.auMarche();
     if (!g || !World.okCount(n) || !Marche.etal(g).includes(id)) return false;
     const cout = Marche.prixAchat(id) * n;
-    if (this.ch.fils < cout) { this.toast('Pas assez de Fils.'); return false; }
+    if (this.ch.fils < cout) { this.toast('Pas assez de Dragmes.'); return false; }
     this.ch.fils -= cout;
     this.ch.addItem(id, n);
     this.emit('gain', { source: 'achat', items: [{ id, count: n }] });
@@ -812,10 +812,10 @@ class World {
   useRelay() {
     if (this.ch.dungeon) { this.emit('dungeonLeavePrompt', World.dungeonDef(this.ch.dungeon.id)); return; }
     const r = this.plateau ? this.plateau.relaisProche(3) : { map: this.mapId, x: this.relay.x, y: this.relay.y };
-    if (!r) { this.toast('Aucun Relais du Fil à portée.'); return; }
+    if (!r) { this.toast('Aucun Relais de l\'Aube à portée.'); return; }
     this.ch.relay = { map: r.map, x: r.x, y: r.y };
     this.relayOpen = true;
-    if (!this.ch.relays.includes(r.map)) { this.ch.relays.push(r.map); this.toast('Relais du Fil enregistré.'); }
+    if (!this.ch.relays.includes(r.map)) { this.ch.relays.push(r.map); this.toast('Relais de l\'Aube enregistré.'); }
     this.state = 'panel';
     this.emit('relay', { here: this.mapId, known: this.ch.relays.map(id => ({ id, def: World.mapDef(id), zone: World.zoneOf(id) })) });
     this.emit('save');

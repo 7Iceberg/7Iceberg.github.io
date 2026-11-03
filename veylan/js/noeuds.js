@@ -28,8 +28,8 @@ const regions = { orsane: 'Orsane', kaldum: 'Kaldum' };
 for (const r in regions) {
   const n = Object.values(DATA.monsters).filter(m => m.region === r && !m.summon).length;
   DATA.content.achievements.push(
-    { id: `carnet_${r}_tiers`, name: `Carnet : ${regions[r]}, premières pages`, desc: `Inscrire ${Math.ceil(n / 3)} remontées de ${regions[r]} au Carnet.`, cond: { type: 'carnet', region: r, count: Math.ceil(n / 3) }, rewards: { xp: 300, fils: 60 } },
-    { id: `carnet_${r}_complet`, name: `Carnet : ${regions[r]} complet`, desc: `Inscrire les ${n} remontées de ${regions[r]} au Carnet, boss et rares compris.`, cond: { type: 'carnet', region: r, count: n }, rewards: { xp: 3000, fils: 500, title: `Mémoire de ${regions[r]}` } },
+    { id: `carnet_${r}_tiers`, name: `Carnet : ${regions[r]}, premières pages`, desc: `Inscrire ${Math.ceil(n / 3)} bêtes de ${regions[r]} au Carnet.`, cond: { type: 'carnet', region: r, count: Math.ceil(n / 3) }, rewards: { xp: 300, fils: 60 } },
+    { id: `carnet_${r}_complet`, name: `Carnet : ${regions[r]} complet`, desc: `Inscrire les ${n} bêtes de ${regions[r]} au Carnet, boss et rares compris.`, cond: { type: 'carnet', region: r, count: n }, rewards: { xp: 3000, fils: 500, title: `Mémoire de ${regions[r]}` } },
   );
 }
 DATA.content.achievements.push(

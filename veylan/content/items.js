@@ -45,7 +45,7 @@
     { id: 'cle_du_terrier', name: 'Clé du Terrier', lore: 'Un coin de corne et de galets serrés dans du cuir. On le glisse sous la pierre de la Gueule, elle bascule, on entre. La pierre garde le coin.',
       drops: [{ monster: 'grouk_cornu', rate: 3 }, { monster: 'grouk', rate: 1 }], node: null, price: 60 },
 
-    { id: 'lanterne_cabossee', name: 'Lanterne cabossée', lore: 'Une lanterne du Fil reprise au Glym Chapardeur. Elle éclaire encore, mais de travers.',
+    { id: 'lanterne_cabossee', name: 'Lanterne cabossée', lore: 'Une lanterne de l\'Aube reprise au Glym Chapardeur. Elle éclaire encore, mais de travers.',
       drops: [{ monster: 'pilou_chapardeur', rate: 100 }], node: null, price: 20 },
     { id: 'plume_doree', name: 'Plume dorée', lore: 'Le Chapardeur la lissait chaque soir à la lueur de ses lanternes volées. Elle brille très bien sans elles.',
       drops: [{ monster: 'pilou_chapardeur', rate: 50 }], node: null, price: 25 },
@@ -55,9 +55,9 @@
     { id: 'plume_changeante', name: 'Plume changeante', lore: 'Bleue le matin, rousse à midi, blanche le soir. Ocre quand elle boude.',
       drops: [{ monster: 'kavou_prisme', rate: 50 }], node: null, price: 40 },
 
-    { id: 'plume_de_kavou', name: 'Plume de Kavou', lore: 'Teinte de la couleur du Voile sous lequel le Kavou a niché. Elle déteint un peu sur les doigts.',
+    { id: 'plume_de_kavou', name: 'Plume de Kavou', lore: 'Teinte de la couleur du ciel sous lequel le Kavou a niché. Elle déteint un peu sur les doigts.',
       drops: [{ monster: 'kavou_bleu', rate: 20 }, { monster: 'kavou_roux', rate: 20 }, { monster: 'kavou_ocre', rate: 20 }, { monster: 'kavou_blanc', rate: 20 }, { monster: 'kavou_pourpre', rate: 25 }], node: null, price: 5 },
-    { id: 'brin_d_oreth', name: 'Brin d\'Oreth', lore: 'Un fil du premier Voile, encore lumineux. Il glisse entre les doigts comme s\'il voulait repartir.',
+    { id: 'brin_d_oreth', name: 'Brin d\'Oreth', lore: 'Une étincelle de la Colère d\'Ithren, encore chaude. Elle glisse entre les doigts comme si elle voulait repartir.',
       drops: [{ monster: 'oreth', rate: 100 }], node: null, price: 60 },
 
     { id: 'cocon_de_fileuse', name: 'Cocon de la Fileuse', lore: 'Un pan du cocon déchiré, plus solide que tout ce que tissent les Tissefils réunis.',
@@ -152,12 +152,12 @@
     pieces: [
       { slot: 'coiffe', id: 'coiffe_marcheur', name: 'Coiffe du Marcheur', lore: 'Un bonnet de laine qui tient chaud et qui tient sur la tête, ce qui fait déjà deux qualités.' },
       { slot: 'cape', id: 'cape_marcheur', name: 'Cape du Marcheur', lore: 'Elle a surtout servi de couverture, et elle le fera encore.' },
-      { slot: 'amulette', id: 'amulette_marcheur', name: 'Amulette du Marcheur', lore: 'Un galet percé sur une ficelle. Le Fil y tient beaucoup, personne ne sait pourquoi.' },
+      { slot: 'amulette', id: 'amulette_marcheur', name: 'Amulette du Marcheur', lore: 'Un galet percé sur une ficelle. L\'Aube y tient beaucoup, personne ne sait pourquoi.' },
       { slot: 'ceinture', id: 'ceinture_marcheur', name: 'Ceinture du Marcheur', lore: 'Une sangle de toile avec une boucle en bois. Elle retient le pantalon, ce qui est son travail.' },
       { slot: 'bottes', id: 'bottes_marcheur', name: 'Bottes du Marcheur', lore: 'Elles ont déjà marché pour quelqu\'un d\'autre. Elles connaissent le chemin.' },
     ],
     bonusProfile: { vita: 60, sagesse: 40 },
-    lore: 'L\'équipement de départ que le Fil remet à chaque Veilleur, vendu trois fois rien au Comptoir. Il n\'a rien d\'extraordinaire, et c\'est bien ce qu\'on lui demande.',
+    lore: 'L\'équipement de départ que l\'Aube remet à chaque Veilleur, vendu trois fois rien au Comptoir. Il n\'a rien d\'extraordinaire, et c\'est bien ce qu\'on lui demande.',
   });
 
   C.sets.push({
@@ -347,11 +347,11 @@
 
     { id: 'cape_de_plumes', name: 'Cape de Plumes', slot: 'cape', level: 4, profile: { agi: 60, vita: 40 }, source: 'craft',
       lore: 'Mille plumes de Glym. Elle ne fait pas voler, mais elle fait croire.' },
-    { id: 'voile_d_oreth', name: 'Voile d\'Oreth', slot: 'cape', level: 12, profile: { agi: 45, sagesse: 35, vita: 20 }, source: 'craft',
+    { id: 'voile_d_oreth', name: 'Manteau d\'Oreth', slot: 'cape', level: 12, profile: { agi: 45, sagesse: 35, vita: 20 }, source: 'craft',
       lore: 'Un brin d\'Oreth tissé dans des plumes de Kavou. Il luit au crépuscule, et tout le monde demande où on l\'a trouvé.' },
     { id: 'manteau_de_cuir', name: 'Manteau de Cuir', slot: 'cape', level: 8, profile: { vita: 50, force: 50 }, source: 'craft',
       lore: 'Du cuir de Grouk cousu double. Il protège, il pèse, il sent le Grouk.' },
-    { id: 'voile_de_cire', name: 'Voile de Cire', slot: 'cape', level: 13, profile: { sagesse: 60, vita: 40 }, source: 'craft',
+    { id: 'voile_de_cire', name: 'Manteau de Cire', slot: 'cape', level: 13, profile: { sagesse: 60, vita: 40 }, source: 'craft',
       lore: 'Un voile tiède qui sent la bougie ; on apprend plus vite dessous.' },
     { id: 'cape_d_ecailles', name: 'Cape d\'Écailles', slot: 'cape', level: 17, profile: { chance: 50, force: 30, vita: 20 }, source: 'craft',
       lore: 'Des écailles de Brimbe sur du cuir. Elle cliquette quand on court.' },
@@ -728,7 +728,7 @@
       drops: [{ monster: 'fendu', rate: 40 }], node: null, price: 13 },
     { id: 'eclat_de_lame_fendue', name: 'Éclat de lame fendue', lore: 'Un morceau de la lame d\'un Fendu. Il coupe des deux côtés, et parfois de l\'autre.',
       drops: [{ monster: 'fendu', rate: 14 }], node: null, price: 24 },
-    { id: 'fil_dechire', name: 'Fil déchiré', lore: 'Un fil du Voile arraché avec le Fendu. Il cherche encore l\'endroit d\'où il vient.',
+    { id: 'fil_dechire', name: 'Mèche brûlée', lore: 'Une mèche brûlée arrachée au Fendu. Elle cherche encore l\'endroit d\'où elle vient.',
       drops: [{ monster: 'fendu', rate: 4 }], node: null, price: 56 },
   );
 
@@ -739,9 +739,9 @@
       drops: [], node: { kind: 'pierre', zone: 'thessa' }, price: 9 },
     { id: 'algue_de_ressac', name: 'Algue de Ressac', lore: 'Longue, verte et glissante. Séchée, elle fait un fil solide ; fraîche, elle fait tomber.',
       drops: [], node: { kind: 'plante', zone: 'thessa' }, price: 8 },
-    { id: 'ardoise_des_effilures', name: 'Ardoise des Effilures', lore: 'Une plaque d\'ardoise veinée de lilas. Elle se fend toujours dans le sens du Voile.',
+    { id: 'ardoise_des_effilures', name: 'Ardoise des Effilures', lore: 'Une plaque d\'ardoise veinée de lilas. Elle se fend toujours dans le sens de la Brûlure.',
       drops: [], node: { kind: 'pierre', zone: 'lisiere' }, price: 11 },
-    { id: 'chardon_de_lisiere', name: 'Chardon de Lisière', lore: 'Il pousse au bord de la Déchirure et ne fleurit que la nuit. Ses piquants sont tièdes.',
+    { id: 'chardon_de_lisiere', name: 'Chardon de Lisière', lore: 'Il pousse au bord de la Brûlure et ne fleurit que la nuit. Ses piquants sont tièdes.',
       drops: [], node: { kind: 'plante', zone: 'lisiere' }, price: 10 },
   );
 
@@ -880,13 +880,13 @@
     pieces: [
       { slot: 'coiffe', id: 'coiffe_fendu', name: 'Coiffe du Fendu', lore: 'Un masque coupé en deux, cousu de travers. Chaque moitié regarde ailleurs.' },
       { slot: 'cape', id: 'cape_fendu', name: 'Cape du Fendu', lore: 'Des lambeaux qui flottent dans deux vents à la fois. On ne sait jamais de quel côté elle tombe.' },
-      { slot: 'amulette', id: 'amulette_fendu', name: 'Amulette du Fendu', lore: 'Un fil déchiré noué sur lui-même. Il tire vers la Déchirure, doucement, toujours.' },
+      { slot: 'amulette', id: 'amulette_fendu', name: 'Amulette du Fendu', lore: 'Une mèche brûlée nouée sur elle-même. Elle tire vers la Brûlure, doucement, toujours.' },
       { slot: 'anneau', id: 'anneau_fendu', name: 'Anneau du Fendu', lore: 'Un anneau brisé dont les deux bouts ne se touchent pas. Il tient quand même.' },
       { slot: 'ceinture', id: 'ceinture_fendu', name: 'Ceinture du Fendu', lore: 'Un éclat de lame fendue en guise de boucle. Elle coupe le vent, et parfois la ceinture.' },
       { slot: 'bottes', id: 'bottes_fendu', name: 'Bottes du Fendu', lore: 'Elles font un pas ici et l\'autre un peu plus loin. On s\'y habitue, puis on en profite.' },
     ],
     bonusProfile: { force: 50, agi: 50 },
-    lore: 'Cousue avec ce que la Déchirure laisse des humains qu\'elle a traversés. Elle donne la force et la vitesse des Fendus, et un peu de leur façon d\'être à deux endroits à la fois.',
+    lore: 'Cousue avec ce que la Colère laisse des humains qu\'elle a traversés. Elle donne la force et la vitesse des Fendus, et un peu de leur façon d\'être à deux endroits à la fois.',
   });
 
   C.items.push(
@@ -894,7 +894,7 @@
       lore: 'De l\'algue de ressac tressée et séchée. Elle sent la marée basse et les idées neuves.' },
     { id: 'tricorne_de_bois_flotte', name: 'Tricorne de Bois Flotté', slot: 'coiffe', level: 33, profile: { force: 50, vita: 30, sagesse: 20 }, source: 'craft',
       lore: 'Trois planches de bois flotté et une couche de carapace. On a l\'air d\'un capitaine, et la tête d\'une coque.' },
-    { id: 'voile_de_sel', name: 'Voile de Sel', slot: 'cape', level: 35, profile: { intel: 50, chance: 30, vita: 20 }, source: 'craft',
+    { id: 'voile_de_sel', name: 'Manteau de Sel', slot: 'cape', level: 35, profile: { intel: 50, chance: 30, vita: 20 }, source: 'craft',
       lore: 'Une toile raidie au sel de Marsalée. Elle crépite au soleil comme un feu de grève.' },
     { id: 'anneau_de_galet_marin', name: 'Anneau de Galet Marin', slot: 'anneau', level: 36, profile: { force: 60, vita: 40 }, source: 'craft',
       lore: 'Un galet de Marnel percé et poli. Il alourdit le poing juste ce qu\'il faut.' },
@@ -907,7 +907,7 @@
     { id: 'anneau_de_tison', name: 'Anneau de Tison', slot: 'anneau', level: 44, profile: { intel: 60, force: 40 }, source: 'craft',
       lore: 'Un tison de Zhaal serré dans l\'ardoise. Il chauffe le poing et les sorts à parts égales.' },
     { id: 'bottes_de_lisiere', name: 'Bottes de Lisière', slot: 'bottes', level: 44, profile: { agi: 50, chance: 30, vita: 20 }, source: 'craft',
-      lore: 'Des piques de Ferrel et des plumes de Harpide. On court au bord de la Déchirure sans y tomber, en général.' },
+      lore: 'Des piques de Ferrel et des plumes de Harpide. On court au bord de la Brûlure sans y tomber, en général.' },
     { id: 'capuche_de_tison', name: 'Capuche de Tison', slot: 'coiffe', level: 47, profile: { intel: 60, sagesse: 20, vita: 20 }, source: 'craft',
       lore: 'Une capuche où couve un tison. Les idées s\'y allument toutes seules, les cheveux aussi.' },
     { id: 'ceinture_d_ardoise', name: 'Ceinture d\'Ardoise', slot: 'ceinture', level: 47, profile: { force: 60, vita: 40 }, source: 'craft',
@@ -915,7 +915,7 @@
     { id: 'cape_de_lambeaux', name: 'Cape de Lambeaux', slot: 'cape', level: 49, profile: { agi: 50, force: 30, vita: 20 }, source: 'drop', from: 'fendu',
       lore: 'Des lambeaux que les Fendus perdent en se déchirant. Elle flotte un instant avant vous.' },
     { id: 'amulette_de_la_fente', name: 'Amulette de la Fente', slot: 'amulette', level: 50, profile: { force: 25, intel: 25, chance: 25, agi: 25 }, extra: { pa: 1 }, source: 'drop', from: 'fendu',
-      lore: 'Un morceau de Voile déchiré, refermé sur un vide. Elle ne donne presque rien, sauf le temps d\'un geste de plus.' },
+      lore: 'Un morceau de ciel brûlé, refermé sur un vide. Elle ne donne presque rien, sauf le temps d\'un geste de plus.' },
   );
 
   C.weapons.push(
@@ -930,7 +930,7 @@
     { id: 'sabre_de_ressac', name: 'Sabre de Ressac', type: 'epee', level: 40, element: 'eau', profile: { chance: 60, vita: 40 }, source: 'craft',
       lore: 'Une lame d\'écume figée autour d\'un cœur de Brisant. Elle frappe et revient, comme la vague.' },
     { id: 'hache_d_ardoise', name: 'Hache d\'Ardoise', type: 'hache', level: 41, element: 'terre', profile: { force: 70, vita: 30 }, source: 'craft',
-      lore: 'Une plaque d\'ardoise des Effilures sur une corne de Vulk. Elle fend dans le sens du Voile.' },
+      lore: 'Une plaque d\'ardoise des Effilures sur une corne de Vulk. Elle fend dans le sens de la Brûlure.' },
     { id: 'masse_de_vulk', name: 'Masse de Vulk', type: 'marteau', level: 42, element: 'terre', profile: { force: 60, vita: 40 }, source: 'drop', from: 'vulk',
       lore: 'Une corne de Vulk entière, encore tiède. Elle frappe en croix, comme une meute.' },
     { id: 'baton_de_lanterne', name: 'Bâton de Lanterne', type: 'baton', level: 43, element: 'feu', profile: { intel: 50, sagesse: 30, vita: 20 }, source: 'craft',
@@ -941,7 +941,7 @@
       lore: 'Le sceptre de corail de la Mère des Brisants. La marée monte d\'une rangée quand on le lève.' },
     { id: 'hache_des_effilures', name: 'Hache des Effilures', type: 'hache', level: 49, element: 'feu', profile: { intel: 50, force: 50 }, source: 'craft',
       lore: 'Une lame d\'ardoise où brûle une flammèche violette. Elle coupe et elle brûle, dans cet ordre.' },
-    { id: 'lame_dechiree', name: 'Lame Déchirée', type: 'epee', level: 50, element: 'air', profile: { agi: 50, force: 30, vita: 20 }, source: 'drop', from: 'fendu',
+    { id: 'lame_dechiree', name: 'Lame Brûlée', type: 'epee', level: 50, element: 'air', profile: { agi: 50, force: 30, vita: 20 }, source: 'drop', from: 'fendu',
       lore: 'La lame d\'un Fendu, fendue comme lui. Elle frappe ici et un peu plus loin.' },
   );
 

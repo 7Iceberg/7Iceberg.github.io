@@ -6,7 +6,7 @@ const Veille = (() => {
   const XP = 12;
   const EPOQUE = Date.UTC(2026, 0, 5);
   const JOUR_MS = 86400000;
-  const VOILES = ['Premier', 'Deuxième', 'Troisième', 'Quatrième', 'Cinquième', 'Sixième', 'Septième'];
+  const VOILES = ['Jour d\'Ithren', 'Jour d\'Aïven', 'Jour de Durren', 'Jour de Morrha', 'Jour d\'Iskar', 'Jour de Nohra', 'Jour de Ruhani'];
   const ROMAINS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
   const ATELIERS = { tailleur: 'du tailleur', cordonnier: 'du cordonnier', bijoutier: 'du bijoutier', forgeron: 'du forgeron', alchimiste: 'de l\'alchimiste' };
 
@@ -36,7 +36,7 @@ const Veille = (() => {
     const voile = e.voile || (i % SEMAINE) + 1;
     return Object.assign({}, e, {
       n, index: i, numero: i + 1, semaine: Math.floor(i / SEMAINE), voile,
-      voileNom: `${VOILES[voile - 1]} Voile`, voileChiffre: ROMAINS[voile - 1],
+      voileNom: VOILES[voile - 1], voileChiffre: ROMAINS[voile - 1],
       element: e.element || ['terre', 'feu', 'eau', 'air'][Math.floor(i / SEMAINE)],
     });
   }

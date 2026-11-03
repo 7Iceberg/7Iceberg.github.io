@@ -278,7 +278,7 @@ Object.assign(Hud.prototype, {
 
 Hud.OPACITE = 90;
 
-Hud.THEMES = [['duality', 'Duality', '#121019', '#ff8a3d'], ['nuit', 'Nuit d\'Orsane', '#172334', '#c9a66b'], ['royal', 'Bleu des Voiles', '#13264a', '#7fb4ff'], ['braise', 'Braise de Kaldum', '#2a1714', '#f07a5c'], ['cimes', 'Vert des Cimes', '#15261c', '#8db585'], ['ardoise', 'Ardoise claire', '#d9d2c3', '#8e7144']];
+Hud.THEMES = [['duality', 'Duality', '#121019', '#ff8a3d'], ['nuit', 'Nuit d\'Orsane', '#172334', '#c9a66b'], ['royal', 'Bleu des Cimes', '#13264a', '#7fb4ff'], ['braise', 'Braise de Kaldum', '#2a1714', '#f07a5c'], ['cimes', 'Vert des Cimes', '#15261c', '#8db585'], ['ardoise', 'Ardoise claire', '#d9d2c3', '#8e7144']];
 Hud.MENUS = MENUS;
 Hud.STAT = STAT;
 Hud.pic = pic;

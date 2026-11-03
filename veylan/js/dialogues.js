@@ -468,7 +468,7 @@ class Conversation {
   static recompense(r) {
     const parts = [];
     if (r.xp) parts.push(`${r.xp} XP`);
-    if (r.fils) parts.push(`${r.fils} Fils`);
+    if (r.fils) parts.push(`${r.fils} Dragmes`);
     for (const it of r.items || []) { const d = Items.get(it.id); parts.push(`${it.count || 1} ${d ? d.name : it.id}`); }
     return parts.join(', ') || 'rien';
   }

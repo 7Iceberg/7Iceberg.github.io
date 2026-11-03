@@ -6,7 +6,7 @@ DATA.spells.m_charge_folle = S('m_charge_folle', { name: 'Charge folle', element
 DATA.spells.m_coup_corne = S('m_coup_corne', { name: 'Coup de corne', element: 'terre', pa: 3, range: [1, 1], target: 'enemy', effects: [dmg(9, 12)], cooldown: 1 });
 DATA.spells.m_toile_fine = S('m_toile_fine', { name: 'Toile fine', element: 'neutre', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(2, 3), pm(-1, 1)] });
 DATA.spells.m_fil_tendu = S('m_fil_tendu', { name: 'Fil tendu', element: 'neutre', pa: 2, range: [1, 4], target: 'free', effects: [{ type: 'trap', name: 'Fil tendu', effects: [dmg(4, 6), root] }], cooldown: 2 });
-DATA.spells.m_voile_lueur = S('m_voile_lueur', { name: 'Voile de lueur', element: 'neutre', pa: 3, range: [0, 4], target: 'ally', aoe: cross1, affects: 'allies', affectsCaster: true, effects: [shield(12, 2)], cooldown: 2 });
+DATA.spells.m_voile_lueur = S('m_voile_lueur', { name: 'Halo de lueur', element: 'neutre', pa: 3, range: [0, 4], target: 'ally', aoe: cross1, affects: 'allies', affectsCaster: true, effects: [shield(12, 2)], cooldown: 2 });
 DATA.spells.m_caillou = S('m_caillou', { name: 'Caillou', element: 'terre', pa: 3, range: [2, 4], target: 'enemy', effects: [dmg(4, 6)] });
 DATA.spells.m_eclat_pierre = S('m_eclat_pierre', { name: 'Éclat de pierre', element: 'terre', pa: 4, range: [2, 5], target: 'enemy', aoe: cross1, affects: 'enemies', effects: [dmg(7, 10)], cooldown: 1 });
 
@@ -67,7 +67,7 @@ DATA.monsters.nouette = M('nouette', { name: 'La Vieille Nouette', region: 'avis
 DATA.monsters.gravas = M('gravas', { name: 'Gravas', region: 'avis', recherche: true, level: '10 à 20', shape: 'square', color: '#6e6e78', hp: 100, dmgMult: 0.65, pa: 6, pm: 3, initiative: 92, resist: { terre: 25, neutre: 10 }, spells: ['m_galet'], ai: 'ranged',
   desc: 'Une Brimbe grosse comme un rocher, qui lance des rochers. Elle a fermé deux fois la route de Kaldum.' });
 DATA.monsters.piouk = M('piouk', { name: 'Glymet', region: 'orsane', level: '1 à 3', shape: 'diamond', color: '#c8ecff', hp: 28, dmgMult: 1.0, pa: 6, pm: 3, initiative: 95, spells: ['m_picot'], ai: 'ranged', desc: 'Nichée du Glym. Vole 1 PM de tout près.' });
-DATA.monsters.pilou_defait = M('pilou_defait', { name: 'Glym Défait', region: 'orsane', level: '12 à 18', shape: 'diamond', color: '#6a3a8a', hp: 59, dmgMult: 0.5, pa: 6, pm: 5, initiative: 115, resist: { air: 20 }, spells: ['m_bec_defait'], ai: 'ranged', desc: 'Glym déchiré. Garde le PM volé.' });
+DATA.monsters.pilou_defait = M('pilou_defait', { name: 'Glym Défait', region: 'orsane', level: '12 à 18', shape: 'diamond', color: '#6a3a8a', hp: 59, dmgMult: 0.5, pa: 6, pm: 5, initiative: 115, resist: { air: 20 }, spells: ['m_bec_defait'], ai: 'ranged', desc: 'Glym brûlé. Garde le PM volé.' });
 DATA.monsters.groukin = M('groukin', { name: 'Groukin', region: 'orsane', level: '1 à 4', shape: 'triangle', color: '#d4b07a', hp: 42, dmgMult: 1.7, pa: 6, pm: 3, initiative: 55, spells: ['m_charge_folle'], ai: 'melee', desc: 'Nichée du Grouk. Pousse de deux cases.' });
 DATA.monsters.grouk_cornu = M('grouk_cornu', { name: 'Grouk Cornu', region: 'orsane', level: '10 à 16', shape: 'triangle', color: '#e8d5a0', hp: 54, dmgMult: 0.85, pa: 6, pm: 3, initiative: 65, resist: { terre: 15 }, spells: ['m_charge', 'm_coup_corne'], ai: 'melee',
   triggers: [{ when: 'hpBelow', pct: 50, do: [{ act: 'buff', effects: [power(30, 99)] }] }], desc: "Grouk tissé. Encorne, s'énerve à moitié vie." });
@@ -79,7 +79,7 @@ DATA.monsters.veilloche_tissee = M('veilloche_tissee', { name: 'Veilloche Tissé
   triggers: [{ when: 'hpBelow', pct: 50, do: [{ act: 'buff', effects: [pa(1, 99)] }] }], desc: "Veilloche tissée. Soigne, protège, s'accélère." });
 DATA.monsters.brim = M('brim', { name: 'Brim', region: 'orsane', level: '8 à 12', shape: 'square', color: '#c4c4c4', hp: 49, dmgMult: 0.6, pa: 6, pm: 3, initiative: 85, spells: ['m_caillou'], ai: 'ranged', desc: 'Nichée de la Brimbe. Lance et recule.' });
 DATA.monsters.brimbe_fendue = M('brimbe_fendue', { name: 'Brimbe Fendue', region: 'orsane', level: '18 à 24', shape: 'square', color: '#4a2a5a', hp: 38, dmgMult: 1.65, pa: 6, pm: 3, initiative: 90, resist: { terre: 20 }, spells: ['m_galet', 'm_eclat_pierre'], ai: 'ranged',
-  triggers: [{ when: 'death', do: [{ act: 'explode', min: 6, max: 9, element: 'terre', radius: 1 }] }], desc: 'Brimbe déchirée. Éclate en mourant.' });
+  triggers: [{ when: 'death', do: [{ act: 'explode', min: 6, max: 9, element: 'terre', radius: 1 }] }], desc: 'Brimbe brûlée. Éclate en mourant.' });
 
 DATA.monsters.molhin = M('molhin', { name: 'Molhin', region: 'kaldum', level: '10 à 22', shape: 'square', color: '#aab2c2', hp: 50, dmgMult: 1.7, pa: 4, pm: 3, initiative: 15, resist: { terre: 20, feu: -20 }, spells: ['m_caillasse'], ai: 'melee', desc: 'Nichée du Molh. Lent, dur, fuyable.' });
 DATA.monsters.molh_ancien = M('molh_ancien', { name: 'Molh Ancien', region: 'kaldum', level: '20 à 30', shape: 'square', color: '#e8e0cc', hp: 105, dmgMult: 1.7, pa: 4, pm: 3, initiative: 20, resist: { terre: 30, feu: -20 }, spells: ['m_ecrasement', 'm_tremblement'], ai: 'melee',
@@ -90,7 +90,7 @@ DATA.monsters.kaldrik_trempe = M('kaldrik_trempe', { name: 'Rakthul Trempé', re
   triggers: [{ when: 'hitByElement', element: 'eau', do: [{ act: 'buff', effects: [pm(-1, 1)] }] }], desc: "Rakthul tissé. L'eau le fige." });
 DATA.monsters.fumil = M('fumil', { name: 'Fumil', region: 'kaldum', level: '14 à 26', shape: 'circle', color: '#e6e6f0', hp: 50, dmgMult: 1.7, pa: 6, pm: 3, initiative: 90, resist: { feu: 30, air: -30 }, spells: ['m_souffle'], ai: 'ranged', desc: 'Nichée de la Fumerolle. Reste visible.' });
 DATA.monsters.fumerolle_noire = M('fumerolle_noire', { name: 'Fumerolle Noire', region: 'kaldum', level: '20 à 30', shape: 'circle', color: '#3a2a4a', hp: 57, dmgMult: 0.8, pa: 6, pm: 3, initiative: 100, resist: { feu: 30, air: -30 }, spells: ['m_bouffee', 'm_etouffement'], ai: 'ranged',
-  triggers: [{ when: 'turnStart', do: [{ act: 'toggleState', name: 'invisible' }] }, { when: 'death', do: [{ act: 'explode', min: 10, max: 14, element: 'feu', radius: 1 }] }], desc: 'Fumerolle déchirée. Étouffe, disparaît, éclate.' });
+  triggers: [{ when: 'turnStart', do: [{ act: 'toggleState', name: 'invisible' }] }, { when: 'death', do: [{ act: 'explode', min: 10, max: 14, element: 'feu', radius: 1 }] }], desc: 'Fumerolle brûlée. Étouffe, disparaît, éclate.' });
 DATA.monsters.clou_vif = M('clou_vif', { name: 'Clou-Vif', region: 'kaldum', level: '12 à 24', shape: 'diamond', color: '#cfcfcf', hp: 45, dmgMult: 0.85, pa: 6, pm: 2, initiative: 60, spells: ['m_clou'], ai: 'ranged', desc: 'Nichée de la Pioche-Vive. Pique en ligne.' });
 DATA.monsters.masse_vive = M('masse_vive', { name: 'Masse-Vive', region: 'kaldum', level: '20 à 30', shape: 'diamond', color: '#e8dcb0', hp: 64, dmgMult: 1.45, pa: 6, pm: 2, initiative: 60, resist: { terre: 10 }, spells: ['m_pic', 'm_masse'], ai: 'melee',
   triggers: [{ when: 'hpBelow', pct: 50, do: [{ act: 'buff', effects: [power(20, 99)] }] }], desc: 'Pioche-Vive tissée. Cogne au contact.' });
@@ -113,7 +113,7 @@ DATA.monsters.tholou = M('tholou', { name: 'Tholou', region: 'kaldum', level: '1
 DATA.monsters.tholou_tisse = M('tholou_tisse', { name: 'Tholou Tissé', region: 'kaldum', level: '20 à 30', shape: 'circle', color: '#ffe0b0', hp: 56, dmgMult: 1.7, pa: 6, pm: 1, initiative: 55, resist: { feu: 30 }, spells: ['m_ronron', 'm_chaleur', 'm_manteau_cendre', 'm_etincelle'], ai: 'support', desc: 'Tholou tissé. Soigne, accélère, protège.' });
 
 DATA.monsters.oreth = M('oreth', { name: 'Oreth', region: 'orsane', level: '10 à 14', rare: true, shape: 'diamond', color: '#fff8d0', hp: 40, pa: 6, pm: 6, initiative: 140, resist: { air: 30, neutre: 30 }, spells: ['m_frolement'], ai: 'ranged',
-  triggers: [{ when: 'turnStart', do: [{ act: 'toggleState', name: 'invisible' }] }], desc: 'Fil perdu du premier Voile. Fuit, disparaît.' });
+  triggers: [{ when: 'turnStart', do: [{ act: 'toggleState', name: 'invisible' }] }], desc: 'Étincelle perdue de la Colère d\'Ithren. Fuit, disparaît.' });
 
 DATA.monsters.korvath = M('korvath', { name: 'Korvath', region: 'kaldum', level: '22 à 28', elite: true, shape: 'square', color: '#6a5a4a', hp: 400, pa: 6, pm: 2, initiative: 45, resist: { terre: 40, air: -20 }, spells: ['m_roulement', 'm_eboulement', 'm_ecrasement'], ai: 'melee',
   triggers: [{ when: 'hpBelow', pct: 70, do: [{ act: 'summon', monster: 'brimbe', count: 2 }, { act: 'log', text: "Korvath s'effrite." }] }, { when: 'hpBelow', pct: 35, do: [{ act: 'summon', monster: 'brimbe_fendue', count: 2 }, { act: 'buff', effects: [power(30, 99)] }] }, { when: 'death', do: [{ act: 'explode', min: 14, max: 18, element: 'terre', radius: 2 }] }],

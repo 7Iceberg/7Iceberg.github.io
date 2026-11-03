@@ -245,7 +245,7 @@ class Accueil {
            <span class="acc-continuer__texte"><b>Continuer</b><small>${esc(d.name)}, ${esc(cl.name)} niv. ${d.level}</small></span>
          </button>
          <button class="vy-bouton acc-changer" data-act="personnages">Changer de personnage</button>`
-      : `<p class="acc-texte">Sept Voiles, un monde à recoudre : ton Veilleur t'attend.</p>
+      : `<p class="acc-texte">Sept Dragons, une Flamme à veiller : ton Veilleur t'attend.</p>
          <button class="vy-bouton vy-bouton--primaire vy-bouton--grand acc-creer" data-act="creer" data-focus>Créer un personnage</button>
          ${persos.length ? '<button class="vy-bouton acc-changer" data-act="personnages">Mes personnages</button>' : '<button class="vy-bouton acc-changer" data-act="importer">Importer un personnage</button>'}`;
     return `<section class="ecran ecran--accueil" aria-label="Accueil">

@@ -616,8 +616,8 @@ DATA.content.npcs.push({
 DATA.content.npcs.push({
   id: 'thalvi', name: 'Thalvi', title: 'Relayeuse et tailleuse', look: 'tisseur', workshop: 'tailleur',
   dialogue: [
-    "Le Relais de Kaldum tient encore. Tant que le Fil tient, tu peux revenir ici.",
-    "Touche le Relais et le Fil te ramènera sur cette place. Pratique, quand les galeries se referment derrière toi.",
+    "Le Relais de Kaldum tient encore. Tant que son feu brûle, tu peux revenir ici.",
+    "Touche le Relais et son feu te ramènera sur cette place. Pratique, quand les galeries se referment derrière toi.",
     "Entre deux voyageurs, je couds. Apporte-moi de quoi, je te taille une coiffe ou une cape.",
   ],
 });
@@ -705,14 +705,14 @@ DATA.content.npcs.push({
 });
 
 DATA.content.npcs.push({
-  id: 'okrel', name: 'Okrel', title: 'Capitaine du Fil', look: 'garde',
+  id: 'okrel', name: 'Okrel', title: 'Capitaine de l\'Aube', look: 'garde',
   dialogue: [
-    "La Porte tient parce que quelqu'un la tient. Ici, c'est le Fil.",
+    "La Porte tient parce que quelqu'un la tient. Ici, c'est l'Aube.",
     "Les Kaldrin n'aiment pas qu'on les aide. Ils aiment encore moins les Molhs.",
   ],
   factionLines: {
-    fil: ["Un fil d'or de plus à la Porte. Bien. Il y a toujours un Molh de trop."],
-    dechirure: ["La cape déchirée, ici ? Passe. La Porte reste ouverte à tous : c'est le Fil qui l'a voulu."],
+    fil: ["Une flamme d'or de plus à la Porte. Bien. Il y a toujours un Molh de trop."],
+    dechirure: ["La cape fendue, ici ? Passe. La Porte reste ouverte à tous : c'est l'Aube qui l'a voulu."],
   },
 });
 
@@ -754,7 +754,7 @@ DATA.content.quests.push({
       "Les Molhs bouchent les galeries. De la pierre qui marche, de la pierre qui s'assoit, et plus rien ne passe.",
       "Dégage le passage jusqu'au Fond. Et rapporte-moi des pierres de Molh : je veux savoir d'où elles viennent.",
     ],
-    progress: ["Le Fond des Galeries est tout en bas. Suis le Fil, il connaît le chemin."],
+    progress: ["Le Fond des Galeries est tout en bas. Suis les lanternes de l'Aube, elles connaissent le chemin."],
     done: [
       "Ces pierres sont chaudes. Pas chaudes comme une pierre au soleil. Chaudes comme une pierre qui sort du four.",
       "Il y a une forge quelque part là-dessous. Et ce n'est pas une des nôtres.",
@@ -805,7 +805,7 @@ DATA.content.quests.push({
     progress: ["La Fonderie est au bout du Conduit. Kerath t'attend près du Relais."],
     done: [
       "Kerath a reconnu la cendre. Ce sont nos braises, mais elles ont été forgées une seconde fois.",
-      "Un seul forgeron sait faire ça, et il dort sous la Fonderie depuis la Déchirure. Dorm.",
+      "Un seul forgeron sait faire ça, et il dort sous la Fonderie depuis la Grande Colère. Dorm.",
     ],
   },
   rewards: { xp: 9363, fils: 70, items: [{ id: 'amulette_pioche_vive', count: 1 }] },
@@ -822,7 +822,7 @@ DATA.content.quests.push({
   ],
   dialogue: {
     offer: [
-      "Dorm forgeait pour l'ère qui dort sous Kaldum. Quand le Voile s'est déchiré, sa forge s'est réveillée avec lui.",
+      "Dorm forgeait pour Kaldum bien avant nous, et Kaldum l'a enseveli. Quand la Colère d'Ithren a brûlé le nord, sa forge s'est réveillée avec lui.",
       "Il tire notre chaleur pour rallumer la sienne. Si on le laisse faire, Kaldum s'éteint.",
       "Descends à la Forge Morte. Éteins-le pour de bon.",
     ],
@@ -950,7 +950,7 @@ DATA.content.quests.push({
   ],
   dialogue: {
     offer: [
-      "Les Relais des Galeries et de la Fonderie ne me répondent plus. Le Fil est tendu, mais il ne chante pas.",
+      "Les Relais des Galeries et de la Fonderie ne me répondent plus. Leur feu tient, mais il ne chante pas.",
       "Va les toucher, l'un après l'autre. S'ils tiennent, je le sentirai d'ici.",
       "C'est loin ? Un peu. C'est dangereux ? Un peu. C'est payé ? Un peu.",
     ],
@@ -1087,7 +1087,7 @@ DATA.content.quests.push({
   ],
   dialogue: {
     offer: [
-      "Les Molhs remontent jusqu'à la Porte, et les Kaldrin les repoussent seuls. Le Fil ne laisse pas une ville seule.",
+      "Les Molhs remontent jusqu'à la Porte, et les Kaldrin les repoussent seuls. L'Aube ne laisse pas une ville seule.",
       "Tiens la Porte avec moi. Six Molhs, trois Molhins, et la nuit sera calme.",
     ],
     progress: ["Un Molh ne court pas. Toi, tu peux."],
@@ -1107,12 +1107,12 @@ DATA.content.quests.push({
   ],
   dialogue: {
     offer: [
-      "Dans les Galeries, les lanternes du Fil s'éteignent une à une. Sans elles, les mineurs se perdent, et les remontées les trouvent.",
-      "Le lichen de scorie brûle sans fin. Cueilles-en, et rallume la lanterne du Relais des Galeries. Le Fil allume ; il n'éteint pas.",
+      "Dans les Galeries, les lanternes de l'Aube s'éteignent une à une. Sans elles, les mineurs se perdent, et les bêtes les trouvent.",
+      "Le lichen de scorie brûle sans fin. Cueilles-en, et rallume la lanterne du Relais des Galeries. L'Aube rallume ; elle ne laisse rien s'éteindre.",
     ],
     progress: ["Le lichen pousse sur les parois chaudes. Ne le confonds pas avec la mousse de Molh : elle, elle mord."],
     done: [
-      "Je la sens d'ici, ta lanterne. Le Fil tremble quand une lumière revient.",
+      "Je la sens d'ici, ta lanterne. L'Aube frémit quand une lumière revient.",
       "Lethir t'a regardé faire, je parie. Il ne dira rien. Il ne dit jamais rien, et il voit tout.",
     ],
   },
@@ -1130,8 +1130,8 @@ DATA.content.quests.push({
   ],
   dialogue: {
     offer: [
-      "Dans le Boyau, il y a une fente. Pas une fissure : une porte, avec des marches. Le Fil l'a scellée il y a longtemps.",
-      "Le sceau faiblit. Renvoie ce qui pousse contre, et ne regarde pas dedans. Ce qu'il y a derrière, le Fil le sait. Ça suffit.",
+      "Dans le Boyau, il y a une fente. Pas une fissure : une porte, avec des marches. L'Aube l'a scellée il y a longtemps.",
+      "Le sceau faiblit. Renvoie ce qui pousse contre, et ne regarde pas dedans. Ce qu'il y a derrière, l'Aube le sait. Ça suffit.",
     ],
     progress: ["Ne descends pas les marches. Ce n'est pas une question de courage."],
     done: [
@@ -1144,21 +1144,21 @@ DATA.content.quests.push({
 
 
 DATA.content.quests.push({
-  id: 'kaldum_fil_recoudre_la_bouche', name: 'Recoudre la Bouche', level: 25, main: false, category: 'faction',
+  id: 'kaldum_fil_recoudre_la_bouche', name: 'Sceller la Bouche', level: 25, main: false, category: 'faction',
   giver: 'okrel', requires: { level: 24, faction: 'fil', factionRank: 2 },
   steps: [
     { type: 'visit', map: 'kaldum_vapeurs_bouche', text: 'Descendre à la Bouche des Vapeurs' },
-    { type: 'kill', monster: 'fumerolle', count: 5, text: 'Dissiper cinq Fumerolles autour de la déchirure' },
-    { type: 'gather', resource: 'basalte_de_kaldum', count: 3, text: 'Tailler trois blocs de basalte pour lester la couture' },
+    { type: 'kill', monster: 'fumerolle', count: 5, text: 'Dissiper cinq Fumerolles autour de la fissure' },
+    { type: 'gather', resource: 'basalte_de_kaldum', count: 3, text: 'Tailler trois blocs de basalte pour lester le sceau' },
     { type: 'talk', npc: 'okrel', text: 'Rendre compte à Okrel' },
   ],
   dialogue: {
     offer: [
-      "La Bouche des Vapeurs n'est pas une bouche. C'est une déchirure, petite, qui souffle chaud. Les Couseurs la recousent chaque printemps.",
-      "Cette année, ils n'osent plus descendre. Dissipe les Fumerolles, leste la couture avec du basalte, et la Bouche se taira un moment.",
+      "La Bouche des Vapeurs n'est pas une bouche. C'est une fissure, petite, qui souffle chaud. Les Porteurs de Flamme la scellent chaque printemps.",
+      "Cette année, ils n'osent plus descendre. Dissipe les Fumerolles, leste le sceau avec du basalte, et la Bouche se taira un moment.",
     ],
     progress: ["Une Fumerolle craint l'air. Garde tes sorts d'air pour elles."],
-    done: ["Les Couseurs sont redescendus. Ils disent que la couture est belle. Venant d'eux, c'est beaucoup."],
+    done: ["Les Porteurs de Flamme sont redescendus. Ils disent que le sceau est beau. Venant d'eux, c'est beaucoup."],
   },
   rewards: { xp: 4139, fils: 55, faction: 10 },
 });
@@ -1174,35 +1174,35 @@ DATA.content.quests.push({
   ],
   dialogue: {
     offer: [
-      "Les Gardiens d'Écailles disent que la roche de Kaldum respire. Pas fort : une fois par heure, sous les Souffleries.",
-      "Ils veulent savoir si c'est un Grand Dragon qui dort, ou la Déchirure qui pousse. Va écouter. Et arrête les Pioche-Vives : elles creusent vers le bruit.",
+      "Les Gardiens des Marques disent que la roche de Kaldum respire. Pas fort : une fois par heure, sous les Souffleries.",
+      "Ils veulent savoir si c'est un Grand Dragon qui dort, ou la Colère qui couve. Va écouter. Et arrête les Pioche-Vives : elles creusent vers le bruit.",
     ],
     progress: ["Pose la main sur la roche, et attends. Si elle te répond, ne lui réponds pas."],
     done: [
-      "Une respiration lente, et chaude. Ce n'est pas la Déchirure : elle ne respire pas, elle tire.",
-      "Les Gardiens d'Écailles vont écrire ça quelque part, et le ranger loin. Le Fil range beaucoup de choses loin.",
+      "Une respiration lente, et chaude. Ce n'est pas la Colère : elle ne respire pas, elle brûle.",
+      "Les Gardiens des Marques vont écrire ça quelque part, et le ranger loin. L'Aube range beaucoup de choses loin.",
     ],
   },
   rewards: { xp: 4682, fils: 60, faction: 10 },
 });
 
 DATA.content.quests.push({
-  id: 'kaldum_fil_le_point', name: 'Le Point', level: 29, main: false, category: 'faction',
+  id: 'kaldum_fil_le_point', name: 'Le Rayon', level: 29, main: false, category: 'faction',
   giver: 'okrel', requires: { level: 28, faction: 'fil', factionRank: 2 },
   steps: [
     { type: 'visit', map: 'kaldum_fonderie_entree', text: "Rejoindre l'Entrée de la Fonderie" },
     { type: 'kill', monster: 'molh_ancien', count: 2, text: 'Arrêter deux Molhs Anciens qui montent vers la ville' },
     { type: 'kill', monster: 'kaldrik', count: 4, text: 'Repousser quatre Rakthuls' },
-    { type: 'talk', npc: 'okrel', text: "Recevoir ton Point des mains d'Okrel" },
+    { type: 'talk', npc: 'okrel', text: "Recevoir ton Rayon des mains d'Okrel" },
   ],
   dialogue: {
     offer: [
-      "Un Point, chez nous, c'est le premier nœud solide. Celui qui tient quand le reste lâche.",
-      "Les Molhs Anciens remontent de la Fonderie vers la ville. Arrête-les. Après, tu choisiras ton ordre : Gardes-Fil, Couseurs ou Gardiens d'Écailles.",
+      "Un Rayon, chez nous, c'est la première lumière qui porte loin. Celle qui tient quand le reste s'éteint.",
+      "Les Molhs Anciens remontent de la Fonderie vers la ville. Arrête-les. Après, tu choisiras ton ordre : Gardes d'Aube, Porteurs de Flamme ou Gardiens des Marques.",
     ],
     progress: ["Un Molh Ancien change de peau, un tour sur deux : la terre, puis le feu. Frappe avec l'élément qu'il ne porte pas."],
     done: [
-      "Tu tiens quand le reste lâche. Te voilà Point du Fil.",
+      "Tu tiens quand le reste s'éteint. Te voilà Rayon de l'Aube.",
       "Choisis ton ordre, et choisis bien : on n'en change pas comme de cape.",
     ],
   },
@@ -1216,18 +1216,18 @@ DATA.content.quests.push({
   steps: [
     { type: 'visit', map: 'kaldum_galeries_entree', text: "Descendre à l'Entrée des Galeries de Kaldum" },
     { type: 'kill', monster: 'thelk', count: 3, text: "Observer trois Thelks : la glaise vivante vient d'en dessous" },
-    { type: 'kill', monster: 'molhin', count: 3, text: 'Compter trois Molhins remontés' },
+    { type: 'kill', monster: 'molhin', count: 3, text: 'Compter trois Molhins qui montent des galeries' },
     { type: 'talk', npc: 'kethril', text: 'Raconter à Kethril ce que tu as vu' },
   ],
   dialogue: {
     offer: [
-      "La Déchirure ne ferme pas les yeux, Veilleur. Elle les ouvre, même quand ça pique.",
-      "Sous Kaldum, la glaise marche et la roche pousse. Le Fil dit « remontées » et sort sa lame. Nous, on regarde d'où elles viennent. Descends, observe, reviens me dire.",
+      "La Chaîne ne ferme pas les yeux, Veilleur. Elle les ouvre, même quand ça pique.",
+      "Sous Kaldum, la glaise marche et la roche pousse. L'Aube dit « Brûlés » et sort sa lame. Nous, on regarde d'où ils viennent. Descends, observe, reviens me dire.",
     ],
     progress: ["Regarde les pieds d'un Thelk. La boue qui y colle n'est pas de Kaldum."],
     done: [
       "Une boue plus vieille que la mine. Tu vois ? Quand on regarde, on apprend.",
-      "Le Fil aurait recousu, et il n'aurait rien su.",
+      "L'Aube aurait scellé, et elle n'aurait rien su.",
     ],
   },
   rewards: { xp: 2896, fils: 40, faction: 10 },
@@ -1250,7 +1250,7 @@ DATA.content.quests.push({
     progress: ["Huit Molhs. Ils sont lourds, mais ils ne tiennent pas tant que ça à rester."],
     done: [
       "Ce basalte est taillé. Pas cassé : taillé, d'un côté. Il y avait un mur, et derrière le mur, un passage.",
-      "Le Fil a fait tomber cet éboulement. Je m'en doutais. Maintenant, je le sais.",
+      "L'Aube a fait tomber cet éboulement. Je m'en doutais. Maintenant, je le sais.",
     ],
   },
   rewards: { xp: 3374, fils: 45, faction: 10 },
@@ -1260,19 +1260,19 @@ DATA.content.quests.push({
   id: 'kaldum_dechirure_la_fente_du_boyau', name: 'La fente du Boyau', level: 24, main: false, category: 'faction',
   giver: 'kethril', requires: { level: 23, faction: 'dechirure', factionRank: 1 },
   steps: [
-    { type: 'visit', map: 'kaldum_galeries_boyau', text: 'Trouver la fente que le Fil a scellée' },
+    { type: 'visit', map: 'kaldum_galeries_boyau', text: 'Trouver la fente que l\'Aube a scellée' },
     { type: 'kill', monster: 'thelk', count: 4, text: 'Laisser sortir ce qui pousse, et compter : quatre Thelks' },
     { type: 'kill', monster: 'kaldrik', count: 2, text: 'Écarter deux Rakthuls du sceau' },
     { type: 'talk', npc: 'kethril', text: "Dire à Kethril ce qu'il y a derrière" },
   ],
   dialogue: {
     offer: [
-      "Dans le Boyau, le Fil a scellé une fente. Un sceau tout neuf sur une porte très vieille.",
+      "Dans le Boyau, l'Aube a scellé une fente. Un sceau tout neuf sur une porte très vieille.",
       "Va voir ce qui pousse contre. Ne casse rien : un sceau, ça se lit avant de s'ouvrir. Puis reviens me dire ce qu'il y a derrière.",
     ],
-    progress: ["Si un capitaine du Fil te demande ce que tu fais là, dis que tu cherches du lichen."],
+    progress: ["Si un capitaine de l'Aube te demande ce que tu fais là, dis que tu cherches du lichen."],
     done: [
-      "Des marches. Taillées. Quelqu'un est descendu là avant nous, et le Fil l'a caché.",
+      "Des marches. Taillées. Quelqu'un est descendu là avant nous, et l'Aube l'a caché.",
       "Un jour, on descendra ces marches. Pas aujourd'hui. Aujourd'hui, on sait qu'elles existent, et c'est déjà beaucoup.",
     ],
   },
@@ -1291,7 +1291,7 @@ DATA.content.quests.push({
   ],
   dialogue: {
     offer: [
-      "Les Lieurs ne tuent pas ce qui remonte. Ils l'attachent, et ils écoutent.",
+      "Les Lieurs ne tuent pas ce qui bouge. Ils l'attachent, et ils écoutent.",
       "Essouffle les Fumerolles de la Bouche, puis tresse un lien de lichen. On verra si une vapeur se laisse tenir.",
     ],
     progress: ["Un lien de lichen, ça brûle les doigts. Les bons liens brûlent toujours un peu."],
@@ -1315,8 +1315,8 @@ DATA.content.quests.push({
   ],
   dialogue: {
     offer: [
-      "Les Descendeurs dessinent la carte de ce qui est en dessous. Pas les Bas-Voiles, pas encore : on commence par les Vapeurs.",
-      "Relève les Souffleries et le Conduit. Note ce qui y vit : la vieille glaise, les Tholous tissés. Tout ce qui est tissé est remonté.",
+      "Les Descendeurs dessinent la carte de ce qui est en dessous. Pas les Cendrées, pas encore : on commence par les Vapeurs.",
+      "Relève les Souffleries et le Conduit. Note ce qui y vit : la vieille glaise, les Tholous tissés. Tout ce qui est tissé, quelque chose l'a tissé.",
     ],
     progress: ["Une bonne carte, c'est une carte où l'on a mis les pieds."],
     done: [
@@ -1328,23 +1328,23 @@ DATA.content.quests.push({
 });
 
 DATA.content.quests.push({
-  id: 'kaldum_dechirure_l_entaille', name: "L'Entaille", level: 29, main: false, category: 'faction',
+  id: 'kaldum_dechirure_l_entaille', name: "L'Anneau", level: 29, main: false, category: 'faction',
   giver: 'kethril', requires: { level: 28, faction: 'dechirure', factionRank: 2 },
   steps: [
     { type: 'visit', map: 'kaldum_fonderie_creusets', text: 'Descendre aux Creusets' },
-    { type: 'kill', monster: 'fumerolle_noire', count: 2, text: "Étudier deux Fumerolles Noires, déchirées jusqu'au cœur" },
+    { type: 'kill', monster: 'fumerolle_noire', count: 2, text: "Étudier deux Fumerolles Noires, brûlées jusqu'au cœur" },
     { type: 'visit', map: 'kaldum_fonderie_forge', text: 'Regarder la porte de la Forge Morte, sans entrer' },
-    { type: 'talk', npc: 'kethril', text: 'Recevoir ton Entaille des mains de Kethril' },
+    { type: 'talk', npc: 'kethril', text: 'Recevoir ton Anneau des mains de Kethril' },
   ],
   dialogue: {
     offer: [
-      "Une Entaille, chez nous, c'est la première vraie marque. Celle qui ne se referme plus.",
-      "Aux Creusets rôdent des Fumerolles Noires, déchirées jusqu'au cœur. Étudie-les, puis va regarder la porte de la Forge Morte. Juste regarder : ce qui dort derrière, on le réveillera peut-être un jour.",
+      "Un Anneau, chez nous, c'est le premier maillon qu'on ferme soi-même. Celui qui ne s'ouvre plus.",
+      "Aux Creusets rôdent des Fumerolles Noires, brûlées jusqu'au cœur. Étudie-les, puis va regarder la porte de la Forge Morte. Juste regarder : ce qui dort derrière, on le réveillera peut-être un jour.",
     ],
     progress: ["Une Fumerolle Noire éclate en mourant. Prends tes notes de loin."],
     done: [
-      "Tu as regardé la Forge sans l'ouvrir. C'est plus dur qu'on croit. Tu portes ton Entaille.",
-      "Choisis ton ordre : Effileurs, Lieurs ou Descendeurs. Une entaille ne se recoud pas, un ordre non plus.",
+      "Tu as regardé la Forge sans l'ouvrir. C'est plus dur qu'on croit. Tu portes ton Anneau.",
+      "Choisis ton ordre : Marteaux, Lieurs ou Descendeurs. Un anneau ne se rouvre pas, un ordre non plus.",
     ],
   },
   rewards: { xp: 5249, fils: 70, items: [{ id: 'pain_de_forge', count: 2 }], faction: 10 },
@@ -1355,7 +1355,7 @@ DATA.content.dungeons.push({
   id: 'forge_morte', name: 'La Forge Morte', zone: 'kaldum_fonderie', level: [28, 30],
   entryMap: 'kaldum_fonderie_forge',
   keyItem: null,
-  description: "La forge de Dorm, ensevelie sous la Fonderie depuis la Déchirure. Elle s'est rallumée, et c'est la chaleur de Kaldum qu'elle brûle.",
+  description: "La forge de Dorm, ensevelie sous la Fonderie depuis la Grande Colère. Elle s'est rallumée, et c'est la chaleur de Kaldum qu'elle brûle.",
   rooms: [
     {
       name: 'Le Vestibule',

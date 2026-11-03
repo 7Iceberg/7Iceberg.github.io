@@ -104,7 +104,7 @@ Object.assign(Hud.prototype, {
         this.fen.render('carte');
       },
       voyager: d => {
-        if (!this.world.canTeleport(d.id)) { this.toast('Il faut être à un Relais du Fil pour voyager.'); return; }
+        if (!this.world.canTeleport(d.id)) { this.toast('Il faut être à un Relais de l\'Aube pour voyager.'); return; }
         c.depuisRelais = false;
         this.fen.close('carte');
         this.world.teleport(d.id);
@@ -183,7 +183,7 @@ Object.assign(Hud.prototype, {
     const here = Atlas.hereOf(w.mapId);
     const vus = [...A.coords.keys()].filter(id => seen.has(id)).length;
     const compte = `<p class="vy-carte__compte"><b>${vus}</b> / ${A.coords.size} cartes explorées</p>`;
-    const leg = [['toi', 'Toi'], ['quete', 'Quête suivie'], ['drapeau', 'Ton drapeau'], ['relais', 'Relais du Fil'], ['donjon', 'Donjon'], ['artisan', 'Atelier', 'forgeron'], ['marchand', 'Marchand'], ['marche', 'Marché'], ['banque', 'Banque'], ['dojo', 'Dojo'], ['metiers', 'Hôtel des Métiers'], ['avis', 'Avis de recherche'], ['temple', 'Temple des Voies'], ['offre', 'Quête à prendre'], ['rendre', 'Quête à rendre']];
+    const leg = [['toi', 'Toi'], ['quete', 'Quête suivie'], ['drapeau', 'Ton drapeau'], ['relais', 'Relais de l\'Aube'], ['donjon', 'Donjon'], ['artisan', 'Atelier', 'forgeron'], ['marchand', 'Marchand'], ['marche', 'Marché'], ['banque', 'Banque'], ['dojo', 'Dojo'], ['metiers', 'Hôtel des Métiers'], ['avis', 'Avis de recherche'], ['temple', 'Temple des Voies'], ['offre', 'Quête à prendre'], ['rendre', 'Quête à rendre']];
     const legende = `<div class="vy-carte__legende">${leg.map(([k, l, sub]) => `<span><img src="${CartePeinture.url(k, sub)}" alt="" width="18" height="18">${l}</span>`).join('')}</div>` +
       `<p class="muted vy-note">${c.drapeau ? `Drapeau en ${coord(c.drapeau.map(Math.round))}. <button class="vy-carte__lien" data-act="drapeau">Retirer</button>` : 'Appui long ou clic droit sur la carte : poser ton drapeau.'}</p>`;
     const id = c.sel || (c.selCase ? null : here);
@@ -213,11 +213,11 @@ Object.assign(Hud.prototype, {
     if (known && info.resources.length) html += `<div class="vy-sous"><span>Récolte</span></div><ul class="vy-carte__liste">${info.resources.map(r => { const d = Items.get(r); return ligne(d ? esc(d.name) : esc(r), d && d.level > 1 ? 'niv. ' + d.level : ''); }).join('')}</ul>`;
     if (info.relay) {
       const reg = ch.relays.includes(id);
-      html += `<div class="vy-sous"><span>Relais du Fil</span></div><p class="vy-note">${reg ? 'Enregistré.' : 'Pas encore enregistré : touche-le pour pouvoir y revenir.'}</p>`;
+      html += `<div class="vy-sous"><span>Relais de l'Aube</span></div><p class="vy-note">${reg ? 'Enregistré.' : 'Pas encore enregistré : touche-le pour pouvoir y revenir.'}</p>`;
       if (reg && id !== w.mapId) {
         html += w.canTeleport(id)
           ? `<div class="vy-carte__actions"><button class="vy-bouton vy-bouton--primaire" data-act="voyager" data-id="${esc(id)}">Voyager</button></div>`
-          : '<p class="muted vy-note">Pour voyager ici, touche un Relais du Fil puis ouvre la carte depuis le relais.</p>';
+          : '<p class="muted vy-note">Pour voyager ici, touche un Relais de l\'Aube puis ouvre la carte depuis le relais.</p>';
       }
     }
     for (const d of info.dungeons) {
@@ -245,7 +245,7 @@ Object.assign(Hud.prototype, {
       const rows = r.zones.map(z => { const n = z.maps.length, v = z.maps.filter(m => seen.has(m.id)).length; return `<li><span>${esc(z.name)} <small class="muted">${levels(z.level)}</small></span><b>${v} / ${n}</b></li>`; }).join('');
       html += `<div class="vy-sous"><span>Zones</span><span>explorées</span></div><ul class="vy-carte__liste">${rows}</ul>
         <div class="vy-carte__actions"><button class="vy-bouton vy-bouton--petit" data-act="voirRegion" data-id="${r.id}">Voir les cartes</button></div>`;
-    } else html += '<p class="muted vy-note">Ces terres ne sont pas encore ouvertes. Les Voiles se lèvent une région après l\'autre.</p>';
+    } else html += '<p class="muted vy-note">Ces terres ne sont pas encore ouvertes. Le continent s\'ouvre une région après l\'autre.</p>';
     html += `<div class="vy-sous"><span>Le premier continent</span></div><div class="vy-carte__regions">${regs.map(x => `<button class="vy-carte__region${x.id === r.id ? ' on' : ''}${x.open ? '' : ' ferme'}" data-act="region" data-id="${x.id}" aria-pressed="${x.id === r.id}"><span class="vy-pastille" style="--c:${REGION[x.id].lanterne}"></span>${esc(DATA.regions[x.id] || x.name)}<small>${levels(x.level)}${x.open ? '' : ', à venir'}</small></button>`).join('')}</div>`;
     return html;
   },
@@ -454,13 +454,13 @@ Object.assign(Hud.prototype, {
       case 'quete': return `<b>Quêtes</b><span class="q">${esc(it.quest.name)}</span><span>${esc(it.text)}${ou}</span>`;
       case 'offre': return `<b>Quêtes</b>${it.quetes.map(q => `<span class="q">${esc(q.name)}</span><span>Aller voir ${esc(it.npc.name)}${ou}</span>`).join('')}`;
       case 'rendre': return `<b>Quêtes</b>${it.quetes.map(q => `<span class="q">${esc(q.name)}</span><span>${esc(Quests.stepText(ch, q.id))}${ou}</span>`).join('')}`;
-      case 'relais': return `<b>Relais du Fil</b><span>${esc(nomCarte)}${ou}</span><span class="q">${ch.relays.includes(it.map) ? 'Enregistré' : 'Pas encore enregistré'}</span>`;
+      case 'relais': return `<b>Relais de l'Aube</b><span>${esc(nomCarte)}${ou}</span><span class="q">${ch.relays.includes(it.map) ? 'Enregistré' : 'Pas encore enregistré'}</span>`;
       case 'donjon': return `<b>Donjon</b><span>${esc(it.donjon.name)}${ou}</span><span class="q">${niveau(it.donjon.level)}</span>`;
       case 'artisan': return `<b>Atelier</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || ATELIERS[it.sub] || '')}${ou}</span>`;
       case 'marchand': return `<b>Marchand</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || '')}${ou}</span>`;
-      case 'banque': return `<b>Banque du Fil</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || '')}${ou}</span>`;
+      case 'banque': return `<b>Banque de l'Aube</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || '')}${ou}</span>`;
       case 'marche': return `<b>Marché des Cimes</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || '')}${ou}</span>`;
-      case 'dojo': return `<b>Dojo du Fil</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || '')}${ou}</span>`;
+      case 'dojo': return `<b>Dojo des Cimes</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || '')}${ou}</span>`;
       case 'metiers': return `<b>Hôtel des Métiers</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || '')}${ou}</span>`;
       case 'avis': return `<b>Garde des Cimes</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || '')}${ou}</span>`;
       case 'temple': return `<b>Temple des Voies</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || '')}${ou}</span>`;
@@ -1202,13 +1202,13 @@ Object.assign(Hud.prototype, {
       case 'quete': return `<b>Quête suivie</b><span class="q">${esc(it.quest.name)}</span><span>${esc(it.text)}</span>`;
       case 'offre': return `<b>${esc(it.npc.name)}</b><span>${esc(it.npc.title || '')}</span>${it.quetes.map(q => `<span class="q">Quête à prendre : ${esc(q.name)}</span>`).join('')}`;
       case 'rendre': return `<b>${esc(it.npc.name)}</b><span>${esc(it.npc.title || '')}</span>${it.quetes.map(q => `<span class="q">Quête à rendre : ${esc(q.name)}</span>`).join('')}`;
-      case 'relais': return `<b>Relais du Fil</b><span>${ou}</span><span class="q">${ch.relays.includes(it.map) ? 'Enregistré' : 'Pas encore enregistré'}</span>`;
+      case 'relais': return `<b>Relais de l'Aube</b><span>${ou}</span><span class="q">${ch.relays.includes(it.map) ? 'Enregistré' : 'Pas encore enregistré'}</span>`;
       case 'donjon': return `<b>${esc(it.donjon ? it.donjon.name : 'Donjon')}</b><span>${ou}</span>${it.donjon ? `<span class="q">Donjon, ${niveau(it.donjon.level).toLowerCase()}</span>` : ''}`;
       case 'artisan': return `<b>${esc(it.npc.name)}</b><span>Atelier, ${esc(it.npc.title || ATELIERS[it.sub] || '')}</span>`;
       case 'marchand': return `<b>${esc(it.npc.name)}</b><span>Marchand, ${esc(it.npc.title || '')}</span>`;
-      case 'banque': return `<b>${esc(it.npc.name)}</b><span>Banque du Fil, ${esc(it.npc.title || '')}</span>`;
+      case 'banque': return `<b>${esc(it.npc.name)}</b><span>Banque de l'Aube, ${esc(it.npc.title || '')}</span>`;
       case 'marche': return `<b>${esc(it.npc.name)}</b><span>Marché des Cimes, ${esc(it.npc.title || '')}</span>`;
-      case 'dojo': return `<b>${esc(it.npc.name)}</b><span>Dojo du Fil, ${esc(it.npc.title || '')}</span>`;
+      case 'dojo': return `<b>${esc(it.npc.name)}</b><span>Dojo des Cimes, ${esc(it.npc.title || '')}</span>`;
       case 'metiers': return `<b>${esc(it.npc.name)}</b><span>Hôtel des Métiers, ${esc(it.npc.title || '')}</span>`;
       case 'avis': return `<b>${esc(it.npc.name)}</b><span>Garde des Cimes, ${esc(it.npc.title || '')}</span>`;
       case 'temple': return `<b>${esc(it.npc.name)}</b><span>Temple des Voies, ${esc(it.npc.title || '')}</span>`;
@@ -1228,7 +1228,7 @@ Object.assign(Hud.prototype, {
     const A = Atlas.get(), seen = new Set(ch.counters.maps);
     const vus = [...A.coords.keys()].filter(id => seen.has(id)).length;
     const compte = `<p class="vy-carte__compte"><b>${vus}</b> / ${A.coords.size} cartes explorées</p>`;
-    const leg = [['toi', 'Toi'], ['quete', 'Quête suivie'], ['relais', 'Relais du Fil'], ['donjon', 'Donjon'], ['artisan', 'Atelier', 'forgeron'], ['marchand', 'Marchand'], ['marche', 'Marché'], ['banque', 'Banque'], ['dojo', 'Dojo'], ['metiers', 'Hôtel des Métiers'], ['avis', 'Avis de recherche'], ['temple', 'Temple des Voies'], ['offre', 'Quête à prendre'], ['rendre', 'Quête à rendre']];
+    const leg = [['toi', 'Toi'], ['quete', 'Quête suivie'], ['relais', 'Relais de l\'Aube'], ['donjon', 'Donjon'], ['artisan', 'Atelier', 'forgeron'], ['marchand', 'Marchand'], ['marche', 'Marché'], ['banque', 'Banque'], ['dojo', 'Dojo'], ['metiers', 'Hôtel des Métiers'], ['avis', 'Avis de recherche'], ['temple', 'Temple des Voies'], ['offre', 'Quête à prendre'], ['rendre', 'Quête à rendre']];
     const legende = `<div class="vy-carte__legende">${leg.map(([k, l, sub]) => `<span><img src="${CartePeinture.url(k, sub)}" alt="" width="18" height="18">${l}</span>`).join('')}</div>`;
     const aide = '<p class="muted vy-note">Touche une pastille, un nom ou le sol pour sa fiche.</p>';
     if (!s || !P) return compte + (w.mapId && World.mapDef(w.mapId) ? this.ficheCase(w.mapId, { sansCoord: true }) : '') + aide + legende;
@@ -1250,7 +1250,7 @@ Object.assign(Hud.prototype, {
       const it = s.item, items = s.groupe && s.groupe.length > 1 ? s.groupe : [it];
       const ligne = (a, b) => `<li><span>${a}</span>${b ? `<b>${b}</b>` : ''}</li>`;
       const marque = k => `<img class="vy-carte__marque" src="${CartePeinture.url(k)}" alt="" width="16" height="16">`;
-      const titre = it.npc ? it.npc.name : it.kind === 'relais' ? 'Relais du Fil' : it.kind === 'donjon' ? (it.donjon ? it.donjon.name : 'Donjon') : it.kind === 'quete' ? it.quest.name : '';
+      const titre = it.npc ? it.npc.name : it.kind === 'relais' ? 'Relais de l\'Aube' : it.kind === 'donjon' ? (it.donjon ? it.donjon.name : 'Donjon') : it.kind === 'quete' ? it.quest.name : '';
       const sous = it.npc ? (it.npc.title || '') : it.kind === 'quete' ? 'Quête suivie' : it.kind === 'donjon' && it.donjon ? `Donjon · ${levels(it.donjon.level)}` : '';
       html = `<h3>${esc(titre)}</h3><p class="vy-carte__coord">${esc(sous)}${sous && ou ? ' · ' : ''}${ou}</p>`;
       const q = [];
@@ -1260,9 +1260,9 @@ Object.assign(Hud.prototype, {
       }
       if (q.length) html += `<div class="vy-sous"><span>Quêtes</span></div><ul class="vy-carte__liste">${q.join('')}</ul>`;
       for (const x of items) {
-        if (x.kind === 'banque') html += `<div class="vy-sous"><span>Banque du Fil</span></div><p class="vy-note">${esc(x.npc.name)} : ton coffre, objets et Fils.</p>`;
+        if (x.kind === 'banque') html += `<div class="vy-sous"><span>Banque de l'Aube</span></div><p class="vy-note">${esc(x.npc.name)} : ton coffre, objets et Dragmes.</p>`;
         if (x.kind === 'marche') html += `<div class="vy-sous"><span>Marché des Cimes</span></div><p class="vy-note">${esc(x.npc.name)} : l'étal du jour.</p>`;
-        if (x.kind === 'dojo') html += `<div class="vy-sous"><span>Dojo du Fil</span></div><p class="vy-note">${esc(x.npc.name)} : l'entraînement contre les mannequins, l'épreuve du jour dès le niveau 5.</p>`;
+        if (x.kind === 'dojo') html += `<div class="vy-sous"><span>Dojo des Cimes</span></div><p class="vy-note">${esc(x.npc.name)} : l'entraînement contre les mannequins, l'épreuve du jour dès le niveau 5.</p>`;
         if (x.kind === 'metiers') html += `<div class="vy-sous"><span>Hôtel des Métiers</span></div><p class="vy-note">${esc(x.npc.name)} : les métiers et leurs ateliers.</p>`;
         if (x.kind === 'avis') html += `<div class="vy-sous"><span>Garde des Cimes</span></div><p class="vy-note">${esc(x.npc.name)} : les avis de recherche.</p>`;
         if (x.kind === 'temple') html += `<div class="vy-sous"><span>Temple des Voies</span></div><p class="vy-note">${esc(x.npc.name)} : les Sceaux de la Garde, la statue vers Ervane.</p>`;
@@ -1271,7 +1271,7 @@ Object.assign(Hud.prototype, {
         if (x.kind === 'donjon' && x.donjon) { const key = x.donjon.keyItem && Items.get(x.donjon.keyItem); html += `<div class="vy-sous"><span>Donjon</span></div><p class="vy-note"><b>${esc(x.donjon.name)}</b> <span class="muted">${levels(x.donjon.level)} · ${x.donjon.rooms.length} salles${key ? ' · clé : ' + esc(key.name) : ''}${ch.counters.dungeons.includes(x.donjon.id) ? ' · terminé' : ''}</span></p>`; }
         if (x.kind === 'relais') {
           const reg = ch.relays.includes(x.map);
-          html += `<div class="vy-sous"><span>Relais du Fil</span></div><p class="vy-note">${reg ? 'Enregistré.' : 'Pas encore enregistré : touche-le pour pouvoir y revenir.'}</p>`;
+          html += `<div class="vy-sous"><span>Relais de l'Aube</span></div><p class="vy-note">${reg ? 'Enregistré.' : 'Pas encore enregistré : touche-le pour pouvoir y revenir.'}</p>`;
           if (reg && x.map !== w.mapId && w.canTeleport(x.map)) html += `<div class="vy-carte__actions"><button class="vy-bouton" data-act="voyager" data-id="${esc(x.map)}">Voyager</button></div>`;
         }
       }

@@ -92,7 +92,7 @@ function propres(s) {
   if (s.telefrag) out.push(['Sur une créature', `téléfrag : les places s'échangent, +${s.telefrag} PA une fois par tour`]);
   if (s.markSight) out.push(['Cible traquée', 'visée à travers les obstacles']);
   if (s.trapReplaceOldest) out.push(['Au-delà de 3 pièges', 'le plus ancien disparaît']);
-  if (s.purse) out.push(['Bourse', `+${s.purse} % de Fils et de butin si la cible tombe`]);
+  if (s.purse) out.push(['Bourse', `+${s.purse} % de Dragmes et de butin si la cible tombe`]);
   if (s.onKill) out.push(['Si la cible tombe', s.onKill.flatMap(x => lignes(x, s)).map(([l, v]) => `${l.toLowerCase()} ${v}`).join(', ')]);
   return out;
 }

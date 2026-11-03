@@ -218,12 +218,12 @@ const Atlas = (() => {
 
   const REGIONS = [
     { id: 'ervane', name: 'Ervane, l\'île de l\'Éveil', level: [1, 8], at: [15, 10], r: 7, desc: 'L\'île où s\'éveillent les Veilleurs, au bout de l\'amarre, au-dessus des Cimes.' },
-    { id: 'orsane', name: 'Orsane, les Cimes', level: [1, 20], at: [40, 15], r: 13, desc: 'La capitale, sur les Cimes, tout en hauteur et en lumière. Siège du Fil.' },
+    { id: 'orsane', name: 'Orsane, les Cimes', level: [1, 20], at: [40, 15], r: 13, desc: 'La capitale, sur les Cimes, tout en hauteur et en lumière. Siège de l\'Aube.' },
     { id: 'kaldum', name: 'Kaldum', level: [20, 40], at: [74, 27], r: 12, desc: 'Mines, forges, roche chaude. Terre des Kaldrin.' },
     { id: 'thessa', name: 'Thessa, les Marées', level: [30, 50], at: [15, 40], r: 12, desc: 'Côte, ports, marchés. Les Francs-Marcheurs y règnent.' },
-    { id: 'lisiere', name: 'La Lisière', level: [40, 60], at: [47, 43], r: 11, desc: 'La zone autour de la Déchirure. Contestée, PvP ouvert.' },
-    { id: 'basvoiles', name: 'Les Bas-Voiles', level: [50, 80], at: [72, 58], r: 11, desc: 'Ce qu\'on trouve juste sous la fente. Donjons, remontées, noir et pourpre.' },
-    { id: 'voile', name: 'Sous le premier Voile', level: [80, 100], at: [36, 64], r: 9, desc: 'La saga de fin : quatre lieutenants, puis l\'Effileur.' },
+    { id: 'lisiere', name: 'La Lisière', level: [40, 60], at: [47, 43], r: 11, desc: 'Le bord de la Brûlure, la cicatrice de la Colère. Contestée, PvP ouvert.' },
+    { id: 'basvoiles', name: 'Les Cendrées', level: [50, 80], at: [72, 58], r: 11, desc: 'Sous la cendre, au-delà de la Lisière. Donjons, Brûlés, noir et pourpre.' },
+    { id: 'voile', name: 'Le Nid d\'Ithren', level: [80, 100], at: [36, 64], r: 9, desc: 'Là où le dragon a disparu. La saga de fin : quatre lieutenants, puis celui qui tient l\'Écaille d\'Ithren.' },
   ];
   function regions() {
     const zones = (DATA.content && DATA.content.zones) || [];

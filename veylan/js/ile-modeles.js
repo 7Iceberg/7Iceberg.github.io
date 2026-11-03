@@ -122,7 +122,7 @@ const IleModeles = (() => {
     }
     ile.octetsGeo = (ile.octetsGeo || 0) + modele.octets.geo;
     ile.octetsTex = (ile.octetsTex || 0) + modele.octets.tex;
-    console.log(`Ervane : ${relais.length} relais du Fil posés (${modele.triangles} triangles chacun, ${Math.round((modele.octets.geo + modele.octets.tex) / 1e5) / 10} Mo)`);
+    console.log(`Ervane : ${relais.length} relais de l'Aube posés (${modele.triangles} triangles chacun, ${Math.round((modele.octets.geo + modele.octets.tex) / 1e5) / 10} Mo)`);
     return { relais, mat: modele.mat, triangles: modele.triangles };
   }
 

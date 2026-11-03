@@ -105,7 +105,7 @@ Object.assign(Hud.prototype, {
       const demain = Veille.entree(s.jour + 1);
       return `<span class="vy-veille__sceau">Veille du jour accomplie</span><p class="vy-veille__note">Demain : « ${esc(demain.nom)} », ${esc(demain.voileNom.replace(/^\S+/, m => m.toLowerCase()))}, ${esc(semaine(demain.element).replace(/^S/, 's'))}.</p>`;
     }
-    if (!s.auRelais) return `<button class="vy-bouton" disabled>Rends-toi à un Relais</button><p class="vy-veille__note">Le dépôt se fait au tableau de n'importe quel Relais du Fil. Il rapporte ${gain}.</p>`;
+    if (!s.auRelais) return `<button class="vy-bouton" disabled>Rends-toi à un Relais</button><p class="vy-veille__note">Le dépôt se fait au tableau de n'importe quel Relais de l'Aube. Il rapporte ${gain}.</p>`;
     if (!s.peut) return `<button class="vy-bouton" disabled>Déposer</button><p class="vy-veille__note">${esc(s.raison)}</p>`;
     const quoi = s.rattrapage ? `Rattrape une Veille en réserve (${s.reserve}) : ${gain}.` : `Rapporte ${gain}.`;
     return `<button class="vy-bouton vy-bouton--primaire" data-act="deposer">Déposer</button><p class="vy-veille__note">${quoi}</p>`;
@@ -113,7 +113,7 @@ Object.assign(Hud.prototype, {
 
   veilleSuivi(ch, s) {
     const cases = Veille.grille(ch);
-    const tete = '<span></span>' + Veille.ROMAINS.map((r, i) => `<span class="vy-veille__col" title="${esc(Veille.VOILES[i])} Voile">${r}</span>`).join('');
+    const tete = '<span></span>' + Veille.ROMAINS.map((r, i) => `<span class="vy-veille__col" title="${esc(Veille.VOILES[i])}">${r}</span>`).join('');
     const rangs = [0, 1, 2, 3].map(k => {
       const el = cases[k * 7].element;
       const ligne = cases.slice(k * 7, k * 7 + 7).map(c => `<span class="vy-veille__case${c.aujourdhui ? ' auj' : ''}" data-etat="${c.etat}" style="--c:${element(c.element).color}" title="Jour ${c.numero} · ${esc(c.nom)} (${c.aujourdhui && c.etat === 'fait' ? 'aujourd\'hui, déposée' : ETATS[c.etat]})">${c.numero}</span>`).join('');

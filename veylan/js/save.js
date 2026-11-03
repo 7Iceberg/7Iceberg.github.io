@@ -97,7 +97,10 @@ const Save = (() => {
     o.spellRanks = ranks;
   }
 
-  const TITRES_RENOMMES = new Map([['Fléau des Pilous', 'Fléau des Glyms'], ['Enfant des Cimes', 'Veilleur des Cimes']]);
+  const TITRES_RENOMMES = new Map([['Fléau des Pilous', 'Fléau des Glyms'], ['Enfant des Cimes', 'Veilleur des Cimes'],
+    ['Bout de fil', 'Étincelle'], ['Couseur', 'Lueur'], ['Point', 'Rayon'], ['Ourlet', 'Flambeau'], ['Trame', 'Fanal'], ['Navette', 'Phare'], ['Fuseau', 'Aurore'], ['Métier', 'Zénith'], ['Grand Tisserand', 'Grand Éveilleur'], ['Main du Fil', 'Main de l\'Aube'],
+    ['Accroc', 'Maillon'], ['Éraflure', 'Crochet'], ['Entaille', 'Anneau'], ['Fêlure', 'Rivet'], ['Fente', 'Fer'], ['Lézarde', 'Entrave'], ['Brèche', 'Carcan'], ['Faille', 'Joug'], ['Gouffre', 'Grand Lieur'], ['Voix de la Déchirure', 'Voix de la Chaîne'],
+    ['Vétéran des Voiles', 'Vétéran des Cimes'], ['Tisseur de Fils', 'Grand Argentier'], ['Bras du Fil', 'Bras de l\'Aube'], ['Veilleur des sept Voiles', 'Veilleur des Sept Dragons']]);
   function migrerTitres(o) {
     if (Array.isArray(o.titles)) o.titles = o.titles.map(t => (TITRES_RENOMMES.has(t) ? TITRES_RENOMMES.get(t) : t));
     if (TITRES_RENOMMES.has(o.title)) o.title = TITRES_RENOMMES.get(o.title);
@@ -146,7 +149,7 @@ const Save = (() => {
         if (!isInt(n, 1, 99999)) { bad(`quantité au coffre ${id}`); continue; }
         coffre.items[id] = n;
       }
-      if (o.coffre.fils != null) { if (isInt(o.coffre.fils, 0, 1e9)) coffre.fils = o.coffre.fils; else bad('Fils du coffre'); }
+      if (o.coffre.fils != null) { if (isInt(o.coffre.fils, 0, 1e9)) coffre.fils = o.coffre.fils; else bad('Dragmes du coffre'); }
     }
     o.coffre = coffre;
     if (o.avis != null) {
@@ -178,12 +181,12 @@ const Save = (() => {
       eq[slot] = id;
     }
     o.equipment = eq;
-    if (!isInt(o.fils, 0, 1e9)) { bad('Fils'); o.fils = 0; }
+    if (!isInt(o.fils, 0, 1e9)) { bad('Dragmes'); o.fils = 0; }
     const c = o.counters && typeof o.counters === 'object' ? o.counters : {};
     const counters = Character.defaults().counters;
     for (const k of ['fights', 'wins', 'crafts', 'gathers', 'filsEarned', 'questsDone']) { if (c[k] == null) continue; if (isInt(c[k], 0, 1e9)) counters[k] = c[k]; else bad(`compteur ${k}`); }
     if (counters.wins > counters.fights) { bad('victoires'); counters.wins = counters.fights; }
-    if (o.fils + o.coffre.fils > counters.filsEarned) { bad('Fils au-delà des gains'); o.fils = Math.min(o.fils, counters.filsEarned); o.coffre.fils = Math.max(0, Math.min(o.coffre.fils, counters.filsEarned - o.fils)); }
+    if (o.fils + o.coffre.fils > counters.filsEarned) { bad('Dragmes au-delà des gains'); o.fils = Math.min(o.fils, counters.filsEarned); o.coffre.fils = Math.max(0, Math.min(o.coffre.fils, counters.filsEarned - o.fils)); }
     for (const k of ['kills', 'feats']) if (c[k] && typeof c[k] === 'object') for (const id of Object.keys(c[k])) { if (isInt(c[k][id], 0, 1e9)) counters[k][id] = c[k][id]; else bad(`compteur ${k}.${id}`); }
     for (const k of ['maps', 'dungeons', 'bosses']) if (Array.isArray(c[k])) counters[k] = [...new Set(c[k].filter(x => typeof x === 'string'))];
     counters.maps = counters.maps.filter(id => World.mapDef(id));

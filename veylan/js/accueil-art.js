@@ -470,8 +470,8 @@ const AccueilArt = (() => {
       c.beginPath(); c.moveTo(mx, my - 22); c.lineTo(mx, my + 20); c.moveTo(mx - 22, my - 12); c.lineTo(mx + 22, my - 12); c.moveTo(mx - 12, my + 20); c.lineTo(mx + 12, my + 20); c.stroke();
       for (const d of [-22, 22]) { c.beginPath(); c.moveTo(mx + d - 9, my + 2); c.quadraticCurveTo(mx + d, my + 12, mx + d + 9, my + 2); c.lineTo(mx + d, my - 12); c.closePath(); c.stroke(); }
       texte(c, 'Serment au niveau 20', 490, 42, 18, '#e2c690', { police: 'Cinzel, Georgia, serif', poids: 700 });
-      texte(c, 'Le Fil', 240, 372, 26, '#fff3d2', { police: 'Cinzel, Georgia, serif', poids: 700 });
-      texte(c, 'La Déchirure', 740, 372, 26, '#ffb3d1', { police: 'Cinzel, Georgia, serif', poids: 700 });
+      texte(c, 'L\'Aube', 240, 372, 26, '#fff3d2', { police: 'Cinzel, Georgia, serif', poids: 700 });
+      texte(c, 'La Chaîne', 740, 372, 26, '#ffb3d1', { police: 'Cinzel, Georgia, serif', poids: 700 });
       texte(c, 'Francs-Marcheurs', 490, 382, 17, '#a9dcc3', { police: 'Cinzel, Georgia, serif', poids: 700 });
       texte(c, 'neutres', 490, 406, 14, '#d8b48a', { poids: 600 });
     },

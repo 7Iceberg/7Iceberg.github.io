@@ -148,7 +148,7 @@ class Scene {
       return d && d.id !== 'puits_de_l_amarre' ? `On descend dans ${d.name.replace(/^L[ea] /, m => m.toLowerCase())}...` : 'On descend dans le Puits...';
     }
     const pl = typeof Ile === 'object' && Ile.plateau(id);
-    return `On recoud ${pl && pl.name ? pl.name : 'Ervane'}...`;
+    return `On rallume ${pl && pl.name ? pl.name : 'Ervane'}...`;
   }
   nomSupport(voulu) {
     const v = String(voulu || this.support || this.voulu || this.supportVoulu() || '');
@@ -244,13 +244,13 @@ class Scene {
       ['astuce', 'Au survol d\'un objet du sac, la bulle le compare à celui que tu portes.'],
       ['astuce', 'Le bloc vital a deux styles, Cœur et losanges ou Grappe : choisis le tien dans les Options.'],
       ['astuce', 'Les notifications se règlent dans les Options : position, style, durée et taille.'],
-      ['legende', 'Veylan est posé sous sept Voiles. Sous chacun dort une ère plus ancienne.'],
+      ['legende', 'Veylan est un continent que sept Grands Dragons ont façonné. Ils gardent ; ils ne règnent pas.'],
       ['legende', 'Il n\'y a pas de dieux à Veylan, mais sept Grands Dragons. Ruhani, le Dragon de l\'Aube, est le plus fort.'],
-      ['legende', 'Il y a cent ans, le premier Voile s\'est déchiré. On appelle ça la Déchirure.'],
-      ['legende', 'Le Tissage est l\'art de tirer sur les fils des Voiles. Les Veilleurs l\'ont dans les mains.'],
-      ['legende', 'Ervane flotte au-dessus d\'Orsane, cousue au monde par une amarre du Fil.'],
-      ['legende', 'Le Fil veut recoudre les Voiles, la Déchirure veut les ouvrir. Au niveau 20, tu prêteras serment, ou pas.'],
-      ['legende', 'Les Francs-Marcheurs de Thessa commercent avec tout le monde, et vendent de fausses Écailles très bien faites.'],
+      ['legende', 'Il y a cent ans, quelqu\'un a pris l\'Écaille d\'Ithren : sa colère a brûlé le nord. On appelle ça la Grande Colère.'],
+      ['legende', 'La Flamme des dragons s\'allume dans quelques-uns, sans prévenir. Ce sont les Veilleurs.'],
+      ['legende', 'Ervane est le plus haut sommet des Cimes, au-dessus de la mer de nuages, relié à Orsane par le câble de la Nacelle.'],
+      ['legende', 'L\'Aube garde les Marques et les dragons, la Chaîne veut les lier. Au niveau 20, tu prêteras serment, ou pas.'],
+      ['legende', 'Les Francs-Marcheurs de Thessa commercent avec tout le monde, et vendent de fausses Marques très bien gravées.'],
       ['legende', 'Au fond du Puits de l\'Amarre attend Krobb, le Ronge-Amarre.'],
     ];
   }
@@ -381,7 +381,7 @@ class Scene {
         : '<button type="button" class="vy-bouton" data-voile="recommencer">Recommencer à Orsane</button>');
     el.appendChild(boutons);
     const e = el.querySelector('.scene-voile__etape');
-    if (e) e.textContent = descendre ? 'Tu peux réessayer, ou descendre par la Nacelle jusqu\'à la Place du Relais d\'Orsane.' : 'Tu peux réessayer, ou recommencer à Orsane : tu gardes ton niveau, tes objets et tes Fils.';
+    if (e) e.textContent = descendre ? 'Tu peux réessayer, ou descendre par la Nacelle jusqu\'à la Place du Relais d\'Orsane.' : 'Tu peux réessayer, ou recommencer à Orsane : tu gardes ton niveau, tes objets et tes Dragmes.';
   }
 
   repliOrsane(ch) {

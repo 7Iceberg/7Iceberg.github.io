@@ -132,7 +132,7 @@ class Discussion {
         this.ajouter('butin', `Tu as obtenu ${it.count || 1} **${def ? def.name : it.id}**.`);
       }
       if (d.xp) this.ajouter('butin', `Tu as gagné ${d.xp} points d'expérience.`);
-      if (d.fils) this.ajouter('butin', `Tu as gagné ${d.fils} Fils.`);
+      if (d.fils) this.ajouter('butin', `Tu as gagné ${d.fils} Dragmes.`);
     });
     Bus.on('relay', () => this.ajouter('systeme', 'Position sauvegardée.'));
     Bus.on('levelUp', d => this.ajouter('systeme', `Tu passes au niveau **${d.level}** !`));

@@ -71,9 +71,9 @@ spells.eclat = S('eclat', { name: 'Éclat', element: 'feu', pa: 3, range: [1, 5]
 spells.givre = S('givre', { name: 'Givre', element: 'eau', pa: 3, range: [1, 4], effects: [dmg(8, 12), pm(-1, 1)], maxPerTurn: 2, desc: 'Gèle les jambes : la cible perd 1 PM à son prochain tour.' });
 spells.bourrasque = S('bourrasque', { name: 'Bourrasque', element: 'air', pa: 2, range: [1, 3], effects: [dmg(5, 8), push(2)], desc: 'Repousse la cible de 2 cases. Contre un obstacle : dégâts de poussée.' });
 spells.secousse = S('secousse', { name: 'Secousse', element: 'terre', pa: 4, range: [1, 3], los: false, target: 'any', aoe: cross1, effects: [dmg(10, 14)], maxPerTurn: 1, desc: 'Frappe en croix, sans ligne de vue. Touche tout ce qui est dans la croix.' });
-spells.pas_de_voile = S('pas_de_voile', { name: 'Pas de Voile', element: 'neutre', pa: 3, range: [1, 6], target: 'free', telefrag: 2, effects: [{ type: 'teleport' }], cooldown: 2, desc: 'Se téléporte sur une case libre en vue ; sur une créature, échange sa place avec elle (téléfrag : +2 PA, une fois par tour).' });
+spells.pas_de_voile = S('pas_de_voile', { name: 'Pas de Brume', element: 'neutre', pa: 3, range: [1, 6], target: 'free', telefrag: 2, effects: [{ type: 'teleport' }], cooldown: 2, desc: 'Se téléporte sur une case libre en vue ; sur une créature, échange sa place avec elle (téléfrag : +2 PA, une fois par tour).' });
 spells.lame_orage = S('lame_orage', { name: "Lame d'Orage", element: 'feu', pa: 4, range: [1, 6], line: true, target: 'any', aoe: line3, effects: [dmg(9, 13)], maxPerTurn: 1, desc: 'Se lance en ligne. Traverse 3 cases à partir de la case visée.' });
-spells.retour_de_voile = S('retour_de_voile', { name: 'Retour de Voile', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', selfEffects: [{ type: 'rewind' }], cooldown: 2, desc: 'À la fin du tour, revient sur la case où le tour a commencé.' });
+spells.retour_de_voile = S('retour_de_voile', { name: 'Retour de Brume', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', selfEffects: [{ type: 'rewind' }], cooldown: 2, desc: 'À la fin du tour, revient sur la case où le tour a commencé.' });
 spells.manteau = S('manteau', { name: 'Manteau', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [shield(20, 2)], cooldown: 3, desc: 'Un bouclier de 20 points pendant 2 tours.' });
 spells.siphon = S('siphon', { name: 'Siphon', element: 'eau', pa: 3, range: [1, 4], target: 'enemy', effects: [dmg(6, 9), pa(-2, 1)], cooldown: 2, desc: 'Aspire 2 PA à la cible pour son prochain tour.' });
 spells.nova = S('nova', { name: 'Nova', element: 'feu', pa: 5, range: [0, 0], los: false, target: 'self', aoe: circle2, effects: [dmg(20, 26)], cooldown: 3, desc: 'Explosion autour de soi, 2 cases de rayon. Épargne le lanceur, pas les alliés.' });
@@ -90,15 +90,15 @@ spells.lame_de_braise = S('lame_de_braise', { name: 'Lame de Braise', element: '
 spells.ferveur = S('ferveur', { name: 'Ferveur', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [power(30, 1)], selfEffects: [{ type: 'pmNow', value: 1 }], cooldown: 3, desc: '+30 % de dégâts ce tour et le suivant, et +1 PM ce tour.' });
 spells.verdict = S('verdict', { name: 'Verdict', element: 'terre', pa: 5, range: [1, 1], effects: [dmg(16, 20)], furySpend: 20, oathPierce: true, cooldown: 2, desc: '+20 % par point de Fureur dépensé (toute la Fureur). Contre le juré : ni esquive ni armure.' });
 
-spells.trait_tisse = S('trait_tisse', { name: 'Flèche Tissée', element: 'air', pa: 3, range: [3, 7], effects: [dmg(10, 14)], maxPerTurn: 2, desc: 'Le tir de base, précis et long.' });
-spells.fil_tendu = S('fil_tendu', { name: 'Fil Tendu', element: 'air', pa: 3, range: [2, 6], effects: [dmg(8, 11), push(2)], maxPerTurn: 2, desc: 'Repousse de 2 cases, deux fois par tour ; contre un obstacle, +6 dégâts par case non parcourue.' });
+spells.trait_tisse = S('trait_tisse', { name: 'Flèche Ailée', element: 'air', pa: 3, range: [3, 7], effects: [dmg(10, 14)], maxPerTurn: 2, desc: 'Le tir de base, précis et long.' });
+spells.fil_tendu = S('fil_tendu', { name: 'Corde Tendue', element: 'air', pa: 3, range: [2, 6], effects: [dmg(8, 11), push(2)], maxPerTurn: 2, desc: 'Repousse de 2 cases, deux fois par tour ; contre un obstacle, +6 dégâts par case non parcourue.' });
 spells.collet = S('collet', { name: 'Collet', element: 'neutre', pa: 2, range: [1, 5], target: 'free', effects: [{ type: 'trap', name: 'Collet', effects: [dmg(6, 9), root] }], trapReplaceOldest: true, maxPerTurn: 2, desc: 'Un collet invisible : la cible est blessée et enracinée 1 tour. Un quatrième collet fait disparaître le plus ancien.' });
 spells.repli_traqueur = S('repli_traqueur', { name: 'Repli', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', effects: [{ type: 'retreat', cells: 2 }], keepsAffut: true, cooldown: 2, desc: 'Recule de 2 cases à l\'opposé de l\'ennemi le plus proche, sans casser l\'Affût.' });
 spells.fleche_lourde = S('fleche_lourde', { name: 'Flèche Lourde', element: 'terre', pa: 4, range: [2, 6], effects: [dmg(15, 19)], maxPerTurn: 1, desc: 'Le tir lourd, la voie de la Force.' });
 spells.corde_longue = S('corde_longue', { name: 'Corde Longue', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [{ type: 'range', value: 3, turns: 1 }], cooldown: 3, desc: '+3 portée ce tour et le suivant.' });
-spells.balise_de_fil = S('balise_de_fil', { name: 'Balise de Fil', element: 'neutre', pa: 2, range: [1, 5], target: 'free', effects: [{ type: 'summon', monster: 'balise_de_fil', count: 1, hpPctOfOwner: 20 }], cooldown: 3, desc: 'Plante un piquet de fil. La première fois que le Lyssar est blessé, il échange sa place avec le piquet.' });
+spells.balise_de_fil = S('balise_de_fil', { name: 'Balise de Plume', element: 'neutre', pa: 2, range: [1, 5], target: 'free', effects: [{ type: 'summon', monster: 'balise_de_fil', count: 1, hpPctOfOwner: 20 }], cooldown: 3, desc: 'Plante un piquet à plume. La première fois que le Lyssar est blessé, il échange sa place avec le piquet.' });
 spells.marque_traqueur = S('marque_traqueur', { name: 'Marque du Traqueur', element: 'neutre', pa: 2, range: [1, 7], los: false, target: 'enemy', effects: [{ type: 'vuln', value: 25, turns: 2 }, { type: 'track', turns: 2 }], cooldown: 1, desc: 'La cible subit +25 % de dégâts 2 tours, et ne peut plus être invisible.' });
-spells.pluie_de_fil = S('pluie_de_fil', { name: 'Pluie de Fil', element: 'air', pa: 4, range: [3, 7], los: false, target: 'any', aoe: circle1, affects: 'enemies', effects: [dmg(8, 11)], cooldown: 2, desc: 'Une volée sans ligne de vue sur une case et ses voisines : chaque ennemi est touché.' });
+spells.pluie_de_fil = S('pluie_de_fil', { name: 'Pluie de Flèches', element: 'air', pa: 4, range: [3, 7], los: false, target: 'any', aoe: circle1, affects: 'enemies', effects: [dmg(8, 11)], cooldown: 2, desc: 'Une volée sans ligne de vue sur une case et ses voisines : chaque ennemi est touché.' });
 spells.fleche_ancre = S('fleche_ancre', { name: 'Flèche Ancre', element: 'terre', pa: 3, range: [2, 6], effects: [dmg(6, 9), pm(-2, 2)], cooldown: 2, desc: 'La cible perd 2 PM pendant 2 tours.' });
 spells.trait_du_veilleur = S('trait_du_veilleur', { name: 'Trait du Veilleur', element: 'air', pa: 5, range: [4, 10], line: true, target: 'any', aoe: { shape: 'pierce', size: 0 }, markSight: true, effects: [dmg(18, 24)], affutBonus: 30, cooldown: 3, desc: 'La flèche traverse : chaque entité de la ligne jusqu\'au bord ou au premier rocher. +30 % à l\'Affût.' });
 
@@ -117,9 +117,9 @@ spells.veille = S('veille', { name: 'Veille', element: 'neutre', pa: 2, range: [
 spells.ardeur = S('ardeur', { name: 'Ardeur', element: 'feu', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(10, 14), push(1)], desc: 'Brûle et repousse d\'une case.' });
 
 spells.double_entaille = S('double_entaille', { name: 'Double Entaille', element: 'air', pa: 4, range: [1, 1], effects: [dmg(10, 13), dmg(10, 13)], maxPerTurn: 1, desc: 'Deux coups au contact.' });
-spells.voile_penombre = S('voile_penombre', { name: "Voile d'Ombre", element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [Object.assign(state('invisible', 1), { lingering: true })], cooldown: 2, desc: 'Invisible jusqu\'à la fin de son prochain tour ; frapper ne la révèle qu\'à la fin du tour.' });
+spells.voile_penombre = S('voile_penombre', { name: "Manteau d'Ombre", element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [Object.assign(state('invisible', 1), { lingering: true })], cooldown: 2, desc: 'Invisible jusqu\'à la fin de son prochain tour ; frapper ne la révèle qu\'à la fin du tour.' });
 spells.piege_penombre = S('piege_penombre', { name: 'Piège de Pénombre', element: 'neutre', pa: 2, range: [1, 3], target: 'free', effects: [{ type: 'trap', name: 'Piège de Pénombre', effects: [dmg(10, 14), pa(-1, 1)] }], maxPerTurn: 2, desc: 'Un piège invisible qui blesse et retire 1 PA.' });
-spells.larcin = S('larcin', { name: 'Larcin', element: 'eau', pa: 3, range: [1, 1], effects: [dmg(9, 12), steal('pa', 1)], purse: 25, maxPerTurn: 1, desc: 'Vole 1 PA. Si la cible meurt, la bourse : +25 % de Fils et de butin.' });
+spells.larcin = S('larcin', { name: 'Larcin', element: 'eau', pa: 3, range: [1, 1], effects: [dmg(9, 12), steal('pa', 1)], purse: 25, maxPerTurn: 1, desc: 'Vole 1 PA. Si la cible meurt, la bourse : +25 % de Dragmes et de butin.' });
 spells.pas_ombre = S('pas_ombre', { name: "Pas de l'Ombre", element: 'neutre', pa: 3, range: [1, 5], target: 'free', effects: [{ type: 'teleport' }], cooldown: 2, desc: 'Se téléporte sans se révéler.' });
 spells.coup_penombre = S('coup_penombre', { name: 'Coup de Pénombre', element: 'air', pa: 3, range: [1, 1], effects: [dmg(10, 13)], bonusIfInvisible: 1.8, maxPerTurn: 2, desc: 'Dégâts × 1,8 si la Nerith est invisible.' });
 spells.main_leste = S('main_leste', { name: 'Main Leste', element: 'eau', pa: 2, range: [1, 3], effects: [dmg(5, 7), Object.assign(steal('shield'), { orBonus: true })], purse: 25, cooldown: 2, desc: 'Vole le bouclier de la cible, ou son meilleur bonus si elle n\'en a pas.' });
@@ -129,7 +129,7 @@ spells.dernier_souffle_ombre = S('dernier_souffle_ombre', { name: 'Dernier Souff
 
 spells.tourelle_de_kaldum = S('tourelle_de_kaldum', { name: 'Tourelle de Kaldum', element: 'neutre', pa: 4, range: [1, 3], target: 'free', effects: [{ type: 'summon', monster: 'tourelle', count: 1 }], cooldown: 2, desc: 'Pose une tourelle qui tire chaque tour.' });
 spells.mur_articule = S('mur_articule', { name: 'Mur Articulé', element: 'terre', pa: 3, range: [1, 4], los: false, target: 'free', effects: [{ type: 'obstacle', kind: 'rock', turns: 2 }], cooldown: 2, desc: 'Un obstacle d\'une case pendant 2 tours.' });
-spells.mine_a_fil = S('mine_a_fil', { name: 'Mine à Fil', element: 'feu', pa: 3, range: [1, 4], target: 'free', effects: [{ type: 'trap', name: 'Mine à Fil', effects: [dmg(14, 18)] }], maxPerTurn: 2, desc: 'Explose au passage d\'un ennemi.' });
+spells.mine_a_fil = S('mine_a_fil', { name: 'Mine Piégée', element: 'feu', pa: 3, range: [1, 4], target: 'free', effects: [{ type: 'trap', name: 'Mine Piégée', effects: [dmg(14, 18)] }], maxPerTurn: 2, desc: 'Explose au passage d\'un ennemi.' });
 spells.marteau = S('marteau', { name: 'Marteau', element: 'terre', pa: 3, range: [1, 1], effects: [dmg(11, 14)], desc: 'Un coup de marteau.' });
 spells.surchauffe = S('surchauffe', { name: 'Surchauffe', element: 'feu', pa: 3, range: [1, 4], effects: [dmg(9, 12), dot('feu', 2, 2)], desc: 'Brûle pendant 2 tours.' });
 spells.reparation = S('reparation', { name: 'Réparation', element: 'neutre', pa: 2, range: [0, 4], target: 'ally', affectsCaster: true, effects: [heal(12, 16)], cooldown: 1, desc: 'Répare une tourelle ou soigne un allié.' });
@@ -182,7 +182,7 @@ spells.appel_du_molh = S('appel_du_molh', { name: 'Appel du Molh', element: 'neu
 spells.morsure = S('morsure', { name: 'Morsure', element: 'terre', pa: 3, range: [1, 2], effects: [dmg(10, 13)], desc: 'Un coup de dents.' });
 spells.soin_de_meute = S('soin_de_meute', { name: 'Soin de meute', element: 'neutre', pa: 3, range: [0, 5], target: 'ally', affectsCaster: true, effects: [heal(14, 18)], cooldown: 1, desc: 'Soigne un allié ou une bête.' });
 spells.cri_de_ralliement = S('cri_de_ralliement', { name: 'Cri de ralliement', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', aoe: circle2, affects: 'allies', affectsCaster: true, effects: [power(30, 1)], cooldown: 3, desc: '+30 % de dégâts aux alliés à 2 cases.' });
-spells.fleche_de_fil = S('fleche_de_fil', { name: 'Flèche de Fil', element: 'neutre', pa: 3, range: [1, 5], effects: [dmg(8, 11)], desc: 'Un tir simple.' });
+spells.fleche_de_fil = S('fleche_de_fil', { name: 'Flèche d\'Attache', element: 'neutre', pa: 3, range: [1, 5], effects: [dmg(8, 11)], desc: 'Un tir simple.' });
 spells.filet = S('filet', { name: 'Filet', element: 'neutre', pa: 2, range: [1, 4], target: 'enemy', effects: [dmg(3, 5), root], cooldown: 2, desc: 'La cible ne bouge plus un tour.' });
 spells.eperon = S('eperon', { name: 'Éperon', element: 'neutre', pa: 2, range: [0, 5], target: 'summon', effects: [pa(3, 1)], maxPerTurn: 1, desc: '+3 PA à une invocation pour son prochain tour.' });
 spells.traque = S('traque', { name: 'Traque', element: 'terre', pa: 4, range: [2, 6], effects: [dmg(17, 21)], maxPerTurn: 1, desc: 'Le tir lourd du Meneur.' });
@@ -221,7 +221,7 @@ spells.m_echange = S('m_echange', { name: 'Échange', element: 'neutre', pa: 2, 
 spells.m_lame_fendue = S('m_lame_fendue', { name: 'Lame fendue', element: 'air', pa: 3, range: [1, 1], target: 'enemy', effects: [dmg(9, 12)] });
 spells.m_devorer = S('m_devorer', { name: 'Dévorer', element: 'neutre', pa: 3, range: [1, 1], target: 'enemy', effects: [{ type: 'devourShield' }, dmg(8, 11)] });
 spells.m_fente = S('m_fente', { name: 'Fente', element: 'air', pa: 4, range: [1, 5], line: true, target: 'any', aoe: line3, affects: 'enemies', effects: [dmg(11, 14)] });
-spells.m_dechirure = S('m_dechirure', { name: 'Déchirure', element: 'neutre', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(8, 10), pa(-1, 1)] });
+spells.m_dechirure = S('m_dechirure', { name: 'Lacération', element: 'neutre', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(8, 10), pa(-1, 1)] });
 spells.m_frisson = S('m_frisson', { name: 'Frisson', element: 'eau', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(7, 9), pa(-1, 1)] });
 spells.m_morsure_vrill = S('m_morsure_vrill', { name: 'Morsure de ver', element: 'terre', pa: 3, range: [1, 1], target: 'enemy', effects: [dmg(10, 13), push(1)] });
 spells.m_os = S('m_os', { name: 'Os tissé', element: 'neutre', pa: 3, range: [2, 6], line: true, target: 'enemy', effects: [dmg(9, 12)] });
@@ -341,7 +341,7 @@ DATA.rankOverrides = {
 })();
 
 DATA.classes = {
-  vaelith: { id: 'vaelith', name: 'Vaelith', title: 'Tisseur des Voiles', role: 'Contrôle', glyph: 'V', color: '#4a90ff', hp: 105, pa: 6, pm: 3, initiative: 100,
+  vaelith: { id: 'vaelith', name: 'Vaelith', title: 'Tisseur de Brume', role: 'Contrôle', glyph: 'V', color: '#4a90ff', hp: 105, pa: 6, pm: 3, initiative: 100,
     spells: ['eclat', 'givre', 'bourrasque', 'secousse', 'pas_de_voile', 'lame_orage', 'retour_de_voile', 'siphon', 'nova', 'attraction'],
     desc: 'Pousse, attire, gèle, se téléporte et prend la place des autres ; gagne par le placement, jamais par la force.' },
   sarkan: { id: 'sarkan', name: 'Sarkan', title: 'Lame-Serment', role: 'Épéiste', glyph: 'S', color: '#c9a35c', hp: 145, pa: 6, pm: 3, initiative: 70, resist: { terre: 15 },
@@ -372,7 +372,7 @@ DATA.classes = {
   thalor: { id: 'thalor', name: 'Thalor', title: 'Porteur', role: 'Positionneur', glyph: 'T', color: '#8a93a6', hp: 175, pa: 6, pm: 3, initiative: 75,
     spells: ['transposition', 'lancer', 'projection', 'poigne', 'ancre', 'gorgee_de_cime', 'elan', 'vague', 'etreinte', 'mur_de_chair'],
     desc: 'Lance, attire, échange les places ; le roi des combos.' },
-  fennal: { id: 'fennal', name: 'Fennal', title: 'Meneur de Remontées', role: 'Invocateur', glyph: 'F', color: '#6fdc8c', hp: 110, pa: 6, pm: 3, initiative: 85, summonGauge: 4,
+  fennal: { id: 'fennal', name: 'Fennal', title: 'Meneur de Meute', role: 'Invocateur', glyph: 'F', color: '#6fdc8c', hp: 110, pa: 6, pm: 3, initiative: 85, summonGauge: 4,
     spells: ['appel_du_grouk', 'appel_du_pilou', 'rappel_sacrificiel', 'morsure', 'soin_de_meute', 'cri_de_ralliement', 'fleche_de_fil', 'filet', 'appel_du_molh', 'traque'],
     desc: 'Mène une meute (jauge de 4 : Glym 1, Grouk 2, Molh 3), la sacrifie pour prendre sa force.' },
 };
@@ -386,8 +386,8 @@ for (const id in DATA.classes) {
 DATA.defaultClass = 'vaelith';
 
 DATA.futureClasses = {
-  kaelum: { id: 'kaelum', name: 'Kaelum', title: 'Déchireur', role: 'Dégâts de zone', season: 1 },
-  lheth: { id: 'lheth', name: 'Lheth', title: 'Horloger des Voiles', role: 'Contrôle du temps', season: 2 },
+  kaelum: { id: 'kaelum', name: 'Kaelum', title: 'Porte-Colère', role: 'Dégâts de zone', season: 1 },
+  lheth: { id: 'lheth', name: 'Lheth', title: 'Horloger des Heures', role: 'Contrôle du temps', season: 2 },
 };
 
 const M = (id, def) => { def.id = id; def.resist = def.resist || {}; def.triggers = def.triggers || []; return def; };
@@ -444,8 +444,8 @@ DATA.monsters = {
   zhaal: M('zhaal', { name: 'Zhaal', region: 'lisiere', level: '44 à 52', shape: 'hex', color: '#9b59d0', hp: 35, pa: 6, pm: 3, initiative: 110, resist: { feu: 30, eau: -20 }, spells: ['m_flamme'], ai: 'ranged',
     desc: 'Lanceur fragile. Frappe fort au feu.' }),
   fendu: M('fendu', { name: 'Fendu', region: 'lisiere', level: '46 à 56', shape: 'player', color: '#7a4a8a', hp: 70, pa: 6, pm: 3, initiative: 95, spells: ['m_echange', 'm_lame_fendue'], ai: 'melee',
-    desc: 'Contrôleur. Humain déchiré, échange sa place avec sa cible.' }),
-  mache_voile: M('mache_voile', { name: 'Mâche-Voile', region: 'lisiere', level: '50 à 60', shape: 'square', color: '#3a2a4a', hp: 110, pa: 6, pm: 2, initiative: 45, spells: ['m_devorer'], ai: 'melee',
+    desc: 'Contrôleur. Humain brûlé, échange sa place avec sa cible.' }),
+  mache_voile: M('mache_voile', { name: 'Mâche-Cendre', region: 'lisiere', level: '50 à 60', shape: 'square', color: '#3a2a4a', hp: 110, pa: 6, pm: 2, initiative: 45, spells: ['m_devorer'], ai: 'melee',
     desc: 'Tank. Dévore les boucliers et se soigne d\'autant.' }),
   porte_fente: M('porte_fente', { name: 'Le Porte-Fente', region: 'lisiere', level: '55 à 60', boss: true, shape: 'hex', color: '#5a1a7a', hp: 300, pa: 6, pm: 3, initiative: 65, resist: { air: 20 }, spells: ['m_fente', 'm_dechirure'], ai: 'ranged',
     triggers: [{ when: 'turnStart', do: [{ act: 'shiftHoles', count: 4 }] }],
@@ -455,10 +455,10 @@ DATA.monsters = {
     triggers: [{ when: 'turnStart', do: [{ act: 'toggleState', name: 'invisible' }] }],
     desc: 'Harceleur. Ombre invisible un tour sur deux, retire des PA.' }),
   vrill: M('vrill', { name: 'Vrill', region: 'basvoiles', level: '55 à 65', shape: 'triangle', color: '#6a5a8a', hp: 90, pa: 6, pm: 3, initiative: 50, ghost: true, spells: ['m_morsure_vrill'], ai: 'melee',
-    desc: 'Cogneur. Ver de voile : traverse les rochers, pousse.' }),
+    desc: 'Cogneur. Ver de cendre : traverse les rochers, pousse.' }),
   craneux: M('craneux', { name: 'Crâneux', region: 'basvoiles', level: '58 à 70', shape: 'diamond', color: '#e0dcc8', hp: 75, pa: 6, pm: 2, initiative: 80, spells: ['m_os'], ai: 'ranged',
-    triggers: [{ when: 'hpBelow', pct: 50, do: [{ act: 'heal', pct: 40 }, { act: 'log', text: 'Le Crâneux se recoud.' }] }],
-    desc: 'Tireur. Squelette tissé, se recoud une fois à moitié vie.' }),
+    triggers: [{ when: 'hpBelow', pct: 50, do: [{ act: 'heal', pct: 40 }, { act: 'log', text: 'Le Crâneux se ressoude.' }] }],
+    desc: 'Tireur. Squelette de cendre, se ressoude une fois à moitié vie.' }),
   tisseuse: M('tisseuse', { name: 'Tisseuse', region: 'basvoiles', level: '62 à 74', shape: 'hex', color: '#8a8a9a', hp: 120, pa: 6, pm: 2, initiative: 60, spells: ['m_appel_tissefil', 'm_toile_ancienne', 'm_crocs'], ai: 'summoner',
     desc: 'Contrôleur et invocateur. Tisse des murs, appelle des Tissefils.' }),
   thane: M('thane', { name: 'Thane', region: 'basvoiles', level: '70 à 80', shape: 'square', color: '#4a5a6a', hp: 160, pa: 4, pm: 2, initiative: 30, spells: ['m_poing_pierre'], ai: 'melee',
@@ -466,7 +466,7 @@ DATA.monsters = {
     desc: 'Tank. Gardien de pierre, immunisé à un élément qui change à chacun de ses tours.' }),
   veilleur_dechu: M('veilleur_dechu', { name: 'Le Veilleur Déchu', region: 'basvoiles', level: '75 à 80', boss: true, shape: 'player', color: '#1a1a2a', hp: 320, pa: 7, pm: 3, initiative: 100, resist: { feu: 10, eau: 10, air: 10, terre: 10, neutre: 10 }, spells: ['eclat', 'givre', 'lame_orage', 'siphon', 'manteau', 'm_coup_dechu'], ai: 'ranged',
     triggers: [{ when: 'hpBelow', pct: 40, do: [{ act: 'buff', effects: [power(40, 99), pa(1, 99)] }, { act: 'log', text: 'Le Veilleur Déchu se souvient de ce qu\'il était.' }] }],
-    desc: 'Boss. Un ancien Veilleur qui tisse comme un Vaelith, et se souvient à 40 % de vie.' }),
+    desc: 'Boss. Un ancien Veilleur qui souffle la brume comme un Vaelith, et se souvient à 40 % de vie.' }),
 
   tourelle: M('tourelle', { name: 'Tourelle', region: 'invocation', level: '', shape: 'square', color: '#ff7a45', hp: 30, pa: 3, pm: 0, initiative: 0, spells: ['m_tir_tourelle'], ai: 'ranged', summon: true,
     desc: 'Mécanisme du Kaldrin. Tire chaque tour, ne bouge pas.' }),
@@ -479,7 +479,7 @@ DATA.monsters = {
   lanterne_de_veille: M('lanterne_de_veille', { name: 'Lanterne de Veille', region: 'invocation', level: '', shape: 'circle', color: '#ffd166', hp: 25, pa: 3, pm: 0, initiative: 0, spells: ['m_lanterne_soin'], ai: 'ranged', summon: true, fixed: true,
     triggers: [{ when: 'death', do: [{ act: 'glyph', name: 'Halo de la Lanterne', turns: 2, size: 1, affects: 'allies', effects: [{ type: 'heal', min: 8, max: 11 }] }] }],
     desc: 'Lanterne de l\'Oriel. Soigne les alliés blessés ; en tombant, laisse un halo qui soigne 2 tours.' }),
-  balise_de_fil: M('balise_de_fil', { name: 'Balise de Fil', region: 'invocation', level: '', shape: 'diamond', color: '#35d6c8', hp: 20, pa: 0, pm: 0, initiative: 0, spells: [], ai: 'inert', summon: true, swapOnOwnerHit: true,
+  balise_de_fil: M('balise_de_fil', { name: 'Balise de Plume', region: 'invocation', level: '', shape: 'diamond', color: '#35d6c8', hp: 20, pa: 0, pm: 0, initiative: 0, spells: [], ai: 'inert', summon: true, swapOnOwnerHit: true,
     desc: 'Piquet du Lyssar. La première fois que le Lyssar est blessé, il prend la place du piquet.' }),
   silhouette_ombre: M('silhouette_ombre', { name: "Silhouette d'ombre", region: 'invocation', level: '', shape: 'diamond', color: '#6b3f99', hp: 27, pa: 0, pm: 0, initiative: 0, spells: [], ai: 'inert', summon: true, fixed: true, taunt: 1,
     triggers: [
@@ -497,7 +497,7 @@ DATA.regions = {
   kaldum: 'Kaldum',
   thessa: 'Thessa',
   lisiere: 'La Lisière',
-  basvoiles: 'Les Bas-Voiles',
+  basvoiles: 'Les Cendrées',
 };
 
 DATA.encounters = [

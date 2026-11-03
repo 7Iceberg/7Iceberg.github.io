@@ -104,7 +104,7 @@ Object.assign(Hud.prototype, {
     const r = q.rewards || {};
     const gains = [
       r.xp ? `<span class="vy-q-gain xp">${r.xp} XP</span>` : '',
-      r.fils ? `<span class="vy-q-gain fils">${r.fils} Fils</span>` : '',
+      r.fils ? `<span class="vy-q-gain fils">${r.fils} Dragmes</span>` : '',
       ...(r.items || []).map(it => { const d = Items.get(it.id); return d ? `<span class="vy-q-gain">${esc(d.name)}${(it.count || 1) > 1 ? ` × ${it.count}` : ''}</span>` : ''; }),
       r.faction ? `<span class="vy-q-gain faction">points de faction</span>` : '',
       r.marcheurs ? `<span class="vy-q-gain faction">confiance des Francs-Marcheurs</span>` : '',

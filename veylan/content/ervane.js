@@ -230,7 +230,7 @@
 
   C.zones.push({
     id: 'ervane_mailles', name: 'Les Mailles', region: 'ervane', level: [1, 1], palette: 'orsane',
-    description: 'Le village du Fil, sur une avancée de pierre blanche au fond de l\'Échancrure. Des maisons de toile cousues aux murs, le Métier au milieu : c\'est ici qu\'on se réveille.',
+    description: 'Le village des Mailles, sur une avancée de pierre blanche au fond de l\'Échancrure. Des maisons de toile cousues aux murs, le Métier au milieu : c\'est ici qu\'on se réveille.',
     maps: [
       { id: 'ervane_mailles_place', name: 'la Place du Relais', level: [1, 1], plateau: P, contour: R(187, 60, 255, 110), coords: [-1, -8],
         npcs: [{ id: 'varek_ervane', u: 201, v: 101.5 }, { id: 'sefra', u: 192, v: 93.5 }, { id: 'haldrec', u: 221, v: 90 }],
@@ -302,7 +302,7 @@
 
   C.zones.push({
     id: 'ervane_murets', name: 'Les Murets', region: 'ervane', level: [3, 5], palette: 'orsane',
-    description: 'Un haut plateau venteux au-dessus du village, découpé en enclos de pierre sèche. Au milieu, un hameau du Fil vidé depuis que les Lampignons ont pris racine sous les murs.',
+    description: 'Un haut plateau venteux au-dessus du village, découpé en enclos de pierre sèche. Au milieu, un hameau de bergers vidé depuis que les Lampignons ont pris racine sous les murs.',
     maps: [
       { id: 'ervane_haut_escalier', name: 'le Haut de l\'Escalier', level: [3, 3], plateau: P, contour: R(194, 54, 255, 75), coords: [-1, -11],
         npcs: [{ id: 'pelk', u: 202.5, v: 58.5 }], nodes: [],
@@ -405,7 +405,7 @@
 
   C.zones.push({
     id: 'ervane_amarre', name: 'L\'Amarre', region: 'ervane', level: [7, 8], palette: 'orsane',
-    description: 'La pointe sud-ouest, où le fil d\'or remonte des nuages : les ruines d\'un poste du Fil sur des terrasses de calcaire gris. Partout, des galets qui bougent.',
+    description: 'La pointe sud-ouest, où le fil d\'or remonte des nuages : les ruines d\'un poste de l\'Aube sur des terrasses de calcaire gris. Partout, des galets qui bougent.',
     maps: [
       { id: 'ervane_pont', name: 'le Pont de cordes', level: [7, 7], plateau: P, contour: R(5, 75, 35, 104), coords: [-10, -9],
         npcs: [], nodes: [], groups: [], relay: null, dungeon: null, porte: null },
@@ -449,8 +449,8 @@
   });
 
   C.npcs.push(
-    { id: 'varek_ervane', name: 'Varek', title: 'Relayeur du Fil', look: 'garde',
-      dialogue: ['Doucement. Tu as dormi trois jours, et tu viens de traverser un Voile. Bienvenue sur Ervane, Veilleur.', 'Le Métier t\'a remonté jusqu\'ici. Touche le Relais quand tu veux : il te ramènera toujours aux Mailles.'] },
+    { id: 'varek_ervane', name: 'Varek', title: 'Relayeur de l\'Aube', look: 'garde',
+      dialogue: ['Doucement. Tu as dormi trois jours, et la Flamme s\'est allumée en toi. Bienvenue sur Ervane, Veilleur.', 'L\'Aube t\'a monté jusqu\'ici. Touche le Relais quand tu veux : il te ramènera toujours aux Mailles.'] },
     { id: 'sefra', name: 'Sefra', title: 'Marchande des Mailles', look: 'marchand',
       dialogue: ['Du pain, des potions, de quoi tenir debout. Le reste, tu le trouveras au bord des sources.', 'Les cailloux tièdes des sources, je les reprends. Ne me demande pas ce que j\'en fais.'],
       shop: ['pain_de_cime', 'potion_de_relais', 'coiffe_marcheur', 'cape_marcheur', 'amulette_marcheur', 'bottes_marcheur'] },
@@ -469,7 +469,7 @@
     { id: 'ardek', name: 'Ardek', title: 'Gardien de l\'Amarre', look: 'garde',
       dialogue: ['Écoute. Ce craquement, c\'est l\'île. Quelque chose mange notre fil.', 'Le Relais de l\'Amarre est à toi. Si l\'île te secoue trop, c\'est ici que tu reviendras.'] },
     { id: 'kolm', name: 'Kolm', title: 'Passeur de la Nacelle', look: 'marcheur',
-      dialogue: ['Tiens-toi au bord, ne regarde pas en bas. Enfin si, regarde : c\'est Orsane.', 'La Nacelle descend quand le Fil le dit. Pour l\'instant, il dit d\'attendre.'],
+      dialogue: ['Tiens-toi au bord, ne regarde pas en bas. Enfin si, regarde : c\'est Orsane.', 'La Nacelle descend quand l\'Aube le dit. Pour l\'instant, elle dit d\'attendre.'],
       passage: { vers: 'orsane_cimes_place', arrivee: { x: 7, y: 9, lieu: 'nacelle' }, texte: 'Descendre par la Nacelle', quete: 'ervane_descente' } },
   );
   const varekOrsane = C.npcs.find(n => n.id === 'varek');
@@ -495,7 +495,7 @@
     profile: { force: 50, vita: 40, sagesse: 10 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_ronge_amarre', name: 'Coiffe du Ronge-Amarre', lore: 'Un bonnet de cuir piqué de gravier d\'or. Lourd sur la tête, mais rien ne la fend.' },
-      { slot: 'cape', id: 'cape_ronge_amarre', name: 'Cape du Ronge-Amarre', lore: 'De la toile du Fil, cousue de galets mâchés : elle sonne un peu quand on marche.' },
+      { slot: 'cape', id: 'cape_ronge_amarre', name: 'Cape du Ronge-Amarre', lore: 'De la toile des Mailles, cousue de galets mâchés : elle sonne un peu quand on marche.' },
       { slot: 'amulette', id: 'amulette_ronge_amarre', name: 'Amulette du Ronge-Amarre', lore: 'Une dent de Krobb au bout d\'un fil d\'or. Elle a mordu l\'amarre ; elle tient à un cou.' },
       { slot: 'ceinture', id: 'ceinture_ronge_amarre', name: 'Ceinture du Ronge-Amarre', lore: 'Du calcaire taillé en plaques, enfilé sur une lanière. On se tient droit, on n\'a pas le choix.' },
       { slot: 'bottes', id: 'bottes_ronge_amarre', name: 'Bottes du Ronge-Amarre', lore: 'Semelles de pierre, tige de cuir. Les galets s\'écartent, on ne sait pas pourquoi.' },
@@ -519,7 +519,7 @@
         { type: 'kill', monster: 'glym_aqua', count: 1, text: 'Vaincre un Glym Aqua près de la Porte' },
       ],
       dialogue: {
-        offer: ['Doucement. Tu as dormi trois jours, et tu viens de traverser un Voile. Bienvenue sur Ervane, Veilleur.', 'Le Fil t\'a remonté jusqu\'ici pour que tu apprennes sans danger. Sefra tient le Comptoir, là-bas sous l\'auvent : va te présenter.', 'Puis descends à la Porte des Sources. Nolwé t\'y attend, et un Glym aussi.'],
+        offer: ['Doucement. Tu as dormi trois jours, et la Flamme s\'est allumée en toi. Bienvenue sur Ervane, Veilleur.', 'L\'Aube t\'a monté jusqu\'ici pour que tu apprennes sans danger. Sefra tient le Comptoir, là-bas sous l\'auvent : va te présenter.', 'Puis descends à la Porte des Sources. Nolwé t\'y attend, et un Glym aussi.'],
         progress: ['Un Glym Aqua rôde près de la Porte des Sources, en bas de la ruelle. Va le vaincre, puis reviens voir Nolwé : Varek te rejoint pour le combat.'],
         done: ['Un Glym de moins autour de la Porte, et un Veilleur de plus qui sait frapper. Varek avait raison de te faire descendre.'],
       },
@@ -627,9 +627,9 @@
         { type: 'dungeon', dungeon: 'puits_de_l_amarre', text: 'Descendre dans le Puits de l\'Amarre et vaincre ce qui ronge le fil' },
       ],
       dialogue: {
-        offer: ['Au fond du Puits, le plus vieux et le plus gros des galets mâche le nœud de l\'amarre. Chaque bouchée fait trembler l\'île.', 'Descends par le treuil. Trois salles, et lui au fond. Il ne te voit pas derrière un pilier : sers-t\'en.', 'Quand ce sera fait, remonte le dire à Varek. C\'est lui qui décide quand le Fil te laisse descendre.'],
+        offer: ['Au fond du Puits, le plus vieux et le plus gros des galets mâche le nœud de l\'amarre. Chaque bouchée fait trembler l\'île.', 'Descends par le treuil. Trois salles, et lui au fond. Il ne te voit pas derrière un pilier : sers-t\'en.', 'Quand ce sera fait, remonte le dire à Varek. C\'est lui qui décide quand l\'Aube te laisse descendre.'],
         progress: ['Krobb garde sa carapace tant qu\'il te voit. Cache-toi à la fin de ton tour : il ouvrira la gueule pour renifler.'],
-        done: ['Le fil ne tremble plus. Tu as fait plus que ce qu\'on demande à un Veilleur d\'un mois.', 'Le Fil te juge prêt. Va voir Kolm, à la pointe : la Nacelle descend quand je le dis, et je le dis.'],
+        done: ['Le fil ne tremble plus. Tu as fait plus que ce qu\'on demande à un Veilleur d\'un mois.', 'L\'Aube te juge prêt. Va voir Kolm, à la pointe : la Nacelle descend quand je le dis, et je le dis.'],
       },
       rewards: { xp: 540, fils: 80, items: [{ id: 'pain_de_grouk', count: 3 }] } },
     { id: 'ervane_descente', name: 'La descente', level: 8, main: true,
@@ -638,9 +638,9 @@
         { type: 'visit', map: 'ervane_nacelle', text: 'Rejoindre Kolm à la Pointe de la Nacelle' },
       ],
       dialogue: {
-        offer: ['Orsane est en bas, sous les nuages. Kolm t\'y descendra par la Nacelle, le long du fil d\'or.', 'Tu pourras remonter : la Nacelle fait les deux trajets. Mais le Fil a besoin de toi en bas, maintenant.'],
+        offer: ['Orsane est en bas, sous les nuages. Kolm t\'y descendra par la Nacelle, le long du fil d\'or.', 'Tu pourras remonter : la Nacelle fait les deux trajets. Mais l\'Aube a besoin de toi en bas, maintenant.'],
         progress: ['La Pointe de la Nacelle est à l\'extrême sud-ouest, au bout du sentier qui passe le Champ des Bornes.'],
-        done: ['Tiens-toi au bord, ne regarde pas en bas. Enfin si, regarde : c\'est Orsane.', 'Quand tu veux redescendre ou remonter, tu me le dis. La Nacelle ne refuse personne que le Fil a éveillé.'],
+        done: ['Tiens-toi au bord, ne regarde pas en bas. Enfin si, regarde : c\'est Orsane.', 'Quand tu veux redescendre ou remonter, tu me le dis. La Nacelle ne refuse personne que l\'Aube a éveillé.'],
       },
       rewards: { xp: 0, fils: 20 } },
   );
@@ -665,7 +665,7 @@
         { type: 'visit', map: 'ervane_rond_des_quatre', text: 'Aller au Rond des Quatre' },
       ],
       dialogue: {
-        offer: ['Les Glyms des Sources descendent de ceux d\'Orsane, montés le long du Fil il y a longtemps. Une affaire de famille.', 'Rapporte-moi quatre Éclats, un par lignée si tu peux, et va voir le Rond des Quatre : les pierres y sont teintées comme eux.'],
+        offer: ['Les Glyms des Sources descendent de ceux d\'Orsane, montés le long du câble il y a longtemps. Une affaire de famille.', 'Rapporte-moi quatre Éclats, un par lignée si tu peux, et va voir le Rond des Quatre : les pierres y sont teintées comme eux.'],
         progress: ['Chaque pierre du Rond porte un élément. Les Glyms les ont choisies, ou l\'inverse.'],
         done: ['Quatre éclats, quatre teintes. L\'ancêtre, le Glym Ancestral, vit dans les Clairières d\'Orsane. Si tu descends un jour, va le saluer de ma part.'],
       },

@@ -1340,7 +1340,7 @@ class Combat {
     if (!b || owner.def.fixed || owner.unpushable) return;
     const from = owner.pos, to = b.pos;
     this.emit('animMove', { entity: owner, to, teleport: true });
-    this.kill(b, `${owner.name} file sur sa Balise de Fil.`);
+    this.kill(b, `${owner.name} file sur sa Balise de Plume.`);
     this.place(owner, to.x, to.y);
     owner.moved = true;
     this.log(`${owner.name} quitte la case ${from.x},${from.y} pour sa balise.`);

@@ -3,12 +3,12 @@ DATA.tutoriel = {
   depart: { map: 'orsane_cimes_place', x: 7, y: 12 },
   secondesTour: 90,
   allie: {
-    id: 'guide_varek', name: 'Varek', title: 'Relayeur du Fil', shape: 'pnj', look: 'garde', color: '#8a93a6',
+    id: 'guide_varek', name: 'Varek', title: 'Relayeur de l\'Aube', shape: 'pnj', look: 'garde', color: '#8a93a6',
     level: 1, hp: 70, pa: 6, pm: 3, initiative: 40, spells: ['lueur', 'eclat'], ai: 'ranged', summon: true, dmgMult: 0.45,
     desc: 'Ton guide. Il soigne ceux qui faiblissent et tire de loin.',
   },
   etapes: [
-    { id: 'bienvenue', say: 'Te voilà sur les Cimes, Veilleur. Je suis **Varek**, je garde le **Relais du Fil**.', humeur: 'joie',
+    { id: 'bienvenue', say: 'Te voilà sur les Cimes, Veilleur. Je suis **Varek**, je garde le **Relais de l\'Aube**.', humeur: 'joie',
       until: { on: 'suite' }, saute: { quete: 'orsane_arrivee' } },
     { id: 'marcher', say: 'Approche-toi. **Touche la case qui brille** pour y marcher.',
       saySouris: 'Approche-toi. **Clique sur la case qui brille** pour y marcher.',
@@ -16,8 +16,8 @@ DATA.tutoriel = {
       cue: { type: 'case', map: 'orsane_cimes_place', x: 7, y: 7 },
       until: [{ on: 'arrive', map: 'orsane_cimes_place', x: 7, y: 7, proche: 1 }, { on: 'dialogue', npc: 'varek' }],
       saute: { quete: 'orsane_arrivee' } },
-    { id: 'parler', say: 'Bien. Maintenant, **touche-moi** pour me parler : le Fil a une tâche pour toi.',
-      saySouris: 'Bien. Maintenant, **clique sur moi** pour me parler : le Fil a une tâche pour toi.',
+    { id: 'parler', say: 'Bien. Maintenant, **touche-moi** pour me parler : l\'Aube a une tâche pour toi.',
+      saySouris: 'Bien. Maintenant, **clique sur moi** pour me parler : l\'Aube a une tâche pour toi.',
       court: 'Un PNJ marqué d\'un {or|!} a une quête pour toi : touche-le.',
       cue: { type: 'pnj', npc: 'varek' },
       cueDialogue: ['.vy-replique[data-quete="orsane_arrivee"]', '.vy-guide--dialogue [data-act="accepter"]'],
@@ -92,7 +92,7 @@ DATA.tutoriel = {
       say: '**Achève le monstre !**', cue: { type: 'ennemi', plusBlesse: true }, until: { on: 'fightEnd' } },
 
     { id: 'victoire', attendre: { explore: true }, humeur: 'joie',
-      say: 'Bien joué, Veilleur ! Le Fil peut compter sur toi.', until: { on: 'suite' } },
+      say: 'Bien joué, Veilleur ! L\'Aube peut compter sur toi.', until: { on: 'suite' } },
 
     { id: 'niveau', bloc: 'niveau', si: { niveau: 2 }, humeur: 'joie',
       say: 'Tu as gagné un **niveau** ! À chaque niveau, tu gagnes {or|5 points} de caractéristiques.',

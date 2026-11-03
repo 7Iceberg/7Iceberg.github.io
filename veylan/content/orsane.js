@@ -2,7 +2,7 @@
 DATA.content.zones.push({
   id: 'orsane_cimes', name: 'Les Cimes d\'Orsane', region: 'orsane', level: [1, 3],
   palette: 'orsane',
-  description: 'La capitale du Fil, posée tout en haut du monde, blanche et dorée sous les lanternes. On y arrive Veilleur, on en repart avec une tâche.',
+  description: 'La capitale de l\'Aube, posée tout en haut du monde, blanche et dorée sous les lanternes. On y arrive Veilleur, on en repart avec une tâche.',
   maps: [
     {
       id: 'orsane_cimes_place', name: 'Place du Relais', level: [1, 1],
@@ -506,7 +506,7 @@ DATA.content.zones.push({
 DATA.content.zones.push({
   id: 'orsane_toiles', name: 'Les Toiles', region: 'orsane', level: [10, 16],
   palette: 'orsane',
-  description: 'Une forêt de pins morts tendue de fils gris, où les lanternes du Fil brillent encore à travers les toiles. Les Tissefils y nichent et les Veilloches y veillent, plus nombreux chaque nuit.',
+  description: 'Une forêt de pins morts tendue de fils gris, où les lanternes de l\'Aube brillent encore à travers les toiles. Les Tissefils y nichent et les Veilloches y veillent, plus nombreux chaque nuit.',
   maps: [
     {
       id: 'orsane_toiles_entree', name: 'Le Seuil des Toiles', level: [10, 12],
@@ -832,12 +832,12 @@ DATA.content.zones.push({
 });
 
 DATA.content.npcs.push({
-  id: 'varek', name: 'Varek', title: 'Relayeur du Fil', look: 'garde',
+  id: 'varek', name: 'Varek', title: 'Relayeur de l\'Aube', look: 'garde',
   dialogue: ['Bienvenue sur les Cimes, Veilleur. Le Relais est à toi : touche-le, il te ramènera toujours ici.', 'Les Glyms ont volé la moitié des lanternes cette nuit. Si tu veux te rendre utile, c\'est le moment.'],
 });
 DATA.content.npcs.push({
   id: 'lotha', name: 'Lotha', title: 'Marchande du Comptoir', look: 'marchand', marche: 'vivres',
-  dialogue: ['Pain de Cime, pain de Grouk, de quoi tenir sur les sentiers. Et le prix est honnête, parole de Lotha.', 'Les Fils, ça se gagne. Les Glyms en ont plein les plumes, va savoir pourquoi.'],
+  dialogue: ['Pain de Cime, pain de Grouk, de quoi tenir sur les sentiers. Et le prix est honnête, parole de Lotha.', 'Les Dragmes, ça se gagne. Les Glyms en ont plein les plumes, va savoir pourquoi.'],
   shop: ['pain_de_cime', 'pain_de_grouk', 'potion_de_relais', 'coiffe_marcheur', 'cape_marcheur', 'amulette_marcheur', 'bottes_marcheur'],
 });
 DATA.content.npcs.push({
@@ -850,7 +850,7 @@ DATA.content.npcs.push({
 });
 DATA.content.npcs.push({
   id: 'rilka', name: 'Rilka', title: 'Bijoutière', look: 'artisan', workshop: 'bijoutier',
-  dialogue: ['Une amulette, ce n\'est pas un bijou. C\'est un morceau de Fil qu\'on porte sur le coeur.', 'Le calcaire des Sentiers se taille bien. Rapporte-m\'en, je te fais quelque chose.'],
+  dialogue: ['Une amulette, ce n\'est pas un bijou. C\'est un morceau d\'aube qu\'on porte sur le coeur.', 'Le calcaire des Sentiers se taille bien. Rapporte-m\'en, je te fais quelque chose.'],
 });
 DATA.content.npcs.push({
   id: 'thorak', name: 'Thorak', title: 'Forgeron', look: 'artisan', workshop: 'forgeron',
@@ -861,8 +861,8 @@ DATA.content.npcs.push({
   dialogue: ['Herbe de veille, cire de Veilloche, un peu de patience : voilà une potion de Relais.', 'Ne bois pas ce qui fume en vert. Celle-là, c\'est pour les Grouks.'],
 });
 DATA.content.npcs.push({
-  id: 'ysolde', name: 'Ysolde', title: 'Banquière du Fil', look: 'tisseur', banque: true,
-  dialogue: ['Ce que tu déposes ici reste à toi, objets et Fils, et ton sac s\'en trouve plus léger.', 'Un coffre sans fond, disent les Veilleurs. Il en a un, mais personne n\'y a jamais touché.'],
+  id: 'ysolde', name: 'Ysolde', title: 'Banquière de l\'Aube', look: 'tisseur', banque: true,
+  dialogue: ['Ce que tu déposes ici reste à toi, objets et Dragmes, et ton sac s\'en trouve plus léger.', 'Un coffre sans fond, disent les Veilleurs. Il en a un, mais personne n\'y a jamais touché.'],
 });
 DATA.content.npcs.push({
   id: 'garen', name: 'Garen', title: 'Comptoir des équipements', look: 'marchand', marche: 'equipements',
@@ -883,11 +883,11 @@ DATA.content.npcs.push({
 });
 DATA.content.npcs.push({
   id: 'saya', name: 'Saya', title: 'Maîtresse du Dojo', look: 'marcheur', dojo: true,
-  dialogue: ['Le Dojo du Fil est ouvert à tous. Les mannequins de la cour ne rendent pas les coups : essaie tes sorts sur eux avant de les essayer sur un Grouk.', 'Un Veilleur qui ne s\'entraîne pas apprend sur le terrain. Le terrain, lui, n\'est pas patient.', 'L\'épreuve du jour, c\'est mes élèves au bâton, par vagues, et le maître d\'armes pour finir. Tiens en huit tours et la Garde te doit un Sceau. Une fois par jour, pas deux.'],
+  dialogue: ['Le Dojo des Cimes est ouvert à tous. Les mannequins de la cour ne rendent pas les coups : essaie tes sorts sur eux avant de les essayer sur un Grouk.', 'Un Veilleur qui ne s\'entraîne pas apprend sur le terrain. Le terrain, lui, n\'est pas patient.', 'L\'épreuve du jour, c\'est mes élèves au bâton, par vagues, et le maître d\'armes pour finir. Tiens en huit tours et la Garde te doit un Sceau. Une fois par jour, pas deux.'],
 });
 DATA.content.npcs.push({
   id: 'hessa', name: 'Hessa', title: 'Capitaine de la Garde', look: 'garde', avis: true,
-  dialogue: ['La Garde des Cimes tient la Place, la Porte et les murs. Dehors, c\'est à toi de tenir.', 'Les avis de recherche sont cloués à la tour : un par zone, une prime chacun. Ramène-moi la bête, je paie en Fils et en Sceaux.'],
+  dialogue: ['La Garde des Cimes tient la Place, la Porte et les murs. Dehors, c\'est à toi de tenir.', 'Les avis de recherche sont cloués à la tour : un par zone, une prime chacun. Ramène-moi la bête, je paie en Dragmes et en Sceaux.'],
 });
 DATA.content.npcs.push({
   id: 'ismere', name: 'Ismère', title: 'Gardienne du Temple des Voies', look: 'ancien', temple: true,
@@ -912,7 +912,7 @@ DATA.content.npcs.push({
 });
 DATA.content.npcs.push({
   id: 'kelthar', name: 'Kelthar', title: 'Ancien des Cimes', look: 'ancien',
-  dialogue: ['J\'ai vu la Déchirure s\'ouvrir, petit. Enfin, je crois. Ma mémoire a des trous.', 'Les lanternes du Fil tiennent les remontées à distance. Quand elles s\'éteignent, le monde descend d\'un cran.'],
+  dialogue: ['J\'ai vu le nord brûler, petit. Enfin, je crois. Ma mémoire a des trous.', 'Les lanternes de l\'Aube tiennent les bêtes à distance. Quand elles s\'éteignent, le monde descend d\'un cran.'],
 });
 DATA.content.npcs.push({
   id: 'vali', name: 'Vali', title: 'Enfant des Terrasses', look: 'enfant',
@@ -931,7 +931,7 @@ DATA.content.npcs.push({
   dialogue: ['Voici Volu. C\'est un Veilloche. Non, il ne mord pas. Oui, il met le feu aux rideaux.', 'Un Veilloche apprivoisé, ça éclaire la maison et ça chauffe la soupe. Il faut juste le tenir loin de l\'eau.'],
 });
 DATA.content.npcs.push({
-  id: 'thevra', name: 'Thevra', title: 'Tisseuse du Fil', look: 'tisseur',
+  id: 'thevra', name: 'Thevra', title: 'Éclaireuse de l\'Aube', look: 'tisseur',
   dialogue: ['Les Toiles grandissent chaque nuit. Hier elles étaient à la crête, aujourd\'hui elles touchent mes bottes.', 'Un Tissefil seul, ça se gère. Quatre dans un nid, c\'est une autre histoire.'],
 });
 DATA.content.npcs.push({
@@ -940,16 +940,16 @@ DATA.content.npcs.push({
 });
 
 DATA.content.npcs.push({
-  id: 'avreth', name: 'Avreth', title: 'Émissaire du Fil', look: 'tisseur',
-  dialogue: ['Le Fil tient les Voiles cousues, Veilleur. Quelqu\'un doit bien le faire.', 'La Déchirure t\'a déjà parlé ? Elle parle beaucoup. Nous, nous recousons.'],
+  id: 'avreth', name: 'Avreth', title: 'Émissaire de l\'Aube', look: 'tisseur',
+  dialogue: ['L\'Aube tient les feux allumés et les Marques sur des peaux dignes, Veilleur. Quelqu\'un doit bien le faire.', 'La Chaîne t\'a déjà parlé ? Elle parle beaucoup. Nous, nous scellons.'],
   factionLines: {
     fil: ['Un fil d\'or au-dessus de la tête : tu es des nôtres. Okrel t\'attend à la Porte de Kaldum.'],
-    dechirure: ['Tu portes la cape déchirée. Passe, Veilleur : le Fil ne retient personne. Il recoud derrière.'],
+    dechirure: ['Tu portes la cape fendue. Passe, Veilleur : l\'Aube ne retient personne. Elle scelle derrière.'],
   },
 });
 DATA.content.npcs.push({
-  id: 'lekra', name: 'Lekra', title: 'Émissaire de la Déchirure', look: 'marcheur',
-  dialogue: ['Le Fil recoud tout ce qu\'il ne comprend pas. Nous, on regarde d\'abord.', 'Il y a des ères entières sous nos pieds. Tu ne veux pas savoir ce qui y dort ?'],
+  id: 'lekra', name: 'Lekra', title: 'Émissaire de la Chaîne', look: 'marcheur',
+  dialogue: ['L\'Aube scelle tout ce qu\'elle ne comprend pas. Nous, on regarde d\'abord.', 'Il y a des villes entières sous la cendre. Tu ne veux pas savoir ce qui y dort ?'],
   factionLines: {
     dechirure: ['La Fosse t\'a vu passer. Kethril dit que tu descends bien.'],
     fil: ['Un fil d\'or au-dessus de la tête ? Il brille bien. Il cache mal ce qu\'il y a dessous.'],
@@ -957,22 +957,22 @@ DATA.content.npcs.push({
 });
 DATA.content.npcs.push({
   id: 'elkor', name: 'Elkor', title: 'Convoyeur des Francs-Marcheurs', look: 'marchand',
-  dialogue: ['Le Fil, la Déchirure : ma guilde vend aux deux, et les deux paient. Chacun son serment, moi je garde mes mules.', 'Une Écaille ? J\'en ai trois. Des vraies, presque. Non, je plaisante. Enfin, à moitié.'],
+  dialogue: ['L\'Aube, la Chaîne : ma guilde vend aux deux, et les deux paient. Chacun son serment, moi je garde mes mules.', 'Une Marque ? J\'en ai trois. Des vraies, presque. Non, je plaisante. Enfin, à moitié.'],
 });
 DATA.content.npcs.push({
   id: 'ulkara', name: 'Ulkara', title: 'Guetteuse de la Passe', look: 'ancien',
-  dialogue: ['Sur cette Passe, personne ne commande. Ni le Fil, ni la Déchirure. C\'est pour ça qu\'on y prête serment.', 'Chaque soir, le col descend. Je le regarde passer, et je compte ceux qui ont eu peur.'],
+  dialogue: ['Sur cette Passe, personne ne commande. Ni l\'Aube, ni la Chaîne. C\'est pour ça qu\'on y prête serment.', 'Chaque soir, le col descend. Je le regarde passer, et je compte ceux qui ont eu peur.'],
   factionLines: {
-    fil: ['Tu as choisi le Fil. La Passe s\'en souvient, et elle ne te juge pas.', 'Un serment se renie ici aussi, devant moi. Ça coûte deux rangs, et un peu de fierté.'],
-    dechirure: ['Tu as choisi la Déchirure. La Passe s\'en souvient, et elle ne te juge pas.', 'Un serment se renie ici aussi, devant moi. Ça coûte deux rangs, et un peu de fierté.'],
+    fil: ['Tu as choisi l\'Aube. La Passe s\'en souvient, et elle ne te juge pas.', 'Un serment se renie ici aussi, devant moi. Ça coûte deux rangs, et un peu de fierté.'],
+    dechirure: ['Tu as choisi la Chaîne. La Passe s\'en souvient, et elle ne te juge pas.', 'Un serment se renie ici aussi, devant moi. Ça coûte deux rangs, et un peu de fierté.'],
   },
 });
 DATA.content.npcs.push({
   id: 'kethril', name: 'Kethril', title: 'Maîtresse de la Fosse', look: 'marcheur',
-  dialogue: ['La Fosse n\'a pas de porte. Ceux qui la trouvent ont le droit d\'y rester.', 'Le Fil appelle ça une blessure. Nous, on appelle ça une fenêtre.'],
+  dialogue: ['La Fosse n\'a pas de porte. Ceux qui la trouvent ont le droit d\'y rester.', 'L\'Aube appelle ça une blessure. Nous, on appelle ça une fenêtre.'],
   factionLines: {
     dechirure: ['Une entaille de plus sur ta cape, Veilleur. Le dessous te va bien.'],
-    fil: ['Un fil d\'or à la Fosse. Assieds-toi, regarde. Personne ne te demandera de recoudre.'],
+    fil: ['Une flamme d\'or à la Fosse. Assieds-toi, regarde. Personne ne te demandera de sceller quoi que ce soit.'],
   },
 });
 
@@ -985,7 +985,7 @@ DATA.content.quests.push({
     { type: 'talk', npc: 'orvak', text: 'Parler à Orvak, le gardien de la Porte' },
   ],
   dialogue: {
-    offer: ['Tu as le Tissage dans les mains, on le voit d\'ici. Alors tu es des nôtres.', 'Fais le tour de la ville. Lotha tient le Comptoir, Orvak tient la Porte. Ils t\'attendent.'],
+    offer: ['Tu as la Flamme dans les mains, on le voit d\'ici. Alors tu es des nôtres.', 'Fais le tour de la ville. Lotha tient le Comptoir, Orvak tient la Porte. Ils t\'attendent.'],
     progress: ['La Porte est au sud de la place. Suis les lanternes.'],
     done: ['Tu connais la ville. Maintenant il faut qu\'elle te connaisse.'],
   },
@@ -995,10 +995,10 @@ DATA.content.quests.push({
   id: 'orsane_visite_cite', name: 'La visite de la Cité', level: 1,
   giver: 'maelis', turnIn: 'maelis', requires: { level: 1, quests: ['orsane_arrivee'] },
   steps: [
-    { type: 'talk', npc: 'ysolde', text: 'Passer à la Banque du Fil, à l\'ouest de la Place' },
+    { type: 'talk', npc: 'ysolde', text: 'Passer à la Banque de l\'Aube, à l\'ouest de la Place' },
     { type: 'talk', npc: 'garen', text: 'Voir le Marché des Cimes, au sud-ouest de la Place' },
     { type: 'talk', npc: 'aldric', text: 'Entrer à l\'Hôtel des Métiers, au nord-est de la Place' },
-    { type: 'talk', npc: 'saya', text: 'Monter au Dojo du Fil, sur les Terrasses' },
+    { type: 'talk', npc: 'saya', text: 'Monter au Dojo des Cimes, sur les Terrasses' },
     { type: 'talk', npc: 'maelis', text: 'Revenir voir Maëlis, près du Relais' },
   ],
   dialogue: {
@@ -1064,7 +1064,7 @@ DATA.content.quests.push({
     { type: 'talk', npc: 'thevra', text: 'Trouver Thevra au seuil des Toiles' },
   ],
   dialogue: {
-    offer: ['Au-dessus du Pont, les Tissefils ont tendu leurs fils en travers du chemin. Le Fil du Relais ne passe plus.', 'Couvre-toi, monte, coupe ce qui bloque. Thevra, notre tisseuse, campe juste après la Crête.'],
+    offer: ['Au-dessus du Pont, les Tissefils ont tendu leurs fils en travers du chemin. La lumière du Relais ne passe plus.', 'Couvre-toi, monte, coupe ce qui bloque. Thevra, notre éclaireuse, campe juste après la Crête.'],
     progress: ['Les toiles enracinent un tour. Frappe de loin ou avance à deux.'],
     done: ['Tu as rouvert le chemin jusqu\'ici. Mais regarde derrière moi : ce n\'est plus une toile, c\'est une forêt.'],
   },
@@ -1297,9 +1297,9 @@ DATA.content.quests.push({
     { type: 'talk', npc: 'kelthar', text: 'Montrer le Brin à Kelthar, l\'ancien des Terrasses' },
   ],
   dialogue: {
-    offer: ['Quand je montais la garde sur la Crête, un fil passait au crépuscule. Il luisait, et il fuyait dès qu\'on le regardait.', 'Les vieux l\'appellent Oreth. Attrape-le, garde ce qu\'il laisse, et porte-le à Kelthar, aux Terrasses : il était là quand le Voile s\'est déchiré.'],
+    offer: ['Quand je montais la garde sur la Crête, un fil passait au crépuscule. Il luisait, et il fuyait dès qu\'on le regardait.', 'Les vieux l\'appellent Oreth. Attrape-le, garde ce qu\'il laisse, et porte-le à Kelthar, aux Terrasses : il était là le jour de la Grande Colère.'],
     progress: ['Oreth disparaît un tour sur deux. Attends qu\'il revienne, et frappe vite.'],
-    done: ['Un Brin d\'Oreth... Il est chaud, petit. Un fil de Voile ne devrait pas être chaud.', 'Ce n\'est pas un fil de Voile. C\'est un fil d\'écaille, et je n\'en connais qu\'une qui brille comme ça : celle d\'Ithren, le dragon disparu le jour de la Déchirure.', 'Garde l\'œil ouvert. S\'il reste un brin, il reste un chemin.'],
+    done: ['Un Brin d\'Oreth... Il est chaud, petit. Un brin de lumière ne devrait pas être chaud.', 'Ce n\'est pas un brin de lumière. C\'est une étincelle d\'écaille, et je n\'en connais qu\'une qui brûle comme ça : celle d\'Ithren, le dragon disparu le jour de la Grande Colère.', 'Garde l\'œil ouvert. S\'il reste un brin, il reste un chemin.'],
   },
   rewards: { xp: 2233, fils: 80, items: [{ id: 'potion_de_veille', count: 1 }] },
 });
@@ -1309,15 +1309,15 @@ DATA.content.quests.push({
   giver: 'avreth', requires: { level: 17, notFaction: 'dechirure' },
   steps: [
     { type: 'visit', map: 'orsane_eboulis_chaos', text: 'Trouver la fissure, au fond du Chaos' },
-    { type: 'kill', monster: 'pilou_defait', count: 4, text: 'Renvoyer quatre Glyms Défaits sous le Voile' },
-    { type: 'collect', item: 'soie_de_tissefil', count: 4, text: 'Réunir quatre soies de Tissefil pour la couture' },
-    { type: 'visit', map: 'orsane_eboulis_chaos', text: 'Recoudre la fissure du Chaos' },
+    { type: 'kill', monster: 'pilou_defait', count: 4, text: 'Renvoyer quatre Glyms Défaits sous la cendre' },
+    { type: 'collect', item: 'soie_de_tissefil', count: 4, text: 'Réunir quatre soies de Tissefil pour le sceau' },
+    { type: 'visit', map: 'orsane_eboulis_chaos', text: 'Sceller la fissure du Chaos' },
     { type: 'talk', npc: 'avreth', text: 'Rendre compte à Avreth, au Relais des Éboulis' },
   ],
   dialogue: {
-    offer: ['Dans le Chaos, la roche s\'est fendue. Un doigt de large, pas plus : assez pour que des Glyms en remontent, gris, à moitié décousus.', 'Le Fil ne laisse pas une fente ouverte. Renvoie ce qui en sort, apporte de la soie, et recouds. C\'est ainsi qu\'on protège les vivants.'],
-    progress: ['La soie de Tissefil tient tout, même une fente. Il en traîne dans les Toiles, juste à l\'ouest.'],
-    done: ['Recousue. Elle tiendra une saison, peut-être deux. Ensuite, quelqu\'un d\'autre la recoudra.', 'Voilà le Fil, Veilleur : on recoud, encore et encore. Au niveau 20, à la Passe de Kaldum, tu pourras nous prêter serment.'],
+    offer: ['Dans le Chaos, la roche s\'est fendue. Un doigt de large, pas plus : assez pour que des Glyms en remontent, gris, à moitié brûlés.', 'L\'Aube ne laisse pas une fissure ouverte. Renvoie ce qui en sort, apporte de la soie, et scelle. C\'est ainsi qu\'on protège les vivants.'],
+    progress: ['La soie de Tissefil tient tout, même une fissure. Il en traîne dans les Toiles, juste à l\'ouest.'],
+    done: ['Scellée. Elle tiendra une saison, peut-être deux. Ensuite, quelqu\'un d\'autre la scellera.', 'Voilà l\'Aube, Veilleur : on scelle, encore et encore. Au niveau 20, à la Passe de Kaldum, tu pourras nous prêter serment.'],
   },
   rewards: { xp: 2447, fils: 85, items: [{ id: 'pain_de_scorie', count: 2 }] },
 });
@@ -1331,9 +1331,9 @@ DATA.content.quests.push({
     { type: 'talk', npc: 'kethril', text: 'Porter tes notes à Kethril, à la Fosse, au-dessus du Terrier' },
   ],
   dialogue: {
-    offer: ['Le Fil va te demander de recoudre la fissure du Chaos. Avant, regarde ce qui en sort.', 'Les Glyms Défaits, les Brimbes Fendues : ils viennent d\'en dessous, et ils en rapportent quelque chose. Étudie-les, puis va voir Kethril. La Fosse est au-dessus du Terrier : cherche bien.'],
+    offer: ['L\'Aube va te demander de sceller la fissure du Chaos. Avant, regarde ce qui en sort.', 'Les Glyms Défaits, les Brimbes Fendues : ils viennent de la cendre, et ils en rapportent quelque chose. Étudie-les, puis va voir Kethril. La Fosse est au-dessus du Terrier : cherche bien.'],
     progress: ['Une Brimbe Fendue éclate en mourant. Regarde la couleur de l\'éclat, pas tes blessures.'],
-    done: ['Tu as trouvé la Fosse. Peu de gens la trouvent sans qu\'on les y conduise.', 'Tes notes disent ce que le Fil ne dit jamais : ce qui remonte n\'est pas mauvais, c\'est perdu. Au niveau 20, à la Passe de Kaldum, tu pourras nous prêter serment.'],
+    done: ['Tu as trouvé la Fosse. Peu de gens la trouvent sans qu\'on les y conduise.', 'Tes notes disent ce que l\'Aube ne dit jamais : ce qui sort de la cendre n\'est pas mauvais, c\'est perdu. Au niveau 20, à la Passe de Kaldum, tu pourras nous prêter serment.'],
   },
   rewards: { xp: 2447, fils: 85, items: [{ id: 'pain_de_scorie', count: 2 }] },
 });
@@ -1348,7 +1348,7 @@ DATA.content.quests.push({
     { type: 'talk', npc: 'ravok', text: 'Faire signer le laissez-passer par Thulvar' },
   ],
   dialogue: {
-    offer: ['Un convoi de mules pour Kaldum : du sel, des clous, et trois Écailles. Fausses, les Écailles. Très bien faites.', 'La Passe est pleine de Brimbes et de boue qui marche. Ouvre la route devant mes mules, puis fais signer le laissez-passer à la Porte. Je paie comme un Franc-Marcheur : bien, et sans te demander ton serment.'],
+    offer: ['Un convoi de mules pour Kaldum : du sel, des clous, et trois Marques. Fausses, les Marques. Très bien gravées.', 'La Passe est pleine de Brimbes et de boue qui marche. Ouvre la route devant mes mules, puis fais signer le laissez-passer à la Porte. Je paie comme un Franc-Marcheur : bien, et sans te demander ton serment.'],
     progress: ['Les mules ne passent pas sur les Brimbes. Elles passent encore moins sur les Thelks.'],
     done: ['Le convoi d\'Elkor ? Passé, compté, signé. Les mules sentaient le sel et la mauvaise humeur.', 'Il m\'a laissé ta part. Les Francs-Marcheurs paient toujours : c\'est même la seule chose qu\'ils jurent.'],
   },
@@ -1377,16 +1377,16 @@ DATA.content.quests.push({
   steps: [
     {
       type: 'answer', npc: 'ulkara', text: 'Prêter serment devant Ulkara, ou refuser',
-      prompt: ['Ici, personne ne commande. Le Fil recoud, la Déchirure ouvre, et aucun des deux n\'a tout à fait tort.', 'Choisis, ou refuse : refuser ne ferme rien. La route de Kaldum reste ouverte, et je serai encore là.'],
+      prompt: ['Ici, personne ne commande. L\'Aube scelle, la Chaîne ouvre, et aucune des deux n\'a tout à fait tort.', 'Choisis, ou refuse : refuser ne ferme rien. La route de Kaldum reste ouverte, et je serai encore là.'],
       options: [
-        { id: 'fil', text: 'Je prête serment au Fil', effects: [{ type: 'faction', id: 'fil' }], reply: ['Le Fil te reçoit. Okrel, son capitaine, t\'attend à la Porte de Kaldum.'] },
-        { id: 'dechirure', text: 'Je prête serment à la Déchirure', effects: [{ type: 'faction', id: 'dechirure' }], reply: ['La Déchirure te reçoit. Kethril t\'attend à la Fosse, au-dessus du Terrier.'] },
+        { id: 'fil', text: 'Je prête serment à l\'Aube', effects: [{ type: 'faction', id: 'fil' }], reply: ['L\'Aube te reçoit. Okrel, son capitaine, t\'attend à la Porte de Kaldum.'] },
+        { id: 'dechirure', text: 'Je prête serment à la Chaîne', effects: [{ type: 'faction', id: 'dechirure' }], reply: ['La Chaîne te reçoit. Kethril t\'attend à la Fosse, au-dessus du Terrier.'] },
         { id: 'plus_tard', text: 'Je refuse pour l\'instant', effects: [{ type: 'later' }], reply: ['Refuser n\'est pas fuir. La Passe ne bouge pas, et moi non plus. Reviens quand tu voudras.'] },
       ],
     },
   ],
   dialogue: {
-    offer: ['Tu as tenu la Passe. Alors tu peux choisir, si tu le veux.', 'Le Fil, la Déchirure, ou personne. Prends le temps qu\'il faut : un serment se prête en un mot, et se renie cher.'],
+    offer: ['Tu as tenu la Passe. Alors tu peux choisir, si tu le veux.', 'L\'Aube, la Chaîne, ou personne. Prends le temps qu\'il faut : un serment se prête en un mot, et se renie cher.'],
     progress: ['Prends ton temps. Le col aussi prend le sien.'],
     done: ['C\'est dit. La Passe s\'en souviendra, et moi aussi.'],
   },
@@ -1407,7 +1407,7 @@ DATA.content.quests.push({
   ],
   dialogue: {
     offer: ['Renier ? Ça arrive. Va voir Ulkara, à la Passe de Kaldum : c\'est devant elle que ça se fait.'],
-    done: ['Le serment se prête encore ici, quand tu voudras. Au Fil, à la Déchirure, ou à personne.'],
+    done: ['Le serment se prête encore ici, quand tu voudras. À l\'Aube, à la Chaîne, ou à personne.'],
   },
   rewards: {},
 });
@@ -1798,8 +1798,8 @@ DATA.content.npcs.push({
   dialogue: ['Les Cimes ne sont pas grandes, mais tout le monde y compte. Moi, je compte tout le monde.', 'Un nouveau visage ? Va saluer ceux qui font tenir la ville. Ils t\'aideront plus vite s\'ils te connaissent.'],
 });
 DATA.content.npcs.push({
-  id: 'fenna', name: 'Fenna', title: 'Archiviste du Fil', look: 'tisseur',
-  dialogue: ['Les archives du Fil tiennent dans trois coffres et ma tête. Les coffres sont mieux rangés.', 'Les Écailles, Veilleur. Sept dragons, sept Écailles, et une qui manque. Tout commence là.'],
+  id: 'fenna', name: 'Fenna', title: 'Archiviste de l\'Aube', look: 'tisseur',
+  dialogue: ['Les archives de l\'Aube tiennent dans trois coffres et ma tête. Les coffres sont mieux rangés.', 'Les Marques, Veilleur. Sept dragons, six Marques, et une Écaille volée. Tout commence là.'],
 });
 DATA.content.npcs.push({
   id: 'brann', name: 'Brann', title: 'Aubergiste de la Lanterne', look: 'marchand',
@@ -1815,7 +1815,7 @@ DATA.content.npcs.push({
 });
 DATA.content.npcs.push({
   id: 'dalric', name: 'Dalric', title: 'Peintre des lanternes', look: 'artisan',
-  dialogue: ['Chaque lanterne du Fil porte sa couleur. Je les repeins une à une, et il y en a mille.', 'Les Kavous ont les plus belles plumes des Clairières. Les plus belles couleurs aussi, si on sait les broyer.'],
+  dialogue: ['Chaque lanterne de l\'Aube porte sa couleur. Je les repeins une à une, et il y en a mille.', 'Les Kavous ont les plus belles plumes des Clairières. Les plus belles couleurs aussi, si on sait les broyer.'],
 });
 
 DATA.content.quests.push({
@@ -1823,16 +1823,16 @@ DATA.content.quests.push({
   giver: 'kelthar', turnIn: 'maelis', requires: { level: 1, quests: ['orsane_arrivee'] },
   steps: [
     { type: 'answer', npc: 'kelthar', text: 'Répondre à la question de Kelthar sur les Grands Dragons',
-      prompt: ['Avant de te laisser filer, une question. Combien de Grands Dragons ont perdu une Écaille ?'],
+      prompt: ['Avant de te laisser filer, une question. Combien de Grands Dragons ont perdu une Écaille, au temps des Lieurs ?'],
       options: [
-        { id: 'sept', text: 'Sept, et l\'une d\'elles a disparu', reply: ['Sept, oui. Ithren est parti avec la sienne, et le ciel de la Lisière garde sa forme. Tu écoutes, c\'est bien.'] },
-        { id: 'six', text: 'Six, je crois', reply: ['Six qu\'on connaît, et une septième que personne n\'a vue. Tu n\'as pas tort, tu n\'as pas raison. Comme tout le monde.'] },
+        { id: 'sept', text: 'Sept, et l\'une d\'elles court encore', reply: ['Sept, oui. Les dragons ont tout repris, sauf Ithren : la sienne court encore, et le ciel de la Lisière garde sa forme. Tu écoutes, c\'est bien.'] },
+        { id: 'six', text: 'Six, je crois', reply: ['Six qui ont repris la leur, et une septième que personne n\'a revue. Tu n\'as pas tort, tu n\'as pas raison. Comme tout le monde.'] },
         { id: 'aucune_idee', text: 'Aucune idée', reply: ['Honnête. C\'est déjà plus que la plupart. Sept, petit. Retiens-le.'] },
       ] },
     { type: 'talk', npc: 'maelis', text: 'Se présenter à Maëlis, la doyenne, sur la place du Relais' },
   ],
   dialogue: {
-    offer: ['Tu as le Tissage dans les mains, et des questions plein les yeux. Les Écailles, les dragons, la Déchirure : tout ça se tient.', 'Je te réponds, puis tu iras voir Maëlis. Une ville, ça se découvre par ses gens.'],
+    offer: ['Tu as la Flamme dans les mains, et des questions plein les yeux. Les Marques, les dragons, la Colère : tout ça se tient.', 'Je te réponds, puis tu iras voir Maëlis. Une ville, ça se découvre par ses gens.'],
     progress: ['Maëlis est sur la place du Relais. Elle te trouvera avant que tu la trouves.'],
     done: ['Kelthar t\'envoie ? Alors il t\'a déjà posé sa question. Il la pose à tout le monde depuis quarante ans.'],
   },
@@ -1849,9 +1849,9 @@ DATA.content.quests.push({
     { type: 'talk', npc: 'fenna', text: 'Rejoindre Fenna, l\'archiviste, sur les Terrasses' },
   ],
   dialogue: {
-    offer: ['Quatre personnes font tenir les Cimes : Thila pour les ateliers, Brann pour l\'auberge, Lotha pour le Comptoir, Orvak pour la Porte.', 'Va les saluer. Ensuite, parle à Fenna sur les Terrasses : tu as des questions sur les Écailles, elle a des réponses.'],
+    offer: ['Quatre personnes font tenir les Cimes : Thila pour les ateliers, Brann pour l\'auberge, Lotha pour le Comptoir, Orvak pour la Porte.', 'Va les saluer. Ensuite, parle à Fenna sur les Terrasses : tu as des questions sur les Marques, elle a des réponses.'],
     progress: ['Thila, Brann, Lotha, Orvak, puis Fenna. Ce n\'est pas une liste, c\'est une ville.'],
-    done: ['Maëlis t\'a fait faire le tour ? Bien. Maintenant, les Écailles. Assieds-toi, ça va prendre un moment.'],
+    done: ['Maëlis t\'a fait faire le tour ? Bien. Maintenant, les Marques. Assieds-toi, ça va prendre un moment.'],
   },
   rewards: { xp: 139, fils: 15, items: [{ id: 'ceinture_de_plume', count: 1 }] },
 });
@@ -1866,11 +1866,11 @@ DATA.content.quests.push({
         { id: 'pair', text: 'Pair', reply: ['Pair ! Gagné. Enfin, j\'ai triché, mais tu as gagné quand même. Ithren est tombé là où le ciel est vide, au-dessus de la Lisière.'] },
         { id: 'impair', text: 'Impair', reply: ['Impair. Perdu ! Je te la dis quand même : Ithren est tombé là où le ciel est vide. Et quelqu\'un tenait son Écaille.'] },
       ] },
-    { type: 'kill', monster: 'kavou_bleu', count: 1, text: 'Vaincre un Kavou, la bête qui garde la couleur du premier Voile' },
+    { type: 'kill', monster: 'kavou_bleu', count: 1, text: 'Vaincre un Kavou, la bête qui garde la couleur du ciel d\'avant la Colère' },
     { type: 'talk', npc: 'fenna', text: 'Raconter à Fenna ce que disent la stèle, Vali et le Kavou' },
   ],
   dialogue: {
-    offer: ['Il y a une stèle au Ruisseau, plus vieille que la ville. Elle parle d\'Ithren, le dragon disparu.', 'Lis-la. Puis va voir Vali : les enfants des Terrasses connaissent la fin de la légende mieux que mes coffres. Et les Kavous gardent la couleur du premier Voile ; regarde-en un de près, de très près.'],
+    offer: ['Il y a une stèle au Ruisseau, plus vieille que la ville. Elle parle d\'Ithren, le dragon disparu.', 'Lis-la. Puis va voir Vali : les enfants des Terrasses connaissent la fin de la légende mieux que mes coffres. Et les Kavous gardent la couleur du ciel d\'avant la Colère ; regarde-en un de près, de très près.'],
     progress: ['La stèle, Vali, un Kavou. Dans cet ordre, si tu veux comprendre.'],
     done: ['Quelqu\'un tenait son Écaille. C\'est ce qu\'on disait déjà quand j\'étais petite. On ne sait toujours pas qui.', 'Il y a un autre chercheur qui avait une piste. Hargal. Il est descendu au vieux puits de la Halte, et il n\'est pas remonté.'],
   },
@@ -1885,9 +1885,9 @@ DATA.content.quests.push({
     { type: 'talk', npc: 'fenna', text: 'Rapporter à Fenna le carnet d\'Hargal' },
   ],
   dialogue: {
-    offer: ['Hargal cherchait les Écailles depuis vingt ans. Il disait qu\'une piste partait du vieux puits de la Halte.', 'Osk garde le puits. Va le voir. Et si quelque chose a avalé Hargal, fais-le rendre ce qu\'il a pris.'],
+    offer: ['Hargal cherchait l\'Écaille d\'Ithren depuis vingt ans. Il disait qu\'une piste partait du vieux puits de la Halte.', 'Osk garde le puits. Va le voir. Et si quelque chose a avalé Hargal, fais-le rendre ce qu\'il a pris.'],
     progress: ['La Halte est au-dessus du Relais des Sentiers. Osk ne quitte jamais son puits.'],
-    done: ['Le carnet d\'Hargal. Mouillé, mâché, mais lisible. Il a vu une lueur au fond du puits, la même que dans le ciel vide.', 'Il a laissé une adresse : les Toiles. Thevra, la Tisseuse du Fil. C\'est là que tu dois aller.'],
+    done: ['Le carnet d\'Hargal. Mouillé, mâché, mais lisible. Il a vu une lueur au fond du puits, la même que dans le ciel vide.', 'Il a laissé une adresse : les Toiles. Thevra, l\'Éclaireuse de l\'Aube. C\'est là que tu dois aller.'],
   },
   rewards: { xp: 668, fils: 40, items: [{ id: 'bottes_de_cuir', count: 1 }] },
 });
@@ -1897,12 +1897,12 @@ DATA.content.quests.push({
   steps: [
     { type: 'visit', map: 'orsane_sentiers_crete', text: 'Monter jusqu\'à la Crête des Sentiers' },
     { type: 'visit', map: 'orsane_toiles_entree', text: 'Passer le Seuil des Toiles' },
-    { type: 'talk', npc: 'thevra', text: 'Remettre la page d\'Hargal à Thevra, la Tisseuse du Fil' },
+    { type: 'talk', npc: 'thevra', text: 'Remettre la page d\'Hargal à Thevra, l\'Éclaireuse de l\'Aube' },
   ],
   dialogue: {
     offer: ['Tu as fini ce que les Cimes pouvaient t\'apprendre. Le reste est plus haut, et plus loin.', 'Monte à la Crête, passe le Seuil des Toiles, et donne cette page à Thevra. Elle saura quoi en faire, ou elle saura qui le sait.'],
     progress: ['La Crête, puis les Toiles. Fais attention où tu mets les pieds, ça colle.'],
-    done: ['Hargal. Je pensais qu\'il était mort. Il l\'est peut-être, mais sa page est arrivée jusqu\'ici.', 'Bienvenue aux Toiles, Veilleur. Ici, le Fil se voit à l\'œil nu.'],
+    done: ['Hargal. Je pensais qu\'il était mort. Il l\'est peut-être, mais sa page est arrivée jusqu\'ici.', 'Bienvenue aux Toiles, Veilleur. Ici, les fils se voient à l\'œil nu.'],
   },
   rewards: { xp: 955, fils: 50, items: [{ id: 'pain_de_grouk', count: 3 }] },
 });
@@ -2135,9 +2135,9 @@ DATA.content.quests.push({
     { type: 'talk', npc: 'brann', text: 'Annoncer à Brann que le cellier est libre' },
   ],
   dialogue: {
-    offer: ['Tu as vu l\'affiche sur ma porte ? « On cherche un chasseur, payé en Fils et en cidre. » C\'est toujours d\'actualité.'],
+    offer: ['Tu as vu l\'affiche sur ma porte ? « On cherche un chasseur, payé en Dragmes et en cidre. » C\'est toujours d\'actualité.'],
     progress: ['Ils sont sortis par la trappe et se sont envolés vers la Porte. Rattrape-les.'],
-    done: ['Plus un Glymet dans le cellier. Mes tonneaux te remercient. Moi aussi, en Fils.'],
+    done: ['Plus un Glymet dans le cellier. Mes tonneaux te remercient. Moi aussi, en Dragmes.'],
   },
   rewards: { xp: 540, fils: 35, items: [{ id: 'potion_de_relais', count: 2 }] },
 });
@@ -2163,7 +2163,7 @@ DATA.content.quests.push({
     { type: 'talk', npc: 'dalric', text: 'Donner les plumes à Dalric' },
   ],
   dialogue: {
-    offer: ['Je n\'ai plus de bleu. Plus une goutte. Les lanternes de la Porte vont finir grises, et Orvak déteste le gris.', 'Les plumes de Kavou, broyées, donnent la couleur du Voile sous lequel ils ont niché. Trois me suffiront.'],
+    offer: ['Je n\'ai plus de bleu. Plus une goutte. Les lanternes de la Porte vont finir grises, et Orvak déteste le gris.', 'Les plumes de Kavou, broyées, donnent la couleur du ciel sous lequel ils ont niché. Trois me suffiront.'],
     progress: ['Les Kavous nichent à la Mare et ici, à l\'Orée. Toutes les couleurs font l\'affaire.'],
     done: ['Ah, ce bleu. Et ce roux ! Les lanternes vont avoir l\'air neuves. Enfin, presque.'],
   },

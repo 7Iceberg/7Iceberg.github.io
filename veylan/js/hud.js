@@ -93,7 +93,7 @@ class Hud {
         `<div class="pb-main"><div class="pb-name">${esc(ch.name)} <small>${cls.name} · niveau ${ch.level}${ch.title ? ' · ' + esc(ch.title) : ''}</small></div>` +
         Util.jauge('vie', ch.hp, d.hpMax, `${ch.hp} / ${d.hpMax}`, 'Points de vie') +
         Util.jauge('xp', xp, 100, null, 'Expérience', 'vy-jauge--fine') + `</div>` +
-        `<div class="pb-fils">${ch.fils} <small>Fils</small>${ch.statPoints ? `<div class="pts">+${ch.statPoints} pts</div>` : ''}</div>`;
+        `<div class="pb-fils">${ch.fils} <small>Dragmes</small>${ch.statPoints ? `<div class="pts">+${ch.statPoints} pts</div>` : ''}</div>`;
     } else {
       Util.setJauge(bar.querySelector('.vy-jauge--vie'), ch.hp, d.hpMax, `${ch.hp} / ${d.hpMax}`);
       Util.setJauge(bar.querySelector('.vy-jauge--xp'), xp, 100);
@@ -117,7 +117,7 @@ class Hud {
   annoncerSucces(g) {
     const a = g.achievement, texte = `Succès : ${a.name}${g.title ? ' · titre « ' + g.title + ' »' : ''}`;
     if (this.pushJournal) this.pushJournal('evenements', texte);
-    const gains = [g.xp ? `+${g.xp} XP` : '', g.fils ? `+${g.fils} Fils` : '', g.title ? `« ${g.title} »` : ''].filter(Boolean);
+    const gains = [g.xp ? `+${g.xp} XP` : '', g.fils ? `+${g.fils} Dragmes` : '', g.title ? `« ${g.title} »` : ''].filter(Boolean);
     const t = document.createElement('div');
     t.className = 'toast toast--succes';
     t.setAttribute('role', 'status');
@@ -258,7 +258,7 @@ class Hud {
     if (d.kind === 'equip' || d.kind === 'weapon') { const c = ch.canEquip(e.id); btns = `<button class="vy-bouton vy-bouton--primaire" data-act="equip" data-id="${e.id}" ${c.ok ? '' : 'disabled title="' + esc(c.reason) + '"'}>Équiper</button>`; if (!c.ok) btns += `<span class="muted">${esc(c.reason)}</span>`; }
     if (d.kind === 'consumable') btns = `<button class="vy-bouton vy-bouton--primaire" data-act="use" data-id="${e.id}">Utiliser</button>`;
     if (d.kind === 'knot') btns = `<button class="vy-bouton vy-bouton--primaire" data-act="knot" data-id="${e.id}">${ch.activeKnots().includes(e.id) ? 'Dénouer' : 'Nouer'}</button>`;
-    if (opts.sell) btns += `<button class="vy-bouton vy-bouton--danger" data-act="sell" data-id="${e.id}">Vendre pour ${Items.sellPrice(d)} Fils</button>`;
+    if (opts.sell) btns += `<button class="vy-bouton vy-bouton--danger" data-act="sell" data-id="${e.id}">Vendre pour ${Items.sellPrice(d)} Dragmes</button>`;
     const stats = Items.statLines(d.stats || {}).map(l => { const m = l.match(/^([+-]?\d+) (.+)$/); return m ? `<li><span>${esc(m[2])}</span><b>${m[1]}</b></li>` : `<li>${esc(l)}</li>`; });
     if (d.spell) stats.push(`<li><span>Coup d'arme, ${d.spell.pa} PA</span><b>${d.spell.effects.map(x => x.min + '-' + x.max).join(' + ')} ${esc(DATA.elements[d.spell.element].label.toLowerCase())}</b></li>`);
     if (d.kind === 'consumable' && d.heal) stats.push(`<li><span>Soin</span><b>${d.heal >= 999 ? 'tous les PV' : '+' + d.heal + ' PV'}</b></li>`);
@@ -321,7 +321,7 @@ class Hud {
           if (!n) return `<div class="row dim"><span><b>???</b>${tag}<br><small class="muted">niv. ${esc(m.level)} · pas encore vaincu</small></span></div>`;
           return `<div class="row"><span><b style="color:${m.color}">${esc(m.name)}</b>${tag} <small class="muted">niv. ${esc(m.level)}</small><br><small>${esc(m.desc || '')}</small></span><small class="muted">${n} vaincu${n > 1 ? 's' : ''}</small></div>`;
         }).join('');
-      return `<div class="tabs">${tabs}</div><p class="muted">Une remontée vaincue s'inscrit au Carnet. Les régions complètes donnent des succès.</p>${list}`;
+      return `<div class="tabs">${tabs}</div><p class="muted">Une bête vaincue s'inscrit au Carnet. Les régions complètes donnent des succès.</p>${list}`;
     };
     this.simpleWin('carnet', 'Carnet du Veilleur', render, { ctab: d => { this.carnetTab = d.tab; this.fen.render('carnet'); } }, { width: 480 });
   }
@@ -337,7 +337,7 @@ class Hud {
       const list = defs.map(a => {
         const got = ch.achievements.includes(a.id);
         const r = a.rewards || {};
-        return `<div class="row ach${got ? ' got' : ''}"><span><b>${esc(a.name)}</b><br><small>${esc(a.desc)}</small></span><span class="muted">${attente.includes(a.id) ? '<b>à réclamer</b>' : got ? 'obtenu' : Achievements.progress(ch, a)}<br><small>${[r.xp ? r.xp + ' XP' : '', r.fils ? r.fils + ' Fils' : '', r.title ? '« ' + esc(r.title) + ' »' : ''].filter(Boolean).join(' · ')}</small></span></div>`;
+        return `<div class="row ach${got ? ' got' : ''}"><span><b>${esc(a.name)}</b><br><small>${esc(a.desc)}</small></span><span class="muted">${attente.includes(a.id) ? '<b>à réclamer</b>' : got ? 'obtenu' : Achievements.progress(ch, a)}<br><small>${[r.xp ? r.xp + ' XP' : '', r.fils ? r.fils + ' Dragmes' : '', r.title ? '« ' + esc(r.title) + ' »' : ''].filter(Boolean).join(' · ')}</small></span></div>`;
       }).join('');
       const n = attente.length;
       return `<div class="row"><span class="muted">${ch.achievements.length} / ${defs.length} succès</span>${n ? `<button data-act="recompenses">${n} récompense${n > 1 ? 's' : ''} en attente</button>` : ''}</div>${list}`;
@@ -468,7 +468,7 @@ class Hud {
     this.shopTab = this.shopTab || 'buy';
     const render = () => {
       const ch = this.world.ch;
-      const tabs = `<div class="tabs"><button class="tab${this.shopTab === 'buy' ? ' on' : ''}" data-act="stab" data-tab="buy">Acheter</button><button class="tab${this.shopTab === 'sell' ? ' on' : ''}" data-act="stab" data-tab="sell">Vendre</button></div><p class="muted">Tu as ${ch.fils} Fils.</p>`;
+      const tabs = `<div class="tabs"><button class="tab${this.shopTab === 'buy' ? ' on' : ''}" data-act="stab" data-tab="buy">Acheter</button><button class="tab${this.shopTab === 'sell' ? ' on' : ''}" data-act="stab" data-tab="sell">Vendre</button></div><p class="muted">Tu as ${ch.fils} Dragmes.</p>`;
       if (this.shopTab === 'sell') {
         const entries = Object.entries(ch.inventory).map(([id, n]) => ({ def: Items.get(id), id, n })).filter(e => e.def);
         return tabs + (entries.map(e => `<div class="row item"><span><b>${esc(e.def.name)}</b> ×${e.n}</span><span class="btns"><button data-act="sell" data-id="${e.id}">Vendre 1 (${Items.sellPrice(e.def)} F)</button>${e.n > 1 ? `<button data-act="sellall" data-id="${e.id}" data-n="${e.n}">Tout (${Items.sellPrice(e.def) * e.n} F)</button>` : ''}</span></div>`).join('') || '<p class="muted">Rien à vendre.</p>');
@@ -490,14 +490,14 @@ class Hud {
       const fils = (act, n, lab) => `<button data-act="${act}" data-n="${n}"${n >= 1 ? '' : ' disabled'}>${lab}</button>`;
       const sac = trie(ch.inventory).map(([id, n]) => ligne(id, n, 'bdeposer', 'Déposer')).join('') || '<p class="muted">Ton sac est vide.</p>';
       const coffre = trie(c.items).map(([id, n]) => ligne(id, n, 'bretirer', 'Retirer')).join('') || '<p class="muted">Le coffre est vide.</p>';
-      return `<div class="banque"><section class="banque__col"><h4>Ton sac</h4><p class="banque__fils">${ch.fils} Fils <span class="btns">${fils('bdeposerfils', Math.min(100, ch.fils), 'Déposer 100')}${fils('bdeposerfils', ch.fils, 'Tout')}</span></p>${sac}</section>`
-        + `<section class="banque__col"><h4>Ton coffre</h4><p class="banque__fils">${c.fils} Fils <span class="btns">${fils('bretirerfils', Math.min(100, c.fils), 'Retirer 100')}${fils('bretirerfils', c.fils, 'Tout')}</span></p>${coffre}</section></div>`;
+      return `<div class="banque"><section class="banque__col"><h4>Ton sac</h4><p class="banque__fils">${ch.fils} Dragmes <span class="btns">${fils('bdeposerfils', Math.min(100, ch.fils), 'Déposer 100')}${fils('bdeposerfils', ch.fils, 'Tout')}</span></p>${sac}</section>`
+        + `<section class="banque__col"><h4>Ton coffre</h4><p class="banque__fils">${c.fils} Dragmes <span class="btns">${fils('bretirerfils', Math.min(100, c.fils), 'Retirer 100')}${fils('bretirerfils', c.fils, 'Tout')}</span></p>${coffre}</section></div>`;
     };
     this.actions.bdeposer = d => { this.world.deposer(d.id, Number(d.n)); };
     this.actions.bretirer = d => { this.world.retirer(d.id, Number(d.n)); };
     this.actions.bdeposerfils = d => { this.world.deposerFils(Number(d.n)); };
     this.actions.bretirerfils = d => { this.world.retirerFils(Number(d.n)); };
-    this.openPanel('dialogue', `La Banque du Fil, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
+    this.openPanel('dialogue', `La Banque de l'Aube, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
   openMarche(ctx) {
@@ -505,7 +505,7 @@ class Hud {
     this.marcheTab = this.marcheTab || 'acheter';
     const render = () => {
       const ch = this.world.ch;
-      const tabs = `<div class="tabs"><button class="tab${this.marcheTab === 'acheter' ? ' on' : ''}" data-act="mtab" data-tab="acheter">L'étal du jour</button><button class="tab${this.marcheTab === 'vendre' ? ' on' : ''}" data-act="mtab" data-tab="vendre">Vendre</button></div><p class="muted">Tu as ${ch.fils} Fils. ${esc(G.nom[0].toUpperCase() + G.nom.slice(1))}.</p>`;
+      const tabs = `<div class="tabs"><button class="tab${this.marcheTab === 'acheter' ? ' on' : ''}" data-act="mtab" data-tab="acheter">L'étal du jour</button><button class="tab${this.marcheTab === 'vendre' ? ' on' : ''}" data-act="mtab" data-tab="vendre">Vendre</button></div><p class="muted">Tu as ${ch.fils} Dragmes. ${esc(G.nom[0].toUpperCase() + G.nom.slice(1))}.</p>`;
       if (this.marcheTab === 'vendre') {
         const entries = Object.entries(ch.inventory).filter(([id]) => Marche.rachete(g, id)).map(([id, n]) => ({ def: Items.get(id), id, n })).sort((a, b) => a.def.name.localeCompare(b.def.name));
         const note = `<p class="muted">Le Marché paie mieux qu'un marchand ; le prix d'un objet baisse de ${Math.round(Marche.BAISSE * 100)} % à chaque vente du même objet aujourd'hui (jusqu'à la moitié) et revient demain.</p>`;
@@ -543,7 +543,7 @@ class Hud {
       const ch = this.world.ch;
       const lignes = Avis.liste().map(a => {
         const m = DATA.monsters[a.monstre] || { name: a.monstre, color: '#aaa' }, s = Avis.statut(ch, a.id), p = a.prime;
-        const prime = `${p.xp} XP, ${p.fils} Fils, ${p.sceaux} Sceau${p.sceaux > 1 ? 'x' : ''} de la Garde`;
+        const prime = `${p.xp} XP, ${p.fils} Dragmes, ${p.sceaux} Sceau${p.sceaux > 1 ? 'x' : ''} de la Garde`;
         const bouton = s === 'libre' ? `<button data-act="aprendre" data-id="${a.id}">Prendre l'avis</button>`
           : s === 'pris' ? `<button data-act="alacher" data-id="${a.id}">Renoncer</button>`
           : s === 'capture' ? `<button data-act="arendre" data-id="${a.id}" class="primary">Toucher la prime</button>`
@@ -598,7 +598,7 @@ class Hud {
     this.actions.tp = x => { this.closePanel(); this.world.teleport(x.id); };
     this.actions.relayCarte = () => this.openMapFromRelay();
     this.actions.relayVeille = () => this.openVeilleFromRelay();
-    this.openPanel('relay', 'Relais du Fil', `<p class="muted">Point de retour enregistré ici. Tu peux rejoindre un autre relais connu.</p>${rows}<div class="row center"><button data-act="relayCarte">Choisir sur la carte du monde</button>${this.veilleBouton ? this.veilleBouton() : ''}</div>`);
+    this.openPanel('relay', 'Relais de l\'Aube', `<p class="muted">Point de retour enregistré ici. Tu peux rejoindre un autre relais connu.</p>${rows}<div class="row center"><button data-act="relayCarte">Choisir sur la carte du monde</button>${this.veilleBouton ? this.veilleBouton() : ''}</div>`);
   }
 
   openDungeonPrompt(d) {
@@ -653,8 +653,8 @@ class Hud {
     let dungeon = '';
     if (r.dungeon) dungeon = r.dungeon.cleared ? `<p class="big">Donjon terminé : ${esc(r.dungeon.def.name)} !</p>${r.dungeon.turns ? `<p class="muted">En ${r.dungeon.turns} tours, toutes salles comprises.</p>` : ''}` : `<p class="muted">Salle suivante : ${esc(r.dungeon.def.rooms[r.dungeon.next].name)}</p>`;
     const html = r.victory
-      ? `<p class="big win">Victoire</p>${dungeon}<div class="row"><span>Expérience</span><b>+${r.gained} XP${r.levels ? ` · niveau ${ch.level} !` : ''}</b></div><div class="row"><span>Fils</span><b>+${r.fils}</b></div>${chal}${epr}${r.veille ? `<div class="row"><span>Veille du jour</span><b class="ok">${esc(r.veille)}</b></div>` : ''}${r.knots ? `<div class="row"><span>Nœuds noués : ${r.knots}</span><b class="ok">+${r.knots * DATA.rules.knotBonus} %</b></div>` : ''}${drops ? `<h4>Butin</h4><ul>${drops}</ul>` : '<p class="muted">Aucun butin cette fois.</p>'}${quests ? `<h4>Quêtes</h4><ul>${quests}</ul>` : ''}${(r.avis || []).length ? `<h4>Avis de recherche</h4><ul>${r.avis.map(a => `<li>${esc(a.nom)} capturé : la prime t'attend à la tour de la Garde, sur la Place du Relais.</li>`).join('')}</ul>` : ''}${achs ? `<ul>${achs}</ul>` : ''}`
-      : `<p class="big lose">Défaite</p><p>Tu reviens au Relais du Fil avec la moitié de tes PV.${this.world.ch.dungeon ? '' : ''}</p>`;
+      ? `<p class="big win">Victoire</p>${dungeon}<div class="row"><span>Expérience</span><b>+${r.gained} XP${r.levels ? ` · niveau ${ch.level} !` : ''}</b></div><div class="row"><span>Dragmes</span><b>+${r.fils}</b></div>${chal}${epr}${r.veille ? `<div class="row"><span>Veille du jour</span><b class="ok">${esc(r.veille)}</b></div>` : ''}${r.knots ? `<div class="row"><span>Nœuds noués : ${r.knots}</span><b class="ok">+${r.knots * DATA.rules.knotBonus} %</b></div>` : ''}${drops ? `<h4>Butin</h4><ul>${drops}</ul>` : '<p class="muted">Aucun butin cette fois.</p>'}${quests ? `<h4>Quêtes</h4><ul>${quests}</ul>` : ''}${(r.avis || []).length ? `<h4>Avis de recherche</h4><ul>${r.avis.map(a => `<li>${esc(a.nom)} capturé : la prime t'attend à la tour de la Garde, sur la Place du Relais.</li>`).join('')}</ul>` : ''}${achs ? `<ul>${achs}</ul>` : ''}`
+      : `<p class="big lose">Défaite</p><p>Tu reviens au Relais de l'Aube avec la moitié de tes PV.${this.world.ch.dungeon ? '' : ''}</p>`;
     this.actions.cont = () => this.closePanel();
     this.openPanel('fightEnd', r.victory ? 'Combat gagné' : 'Combat perdu', `${html}<div class="row center"><button data-act="cont" class="primary">Continuer</button></div>`);
   }
@@ -672,7 +672,7 @@ function rewardText(r) {
   r = r || {};
   const parts = [];
   if (r.xp) parts.push(`${r.xp} XP`);
-  if (r.fils) parts.push(`${r.fils} Fils`);
+  if (r.fils) parts.push(`${r.fils} Dragmes`);
   for (const it of r.items || []) { const d = Items.get(it.id); parts.push(`${d ? esc(d.name) : it.id}${it.count > 1 ? ' ×' + it.count : ''}`); }
   if (r.faction) parts.push(`${r.faction} points de faction`);
   if (r.marcheurs) parts.push('la confiance des Francs-Marcheurs');

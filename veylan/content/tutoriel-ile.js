@@ -1,7 +1,7 @@
 (DATA.modules = DATA.modules || {}).ervaneTutoriel = () => {
   if (DATA.tutorielIle) return;
   const allie = {
-    id: 'guide_varek', name: 'Varek', title: 'Relayeur du Fil', shape: 'pnj', look: 'garde', color: '#8a93a6',
+    id: 'guide_varek', name: 'Varek', title: 'Relayeur de l\'Aube', shape: 'pnj', look: 'garde', color: '#8a93a6',
     level: 1, hp: 70, pa: 6, pm: 3, initiative: 40, spells: ['lueur', 'eclat'], ai: 'ranged', summon: true, dmgMult: 0.45,
     desc: 'Ton guide. Il soigne ceux qui faiblissent et tire de loin.',
   };
@@ -89,8 +89,8 @@
         cue: { type: 'point', map: 'ervane_mailles_place', u: 209, v: 103 },
         until: [{ on: 'arrive', map: 'ervane_mailles_place', u: 209, v: 103, rayon: 1.5 }, { on: 'dialogue', npc: 'varek_ervane' }],
         saute: { quete: 'ervane_eveil' } },
-      { id: 'parler', say: 'Bien. Maintenant, **touche-moi** pour me parler : le Fil a une tâche pour toi.',
-        saySouris: 'Bien. Maintenant, **clique sur moi** pour me parler : le Fil a une tâche pour toi.',
+      { id: 'parler', say: 'Bien. Maintenant, **touche-moi** pour me parler : l\'Aube a une tâche pour toi.',
+        saySouris: 'Bien. Maintenant, **clique sur moi** pour me parler : l\'Aube a une tâche pour toi.',
         court: 'Un PNJ marqué d\'un {or|!} a une quête pour toi : touche-le.', courtSouris: 'Un PNJ marqué d\'un {or|!} a une quête pour toi : clique dessus.',
         cue: { type: 'pnj', npc: 'varek_ervane' },
         cueDialogue: ['.vy-replique[data-quete="ervane_eveil"]', '.vy-guide--dialogue [data-act="accepter"]'],
@@ -122,7 +122,7 @@
       ...combat,
 
       { id: 'victoire', attendre: { explore: true }, humeur: 'joie',
-        say: 'Bien joué, Veilleur ! Le Fil a eu raison de te remonter jusqu\'ici.', until: { on: 'suite' } },
+        say: 'Bien joué, Veilleur ! L\'Aube a eu raison de te monter jusqu\'ici.', until: { on: 'suite' } },
       ...niveau,
 
       { id: 'sac', say: 'Ce que tu gagnes va dans ton **sac**. Ouvre-le.',

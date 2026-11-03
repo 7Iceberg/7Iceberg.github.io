@@ -16,7 +16,7 @@
   };
   const ERREUR = /^(Impossible|Pas assez|Pas pendant|Trop loin|Il manque|Il faut|Aucun|Aucune|Rien à|Plus d'|Choisis)|ne (va|peut) pas|illisible|invalide|est fermée?\b|fermé pour/i;
   const ATTENTION = /^Attention|surcharg|abandonné|corrigée|marquée/i;
-  const SUCCES = /^(Code copié|Sauvegardé|Relais du Fil enregistré|Position sauvegardée|Ensemble|Caractéristiques enregistrées|Succès)|vendu :|terminé, à rendre|est arrivé|enregistrée?\.$/i;
+  const SUCCES = /^(Code copié|Sauvegardé|Relais de l'Aube enregistré|Position sauvegardée|Ensemble|Caractéristiques enregistrées|Succès)|vendu :|terminé, à rendre|est arrivé|enregistrée?\.$/i;
   const typeDe = texte => ERREUR.test(texte) ? 'erreur' : ATTENTION.test(texte) ? 'attention' : SUCCES.test(texte) ? 'succes' : 'info';
   const borne = (v, a, b, d) => (Number.isFinite(+v) ? Math.max(a, Math.min(b, Math.round(+v))) : d);
   const nf = n => Number(n).toLocaleString('fr-FR');
@@ -97,11 +97,11 @@
       const liste = objets.slice(0, 3).join(' · ') + (objets.length > 3 ? ` et ${objets.length - 3} autre${objets.length > 4 ? 's' : ''}` : '');
       const titre = d.source === 'quete' && !xp && !fils ? 'Objet de quête' : (SOURCES[d.source] || 'Gain');
       t.innerHTML = `<span class="vy-notif__ico">${ICONES.gain}</span><span class="vy-notif__texte"><small>${titre}</small>` +
-        (fils ? `<b class="vy-notif__fils">+${nf(fils)} <i>Fils</i></b>` : '') +
+        (fils ? `<b class="vy-notif__fils">+${nf(fils)} <i>Dragmes</i></b>` : '') +
         (xpCarte ? `<b class="vy-notif__xp">+${nf(xp)} XP</b>` : '') +
         (liste ? `<span class="vy-notif__objets"></span>` : '') + '</span>';
       if (liste) t.querySelector('.vy-notif__objets').textContent = liste;
-      t.setAttribute('aria-label', [titre, fils ? `${fils} Fils` : '', xpCarte ? `${xp} XP` : '', liste].filter(Boolean).join(', '));
+      t.setAttribute('aria-label', [titre, fils ? `${fils} Dragmes` : '', xpCarte ? `${xp} XP` : '', liste].filter(Boolean).join(', '));
       this.poserNotif(t, (r.duree + 1.2) * 1000);
     },
 

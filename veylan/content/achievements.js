@@ -3,7 +3,7 @@ const ACH = DATA.content.achievements;
 ACH.push({ id: 'premier_sang', name: 'Premier sang', desc: 'Gagner un combat.', cond: { type: 'fights', count: 1 }, rewards: { xp: 30, fils: 10 } });
 ACH.push({ id: 'dix_combats', name: 'Dix de tombés', desc: 'Gagner dix combats.', cond: { type: 'fights', count: 10 }, rewards: { xp: 120, fils: 30 } });
 ACH.push({ id: 'cinquante_combats', name: 'Cinquante de tombés', desc: 'Gagner cinquante combats.', cond: { type: 'fights', count: 50 }, rewards: { xp: 500, fils: 100, title: 'Batailleur' } });
-ACH.push({ id: 'deux_cents_combats', name: 'Deux cents de tombés', desc: 'Gagner deux cents combats.', cond: { type: 'fights', count: 200 }, rewards: { xp: 2000, fils: 400, title: 'Vétéran des Voiles' } });
+ACH.push({ id: 'deux_cents_combats', name: 'Deux cents de tombés', desc: 'Gagner deux cents combats.', cond: { type: 'fights', count: 200 }, rewards: { xp: 2000, fils: 400, title: 'Vétéran des Cimes' } });
 
 ACH.push({ id: 'chasseur_de_pilous', name: 'Chasseur de Glyms', desc: 'Vaincre vingt-cinq Glyms Ancestraux.', cond: { type: 'kills', monster: 'pilou', count: 25 }, rewards: { xp: 100, fils: 25 } });
 ACH.push({ id: 'fleau_des_pilous', name: 'Fléau des Glyms', desc: 'Vaincre cent Glyms Ancestraux. Les lanternes des Cimes respirent.', cond: { type: 'kills', monster: 'pilou', count: 100 }, rewards: { xp: 400, fils: 80, title: 'Fléau des Glyms' } });
@@ -28,7 +28,7 @@ ACH.push({ id: 'niveau_30', name: 'Trempé à la forge', desc: 'Atteindre le niv
 ACH.push({ id: 'donjon_grenier', name: 'Tout le monde descend du grenier', desc: 'Terminer le Grenier des Glyms.', cond: { type: 'dungeon', dungeon: 'grenier_des_pilous' }, rewards: { xp: 150, fils: 30 } });
 ACH.push({ id: 'defi_grenier', name: 'Bonk', desc: 'Faire lâcher sa lanterne au Glym Chapardeur trois fois, en le frappant au contact.', cond: { type: 'feat', key: 'lanterne_reprise', count: 3 }, rewards: { xp: 200, fils: 40, title: 'Repreneur de lanternes' } });
 ACH.push({ id: 'donjon_voliere', name: 'Toutes les cages ouvertes', desc: 'Terminer la Volière des Kavous.', cond: { type: 'dungeon', dungeon: 'voliere_des_kavous' }, rewards: { xp: 600, fils: 100 } });
-ACH.push({ id: 'boss_kavou_prisme', name: 'Toutes les couleurs du Voile', desc: 'Vaincre le Kavou Prisme, quelle que soit sa couleur du moment.', cond: { type: 'boss', monster: 'kavou_prisme' }, rewards: { xp: 500, fils: 90, title: 'Œil du Prisme' } });
+ACH.push({ id: 'boss_kavou_prisme', name: 'Toutes les couleurs du ciel', desc: 'Vaincre le Kavou Prisme, quelle que soit sa couleur du moment.', cond: { type: 'boss', monster: 'kavou_prisme' }, rewards: { xp: 500, fils: 90, title: 'Œil du Prisme' } });
 ACH.push({ id: 'donjon_nid', name: 'Le Nid défait', desc: 'Terminer le Nid des Toiles.', cond: { type: 'dungeon', dungeon: 'nid_des_toiles' }, rewards: { xp: 600, fils: 100 } });
 ACH.push({ id: 'defi_nid', name: 'Deux fils, un seul tour', desc: 'Déchirer trois fois le cocon de la Fileuse en coupant ses deux fils d\'ancrage le même tour.', cond: { type: 'feat', key: 'cocon_dechire', count: 3 }, rewards: { xp: 500, fils: 90, title: 'Coupe-Fil' } });
 ACH.push({ id: 'donjon_terrier', name: 'Au fond du Terrier', desc: 'Terminer le Terrier du Grand Grouk.', cond: { type: 'dungeon', dungeon: 'terrier_du_grand_grouk' }, rewards: { xp: 800, fils: 150 } });
@@ -51,7 +51,7 @@ ACH.push({ id: 'defis_200', name: 'Maître des Défis', desc: 'Réussir deux cen
 
 ACH.push({ id: 'cinq_quetes', name: 'Rendre service', desc: 'Terminer cinq quêtes.', cond: { type: 'quests', count: 5 }, rewards: { xp: 100, fils: 30 } });
 ACH.push({ id: 'quinze_quetes', name: 'Homme de confiance', desc: 'Terminer quinze quêtes.', cond: { type: 'quests', count: 15 }, rewards: { xp: 500, fils: 100 } });
-ACH.push({ id: 'trente_quetes', name: 'Bras du Fil', desc: 'Terminer trente quêtes.', cond: { type: 'quests', count: 30 }, rewards: { xp: 1500, fils: 300, title: 'Bras du Fil' } });
+ACH.push({ id: 'trente_quetes', name: 'Bras de l\'Aube', desc: 'Terminer trente quêtes.', cond: { type: 'quests', count: 30 }, rewards: { xp: 1500, fils: 300, title: 'Bras de l\'Aube' } });
 
 ACH.push({ id: 'dix_cartes', name: 'Promeneur', desc: 'Visiter dix cartes.', cond: { type: 'maps', count: 10 }, rewards: { xp: 80, fils: 20 } });
 ACH.push({ id: 'vingt_cinq_cartes', name: 'Arpenteur', desc: 'Visiter vingt-cinq cartes.', cond: { type: 'maps', count: 25 }, rewards: { xp: 400, fils: 80, title: 'Arpenteur' } });
@@ -67,15 +67,15 @@ ACH.push({ id: 'cinquante_fabrications', name: 'Compagnon', desc: 'Fabriquer cin
 ACH.push({ id: 'vingt_recoltes', name: 'Cueilleur', desc: 'Récolter vingt fois.', cond: { type: 'gather', count: 20 }, rewards: { xp: 80, fils: 20 } });
 ACH.push({ id: 'cent_recoltes', name: 'Récolteur', desc: 'Récolter cent fois.', cond: { type: 'gather', count: 100 }, rewards: { xp: 500, fils: 100 } });
 
-ACH.push({ id: 'mille_fils', name: 'Pelote', desc: 'Amasser mille Fils.', cond: { type: 'fils', count: 1000 }, rewards: { xp: 200, fils: 50 } });
-ACH.push({ id: 'dix_mille_fils', name: 'Bobine', desc: 'Amasser dix mille Fils.', cond: { type: 'fils', count: 10000 }, rewards: { xp: 1000, fils: 200, title: 'Tisseur de Fils' } });
+ACH.push({ id: 'mille_fils', name: 'Bourse pleine', desc: 'Amasser mille Dragmes.', cond: { type: 'fils', count: 1000 }, rewards: { xp: 200, fils: 50 } });
+ACH.push({ id: 'dix_mille_fils', name: 'Coffre plein', desc: 'Amasser dix mille Dragmes.', cond: { type: 'fils', count: 10000 }, rewards: { xp: 1000, fils: 200, title: 'Grand Argentier' } });
 
 {
 const SERIE_ECAILLES = ['orsane_questions_de_kelthar', 'orsane_visages_des_cimes', 'orsane_legende_d_ithren', 'orsane_gueule_du_glouton', 'orsane_destination_toiles'];
 const SERIE_PORTE = ['porte_mise_a_l_epreuve', 'porte_champs_de_bataille', 'porte_coups_d_epee_dans_l_eau', 'porte_decime_des_grouks', 'porte_chasse_aux_chapardeurs', 'porte_lecon_d_humilite', 'porte_tissefils_en_marche'];
 const SERIE_ATELIERS = ['ateliers_produits_des_cimes', 'ateliers_metier_des_veilleurs', 'ateliers_la_hache_et_le_burin', 'ateliers_marcheur_un_jour', 'ateliers_preparation_au_combat'];
 const SERIE_REMUE = ['remue_galette_de_brann', 'remue_mort_aux_glymets', 'remue_secret_du_grenier', 'remue_un_peu_de_pigment'];
-ACH.push({ id: 'chemin_des_ecailles', name: 'Le chemin des Écailles', desc: 'Suivre la piste d\'Ithren, des questions de Kelthar jusqu\'aux Toiles.', cond: { type: 'questline', quests: SERIE_ECAILLES }, rewards: { xp: 1200, fils: 150 } });
+ACH.push({ id: 'chemin_des_ecailles', name: 'Le chemin des Marques', desc: 'Suivre la piste d\'Ithren, des questions de Kelthar jusqu\'aux Toiles.', cond: { type: 'questline', quests: SERIE_ECAILLES }, rewards: { xp: 1200, fils: 150 } });
 ACH.push({ id: 'service_de_la_porte', name: 'Les missions de la Porte', desc: 'Accomplir les sept missions d\'Orvak, du regard d\'Ilsa à la Corniche qui grouille.', cond: { type: 'questline', quests: SERIE_PORTE }, rewards: { xp: 1000, fils: 120 } });
 ACH.push({ id: 'mains_des_ateliers', name: 'Les mains des ateliers', desc: 'Apprendre les ateliers avec Thila, de la première fournée à la masse du Grenier.', cond: { type: 'questline', quests: SERIE_ATELIERS }, rewards: { xp: 700, fils: 100 } });
 ACH.push({ id: 'remue_menage_aux_cimes', name: 'Petits services des Cimes', desc: 'Rendre service à l\'auberge, au peintre et aux archives.', cond: { type: 'questline', quests: SERIE_REMUE }, rewards: { xp: 600, fils: 90 } });

@@ -24,7 +24,7 @@ const KIND = slot => ({ kind: slot === 'arme' ? 'weapon' : 'equip', slot: slot.s
 const GAUCHE = ['amulette', 'anneau1', 'anneau2', 'ceinture'];
 const DROITE = ['coiffe', 'cape', 'arme', 'bottes'];
 const MAX_ENSEMBLES = 6;
-const ECAILLES = ['Écaille d\'Aïven', 'Écaille de Durren', 'Écaille de Morrha', 'Écaille d\'Iskar', 'Écaille de Nohra', 'Écaille d\'Aube'];
+const ECAILLES = ['Marque d\'Aïven', 'Marque de Durren', 'Marque de Morrha', 'Marque d\'Iskar', 'Marque de Nohra', 'Marque d\'Aube'];
 
 const portable = d => d.kind === 'equip' || d.kind === 'weapon';
 const ONGLETS = [
@@ -184,7 +184,7 @@ Object.assign(Hud.prototype, {
       <div class="vy-inv__col">${col(DROITE)}</div>
       <div class="vy-inv__rangee">
         <div class="vy-inv__groupe"><div class="vy-inv__noeuds" title="Nœuds noués : chacun durcit les combats et ajoute ${DATA.rules.knotBonus} % d'XP et de butin">${noeuds.join('')}</div><small>Nœuds ${actifs.length} / ${DATA.rules.maxKnots}</small></div>
-        <div class="vy-inv__groupe"><div class="vy-inv__ecailles">${ecailles}</div><small>Écailles · <span class="vy-bientot">bientôt</span></small></div>
+        <div class="vy-inv__groupe"><div class="vy-inv__ecailles">${ecailles}</div><small>Marques · <span class="vy-bientot">bientôt</span></small></div>
       </div>
     </section>`;
   },
@@ -274,7 +274,7 @@ Object.assign(Hud.prototype, {
     }
     if (d.kind === 'consumable') {
       if (d.sub === 'pain') L.push(li(`${Hud.pic('pv', 15)}Rend`, `${d.heal} PV`));
-      if (d.sub === 'potion') L.push(d.heal ? li(`${Hud.pic('pv', 15)}Rend`, 'tous les PV') : li('Ramène au dernier Relais du Fil'));
+      if (d.sub === 'potion') L.push(d.heal ? li(`${Hud.pic('pv', 15)}Rend`, 'tous les PV') : li('Ramène au dernier Relais de l\'Aube'));
       if (d.sub === 'parchemin') L.push(li(`${picStat(d.stat)}${Items.STAT_LABEL[d.stat]} de base, gratuits`, `+${d.value}`));
     }
     if (d.kind === 'knot') {
@@ -337,7 +337,7 @@ Object.assign(Hud.prototype, {
       if (d.node) L.push(li('Se récolte', 'sur les cartes'));
     }
     L.push(li('Poids', `${Items.poids(d)} pod${Items.poids(d) > 1 ? 's' : ''}`));
-    L.push(li('Revente', `${Items.sellPrice(d)} Fils, chez un marchand`));
+    L.push(li('Revente', `${Items.sellPrice(d)} Dragmes, chez un marchand`));
     return `<ul class="vy-inv__liste">${L.join('')}</ul>`;
   },
 
@@ -368,7 +368,7 @@ Object.assign(Hud.prototype, {
     else if (d.kind === 'knot') B.push(principal('nouer', e.noue ? 'Dénouer' : 'Nouer', `data-id="${d.id}"`));
     if (e.de === 'sac') {
       B.push('<span class="vy-inv__espace"></span>');
-      if (this.invMarchand()) B.push(icone('vendre', ICO.vendre, `Vendre 1 pour ${Items.sellPrice(d)} Fils`, `data-id="${d.id}"`));
+      if (this.invMarchand()) B.push(icone('vendre', ICO.vendre, `Vendre 1 pour ${Items.sellPrice(d)} Dragmes`, `data-id="${d.id}"`));
       B.push(icone('detruire', ICO.corbeille, 'Détruire', `data-id="${d.id}"`, 'vy-bouton--danger'));
     }
     return B.join('');
@@ -476,7 +476,7 @@ Object.assign(Hud.prototype, {
       <footer class="vy-inv__pied">
         <span class="vy-inv__pages"><button class="vy-inv__page" data-act="page" data-sens="-1" ${s.page > 0 ? '' : 'disabled'} aria-label="Page précédente">${ICO.precedent}</button><b>${s.page + 1} / ${pages}</b><button class="vy-inv__page" data-act="page" data-sens="1" ${s.page < pages - 1 ? '' : 'disabled'} aria-label="Page suivante">${ICO.suivant}</button></span>
         <span class="vy-inv__pods${etatPods}" title="Poids : ${nf(pods)} sur ${nf(max)} (1000, plus 5 par point de Terra). ${total} objet${total > 1 ? 's' : ''}.${part > 1 ? ' Surchargé : tu ne peux plus marcher.' : ''}" role="meter" aria-label="Poids" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${pods}">${ICO.pods}<span class="vy-inv__pods-jauge"><i style="width:${Math.min(100, part * 100).toFixed(1)}%"></i></span><b>${nf(pods)}</b><small>/ ${nf(max)}</small></span>
-        <span class="vy-inv__fils" title="Les Fils, la monnaie de Veylan">${ICO.fils}<b>${nf(ch.fils)}</b> Fils</span>
+        <span class="vy-inv__fils" title="Les Dragmes, la monnaie de Veylan">${ICO.fils}<b>${nf(ch.fils)}</b> Dragmes</span>
       </footer>`;
   },
 
@@ -589,7 +589,7 @@ Object.assign(Hud.prototype, {
     if (!this.invMarchand() || !this.invGarde()) return false;
     const d = Items.get(id);
     if (!this.world.sell(id, 1)) return false;
-    this.toast(`${d.name} vendu : +${Items.sellPrice(d)} Fils.`);
+    this.toast(`${d.name} vendu : +${Items.sellPrice(d)} Dragmes.`);
     return true;
   },
 

@@ -77,7 +77,7 @@ Object.assign(Hud.prototype, {
           ? `<span class="vy-case" data-rarete="${Items.rarity(d)}" title="${esc(d.name)}${it.count > 1 ? ' ×' + it.count : ''}"><span class="vy-case__icone">${Hud.picto(d)}</span>${it.count > 1 ? `<span class="vy-case__nombre">${it.count}</span>` : ''}</span>`
           : '<span class="vy-case vy-case--vide" aria-hidden="true"></span>');
       }
-      const gains = [r.xp ? `<span class="vy-recompense__xp"><b>${nf(r.xp)}</b> XP</span>` : '', r.fils ? `<span class="vy-recompense__fils"><b>${nf(r.fils)}</b> Fils</span>` : ''].join('');
+      const gains = [r.xp ? `<span class="vy-recompense__xp"><b>${nf(r.xp)}</b> XP</span>` : '', r.fils ? `<span class="vy-recompense__fils"><b>${nf(r.fils)}</b> Dragmes</span>` : ''].join('');
       return `<li class="vy-recompense" data-id="${a.id}">
         <div class="vy-recompense__tete"><b class="vy-recompense__nom">${esc(a.name)}</b><span class="vy-recompense__cat">${Achievements.category(a)}</span></div>
         <div class="vy-recompense__corps"><div class="vy-recompense__cases" role="list" aria-label="Objets">${cases.join('')}</div>
@@ -88,7 +88,7 @@ Object.assign(Hud.prototype, {
     }).join('');
     const n = list.length;
     return `<div class="vy-recompenses">
-      ${n ? `<ul class="vy-recompenses__liste" data-defile="recompenses">${rows}</ul>` : '<p class="vy-recompenses__vide">Aucune récompense en attente. Chaque succès débloqué dépose ici son XP, ses Fils et ses objets.</p>'}
+      ${n ? `<ul class="vy-recompenses__liste" data-defile="recompenses">${rows}</ul>` : '<p class="vy-recompenses__vide">Aucune récompense en attente. Chaque succès débloqué dépose ici son XP, ses Dragmes et ses objets.</p>'}
       <footer class="vy-recompenses__pied"><span class="vy-recompenses__reste">${n ? `${n} récompense${n > 1 ? 's' : ''} restante${n > 1 ? 's' : ''}` : 'Tout est remis.'}</span>
         ${combat ? '<span class="muted">Pas pendant un combat.</span>' : ''}
         <button class="vy-bouton vy-bouton--primaire" data-act="toutAccepter" ${n && !combat ? '' : 'disabled'}>Tout accepter</button></footer>
@@ -111,10 +111,10 @@ Object.assign(Hud.prototype, {
     const objets = [];
     for (const g of list) for (const it of g.items) { const d = Items.get(it.id); if (d) objets.push(d.name + (it.count > 1 ? ' ×' + it.count : '')); }
     if (xp) this.chat('gain', `Tu as gagné ${nf(xp)} points d'expérience.`);
-    if (fils) this.chat('gain', `Tu as obtenu ${nf(fils)} Fils.`);
+    if (fils) this.chat('gain', `Tu as obtenu ${nf(fils)} Dragmes.`);
     for (const o of objets) this.chat('gain', `Tu as obtenu ${o}.`);
     const levels = list.reduce((s, g) => s + g.levels, 0);
-    const quoi = [xp ? `+${nf(xp)} XP` : '', fils ? `+${nf(fils)} Fils` : ''].concat(objets).filter(Boolean).join(', ');
+    const quoi = [xp ? `+${nf(xp)} XP` : '', fils ? `+${nf(fils)} Dragmes` : ''].concat(objets).filter(Boolean).join(', ');
     this.toast(`${list.length > 1 ? `${list.length} récompenses` : list[0].achievement.name} : ${quoi || 'remis'}${levels ? ` · niveau ${this.world.ch.level} !` : ''}`);
     this.majCoffre();
   },
