@@ -235,9 +235,22 @@ const IleSol = (() => {
       vec4 pieA = texture2D(etatCases, tcA + vec2(3.0 / 64.0, 0.0));
       float sorteA = floor(genA.r * 255.0 + 0.5);
       float drapA = floor(genA.g * 255.0 + 0.5);
+      float drapB = floor(genA.a * 255.0 + 0.5);
       vec2 cA = abs(fA - 0.5);
       float mA = max(cA.x, cA.y);
       float wA = traitU;
+      // Les drapeaux (js/ile-arene.js, majCases) : le survol, le chemin, la respiration, l'arrivée du
+      // chemin, puis ses côtés (+x, -x, +y, -y) ; dans le second octet, la ligne de vue coupée et la cible.
+      float fSurvol = mod(drapA, 2.0), fChemin = mod(floor(drapA / 2.0), 2.0), fRespire = mod(floor(drapA / 4.0), 2.0), fArrivee = mod(floor(drapA / 8.0), 2.0);
+      float cPx = mod(floor(drapA / 16.0), 2.0), cMx = mod(floor(drapA / 32.0), 2.0), cPy = mod(floor(drapA / 64.0), 2.0), cMy = mod(floor(drapA / 128.0), 2.0);
+      float fCoupe = mod(drapB, 2.0), fCible = mod(floor(drapB / 2.0), 2.0);
+      // La case : un carré aux coins arrondis (rayon 0,11 u), en retrait d'un pixel et demi du bord,
+      // par sa distance signée ; dedans le remplit, lisere est son trait d'un pixel.
+      float rA = 0.11, inA = wA * 1.5;
+      vec2 qq = cA - vec2(0.5 - inA - rA);
+      float dA = length(max(qq, 0.0)) + min(max(qq.x, qq.y), 0.0) - rA;
+      float dedans = 1.0 - smoothstep(-wA * 0.6, wA * 0.6, dA);
+      float lisere = 1.0 - smoothstep(wA * 0.4, wA * 1.3, abs(dA));
       if (tactiqueSol > 0.5) {
         // La vue tactique : un damier d'ardoise ; l'eau, le vide, les obstacles en pierre sombre.
         vec3 ardA = mod(celA.x + celA.y, 2.0) > 0.5 ? vec3(0.231, 0.263, 0.337) : vec3(0.204, 0.231, 0.302);
@@ -250,19 +263,33 @@ const IleSol = (() => {
           float tbA = 1.0 - smoothstep(wA * 0.6, wA * 1.4, abs(mA - 0.47));
           gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.788, 0.651, 0.42), 0.35 * tbA * aireOn);
         }
-      } else if (sorteA < 0.5) {
-        float lgA = smoothstep(0.5 - wA * 1.1, 0.5 - wA * 0.1, mA);
-        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.04, 0.05, 0.08), 0.32 * lgA * aireOn);
+      } else {
+        // La grille (réglage « Afficher la grille ») : un filet sombre au bord des cases de sol.
+        if (sorteA < 0.5 && grilleSol > 0.5) {
+          float lgA = smoothstep(0.5 - wA * 1.1, 0.5 - wA * 0.1, mA);
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.04, 0.05, 0.08), 0.32 * lgA * aireOn);
+        }
+        // Un obstacle (rocher, souche, borne : sorte 1) : sa case hachurée d'ardoise et cernée de
+        // pierre claire, lisible même derrière l'objet qui la porte ; l'eau et les trous (2, 3) : un
+        // liseré sombre.
+        if (sorteA > 0.5 && sorteA < 1.5) {
+          float hachA = step(0.5, fract((fA.x + fA.y) * 5.0));
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.05, 0.06, 0.09), (0.2 + 0.18 * hachA) * dedans * aireOn);
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.64, 0.62, 0.56), 0.5 * lisere * aireOn);
+        } else if (sorteA > 1.5) {
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.03, 0.04, 0.07), 0.35 * lisere * aireOn);
+        }
       }
-      float poulsA = mod(drapA, 8.0) > 3.5 ? 0.72 + 0.28 * sin(tempsSol / 0.34) : 1.0;
+      float poulsA = fRespire > 0.5 ? 0.72 + 0.28 * sin(tempsSol / 0.34) : 1.0;
       if (remA.a > 0.0) {
-        float dansA = 1.0 - smoothstep(0.47 - wA * 0.5, 0.47 + wA * 0.5, mA);
-        gl_FragColor.rgb = mix(gl_FragColor.rgb, remA.rgb, remA.a * dansA * aireOn * poulsA);
+        // Le remplissage : plus dense vers le bord (un verre éclairé par la tranche), doux au centre ;
+        // hachuré quand la ligne de vue est coupée.
+        float bordA = 0.55 + 0.45 * smoothstep(-0.22, 0.0, dA);
+        float fondA = remA.a * dedans * bordA * aireOn * poulsA;
+        if (fCoupe > 0.5) fondA *= 0.5 + 0.5 * step(0.5, fract((fA.x - fA.y) * 5.0));
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, remA.rgb, fondA);
       }
-      if (traA.a > 0.0) {
-        float ttA = 1.0 - smoothstep(wA * 0.6, wA * 1.3, abs(mA - 0.47));
-        gl_FragColor.rgb = mix(gl_FragColor.rgb, traA.rgb, traA.a * ttA * aireOn * poulsA);
-      }
+      if (traA.a > 0.0) gl_FragColor.rgb = mix(gl_FragColor.rgb, traA.rgb, traA.a * lisere * aireOn * poulsA);
       if (pieA.a > 0.0) {
         // Un piège du Veilleur : une croix de la couleur de son élément, cernée de sombre.
         float extA = max(cA.x, cA.y), brasA = min(cA.x, cA.y);
@@ -271,17 +298,39 @@ const IleSol = (() => {
         gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.0), 0.5 * foA * aireOn);
         gl_FragColor.rgb = mix(gl_FragColor.rgb, pieA.rgb, clA * aireOn);
       }
-      if (mod(drapA, 4.0) > 1.5) {
-        // Le chemin : un point blanc cerné de sombre au milieu de la case.
-        float dpA = length(fA - 0.5);
-        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.0), 0.4 * (1.0 - smoothstep(wA * 3.5, wA * 4.5, dpA)) * aireOn);
-        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(1.0), 0.9 * (1.0 - smoothstep(wA * 2.4, wA * 3.2, dpA)) * aireOn);
+      if (fChemin > 0.5) {
+        // Le chemin : un trait clair cerné de sombre, du centre de la case vers chacun de ses côtés
+        // sur le chemin (un fil continu des pieds de l'acteur à la case visée), un point à chaque
+        // centre ; la case d'arrivée porte un anneau.
+        vec2 pA = fA - 0.5;
+        float dpA = length(pA), dTrait = dpA;
+        if (cPx > 0.5 && pA.x > 0.0) dTrait = min(dTrait, abs(pA.y));
+        if (cMx > 0.5 && pA.x < 0.0) dTrait = min(dTrait, abs(pA.y));
+        if (cPy > 0.5 && pA.y > 0.0) dTrait = min(dTrait, abs(pA.x));
+        if (cMy > 0.5 && pA.y < 0.0) dTrait = min(dTrait, abs(pA.x));
+        float ombreT = 1.0 - smoothstep(wA * 1.8, wA * 2.8, dTrait);
+        float clairT = 1.0 - smoothstep(wA * 0.7, wA * 1.5, dTrait);
+        if (fArrivee > 0.5) {
+          float dAnn = abs(dpA - 0.21);
+          ombreT = max(ombreT, 1.0 - smoothstep(wA * 1.6, wA * 2.6, dAnn));
+          clairT = max(clairT, 1.0 - smoothstep(wA * 0.6, wA * 1.4, dAnn));
+          ombreT = max(ombreT, 1.0 - smoothstep(wA * 2.6, wA * 3.6, dpA));
+          clairT = max(clairT, 1.0 - smoothstep(wA * 1.4, wA * 2.2, dpA));
+        }
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.0, 0.02, 0.05), 0.5 * ombreT * aireOn);
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.9, 1.0, 1.0), 0.95 * clairT * aireOn);
       }
-      if (mod(drapA, 2.0) > 0.5) {
-        // Le survol : le bord de la case, blanc sur un halo bleu.
-        float dbA = 0.5 - mA;
-        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.0, 0.761, 1.0), 0.35 * (1.0 - smoothstep(wA * 3.0, wA * 4.0, dbA)) * aireOn);
-        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(1.0), 0.95 * (1.0 - smoothstep(wA * 1.3, wA * 2.1, dbA)) * aireOn);
+      if (fCible > 0.5) {
+        // Le combattant visé (sa case survolée, ou son portrait) : un anneau d'or qui respire.
+        float dCi = abs(length(fA - 0.5) - (0.36 + 0.03 * sin(tempsSol * 5.0)));
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.0), 0.4 * (1.0 - smoothstep(wA * 2.0, wA * 3.0, dCi)) * aireOn);
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(1.0, 0.9, 0.6), 0.95 * (1.0 - smoothstep(wA * 1.0, wA * 2.0, dCi)) * aireOn);
+      }
+      if (fSurvol > 0.5) {
+        // Le survol : le trait de la case en blanc, sur un halo bleu.
+        float dbA = abs(dA);
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.0, 0.761, 1.0), 0.45 * (1.0 - smoothstep(wA * 1.5, wA * 3.5, dbA)) * aireOn);
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(1.0), 0.95 * (1.0 - smoothstep(wA * 0.5, wA * 1.4, dbA)) * aireOn);
       }
     }
   }`;
@@ -299,7 +348,7 @@ const IleSol = (() => {
       // pixel en u (les traits gardent leur épaisseur à l'écran), le temps (les cases qui
       // respirent), la vue tactique.
       aireOn: { value: 0 }, aireO: { value: new THREE.Vector2(0, 0) }, etatCases: { value: null },
-      tempsSol: { value: 0 }, traitU: { value: 0.05 }, tactiqueSol: { value: 0 },
+      tempsSol: { value: 0 }, traitU: { value: 0.05 }, tactiqueSol: { value: 0 }, grilleSol: { value: 1 },
     };
     const tableau = !!tex.matieres;
     const fabriquer = bord => {
@@ -314,7 +363,7 @@ const IleSol = (() => {
 varying vec3 vMonde;
 uniform sampler2D poids1; uniform sampler2D poids2; uniform sampler2D teinteIle; uniform sampler2D lueurIle; uniform sampler2D grainSol;
 uniform vec2 tailleIle; uniform float forceLueur; uniform float reperage; uniform vec3 moyennes[6];
-uniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol;
+uniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol;
 ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
           .replace('#include <map_fragment>', `
   vec2 bruitSol = texture2D(grainSol, vMonde.xz / 5.3).rg - 0.5;
@@ -350,7 +399,7 @@ ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
   // Le sol d'une salle de donjon (js/ile-salle.js) : la toile peinte des dalles, le modelé en aplats
   // et la grille du combat par-dessus, avec les mêmes uniformes que le sol de l'île. Rend { sol, uniforms }.
   function materiauSalle(THREE, texSol, rampe) {
-    const uniforms = { aireOn: { value: 0 }, aireO: { value: new THREE.Vector2(0, 0) }, etatCases: { value: null }, tempsSol: { value: 0 }, traitU: { value: 0.05 }, tactiqueSol: { value: 0 } };
+    const uniforms = { aireOn: { value: 0 }, aireO: { value: new THREE.Vector2(0, 0) }, etatCases: { value: null }, tempsSol: { value: 0 }, traitU: { value: 0.05 }, tactiqueSol: { value: 0 }, grilleSol: { value: 1 } };
     const m = new THREE.MeshToonMaterial({ color: 0xffffff, map: texSol, gradientMap: rampe, side: THREE.DoubleSide });
     m.onBeforeCompile = sh => {
       Object.assign(sh.uniforms, uniforms);
@@ -358,7 +407,7 @@ ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
         .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;')
         .replace('#include <project_vertex>', '#include <project_vertex>\nvMonde = (modelMatrix * vec4(transformed, 1.0)).xyz;');
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;\nuniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol;')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;\nuniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol;')
         .replace('#include <fog_fragment>', '#include <fog_fragment>\n' + GRILLE);
     };
     m.customProgramCacheKey = () => 'ile-sol-salle';
@@ -378,7 +427,7 @@ ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
         .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;')
         .replace('#include <project_vertex>', '#include <project_vertex>\nvMonde = (modelMatrix * vec4(transformed, 1.0)).xyz;');
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;\nuniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol;')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;\nuniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol;')
         .replace('#include <fog_fragment>', '#include <fog_fragment>\n' + GRILLE);
     };
     materiau.customProgramCacheKey = () => 'ile-sol-grille-' + (materiau.vertexColors ? 'c' : 'u') + (materiau.map ? 't' : '') + (cle ? '/' + cle.call(materiau) : '');

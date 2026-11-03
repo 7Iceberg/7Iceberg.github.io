@@ -235,30 +235,45 @@ void main() {
       D[o + 8] = this.map.cells[y][x];
       const h = this.ile.hauteur(this.x0 + x + 0.5, this.y0 + y + 0.5);
       D[o + 10] = Number.isFinite(h) ? Math.max(0, Math.min(255, Math.round(128 + (h - (this.hMoy || 0)) * 32))) : 128;
-      D[o + 11] = 255;
+      D[o + 11] = 0;
     }
 
     // ----- L'état des cases -----
 
     // Les surbrillances de l'interface et l'état du combat dans la texture lue par le sol : même
-    // priorité et mêmes couleurs que RendererGL.updateCells. Refaite seulement quand sa signature change.
+    // priorité et mêmes couleurs que RendererGL.updateCells. Refaite seulement quand sa signature
+    // change. Le texel 2 porte, en vert, les drapeaux de la case (1 le survol, 2 le chemin, 4 la
+    // respiration, 8 l'arrivée du chemin, 16 à 128 les côtés du chemin vers +x, -x, +y, -y) et, en
+    // alpha, la ligne de vue coupée (1) et la cible visée (2) : le sol trace le chemin en fil continu
+    // depuis les pieds de l'acteur, hachure les cases sans ligne de vue, cerne la cible d'un anneau.
     majCases(H, cb) {
       if (this.etat !== 'ouverte') return;
       const m = this.map, placement = cb.phase === 'placement';
       const traps = (cb.traps || []).filter(t => t.owner && t.owner.team === 'player');
       const hv = H.hover && Grid.inBounds(m, H.hover.x, H.hover.y) ? H.hover : null;
-      const chemin = H.path || [];
-      const sig = [placement ? 1 : 0, [...H.move].join(','), [...H.range].join(','), [...H.blocked].join(','), [...H.aoe].join(','), [...cb.temp.keys()].map(k => k + cb.temp.get(k).kind).join(','), traps.map(t => t.x + ',' + t.y + t.element).join(';'), hv ? hv.x + ',' + hv.y : '', chemin.map(p => p.x + ',' + p.y).join(';')].join('|');
+      const chemin = H.path && H.path.length && cb.actor ? [{ x: cb.actor.x, y: cb.actor.y }].concat(H.path) : [];
+      const cible = H.cible != null ? cb.entities.find(e => e.id === H.cible && e.alive) : null;
+      const sig = [placement ? 1 : 0, [...H.move].join(','), [...H.range].join(','), [...H.blocked].join(','), [...H.aoe].join(','), [...cb.temp.keys()].map(k => k + cb.temp.get(k).kind).join(','), traps.map(t => t.x + ',' + t.y + t.element).join(';'), hv ? hv.x + ',' + hv.y : '', chemin.map(p => p.x + ',' + p.y).join(';'), cible ? cible.x + ',' + cible.y : ''].join('|');
       this.majRochers(cb);
       if (sig === this.sig) return;
       this.sig = sig;
       const D = this.donnees;
       D.fill(0);
-      const sur = new Set(chemin.map(p => Grid.key(p.x, p.y)));
+      // Les côtés du chemin : chaque case et ses voisines sur le chemin ; la dernière est l'arrivée.
+      const cotes = new Map();
+      for (let i = 0; i < chemin.length; i++) {
+        const p = chemin[i], k = Grid.key(p.x, p.y);
+        let b = 2 | (i === chemin.length - 1 ? 8 : 0);
+        for (const q of [chemin[i - 1], chemin[i + 1]]) {
+          if (!q) continue;
+          if (q.x === p.x + 1) b |= 16; else if (q.x === p.x - 1) b |= 32; else if (q.y === p.y + 1) b |= 64; else if (q.y === p.y - 1) b |= 128;
+        }
+        cotes.set(k, (cotes.get(k) || 0) | b);
+      }
       for (let y = 0; y < m.h && y < 16; y++) for (let x = 0; x < m.w && x < 16; x++) {
         const k = Grid.key(x, y), o = (y * 64 + x * 4) * 4;
         const tmp = cb.tempAt ? cb.tempAt(x, y) : null;
-        let fill = null, stroke = null, respire = false;
+        let fill = null, stroke = null, respire = false, coupe = false;
         if (tmp && tmp.kind === 'water') { fill = [0x2f8fe0, 0.5]; stroke = [0x9fd7ff, 0.5]; }
         if (tmp && tmp.kind === 'fente') { fill = [0x120818, 0.92]; stroke = [0xbf95ff, 0.9]; }
         if (placement) {
@@ -267,14 +282,15 @@ void main() {
           // qui tournait au brun sur l'herbe claire.
           else if (cb.isStartCell('monster', x, y)) { fill = [0xe83a3a, 0.56]; stroke = [0xffa0a0, 0.9]; }
         }
-        if (H.move.has(k)) { fill = [0x4fd47a, 0.4]; stroke = [0xa8ffc4, 0.6]; respire = false; }
-        if (H.range.has(k)) { fill = [0x4a90ff, 0.38]; stroke = [0xb8dcff, 0.5]; respire = false; }
-        if (H.blocked.has(k)) { fill = [0x000000, 0.4]; stroke = null; respire = false; }
+        if (H.move.has(k)) { fill = [0x3fd47f, 0.4]; stroke = [0xbaffd3, 0.8]; respire = false; }
+        if (H.range.has(k)) { fill = [0x3f8cff, 0.42]; stroke = [0xc2e2ff, 0.85]; respire = false; }
+        if (H.blocked.has(k)) { fill = [0x0b1322, 0.5]; stroke = [0x4a5878, 0.6]; respire = false; coupe = true; }
         if (H.aoe.has(k)) { fill = [0xff9a30, 0.6]; stroke = [0xffe0a0, 0.95]; respire = false; }
         if (fill) { const c = rgb(fill[0]); D[o] = c[0]; D[o + 1] = c[1]; D[o + 2] = c[2]; D[o + 3] = octet(fill[1] * 255); }
         if (stroke) { const c = rgb(stroke[0]); D[o + 4] = c[0]; D[o + 5] = c[1]; D[o + 6] = c[2]; D[o + 7] = octet(stroke[1] * 255); }
         this.ecrireFixe(x, y);
-        D[o + 9] = (hv && hv.x === x && hv.y === y ? 1 : 0) | (sur.has(k) ? 2 : 0) | (respire ? 4 : 0);
+        D[o + 9] = (hv && hv.x === x && hv.y === y ? 1 : 0) | (cotes.get(k) || 0) | (respire ? 4 : 0);
+        D[o + 11] = (coupe ? 1 : 0) | (cible && cible.x === x && cible.y === y ? 2 : 0);
       }
       for (const tr of traps) {
         if (!Grid.inBounds(m, tr.x, tr.y)) continue;
@@ -311,10 +327,19 @@ void main() {
     // interpolés par animMove) posée sur le relief, leurs anneaux, leur barre de vie, leurs états.
     sprites(cb, now, fig, telephone) {
       if (this.etat !== 'ouverte') return [];
-      const out = [];
+      const out = [], Hc = this.ile.highlights;
       for (const e of cb.entities) {
         if (!e.alive || !cb.canSee(cb.player, e)) continue;
         const p = this.versMonde(e.rx, e.ry), h = this.ile.hauteur(p.u, p.v);
+        // La trace des PV qui viennent de partir (la barre de vie) : elle reste un instant au niveau
+        // d'avant le coup, puis fond vers les PV ; elle rejoint tout de suite une vie qui remonte.
+        const hpF = Math.max(0, Math.min(1, e.hp / e.hpMax));
+        if (e._trace == null || hpF >= e._trace) e._trace = hpF;
+        else {
+          if (e._traceHp == null || hpF < e._traceHp) e._traceDepuis = now;
+          if (now - (e._traceDepuis || 0) > 380) { const dt = Math.min(0.1, Math.max(0, (now - (e._traceT || now)) / 1000)); e._trace += (hpF - e._trace) * Math.min(1, dt * 2.6); if (e._trace - hpF < 0.004) e._trace = hpF; }
+        }
+        e._traceHp = hpF; e._traceT = now;
         const s = {
           kind: 'entity', shape: e.shape, color: e.color, glyph: e.glyph, name: e.name, look: e.def.look, gender: e.def.gender,
           team: e.team, flash: now < (e.flashUntil || 0), motif: e.team === 'monster' ? Renderer.motifOf(e.def.id) : null, noyau: e.def.noyau || null,
@@ -326,7 +351,8 @@ void main() {
           x: p.u, y: p.v, h, normale: this.ile.normale(p.u, p.v), bob: e.hop || 0,
           cible: { type: 'combattant', ref: e },
           combat: {
-            hp: e.hp / e.hpMax, bouclier: e.shield / e.hpMax, equipe: e.team, actif: cb.actor === e && cb.phase === 'battle',
+            hp: hpF, trace: e._trace, bouclier: e.shield / e.hpMax, equipe: e.team, actif: cb.actor === e && cb.phase === 'battle', boss: !!e.boss,
+            vise: !!(Hc && Hc.cible != null && Hc.cible === e.id),
             immun: e.immuneElement ? DATA.elements[e.immuneElement].color : null,
             sonne: e.hasState('stunned'), invuln: !!e.def.invulnerable || e.hasState('invulnerable'), armure: e.modifier('armor') > 0,
             lanterne: e.effects.some(f => f.type === 'state' && f.farDodge),

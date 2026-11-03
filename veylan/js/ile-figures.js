@@ -121,12 +121,21 @@ void main() {
   #include <encodings_fragment>
   #include <fog_fragment>
 }`;
+  // La barre de vie d'un combattant : une instance par barre, un rectangle à taille constante à
+  // l'écran (boite : dx, dy, largeur, hauteur en pixels) dont le fragment peint toute la pilule :
+  // le fond sombre, un liseré de la couleur du camp, la vie en dégradé éclairé par le haut, la trace
+  // pâle des PV qui viennent de partir, le bouclier en bande claire sur le haut, un repère tous les
+  // quarts. `jauge` : la vie (0 à 1), le bouclier, la trace, un drapeau (l'acteur du tour).
   const VS_BARRE = `
 attribute vec3 ancre;
 attribute vec4 boite;
 attribute vec4 couleur;
+attribute vec4 jauge;
 uniform vec2 vue;
 varying vec4 vCol;
+varying vec4 vJauge;
+varying vec2 vUv;
+varying vec2 vTaille;
 void main() {
   vec4 p = projectionMatrix * modelViewMatrix * vec4(ancre, 1.0);
   vec2 px = boite.xy + (position.xy - vec2(0.5)) * boite.zw;
@@ -134,11 +143,38 @@ void main() {
   gl_Position = p;
   vCol = couleur;
   vCol.a *= step(-p.w, p.z) * step(p.z, p.w);
+  vJauge = jauge;
+  vUv = position.xy;
+  vTaille = boite.zw;
 }`;
   const FS_BARRE = `
 varying vec4 vCol;
+varying vec4 vJauge;
+varying vec2 vUv;
+varying vec2 vTaille;
 void main() {
-  gl_FragColor = vCol;
+  vec2 px = (vUv - 0.5) * vTaille;
+  float r = vTaille.y * 0.5;
+  vec2 q = abs(px) - (vTaille * 0.5 - r);
+  float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+  float pilule = 1.0 - smoothstep(-0.6, 0.6, d);
+  float dedans = 1.0 - smoothstep(-0.6, 0.6, d + 1.1);
+  float liseret = pilule - dedans;
+  vec3 col = vec3(0.03, 0.045, 0.075);
+  col = mix(col, vCol.rgb * (0.55 + 0.35 * vJauge.w), liseret);
+  float x = vUv.x;
+  float vie = step(x, vJauge.x) * dedans;
+  float trace = step(vJauge.x, x) * step(x, vJauge.z) * dedans;
+  float haut = smoothstep(0.3, 1.0, vUv.y);
+  vec3 cvie = vCol.rgb * (0.72 + 0.55 * haut) + 0.14 * smoothstep(0.78, 0.96, vUv.y);
+  col = mix(col, cvie, vie);
+  col = mix(col, vec3(0.96, 0.6, 0.5), trace * 0.78);
+  float bouclier = step(x, vJauge.y) * step(0.58, vUv.y) * dedans;
+  col = mix(col, vec3(0.85, 0.96, 1.0), bouclier * 0.92);
+  float tq = abs(fract(x * 4.0 + 0.5) - 0.5) * vTaille.x * 0.25;
+  float rep = (1.0 - smoothstep(0.3, 0.9, tq)) * vie * step(0.02, x) * step(x, 0.98);
+  col = mix(col, col * 0.5, rep);
+  gl_FragColor = vec4(col, pilule * vCol.a);
   #include <encodings_fragment>
 }`;
   // L'anneau d'un combattant, couché au sol.
@@ -266,8 +302,9 @@ void main() {
       this.bAncre = new THREE.InstancedBufferAttribute(new Float32Array(MAX_BARRES * 3), 3);
       this.bBoite = new THREE.InstancedBufferAttribute(new Float32Array(MAX_BARRES * 4), 4);
       this.bCouleur = new THREE.InstancedBufferAttribute(new Float32Array(MAX_BARRES * 4), 4);
-      for (const a of [this.bAncre, this.bBoite, this.bCouleur]) a.setUsage(THREE.DynamicDrawUsage);
-      geoB.setAttribute('ancre', this.bAncre); geoB.setAttribute('boite', this.bBoite); geoB.setAttribute('couleur', this.bCouleur);
+      this.bJauge = new THREE.InstancedBufferAttribute(new Float32Array(MAX_BARRES * 4), 4);
+      for (const a of [this.bAncre, this.bBoite, this.bCouleur, this.bJauge]) a.setUsage(THREE.DynamicDrawUsage);
+      geoB.setAttribute('ancre', this.bAncre); geoB.setAttribute('boite', this.bBoite); geoB.setAttribute('couleur', this.bCouleur); geoB.setAttribute('jauge', this.bJauge);
       geoB.instanceCount = 0;
       this.matB = new THREE.ShaderMaterial({ uniforms: { vue: this.matT.uniforms.vue }, vertexShader: VS_BARRE, fragmentShader: FS_BARRE, transparent: true, depthTest: false, depthWrite: false });
       this.barres = new THREE.Mesh(geoB, this.matB);
@@ -477,15 +514,18 @@ void main() {
         if (f != null) blanc.multiplyScalar(f);
         mesh.setColorAt(i, blanc);
       };
-      const barre = (s, dx, dy, w, h, couleur, a) => {
+      const barre = (s, dx, dy, w, h, couleur, a, jauge) => {
         if (nb >= MAX_BARRES) return;
         const k = s.scale || 1;
         this.bAncre.setXYZ(nb, s.x, s.h + 1.86 * k, s.y);
         this.bBoite.setXYZW(nb, dx, dy, w, h);
         blanc.set(couleur);
         this.bCouleur.setXYZW(nb, blanc.r, blanc.g, blanc.b, a * (s.alpha == null ? 1 : s.alpha));
+        this.bJauge.setXYZW(nb, jauge[0], jauge[1], jauge[2], jauge[3]);
         nb++;
       };
+      // Le réglage « Barres de vie » (Options) : toutes, sinon celle du combattant visé et de l'acteur.
+      const toutes = typeof UI === 'function' && UI.reglage ? UI.reglage('barres') : true;
       for (const s of sprites) {
         const c = s.combat;
         if (!c) continue;
@@ -493,15 +533,18 @@ void main() {
         if (na < 48) anneau(this.anneaux, na++, s, 0.98 * k, c.equipe === 'player' ? '#4a90ff' : '#ff5a5a');
         if (c.immun && na < 48) anneau(this.anneaux, na++, s, 1.16 * k, c.immun);
         if (c.actif && nl < 24) { const p = 0.5 + 0.5 * Math.sin(now / 180); anneau(this.anneauxL, nl++, s, (1.18 + p * 0.12) * k, '#ffffff', 0.35 + 0.45 * p); }
-        // La barre : un fond sombre, la vie, le bouclier au-dessus.
-        const hp = Math.max(0, Math.min(1, c.hp)), dy = 8;
-        barre(s, 0, dy, 40, 7, '#0a0d14', 0.85);
-        if (hp > 0) barre(s, -18 + 18 * hp, dy, 36 * hp, 5, c.equipe === 'player' ? (hp <= 0.25 ? '#f07a5c' : '#8db585') : '#f07a5c', 1);
-        if (c.bouclier > 0) { const b = Math.min(1, c.bouclier); barre(s, -18 + 18 * b, dy + 4.5, 36 * b, 2, '#dff3ff', 1); }
+        // Le combattant visé (sa case ou son portrait survolé) : un anneau d'or en plus.
+        if (c.vise && nl < 24) { const p = 0.5 + 0.5 * Math.sin(now / 150); anneau(this.anneauxL, nl++, s, (1.3 + p * 0.08) * k, '#ffe6a8', 0.5 + 0.4 * p); }
+        if (!toutes && !c.vise && !c.actif) continue;
+        // La barre : une pilule de la couleur du camp (le Veilleur et ses alliés en cristal, ambre
+        // quand il leur reste un quart de vie ; les monstres en braise), la trace des PV perdus, le bouclier.
+        const hp = Math.max(0, Math.min(1, c.hp)), trace = Math.max(hp, Math.min(1, c.trace == null ? hp : c.trace));
+        const couleur = c.equipe === 'player' ? (hp <= 0.25 ? '#ffb347' : '#4fc8ff') : '#ff6b5e';
+        barre(s, 0, 10, c.boss ? 66 : 52, 8, couleur, 1, [hp, Math.min(1, c.bouclier || 0), trace, c.actif ? 1 : 0]);
       }
       this.anneaux.count = na; this.anneauxL.count = nl;
       for (const a of [this.anneaux, this.anneauxL]) { a.instanceMatrix.needsUpdate = true; if (a.instanceColor) a.instanceColor.needsUpdate = true; }
-      this.bAncre.needsUpdate = this.bBoite.needsUpdate = this.bCouleur.needsUpdate = true;
+      this.bAncre.needsUpdate = this.bBoite.needsUpdate = this.bCouleur.needsUpdate = this.bJauge.needsUpdate = true;
       this.barres.geometry.instanceCount = nb;
     }
 

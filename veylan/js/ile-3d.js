@@ -1783,6 +1783,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     u.aireOn.value = A.etat ? Math.max(0, Math.min(1, cam.fondu)) : 0;
     u.tempsSol.value = now / 1000;
     u.tactiqueSol.value = ici && this.tactique ? 1 : 0;
+    // La grille de l'aire (réglage « Afficher la grille » des Options, js/ui.js).
+    if (u.grilleSol) u.grilleSol.value = typeof UI === 'function' && UI.reglage && !UI.reglage('grille') ? 0 : 1;
     if (A.etat) {
       // Un pixel d'écran en u, perpendiculairement au bord d'une case (l'azimut est de 45°).
       const el = cam.enCombat && !cam.trans && cam.cadre ? cam.cadre.el : (cam.dernierEtat ? cam.dernierEtat.el : cam.elevation());

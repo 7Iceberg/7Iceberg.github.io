@@ -366,7 +366,58 @@ const IleModeles = (() => {
     posesBords(S, T, hauteur, out);
     posesDenses(S, T, hauteur, out);
     posesParcelles(S, T, hauteur, out);
+    posesObstacles(S, T, hauteur, out);
     return out;
+  }
+
+  // ----- Les obstacles des aires de combat (docs/ILE-TECHNIQUE.md, 5.2 et 5.4) -----
+  // Les plans cuits (tools/cuire-aires.js) posent des pierres (#) et des troncs (T) que le terrain n'a
+  // pas. Le décor dessiné par le code les portait (IleDecor.obstaclesAires), mais le monde modelé le
+  // retire (IleGlb.poser) : en combat, les cases bloquées n'avaient plus rien dessus (revue du
+  // fondateur). Ici, le même obstacle avec le kit Meshy, posé au centre de sa case, choisi par le style
+  // de l'aire : les pierres, un rocher pâle ; les murets, un bout de muret dans le sens de ses voisins ;
+  // les bornes, la borne à runes ; les troncs, une souche ; les racines, le tronc couché. Un obstacle
+  // que le terrain porte déjà (muret, haie, objet posé) n'est pas redoublé ; chaque case une fois (les
+  // aires se recouvrent). L'objet tient dans sa case (au plus 1 u de large) : la case reste lisible.
+  // Les modèles les plus légers du kit (le semis est fusionné par tuile : chaque obstacle emporte ses
+  // sommets ; environ 550 obstacles sur Ervane) : les rochers moussus (400 sommets), la souche (768).
+  const OBSTACLES = {
+    '#': { pierres: ['rocher2', 1.15], murets: ['mu-muret', 1.0], bornes: ['a-borne', 1.7], libre: ['rocher2', 1.1], defaut: ['rocher2', 1.2] },
+    T: { troncs: ['souche', 1.25], racines: ['souche', 1.15], defaut: ['souche', 1.2] },
+  };
+  function posesObstacles(S, T, hauteur, out) {
+    const N = 15, vus = new Set(), est = new Map();
+    for (const a of (T && T.aires) || []) {
+      if (!a.layout) continue;
+      for (let cy = 0; cy < N; cy++) for (let cx = 0; cx < N; cx++) { const c = a.layout[cy][cx]; if (c === '#' || c === 'T') est.set((a.x + cx) + ',' + (a.y + cy), c); }
+    }
+    for (const a of (T && T.aires) || []) {
+      if (!a.layout) continue;
+      for (let cy = 0; cy < N; cy++) for (let cx = 0; cx < N; cx++) {
+        const c = a.layout[cy][cx];
+        if (c !== '#' && c !== 'T') continue;
+        const X = a.x + cx, Y = a.y + cy, cle = X + ',' + Y;
+        if (vus.has(cle)) continue;
+        vus.add(cle);
+        if (typeof IleTerrain === 'object' && IleTerrain.caseAire && IleTerrain.caseAire(T, X, Y).c !== '.') continue;
+        const table = OBSTACLES[c], choix = table[a.style] || table.defaut, nom = choix[0], M = S.modeles[nom];
+        if (!M) continue;
+        const u = X + 0.5, v = Y + 0.5, y = hauteur(u, v);
+        if (!Number.isFinite(y)) continue;
+        const r1 = hacheEntier(X, Y, 909), r2 = hacheEntier(X, Y, 910), r3 = hacheEntier(X, Y, 911);
+        const h = choix[1] * (0.9 + 0.2 * r3);
+        const k = Math.min(h / M.hauteur, 1.0 / Math.max(0.01, Math.max(M.largeur, M.profondeur)));
+        let angle = r1 * Math.PI * 2, kx;
+        if (nom === 'mu-muret') {
+          // Le bout de muret suit ses voisins (la ligne du style `murets`), et remplit sa case.
+          const hor = est.get((X - 1) + ',' + Y) === '#' || est.get((X + 1) + ',' + Y) === '#';
+          const vert = est.get(X + ',' + (Y - 1)) === '#' || est.get(X + ',' + (Y + 1)) === '#';
+          angle = hor || !vert ? 0 : Math.PI / 2;
+          kx = 1.02 / (M.largeur * k);
+        }
+        out.push(Object.assign({ nom, x: u + (r1 - 0.5) * 0.1, y: y - 0.04, z: v + (r2 - 0.5) * 0.1, a: angle, k }, kx && kx > 1.02 ? { kx } : {}));
+      }
+    }
   }
 
   // ----- Les parcelles cultivées (phase D, docs/REFERENCE-OPEN-WORLD.md) -----
@@ -1271,6 +1322,6 @@ const IleModeles = (() => {
     return noms.reduce((a, n) => a + tx[n].octets, 0) + bz.octets + (carte ? carte.octets : 0);
   }
 
-  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, ATLAS, OBJETS, SOLS, VILLAGES, DENSE, CARTES_DENSES, cartes, fumees, lumieresSol, charger, chargerSemis, poses, places, poser, animer, habillerSol };
+  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, ATLAS, OBJETS, SOLS, VILLAGES, DENSE, CARTES_DENSES, OBSTACLES, cartes, fumees, lumieresSol, charger, chargerSemis, poses, posesObstacles, places, poser, animer, habillerSol };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = IleModeles;

@@ -59,9 +59,16 @@ html, body {
 .vy-combattant img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .vy-combattant--allie { --_camp: var(--vy-cristal); }
 .vy-combattant--ennemi { --_camp: var(--vy-braise-clair); }
-.vy-combattant__pv { position: absolute; top: 2px; right: 2px; bottom: 2px; width: 4px; border-radius: 2px; background: rgba(5, 8, 13, 0.7); overflow: hidden; }
-.vy-combattant__pv::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--v, 1) * 100%); background: var(--_camp); box-shadow: 0 0 4px var(--_camp); transition: height 0.35s var(--vy-courbe); }
+/* La jauge de vie du portrait : une barre au pied, de la couleur du camp, éclairée en haut (comme
+   les barres au-dessus des combattants, js/ile-figures.js) ; elle glisse quand les PV changent. */
+.vy-combattant__pv { position: absolute; left: 2px; right: 2px; bottom: 2px; height: 4px; border-radius: 2px; background: rgba(5, 8, 13, 0.78); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); overflow: hidden; }
+.vy-combattant__pv::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--v, 1) * 100%); border-radius: 2px; background: linear-gradient(180deg, color-mix(in srgb, var(--_camp) 70%, #fff 30%), var(--_camp) 55%, color-mix(in srgb, var(--_camp) 75%, #000 25%)); box-shadow: 0 0 5px var(--_camp); transition: width 0.35s var(--vy-courbe); }
+/* Le combattant visé (la case survolée, ou son portrait) : un liseré blanc et la lueur de son camp. */
+.vy-combattant.vise { box-shadow: 0 0 0 2px #fff, 0 0 12px var(--_camp); }
+/* Un sort choisi : les portraits sont des cibles. */
+#app.vy-sort-choisi .vy-combattant { cursor: crosshair; }
 .vy-combattant.actuel { box-shadow: 0 0 0 2px var(--vy-or-clair), 0 0 10px rgba(226, 198, 144, 0.55); overflow: visible; }
+.vy-combattant.actuel.vise { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--vy-or-clair), 0 0 12px var(--_camp); }
 .vy-combattant.actuel img { border-radius: 4px; }
 .vy-combattant.actuel::after { content: ""; position: absolute; left: 50%; bottom: -8px; margin-left: -5px; border: 5px solid transparent; border-top: 6px solid var(--vy-or-clair); border-bottom: 0; }
 .vy-combattant.invoc { opacity: 0.88; }

@@ -622,6 +622,27 @@ const IleTerrain = (() => {
         const w = 1 - fondu(d, 0, RACCORD);
         if (w > 0) h[i] += (hm - h[i]) * w;
       }
+      // Les berges (revue du fondateur, « certains sols ne sont pas droits ») : un noeud mouillé qui
+      // touche un noeud sec du carré faisait pencher la case de sol qu'ils partagent (sa hauteur est
+      // l'interpolation de ses quatre coins : jusqu'à 1 u d'écart au Rond des Quatre, à la Mare aux
+      // Grouks). Un tel noeud de berge, quand son eau n'est pas au-dessus du plateau, monte au
+      // plateau et s'assèche : la mare garde son fond et son niveau à l'intérieur, sa rive tombe net
+      // au bord des cases de sol, qui sont planes jusqu'à l'eau. Une passe, sur les noeuds d'avant.
+      const sec = new Uint8Array(N);
+      for (let v = max(0, ceil(Y0)); v <= min(H - 1, floor(Y1)); v++) for (let u = max(0, ceil(X0)); u <= min(W - 1, floor(X1)); u++) {
+        const i = idx(u, v);
+        if (!vide[i] && eau[i] !== eau[i] && cs.some(c => u >= c.x0 && u <= c.x1 && v >= c.y0 && v <= c.y1)) sec[i] = 1;
+      }
+      for (let v = max(1, ceil(Y0)); v <= min(H - 2, floor(Y1)); v++) for (let u = max(1, ceil(X0)); u <= min(W - 2, floor(X1)); u++) {
+        const i = idx(u, v);
+        if (eau[i] !== eau[i] || vide[i] || eau[i] > hm + 0.05) continue;
+        if (!cs.some(c => u >= c.x0 && u <= c.x1 && v >= c.y0 && v <= c.y1)) continue;
+        let berge = false;
+        for (let dv = -1; dv <= 1 && !berge; dv++) for (let du = -1; du <= 1; du++) if ((du || dv) && sec[idx(u + du, v + dv)]) { berge = true; break; }
+        if (!berge) continue;
+        h[i] = hm;
+        eau[i] = NaN;
+      }
     }
 
     // ----- 9. Quantification au 1/256 u -----
@@ -1049,6 +1070,14 @@ const IleTerrain = (() => {
       if (dx * dx + dy * dy < (f.r + 0.15) * (f.r + 0.15)) return { c: '#', pourquoi: 'objet' };
     }
     if (T.profondeurA(cu, cv) > 0.3) return { c: '~', pourquoi: 'eau' };
+    // Un coin sous l'eau (la berge) : la case penche vers la mare, puisque sa hauteur interpole ses
+    // quatre coins ; elle est de l'eau pour le combat. Avec les berges des aires relevées (8b), les
+    // cases de sol ont leurs quatre coins secs, au plateau : elles sont planes jusqu'à la rive.
+    for (const [u, v] of [[X, Y], [X + 1, Y], [X, Y + 1], [X + 1, Y + 1]]) {
+      if (u < 0 || v < 0 || u >= T.W || v >= T.H) continue;
+      const i = v * T.W + u, e = T.eau[i];
+      if (e === e && e > T.haut[i] + 0.02) return { c: '~', pourquoi: 'berge' };
+    }
     return { c: '.', pourquoi: null };
   }
 

@@ -405,9 +405,18 @@ class Hud {
         <div class="row"><span class="muted">${mode === 'off' ? 'Le tutoriel est terminé ou éteint.' : 'Le guide t\'accompagne pas à pas.'}</span><span class="btns">${mode !== 'off' ? '<button data-act="tutoPasser">Passer le tutoriel</button>' : ''}<button data-act="tutoRevoir">Revoir le tutoriel</button></span></div>`;
     };
     const jeu = () => `<h4>Jeu</h4>
-      <div class="row"><label class="vy-coche"><input type="checkbox" id="opt-confirmer" ${UI.confirmerSorts(null) ? 'checked' : ''}> Confirmer les sorts</label><span class="muted">un toucher sur la cible, puis la coche</span></div>
       <div class="row"><label class="vy-coche"><input type="checkbox" id="opt-gaucher" ${this.jeu && this.jeu.gaucher ? 'checked' : ''}> Mode gaucher</label><span class="muted">le panneau de jeu passe à gauche</span></div>
       ${PleinEcran.disponible() ? `<div class="row"><label class="vy-coche"><input type="checkbox" id="opt-plein-ecran"${PleinEcran.actif() ? ' checked' : ''}> Plein écran</label><span class="muted">sans la barre du navigateur</span></div>` : ''}`;
+    // Le combat (comme les options de combat de Dofus) : la confirmation des sorts, la grille, les
+    // cases de déplacement, la portée des sorts, le coût du chemin, les barres de vie (UI.reglage).
+    const coche = (nom, label, aide) => `<div class="row"><label class="vy-coche"><input type="checkbox" id="opt-combat-${nom}" ${UI.reglage(nom) ? 'checked' : ''}> ${label}</label><span class="muted">${aide}</span></div>`;
+    const combat = () => `<h4>Combat</h4>
+      <div class="row"><label class="vy-coche"><input type="checkbox" id="opt-confirmer" ${UI.confirmerSorts(null) ? 'checked' : ''}> Confirmer les sorts</label><span class="muted">un toucher sur la cible, puis la coche</span></div>
+      ${coche('grille', 'Afficher la grille', 'le quadrillage de l\'aire')}
+      ${coche('deplacement', 'Cases de déplacement', 'en vert, pendant ton tour')}
+      ${coche('portee', 'Portée des sorts', 'en bleu, pour le sort choisi')}
+      ${coche('cout', 'Coût du déplacement', 'les PM du chemin, au survol')}
+      ${coche('barres', 'Barres de vie', 'au-dessus de chaque combattant ; sinon celui qu\'on vise et celui qui joue')}`;
     // L'opacité des fonds : la valeur posée (le curseur suit, même si la fenêtre se redessine en cours de route).
     const curseur = (id, cls, label, v, min, max) => `<div class="row vy-reglage ${cls}"><label for="${id}">${label}</label><input type="range" id="${id}" min="${min}" max="${max}" step="5" value="${v}" style="--v:${v};--min:${min};--max:${max}" aria-valuetext="${v} %"><output for="${id}">${v} %</output></div>`;
     const opacite = () => curseur('opt-opacite', 'vy-opacite', 'Opacité des fonds', this.opacite || this.loadOpacite(), 40, 100) +
@@ -415,7 +424,7 @@ class Hud {
     // Le style du bloc vital (et des gemmes de la barre de combat) : un aperçu de chacun (js/gemmes.js).
     const vitaux = () => Gemmes.STYLES.map(([id, label]) => { const on = this.styleVital() === id;
       return `<button class="vy-style-vital${on ? ' on' : ''}" data-act="vital" data-vital="${id}" aria-pressed="${on}"><span class="vy-style-vital__apercu" aria-hidden="true">${Gemmes.apercu(id)}</span><span class="vy-style-vital__nom">${label}</span></button>`; }).join('');
-    const html = () => `${tuto()}${jeu()}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div>
+    const html = () => `${tuto()}${jeu()}${combat()}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div>
       <h4>Bloc vital</h4><div class="vy-styles-vital" role="group" aria-label="Style du bloc vital">${vitaux()}</div>
       ${this.optionsNotifs ? this.optionsNotifs() : ''}
       ${opacite()}
@@ -471,6 +480,7 @@ class Hud {
       if (kind !== 'change') return;
       if (el.id === 'opt-tuto') { this.guide.choisirMode(el.value); this.fen.render('options'); }
       if (el.id === 'opt-confirmer') { try { localStorage.setItem('veylan.confirmerSorts', el.checked ? '1' : '0'); } catch (e) { /* stockage indisponible */ } }
+      if (/^opt-combat-/.test(el.id)) { UI.regler(el.id.slice(11), el.checked); if (this.ui && this.ui.updateHighlights) this.ui.updateHighlights(); }
       if (el.id === 'opt-gaucher' && this.jeu) this.jeu.mettreGaucher(el.checked);
       if (el.id === 'opt-plein-ecran') PleinEcran.basculer().then(() => { if (this.fen.isOpen('options')) this.fen.render('options'); });
     };

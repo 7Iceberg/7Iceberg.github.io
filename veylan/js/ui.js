@@ -96,6 +96,8 @@ class UI {
       this.el.encounter.addEventListener('change', () => this.restart());
     }
     if (this.el.restart) this.el.restart.addEventListener('click', () => this.restart());
+    // La frise du laboratoire (et des cartes à cases) : les mêmes gestes que la barre de tour du jeu.
+    if (this.el.timeline) this.brancherFrise(this.el.timeline);
     this.el.ready.addEventListener('click', () => this.ready());
     this.el.endTurn.addEventListener('click', () => this.endTurn());
     setInterval(() => this.updateTimer(), 200);
@@ -175,6 +177,22 @@ class UI {
 
   // Un écran qu'on touche du doigt (téléphone, tablette) plutôt qu'à la souris.
   static tactile() { return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches; }
+
+  // Les réglages d'affichage du combat (Options, rubrique Combat ; UI.REGLAGES donne les défauts) :
+  // la grille de l'aire, les cases de déplacement (vert), la portée du sort choisi (bleu), le coût du
+  // chemin en PM au survol, les barres de vie au-dessus des combattants. Lus souvent (chaque survol,
+  // chaque image) : gardés en mémoire, invalidés par regler().
+  static reglage(nom) {
+    const M = UI._reglages || (UI._reglages = {});
+    if (nom in M) return M[nom];
+    let v = null;
+    try { v = localStorage.getItem('veylan.combat.' + nom); } catch (e) { /* stockage indisponible */ }
+    return (M[nom] = v === '0' ? false : v === '1' ? true : !!UI.REGLAGES[nom]);
+  }
+  static regler(nom, on) {
+    try { localStorage.setItem('veylan.combat.' + nom, on ? '1' : '0'); } catch (e) { /* stockage indisponible */ }
+    if (UI._reglages) delete UI._reglages[nom];
+  }
 
   // L'ordre des sorts dans la barre : l'arme équipée d'abord (première case), puis ceux de la
   // classe. Les touches 1 à 9 suivent le même ordre.
@@ -384,11 +402,80 @@ class UI {
 
   hover(cell) {
     this.hoverCell = cell;
+    const c = this.combat;
+    let e = null;
     if (cell) {
-      const e = this.combat.entityAt(cell.x, cell.y);
-      if (e && e !== this.inspected && this.combat.canSee(this.combat.player, e)) { this.inspected = e; this.renderInspect(); }
+      e = c.entityAt(cell.x, cell.y);
+      if (e && e !== this.inspected && c.canSee(c.player, e)) { this.inspected = e; this.renderInspect(); }
     }
+    // À la souris, sans sort choisi : le coût du chemin en PM près de la case survolée (comme l'option
+    // de Dofus) ; au doigt, c'est tapCell qui le montre au premier toucher (armed).
+    if (!this.armed && !UI.tactile()) {
+      if (cell && !this.selectedSpell && !e && UI.reglage('cout')) this.showMoveCost(cell); else this.hideMoveCost();
+    }
+    this.majVise(e && c.canSee(c.player, e) ? e : null);
     this.updateHighlights();
+  }
+
+  // Le combattant visé (la case survolée sur la grille, ou son portrait survolé dans la frise) : son
+  // portrait s'allume dans la frise, et la grille cerne sa case (H.cible). Comme Dofus (2.3), dans
+  // les deux sens.
+  majVise(e) {
+    const id = e ? String(e.id) : null;
+    if (this.viseId === id) return;
+    this.viseId = id;
+    if (typeof document === 'undefined') return;
+    for (const el of document.querySelectorAll('.vy-combattant.vise')) if (el.dataset.id !== id) el.classList.remove('vise');
+    if (id) for (const el of document.querySelectorAll('.vy-combattant[data-id="' + id + '"]')) el.classList.add('vise');
+  }
+
+  // Un portrait de la frise touché (toucherPortrait) ou survolé à la souris (viserPortrait) : avec un
+  // sort choisi, pendant son tour, le sort part sur ce combattant sans passer par la grille (Dofus :
+  // le clic sur le portrait, l'anti « miss-clic ») ; au doigt avec « Confirmer les sorts », la fiche
+  // de confirmation s'ouvre près de lui ; hors de portée, la raison s'affiche. Sans sort : sa fiche.
+  toucherPortrait(e, touch) {
+    const c = this.combat;
+    if (!e || !e.alive || !c.canSee(c.player, e)) return;
+    if (this.selectedSpell && this.isPlayerTurn() && !c.busy) {
+      const cell = { x: e.x, y: e.y };
+      this.hideCastConfirm();
+      const ok = c.canCastAt(c.actor, this.selectedSpell, cell);
+      if (!ok.ok) { this.armed = null; this.banner(ok.reason, 900); return; }
+      if (UI.confirmerSorts(touch)) {
+        this.armed = { x: cell.x, y: cell.y, spell: this.selectedSpell };
+        this.hover(cell);
+        this.showCastConfirm(cell);
+        return;
+      }
+      this.armed = null;
+      this.hover(cell);
+      this.clickCell(cell);
+      return;
+    }
+    this.inspected = e; this.renderInspect(); this.showEntityCard(e);
+  }
+  viserPortrait(e) {
+    const c = this.combat;
+    if (e && (!e.alive || !c.canSee(c.player, e))) e = null;
+    this.hover(e ? { x: e.x, y: e.y } : null);
+  }
+
+  // Les portraits d'une frise (#timeline du laboratoire, la barre de tour du jeu) : le toucher et le
+  // survol à la souris.
+  brancherFrise(liste) {
+    const trouver = evt => { const b = evt.target.closest('[data-id]'); return b ? this.combat.entities.find(x => String(x.id) === b.dataset.id) : null; };
+    // Le genre du pointeur, noté aux événements pointer (qui précèdent les événements souris) ; le
+    // survol se lit sur mouseover et mouseout, qui viennent après le mouseleave du canvas (celui-ci
+    // efface le survol de la grille : avec pointerover, la visée du portrait était effacée aussitôt).
+    for (const n of ['pointerover', 'pointerdown']) liste.addEventListener(n, evt => { this.pointeurFrise = evt.pointerType; }, { passive: true });
+    liste.addEventListener('click', evt => { const e = trouver(evt); if (e) this.toucherPortrait(e, this.pointeurFrise ? this.pointeurFrise !== 'mouse' : UI.tactile()); });
+    liste.addEventListener('mouseover', evt => { if (this.pointeurFrise && this.pointeurFrise !== 'mouse') return; const e = trouver(evt); if (e) this.viserPortrait(e); });
+    liste.addEventListener('mouseout', evt => {
+      if (this.pointeurFrise && this.pointeurFrise !== 'mouse') return;
+      const b = evt.target.closest('[data-id]');
+      if (!b || (evt.relatedTarget && b.contains(evt.relatedTarget))) return;
+      this.viserPortrait(null);
+    });
   }
 
   // Un sort choisi : avec l'option « Confirmer les sorts » (au doigt par défaut), la case visée ouvre
@@ -514,7 +601,9 @@ class UI {
       if (!r.ok) this.banner(r.reason, 900);
       else {
         Bus.emit('spellCast', { spell: id, ennemi: !!(target && target.team !== c.player.team) });
-        if (c.actor && !c.spellState(c.actor, id).ok) this.selectedSpell = null;
+        // Le sort part : il se désarme (comme Dofus, où il faut le reprendre pour le relancer) ; la
+        // grille revient aux cases de déplacement.
+        if (this.selectedSpell === id) this.selectedSpell = null;
       }
       this.refresh();
       this.updateHighlights();
@@ -570,19 +659,27 @@ class UI {
     H.move.clear(); H.range.clear(); H.blocked.clear(); H.aoe.clear();
     H.path = [];
     H.hover = this.hoverCell;
+    // Le combattant visé (la case survolée, ou son portrait) : vu, vivant, en combat.
+    const vise = this.hoverCell && c.phase === 'battle' ? c.entityAt(this.hoverCell.x, this.hoverCell.y) : null;
+    H.cible = vise && vise.alive && c.canSee(c.player, vise) ? vise.id : null;
     if (!this.isPlayerTurn()) return;
     const a = c.actor;
     if (this.selectedSpell) {
       const s = c.spellOf(this.selectedSpell, a);
-      const tc = c.targetCells(a, this.selectedSpell);
-      for (const cell of tc.cells) H.range.add(Grid.key(cell.x, cell.y));
-      for (const cell of tc.blocked) H.blocked.add(Grid.key(cell.x, cell.y));
+      // La portée (bleu) et les cases sans ligne de vue : selon le réglage « Portée des sorts » ; la
+      // zone d'effet au survol reste (c'est la conséquence du clic).
+      if (UI.reglage('portee')) {
+        const tc = c.targetCells(a, this.selectedSpell);
+        for (const cell of tc.cells) H.range.add(Grid.key(cell.x, cell.y));
+        for (const cell of tc.blocked) H.blocked.add(Grid.key(cell.x, cell.y));
+      }
       if (this.hoverCell && c.canCastAt(a, this.selectedSpell, this.hoverCell).ok) {
         for (const cell of c.zoneCells(a, s, this.hoverCell, a.pos)) H.aoe.add(Grid.key(cell.x, cell.y));
       }
     } else if (!c.busy) {
       const reach = c.reachFor(a);
-      for (const [k, d] of reach.dist) if (d > 0) H.move.add(k);
+      // Les cases de déplacement (vert) : selon le réglage ; le chemin au survol se trace toujours.
+      if (UI.reglage('deplacement')) for (const [k, d] of reach.dist) if (d > 0) H.move.add(k);
       if (this.hoverCell) {
         const p = Grid.pathTo(reach, this.hoverCell);
         if (p) H.path = p;
@@ -679,6 +776,9 @@ class UI {
       const cd = p.cooldowns[id] || 0;
       b.querySelector('.cd').textContent = cd > 0 ? cd : '';
     }
+    // Un sort choisi : les portraits de la frise deviennent des cibles (le curseur le dit).
+    const app = typeof document !== 'undefined' ? document.getElementById('app') : null;
+    if (app) app.classList.toggle('vy-sort-choisi', !!this.selectedSpell && playerTurn);
 
     this.el.ready.classList.toggle('hidden', c.phase !== 'placement');
     this.el.endTurn.classList.toggle('hidden', c.phase !== 'battle');
@@ -748,12 +848,8 @@ class UI {
       '<div class="vy-barre-tour__cote"><span class="vy-barre-tour__tour"></span>' +
       '<button type="button" class="vy-bouton vy-bouton--primaire vy-barre-tour__action" data-ui="pret">Prêt</button></div></div>';
     tb.querySelector('.vy-barre-tour__action').addEventListener('click', () => { if (this.combat.phase === 'placement') this.ready(); else this.endTurn(); });
-    // Toucher un buste : la fiche du combattant.
-    tb.querySelector('.vy-barre-tour__liste').addEventListener('click', evt => {
-      const b = evt.target.closest('[data-id]');
-      const e = b && this.combat.entities.find(x => String(x.id) === b.dataset.id);
-      if (e && e.alive && this.combat.canSee(this.combat.player, e)) { this.inspected = e; this.renderInspect(); this.showEntityCard(e); }
-    });
+    // Toucher un buste : le sort choisi part sur lui, sinon sa fiche ; le survol le vise.
+    this.brancherFrise(tb.querySelector('.vy-barre-tour__liste'));
     this.el.stage.appendChild(tb);
     this.timelineHtml = null;
     if (this.combat.player) this.refresh();
@@ -777,6 +873,9 @@ class UI {
     this.timelineHtml = html;
     this.el.timeline.innerHTML = html;
     if (this.el.turnBar) this.el.turnBar.querySelector('.vy-barre-tour__liste').innerHTML = html;
+    // Les portraits sont refaits : le combattant visé garde sa marque.
+    const id = this.viseId; this.viseId = null;
+    if (id) this.majVise(c.entities.find(x => String(x.id) === id) || null);
   }
 
   // Le buste d'un combattant, peint une fois par apparence puis gardé en image.
@@ -861,6 +960,9 @@ class UI {
 
 // Le compte à rebours du placement, dans le monde : à zéro, le combat commence.
 UI.PLACEMENT_SECONDES = 30;
+
+// Les réglages d'affichage du combat et leurs défauts (UI.reglage, Options, rubrique Combat).
+UI.REGLAGES = { grille: true, deplacement: true, portee: true, cout: true, barres: true };
 
 // Pictogrammes de la confirmation d'un sort : annuler, lancer, et le badge des PA (un hexagone
 // d'or, la forme des PA dans toute l'interface).
