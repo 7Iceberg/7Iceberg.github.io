@@ -411,6 +411,7 @@ class Conversation {
     if (ctx.shop) out.push({ label: 'Voir tes marchandises.', action: () => this.ailleurs(() => hud.openShop(ctx)) });
     if (ctx.workshop) out.push({ label: 'Utiliser ton atelier.', action: () => this.ailleurs(() => hud.openWorkshop(ctx)) });
     if (ctx.marche) out.push({ label: 'Voir l\'étal du jour.', action: () => this.ailleurs(() => hud.openMarche(ctx)) });
+    if (ctx.metiers) out.push({ label: 'Voir le tableau des métiers.', action: () => this.ailleurs(() => hud.openMetiers(ctx)) });
     if (ctx.dojo) out.push({ label: 'M\'entraîner contre les mannequins.', action: () => this.ailleurs(() => { hud.world.endDialogue && hud.world.endDialogue(); hud.world.entrainement(); }) });
     if (ctx.banque) out.push({ label: 'Ouvrir ton coffre.', action: () => this.ailleurs(() => hud.openBanque(ctx)) });
     if (!out.length) out.push({ label: 'Au revoir.', action: () => this.fermer() });

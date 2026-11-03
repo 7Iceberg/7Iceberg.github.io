@@ -557,6 +557,7 @@ class World {
       workshop: npc.def.workshop || null,
       banque: !!npc.def.banque,
       dojo: !!npc.def.dojo,
+      metiers: !!npc.def.metiers,
       marche: Marche.genreDe(npc),
       // Un passeur (la Nacelle d'Ervane, docs/ILE-TECHNIQUE.md, 2.9) : offert quand sa quête est faite.
       passage: this.passageDe(npc),

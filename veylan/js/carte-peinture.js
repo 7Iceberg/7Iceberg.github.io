@@ -719,6 +719,12 @@ const CartePeinture = (() => {
     donjon: ['#b996ff', '#7a4fd0', '#43258a'],
     artisan: ['#f3aa72', '#c06a34', '#773916'],
     marchand: ['#8ad884', '#3f9a4a', '#215a29'],
+    // Les services de la Cité des Cimes (docs/CITE-DES-CIMES.md) : la banque (or), le Marché
+    // (sarcelle), le Dojo (rouge), l'Hôtel des Métiers (violet).
+    banque: ['#ffe08a', '#d9a93a', '#8a6416'],
+    marche: ['#7fe0d0', '#2f9e8e', '#155c52'],
+    dojo: ['#ff9a8a', '#c23a3a', '#6e1a1a'],
+    metiers: ['#d0b0ff', '#7a5ea8', '#40306a'],
     offre: ['#ffe596', '#f2b134', '#b0700e'],
     rendre: ['#ffe596', '#f2b134', '#b0700e'],
     verrou: ['#9a90b8', '#5a4f7a', '#2e2744'],
@@ -737,6 +743,26 @@ const CartePeinture = (() => {
       c.fillStyle = blanc; c.beginPath(); c.moveTo(-s * 0.25, -s * 0.55); c.lineTo(s * 0.25, -s * 0.55); c.lineTo(s * 0.12, -s * 0.3); c.bezierCurveTo(s * 0.95, -s * 0.1, s * 0.95, s * 0.9, 0, s * 0.9); c.bezierCurveTo(-s * 0.95, s * 0.9, -s * 0.95, -s * 0.1, -s * 0.12, -s * 0.3); c.closePath(); c.fill();
       c.strokeStyle = '#215a29'; c.lineWidth = s * 0.13; c.beginPath(); c.moveTo(-s * 0.22, -s * 0.32); c.lineTo(s * 0.22, -s * 0.32); c.stroke();
       c.fillStyle = '#e2b13c'; c.beginPath(); c.arc(0, s * 0.35, s * 0.26, 0, Math.PI * 2); c.fill();
+    } else if (kind === 'banque') {
+      // Un coffre : le corps, le couvercle bombé, la serrure d'or.
+      c.fillStyle = blanc; c.fillRect(-s * 0.85, -s * 0.15, s * 1.7, s * 0.95);
+      c.beginPath(); c.moveTo(-s * 0.85, -s * 0.2); c.quadraticCurveTo(0, -s * 0.95, s * 0.85, -s * 0.2); c.closePath(); c.fill();
+      c.fillStyle = '#8a6416'; c.fillRect(-s * 0.85, -s * 0.24, s * 1.7, s * 0.12);
+      c.fillStyle = '#f2c14e'; c.fillRect(-s * 0.17, -s * 0.3, s * 0.34, s * 0.42);
+    } else if (kind === 'marche') {
+      // Une balance : le fléau, le pied, deux plateaux.
+      c.strokeStyle = blanc; c.fillStyle = blanc; c.lineWidth = s * 0.14;
+      c.beginPath(); c.moveTo(0, -s * 0.85); c.lineTo(0, s * 0.75); c.moveTo(-s * 0.4, s * 0.8); c.lineTo(s * 0.4, s * 0.8); c.moveTo(-s * 0.75, -s * 0.55); c.lineTo(s * 0.75, -s * 0.55); c.stroke();
+      for (const k of [-1, 1]) { c.beginPath(); c.moveTo(k * s * 0.75, -s * 0.55); c.lineTo(k * s * 0.75 - s * 0.32, s * 0.05); c.lineTo(k * s * 0.75 + s * 0.32, s * 0.05); c.closePath(); c.fill(); }
+    } else if (kind === 'dojo') {
+      // Un mannequin : la tête, le corps, les bras en croix, le poteau.
+      c.fillStyle = blanc; c.beginPath(); c.arc(0, -s * 0.62, s * 0.26, 0, Math.PI * 2); c.fill();
+      c.fillRect(-s * 0.3, -s * 0.34, s * 0.6, s * 0.8); c.fillRect(-s * 0.85, -s * 0.24, s * 1.7, s * 0.2); c.fillRect(-s * 0.08, s * 0.4, s * 0.16, s * 0.5);
+      c.fillStyle = '#c23a3a'; c.fillRect(-s * 0.3, -s * 0.02, s * 0.6, s * 0.14);
+    } else if (kind === 'metiers') {
+      // Un livre ouvert (le registre des métiers).
+      c.fillStyle = blanc; c.beginPath(); c.moveTo(0, -s * 0.45); c.quadraticCurveTo(-s * 0.5, -s * 0.75, -s * 0.9, -s * 0.5); c.lineTo(-s * 0.9, s * 0.6); c.quadraticCurveTo(-s * 0.5, s * 0.4, 0, s * 0.7); c.quadraticCurveTo(s * 0.5, s * 0.4, s * 0.9, s * 0.6); c.lineTo(s * 0.9, -s * 0.5); c.quadraticCurveTo(s * 0.5, -s * 0.75, 0, -s * 0.45); c.closePath(); c.fill();
+      c.strokeStyle = '#40306a'; c.lineWidth = s * 0.08; c.beginPath(); c.moveTo(0, -s * 0.45); c.lineTo(0, s * 0.68); c.stroke();
     } else if (kind === 'artisan') {
       c.fillStyle = blanc; c.strokeStyle = blanc;
       if (sub === 'tailleur') {

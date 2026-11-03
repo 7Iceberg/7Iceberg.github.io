@@ -573,6 +573,28 @@ class Hud {
     this.openPanel('dialogue', `Le Marché des Cimes, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
+  // Le tableau des métiers de l'Hôtel des Métiers (docs/CITE-DES-CIMES.md) : pour chaque atelier, ses
+  // artisans, ce qu'on y fabrique (nombre de recettes, niveaux) et les ressources les plus demandées,
+  // d'où elles viennent (la récolte ou le butin des monstres).
+  openMetiers(ctx) {
+    const ateliers = (typeof Veille === 'object' && Veille.ATELIERS) || {};
+    const res = id => (DATA.content.resources || []).find(r => r.id === id);
+    const render = () => {
+      const lignes = Object.keys(ateliers).map(k => {
+        const recettes = Items.recipes().filter(r => r.workshop === k && Items.get(r.result));
+        if (!recettes.length) return '';
+        const niv = recettes.map(r => Items.get(r.result).level || 1), compte = {};
+        for (const r of recettes) for (const i of r.ingredients || []) compte[i.id] = (compte[i.id] || 0) + i.count;
+        const top = Object.entries(compte).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([id]) => { const d = Items.get(id), r = res(id); return d ? `${esc(d.name)}${r ? ` <small class="muted">(${r.node ? 'récolte' : 'butin'})</small>` : ''}` : ''; }).filter(Boolean).join(', ');
+        const artisans = DATA.content.npcs.filter(n => n.workshop === k).map(n => esc(n.name)).join(', ');
+        const exemples = recettes.slice().sort((a, b) => (Items.get(a.result).level || 1) - (Items.get(b.result).level || 1)).slice(0, 3).map(r => esc(Items.get(r.result).name)).join(', ');
+        return `<div class="row item"><span><b>L'atelier ${esc(ateliers[k])}</b> <small class="muted">${recettes.length} recettes, niveaux ${Math.min(...niv)} à ${Math.max(...niv)}</small><br><small>Artisans : ${artisans || '—'}</small><br><small>On y fait : ${exemples}…</small><br><small>Ce qu'il demande le plus : ${top}</small></span></div>`;
+      }).join('');
+      return `<p class="muted">Chaque métier a son atelier dans la Rue des Ateliers, à l'est de la Place : parle à l'artisan, ou touche sa machine.</p>${lignes}`;
+    };
+    this.openPanel('dialogue', `L'Hôtel des Métiers, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
+  }
+
   openWorkshop(ctx) {
     const render = () => {
       const ch = this.world.ch;

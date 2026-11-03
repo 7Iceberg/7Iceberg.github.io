@@ -891,7 +891,7 @@ DATA.content.npcs.push({
   dialogue: ['Plumes, cuir, soie, cire : ce qu\'il faut aux ateliers quand la récolte a été maigre.', 'Je rachète mieux que les marchands des routes. Mais si tout le monde m\'apporte des plumes le même jour, la plume baisse.'],
 });
 DATA.content.npcs.push({
-  id: 'aldric', name: 'Aldric', title: 'Maître des Métiers', look: 'ancien',
+  id: 'aldric', name: 'Aldric', title: 'Maître des Métiers', look: 'ancien', metiers: true,
   dialogue: ['Chaque métier a son atelier dans la Rue des Ateliers, à l\'est : la forge, la taille, la cordonnerie, la bijouterie, l\'alchimie. Touche la machine, l\'artisan fera le reste.', 'Ce qui se récolte dehors se façonne ici. Rapporte, fabrique, recommence : c\'est tout le secret.'],
 });
 DATA.content.npcs.push({
@@ -995,6 +995,25 @@ DATA.content.quests.push({
     done: ['Tu connais la ville. Maintenant il faut qu\'elle te connaisse.'],
   },
   rewards: { xp: 48, fils: 15, items: [{ id: 'pain_de_cime', count: 2 }] },
+});
+// La visite de la Cité (docs/CITE-DES-CIMES.md, C5) : une quête courte, une étape par service, comme
+// le tour d'Astrub des nouveaux venus.
+DATA.content.quests.push({
+  id: 'orsane_visite_cite', name: 'La visite de la Cité', level: 1,
+  giver: 'maelis', turnIn: 'maelis', requires: { level: 1, quests: ['orsane_arrivee'] },
+  steps: [
+    { type: 'talk', npc: 'ysolde', text: 'Passer à la Banque du Fil, à l\'ouest de la Place' },
+    { type: 'talk', npc: 'garen', text: 'Voir le Marché des Cimes, au sud-ouest de la Place' },
+    { type: 'talk', npc: 'aldric', text: 'Entrer à l\'Hôtel des Métiers, au nord-est de la Place' },
+    { type: 'talk', npc: 'saya', text: 'Monter au Dojo du Fil, sur les Terrasses' },
+    { type: 'talk', npc: 'maelis', text: 'Revenir voir Maëlis, près du Relais' },
+  ],
+  dialogue: {
+    offer: ['Une ville, ça se connaît à pied. La Banque garde ce que tu ne portes pas, le Marché achète ce que tu rapportes, l\'Hôtel des Métiers t\'apprend à fabriquer, le Dojo à frapper juste.', 'Fais le tour, puis reviens me voir.'],
+    progress: ['La Banque est à l\'ouest de la Place, le Marché au sud-ouest, l\'Hôtel des Métiers au nord-est, le Dojo en haut, sur les Terrasses.'],
+    done: ['Te voilà des Cimes. Les Clairières t\'attendent, et plus loin les Sentiers, les Toiles, les Éboulis.'],
+  },
+  rewards: { xp: 40, fils: 20, items: [{ id: 'pain_de_cime', count: 2 }] },
 });
 DATA.content.quests.push({
   id: 'orsane_lanternes_volees', name: 'Les lanternes volées', level: 2, main: true,
