@@ -51,7 +51,7 @@ const Save = (() => {
 
   // ----- Validation -----
   const isInt = (v, min, max) => Number.isInteger(v) && v >= (min == null ? -Infinity : min) && v <= (max == null ? Infinity : max);
-  const ALLOWED = new Set(['classId', 'name', 'gender', 'level', 'xp', 'statPoints', 'stats', 'equipment', 'inventory', 'fils', 'hp', 'titles', 'title', 'quests', 'counters', 'achievements', 'achClaimed', 'veille', 'pos', 'relay', 'relays', 'dungeon', 'autoStats', 'playTime', 'knots', 'ensembles', 'fight', 'mapTimers', 'flags', 'v', 'uid', 'voie', 'scrolls', 'faction', 'tuto']);
+  const ALLOWED = new Set(['classId', 'name', 'gender', 'level', 'xp', 'statPoints', 'stats', 'equipment', 'inventory', 'fils', 'hp', 'titles', 'title', 'quests', 'counters', 'achievements', 'achClaimed', 'veille', 'pos', 'relay', 'relays', 'dungeon', 'coffre', 'autoStats', 'playTime', 'knots', 'ensembles', 'fight', 'mapTimers', 'flags', 'v', 'uid', 'voie', 'scrolls', 'faction', 'tuto']);
   // Rangs des sorts (docs/SORTS.md) : { idDeSort: rang }, points de sort restants, répartition automatique.
   for (const k of ['spellRanks', 'spellPoints', 'autoSpells']) ALLOWED.add(k);
   // Création de personnage (js/accueil.js) : l'apparence.
@@ -191,6 +191,19 @@ const Save = (() => {
       inv[id] = n;
     }
     o.inventory = inv;
+    // Le coffre de la Banque du Fil : objets existants, quantités entières ; ses Fils.
+    const coffre = { items: {}, fils: 0 };
+    if (o.coffre && typeof o.coffre === 'object') {
+      const ci = o.coffre.items;
+      if (ci && typeof ci === 'object') for (const id of Object.keys(ci)) {
+        const n = ci[id];
+        if (!Items.get(id)) { bad(`objet inconnu au coffre ${id}`); continue; }
+        if (!isInt(n, 1, 99999)) { bad(`quantité au coffre ${id}`); continue; }
+        coffre.items[id] = n;
+      }
+      if (o.coffre.fils != null) { if (isInt(o.coffre.fils, 0, 1e9)) coffre.fils = o.coffre.fils; else bad('Fils du coffre'); }
+    }
+    o.coffre = coffre;
     // Équipement : objet existant, bon emplacement, niveau atteint ; sinon il retourne au sac.
     const eq = { coiffe: null, cape: null, amulette: null, anneau1: null, anneau2: null, ceinture: null, bottes: null, arme: null };
     if (o.equipment && typeof o.equipment === 'object') for (const slot of Object.keys(eq)) {
@@ -209,7 +222,7 @@ const Save = (() => {
     const counters = Character.defaults().counters;
     for (const k of ['fights', 'wins', 'crafts', 'gathers', 'filsEarned', 'questsDone']) { if (c[k] == null) continue; if (isInt(c[k], 0, 1e9)) counters[k] = c[k]; else bad(`compteur ${k}`); }
     if (counters.wins > counters.fights) { bad('victoires'); counters.wins = counters.fights; }
-    if (o.fils > counters.filsEarned) { bad('Fils au-delà des gains'); o.fils = counters.filsEarned; }
+    if (o.fils + o.coffre.fils > counters.filsEarned) { bad('Fils au-delà des gains'); o.fils = Math.min(o.fils, counters.filsEarned); o.coffre.fils = Math.max(0, Math.min(o.coffre.fils, counters.filsEarned - o.fils)); }
     for (const k of ['kills', 'feats']) if (c[k] && typeof c[k] === 'object') for (const id of Object.keys(c[k])) { if (isInt(c[k][id], 0, 1e9)) counters[k][id] = c[k][id]; else bad(`compteur ${k}.${id}`); }
     for (const k of ['maps', 'dungeons', 'bosses']) if (Array.isArray(c[k])) counters[k] = [...new Set(c[k].filter(x => typeof x === 'string'))];
     counters.maps = counters.maps.filter(id => World.mapDef(id));

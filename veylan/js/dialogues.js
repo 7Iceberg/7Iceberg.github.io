@@ -410,6 +410,7 @@ class Conversation {
     if (ctx.passage) out.push({ label: ctx.passage.texte, marque: '>', passage: true, data: { passage: ctx.passage.vers }, action: () => this.ailleurs(() => { if (!hud.world.passage()) hud.world.endDialogue(); }) });
     if (ctx.shop) out.push({ label: 'Voir tes marchandises.', action: () => this.ailleurs(() => hud.openShop(ctx)) });
     if (ctx.workshop) out.push({ label: 'Utiliser ton atelier.', action: () => this.ailleurs(() => hud.openWorkshop(ctx)) });
+    if (ctx.banque) out.push({ label: 'Ouvrir ton coffre.', action: () => this.ailleurs(() => hud.openBanque(ctx)) });
     if (!out.length) out.push({ label: 'Au revoir.', action: () => this.fermer() });
     return out;
   }

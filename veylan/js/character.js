@@ -7,11 +7,16 @@ class Character {
       stats: { vita: 0, sagesse: 0, force: 0, intel: 0, chance: 0, agi: 0 },
       equipment: { coiffe: null, cape: null, amulette: null, anneau1: null, anneau2: null, ceinture: null, bottes: null, arme: null },
       inventory: {}, fils: 0, hp: null, titles: [], title: null,
+      // Le coffre de la Banque du Fil (docs/CITE-DES-CIMES.md) : des objets et des Fils, sans limite de poids.
+      coffre: { items: {}, fils: 0 },
       quests: { active: {}, done: [] },
       counters: { fights: 0, wins: 0, kills: {}, maps: [], crafts: 0, gathers: 0, filsEarned: 0, dungeons: [], dungeonTurns: {}, bosses: [], questsDone: 0, feats: {} },
       achievements: [], pos: null, relay: null, relays: [], dungeon: null, autoStats: true, playTime: 0, knots: [], ensembles: [], voie: null, scrolls: {},
       look: null,
     }, data || {});
+    if (!this.coffre || typeof this.coffre !== 'object') this.coffre = { items: {}, fils: 0 };
+    if (!this.coffre.items || typeof this.coffre.items !== 'object') this.coffre.items = {};
+    if (!Number.isFinite(this.coffre.fils)) this.coffre.fils = 0;
     // Une sauvegarde plus ancienne peut manquer de champs imbriqués : on complète sans écraser.
     const base = new.target === Character && data ? Character.defaults() : null;
     if (base) {

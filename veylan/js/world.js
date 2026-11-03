@@ -554,6 +554,7 @@ class World {
       answers: Quests.answersFor(this.ch, npc.id),
       shop: npc.def.shop || null,
       workshop: npc.def.workshop || null,
+      banque: !!npc.def.banque,
       // Un passeur (la Nacelle d'Ervane, docs/ILE-TECHNIQUE.md, 2.9) : offert quand sa quête est faite.
       passage: this.passageDe(npc),
     };
@@ -706,6 +707,49 @@ class World {
     this.ch.fils += gain;
     this.ch.counters.filsEarned += gain;
     this.checkAchievements();
+    this.emit('update');
+    return true;
+  }
+
+  // La Banque du Fil (docs/CITE-DES-CIMES.md) : déposer et retirer des objets et des Fils, seulement
+  // en parlant à la banquière (un PNJ `banque`), hors combat. Le coffre n'a pas de limite de poids ;
+  // ce qu'il garde ne compte pas pour les quêtes (comme dans le sac d'un autre).
+  aLaBanque() { return !!(this.talkNpc && this.talkNpc.def && this.talkNpc.def.banque) && this.state !== 'combat'; }
+  static okBanque(n) { return Number.isInteger(n) && n >= 1 && n <= 99999; }
+  deposer(id, n) {
+    n = n == null ? 1 : Number(n);
+    if (!this.aLaBanque() || !Items.get(id) || !World.okBanque(n) || !this.ch.has(id, n)) return false;
+    this.ch.removeItem(id, n);
+    const c = this.ch.coffre;
+    c.items[id] = (c.items[id] || 0) + n;
+    this.afterEvents(Quests.onEvent(this.ch, { type: 'inventory' }));
+    this.emit('update');
+    return true;
+  }
+  retirer(id, n) {
+    n = n == null ? 1 : Number(n);
+    const c = this.ch.coffre;
+    if (!this.aLaBanque() || !World.okBanque(n) || !c || (c.items[id] || 0) < n) return false;
+    c.items[id] -= n;
+    if (c.items[id] <= 0) delete c.items[id];
+    this.ch.addItem(id, n);
+    this.afterEvents(Quests.onEvent(this.ch, { type: 'inventory' }));
+    this.emit('update');
+    return true;
+  }
+  deposerFils(n) {
+    n = Number(n);
+    if (!this.aLaBanque() || !Number.isInteger(n) || n < 1 || n > this.ch.fils) return false;
+    this.ch.fils -= n;
+    this.ch.coffre.fils += n;
+    this.emit('update');
+    return true;
+  }
+  retirerFils(n) {
+    n = Number(n);
+    if (!this.aLaBanque() || !Number.isInteger(n) || n < 1 || n > this.ch.coffre.fils) return false;
+    this.ch.coffre.fils -= n;
+    this.ch.fils += n;
     this.emit('update');
     return true;
   }

@@ -532,6 +532,26 @@ class Hud {
     this.openPanel('dialogue', `Boutique de ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
+  // La Banque du Fil : le sac à gauche, le coffre à droite ; un objet passe de l'un à l'autre (un, ou
+  // toute la pile) ; les Fils par cent ou tous.
+  openBanque(ctx) {
+    const render = () => {
+      const ch = this.world.ch, c = ch.coffre || { items: {}, fils: 0 };
+      const trie = o => Object.entries(o).filter(([id]) => Items.get(id)).sort((a, b) => Items.get(a[0]).name.localeCompare(Items.get(b[0]).name));
+      const ligne = (id, n, act, lab) => `<div class="row item"><span><b>${esc(Items.get(id).name)}</b> ×${n}</span><span class="btns"><button data-act="${act}" data-id="${id}" data-n="1">${lab}</button>${n > 1 ? `<button data-act="${act}" data-id="${id}" data-n="${n}">Tout</button>` : ''}</span></div>`;
+      const fils = (act, n, lab) => `<button data-act="${act}" data-n="${n}"${n >= 1 ? '' : ' disabled'}>${lab}</button>`;
+      const sac = trie(ch.inventory).map(([id, n]) => ligne(id, n, 'bdeposer', 'Déposer')).join('') || '<p class="muted">Ton sac est vide.</p>';
+      const coffre = trie(c.items).map(([id, n]) => ligne(id, n, 'bretirer', 'Retirer')).join('') || '<p class="muted">Le coffre est vide.</p>';
+      return `<div class="banque"><section class="banque__col"><h4>Ton sac</h4><p class="banque__fils">${ch.fils} Fils <span class="btns">${fils('bdeposerfils', Math.min(100, ch.fils), 'Déposer 100')}${fils('bdeposerfils', ch.fils, 'Tout')}</span></p>${sac}</section>`
+        + `<section class="banque__col"><h4>Ton coffre</h4><p class="banque__fils">${c.fils} Fils <span class="btns">${fils('bretirerfils', Math.min(100, c.fils), 'Retirer 100')}${fils('bretirerfils', c.fils, 'Tout')}</span></p>${coffre}</section></div>`;
+    };
+    this.actions.bdeposer = d => { this.world.deposer(d.id, Number(d.n)); };
+    this.actions.bretirer = d => { this.world.retirer(d.id, Number(d.n)); };
+    this.actions.bdeposerfils = d => { this.world.deposerFils(Number(d.n)); };
+    this.actions.bretirerfils = d => { this.world.retirerFils(Number(d.n)); };
+    this.openPanel('dialogue', `La Banque du Fil, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
+  }
+
   openWorkshop(ctx) {
     const render = () => {
       const ch = this.world.ch;
