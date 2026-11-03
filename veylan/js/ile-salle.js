@@ -20,12 +20,38 @@ const IleSalle = (() => {
   const hex = (h, k) => { const T = THREE_(), c = new T.Color(h); return [c.r * k, c.g * k, c.b * k]; };
   let THREE_ = () => window.THREE;
 
+  const TUILES = { claire: [1, 3, 3], amarre: [3, 3, 2], planches: [3, 3, 2], forge: [3, 3, 1], cuve: [3, 3, 2] };
+  const TEXTURES = ['terrier', 'toiles', 'boues', 'mine'];
+  const IMAGES = {};
+  function source(chemin) {
+    try {
+      const ref = document.querySelector('script[src*="ile-salle.js"]');
+      if (ref && ref.src) { const u = new URL(ref.src); return new URL('../' + chemin, u).href + u.search; }
+    } catch (e) {   }
+    return chemin;
+  }
+  function image(nom) {
+    if (!IMAGES[nom] && typeof Image !== 'undefined') { const im = new Image(); im.src = source('assets/decor/donjons/' + nom + '.jpg'); IMAGES[nom] = im; }
+    return IMAGES[nom];
+  }
+  const prete = im => !!(im && im.complete && im.naturalWidth > 0);
+  function precharger() {
+    for (const n of Object.keys(TUILES)) for (const k of 'abc') image(n + '-' + k);
+    for (const n of TEXTURES) image(n);
+  }
+  if (typeof document !== 'undefined') precharger();
+
   function peindreSol(layout, style, S) {
     const P = PALETTES[style.sol] || PALETTES.dalles_amarre;
+    const jeu = style.tuiles && TUILES[style.tuiles] ? [...'abc'].map(k => image(style.tuiles + '-' + k)) : null;
+    const tuiles = jeu && jeu.every(prete) ? jeu : null, poids = tuiles ? TUILES[style.tuiles] : null;
+    const tex = style.texture && TEXTURES.includes(style.texture) ? image(style.texture) : null;
     const c = document.createElement('canvas'); c.width = S; c.height = S;
     const g = c.getContext('2d'), cs = S / N;
     const R = M().hasard(M().cle('salle:' + (style.sol || '') + ':' + layout.join('/')));
     const at = (x, y) => (y >= 0 && y < N && x >= 0 && x < N ? layout[y][x] : '#');
+    const motif = !tuiles && prete(tex) ? g.createPattern(tex, 'repeat') : null, fM = 7.5 * cs / ((tex && tex.naturalWidth) || 512);
+    const tirer = () => { const t = poids.reduce((a, b) => a + b, 0) * R(); let acc = 0; for (let i = 0; i < poids.length; i++) { acc += poids[i]; if (t < acc) return tuiles[i]; } return tuiles[0]; };
     g.fillStyle = P.joint; g.fillRect(0, 0, S, S);
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
       const ch = at(x, y), X = x * cs, Y = y * cs;
@@ -73,7 +99,14 @@ const IleSalle = (() => {
         continue;
       }
       const col = P.dalles[Math.floor(R() * P.dalles.length)], r = 1.5;
-      if (P.genre === 'planches') {
+      const peint = !!(tuiles || motif);
+      if (tuiles) {
+        g.drawImage(tirer(), X, Y, cs + 0.5, cs + 0.5);
+        g.globalAlpha = 0.04 + R() * 0.08; g.fillStyle = R() < 0.5 ? '#000000' : '#ffffff'; g.fillRect(X, Y, cs + 0.5, cs + 0.5); g.globalAlpha = 1;
+      } else if (motif) {
+        g.save(); g.beginPath(); g.rect(X - 0.5, Y - 0.5, cs + 1, cs + 1); g.clip(); g.scale(fM, fM);
+        g.fillStyle = motif; g.fillRect((X - 0.5) / fM, (Y - 0.5) / fM, (cs + 1) / fM, (cs + 1) / fM); g.restore();
+      } else if (P.genre === 'planches') {
         for (let k = 0; k < 2; k++) {
           const Yk = Y + k * cs / 2, h = cs / 2, c2 = P.dalles[Math.floor(R() * P.dalles.length)];
           g.fillStyle = c2; g.fillRect(X, Yk + 1, cs + 0.5, h - 2);
@@ -93,8 +126,8 @@ const IleSalle = (() => {
       g.fillStyle = 'rgba(255,255,255,0.09)'; g.fillRect(X + r, Y + r, cs - 2 * r, 2); g.fillRect(X + r, Y + r, 2, cs - 2 * r);
       g.fillStyle = 'rgba(0,0,0,0.2)'; g.fillRect(X + r, Y + cs - r - 2, cs - 2 * r, 2); g.fillRect(X + cs - r - 2, Y + r, 2, cs - 2 * r);
       }
-      if (!P.genre) for (let i = 0; i < 4; i++) { g.globalAlpha = 0.07 + R() * 0.1; g.fillStyle = R() < 0.5 ? '#000000' : '#ffffff'; g.beginPath(); g.ellipse(X + r + R() * (cs - 2 * r), Y + r + R() * (cs - 2 * r), 2 + R() * 6, 1.5 + R() * 3, R() * 3.1, 0, 6.3); g.fill(); }
-      if (!P.genre && R() < 0.45) {
+      if (!P.genre && !peint) for (let i = 0; i < 4; i++) { g.globalAlpha = 0.07 + R() * 0.1; g.fillStyle = R() < 0.5 ? '#000000' : '#ffffff'; g.beginPath(); g.ellipse(X + r + R() * (cs - 2 * r), Y + r + R() * (cs - 2 * r), 2 + R() * 6, 1.5 + R() * 3, R() * 3.1, 0, 6.3); g.fill(); }
+      if (!P.genre && !peint && R() < 0.45) {
         g.globalAlpha = 0.55; g.strokeStyle = P.fissure; g.lineWidth = Math.max(1, cs / 34);
         let fx = X + r + R() * (cs - 2 * r), fy = Y + r + R() * (cs - 2 * r);
         g.beginPath(); g.moveTo(fx, fy);
@@ -258,5 +291,5 @@ const IleSalle = (() => {
     return { groupe, lanternes, halos, aire, geos, brume };
   }
 
-  return { peindreSol, construire, PALETTES, PAROIS };
+  return { peindreSol, construire, PALETTES, PAROIS, TUILES, TEXTURES };
 })();

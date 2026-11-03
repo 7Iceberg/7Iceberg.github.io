@@ -1415,7 +1415,7 @@ DATA.content.quests.push({
 DATA.content.dungeons.push({
   id: 'terrier_du_grand_grouk', name: 'Le Terrier du Grand Grouk', zone: 'orsane_eboulis', level: [15, 20],
   entryMap: 'orsane_eboulis_terrier',
-  salles3d: { sol: 'terre_battue', paroi: 'terre', lumiere: '#f2a64e', brume: '#2a2018' },
+  salles3d: { texture: 'terrier', sol: 'terre_battue', paroi: 'terre', lumiere: '#f2a64e', brume: '#2a2018' },
   keyItem: 'cle_du_terrier',
   description: 'Cinq salles creusées sous les Éboulis par dix ans de griffes, de plus en plus chaudes à mesure qu\'on descend. Au fond, le Grand Grouk attend, et sa horde avec lui. On entre avec la Clé du Terrier ; la pierre de la Gueule la garde.',
   rooms: [
@@ -1532,7 +1532,7 @@ DATA.content.dungeons.push({
 DATA.content.dungeons.push({
   id: 'grenier_des_pilous', name: 'Le Grenier des Glyms', zone: 'orsane_clairieres', level: [4, 6],
   entryMap: 'orsane_clairieres_bosquet',
-  salles3d: { sol: 'planches', paroi: 'bois', lumiere: '#f2c14e', brume: '#2b2418' },
+  salles3d: { tuiles: 'planches', sol: 'planches', paroi: 'bois', lumiere: '#f2c14e', brume: '#2b2418' },
   keyItem: null,
   description: 'Le grenier d\'une vieille grange du Bosquet, où les Glyms entassent toutes les lanternes qu\'ils chapardent. Ça sent la paille, la plume et la mèche brûlée.',
   rooms: [
@@ -1607,7 +1607,7 @@ DATA.content.dungeons.push({
 DATA.content.dungeons.push({
   id: 'voliere_des_kavous', name: 'La Volière des Kavous', zone: 'orsane_sentiers', level: [12, 14],
   entryMap: 'orsane_sentiers_crete',
-  salles3d: { sol: 'dalles_claires', paroi: 'roche_grise', lumiere: '#e8d890', brume: '#262a38' },
+  salles3d: { tuiles: 'claire', sol: 'dalles_claires', paroi: 'roche_grise', lumiere: '#e8d890', brume: '#262a38' },
   keyItem: null,
   description: 'La vieille volière de Thoril, accrochée à la Crête : un perchoir par couleur, et des Kavous partout. Au sommet, le Kavou Prisme change de couleur plus vite qu\'on ne change d\'avis.',
   rooms: [
@@ -1724,7 +1724,7 @@ DATA.content.dungeons.push({
 DATA.content.dungeons.push({
   id: 'nid_des_toiles', name: 'Le Nid des Toiles', zone: 'orsane_toiles', level: [12, 14],
   entryMap: 'orsane_toiles_nid',
-  salles3d: { sol: 'sous_bois', paroi: 'bois_mort', lumiere: '#c8e0a0', brume: '#1e2428' },
+  salles3d: { texture: 'toiles', sol: 'sous_bois', paroi: 'bois_mort', lumiere: '#c8e0a0', brume: '#1e2428' },
   keyItem: null,
   description: 'Sous le Nid, les toiles descendent en galeries tièdes et serrées, où les Filins jouent et les Veilloches éclairent le travail. Tout au fond, la Fileuse dort dans son cocon, tenu par deux fils.',
   rooms: [

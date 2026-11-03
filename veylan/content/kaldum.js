@@ -1354,7 +1354,7 @@ DATA.content.quests.push({
 DATA.content.dungeons.push({
   id: 'forge_morte', name: 'La Forge Morte', zone: 'kaldum_fonderie', level: [28, 30],
   entryMap: 'kaldum_fonderie_forge',
-  salles3d: { sol: 'basalte', paroi: 'basalte', lumiere: '#ff7a30', brume: '#2a1410' },
+  salles3d: { tuiles: 'forge', sol: 'basalte', paroi: 'basalte', lumiere: '#ff7a30', brume: '#2a1410' },
   keyItem: null,
   description: "La forge de Dorm, ensevelie sous la Fonderie depuis la Grande Colère. Elle s'est rallumée, et c'est la chaleur de Kaldum qu'elle brûle.",
   rooms: [
@@ -1450,7 +1450,7 @@ DATA.content.dungeons.push({
 DATA.content.dungeons.push({
   id: 'boues_chaudes', name: 'Les Boues Chaudes', zone: 'kaldum_galeries', level: [20, 24],
   entryMap: 'kaldum_galeries_eboulement',
-  salles3d: { sol: 'terre_battue', paroi: 'terre', lumiere: '#e8a860', brume: '#2a2018' },
+  salles3d: { texture: 'boues', sol: 'terre_battue', paroi: 'terre', lumiere: '#e8a860', brume: '#2a2018' },
   keyItem: null,
   description: "Sous l'Éboulement, des bassins de boue tiède où les mineurs prenaient leur bain. La Glaise Mère s'y est levée, et ses petits Gleks barbotent partout.",
   rooms: [
@@ -1525,7 +1525,7 @@ DATA.content.dungeons.push({
 DATA.content.dungeons.push({
   id: 'mine_des_tholous', name: 'La Mine des Tholous', zone: 'kaldum_vapeurs', level: [24, 28],
   entryMap: 'kaldum_vapeurs_bouche',
-  salles3d: { sol: 'terre_battue', paroi: 'bois', lumiere: '#f2c14e', brume: '#1e1a16' },
+  salles3d: { texture: 'mine', sol: 'terre_battue', paroi: 'bois', lumiere: '#f2c14e', brume: '#1e1a16' },
   keyItem: null,
   description: "Une vieille mine abandonnée près de la Bouche des Vapeurs, devenue le dortoir le plus tiède de Kaldum. Les Tholous y ronronnent en tas, et le Grand Tholou ne quitte jamais son Molh.",
   rooms: [
@@ -1600,7 +1600,7 @@ DATA.content.dungeons.push({
 DATA.content.dungeons.push({
   id: 'cuve_des_cendrous', name: 'La Cuve des Cendrous', zone: 'kaldum_vapeurs', level: [26, 30],
   entryMap: 'kaldum_vapeurs_cuve',
-  salles3d: { sol: 'basalte', paroi: 'basalte', lumiere: '#d0c8b0', brume: '#262220' },
+  salles3d: { tuiles: 'cuve', sol: 'basalte', paroi: 'basalte', lumiere: '#d0c8b0', brume: '#262220' },
   keyItem: null,
   description: "Sous la Cuve, un puits de lave où les Cendrous portent les braises volées à la Fonderie. Au fond, Kraska, la Mère-Braise, les rallume une à une.",
   rooms: [

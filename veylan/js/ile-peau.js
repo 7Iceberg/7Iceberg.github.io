@@ -127,9 +127,20 @@ const IlePeau = (() => {
       if (!(haut > bas)) { const bb = this.geo.boundingBox; v.set(0, bb.min.y, 0).applyMatrix4(ex.mesh.matrixWorld); bas = v.y; v.set(0, bb.max.y, 0).applyMatrix4(ex.mesh.matrixWorld); haut = v.y; }
       this.brut = { bas, haut, hauteur: Math.max(0.01, haut - bas) };
       this.k = P.hauteur / this.brut.hauteur;
+      this.demiTour = Modele.sens(ex) < 0 ? Math.PI : 0;
       this.libre = [ex];
       this.exemplaires = [ex];
       this.arme = null;
+    }
+    static sens(ex) {
+      const os = n => ex.objets.find(o => o.name === n), p = o => { const v = new ex.racine.position.constructor(); o.getWorldPosition(v); return v; };
+      for (const [a, b] of [['LeftFoot', 'LeftToeBase'], ['RightFoot', 'RightToeBase'], ['Head', 'headfront']]) {
+        const oa = os(a), ob = os(b);
+        if (!oa || !ob) continue;
+        const dz = p(ob).z - p(oa).z;
+        if (Math.abs(dz) > 1e-4) return dz > 0 ? 1 : -1;
+      }
+      return -1;
     }
     exemplaire() {
       const THREE = this.THREE, G = this.G;
@@ -243,21 +254,26 @@ const IlePeau = (() => {
         if (ex.cap == null) ex.cap = cap;
         let d = cap - ex.cap; d = Math.atan2(Math.sin(d), Math.cos(d));
         ex.cap += d * (dt > 0 ? 1 - Math.exp(-dt / TAU_CAP) : 1);
-        r.rotation.y = ex.cap + Math.PI;
+        r.rotation.y = ex.cap + this.demiTour;
       }
       const P = this.P.clips;
       const marche = bouge && vitesse > 0.05;
       const vise = marche ? 1 : 0;
       ex.kMarche += (vise - ex.kMarche) * (dt > 0 ? 1 - Math.exp(-dt / TAU_MARCHE) : 1);
-      const course = P.course && vitesse > 2.4 ? P.course : P.marche;
-      const cRepos = this.clip('repos'), cMarche = course ? this.clips[course.nom] : null;
-      if (cMarche && ex.kMarche > 0.01) {
-        const vnat = (course.vitesse || 1) * kk, taux = Math.max(0.5, Math.min(2.4, (vitesse || vnat) / (vnat || 1)));
-        ex.tMarche += dt * taux;
+      const cRepos = this.clip('repos');
+      const cPas = P.marche ? this.clips[P.marche.nom] || null : null, cCourse = P.course ? this.clips[P.course.nom] || null : null;
+      const u = Math.max(0, Math.min(1, ((vitesse || 0) - 1.8) / 1.2));
+      const wCourse = cCourse ? (cPas ? u * u * (3 - 2 * u) : 1) : 0;
+      const taux = c => { const vnat = (c.vitesse || 1) * kk; return Math.max(0.5, Math.min(2.4, (vitesse || vnat) / (vnat || 1))); };
+      if (ex.kMarche > 0.01) {
+        if (cPas) ex.tMarche += dt * taux(P.marche);
+        if (cCourse) ex.tCourse = (ex.tCourse || 0) + dt * taux(P.course);
       }
+      const kM = Math.min(1, ex.kMarche), avecPas = !!cPas && wCourse < 0.999;
       this.reposer(ex);
       if (cRepos) this.meler(ex, cRepos, t + ex.hsh, 1, true);
-      if (cMarche) this.meler(ex, cMarche, ex.tMarche, Math.min(1, ex.kMarche), true);
+      if (avecPas) this.meler(ex, cPas, ex.tMarche, kM, true);
+      if (cCourse && wCourse > 0.001) this.meler(ex, cCourse, ex.tCourse || 0, avecPas ? wCourse : kM, true);
       const g = geste && (geste.type === 'sort' || geste.type === 'coup') ? geste : null;
       const cG = g ? this.P.clips[g.type] : null, clipG = cG ? this.clips[cG.nom] : null;
       ex.kGeste += ((clipG ? 1 : 0) - ex.kGeste) * (dt > 0 ? 1 - Math.exp(-dt / TAU_GESTE) : 1);

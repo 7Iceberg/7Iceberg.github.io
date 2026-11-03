@@ -727,7 +727,7 @@
     keyItem: null,
     entree: { niveau: 7, quete: 'ervane_puits' },
     entreeEnCombat: true,
-    salles3d: { sol: 'dalles_amarre', paroi: 'roche_grise', lumiere: '#f2c14e', brume: '#2a2238', accessoires: [{ salle: 2, sorte: 'fil_d_or', case: [7, 1] }] },
+    salles3d: { tuiles: 'amarre', sol: 'dalles_amarre', paroi: 'roche_grise', lumiere: '#f2c14e', brume: '#2a2238', accessoires: [{ salle: 2, sorte: 'fil_d_or', case: [7, 1] }] },
     description: 'Le puits creusé dans la pointe de l\'île, où le fil d\'or de l\'amarre se noue à un anneau de pierre. On y descend par le treuil, le long du fil, jusqu\'au nœud que Krobb mâche.',
     rooms: [
       {
