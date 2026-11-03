@@ -325,6 +325,9 @@ class UI {
     if (s.aoe.shape === 'pierce') lines.push('Traverse la ligne jusqu\'au bord ou au premier rocher');
     if (s.fury) lines.push(`+${s.fury} Fureur si un ennemi est touché`);
     if (s.furySpend) lines.push(`+${s.furySpend} % par point de Fureur, toute la Fureur dépensée`);
+    if (s.braiseCost) lines.push(`Coûte ${s.braiseCost} de Braise`);
+    if (s.braise) lines.push(`+${s.braise} de Braise si un ennemi est touché`);
+    if (s.braiseSpend) lines.push(`+${s.braiseSpend} % par point de Braise, toute la Braise soufflée`);
     if (s.oathPierce) lines.push('Contre le juré : ni esquive ni armure');
     if (s.affutBonus) lines.push(`+${s.affutBonus} % à l'Affût`);
     if (s.keepsAffut) lines.push('Ne casse pas l\'Affût');
@@ -645,7 +648,7 @@ class UI {
       case 'range': return `+${f.value} portée (${t})`;
       case 'echo': return `écho, ${f.uses} résonance(s) (${t})`;
       case 'state': {
-        const names = { invisible: 'invisible', stunned: 'sonné', invulnerable: 'invulnérable', lanterne: 'tient sa lanterne (esquive à distance)', ivre: 'ivre (vole de la vie au contact)', unhealable: 'insoignable' };
+        const names = { invisible: 'invisible', stunned: 'sonné', invulnerable: 'invulnérable', lanterne: 'tient sa lanterne (esquive à distance)', assise: 'assis comme la montagne (rien ne le déplace, ses prises portent une case de plus, vole de la vie au contact)', unhealable: 'insoignable' };
         if (f.name === 'provoked') return `provoqué par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
         if (f.name === 'sworn') return `juré par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
         if (f.name === 'tracked') return `traqué par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
@@ -670,7 +673,7 @@ class UI {
     const kit = [];
     if (p.kit && p.kit.fury) kit.push(`Fureur ${p.fury} / ${p.kit.fury.max}`);
     if (c.isAffut(p)) kit.push('à l\'affût');
-    if (p.kit && p.kit.blood) kit.push(`Sang Versé ${c.bloodOf(p)} %`);
+    if (p.kit && p.kit.braise) kit.push(`Braise ${c.braiseOf(p)} / ${p.kit.braise.max}${c.braiseOf(p) >= p.kit.braise.surchauffe ? ' (surchauffe)' : ''}`);
     if (c.isArmed(p)) kit.push(`armé (−${p.kit.armed.reduction} % subis)`);
     const effects = kit.concat(p.effects.map(f => this.describeEffect(f))).join(', ');
     this.effetsTexte = effects;

@@ -138,17 +138,17 @@ spells.grappin = S('grappin', { name: 'Grappin', element: 'neutre', pa: 2, range
 spells.detonation = S('detonation', { name: 'Détonation', element: 'feu', pa: 4, range: [0, 8], los: false, target: 'summon', aoe: circle1, affects: 'enemies', effects: [dmg(12, 16)], cooldown: 2, desc: 'Une explosion autour de sa tourelle, sans ligne de vue.' });
 spells.forge = S('forge', { name: 'Forge', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [power(25, 1)], cooldown: 2, desc: '+25 % de dégâts.' });
 
-spells.serment_de_sang = S('serment_de_sang', { name: 'Serment de Sang', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', selfEffects: [{ type: 'selfDamagePct', pct: 15 }, { type: 'paNow', value: 2 }], maxPerTurn: 1, desc: 'Perd 15 % de ses PV, gagne 2 PA tout de suite.' });
-spells.charge = S('charge', { name: 'Charge', element: 'neutre', pa: 3, range: [2, 4], line: true, target: 'free', effects: [{ type: 'teleport' }], cooldown: 2, desc: 'Fonce en ligne sur une case libre.' });
-spells.taillade = S('taillade', { name: 'Taillade', element: 'feu', pa: 3, range: [1, 1], effects: [dmg(14, 18)], desc: 'Un coup de lame.' });
-spells.dernier_souffle = S('dernier_souffle', { name: 'Dernier Souffle', element: 'feu', pa: 4, range: [1, 2], effects: [dmg(17, 21)], lowHpBonus: { below: 30, mult: 2 }, desc: 'Dégâts doublés si le Karsh est sous 30 % de vie.' });
+spells.serment_de_sang = S('serment_de_sang', { name: 'Tirage', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', braiseCost: 2, selfEffects: [{ type: 'paNow', value: 2 }], maxPerTurn: 1, desc: 'Dépense 2 de Braise, gagne 2 PA tout de suite.' });
+spells.charge = S('charge', { name: 'Charge', element: 'neutre', pa: 3, range: [2, 4], line: true, target: 'free', effects: [{ type: 'teleport' }], selfEffects: [{ type: 'braiseNow', value: 1 }], cooldown: 2, desc: 'Fonce en ligne sur une case libre ; +1 de Braise.' });
+spells.taillade = S('taillade', { name: 'Taillade', element: 'feu', pa: 3, range: [1, 1], effects: [dmg(14, 18)], braise: 1, desc: 'Un coup de lame ; +1 de Braise s\'il porte.' });
+spells.dernier_souffle = S('dernier_souffle', { name: 'Dernier Souffle', element: 'feu', pa: 4, range: [1, 2], effects: [dmg(17, 21)], braiseSpend: 20, cooldown: 1, desc: 'Toute la Braise dépensée : +20 % de dégâts par point.' });
 spells.hurlement = S('hurlement', { name: 'Hurlement', element: 'feu', pa: 2, range: [0, 0], los: false, target: 'self', aoe: circle1, affects: 'enemies', effects: [dmg(4, 6), pa(-1, 1)], cooldown: 2, desc: 'Les ennemis adjacents perdent 1 PA.' });
 spells.sang_pour_sang = S('sang_pour_sang', { name: 'Sang pour sang', element: 'feu', pa: 3, range: [1, 3], effects: [dmg(9, 12)], lifesteal: 50, desc: 'La moitié des dégâts revient en soin.' });
 spells.brulure = S('brulure', { name: 'Brûlure', element: 'feu', pa: 3, range: [1, 3], effects: [dmg(6, 8), dot('feu', 4, 2)], desc: 'Brûle pendant 2 tours.' });
 spells.lien_de_sang = S('lien_de_sang', { name: 'Lien de Sang', element: 'feu', pa: 3, range: [2, 5], line: true, effects: [dmg(5, 7), pull(3)], cooldown: 2, desc: 'Attire la cible de 3 cases, en ligne.' });
 spells.colosse = S('colosse', { name: 'Colosse', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [shield(25, 1)], cooldown: 3, desc: 'Un bouclier de 25 pour un tour.' });
-spells.frappe_lourde = S('frappe_lourde', { name: 'Frappe lourde', element: 'feu', pa: 4, range: [1, 1], effects: [dmg(20, 25), push(1)], maxPerTurn: 1, desc: 'Le gros coup, qui repousse.' });
-spells.rage = S('rage', { name: 'Rage', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [power(35, 1)], selfEffects: [{ type: 'selfDamagePct', pct: 15 }], cooldown: 3, desc: '+35 % de dégâts contre 15 % de ses PV.' });
+spells.frappe_lourde = S('frappe_lourde', { name: 'Frappe lourde', element: 'feu', pa: 4, range: [1, 1], effects: [dmg(20, 25), push(1)], braise: 1, maxPerTurn: 1, desc: 'Le gros coup, qui repousse ; +1 de Braise s\'il porte.' });
+spells.rage = S('rage', { name: 'Rage', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [power(35, 1)], braiseCost: 3, cooldown: 3, desc: '+35 % de dégâts ce tour, contre 3 de Braise.' });
 
 spells.cadence = S('cadence', { name: 'Cadence', element: 'neutre', pa: 1, range: [0, 5], target: 'ally', affectsCaster: true, effects: [Object.assign(pa(1, 1), { selfNow: 2 })], maxPerTurn: 1, desc: '+1 PA à un allié pour son prochain tour ; sur soi, +2 PA tout de suite.' });
 spells.refrain = S('refrain', { name: 'Refrain', element: 'neutre', pa: 3, range: [0, 4], los: false, target: 'any', aoe: circle1, affects: 'allies', affectsCaster: true, effects: [pm(1, 1)], cooldown: 2, desc: '+1 PM aux alliés d\'une zone.' });
@@ -164,15 +164,15 @@ spells.silence = S('silence', { name: 'Silence', element: 'air', pa: 3, range: [
 spells.transposition = S('transposition', { name: 'Transposition', element: 'neutre', pa: 2, range: [1, 4], effects: [{ type: 'swap' }], maxPerTurn: 2, desc: 'Échange sa place avec la cible, alliée ou ennemie.' });
 spells.lancer = S('lancer', { name: 'Lancer', element: 'terre', pa: 3, range: [1, 1], effects: [dmg(10, 13), push(3)], desc: 'Jette la cible à 3 cases.' });
 spells.projection = S('projection', { name: 'Projection', element: 'terre', pa: 3, range: [2, 5], effects: [dmg(5, 7), pull(3)], desc: 'Attire la cible de 3 cases.' });
-spells.poigne = S('poigne', { name: 'Poigne', element: 'terre', pa: 3, range: [1, 1], effects: [dmg(15, 18)], lifestealIfState: { state: 'ivre', pct: 30 }, desc: 'Un coup de poing.' });
+spells.poigne = S('poigne', { name: 'Poigne', element: 'terre', pa: 3, range: [1, 1], effects: [dmg(15, 18)], lifestealIfState: { state: 'assise', pct: 30 }, desc: 'Un coup de poing.' });
 spells.ancre = S('ancre', { name: 'Ancre', element: 'eau', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(6, 8), root], cooldown: 2, desc: 'La cible ne bouge plus un tour.' });
-spells.gorgee_de_cime = S('gorgee_de_cime', { name: 'Gorgée de Cime', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [state('ivre', 2), { type: 'armor', value: 15, turns: 2 }], selfEffects: [{ type: 'pmNow', value: -1 }], cooldown: 3, desc: 'Ivre 2 tours : −1 PM tout de suite, −15 % de dégâts subis, et les coups au contact volent de la vie.' });
+spells.gorgee_de_cime = S('gorgee_de_cime', { name: 'Assise de Durren', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [state('assise', 2)], selfEffects: [{ type: 'pmNow', value: -1 }], cooldown: 3, desc: 'Assis comme la montagne 2 tours : −1 PM tout de suite, rien ne le déplace, ses prises portent une case de plus, et les coups au contact rendent 30 % des dégâts en PV.' });
 spells.bascule = S('bascule', { name: 'Bascule', element: 'neutre', pa: 2, range: [1, 2], effects: [dmg(3, 5), push(1), pm(-1, 1)], desc: 'Pousse d\'une case et retire 1 PM.' });
 spells.glyphe_de_garde = S('glyphe_de_garde', { name: 'Glyphe de Garde', element: 'neutre', pa: 3, range: [0, 3], target: 'any', los: false, aoe: circle1, effects: [{ type: 'glyph', name: 'Glyphe de Garde', turns: 2, affects: 'allies', effects: [{ type: 'shield', pctOwnerHp: 8 }] }], cooldown: 2, desc: 'Trace un glyphe pour 2 tours : chaque allié qui commence son tour dedans, le lanceur compris, reçoit un bouclier de 8 % des PV du lanceur.' });
 spells.glyphe_pesant = S('glyphe_pesant', { name: 'Glyphe Pesant', element: 'terre', pa: 3, range: [1, 4], target: 'any', aoe: circle1, effects: [{ type: 'glyph', name: 'Glyphe Pesant', turns: 2, affects: 'enemies', effects: [dmg(6, 8), pm(-2, 1)] }], cooldown: 3, desc: 'Trace un glyphe pour 2 tours : chaque ennemi qui commence son tour dedans subit 6 à 8 terre et perd 2 PM.' });
 spells.mur_de_chair = S('mur_de_chair', { name: 'Mur de chair', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [shield(20, 2)], cooldown: 3, desc: 'Un bouclier de 20.' });
 spells.vague = S('vague', { name: 'Vague', element: 'terre', pa: 4, range: [1, 3], line: true, target: 'any', aoe: line3, effects: [dmg(12, 15), push(1)], cooldown: 1, desc: 'Une ligne de 3 cases qui repousse.' });
-spells.etreinte = S('etreinte', { name: 'Étreinte', element: 'terre', pa: 4, range: [1, 1], effects: [dmg(17, 21), pa(-1, 1)], lifestealIfState: { state: 'ivre', pct: 30 }, desc: 'Serre fort : la cible perd 1 PA.' });
+spells.etreinte = S('etreinte', { name: 'Étreinte', element: 'terre', pa: 4, range: [1, 1], effects: [dmg(17, 21), pa(-1, 1)], lifestealIfState: { state: 'assise', pct: 30 }, desc: 'Serre fort : la cible perd 1 PA.' });
 spells.elan = S('elan', { name: 'Élan', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', selfEffects: [{ type: 'pmNow', value: 1 }], cooldown: 1, desc: '+1 PM tout de suite.' });
 
 spells.appel_du_grouk = S('appel_du_grouk', { name: 'Appel du Grouk', element: 'neutre', pa: 4, range: [1, 3], target: 'free', effects: [{ type: 'summon', monster: 'grouk_apprivoise', count: 1 }], cooldown: 2, desc: 'Invoque un Grouk apprivoisé, un cogneur.' });
@@ -362,16 +362,16 @@ DATA.classes = {
     armed: { reduction: 10, summon: 'tourelle' },
     spells: ['tourelle_de_kaldum', 'mur_articule', 'mine_a_fil', 'marteau', 'surchauffe', 'reparation', 'propulseur', 'grappin', 'detonation', 'forge'],
     desc: 'Pose des tourelles, des murs, des mines ; fait éclater sa tourelle, et tient mieux tant qu\'elle n\'est pas posée.' },
-  karsh: { id: 'karsh', name: 'Karsh', title: 'Lame de Sang', role: 'Mêlée', glyph: 'Kr', color: '#d9452b', hp: 150, pa: 6, pm: 3, initiative: 80,
-    blood: { per: 5, max: 15 },
+  karsh: { id: 'karsh', name: 'Karsh', title: 'Lame de Braise', role: 'Mêlée', glyph: 'Kr', color: '#d9452b', hp: 150, pa: 6, pm: 3, initiative: 80,
+    braise: { max: 5, debut: 1, perTurn: 2, power: 3, surchauffe: 5, brulure: 6 },
     spells: ['serment_de_sang', 'charge', 'taillade', 'dernier_souffle', 'hurlement', 'sang_pour_sang', 'lien_de_sang', 'colosse', 'frappe_lourde', 'rage'],
-    desc: 'Plus il est blessé, plus il frappe et moins il encaisse ; dépense ses PV pour des PA, ramène ses proies au contact.' },
+    desc: 'Chauffe à chaque tour : sa Braise nourrit ses coups, se dépense en PA et en fournaise, et le brûle s\'il la laisse monter ; ramène ses proies au contact.' },
   mirel: { id: 'mirel', name: 'Mirel', title: 'Chantre', role: 'Soutien', glyph: 'M', color: '#a8e6d8', hp: 105, pa: 6, pm: 3, initiative: 100,
     spells: ['cadence', 'refrain', 'dissonance', 'note_vive', 'berceuse', 'envolee', 'choeur', 'cri', 'tempo', 'silence'],
     desc: 'Donne des PA et des PM, chante des zones, affaiblit l\'ennemi.' },
-  thalor: { id: 'thalor', name: 'Thalor', title: 'Porteur', role: 'Positionneur', glyph: 'T', color: '#8a93a6', hp: 175, pa: 6, pm: 3, initiative: 75,
+  thalor: { id: 'thalor', name: 'Thalor', title: 'Ébouleur', role: 'Positionneur', glyph: 'T', color: '#8a93a6', hp: 175, pa: 6, pm: 3, initiative: 75,
     spells: ['transposition', 'lancer', 'projection', 'poigne', 'ancre', 'gorgee_de_cime', 'elan', 'vague', 'etreinte', 'mur_de_chair'],
-    desc: 'Lance, attire, échange les places ; le roi des combos.' },
+    desc: 'Jette, attire, échange les places, et prend l\'assise de la montagne ; le roi des combos.' },
   fennal: { id: 'fennal', name: 'Fennal', title: 'Meneur de Meute', role: 'Invocateur', glyph: 'F', color: '#6fdc8c', hp: 110, pa: 6, pm: 3, initiative: 85, summonGauge: 4,
     spells: ['appel_du_grouk', 'appel_du_pilou', 'rappel_sacrificiel', 'morsure', 'soin_de_meute', 'cri_de_ralliement', 'fleche_de_fil', 'filet', 'appel_du_molh', 'traque'],
     desc: 'Mène une meute (jauge de 4 : Glym 1, Grouk 2, Molh 3), la sacrifie pour prendre sa force.' },
@@ -387,7 +387,7 @@ DATA.defaultClass = 'vaelith';
 
 DATA.futureClasses = {
   kaelum: { id: 'kaelum', name: 'Kaelum', title: 'Porte-Colère', role: 'Dégâts de zone', season: 1 },
-  lheth: { id: 'lheth', name: 'Lheth', title: 'Horloger des Heures', role: 'Contrôle du temps', season: 2 },
+  lheth: { id: 'lheth', name: 'Lheth', title: 'Veilleuse des Songes', role: 'Sommeil', season: 2 },
 };
 
 const M = (id, def) => { def.id = id; def.resist = def.resist || {}; def.triggers = def.triggers || []; return def; };

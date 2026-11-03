@@ -52,6 +52,7 @@ class Entity {
     this.turnStartPos = null;
     this.kit = def.shape === 'player' ? DATA.classes[def.classId || def.id] || null : null;
     this.fury = 0;
+    this.braise = this.kit && this.kit.braise ? this.kit.braise.debut || 0 : 0;
     this.moved = false;
     this.lootBonus = 0;
     this.rx = 0;

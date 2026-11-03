@@ -295,6 +295,7 @@ class Combat {
     }
     this.log(`Tour de ${e.name}` + (e === this.player ? ` : ${e.pa} PA, ${e.pm} PM.` : '.'), 'turn');
     this.tickDots(e);
+    if (e.alive) this.tickBraise(e);
     e.glyphThisTurn = false;
     e.telefragThisTurn = false;
     e.turnStartPos = { x: e.x, y: e.y };
@@ -476,6 +477,7 @@ class Combat {
 
   async swap(a, b) {
     if (a.def.fixed || b.def.fixed || a.unpushable || b.unpushable) { this.log(`${a.def.fixed || a.unpushable ? a.name : b.name} ne bouge pas.`); return; }
+    if (b.hasState('assise')) { this.log(`${b.name} tient bon : assis comme la montagne.`); return; }
     const pa = a.pos, pb = b.pos;
     await Promise.all([
       this.emitAsync('animMove', { entity: a, to: pb, teleport: true }),
@@ -495,8 +497,10 @@ class Combat {
       : Grid.pushDirection(target.pos, caster.pos);
     if (!dir) return;
     if (target.def.fixed || target.unpushable) { this.log(`${target.name} ne bouge pas.`); return; }
+    if (target !== caster && target.hasState('assise')) { this.log(`${target.name} tient bon : assis comme la montagne.`); return; }
+    const cells = ef.cells + (caster && caster !== target && caster.hasState('assise') ? 1 : 0);
     let moved = 0;
-    for (let i = 0; i < ef.cells; i++) {
+    for (let i = 0; i < cells; i++) {
       const nx = target.x + dir.x;
       const ny = target.y + dir.y;
       if (!this.isWalkable(nx, ny, target) || this.entityAt(nx, ny)) {
@@ -510,7 +514,7 @@ class Combat {
       await this.checkTraps(target);
       if (!target.alive) return;
     }
-    const remaining = ef.cells - moved;
+    const remaining = cells - moved;
     if (ef.type === 'push' && remaining > 0) {
       this.dealDamage(caster, target, remaining * DATA.rules.pushDamagePerCell, null, { label: 'poussée bloquée' });
     } else if (moved) {
@@ -684,6 +688,7 @@ class Combat {
     if (e.pa < s.pa) return { ok: false, reason: 'Pas assez de PA' };
     if ((e.cooldowns[spellId] || 0) > 0) return { ok: false, reason: `Relance dans ${e.cooldowns[spellId]} tour(s)` };
     if (s.maxPerTurn && (e.casts[spellId] || 0) >= s.maxPerTurn) return { ok: false, reason: 'Déjà lancé le maximum de fois ce tour' };
+    if (s.braiseCost && this.braiseOf(e) < s.braiseCost) return { ok: false, reason: `Il faut ${s.braiseCost} de Braise` };
     if (e.glyphThisTurn && s.effects.some(ef => ef.type === 'glyph')) return { ok: false, reason: 'Un seul glyphe par tour' };
     return { ok: true };
   }
@@ -709,10 +714,20 @@ class Combat {
     return !!(t && t.effects.some(f => f.type === 'state' && f.name === 'tracked' && f.by === by));
   }
 
-  bloodOf(e) {
-    const b = e && e.kit && e.kit.blood;
-    if (!b || !e.hpMax) return 0;
-    return Math.max(0, Math.min(b.max, Math.floor((1 - e.hp / e.hpMax) * 100 / b.per)));
+  braiseOf(e) { return e && e.kit && e.kit.braise ? e.braise || 0 : 0; }
+  braisePower(e) { const k = e && e.kit && e.kit.braise; return k ? this.braiseOf(e) * (k.power || 0) : 0; }
+  gainBraise(e, n) {
+    const k = e.kit && e.kit.braise;
+    if (!k || !(n > 0) || !e.alive) return;
+    const before = e.braise || 0;
+    e.braise = Math.min(k.max, before + n);
+    if (e.braise > before) this.log(`${e.name} : Braise ${e.braise} / ${k.max}.`, e.team);
+  }
+  tickBraise(e) {
+    const k = e.kit && e.kit.braise;
+    if (!k) return;
+    if ((e.braise || 0) >= k.surchauffe) { this.loseHp(e, Math.round(e.hpMax * k.brulure / 100), 'surchauffe'); if (!e.alive) return; }
+    this.gainBraise(e, k.perTurn);
   }
 
   isArmed(e) {
@@ -898,12 +913,14 @@ class Combat {
     if (!check.ok) return check;
     const s = this.spellOf(spellId, e);
     this.busy = true;
-    const ctx = this.castCtx = { caster: e, spell: s, fury: e.fury, hitFoe: false, kills: [] };
+    const ctx = this.castCtx = { caster: e, spell: s, fury: e.fury, braise: e.braise || 0, hitFoe: false, kills: [] };
     try {
       e.pa -= s.pa;
       e.casts[spellId] = (e.casts[spellId] || 0) + 1;
       if (s.cooldown) e.cooldowns[spellId] = s.cooldown;
       if (s.furySpend && e.fury > 0) { this.log(`${e.name} dépense ${e.fury} de Fureur.`, e.team); e.fury = 0; }
+      if (s.braiseCost) { e.braise = Math.max(0, (e.braise || 0) - s.braiseCost); this.log(`${e.name} dépense ${s.braiseCost} de Braise.`, e.team); }
+      if (s.braiseSpend && (e.braise || 0) > 0) { this.log(`${e.name} souffle ${e.braise} de Braise.`, e.team); e.braise = 0; }
       const center = s.target === 'self' ? e.pos : { x: cell.x, y: cell.y };
       const cells = this.zoneCells(e, s, center, e.pos);
       this.log(`${e.name} lance ${s.name}.`, e.team);
@@ -947,6 +964,7 @@ class Combat {
       }
       for (const ef of s.selfEffects || []) this.applySelfEffect(e, ef, s);
       if (s.fury && ctx.hitFoe) this.gainFury(e, s.fury);
+      if (s.braise && ctx.hitFoe) this.gainBraise(e, s.braise);
       if (s.onKill && ctx.kills.length && e.alive) for (const ef of s.onKill) this.applySelfEffect(e, ef, s);
     } finally {
       this.busy = false;
@@ -1091,6 +1109,7 @@ class Combat {
   applySelfEffect(e, ef, s) {
     if (ef.type === 'selfDamagePct') this.loseHp(e, Math.round(e.hpMax * ef.pct / 100), s.name);
     else if (ef.type === 'paNow') { e.pa += ef.value; this.log(`${e.name} gagne ${ef.value} PA.`); }
+    else if (ef.type === 'braiseNow') this.gainBraise(e, ef.value);
     else if (ef.type === 'rewind') { e.rewind = true; this.log(`${e.name} reviendra à la fin de son tour où il l'a commencé.`); }
     else if (ef.type === 'pmNow') {
       if (ef.value < 0) { const lost = Math.min(e.pm, -ef.value); e.pm -= lost; this.log(`${e.name} perd ${lost} PM.`); }
@@ -1193,7 +1212,7 @@ class Combat {
     const oath = source ? this.oathOn(t, source) : null;
     if (oath) mult += (oath.power || 0) / 100;
     if (source && this.isAffut(source)) mult += ((s && s.affutBonus) || source.kit.affut.power || 0) / 100;
-    if (source) mult += this.bloodOf(source) / 100;
+    if (source) mult += this.braisePower(source) / 100;
     if (s && source) {
       if (s.lowHpBonus && source.hpPct() < s.lowHpBonus.below) mult *= s.lowHpBonus.mult;
       if (s.executeBelow && t.hpPct() < s.executeBelow) mult *= 2;
@@ -1203,6 +1222,10 @@ class Combat {
       if (s.furySpend) {
         const fury = this.castCtx && this.castCtx.caster === source ? this.castCtx.fury : source.fury;
         mult *= 1 + s.furySpend * fury / 100;
+      }
+      if (s.braiseSpend) {
+        const braise = this.castCtx && this.castCtx.caster === source ? this.castCtx.braise : (source.braise || 0);
+        mult *= 1 + s.braiseSpend * braise / 100;
       }
     }
     let base = this.rand(ef.min, ef.max) * (ef.mult || 1);
@@ -1214,7 +1237,6 @@ class Combat {
     const pierce = !!(s && s.oathPierce && oath);
     if (source && !t.hasState('stunned') && !pierce) mult *= 1 - Math.min(90, Math.max(0, t.modifier('armor'))) / 100;
     if (source && !pierce && Grid.dist(source.pos, t.pos) <= 1 && t.modifier('guard') > 0) mult *= 1 - Math.min(90, t.modifier('guard')) / 100;
-    mult *= 1 - this.bloodOf(t) / 100;
     if (this.isArmed(t)) mult *= 1 - t.kit.armed.reduction / 100;
     return this.scaleByResist(t, element, base * Math.max(0, mult));
   }

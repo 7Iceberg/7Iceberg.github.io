@@ -86,6 +86,9 @@ function propres(s) {
   if (s.bonusIfInvisible) out.push(['Invisible', `dégâts × ${String(s.bonusIfInvisible).replace('.', ',')}`]);
   if (s.fury) out.push(['Fureur', `+${s.fury} si la cible est touchée`]);
   if (s.furySpend) out.push(['Fureur dépensée', `+${s.furySpend} % par point`]);
+  if (s.braiseCost) out.push(['Braise', `coûte ${s.braiseCost}`]);
+  if (s.braise) out.push(['Braise', `+${s.braise} si la cible est touchée`]);
+  if (s.braiseSpend) out.push(['Braise soufflée', `+${s.braiseSpend} % par point`]);
   if (s.oathPierce) out.push(['Contre le juré', 'ni esquive ni armure']);
   if (s.affutBonus) out.push(['À l\'affût', `+${s.affutBonus} % de dégâts`]);
   if (s.keepsAffut) out.push(['Affût', 'gardé']);
