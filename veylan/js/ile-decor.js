@@ -445,6 +445,11 @@ const IleDecor = (() => {
 
   // ----- Les objets posés -----
 
+  // La couleur de chaque service de la Cité des Cimes (tools/orsane-plateau.js, SERVICES ; la même
+  // dans tools/blender/monde/ervane.py) : son enseigne, la bande au-dessus de sa porte.
+  const SERVICES = { banque: '#d9a93a', taverne: '#c8743a', marche: '#5f9e4f', metiers: '#7a5ea8', forge: '#b5482f', tailleur: '#3f7fb5', cordonnier: '#8a5a3a',
+    bijoutier: '#3fa6a0', alchimie: '#6aa84f', dojo: '#b8323a', armes: '#6b7686', garde: '#3d5a9e', boulangerie: '#e0a050' };
+
   function objets(ctx, L, seau, piece, sol, solPlat, palette, G) {
     const { T, def } = ctx;
     const C = {
@@ -520,7 +525,10 @@ const IleDecor = (() => {
           break;
         }
         case 'maison': {
-          const t = o.taille || [6, 5], hm = 2.5 + (o.index % 3) * 0.25;
+          // Le bâtiment d'un service (la Cité des Cimes) est plus haut ; une bande à sa couleur au-dessus
+          // de la porte.
+          const t = o.taille || [6, 5], hm = o.service ? 2.9 + Math.max(0, (o.hauteur || 6.5) - 6) * 0.7 : 2.5 + (o.index % 3) * 0.25;
+          if (o.service) { const [px, pz] = local(o, -t[0] * 0.18, t[1] / 2 + 0.06); ajouter(o, 'acc', L.boiteC, matrice(px, y + 2.15, pz, 0, r, 0, 1.6, 0.32, 0.08), { c: coul(SERVICES[o.service] || '#b8b0a0') }); }
           const mur = melange(C.calcaire, C.pierre, 0.25 + (o.index % 4) * 0.1);
           ajouter(o, 'acc', L.boite, matrice(o.u, y - 0.4, o.v, 0, r, 0, t[0], hm + 0.4, t[1]), { c: mur, bas: 0.78, haut: 1.04, grain: 0.04 });
           // Soubassement de pierre plus sombre.
@@ -673,6 +681,77 @@ const IleDecor = (() => {
           break;
         }
         case 'lanterne': lanterne(o.u, o.v, y, 2.3, s, true); break;
+        case 'enseigne': {
+          // L'enseigne d'un service : le poteau, la potence vers la rue (+x local), la planche pendue, le
+          // médaillon à la couleur du service sur un fond d'or, des deux côtés.
+          const cs = coul(SERVICES[o.service] || '#b8b0a0');
+          ajouter(o, 'acc', L.cyl(6), matrice(o.u, y - 0.05, o.v, 0, 0, 0, 0.09, 2.9, 0.09), { c: C.boisSombre });
+          { const [px, pz] = local(o, 0.5, 0); ajouter(o, 'acc', L.boiteC, matrice(px, y + 2.72, pz, 0, r, 0, 1.15, 0.1, 0.1), { c: C.bois }); }
+          { const [px, pz] = local(o, 0.55, 0);
+            ajouter(o, 'acc', L.boiteC, matrice(px, y + 2.05, pz, 0, r, 0, 0.95, 0.72, 0.07), { c: C.boisClair });
+            ajouter(o, 'acc', L.boiteC, matrice(px, y + 2.05, pz, 0, r, 0, 0.6, 0.5, 0.1), { c: C.or });
+            ajouter(o, 'lueur', L.boiteC, matrice(px, y + 2.05, pz, 0, r, 0, 0.46, 0.38, 0.12), { c: cs }); }
+          break;
+        }
+        case 'mannequin': {
+          // Un mannequin du Dojo : la croix de pied, le poteau, le corps de paille, les bras, la tête,
+          // l'écharpe rouge.
+          const paille = coul('#d8c27a');
+          for (const a of [0, Math.PI / 2]) ajouter(o, 'acc', L.boiteC, matrice(o.u, y + 0.06, o.v, 0, r + a, 0, 1.0, 0.12, 0.14), { c: C.bois });
+          ajouter(o, 'acc', L.cyl(6), matrice(o.u, y, o.v, 0, 0, 0, 0.07, 1.9, 0.07), { c: C.bois });
+          ajouter(o, 'acc', L.cyl(8), matrice(o.u, y + 0.85, o.v, 0, r, 0, 0.27, 0.8, 0.27), { c: paille, bas: 0.85, haut: 1.05 });
+          ajouter(o, 'acc', L.boiteC, matrice(o.u, y + 1.5, o.v, 0, r, 0, 1.1, 0.13, 0.13), { c: paille });
+          ajouter(o, 'acc', L.sphere, matrice(o.u, y + 1.86, o.v, 0, 0, 0, 0.2, 0.2, 0.2), { c: paille });
+          ajouter(o, 'acc', L.cyl(8), matrice(o.u, y + 1.3, o.v, 0, r, 0, 0.29, 0.1, 0.29), { c: coul(SERVICES.dojo) });
+          piece(s, 'sil', L.cyl(6), matrice(o.u, y, o.v, 0, 0, 0, 0.3, 2.0, 0.3), { c: paille });
+          break;
+        }
+        case 'enclume': {
+          // L'enclume de la forge sur sa souche cerclée de fer.
+          const fer = coul('#5e626c');
+          ajouter(o, 'acc', L.cyl(8), matrice(o.u, y - 0.05, o.v, 0, r, 0, 0.36, 0.6, 0.36), { c: coul('#6e5440'), bas: 0.8, haut: 1.05 });
+          ajouter(o, 'acc', L.cyl(8), matrice(o.u, y + 0.4, o.v, 0, r, 0, 0.38, 0.05, 0.38), { c: fer });
+          ajouter(o, 'acc', L.boiteC, matrice(o.u, y + 0.63, o.v, 0, r, 0, 0.3, 0.16, 0.24), { c: fer });
+          ajouter(o, 'acc', L.boiteC, matrice(o.u, y + 0.8, o.v, 0, r, 0, 0.72, 0.2, 0.3), { c: fer });
+          { const [px, pz] = local(o, 0.48, 0); ajouter(o, 'acc', L.boiteC, matrice(px, y + 0.82, pz, 0, r, 0, 0.26, 0.12, 0.16), { c: fer }); }
+          break;
+        }
+        case 'alambic': {
+          // L'alambic : le foyer de pierre, la braise, la panse de cuivre, son col, le tube, le flacon vert.
+          const cuivre = coul('#c07a45');
+          ajouter(o, 'roche', L.cyl(10), matrice(o.u, y - 0.05, o.v, 0, r, 0, 0.5, 0.5, 0.5), { c: C.pierre, bas: 0.8, haut: 1.0 });
+          { const [px, pz] = local(o, 0, -0.42); ajouter(o, 'lueur', L.sphere, matrice(px, y + 0.2, pz, 0, 0, 0, 0.16, 0.08, 0.16), { c: C.braise }); }
+          ajouter(o, 'acc', L.sphere, matrice(o.u, y + 0.8, o.v, 0, 0, 0, 0.42, 0.42, 0.42), { c: cuivre });
+          ajouter(o, 'acc', L.cone(8), matrice(o.u, y + 1.1, o.v, 0, 0, 0, 0.16, 0.45, 0.16), { c: cuivre });
+          { const [px, pz] = local(o, 0.38, 0); ajouter(o, 'acc', L.boiteC, matrice(px, y + 1.25, pz, 0, r, -1.05, 0.8, 0.07, 0.07), { c: cuivre }); }
+          { const [px, pz] = local(o, 0.75, 0); ajouter(o, 'acc', L.boite, matrice(px, y - 0.02, pz, 0, r, 0, 0.35, 0.47, 0.35), { c: C.bois });
+            ajouter(o, 'lueur', L.sphere, matrice(px, y + 0.62, pz, 0, 0, 0, 0.15, 0.15, 0.15), { c: coul('#7fd08a') }); }
+          break;
+        }
+        case 'etabli': {
+          // L'établi d'un artisan : le plateau, ses pieds ; le cordonnier son cuir, le bijoutier son or et
+          // ses pierres.
+          ajouter(o, 'acc', L.boiteC, matrice(o.u, y + 0.9, o.v, 0, r, 0, 1.8, 0.1, 0.8), { c: C.boisClair });
+          for (const [lx, lz] of [[-0.8, -0.32], [0.8, -0.32], [-0.8, 0.32], [0.8, 0.32]]) { const [px, pz] = local(o, lx, lz); ajouter(o, 'acc', L.boite, matrice(px, y - 0.02, pz, 0, r, 0, 0.1, 0.88, 0.1), { c: C.bois }); }
+          if (o.outil === 'bijou') {
+            for (let q = 0; q < 3; q++) { const [px, pz] = local(o, -0.05 + q * 0.2, -0.1); ajouter(o, 'lueur', L.octa, matrice(px, y + 1.0, pz, 0, q, 0, 0.07, 0.07, 0.07), { c: q === 1 ? C.orVif : coul('#5fd0e0') }); }
+            { const [px, pz] = local(o, 0.6, 0.1); ajouter(o, 'acc', L.boiteC, matrice(px, y + 1.02, pz, 0, r, 0, 0.4, 0.14, 0.3), { c: coul(SERVICES.bijoutier) }); }
+          } else {
+            { const [px, pz] = local(o, -0.35, -0.05); ajouter(o, 'acc', L.boiteC, matrice(px, y + 1.09, pz, 0, r, 0, 0.7, 0.26, 0.26), { c: coul('#8a5a3a') }); }
+            for (const lx of [0.3, 0.6]) { const [px, pz] = local(o, lx, 0.15); ajouter(o, 'acc', L.boiteC, matrice(px, y + 1.02, pz, 0, r, 0, 0.24, 0.14, 0.12), { c: coul('#6e4630') }); }
+          }
+          break;
+        }
+        case 'metier_tisser': {
+          // Le métier à tisser : deux montants, l'ensouple, la chaîne à la couleur du service, la toile
+          // enroulée, le banc.
+          for (const k of [-1, 1]) { const [px, pz] = local(o, k * 0.75, 0); ajouter(o, 'acc', L.boite, matrice(px, y - 0.02, pz, 0, r, 0, 0.1, 1.72, 0.5), { c: C.bois }); }
+          ajouter(o, 'acc', L.boiteC, matrice(o.u, y + 1.6, o.v, 0, r, 0, 1.5, 0.12, 0.12), { c: C.bois });
+          ajouter(o, 'acc', L.boiteC, matrice(o.u, y + 0.5, o.v, 0, r, 0, 1.5, 0.22, 0.22), { c: C.toiles[1] });
+          ajouter(o, 'acc', L.boiteC, matrice(o.u, y + 1.07, o.v, 0, r, 0, 1.3, 1.0, 0.03), { c: coul(SERVICES.tailleur) });
+          { const [px, pz] = local(o, 0, 0.7); ajouter(o, 'acc', L.boite, matrice(px, y - 0.02, pz, 0, r, 0, 0.9, 0.47, 0.35), { c: C.boisSombre }); }
+          break;
+        }
         case 'panneau': {
           ajouter(o, 'acc', L.cyl(5), matrice(o.u, y, o.v, 0, 0, 0, 0.07, 1.5, 0.07), { c: C.boisSombre });
           ajouter(o, 'acc', L.boiteC, matrice(o.u, y + 1.3, o.v, 0, r - 0.6, 0, 1.0, 0.45, 0.07), { c: C.boisClair });

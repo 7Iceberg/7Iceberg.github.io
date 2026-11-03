@@ -265,6 +265,14 @@ const IleTerrain = (() => {
     treuil: o => [{ x: 0, y: 0, r: 0.8 }],
     nacelle: o => [{ x: 0, y: 0, r: 1.2 }],
     panneau: o => [{ x: 0, y: 0, r: 0.3 }],
+    // La Cité des Cimes (docs/CITE-DES-CIMES.md) : l'enseigne d'un service (son poteau), les meubles
+    // des ateliers et du Dojo.
+    enseigne: o => [{ x: 0, y: 0, r: 0.3 }],
+    mannequin: o => [{ x: 0, y: 0, r: 0.45 }],
+    enclume: o => [{ x: 0, y: 0, r: 0.55 }],
+    alambic: o => [{ x: 0, y: 0, r: 0.6 }, { x: 0.75, y: 0, r: 0.3 }],
+    etabli: o => [{ rect: true, x: 0, y: 0, l: 1.9, p: 0.9 }],
+    metier_tisser: o => [{ rect: true, x: 0, y: 0.3, l: 1.8, p: 1.4 }],
     lanterne: o => [{ x: 0, y: 0, r: 0.25 }],
     longue_vue: o => [{ x: 0, y: 0, r: 0.3 }],
     feu: o => [{ x: 0, y: 0, r: 0.6 }],

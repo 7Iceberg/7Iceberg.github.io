@@ -290,10 +290,11 @@ const IleModeles = (() => {
   // aligne son grand côté. tools/meshy/retirer-objets.py a retiré leur forme de l'export.
   const OBJETS = {
     // La maison du Bois Cousu est sa cabane de bois sombre au toit de mousse ; les autres, celles des Mailles.
-    maison: { modele: o => (ervane() && dansBois(o.u, o.v) ? 'b-cabane' : 'm-maison'), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 6 }) },
+    // Le bâtiment d'un service de la Cité des Cimes : plus haut (`hauteur`), étiré à sa façade.
+    maison: { modele: o => (ervane() && dansBois(o.u, o.v) ? 'b-cabane' : 'm-maison'), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: o.hauteur || 6 }), etire: o => !!o.service, angle: o => -(o.rot || 0) },
     arbre_bobine: { modele: 'b-bobine', taille: () => ({ l: 9, p: 9, h: 18 }) },
     pieu: { modele: 'b-pieux', taille: () => ({ l: 2.6, p: 2.6, h: 2 }) },
-    comptoir: { modele: 'm-etal', taille: o => ({ l: (o.taille || [5, 2])[0], p: (o.taille || [5, 2])[1], h: 3.6 }) },
+    comptoir: { modele: 'm-etal', taille: o => ({ l: (o.taille || [5, 2])[0], p: (o.taille || [5, 2])[1], h: 3.6 }), angle: o => -(o.rot || 0) },
     lanterne: { modele: 'm-lanterne', taille: () => ({ l: 9, p: 9, h: 2.6 }) },
     // Une pierre levée des Mailles, ou l'une des quatre du Rond des Quatre, teintée par son élément.
     pierre_levee: { modele: o => (o.element ? 's-pierre-' + o.element : 'm-pierre'), taille: o => ({ l: 9, p: 9, h: o.element ? 2.6 : 2.4 }) },
@@ -308,7 +309,7 @@ const IleModeles = (() => {
     // bois bout à bout, le long de son axe.
     rambarde: { modele: (o, T) => (T.objets.some(x => x.sorte === 'longue_vue' && Math.hypot(x.u - o.u, x.v - o.v) < 2) ? null : 's-barriere'),
       taille: () => ({ l: 3, p: 3, h: 1.35 }), copies: [-1.5, 1.5] },
-    ratelier: { modele: 'm-armes', taille: () => ({ l: 4, p: 2.2, h: 1.9 }) },
+    ratelier: { modele: 'm-armes', taille: () => ({ l: 4, p: 2.2, h: 1.9 }), angle: o => -(o.rot || 0) },
     tour: { modele: 'm-tour', taille: o => ({ l: (o.taille || [6, 6])[0], p: (o.taille || [6, 6])[1], h: 7 }) },
     longue_vue: { modele: 'm-belvedere', taille: () => ({ l: 3, p: 2.2, h: 2.4 }) },
     tonneau: { modele: 'm-tonneaux', taille: () => ({ l: 2.2, p: 2.2, h: 1.6 }) },
@@ -357,7 +358,8 @@ const IleModeles = (() => {
       for (const dx0 of d.copies || [0]) {
         const dx = dx0 + dec[0];
         const u = o.u + dx * Math.cos(o.rot || 0) - dec[1] * Math.sin(o.rot || 0), v = o.v + dx * Math.sin(o.rot || 0) + dec[1] * Math.cos(o.rot || 0), y = hauteur(u, v);
-        out.push({ nom, x: u, y: (Number.isFinite(y) ? y - 0.05 : 0) - enf, z: v, a: d.copies ? -(o.rot || 0) : a, k });
+        const kx = d.etire && d.etire(o) ? Math.max(1, t.l / (M.largeur * k)) : 1;
+        out.push(Object.assign({ nom, x: u, y: (Number.isFinite(y) ? y - 0.05 : 0) - enf, z: v, a: d.copies ? -(o.rot || 0) : a, k }, kx > 1.02 ? { kx } : {}));
       }
     }
     posesLignes(S, T, hauteur, out);
@@ -484,7 +486,8 @@ const IleModeles = (() => {
     // Orsane a trois fois la surface d'Ervane, et tout son semis est cuit en mémoire : des densités
     // plus basses, et les variantes légères (le jeune arbre ambre, 1 140 sommets, plutôt que le vert,
     // 2 051 ; l'arbuste blanc, 1 131, plutôt que la lavande, 2 542).
-    orsane_cimes: [['arbre', 0.004, [3.0, 4.0], ['jt-ambre']], ['buisson', 0.006, [0.9, 1.2], ['v-buisson']], ['arbuste', 0.006, [0.55, 0.75], ['v-fleurs-blanc']]],
+    // La Cité : pas de jeunes arbres dans les rues ; des buissons et des arbustes fleuris dans les jardins.
+    orsane_cimes: [['buisson', 0.005, [0.9, 1.2], ['v-buisson']], ['arbuste', 0.006, [0.55, 0.75], ['v-fleurs-blanc', 'v-fleurs-lavande']]],
     orsane_clairieres: [['arbre', 0.009, [3.0, 4.4], ['jt-ambre', 'jt-ambre', 'jt-vert']], ['buisson', 0.008, [0.9, 1.4], ['v-buisson']],
       ['arbuste', 0.006, [0.55, 0.8], ['v-fleurs-blanc', 'v-fleurs-blanc', 'v-fleurs-lavande']], ['rocher', 0.003, [0.8, 1.2], ['v-rochers']], ['amanite', 0.002, [0.45, 0.6], ['v-amanites']]],
     orsane_sentiers: [['arbre', 0.004, [2.8, 4.0], ['jt-ambre', 'jt-rouille']], ['buisson', 0.006, [0.9, 1.3], ['v-buisson']], ['rocher', 0.008, [0.8, 1.3], ['v-rochers']]],
