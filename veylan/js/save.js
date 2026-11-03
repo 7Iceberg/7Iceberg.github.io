@@ -51,7 +51,7 @@ const Save = (() => {
 
   // ----- Validation -----
   const isInt = (v, min, max) => Number.isInteger(v) && v >= (min == null ? -Infinity : min) && v <= (max == null ? Infinity : max);
-  const ALLOWED = new Set(['classId', 'name', 'gender', 'level', 'xp', 'statPoints', 'stats', 'equipment', 'inventory', 'fils', 'hp', 'titles', 'title', 'quests', 'counters', 'achievements', 'achClaimed', 'veille', 'pos', 'relay', 'relays', 'dungeon', 'coffre', 'autoStats', 'playTime', 'knots', 'ensembles', 'fight', 'mapTimers', 'flags', 'v', 'uid', 'voie', 'scrolls', 'faction', 'tuto']);
+  const ALLOWED = new Set(['classId', 'name', 'gender', 'level', 'xp', 'statPoints', 'stats', 'equipment', 'inventory', 'fils', 'hp', 'titles', 'title', 'quests', 'counters', 'achievements', 'achClaimed', 'veille', 'pos', 'relay', 'relays', 'dungeon', 'coffre', 'marche', 'autoStats', 'playTime', 'knots', 'ensembles', 'fight', 'mapTimers', 'flags', 'v', 'uid', 'voie', 'scrolls', 'faction', 'tuto']);
   // Rangs des sorts (docs/SORTS.md) : { idDeSort: rang }, points de sort restants, répartition automatique.
   for (const k of ['spellRanks', 'spellPoints', 'autoSpells']) ALLOWED.add(k);
   // Création de personnage (js/accueil.js) : l'apparence.
@@ -204,6 +204,12 @@ const Save = (() => {
       if (o.coffre.fils != null) { if (isInt(o.coffre.fils, 0, 1e9)) coffre.fils = o.coffre.fils; else bad('Fils du coffre'); }
     }
     o.coffre = coffre;
+    // Le carnet du Marché (js/marche.js) : le jour et les ventes de ce jour, par objet.
+    if (o.marche != null) {
+      const m = o.marche && typeof o.marche === 'object' ? o.marche : {}, vendus = {};
+      if (m.vendus && typeof m.vendus === 'object') for (const id of Object.keys(m.vendus)) { if (Items.get(id) && isInt(m.vendus[id], 0, 99999)) vendus[id] = m.vendus[id]; else bad(`vente au Marché ${id}`); }
+      if (isInt(m.jour, -100000, 1000000)) o.marche = { jour: m.jour, vendus }; else { bad('carnet du Marché'); delete o.marche; }
+    }
     // Équipement : objet existant, bon emplacement, niveau atteint ; sinon il retourne au sac.
     const eq = { coiffe: null, cape: null, amulette: null, anneau1: null, anneau2: null, ceinture: null, bottes: null, arme: null };
     if (o.equipment && typeof o.equipment === 'object') for (const slot of Object.keys(eq)) {

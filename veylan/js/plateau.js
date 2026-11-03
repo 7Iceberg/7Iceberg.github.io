@@ -196,6 +196,7 @@ class Plateau {
   }
 
   errer(g, dt) {
+    if (g.tpl && g.tpl.dojo) return;
     const w = this.world, p = w.player;
     if (g.chemin) {
       if (g.hold || w.state === 'combat') return;

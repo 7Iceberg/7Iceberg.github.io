@@ -303,6 +303,7 @@ class World {
   }
 
   updateGroup(g, dt) {
+    if (this.estDojo(g)) return;
     const sp = 3 * dt;
     if (g.rx !== g.x || g.ry !== g.y) {
       const dx = g.x - g.rx, dy = g.y - g.ry;
@@ -555,6 +556,8 @@ class World {
       shop: npc.def.shop || null,
       workshop: npc.def.workshop || null,
       banque: !!npc.def.banque,
+      dojo: !!npc.def.dojo,
+      marche: Marche.genreDe(npc),
       // Un passeur (la Nacelle d'Ervane, docs/ILE-TECHNIQUE.md, 2.9) : offert quand sa quête est faite.
       passage: this.passageDe(npc),
     };
@@ -754,6 +757,37 @@ class World {
     return true;
   }
 
+  // Le Marché des Cimes (js/marche.js) : acheter à l'étal du jour, vendre au prix du jour, seulement
+  // à un comptoir du Marché (un PNJ `marche`), hors combat.
+  auMarche() { return this.state !== 'combat' ? Marche.genreDe(this.talkNpc) : null; }
+  acheterMarche(id, n) {
+    n = n == null ? 1 : Number(n);
+    const g = this.auMarche();
+    if (!g || !World.okCount(n) || !Marche.etal(g).includes(id)) return false;
+    const cout = Marche.prixAchat(id) * n;
+    if (this.ch.fils < cout) { this.toast('Pas assez de Fils.'); return false; }
+    this.ch.fils -= cout;
+    this.ch.addItem(id, n);
+    this.emit('gain', { source: 'achat', items: [{ id, count: n }] });
+    this.afterEvents(Quests.onEvent(this.ch, { type: 'inventory' }));
+    this.emit('update');
+    return true;
+  }
+  vendreMarche(id, n) {
+    n = n == null ? 1 : Number(n);
+    const g = this.auMarche();
+    if (!g || !World.okCount(n) || !Marche.rachete(g, id) || !this.ch.has(id, n)) return false;
+    const gain = Marche.gain(this.ch, id, n);
+    this.ch.removeItem(id, n);
+    const c = Marche.carnet(this.ch);
+    c.vendus[id] = (c.vendus[id] || 0) + n;
+    this.ch.fils += gain;
+    this.ch.counters.filsEarned += gain;
+    this.checkAchievements();
+    this.emit('update');
+    return true;
+  }
+
   craft(recipe) {
     // On fabrique à l'atelier du PNJ à qui l'on parle.
     if (!recipe || !this.talkNpc || this.talkNpc.def.workshop !== recipe.workshop) return false;
@@ -941,6 +975,19 @@ class World {
     return cells.slice(0, n);
   }
 
+  // Le Dojo du Fil : un groupe d'entraînement (`dojo` sur son modèle) se bat au niveau du personnage,
+  // sans défi, sans marque de combat en cours (fermer la page ne coûte rien), sans compter de combat.
+  estDojo(group) { return !!(group && group.tpl && group.tpl.dojo); }
+  // S'entraîner au Dojo depuis la maîtresse du Dojo : le groupe de mannequins de la carte (ou du
+  // plateau) le plus proche.
+  entrainement() {
+    if (this.state !== 'explore' && this.state !== 'dialogue' && this.state !== 'panel') return false;
+    const g = this.groups.filter(x => this.estDojo(x)).sort((a, b) => Math.hypot(a.x - this.player.x, a.y - this.player.y) - Math.hypot(b.x - this.player.x, b.y - this.player.y))[0];
+    if (!g) { this.toast('Les mannequins ne sont pas sur la cour.'); return false; }
+    if (this.state !== 'explore') { this.talkNpc = null; this.state = 'explore'; }
+    return this.startFight(g) !== false;
+  }
+
   startFight(group) {
     // Sur un plateau, le combat se joue sur l'aire du groupe (Plateau.arene) ; sans plan, pas de
     // combat.
@@ -954,7 +1001,9 @@ class World {
     const knots = this.ch.activeKnots();
     // Nœud de Meute : un monstre de plus, copie d'un monstre du groupe.
     let monsters = group.monsters;
-    if (knots.includes('noeud_de_meute') && monsters.length < 6) monsters = monsters.concat([monsters[Math.floor(this.rng() * monsters.length)]]);
+    const dojo = this.estDojo(group);
+    if (dojo) monsters = monsters.map(m => Object.assign({}, m, { level: this.ch.level }));
+    else if (knots.includes('noeud_de_meute') && monsters.length < 6) monsters = monsters.concat([monsters[Math.floor(this.rng() * monsters.length)]]);
     const monsterCells = arene ? arene.monsterCells : this.cellsAround({ x: group.x, y: group.y }, 6, [this.player]);
     const playerCells = arene ? arene.playerCells : this.cellsAround({ x: this.player.x, y: this.player.y }, 6, monsterCells);
     const names = [...new Set(group.monsters.map(m => DATA.monsters[m.id].name))].join(', ');
@@ -964,17 +1013,22 @@ class World {
       playerCells: playerCells.length ? playerCells : [{ x: this.player.x, y: this.player.y }],
       monsterCells: monsterCells.length ? monsterCells : [{ x: group.x, y: group.y }],
     });
-    this.combat.challenge = Challenges.pick(this.combat, this.rng);
+    this.combat.entrainement = dojo;
+    this.hpAvantDojo = dojo ? this.ch.hp : null;
+    this.combat.challenge = dojo ? null : Challenges.pick(this.combat, this.rng);
     this.combat.emit('challenge', this.combat.challenge);
-    this.ch.counters.fights++;
-    // Marque « combat en cours » : si la page se ferme avant la fin, le combat compte comme perdu.
-    this.ch.fight = { map: this.mapId, at: Date.now() };
+    if (!dojo) {
+      this.ch.counters.fights++;
+      // Marque « combat en cours » : si la page se ferme avant la fin, le combat compte comme perdu.
+      this.ch.fight = { map: this.mapId, at: Date.now() };
+    }
     this.emit('save');
     this.emit('fight', { group });
   }
 
   onFightEnd(d) {
     if (this.state !== 'combat') return;
+    if (this.combat.entrainement) return this.finEntrainement(d);
     const ch = this.ch;
     delete ch.fight;
     const result = { victory: d.victory, xp: 0, gained: 0, levels: 0, fils: 0, drops: [], achievements: [], quests: [], dungeon: null };
@@ -1076,11 +1130,29 @@ class World {
     this.emit('save');
   }
 
+  // La fin d'un entraînement au Dojo : ni XP, ni Fils, ni butin, ni quête, ni compteur ; les PV
+  // d'avant le combat ; les mannequins restent sur la cour. Le bilan : les dégâts faits aux
+  // mannequins, les tours, les mannequins abattus.
+  finEntrainement(d) {
+    const ch = this.ch;
+    const mannequins = this.combat.entities.filter(e => e.team === 'monster' && !e.isSummon);
+    const degats = mannequins.reduce((s, e) => s + Math.max(0, e.hpMax - Math.max(0, e.hp)), 0);
+    const result = { victory: !!d.victory, entrainement: { degats, tours: this.combat.round || 1, abattus: mannequins.filter(e => !e.alive).length, total: mannequins.length },
+      xp: 0, gained: 0, levels: 0, fils: 0, drops: [], achievements: [], quests: [], dungeon: null, challenge: null };
+    if (this.hpAvantDojo != null) ch.hp = this.hpAvantDojo;
+    this.hpAvantDojo = null;
+    this.combat.entrainement = false;
+    this.lastResult = result;
+    this.state = 'panel';
+    this.emit('fightEnd', result);
+    this.emit('save');
+  }
+
   // Quitter un combat en cours : il compte comme perdu (moitié des PV, retour au Relais), comme un
   // combat laissé ouvert à la fermeture de la page (js/main.js).
   abandonFight() {
     if (this.state !== 'combat' || this.combat.phase === 'ended' || this.combat.busy) return false;
-    this.ch.counters.abandons = (this.ch.counters.abandons || 0) + 1;
+    if (!this.combat.entrainement) this.ch.counters.abandons = (this.ch.counters.abandons || 0) + 1;
     this.combat.log(`${this.ch.name} quitte le combat.`, 'system');
     this.combat.finish(false);
     return true;

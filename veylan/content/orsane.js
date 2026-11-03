@@ -45,7 +45,7 @@ DATA.content.zones.push({
         'o,..###.###..,o',
         'o,..#.....#..,o',
         'o,....P......,o',
-        'o,P........P.,o',
+        'o,P....M...P.,o',
         'o,......P....,o',
         'o,..#.....#..,o',
         'o,..###.###..,o',
@@ -57,7 +57,9 @@ DATA.content.zones.push({
       exits: { n: null, e: null, s: 'orsane_cimes_place', w: null },
       npcs: ['kelthar', 'brakk', 'saya', 'vali', 'fenna'],
       nodes: [],
-      groups: [],
+      // Les mannequins du Dojo du Fil (docs/CITE-DES-CIMES.md, C4) : un groupe d'entraînement, au
+      // niveau du personnage, toujours là.
+      groups: [{ monsters: ['mannequin', 'mannequin', 'mannequin'], level: [1, 1], respawn: 1, dojo: true }],
       dungeon: null,
       relay: false,
     },
@@ -850,7 +852,7 @@ DATA.content.npcs.push({
   dialogue: ['Bienvenue sur les Cimes, Veilleur. Le Relais est à toi : touche-le, il te ramènera toujours ici.', 'Les Glyms ont volé la moitié des lanternes cette nuit. Si tu veux te rendre utile, c\'est le moment.'],
 });
 DATA.content.npcs.push({
-  id: 'lotha', name: 'Lotha', title: 'Marchande du Comptoir', look: 'marchand',
+  id: 'lotha', name: 'Lotha', title: 'Marchande du Comptoir', look: 'marchand', marche: 'vivres',
   dialogue: ['Pain de Cime, pain de Grouk, de quoi tenir sur les sentiers. Et le prix est honnête, parole de Lotha.', 'Les Fils, ça se gagne. Les Glyms en ont plein les plumes, va savoir pourquoi.'],
   shop: ['pain_de_cime', 'pain_de_grouk', 'potion_de_relais', 'coiffe_marcheur', 'cape_marcheur', 'amulette_marcheur', 'bottes_marcheur'],
 });
@@ -881,14 +883,12 @@ DATA.content.npcs.push({
   dialogue: ['Ce que tu déposes ici reste à toi, objets et Fils, et ton sac s\'en trouve plus léger.', 'Un coffre sans fond, disent les Veilleurs. Il en a un, mais personne n\'y a jamais touché.'],
 });
 DATA.content.npcs.push({
-  id: 'garen', name: 'Garen', title: 'Comptoir des équipements', look: 'marchand',
-  dialogue: ['Capes, amulettes, bottes : de quoi tenir tes premières lunes hors des murs.', 'Tu reviendras me vendre ce que tu trouves en bas. Tout le monde revient.'],
-  shop: ['sandales_de_duvet', 'ceinture_de_plume', 'cape_de_plumes', 'amulette_de_bec', 'anneau_de_corne', 'bottes_de_cuir'],
+  id: 'garen', name: 'Garen', title: 'Comptoir des équipements', look: 'marchand', marche: 'equipements',
+  dialogue: ['Capes, amulettes, bottes, armes : mon étal change chaque matin. Reviens voir.', 'Tu reviendras me vendre ce que tu trouves en bas. Tout le monde revient.'],
 });
 DATA.content.npcs.push({
-  id: 'mira', name: 'Mira', title: 'Comptoir des ressources', look: 'marchand',
-  dialogue: ['Plumes, cuir, soie, cire : ce qu\'il faut aux ateliers quand la récolte a été maigre.', 'Je rachète au même prix que je vends. Ici, on ne s\'enrichit pas sur le dos des Veilleurs.'],
-  shop: ['plume_de_pilou', 'cuir_de_grouk', 'soie_de_tissefil', 'cire_de_veilloche'],
+  id: 'mira', name: 'Mira', title: 'Comptoir des ressources', look: 'marchand', marche: 'ressources',
+  dialogue: ['Plumes, cuir, soie, cire : ce qu\'il faut aux ateliers quand la récolte a été maigre.', 'Je rachète mieux que les marchands des routes. Mais si tout le monde m\'apporte des plumes le même jour, la plume baisse.'],
 });
 DATA.content.npcs.push({
   id: 'aldric', name: 'Aldric', title: 'Maître des Métiers', look: 'ancien',
@@ -900,7 +900,7 @@ DATA.content.npcs.push({
   shop: ['lame_de_cime', 'dagues_de_bec', 'arc_de_cime', 'baguette_de_duvet', 'baton_de_cime', 'masse_de_calcaire', 'pelle_noueuse', 'hache_de_cime'],
 });
 DATA.content.npcs.push({
-  id: 'saya', name: 'Saya', title: 'Maîtresse du Dojo', look: 'marcheur',
+  id: 'saya', name: 'Saya', title: 'Maîtresse du Dojo', look: 'marcheur', dojo: true,
   dialogue: ['Le Dojo du Fil est ouvert à tous. Les mannequins de la cour ne rendent pas les coups : essaie tes sorts sur eux avant de les essayer sur un Grouk.', 'Un Veilleur qui ne s\'entraîne pas apprend sur le terrain. Le terrain, lui, n\'est pas patient.'],
 });
 DATA.content.npcs.push({

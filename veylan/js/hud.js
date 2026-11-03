@@ -552,6 +552,27 @@ class Hud {
     this.openPanel('dialogue', `La Banque du Fil, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
+  // Un comptoir du Marché des Cimes (js/marche.js) : l'étal du jour, et la vente au prix du jour (qui
+  // baisse à chaque vente du même objet aujourd'hui).
+  openMarche(ctx) {
+    const g = ctx.marche, G = Marche.GENRES[g];
+    this.marcheTab = this.marcheTab || 'acheter';
+    const render = () => {
+      const ch = this.world.ch;
+      const tabs = `<div class="tabs"><button class="tab${this.marcheTab === 'acheter' ? ' on' : ''}" data-act="mtab" data-tab="acheter">L'étal du jour</button><button class="tab${this.marcheTab === 'vendre' ? ' on' : ''}" data-act="mtab" data-tab="vendre">Vendre</button></div><p class="muted">Tu as ${ch.fils} Fils. ${esc(G.nom[0].toUpperCase() + G.nom.slice(1))}.</p>`;
+      if (this.marcheTab === 'vendre') {
+        const entries = Object.entries(ch.inventory).filter(([id]) => Marche.rachete(g, id)).map(([id, n]) => ({ def: Items.get(id), id, n })).sort((a, b) => a.def.name.localeCompare(b.def.name));
+        const note = `<p class="muted">Le Marché paie mieux qu'un marchand ; le prix d'un objet baisse de ${Math.round(Marche.BAISSE * 100)} % à chaque vente du même objet aujourd'hui (jusqu'à la moitié) et revient demain.</p>`;
+        return tabs + note + (entries.map(e => { const p = Marche.prixVente(ch, e.id), v = Marche.vendus(ch, e.id); return `<div class="row item"><span><b>${esc(e.def.name)}</b> ×${e.n}${v ? `<br><small>${v} vendu${v > 1 ? 's' : ''} aujourd'hui</small>` : ''}</span><span class="btns"><button data-act="mvendre" data-id="${e.id}" data-n="1">Vendre 1 (${p} F)</button>${e.n > 1 ? `<button data-act="mvendre" data-id="${e.id}" data-n="${e.n}">Tout (${Marche.gain(ch, e.id, e.n)} F)</button>` : ''}</span></div>`; }).join('') || '<p class="muted">Rien de ce genre dans ton sac.</p>');
+      }
+      return tabs + Marche.etal(g).map(id => { const d = Items.get(id), prix = Marche.prixAchat(id); const info = d.kind === 'consumable' ? (d.heal ? `rend ${d.heal >= 999 ? 'tous les' : d.heal} PV` : esc(d.lore)) : d.kind === 'resource' ? esc(d.lore || 'Ressource') : `niv. ${d.level} · ${Items.statLines(d.stats).join(', ')}`; return `<div class="row item"><span><b>${esc(d.name)}</b><br><small>${info}</small></span><span class="btns"><button data-act="macheter" data-id="${id}" ${ch.fils >= prix ? '' : 'disabled'}>Acheter ${prix} F</button></span></div>`; }).join('') + '<p class="muted">L\'étal change chaque jour.</p>';
+    };
+    this.actions.mtab = d => { this.marcheTab = d.tab; this.el.panelBody.innerHTML = render(); };
+    this.actions.macheter = d => { this.world.acheterMarche(d.id, 1); };
+    this.actions.mvendre = d => { this.world.vendreMarche(d.id, Number(d.n)); };
+    this.openPanel('dialogue', `Le Marché des Cimes, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
+  }
+
   openWorkshop(ctx) {
     const render = () => {
       const ch = this.world.ch;
@@ -626,6 +647,12 @@ class Hud {
 
   openFightEnd(r) {
     const ch = this.world.ch;
+    if (r.entrainement) {
+      const e = r.entrainement;
+      this.actions.cont = () => this.closePanel();
+      this.openPanel('fightEnd', 'Entraînement au Dojo', `<p class="big win">Entraînement terminé</p><div class="row"><span>Dégâts infligés</span><b>${e.degats}</b></div><div class="row"><span>Tours</span><b>${e.tours}</b></div><div class="row"><span>Moyenne par tour</span><b>${Math.round(e.degats / Math.max(1, e.tours))}</b></div><div class="row"><span>Mannequins abattus</span><b>${e.abattus} sur ${e.total}</b></div><p class="muted">Au Dojo, ni gain ni perte : tes PV sont ceux d'avant le combat.</p><div class="row center"><button data-act="cont" class="primary">Continuer</button></div>`);
+      return;
+    }
     const drops = r.drops.map(d => { const def = Items.get(d.id); return `<li>${def ? esc(def.name) : d.id}${d.count > 1 ? ' ×' + d.count : ''}</li>`; }).join('');
     const achs = r.achievements.map(a => `<li>Succès : ${esc(a.achievement.name)}${a.title ? ' · titre « ' + esc(a.title) + ' »' : ''}</li>`).join('');
     const quests = r.quests.filter((t, i, arr) => arr.findIndex(x => x.quest === t.quest) === i).map(t => `<li>${esc(t.quest.name)} : ${t.finished ? 'terminée, à rendre à ' + esc(Quests.npcName(Quests.turnInOf(t.quest))) : esc(Quests.stepText(ch, t.quest.id))}</li>`).join('');

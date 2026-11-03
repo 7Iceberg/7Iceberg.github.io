@@ -571,7 +571,7 @@ Object.assign(Hud.prototype, {
         if (D.marks.turnInNpc.has(n.id)) items.push({ kind: 'rendre', map: id, at: p, npc: nd, quetes: D.marks.turnInNpc.get(n.id) });
         else if (D.marks.giveNpc.has(n.id)) items.push({ kind: 'offre', map: id, at: p, npc: nd, quetes: D.marks.giveNpc.get(n.id) });
         if (vu && nd.workshop) items.push({ kind: 'artisan', sub: nd.workshop, map: id, at: p, npc: nd });
-        if (vu && nd.shop) items.push({ kind: 'marchand', map: id, at: p, npc: nd });
+        if (vu && (nd.shop || nd.marche)) items.push({ kind: 'marchand', map: id, at: p, npc: nd });
       }
     }
     return items;
@@ -1216,7 +1216,7 @@ Object.assign(Hud.prototype, {
       if (rendre.length) out.push(Object.assign({ cle: 'rendre:' + n.id, kind: 'rendre', prio: PRIO.rendre, quetes: rendre }, base));
       else if (offre.length) out.push(Object.assign({ cle: 'offre:' + n.id, kind: 'offre', prio: PRIO.offre, quetes: offre }, base));
       if (d.workshop && vu.has(n.carte)) out.push(Object.assign({ cle: 'artisan:' + n.id, kind: 'artisan', sub: d.workshop, prio: PRIO.artisan }, base));
-      if (d.shop && vu.has(n.carte)) out.push(Object.assign({ cle: 'marchand:' + n.id, kind: 'marchand', prio: PRIO.marchand }, base));
+      if ((d.shop || d.marche) && vu.has(n.carte)) out.push(Object.assign({ cle: 'marchand:' + n.id, kind: 'marchand', prio: PRIO.marchand }, base));
     }
     for (const t of Quests.tracker(ch).slice(0, 3)) {
       const at = this.cibleQueteIle(t.quest);

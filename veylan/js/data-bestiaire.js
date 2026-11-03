@@ -68,6 +68,10 @@ const thelkTriggers = [{ when: 'hitByElement', element: 'feu', do: [{ act: 'buff
 
 // ===== Les paliers, Orsane =====
 // Glym
+// Le mannequin du Dojo du Fil (docs/CITE-DES-CIMES.md, C4) : un monstre d'entraînement, inerte (ni
+// pas ni coup), solide, de la région `dojo` (hors des carnets et des succès de région).
+DATA.monsters.mannequin = M('mannequin', { name: 'Mannequin du Dojo', region: 'dojo', level: 'au tien', shape: 'square', color: '#d8c27a', hp: 70, dmgMult: 0, pa: 0, pm: 0, initiative: 1, spells: [], ai: 'inert', entrainement: true,
+  desc: 'De la paille serrée sur un poteau. Il ne rend pas les coups.' });
 DATA.monsters.piouk = M('piouk', { name: 'Glymet', region: 'orsane', level: '1 à 3', shape: 'diamond', color: '#c8ecff', hp: 28, dmgMult: 1.0, pa: 6, pm: 3, initiative: 95, spells: ['m_picot'], ai: 'ranged', desc: 'Nichée du Glym. Vole 1 PM de tout près.' });
 DATA.monsters.pilou_defait = M('pilou_defait', { name: 'Glym Défait', region: 'orsane', level: '12 à 18', shape: 'diamond', color: '#6a3a8a', hp: 59, dmgMult: 0.5, pa: 6, pm: 5, initiative: 115, resist: { air: 20 }, spells: ['m_bec_defait'], ai: 'ranged', desc: 'Glym déchiré. Garde le PM volé.' });
 // Grouk
