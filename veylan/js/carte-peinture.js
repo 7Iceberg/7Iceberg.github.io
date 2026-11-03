@@ -725,6 +725,8 @@ const CartePeinture = (() => {
     marche: ['#7fe0d0', '#2f9e8e', '#155c52'],
     dojo: ['#ff9a8a', '#c23a3a', '#6e1a1a'],
     metiers: ['#d0b0ff', '#7a5ea8', '#40306a'],
+    avis: ['#a8c0ff', '#3d5a9e', '#1f2f5a'],
+    temple: ['#fff2cc', '#c9a35c', '#6b5420'],
     offre: ['#ffe596', '#f2b134', '#b0700e'],
     rendre: ['#ffe596', '#f2b134', '#b0700e'],
     verrou: ['#9a90b8', '#5a4f7a', '#2e2744'],
@@ -759,6 +761,16 @@ const CartePeinture = (() => {
       c.fillStyle = blanc; c.beginPath(); c.arc(0, -s * 0.62, s * 0.26, 0, Math.PI * 2); c.fill();
       c.fillRect(-s * 0.3, -s * 0.34, s * 0.6, s * 0.8); c.fillRect(-s * 0.85, -s * 0.24, s * 1.7, s * 0.2); c.fillRect(-s * 0.08, s * 0.4, s * 0.16, s * 0.5);
       c.fillStyle = '#c23a3a'; c.fillRect(-s * 0.3, -s * 0.02, s * 0.6, s * 0.14);
+    } else if (kind === 'avis') {
+      // Un avis cloué : la feuille, le clou, deux lignes.
+      c.fillStyle = blanc; c.fillRect(-s * 0.7, -s * 0.8, s * 1.4, s * 1.6);
+      c.fillStyle = '#1f2f5a'; c.beginPath(); c.arc(0, -s * 0.58, s * 0.13, 0, Math.PI * 2); c.fill();
+      c.fillRect(-s * 0.45, -s * 0.15, s * 0.9, s * 0.14); c.fillRect(-s * 0.45, s * 0.2, s * 0.9, s * 0.14);
+    } else if (kind === 'temple') {
+      // Un fronton sur trois colonnes, sur une marche.
+      c.fillStyle = blanc; c.beginPath(); c.moveTo(-s * 0.95, -s * 0.35); c.lineTo(0, -s * 0.95); c.lineTo(s * 0.95, -s * 0.35); c.closePath(); c.fill();
+      for (const k of [-1, 0, 1]) c.fillRect(k * s * 0.6 - s * 0.12, -s * 0.3, s * 0.24, s * 0.85);
+      c.fillRect(-s * 0.95, s * 0.6, s * 1.9, s * 0.22);
     } else if (kind === 'metiers') {
       // Un livre ouvert (le registre des métiers).
       c.fillStyle = blanc; c.beginPath(); c.moveTo(0, -s * 0.45); c.quadraticCurveTo(-s * 0.5, -s * 0.75, -s * 0.9, -s * 0.5); c.lineTo(-s * 0.9, s * 0.6); c.quadraticCurveTo(-s * 0.5, s * 0.4, 0, s * 0.7); c.quadraticCurveTo(s * 0.5, s * 0.4, s * 0.9, s * 0.6); c.lineTo(s * 0.9, -s * 0.5); c.quadraticCurveTo(s * 0.5, -s * 0.75, 0, -s * 0.45); c.closePath(); c.fill();

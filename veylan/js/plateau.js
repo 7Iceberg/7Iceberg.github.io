@@ -23,6 +23,7 @@ class Plateau {
     this.relais = [];          // [{ carte, x, y }]
     this.portes = [];          // [{ carte, x, y, dungeon }]
     this.panneaux = [];        // [{ x, y, texte }]
+    this.machines = [];        // [{ x, y, cle, workshop, nom }]
     // Les sorties vers une carte hors du plateau (la Passe d'Orsane vers Kaldum, en cases) :
     // [{ carte, cote, vers, arrivee, x, y, rayon }], au lieu nommé de chacune.
     this.sorties = (def.sorties || []).map(s => { const p = (def.lieux || {})[s.lieu]; return p ? { carte: s.carte, cote: s.cote, vers: s.vers, arrivee: s.arrivee, x: p[0], y: p[1], rayon: s.rayon || 3 } : null; }).filter(Boolean);
@@ -106,7 +107,10 @@ class Plateau {
       if (m.relay) this.relais.push({ carte: m.id, x: m.relay.u, y: m.relay.v });
       if (m.porte) this.portes.push({ carte: m.id, x: m.porte.u, y: m.porte.v, dungeon: m.dungeon || null });
     }
+    if (w.majRecherches) w.majRecherches();
     this.panneaux = this.terrain.objets.filter(o => o.sorte === 'panneau').map(o => ({ x: o.u, y: o.v, texte: o.texte || '' }));
+    // Les machines des ateliers (la Rue des Ateliers) : chacune ouvre l'atelier de son métier.
+    this.machines = this.terrain.objets.map(o => { const m = IleTerrain.machine(o); return m ? Object.assign({ x: o.u, y: o.v, cle: `${o.u},${o.v}` }, m) : null; }).filter(Boolean);
     this.majPassages();
     const p = this.pointArrivee(mapId, arrivee);
     this.placer(p[0], p[1]);
@@ -272,6 +276,7 @@ class Plateau {
         const g = this.creerGroupe(tpl, i, m.id);
         g.naissance = w.time;
         w.groups.push(g);
+        if (w.majRecherches) w.majRecherches();
       });
     }
   }
@@ -427,6 +432,7 @@ class Plateau {
     for (const r of this.relais) voir('relais', r, 1.6);
     for (const r of this.portes) voir('porte', r, 2.0);
     for (const r of this.panneaux) voir('panneau', r, 1.0);
+    for (const r of this.machines) voir('machine', r, 1.2);
     // Une sortie se vise de loin : qui s'y tient (il vient d'arriver de Kaldum) marche autour.
     for (const r of this.sorties) if (Plateau.dist(w.player, r) > r.rayon) voir('sortie', r, 2.0);
     cands.sort((a, b) => a.n - b.n);
@@ -451,6 +457,7 @@ class Plateau {
         if (d) w.emit('dungeonPrompt', d); else w.toast('Cette porte est fermée pour l\'instant.');
       }, 3);
       case 'panneau': return this.approcher(ref, 1.5, () => w.emit('panneau', { texte: ref.texte, x: ref.x, y: ref.y }), 3);
+      case 'machine': return this.approcher(ref, 1.6, () => w.machine(ref), 3);
       case 'sortie': return this.approcher(ref, 0.5, () => w.sortirPlateau(ref), ref.rayon);
       default: return this.allerA(t.x, t.y, null);
     }
@@ -467,6 +474,7 @@ class Plateau {
       case 'relais': return parId(this.relais, x => x.carte === r);
       case 'porte': return parId(this.portes, x => x.carte === r);
       case 'panneau': return parId(this.panneaux, x => x.texte === r);
+      case 'machine': return parId(this.machines, x => x.cle === r);
       case 'sortie': return parId(this.sorties, x => x.vers === r);
       default: return null;
     }

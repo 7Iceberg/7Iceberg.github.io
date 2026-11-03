@@ -311,7 +311,9 @@ void main() {
 
     texte(cle, sorte, chaine, couleur) {
       return this.textes.obtenir(cle, (g, x, y, cw, ch) => {
-        const k = 2;
+        // Un nom long (« Recherché : Brask Corne-Lasse niv. 11 ») est peint moins grand dans sa case
+        // et montré dans une boîte plus large (Figures.boiteTexte) : le texte garde 11 px à l'écran.
+        const k = sorte === 'nom' || sorte === 'ennemi' ? 256 / Figures.boiteTexte(this.largeurTexte(sorte, chaine)) : 2;
         g.translate(x, y);
         g.textAlign = 'center'; g.textBaseline = 'middle';
         if (sorte === 'icone') {
@@ -350,8 +352,12 @@ void main() {
       const g = this._mes;
       if (sorte === 'marque') return 32;
       g.font = sorte === 'badge' ? '800 11px Inter, sans-serif' : '600 11px Inter, sans-serif';
-      return Math.min(126, g.measureText(chaine).width + (sorte === 'badge' ? 8 : 14));
+      return Math.min(sorte === 'badge' ? 126 : 240, g.measureText(chaine).width + (sorte === 'badge' ? 8 : 14));
     }
+    // La boîte à l'écran d'un nom ou d'une étiquette d'ennemi de largeur `w` : 128 px (la case de
+    // 256 texels à 2 texels par pixel), ou plus large pour un nom long (au plus 240 px, la case
+    // entière), peint alors à moins de 2 texels par pixel.
+    static boiteTexte(w) { return Math.max(128, Math.min(240, Math.ceil(w))); }
 
     // ----- Les membres d'un groupe : en file lâche derrière le premier -----
 
@@ -562,7 +568,8 @@ void main() {
           if (poses.some(q => croise(b, q))) continue;
           poses.push(b);
         }
-        gardes.push(dy === (it.dy || 0) ? it : Object.assign({}, it, { dy }));
+        if (it.sorte === 'nom' || it.sorte === 'ennemi') { const W = Figures.boiteTexte(w); gardes.push(Object.assign({}, it, { dy, w: W, h: W / 4 })); }
+        else gardes.push(dy === (it.dy || 0) ? it : Object.assign({}, it, { dy }));
       }
       items.length = 0;
       for (const it of gardes) items.push(it);

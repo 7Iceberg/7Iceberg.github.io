@@ -17,7 +17,7 @@
     ['milieu-droite', 'Au milieu à droite'], ['milieu-gauche', 'Au milieu à gauche'], ['bas-droite', 'En bas à droite'], ['bas-centre', 'En bas au centre'], ['bas-gauche', 'En bas à gauche']];
   const STYLES = [['verre', 'Verre'], ['minimal', 'Minimal'], ['ruban', 'Ruban']];
   const TITRES = { info: 'Information', succes: 'Succès', attention: 'Attention', erreur: 'Erreur' };
-  const SOURCES = { combat: 'Butin du combat', quete: 'Récompense de quête', recolte: 'Récolte', achat: 'Achat', artisanat: 'Fabrication' };
+  const SOURCES = { combat: 'Butin du combat', quete: 'Récompense de quête', recolte: 'Récolte', achat: 'Achat', artisanat: 'Fabrication', prime: 'Prime de la Garde', echange: 'Échange au Temple' };
   const svg = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
   const ICONES = {
     info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.4"/>'),

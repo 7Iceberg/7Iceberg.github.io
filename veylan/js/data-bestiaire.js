@@ -72,6 +72,17 @@ const thelkTriggers = [{ when: 'hitByElement', element: 'feu', do: [{ act: 'buff
 // pas ni coup), solide, de la région `dojo` (hors des carnets et des succès de région).
 DATA.monsters.mannequin = M('mannequin', { name: 'Mannequin du Dojo', region: 'dojo', level: 'au tien', shape: 'square', color: '#d8c27a', hp: 70, dmgMult: 0, pa: 0, pm: 0, initiative: 1, spells: [], ai: 'inert', entrainement: true,
   desc: 'De la paille serrée sur un poteau. Il ne rend pas les coups.' });
+// Les cibles des avis de recherche de la Garde des Cimes (js/avis.js, docs/CITE-DES-CIMES.md, C6) :
+// une par zone d'Orsane, deux fois plus solide que ses semblables (la même fourchette de niveaux, au
+// niveau de son avis au moins), de la région `avis` (hors des carnets et des succès de région).
+DATA.monsters.brask = M('brask', { name: 'Brask Corne-Lasse', region: 'avis', recherche: true, level: '3 à 20', shape: 'triangle', color: '#7a5a2a', hp: 80, dmgMult: 1.25, pa: 6, pm: 3, initiative: 62, resist: { terre: 20 }, spells: ['m_charge'], ai: 'melee',
+  desc: 'Un vieux Grouk qui a pris les Clairières pour son pré. Il charge les charrettes, et les fermiers avec.' });
+DATA.monsters.meche_folle = M('meche_folle', { name: 'Mèche-Folle', region: 'avis', recherche: true, level: '6 à 10', shape: 'circle', color: '#ff9a3c', hp: 80, dmgMult: 1.7, pa: 6, pm: 3, initiative: 78, resist: { eau: -50, feu: 25 }, spells: ['m_etincelle'], ai: 'ranged',
+  desc: 'Une Loche qui a goûté à l\'huile des lanternes. Elle met le feu aux ponts de corde des Sentiers.' });
+DATA.monsters.nouette = M('nouette', { name: 'La Vieille Nouette', region: 'avis', recherche: true, level: '12 à 18', shape: 'hex', color: '#d8cfa8', hp: 110, dmgMult: 1.2, pa: 6, pm: 2, initiative: 88, spells: ['m_toile', 'm_fil_tendu', 'm_crocs'], ai: 'ranged',
+  desc: 'La plus vieille fileuse des Toiles. Elle noue les sentiers sur eux-mêmes pour que les Veilleurs tournent en rond.' });
+DATA.monsters.gravas = M('gravas', { name: 'Gravas', region: 'avis', recherche: true, level: '10 à 20', shape: 'square', color: '#6e6e78', hp: 100, dmgMult: 0.65, pa: 6, pm: 3, initiative: 92, resist: { terre: 25, neutre: 10 }, spells: ['m_galet'], ai: 'ranged',
+  desc: 'Une Brimbe grosse comme un rocher, qui lance des rochers. Elle a fermé deux fois la route de Kaldum.' });
 DATA.monsters.piouk = M('piouk', { name: 'Glymet', region: 'orsane', level: '1 à 3', shape: 'diamond', color: '#c8ecff', hp: 28, dmgMult: 1.0, pa: 6, pm: 3, initiative: 95, spells: ['m_picot'], ai: 'ranged', desc: 'Nichée du Glym. Vole 1 PM de tout près.' });
 DATA.monsters.pilou_defait = M('pilou_defait', { name: 'Glym Défait', region: 'orsane', level: '12 à 18', shape: 'diamond', color: '#6a3a8a', hp: 59, dmgMult: 0.5, pa: 6, pm: 5, initiative: 115, resist: { air: 20 }, spells: ['m_bec_defait'], ai: 'ranged', desc: 'Glym déchiré. Garde le PM volé.' });
 // Grouk

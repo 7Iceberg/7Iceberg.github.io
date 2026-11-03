@@ -154,6 +154,7 @@ class World {
       if (!tpl || (st.dead[i] && st.dead[i] > this.time)) return;
       this.groups.push(this.makeGroup(tpl, i, c));
     });
+    this.majRecherches();
     this.door = S.door ? { x: S.door.x, y: S.door.y, dungeon: def.dungeon } : null;
     this.relay = S.relay ? { x: S.relay.x, y: S.relay.y } : null;
 
@@ -557,6 +558,8 @@ class World {
       workshop: npc.def.workshop || null,
       banque: !!npc.def.banque,
       dojo: !!npc.def.dojo,
+      avis: !!npc.def.avis,
+      temple: !!npc.def.temple,
       metiers: !!npc.def.metiers,
       marche: Marche.genreDe(npc),
       // Un passeur (la Nacelle d'Ervane, docs/ILE-TECHNIQUE.md, 2.9) : offert quand sa quête est faite.
@@ -785,6 +788,86 @@ class World {
     this.ch.fils += gain;
     this.ch.counters.filsEarned += gain;
     this.checkAchievements();
+    this.emit('update');
+    return true;
+  }
+
+  // Une machine d'atelier (docs/CITE-DES-CIMES.md, C6), comme dans Dofus : la toucher ouvre l'atelier
+  // de son métier sans passer par l'artisan. On « parle » à la machine (talkNpc) : on y fabrique
+  // comme chez l'artisan, et fermer l'atelier la quitte.
+  machine(m) {
+    if (this.state !== 'explore' || !m || !m.workshop) return false;
+    if (this.plateau && Plateau.dist(this.player, m) > 3) { this.toast('Trop loin.'); return false; }
+    this.state = 'dialogue';
+    this.talkNpc = { id: `machine:${m.workshop}`, machine: true, x: m.x, y: m.y, def: { id: 'machine', name: m.nom, workshop: m.workshop, dialogue: [] } };
+    this.emit('machine', { workshop: m.workshop, npc: this.talkNpc });
+    return true;
+  }
+
+  // Les avis de recherche de la Garde (js/avis.js) : on les prend, on y renonce et l'on touche la
+  // prime en parlant à la capitaine (un PNJ `avis`), hors combat.
+  aLaGarde() { return !!(this.talkNpc && this.talkNpc.def && this.talkNpc.def.avis) && this.state !== 'combat'; }
+  prendreAvis(id) {
+    if (!this.aLaGarde()) return false;
+    const r = Avis.prendre(this.ch, id);
+    if (!r.ok) { this.toast(r.reason); return false; }
+    this.majRecherches();
+    this.toast(`Avis pris : ${DATA.monsters[r.avis.monstre].name}, ${r.avis.lieu}.`);
+    this.emit('save');
+    this.emit('update');
+    return true;
+  }
+  abandonnerAvis(id) {
+    if (!this.aLaGarde() || !Avis.abandonner(this.ch, id)) return false;
+    this.majRecherches();
+    this.emit('save');
+    this.emit('update');
+    return true;
+  }
+  // La prime d'un avis capturé : l'XP, les Fils, les Sceaux de la Garde.
+  rendreAvis(id) {
+    if (!this.aLaGarde()) return null;
+    const r = Avis.rendre(this.ch, id);
+    if (!r) return null;
+    const g = r.xp ? this.ch.gainXp(r.xp) : { gained: 0, levels: 0 };
+    this.ch.fils += r.fils;
+    this.ch.counters.filsEarned += r.fils;
+    if (r.sceaux) this.ch.addItem(Avis.SCEAU, r.sceaux);
+    this.emit('gain', { source: 'prime', xp: g.gained, fils: r.fils, items: r.sceaux ? [{ id: Avis.SCEAU, count: r.sceaux }] : [] });
+    if (g.levels) {
+      this.afterEvents(Quests.onEvent(this.ch, { type: 'level', level: this.ch.level }));
+      this.emit('levelUp', { level: this.ch.level, levels: g.levels });
+    }
+    this.afterEvents(Quests.onEvent(this.ch, { type: 'inventory' }));
+    this.checkAchievements();
+    this.emit('save');
+    this.emit('update');
+    return Object.assign({}, r, { xp: g.gained, levels: g.levels });
+  }
+  // La cible d'un avis pris se joint en tête de son groupe (sa carte, son numéro) : l'étiquette, la
+  // fiche et le combat la montrent ; elle le quitte quand l'avis est rendu, abandonné ou capturé.
+  majRecherches() {
+    for (const g of this.groups) {
+      if (!g || !g.monsters || this.estDojo(g)) continue;
+      const a = Avis.cibleDe(this.ch, g.carte || this.mapId, g.idx);
+      if ((a ? a.id : null) === (g.recherche || null)) continue;
+      g.monsters = g.monsters.filter(m => !m.recherche);
+      g.recherche = a ? a.id : null;
+      // Au niveau de son avis au moins, et jamais en dessous de son escorte (les zones montent pour
+      // un Veilleur né sur Ervane), dans la fourchette de sa définition.
+      if (a) { const def = DATA.monsters[a.monstre], [lo, hi] = def ? Entity.levelRange(def) : [1, 99]; const niv = Math.max(lo, Math.min(hi, Math.max(a.niveau, ...g.monsters.map(m => m.level)))); g.monsters = [{ id: a.monstre, level: niv, recherche: true }].concat(g.monsters); }
+      g.level = Math.round(g.monsters.reduce((s, m) => s + m.level, 0) / g.monsters.length);
+    }
+  }
+  // Le Temple des Voies : la gardienne (un PNJ `temple`) échange les Sceaux de la Garde.
+  auTemple() { return !!(this.talkNpc && this.talkNpc.def && this.talkNpc.def.temple) && this.state !== 'combat'; }
+  echangerTemple(id) {
+    if (!this.auTemple()) return false;
+    const r = Avis.echanger(this.ch, id);
+    if (!r.ok) { this.toast(r.reason); return false; }
+    this.emit('gain', { source: 'echange', items: [{ id, count: 1 }] });
+    this.afterEvents(Quests.onEvent(this.ch, { type: 'inventory' }));
+    this.emit('save');
     this.emit('update');
     return true;
   }
@@ -1070,6 +1153,8 @@ class World {
         result.quests.push(...Quests.onEvent(ch, { type: 'kill', monster: e.def.id }));
       }
       result.xp = Math.round(result.xp * (1 + bonus / 100));
+      // Un avis de recherche dont la cible est tombée : capturé, la prime attend à la Garde.
+      result.avis = Avis.victoire(ch, monsters.map(e => e.def.id)).map(a => ({ id: a.id, nom: DATA.monsters[a.monstre].name }));
       const g = ch.gainXp(result.xp);
       result.gained = g.gained; result.levels = g.levels;
       ch.fils += result.fils; ch.counters.filsEarned += result.fils;

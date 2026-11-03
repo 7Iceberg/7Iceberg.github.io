@@ -269,6 +269,7 @@ const IleTerrain = (() => {
     // des ateliers et du Dojo.
     enseigne: o => [{ x: 0, y: 0, r: 0.3 }],
     mannequin: o => [{ x: 0, y: 0, r: 0.45 }],
+    statue: o => [{ x: 0, y: 0, r: 0.5 }],
     enclume: o => [{ x: 0, y: 0, r: 0.55 }],
     alambic: o => [{ x: 0, y: 0, r: 0.6 }, { x: 0.75, y: 0, r: 0.3 }],
     etabli: o => [{ rect: true, x: 0, y: 0, l: 1.9, p: 0.9 }],
@@ -1059,8 +1060,20 @@ const IleTerrain = (() => {
   }
   const importer = o => munir(Object.assign({}, o));
 
+  // Les machines des ateliers (docs/CITE-DES-CIMES.md, C6) : l'atelier qu'un objet posé ouvre, et son
+  // nom ; null pour un objet qui n'en est pas une.
+  function machine(o) {
+    switch (o && o.sorte) {
+      case 'enclume': return { workshop: 'forgeron', nom: 'L\'enclume de la forge' };
+      case 'metier_tisser': return { workshop: 'tailleur', nom: 'Le métier à tisser' };
+      case 'alambic': return { workshop: 'alchimiste', nom: 'L\'alambic' };
+      case 'etabli': return o.outil === 'bijou' ? { workshop: 'bijoutier', nom: 'L\'établi du bijoutier' } : { workshop: 'cordonnier', nom: 'L\'établi du cordonnier' };
+      default: return null;
+    }
+  }
+
   return {
-    construire, importer, cartesDe, dansPoly, courbe, cumul, projeter, pointA, bilin, caseAire, facesEscarpements, MATIERES, EMPREINTES, FAMILLES, SORTES_LIGNES,
+    machine, construire, importer, cartesDe, dansPoly, courbe, cumul, projeter, pointA, bilin, caseAire, facesEscarpements, MATIERES, EMPREINTES, FAMILLES, SORTES_LIGNES,
     M: { sin, cos, atan2, hache, bruit, fbm, hasard, cle, graineDe, quantifier },
   };
 })();

@@ -530,7 +530,7 @@ class Carte3D {
       ajoute(texture('p' + it.kind + it.sub, art.canvas), art.canvas, [it.at[0], h + 0.13, it.at[1]], 0.2, [0.5, 1 - art.ay / art.canvas.height], it, 'proche');
       (parCarte.get(it.map) || parCarte.set(it.map, []).get(it.map)).push(it);
     }
-    const PRIO = { rendre: 6, offre: 5, relais: 4, donjon: 3, banque: 3, marche: 2, dojo: 2, metiers: 2, artisan: 2, marchand: 1 };
+    const PRIO = { rendre: 6, offre: 5, relais: 4, donjon: 3, banque: 3, marche: 2, dojo: 2, metiers: 2, avis: 2, temple: 2, artisan: 2, marchand: 1 };
     for (const [id, l] of parCarte) {
       l.sort((a, b) => PRIO[b.kind] - PRIO[a.kind]);
       const p = Atlas.coordsOf(id), art = Carte3D.compte(l[0], l.length), h = this.hauteur(p[0], p[1]);

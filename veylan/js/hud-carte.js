@@ -33,7 +33,7 @@ const ROUTES = [['ervane', 'orsane'], ['orsane', 'kaldum'], ['orsane', 'thessa']
 const ATELIERS = { tailleur: 'tailleur', cordonnier: 'cordonnier', bijoutier: 'bijoutier', forgeron: 'forgeron', alchimiste: 'alchimiste' };
 const DRAPEAU = 'veylan.carte.drapeau';
 // Ordre des pastilles quand elles se recouvrent : la quête d'abord.
-const PRIO = { rendre: 6, offre: 5, relais: 4, donjon: 3, banque: 3, marche: 2, dojo: 2, metiers: 2, artisan: 2, marchand: 1 };
+const PRIO = { rendre: 6, offre: 5, relais: 4, donjon: 3, banque: 3, marche: 2, dojo: 2, metiers: 2, avis: 2, temple: 2, artisan: 2, marchand: 1 };
 
 const hex = c => { const m = /^#?([0-9a-f]{6})$/i.exec(String(c || '').trim()); const n = m ? parseInt(m[1], 16) : 0x808080; return [n >> 16, (n >> 8) & 255, n & 255]; };
 const mix = (a, b, t) => { const A = hex(a), B = hex(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
@@ -214,7 +214,7 @@ Object.assign(Hud.prototype, {
     const here = Atlas.hereOf(w.mapId);
     const vus = [...A.coords.keys()].filter(id => seen.has(id)).length;
     const compte = `<p class="vy-carte__compte"><b>${vus}</b> / ${A.coords.size} cartes explorées</p>`;
-    const leg = [['toi', 'Toi'], ['quete', 'Quête suivie'], ['drapeau', 'Ton drapeau'], ['relais', 'Relais du Fil'], ['donjon', 'Donjon'], ['artisan', 'Atelier', 'forgeron'], ['marchand', 'Marchand'], ['marche', 'Marché'], ['banque', 'Banque'], ['dojo', 'Dojo'], ['metiers', 'Hôtel des Métiers'], ['offre', 'Quête à prendre'], ['rendre', 'Quête à rendre']];
+    const leg = [['toi', 'Toi'], ['quete', 'Quête suivie'], ['drapeau', 'Ton drapeau'], ['relais', 'Relais du Fil'], ['donjon', 'Donjon'], ['artisan', 'Atelier', 'forgeron'], ['marchand', 'Marchand'], ['marche', 'Marché'], ['banque', 'Banque'], ['dojo', 'Dojo'], ['metiers', 'Hôtel des Métiers'], ['avis', 'Avis de recherche'], ['temple', 'Temple des Voies'], ['offre', 'Quête à prendre'], ['rendre', 'Quête à rendre']];
     const legende = `<div class="vy-carte__legende">${leg.map(([k, l, sub]) => `<span><img src="${CartePeinture.url(k, sub)}" alt="" width="18" height="18">${l}</span>`).join('')}</div>` +
       `<p class="muted vy-note">${c.drapeau ? `Drapeau en ${coord(c.drapeau.map(Math.round))}. <button class="vy-carte__lien" data-act="drapeau">Retirer</button>` : 'Appui long ou clic droit sur la carte : poser ton drapeau.'}</p>`;
     const id = c.sel || (c.selCase ? null : here);
@@ -507,6 +507,8 @@ Object.assign(Hud.prototype, {
       case 'marche': return `<b>Marché des Cimes</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || '')}${ou}</span>`;
       case 'dojo': return `<b>Dojo du Fil</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || '')}${ou}</span>`;
       case 'metiers': return `<b>Hôtel des Métiers</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || '')}${ou}</span>`;
+      case 'avis': return `<b>Garde des Cimes</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || '')}${ou}</span>`;
+      case 'temple': return `<b>Temple des Voies</b><span>${esc(it.npc.name)}, ${esc(it.npc.title || '')}${ou}</span>`;
       default: return '';
     }
   },
@@ -577,7 +579,7 @@ Object.assign(Hud.prototype, {
         if (vu && nd.workshop) items.push({ kind: 'artisan', sub: nd.workshop, map: id, at: p, npc: nd });
         if (vu && nd.marche) items.push({ kind: 'marche', map: id, at: p, npc: nd });
         else if (vu && nd.shop) items.push({ kind: 'marchand', map: id, at: p, npc: nd });
-        for (const k of ['banque', 'dojo', 'metiers']) if (vu && nd[k]) items.push({ kind: k, map: id, at: p, npc: nd });
+        for (const k of ['banque', 'dojo', 'metiers', 'avis', 'temple']) if (vu && nd[k]) items.push({ kind: k, map: id, at: p, npc: nd });
       }
     }
     return items;
@@ -1224,7 +1226,7 @@ Object.assign(Hud.prototype, {
       if (d.workshop && vu.has(n.carte)) out.push(Object.assign({ cle: 'artisan:' + n.id, kind: 'artisan', sub: d.workshop, prio: PRIO.artisan }, base));
       if (d.marche && vu.has(n.carte)) out.push(Object.assign({ cle: 'marche:' + n.id, kind: 'marche', prio: PRIO.marche }, base));
       else if (d.shop && vu.has(n.carte)) out.push(Object.assign({ cle: 'marchand:' + n.id, kind: 'marchand', prio: PRIO.marchand }, base));
-      for (const k of ['banque', 'dojo', 'metiers']) if (d[k] && vu.has(n.carte)) out.push(Object.assign({ cle: k + ':' + n.id, kind: k, prio: PRIO[k] }, base));
+      for (const k of ['banque', 'dojo', 'metiers', 'avis', 'temple']) if (d[k] && vu.has(n.carte)) out.push(Object.assign({ cle: k + ':' + n.id, kind: k, prio: PRIO[k] }, base));
     }
     for (const t of Quests.tracker(ch).slice(0, 3)) {
       const at = this.cibleQueteIle(t.quest);
@@ -1340,6 +1342,8 @@ Object.assign(Hud.prototype, {
       case 'marche': return `<b>${esc(it.npc.name)}</b><span>Marché des Cimes, ${esc(it.npc.title || '')}</span>`;
       case 'dojo': return `<b>${esc(it.npc.name)}</b><span>Dojo du Fil, ${esc(it.npc.title || '')}</span>`;
       case 'metiers': return `<b>${esc(it.npc.name)}</b><span>Hôtel des Métiers, ${esc(it.npc.title || '')}</span>`;
+      case 'avis': return `<b>${esc(it.npc.name)}</b><span>Garde des Cimes, ${esc(it.npc.title || '')}</span>`;
+      case 'temple': return `<b>${esc(it.npc.name)}</b><span>Temple des Voies, ${esc(it.npc.title || '')}</span>`;
       case 'lieu': return `<b>${esc(it.nom)}</b><span>${it.sorte === 'zone' ? esc(it.sous || '') : ou}</span>`;
       default: return '';
     }
@@ -1359,7 +1363,7 @@ Object.assign(Hud.prototype, {
     const A = Atlas.get(), seen = new Set(ch.counters.maps);
     const vus = [...A.coords.keys()].filter(id => seen.has(id)).length;
     const compte = `<p class="vy-carte__compte"><b>${vus}</b> / ${A.coords.size} cartes explorées</p>`;
-    const leg = [['toi', 'Toi'], ['quete', 'Quête suivie'], ['relais', 'Relais du Fil'], ['donjon', 'Donjon'], ['artisan', 'Atelier', 'forgeron'], ['marchand', 'Marchand'], ['marche', 'Marché'], ['banque', 'Banque'], ['dojo', 'Dojo'], ['metiers', 'Hôtel des Métiers'], ['offre', 'Quête à prendre'], ['rendre', 'Quête à rendre']];
+    const leg = [['toi', 'Toi'], ['quete', 'Quête suivie'], ['relais', 'Relais du Fil'], ['donjon', 'Donjon'], ['artisan', 'Atelier', 'forgeron'], ['marchand', 'Marchand'], ['marche', 'Marché'], ['banque', 'Banque'], ['dojo', 'Dojo'], ['metiers', 'Hôtel des Métiers'], ['avis', 'Avis de recherche'], ['temple', 'Temple des Voies'], ['offre', 'Quête à prendre'], ['rendre', 'Quête à rendre']];
     const legende = `<div class="vy-carte__legende">${leg.map(([k, l, sub]) => `<span><img src="${CartePeinture.url(k, sub)}" alt="" width="18" height="18">${l}</span>`).join('')}</div>`;
     const aide = '<p class="muted vy-note">Touche une pastille, un nom ou le sol pour sa fiche.</p>';
     if (!s || !P) return compte + (w.mapId && World.mapDef(w.mapId) ? this.ficheCase(w.mapId, { sansCoord: true }) : '') + aide + legende;
@@ -1395,6 +1399,8 @@ Object.assign(Hud.prototype, {
         if (x.kind === 'marche') html += `<div class="vy-sous"><span>Marché des Cimes</span></div><p class="vy-note">${esc(x.npc.name)} : l'étal du jour.</p>`;
         if (x.kind === 'dojo') html += `<div class="vy-sous"><span>Dojo du Fil</span></div><p class="vy-note">${esc(x.npc.name)} : l'entraînement contre les mannequins.</p>`;
         if (x.kind === 'metiers') html += `<div class="vy-sous"><span>Hôtel des Métiers</span></div><p class="vy-note">${esc(x.npc.name)} : les métiers et leurs ateliers.</p>`;
+        if (x.kind === 'avis') html += `<div class="vy-sous"><span>Garde des Cimes</span></div><p class="vy-note">${esc(x.npc.name)} : les avis de recherche.</p>`;
+        if (x.kind === 'temple') html += `<div class="vy-sous"><span>Temple des Voies</span></div><p class="vy-note">${esc(x.npc.name)} : les Sceaux de la Garde, la statue vers Ervane.</p>`;
         if (x.kind === 'marchand') html += `<div class="vy-sous"><span>Marchand</span></div><p class="vy-note">${esc(x.npc.name)} vend de quoi tenir debout : parle-lui pour voir ses étals.</p>`;
         if (x.kind === 'artisan') html += `<div class="vy-sous"><span>Atelier</span></div><p class="vy-note">${esc(x.npc.name)}, ${esc(x.npc.title || ATELIERS[x.sub] || '')}.</p>`;
         if (x.kind === 'donjon' && x.donjon) { const key = x.donjon.keyItem && Items.get(x.donjon.keyItem); html += `<div class="vy-sous"><span>Donjon</span></div><p class="vy-note"><b>${esc(x.donjon.name)}</b> <span class="muted">${levels(x.donjon.level)} · ${x.donjon.rooms.length} salles${key ? ' · clé : ' + esc(key.name) : ''}${ch.counters.dungeons.includes(x.donjon.id) ? ' · terminé' : ''}</span></p>`; }

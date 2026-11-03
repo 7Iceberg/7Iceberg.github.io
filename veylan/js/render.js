@@ -2898,7 +2898,7 @@ class Renderer {
     out.push({ kind: 'entity', rx: p.rx, ry: p.ry, shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, scale: 1, alpha: 1, team: 'player', facing: p.facing, look: ch.look, gender: ch.gender, bob: p.moving ? Math.abs(Math.sin(now / 90)) * 3.5 : 0, label: null, phase: 0, insigne: Factions.insigne(ch) });
     for (const g of w.groups) {
       const def = DATA.monsters[g.monsters[0].id];
-      out.push({ kind: 'entity', rx: g.rx, ry: g.ry, shape: def.shape, color: def.color, glyph: null, name: def.name, scale: def.boss ? 1.3 : 0.95, alpha: 1, team: 'monster', facing: 1, bob: Math.abs(Math.sin(now / 500 + g.idx)) * 1.5, badge: g.monsters.length > 1 ? `×${g.monsters.length}` : null, label: `${def.name} niv. ${g.level}`, motif: Renderer.motifOf(g.monsters[0].id), phase: g.idx || 0 });
+      out.push({ kind: 'entity', rx: g.rx, ry: g.ry, shape: def.shape, color: def.color, glyph: null, name: def.name, scale: def.boss || def.recherche ? 1.3 : 0.95, alpha: 1, team: 'monster', facing: 1, bob: Math.abs(Math.sin(now / 500 + g.idx)) * 1.5, badge: g.monsters.length > 1 ? `×${g.monsters.length}` : null, label: `${def.recherche ? 'Recherché : ' : ''}${def.name} niv. ${g.level}`, motif: Renderer.motifOf(g.monsters[0].id), phase: g.idx || 0 });
     }
     if (!this.marksAt || now - this.marksAt > 500 || this.marksMap !== w.mapId) {
       this.marksAt = now; this.marksMap = w.mapId; this.marks = {};

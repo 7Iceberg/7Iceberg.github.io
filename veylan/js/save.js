@@ -51,7 +51,7 @@ const Save = (() => {
 
   // ----- Validation -----
   const isInt = (v, min, max) => Number.isInteger(v) && v >= (min == null ? -Infinity : min) && v <= (max == null ? Infinity : max);
-  const ALLOWED = new Set(['classId', 'name', 'gender', 'level', 'xp', 'statPoints', 'stats', 'equipment', 'inventory', 'fils', 'hp', 'titles', 'title', 'quests', 'counters', 'achievements', 'achClaimed', 'veille', 'pos', 'relay', 'relays', 'dungeon', 'coffre', 'marche', 'autoStats', 'playTime', 'knots', 'ensembles', 'fight', 'mapTimers', 'flags', 'v', 'uid', 'voie', 'scrolls', 'faction', 'tuto']);
+  const ALLOWED = new Set(['classId', 'name', 'gender', 'level', 'xp', 'statPoints', 'stats', 'equipment', 'inventory', 'fils', 'hp', 'titles', 'title', 'quests', 'counters', 'achievements', 'achClaimed', 'veille', 'pos', 'relay', 'relays', 'dungeon', 'coffre', 'marche', 'avis', 'autoStats', 'playTime', 'knots', 'ensembles', 'fight', 'mapTimers', 'flags', 'v', 'uid', 'voie', 'scrolls', 'faction', 'tuto']);
   // Rangs des sorts (docs/SORTS.md) : { idDeSort: rang }, points de sort restants, répartition automatique.
   for (const k of ['spellRanks', 'spellPoints', 'autoSpells']) ALLOWED.add(k);
   // Création de personnage (js/accueil.js) : l'apparence.
@@ -204,6 +204,16 @@ const Save = (() => {
       if (o.coffre.fils != null) { if (isInt(o.coffre.fils, 0, 1e9)) coffre.fils = o.coffre.fils; else bad('Fils du coffre'); }
     }
     o.coffre = coffre;
+    // Les avis de recherche (js/avis.js) : des avis connus ; une cible capturée est un avis pris ;
+    // le jour de chaque prime touchée.
+    if (o.avis != null) {
+      const a = o.avis && typeof o.avis === 'object' ? o.avis : {}, connus = new Set(((DATA.content && DATA.content.avis) || []).map(x => x.id));
+      const ids = v => (Array.isArray(v) ? [...new Set(v.filter(x => typeof x === 'string' && connus.has(x)))] : []);
+      const pris = ids(a.pris), captures = ids(a.captures).filter(x => pris.includes(x)), rendus = {};
+      for (const [k, j] of Object.entries(a.rendus && typeof a.rendus === 'object' ? a.rendus : {})) if (connus.has(k) && isInt(j, -100000, 1000000)) rendus[k] = j;
+      if (pris.length !== (Array.isArray(a.pris) ? a.pris.length : 0) || captures.length !== (Array.isArray(a.captures) ? a.captures.length : 0)) bad('avis de recherche');
+      o.avis = { pris, captures, rendus };
+    }
     // Le carnet du Marché (js/marche.js) : le jour et les ventes de ce jour, par objet.
     if (o.marche != null) {
       const m = o.marche && typeof o.marche === 'object' ? o.marche : {}, vendus = {};

@@ -64,6 +64,7 @@ class Hud {
     // l'île, une figure visible à côté d'une fenêtre ouverte lançait le combat sous elle (revue finale).
     w.on('fight', () => { this.closePanel(); this.fermerFenetres(); this.setMode('combat'); this.ui.refresh(); this.ui.updateHighlights(); });
     w.on('fightEnd', r => this.openFightEnd(r));
+    w.on('machine', ctx => this.openWorkshop(ctx));
     w.on('reward', r => this.openReward(r));
     w.on('achievement', g => this.annoncerSucces(g));
     w.on('relay', d => this.openRelay(d));
@@ -595,6 +596,46 @@ class Hud {
     this.openPanel('dialogue', `L'Hôtel des Métiers, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
+  // Les avis de recherche de la Garde (js/avis.js) : la cible de chaque avis, où elle se cache, sa
+  // prime ; prendre l'avis, y renoncer, toucher la prime.
+  openAvis(ctx) {
+    const render = () => {
+      const ch = this.world.ch;
+      const lignes = Avis.liste().map(a => {
+        const m = DATA.monsters[a.monstre] || { name: a.monstre, color: '#aaa' }, s = Avis.statut(ch, a.id), p = a.prime;
+        const prime = `${p.xp} XP, ${p.fils} Fils, ${p.sceaux} Sceau${p.sceaux > 1 ? 'x' : ''} de la Garde`;
+        const bouton = s === 'libre' ? `<button data-act="aprendre" data-id="${a.id}">Prendre l'avis</button>`
+          : s === 'pris' ? `<button data-act="alacher" data-id="${a.id}">Renoncer</button>`
+          : s === 'capture' ? `<button data-act="arendre" data-id="${a.id}" class="primary">Toucher la prime</button>`
+          : '<small class="muted">Prime touchée : un nouvel avis demain</small>';
+        const etat = s === 'pris' ? '<br><small class="ok">En chasse</small>' : s === 'capture' ? '<br><small class="ok">Capturé, la prime t\'attend</small>' : '';
+        return `<div class="row item${s === 'rendu' ? ' dim' : ''}" data-avis="${a.id}"><span><b style="color:${m.color}">${esc(m.name)}</b> <small class="muted">niv. ${a.niveau}</small><br><small>${esc(a.texte)}</small><br><small>Vu ${esc(a.lieu)}. Prime : ${prime}.</small>${etat}</span><span class="btns">${bouton}</span></div>`;
+      }).join('');
+      return `<p class="muted">Prends un avis : sa cible se joint à un groupe de sa carte, son nom sur l'étiquette. Bats-la, puis reviens toucher la prime. Chaque avis se rend une fois par jour ; les Sceaux s'échangent au Temple des Voies.</p>${lignes}`;
+    };
+    this.actions.aprendre = d => { this.world.prendreAvis(d.id); };
+    this.actions.alacher = d => { this.world.abandonnerAvis(d.id); };
+    this.actions.arendre = d => { this.world.rendreAvis(d.id); };
+    this.openPanel('dialogue', `Les avis de recherche, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
+  }
+
+  // Le Temple des Voies : ce que la gardienne donne contre des Sceaux de la Garde.
+  openTemple(ctx) {
+    const render = () => {
+      const ch = this.world.ch, n = ch.count(Avis.SCEAU);
+      const lignes = Avis.ECHANGES.map(e => {
+        const d = Items.get(e.id);
+        if (!d) return '';
+        const info = d.sub === 'parchemin' ? `+${d.value} ${esc((Items.STAT_LABEL && Items.STAT_LABEL[d.stat]) || d.stat)} pour toujours` : d.heal ? `rend ${d.heal >= 999 ? 'tous les' : d.heal} PV` : esc(d.lore || '');
+        return `<div class="row item"><span><b>${esc(d.name)}</b><br><small>${info}</small></span><span class="btns"><button data-act="techanger" data-id="${e.id}" ${n >= e.sceaux ? '' : 'disabled'}>${e.sceaux} Sceau${e.sceaux > 1 ? 'x' : ''}</button></span></div>`;
+      }).join('');
+      return `<p class="muted">Tu as ${n} Sceau${n > 1 ? 'x' : ''} de la Garde. On les gagne aux avis de recherche, à la tour de la Garde sur la Place.</p>${lignes}`;
+    };
+    this.actions.techanger = d => { this.world.echangerTemple(d.id); };
+    this.openPanel('dialogue', `Le Temple des Voies, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
+  }
+
+  // `ctx.npc` : l'artisan, ou la machine de l'atelier (World.machine : `machine`, son nom).
   openWorkshop(ctx) {
     const render = () => {
       const ch = this.world.ch;
@@ -611,7 +652,7 @@ class Hud {
       return `<p class="muted">Atelier : ${ctx.workshop}. Les ingrédients viennent des monstres et de la récolte.${remise ? ` <b class="ok">Veille du jour : ${remise} % de ressources en moins.</b>` : ''}</p>${rows || '<p class="muted">Aucune recette.</p>'}`;
     };
     this.actions.craft = d => { const r = Items.recipeFor(d.id); if (r) this.world.craft(r); };
-    this.openPanel('dialogue', `Atelier de ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
+    this.openPanel('dialogue', ctx.npc.machine ? ctx.npc.def.name : `Atelier de ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
   // ----- Relais, donjons, fin de combat -----
@@ -682,7 +723,7 @@ class Hud {
     let dungeon = '';
     if (r.dungeon) dungeon = r.dungeon.cleared ? `<p class="big">Donjon terminé : ${esc(r.dungeon.def.name)} !</p>${r.dungeon.turns ? `<p class="muted">En ${r.dungeon.turns} tours, toutes salles comprises.</p>` : ''}` : `<p class="muted">Salle suivante : ${esc(r.dungeon.def.rooms[r.dungeon.next].name)}</p>`;
     const html = r.victory
-      ? `<p class="big win">Victoire</p>${dungeon}<div class="row"><span>Expérience</span><b>+${r.gained} XP${r.levels ? ` · niveau ${ch.level} !` : ''}</b></div><div class="row"><span>Fils</span><b>+${r.fils}</b></div>${chal}${r.veille ? `<div class="row"><span>Veille du jour</span><b class="ok">${esc(r.veille)}</b></div>` : ''}${r.knots ? `<div class="row"><span>Nœuds noués : ${r.knots}</span><b class="ok">+${r.knots * DATA.rules.knotBonus} %</b></div>` : ''}${drops ? `<h4>Butin</h4><ul>${drops}</ul>` : '<p class="muted">Aucun butin cette fois.</p>'}${quests ? `<h4>Quêtes</h4><ul>${quests}</ul>` : ''}${achs ? `<ul>${achs}</ul>` : ''}`
+      ? `<p class="big win">Victoire</p>${dungeon}<div class="row"><span>Expérience</span><b>+${r.gained} XP${r.levels ? ` · niveau ${ch.level} !` : ''}</b></div><div class="row"><span>Fils</span><b>+${r.fils}</b></div>${chal}${r.veille ? `<div class="row"><span>Veille du jour</span><b class="ok">${esc(r.veille)}</b></div>` : ''}${r.knots ? `<div class="row"><span>Nœuds noués : ${r.knots}</span><b class="ok">+${r.knots * DATA.rules.knotBonus} %</b></div>` : ''}${drops ? `<h4>Butin</h4><ul>${drops}</ul>` : '<p class="muted">Aucun butin cette fois.</p>'}${quests ? `<h4>Quêtes</h4><ul>${quests}</ul>` : ''}${(r.avis || []).length ? `<h4>Avis de recherche</h4><ul>${r.avis.map(a => `<li>${esc(a.nom)} capturé : la prime t'attend à la tour de la Garde, sur la Place du Relais.</li>`).join('')}</ul>` : ''}${achs ? `<ul>${achs}</ul>` : ''}`
       : `<p class="big lose">Défaite</p><p>Tu reviens au Relais du Fil avec la moitié de tes PV.${this.world.ch.dungeon ? '' : ''}</p>`;
     this.actions.cont = () => this.closePanel();
     this.openPanel('fightEnd', r.victory ? 'Combat gagné' : 'Combat perdu', `${html}<div class="row center"><button data-act="cont" class="primary">Continuer</button></div>`);

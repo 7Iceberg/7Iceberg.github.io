@@ -1881,10 +1881,10 @@ void main() { float a = texture2D(carte, vUv).a * vA;
         const def = DATA.monsters[m.id];
         if (!def) return;
         const [x, y] = membres[k];
-        const s = { kind: 'entity', shape: def.shape, color: def.color, glyph: null, team: 'monster', motif: Renderer.motifOf(m.id), noyau: def.noyau || null, scale: def.boss ? 1.3 : this.telephone ? 1.2 : 0.95, facing: prec.f, x, y, h: H(x, y), normale: N(x, y), bob: Math.sin(now / 500 + g.idx + k) * 1.5, alpha: fondu, cible: { type: 'groupe', ref: g } };
+        const s = { kind: 'entity', shape: def.shape, color: def.color, glyph: null, team: 'monster', motif: Renderer.motifOf(m.id), noyau: def.noyau || null, scale: def.boss || def.recherche ? 1.3 : this.telephone ? 1.2 : 0.95, facing: prec.f, x, y, h: H(x, y), normale: N(x, y), bob: Math.sin(now / 500 + g.idx + k) * 1.5, alpha: fondu, cible: { type: 'groupe', ref: g } };
         // En combat, les groupes du monde gardent leur figure, pas leur nom.
         // Un boss garde son prénom sur l'étiquette (« Krobb niv. 7 ») : le titre entier tient sur sa fiche.
-        if (k === 0 && !enCombat && !vol) { s.label = `${def.boss ? def.name.split(',')[0] : def.name} niv. ${g.level}`; s.labelSorte = 'ennemi'; if (g.monsters.length > 1) s.badge = `×${g.monsters.length}`; }
+        if (k === 0 && !enCombat && !vol) { s.label = `${def.recherche ? 'Recherché : ' : ''}${def.boss ? def.name.split(',')[0] : def.name} niv. ${g.level}`; s.labelSorte = 'ennemi'; if (g.monsters.length > 1) s.badge = `×${g.monsters.length}`; }
         if (fig.modeles && fig.modeles.prend(m.id)) { s.modele = m.id; s.modeleCle = `${g.nid || g.idx}|${k}`; }
         s.cle = fig.cleFigure(s); s.peindre = fig.peindreFigure(s);
         out.push(s);

@@ -14,13 +14,13 @@ DATA.content.zones.push({
       layout: [
         'TTTTTT.n.TTTTTT',
         'T,,,,,...,,,,,T',
-        'T,.L.......L.,T',
+        'T,.LP......L.,T',
         'T,...........,T',
         'T,...,,,,,.P.,T',
         'T,...,.P.,...,T',
         'T,P..,,Z,,...,T',
         'T....,...,....e',
-        'T,...,,,,,...,T',
+        'T,...,,,,,..P,T',
         'T,...........,T',
         'T,.LP..P..PL.,T',
         'T,..P.....P..,T',
@@ -29,7 +29,7 @@ DATA.content.zones.push({
         'TTTTTTTsTTTTTTT',
       ],
       exits: { n: 'orsane_cimes_terrasses', e: 'orsane_cimes_ateliers', s: 'orsane_cimes_porte', w: null },
-      npcs: ['aldric', 'varek', 'ysolde', 'garen', 'lotha', 'mira', 'maelis', 'brann'],
+      npcs: ['ismere', 'aldric', 'varek', 'ysolde', 'hessa', 'garen', 'lotha', 'mira', 'maelis', 'brann'],
       nodes: [],
       groups: [],
       dungeon: null,
@@ -98,7 +98,7 @@ DATA.content.zones.push({
         'T,...........,T',
         'T,.T...M...T.,T',
         'T,...........,T',
-        'T,P...P....P.,T',
+        'T,P...P......,T',
         'T,...........,T',
         'T,..M.....M..,T',
         'T,........P..,T',
@@ -109,7 +109,7 @@ DATA.content.zones.push({
         'TTTTTTTsTTTTTTT',
       ],
       exits: { n: 'orsane_cimes_place', e: null, s: 'orsane_clairieres_lisiere', w: null },
-      npcs: ['petra', 'orvak', 'hessa', 'ilsa'],
+      npcs: ['petra', 'orvak', 'ilsa'],
       nodes: [],
       groups: [
         { monsters: ['piouk', 'piouk'], level: [1, 2], respawn: 30 },
@@ -904,9 +904,31 @@ DATA.content.npcs.push({
   dialogue: ['Le Dojo du Fil est ouvert à tous. Les mannequins de la cour ne rendent pas les coups : essaie tes sorts sur eux avant de les essayer sur un Grouk.', 'Un Veilleur qui ne s\'entraîne pas apprend sur le terrain. Le terrain, lui, n\'est pas patient.'],
 });
 DATA.content.npcs.push({
-  id: 'hessa', name: 'Hessa', title: 'Capitaine de la Garde', look: 'garde',
-  dialogue: ['La Garde des Cimes tient la Porte et les murs. Dehors, c\'est à toi de tenir.', 'Les avis de recherche sont cloués à la tour. Les Clairières d\'abord, les Sentiers ensuite.'],
+  id: 'hessa', name: 'Hessa', title: 'Capitaine de la Garde', look: 'garde', avis: true,
+  dialogue: ['La Garde des Cimes tient la Place, la Porte et les murs. Dehors, c\'est à toi de tenir.', 'Les avis de recherche sont cloués à la tour : un par zone, une prime chacun. Ramène-moi la bête, je paie en Fils et en Sceaux.'],
 });
+// Le Temple des Voies (docs/CITE-DES-CIMES.md, C6), au nord-ouest de la Place : les statues des dix
+// Voies ; Ismère échange les Sceaux de la Garde (comme les doplons aux temples d'Astrub), et la
+// statue de sa Voie ramène celui qui vient d'Ervane au Métier (le passage, content/ervane.js).
+DATA.content.npcs.push({
+  id: 'ismere', name: 'Ismère', title: 'Gardienne du Temple des Voies', look: 'ancien', temple: true,
+  dialogue: ['Dix statues, dix Voies. Chacune a commencé par un geste, et chacune a fini par un serment.', 'La Garde paie ses primes en Sceaux. Ici, un Sceau vaut une page de ce que les Voies ont appris.'],
+});
+// Les Sceaux de la Garde : la prime des avis de recherche, la monnaie du Temple des Voies.
+DATA.content.resources.push({ id: 'sceau_de_la_garde', name: 'Sceau de la Garde', monnaie: true, drops: [], node: null, price: 8,
+  lore: 'Un jeton de cire bleue frappé de la tour des Cimes. La Garde le donne pour chaque bête ramenée ; le Temple le reprend contre ses pages.' });
+// Les avis de recherche de la Garde des Cimes (js/avis.js) : un par zone d'Orsane. La cible se joint
+// au groupe `groupe` de la carte `carte`, au niveau `niveau` ; la prime : XP, Fils, Sceaux.
+(DATA.content.avis = DATA.content.avis || []).push(
+  { id: 'avis_brask', monstre: 'brask', niveau: 6, carte: 'orsane_clairieres_oree', groupe: 2, lieu: 'à l\'Orée des Sentiers, au bout des Clairières',
+    texte: 'Un vieux Grouk qui charge les charrettes des fermes. Deux ou trois Grouks le suivent partout.', prime: { xp: 300, fils: 40, sceaux: 1 } },
+  { id: 'avis_meche_folle', monstre: 'meche_folle', niveau: 10, carte: 'orsane_sentiers_corniche', groupe: 3, lieu: 'sur la Corniche des Sentiers',
+    texte: 'Une Loche qui brûle les ponts de corde. Elle vole avec deux Loches et un Tissefil.', prime: { xp: 700, fils: 70, sceaux: 2 } },
+  { id: 'avis_nouette', monstre: 'nouette', niveau: 15, carte: 'orsane_toiles_sortie', groupe: 3, lieu: 'au Bord des Éboulis, à la sortie des Toiles',
+    texte: 'La plus vieille fileuse des Toiles. Deux Tissefils Anciens et une Veilloche la gardent.', prime: { xp: 1300, fils: 110, sceaux: 3 } },
+  { id: 'avis_gravas', monstre: 'gravas', niveau: 19, carte: 'orsane_eboulis_chaos', groupe: 0, lieu: 'dans le Chaos des Éboulis',
+    texte: 'Une Brimbe grosse comme un rocher, qui ferme la route de Kaldum. Deux Brimbes et un Grouk tiennent la pente avec elle.', prime: { xp: 2000, fils: 160, sceaux: 4 } },
+);
 DATA.content.npcs.push({
   id: 'petra', name: 'Pétra', title: 'Boulangère de la Porte', look: 'marchand',
   dialogue: ['Pain de Cime chaud du matin, pain de Grouk pour les longues marches. Prends-en avant de sortir.', 'Les gardes me prennent tout à l\'aube. Viens tôt, ou viens souvent.'],

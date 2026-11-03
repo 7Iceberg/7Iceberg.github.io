@@ -448,7 +448,7 @@ const IleDecor = (() => {
   // La couleur de chaque service de la Cité des Cimes (tools/orsane-plateau.js, SERVICES ; la même
   // dans tools/blender/monde/ervane.py) : son enseigne, la bande au-dessus de sa porte.
   const SERVICES = { banque: '#d9a93a', taverne: '#c8743a', marche: '#5f9e4f', metiers: '#7a5ea8', forge: '#b5482f', tailleur: '#3f7fb5', cordonnier: '#8a5a3a',
-    bijoutier: '#3fa6a0', alchimie: '#6aa84f', dojo: '#b8323a', armes: '#6b7686', garde: '#3d5a9e', boulangerie: '#e0a050' };
+    bijoutier: '#3fa6a0', alchimie: '#6aa84f', dojo: '#b8323a', armes: '#6b7686', garde: '#3d5a9e', boulangerie: '#e0a050', temple: '#c9b07a' };
 
   function objets(ctx, L, seau, piece, sol, solPlat, palette, G) {
     const { T, def } = ctx;
@@ -704,6 +704,20 @@ const IleDecor = (() => {
           ajouter(o, 'acc', L.sphere, matrice(o.u, y + 1.86, o.v, 0, 0, 0, 0.2, 0.2, 0.2), { c: paille });
           ajouter(o, 'acc', L.cyl(8), matrice(o.u, y + 1.3, o.v, 0, r, 0, 0.29, 0.1, 0.29), { c: coul(SERVICES.dojo) });
           piece(s, 'sil', L.cyl(6), matrice(o.u, y, o.v, 0, 0, 0, 0.3, 2.0, 0.3), { c: paille });
+          break;
+        }
+        case 'statue': {
+          // Une statue d'une Voie (le Temple des Voies) : un socle de pierre à deux gradins, une
+          // figure drapée de calcaire (le manteau, les épaules, la tête), un médaillon à la couleur de
+          // sa classe, sur la face du socle.
+          const blanc = coul('#e6e2d6');
+          ajouter(o, 'acc', L.boiteC, matrice(o.u, y + 0.15, o.v, 0, r, 0, 0.9, 0.3, 0.9), { c: C.pierre });
+          ajouter(o, 'acc', L.boiteC, matrice(o.u, y + 0.42, o.v, 0, r, 0, 0.66, 0.24, 0.66), { c: blanc });
+          ajouter(o, 'acc', L.cyl(8), matrice(o.u, y + 0.54, o.v, 0, r, 0, 0.36, 1.0, 0.36), { c: blanc, bas: 1.0, haut: 0.62 });
+          ajouter(o, 'acc', L.boiteC, matrice(o.u, y + 1.5, o.v, 0, r, 0, 0.62, 0.16, 0.22), { c: blanc });
+          ajouter(o, 'acc', L.sphere, matrice(o.u, y + 1.76, o.v, 0, 0, 0, 0.19, 0.21, 0.19), { c: blanc });
+          { const [px, pz] = local(o, 0, 0.34); ajouter(o, 'acc', L.boiteC, matrice(px, y + 0.42, pz, 0, r, 0, 0.24, 0.24, 0.04), { c: coul(o.couleur || '#c9a35c') }); }
+          piece(s, 'sil', L.cyl(6), matrice(o.u, y, o.v, 0, 0, 0, 0.45, 2.0, 0.45), { c: blanc });
           break;
         }
         case 'enclume': {
@@ -975,6 +989,8 @@ const IleDecor = (() => {
     // Le relais des Mailles : un cristal au-dessus du Métier.
     for (const r of T.relais) G.cibles.push({ type: 'relais', ref: r.carte, x: r.u, y: r.v, h: 3, r: 1.4 });
     for (const p of T.portes) G.cibles.push({ type: 'porte', ref: p.carte, x: p.u, y: p.v, h: 2.4, r: 1.2 });
+    // Les machines des ateliers (IleTerrain.machine) : les toucher ouvre l'atelier.
+    for (const o of T.objets) if (IleTerrain.machine(o)) G.cibles.push({ type: 'machine', ref: `${o.u},${o.v}`, x: o.u, y: o.v, h: 1.5, r: 0.9 });
   }
 
   // ----- Les lignes : murets, haies, ponts, escaliers, gués, berges -----

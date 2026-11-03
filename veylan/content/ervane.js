@@ -539,6 +539,10 @@
   // valider de la même façon sur toute page où l'île est disponible (docs/ILE-TECHNIQUE.md, 7.2).
   const varekOrsane = C.npcs.find(n => n.id === 'varek');
   if (varekOrsane) varekOrsane.passage = { vers: 'ervane_nacelle', arrivee: { lieu: 'nacelle' }, texte: 'Monter sur Ervane par la Nacelle', quete: 'ervane_descente' };
+  // La statue de sa Voie, au Temple des Voies (docs/CITE-DES-CIMES.md, C6), comme les statues
+  // d'Astrub vers Incarnam : elle ramène au Métier des Mailles.
+  const ismere = C.npcs.find(n => n.id === 'ismere');
+  if (ismere) ismere.passage = { vers: 'ervane_mailles_place', arrivee: { lieu: 'metier' }, texte: 'Toucher la statue de ta Voie : revenir au Métier d\'Ervane', quete: 'ervane_descente' };
 
   // ----- Les ressources d'Ervane -----
   // Le butin des Glyms des Sources est minéral (pas de plumes, pas de panoplie par élément : les

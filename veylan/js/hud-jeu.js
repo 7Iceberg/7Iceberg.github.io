@@ -908,7 +908,7 @@ class FicheGroupe {
     const liste = lignes.map(l => {
       const def = DATA.monsters[l.id] || { name: l.id, color: '#aaa' };
       // `data-monstre` : le guide de l'île y met en avant le Glym qui craint et celui qui résiste.
-      return `<li data-monstre="${Util.esc(l.id)}"><span class="vy-pastille" style="--c:${def.color}"></span><span class="vy-fiche-groupe__nom">${Util.esc(def.name)}</span><small>niv. ${l.level}</small>${l.n > 1 ? `<b>×${l.n}</b>` : ''}</li>` +
+      return `<li data-monstre="${Util.esc(l.id)}"><span class="vy-pastille" style="--c:${def.color}"></span><span class="vy-fiche-groupe__nom">${Util.esc(def.name)}</span><small>niv. ${l.level}</small>${def.recherche ? '<small class="vy-fiche-groupe__recherche">recherché</small>' : ''}${l.n > 1 ? `<b>×${l.n}</b>` : ''}</li>` +
         (ile ? FicheGroupe.ligneResistances(def) : '');
     }).join('');
     this.el.innerHTML =
