@@ -1016,9 +1016,8 @@ const IleModeles = (() => {
         vec2 e = q - P.xy;
         float d = length(e);
         if (d < P.z + 0.6) {
-          float a = atan(e.y, e.x);
-          // Le pavage en anneaux : une répétition de la texture tous les 7 u (des pierres d'environ 0,7 u).
-          qd = vec2(a * max(d, 0.5), d) * ${SOLS.dalles.pas.toFixed(1)} / 7.0;
+          // Le pavage irrégulier (3.43) se pose à plat : enroulé autour du centre, il tournait en
+          // tourbillon vers le relais et s'étirait au bord. La place garde son liseré clair.
           anneau = smoothstep(P.z - 1.1, P.z - 0.7, d) * (1.0 - smoothstep(P.z - 0.35, P.z, d));
         }
       }
@@ -1126,7 +1125,7 @@ const IleModeles = (() => {
           .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_SOL)
           .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + GLSL_LUMIERES);
       };
-      m.customProgramCacheKey = () => 'sol-meshy-7/' + (cle ? cle.call(m) : '');
+      m.customProgramCacheKey = () => 'sol-meshy-8/' + (cle ? cle.call(m) : '');
       m.needsUpdate = true;
     }
     ile.solCarte = !!carte;
