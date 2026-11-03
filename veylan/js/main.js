@@ -19,6 +19,18 @@
   const ui = new UI(combat, R);
   let world = null;
   let hud = null;
+  const musiqueDuLieu = w => {
+    if (!w) return 'accueil';
+    if (w.ch && w.ch.dungeon) return 'donjon';
+    const z = World.zoneOf(w.mapId);
+    const r = z && (z.region || z.palette);
+    return r === 'ervane' ? 'ervane' : r === 'kaldum' ? 'kaldum' : 'orsane';
+  };
+  Son.musique('accueil');
+  combat.on('float', d => { if (/^-\d/.test(d.text)) Son.jouer('coup'); else if (/^\+\d+$/.test(d.text)) Son.jouer('soin'); });
+  combat.on('fx', () => Son.jouer('sort'));
+  combat.on('turn', e => { if (e === combat.player) Son.jouer('tour'); });
+  document.addEventListener('click', e => { if (e.target && e.target.closest && e.target.closest('button, .vy-bouton, .e-nu, .vy-onglet, .tab')) Son.jouer('toucher'); }, true);
 
   function startGame(character) {
     title.hide();
@@ -51,6 +63,14 @@
     if (abandoned) hud.toast('Combat abandonné : il compte comme perdu.');
     if (character.integrity && character.integrity.length) hud.toast('Sauvegarde corrigée : des valeurs impossibles ont été remises en ordre.');
     Save.write(character);
+    if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist().catch(() => {}); } catch (e) {   } }
+    Son.musique(musiqueDuLieu(world));
+    world.on('map', () => Son.musique(musiqueDuLieu(world)));
+    world.on('fight', d => { const g = d && d.group; const boss = !!(g && g.monsters && g.monsters.some(m => DATA.monsters[m.id] && DATA.monsters[m.id].boss)); Son.musique(boss ? 'boss' : 'combat'); });
+    world.on('fightEnd', r => { Son.jouer(r && r.victory ? 'victoire' : 'defaite'); Son.musique(musiqueDuLieu(world)); });
+    world.on('levelUp', () => Son.jouer('niveau'));
+    world.on('gain', () => Son.jouer('butin'));
+    world.on('reward', () => Son.jouer('butin'));
     VEYLAN.world = world;
     VEYLAN.hud = hud;
   }

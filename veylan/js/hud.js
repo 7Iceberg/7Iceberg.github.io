@@ -372,7 +372,11 @@ class Hud {
       curseur('opt-taille', 'vy-taille', 'Taille de l\'interface', this.taille || this.loadTaille(), 80, 130);
     const vitaux = () => Gemmes.STYLES.map(([id, label]) => { const on = this.styleVital() === id;
       return `<button class="vy-style-vital${on ? ' on' : ''}" data-act="vital" data-vital="${id}" aria-pressed="${on}"><span class="vy-style-vital__apercu" aria-hidden="true">${Gemmes.apercu(id)}</span><span class="vy-style-vital__nom">${label}</span></button>`; }).join('');
-    const html = () => `${tuto()}${jeu()}${combat()}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div>
+    const son = () => `<h4>Son</h4>
+      <div class="row"><label class="vy-coche"><input type="checkbox" id="opt-son" ${Son.actif() ? 'checked' : ''}> Son</label><span class="muted">${Son.pret() ? 'la musique du lieu et les bruitages' : 'se lance au premier toucher'}</span></div>
+      ${curseur('opt-musique', 'vy-musique', 'Musique', Son.reglages.musique, 0, 100)}
+      ${curseur('opt-bruitages', 'vy-bruitages', 'Bruitages', Son.reglages.bruitages, 0, 100)}`;
+    const html = () => `${tuto()}${jeu()}${combat()}${son()}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div>
       <h4>Bloc vital</h4><div class="vy-styles-vital" role="group" aria-label="Style du bloc vital">${vitaux()}</div>
       ${this.optionsNotifs ? this.optionsNotifs() : ''}
       ${opacite()}
@@ -382,14 +386,32 @@ class Hud {
     : '<div class="row"><span>Partie sauvegardée automatiquement dans ce navigateur.</span><button data-act="savenow">Sauvegarder</button></div>'}
       <h4>Changer d'appareil</h4><p class="muted">Copie ce code, colle-le dans « Importer » sur l'autre appareil.</p>
       <textarea id="export-area" rows="3" readonly>${Save.exportText(ch)}</textarea>
-      <div class="row"><button data-act="copy">Copier le code</button></div>
-      ${invite ? '' : `<h4>Importer</h4><textarea id="import-area" rows="3" placeholder="Colle un code ici">${esc(this.importDraft || '')}</textarea><div class="row"><button data-act="import">Importer</button></div>`}
+      <div class="row"><button data-act="copy">Copier le code</button><button data-act="telecharger">Télécharger le fichier</button></div>
+      ${invite ? '' : `<h4>Importer</h4><textarea id="import-area" rows="3" placeholder="Colle un code ici">${esc(this.importDraft || '')}</textarea><div class="row"><button data-act="import">Importer</button><button data-act="charger">Charger un fichier</button></div>`}
       <h4>Temps de jeu</h4><p class="muted">${Math.floor(ch.playTime / 60)} min · ${ch.counters.wins} victoires sur ${ch.counters.fights} combats</p>
       <h4>Personnages</h4><div class="row"><span class="muted">${invite ? 'Quitter la partie d\'invité ramène à l\'accueil ; ce personnage sera perdu.' : 'Jusqu\'à cinq personnages par appareil. Celui-ci est sauvegardé avant de partir.'}</span><button data-act="newgame"${invite ? ' class="danger"' : ''}>${invite ? 'Quitter la partie' : 'Changer de personnage'}</button></div>
       <p class="muted">Raccourcis : ${Hud.MENUS.map(m => `${m[2]} ${m[1].toLowerCase()}`).join(' · ')} · Échap ferme la fenêtre du dessus.</p>
       ${location.protocol === 'file:' || location.hostname === 'localhost' ? '<p class="muted">Laboratoire de combat : <a href="lab.html">lab.html</a></p>' : ''}`;
     this.actions.savenow = () => { this.toast(Save.write(ch) ? 'Sauvegardé.' : 'Sauvegarde impossible ici.'); };
     this.actions.copy = () => { const ta = document.getElementById('export-area'); ta.select(); const fallback = () => this.toast('Sélectionne et copie le code.'); try { navigator.clipboard.writeText(ta.value).then(() => this.toast('Code copié.'), fallback); } catch (e) { fallback(); } };
+    this.actions.telecharger = () => {
+      try {
+        const blob = new Blob([Save.exportText(ch)], { type: 'text/plain;charset=utf-8' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `veylan-${String(ch.name || 'veilleur').replace(/[^\w.-]+/g, '_')}.txt`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+        this.toast('Fichier de sauvegarde téléchargé.');
+      } catch (e) { this.toast('Téléchargement impossible ici.'); }
+    };
+    this.actions.charger = () => {
+      const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.txt,.veylan,text/plain';
+      inp.addEventListener('change', () => {
+        const f = inp.files && inp.files[0]; if (!f) return;
+        f.text().then(t => { const ta = document.getElementById('import-area'); if (ta) ta.value = t.trim(); this.importDraft = t.trim(); this.actions.import(); }, () => this.toast('Fichier illisible.'));
+      });
+      inp.click();
+    };
     this.actions.import = () => {
       const r = Save.importText(document.getElementById('import-area').value);
       if (r.recharge) { this.toast(r.error); Save.write(ch); Save.suspend(); setTimeout(() => location.reload(), 50); return; }
@@ -404,7 +426,7 @@ class Hud {
       location.reload();
     };
     const actions = {
-      savenow: this.actions.savenow, copy: this.actions.copy, import: this.actions.import, newgame: this.actions.newgame,
+      savenow: this.actions.savenow, copy: this.actions.copy, import: this.actions.import, newgame: this.actions.newgame, telecharger: this.actions.telecharger, charger: this.actions.charger,
       theme: d => { this.applyTheme(d.theme); this.fen.close('options'); this.openMenu(); },
       vital: d => { this.choisirVital(d.vital); this.fen.render('options'); },
       replacer: () => this.fen.resetPositions(),
@@ -417,6 +439,14 @@ class Hud {
     const onField = (el, kind) => {
       if (this.champNotifs && this.champNotifs(el, kind)) return;
       if (el.id === 'import-area') this.importDraft = el.value;
+      if (el.id === 'opt-musique' || el.id === 'opt-bruitages') {
+        const v = Math.max(0, Math.min(100, Number(el.value) || 0));
+        Son.regler(el.id.slice(4), v);
+        el.style.setProperty('--v', v); el.setAttribute('aria-valuetext', `${v} %`);
+        const o = el.parentNode.querySelector('output'); if (o) o.textContent = `${v} %`;
+        if (kind === 'change' && el.id === 'opt-bruitages') Son.jouer('butin');
+        return;
+      }
       if (el.id === 'opt-opacite' || el.id === 'opt-taille') {
         const v = el.id === 'opt-taille' ? this.appliquerTaille(Number(el.value), kind === 'change') : this.appliquerVerre(Number(el.value), kind === 'change');
         el.style.setProperty('--v', v); el.setAttribute('aria-valuetext', `${v} %`);
@@ -428,6 +458,7 @@ class Hud {
       if (el.id === 'opt-confirmer') { try { localStorage.setItem('veylan.confirmerSorts', el.checked ? '1' : '0'); } catch (e) {   } }
       if (/^opt-combat-/.test(el.id)) { UI.regler(el.id.slice(11), el.checked); if (this.ui && this.ui.updateHighlights) this.ui.updateHighlights(); }
       if (el.id === 'opt-gaucher' && this.jeu) this.jeu.mettreGaucher(el.checked);
+      if (el.id === 'opt-son') { Son.regler('actif', el.checked); if (el.checked) { Son.deverrouiller(); Son.jouer('butin'); } }
       if (el.id === 'opt-plein-ecran') PleinEcran.basculer().then(() => { if (this.fen.isOpen('options')) this.fen.render('options'); });
     };
     if (!this.suitPleinEcran) { this.suitPleinEcran = true; PleinEcran.surChangement(() => { if (this.fen.isOpen('options')) this.fen.render('options'); }); }
