@@ -712,7 +712,7 @@ class RendererGL {
     const cb = this.combat;
     return cb.entities.filter(e => e.alive && cb.canSee(cb.player, e)).map(e => ({
       key: 'c' + e.id, kind: 'entity', rx: e.rx, ry: e.ry, shape: e.shape, color: e.color, glyph: e.glyph, name: e.name,
-      scale: e.boss ? 1.35 : (e.isSummon && !e.ally ? 0.8 : 1), alpha: (e.alpha == null ? 1 : e.alpha) * (e.hasState('invisible') ? 0.45 : 1), look: e.def.look,
+      scale: e.boss ? 1.35 : (e.isSummon && !e.ally ? 0.8 : 1), alpha: (e.alpha == null ? 1 : e.alpha) * (e.hasState('invisible') ? 0.45 : 1), look: e.def.look, auraCos: Renderer.qualityParam() === 'basse' ? null : e.def.auraCos, lueur: e.def.lueur,
       team: e.team, flash: performance.now() < e.flashUntil, current: cb.actor === e, immune: e.immuneElement, boss: e.boss,
       hp: e.hp / e.hpMax, shield: e.shield / e.hpMax, bob: e.hop || 0, motif: e.team === 'monster' ? Renderer.motifOf(e.def.id) : null,
       facing: e.shape === 'player' ? e.facing || Renderer.faceFoe(cb, e) : 1, gender: e.def.gender,
@@ -724,7 +724,8 @@ class RendererGL {
   worldSprites(now) {
     const w = this.world, out = [];
     const ch = w.ch, cls = DATA.classes[ch.classId], p = w.player;
-    out.push({ key: 'player', kind: 'entity', rx: p.rx, ry: p.ry, shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, scale: 1, alpha: 1, team: 'player', facing: p.facing, look: ch.look, gender: ch.gender, bob: p.moving ? Math.abs(Math.sin(now / 70)) * 3 : Math.sin(now / 900) * 0.8, aura: true, insigne: Factions.insigne(ch) });
+    const ap = ch.lookAffiche();
+    out.push({ key: 'player', kind: 'entity', rx: p.rx, ry: p.ry, shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, scale: 1, alpha: 1, team: 'player', facing: p.facing, look: ap.look, auraCos: Renderer.qualityParam() === 'basse' ? null : ap.auraCos, lueur: ap.lueur, gender: ch.gender, bob: p.moving ? Math.abs(Math.sin(now / 70)) * 3 : Math.sin(now / 900) * 0.8, aura: true, insigne: Factions.insigne(ch) });
     for (const g of w.groups) {
       const def = DATA.monsters[g.monsters[0].id];
       out.push({ key: 'g' + g.idx, kind: 'entity', rx: g.rx, ry: g.ry, shape: def.shape, color: def.color, glyph: null, name: def.name, scale: def.boss ? 1.3 : 0.95, alpha: 1, team: 'monster', facing: 1, bob: Math.sin(now / 500 + g.idx) * 1.5, badge: g.monsters.length > 1 ? `×${g.monsters.length}` : null, label: `${def.name} niv. ${g.level}`, motif: Renderer.motifOf(g.monsters[0].id), boss: def.boss });

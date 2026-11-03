@@ -130,8 +130,8 @@
   };
 
   C.achievements.push(
-    { id: 'veille_7', name: 'Une semaine de Veille', desc: 'Accomplir sept Veilles, autant que de Dragons.', cond: { type: 'feat', key: 'veille', count: 7 }, rewards: { title: 'Main des Relais' } },
-    { id: 'veille_28', name: 'Le cycle des Dragons', desc: 'Accomplir vingt-huit Veilles : un cycle entier, sous les quatre éléments.', cond: { type: 'feat', key: 'veille', count: 28 }, rewards: { title: 'Veilleur des Sept Dragons' } },
+    { id: 'veille_7', name: 'Une semaine de Veille', desc: 'Accomplir sept Veilles, autant que de Dragons.', cond: { type: 'feat', key: 'veille', count: 7 }, rewards: { title: 'Main des Relais', cosmetique: 'teinture_mousse' } },
+    { id: 'veille_28', name: 'Le cycle des Dragons', desc: 'Accomplir vingt-huit Veilles : un cycle entier, sous les quatre éléments.', cond: { type: 'feat', key: 'veille', count: 28 }, rewards: { title: 'Veilleur des Sept Dragons', cosmetique: 'lueur_aube' } },
     { id: 'veille_100', name: 'Cent Veilles', desc: 'Accomplir cent Veilles pour l\'entretien des Relais.', cond: { type: 'feat', key: 'veille', count: 100 }, rewards: { title: 'Lanterne des Relais' } },
     { id: 'veille_365', name: 'Une année de souffles', desc: 'Accomplir trois cent soixante-cinq Veilles, autant que de souffles de Ruhani dans une année.', cond: { type: 'feat', key: 'veille', count: 365 }, rewards: { title: 'Compteur de souffles' } },
   );

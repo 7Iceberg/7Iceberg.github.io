@@ -84,13 +84,14 @@ class Hud {
     const cls = ch.classDef;
     const xp = Math.round(ch.xpProgress() * 100);
     const xpText = ch.level >= Character.MAX_LEVEL ? 'niveau maximum' : xp + ' %';
-    const sig = [ch.name, cls.id, ch.level, ch.title, ch.fils, ch.statPoints, d.hpMax].join('|');
+    const blason = ch.lookAffiche ? ch.lookAffiche().blason : null;
+    const sig = [ch.name, cls.id, ch.level, ch.title, ch.fils, ch.statPoints, d.hpMax, blason ? blason.glyphe + blason.couleur : ''].join('|');
     const bar = this.el.playerBar;
     if (this.barSig !== sig || !bar.querySelector('.vy-jauge')) {
       this.barSig = sig;
       bar.innerHTML =
         `<div class="portrait" style="--c:${cls.color}">${cls.glyph}</div>` +
-        `<div class="pb-main"><div class="pb-name">${esc(ch.name)} <small>${cls.name} · niveau ${ch.level}${ch.title ? ' · ' + esc(ch.title) : ''}</small></div>` +
+        `<div class="pb-main"><div class="pb-name">${blason ? `<span class="pb-blason" style="color:${esc(blason.couleur || '#c9a66b')}" title="Blason" aria-hidden="true">${esc(blason.glyphe || '')}</span>` : ''}${esc(ch.name)} <small>${cls.name} · niveau ${ch.level}${ch.title ? ' · ' + esc(ch.title) : ''}</small></div>` +
         Util.jauge('vie', ch.hp, d.hpMax, `${ch.hp} / ${d.hpMax}`, 'Points de vie') +
         Util.jauge('xp', xp, 100, null, 'Expérience', 'vy-jauge--fine') + `</div>` +
         `<div class="pb-fils">${ch.fils} <small>Dragmes</small>${ch.statPoints ? `<div class="pts">+${ch.statPoints} pts</div>` : ''}</div>`;
@@ -348,7 +349,7 @@ class Hud {
 
   openMenu() {
     const ch = this.world.ch;
-    const themes = Hud.THEMES.map(([id, label, fond, accent]) => `<button class="vy-theme${document.getElementById('app').dataset.uiTheme === id ? ' on' : ''}" data-act="theme" data-theme="${id}" aria-pressed="${document.getElementById('app').dataset.uiTheme === id}"><span class="vy-theme__apercu" style="--f:${fond};--a:${accent}"></span>${label}</button>`).join('');
+    const themes = Hud.themesDisponibles().map(([id, label, fond, accent]) => `<button class="vy-theme${document.getElementById('app').dataset.uiTheme === id ? ' on' : ''}" data-act="theme" data-theme="${id}" aria-pressed="${document.getElementById('app').dataset.uiTheme === id}"><span class="vy-theme__apercu" style="--f:${fond};--a:${accent}"></span>${label}</button>`).join('');
     const invite = !!ch.invite;
     const tuto = () => {
       const mode = Guide.modeDe(ch), t = ch.tuto;
@@ -427,7 +428,7 @@ class Hud {
     };
     const actions = {
       savenow: this.actions.savenow, copy: this.actions.copy, import: this.actions.import, newgame: this.actions.newgame, telecharger: this.actions.telecharger, charger: this.actions.charger,
-      theme: d => { this.applyTheme(d.theme); this.fen.close('options'); this.openMenu(); },
+      theme: d => { this.choisirTheme(d.theme); this.fen.close('options'); this.openMenu(); },
       vital: d => { this.choisirVital(d.vital); this.fen.render('options'); },
       replacer: () => this.fen.resetPositions(),
       editeur: () => { this.fen.close('options'); this.syncMenus(); this.ouvrirEditeur(); },
@@ -677,7 +678,8 @@ class Hud {
       return;
     }
     const drops = r.drops.map(d => { const def = Items.get(d.id); return `<li>${def ? esc(def.name) : d.id}${d.count > 1 ? ' ×' + d.count : ''}</li>`; }).join('');
-    const achs = r.achievements.map(a => `<li>Succès : ${esc(a.achievement.name)}${a.title ? ' · titre « ' + esc(a.title) + ' »' : ''}</li>`).join('');
+    const achs = r.achievements.map(a => `<li>Succès : ${esc(a.achievement.name)}${a.title ? ' · titre « ' + esc(a.title) + ' »' : ''}</li>`).join('')
+      + (r.cosmetiques || []).map(e => `<li>${esc(World.texteCosmetique(e))}</li>`).join('');
     const quests = r.quests.filter((t, i, arr) => arr.findIndex(x => x.quest === t.quest) === i).map(t => `<li>${esc(t.quest.name)} : ${t.finished ? 'terminée, à rendre à ' + esc(Quests.npcName(Quests.turnInOf(t.quest))) : esc(Quests.stepText(ch, t.quest.id))}</li>`).join('');
     const chal = r.challenge ? `<div class="row"><span>Défi : ${esc(r.challenge.name)}</span><b class="${r.challenge.success ? 'ok' : 'missing'}">${r.challenge.success ? `réussi, +${r.challenge.bonus} %` : 'raté'}</b></div>` : '';
     const epr = r.epreuveDojo ? `<div class="row"><span>Épreuve du jour</span><b>${r.epreuveDojo.tours} tour${r.epreuveDojo.tours > 1 ? 's' : ''}${r.epreuveDojo.sceaux ? ' · un Sceau de la Garde' : ` · plus de ${r.epreuveDojo.limite} tours, sans Sceau`}</b></div>` : '';
@@ -707,5 +709,6 @@ function rewardText(r) {
   for (const it of r.items || []) { const d = Items.get(it.id); parts.push(`${d ? esc(d.name) : it.id}${it.count > 1 ? ' ×' + it.count : ''}`); }
   if (r.faction) parts.push(`${r.faction} points de faction`);
   if (r.marcheurs) parts.push('la confiance des Francs-Marcheurs');
+  if (r.cosmetique && typeof Garderobe !== 'undefined') for (const id of [].concat(r.cosmetique)) { const c = Garderobe.get(id); if (c) parts.push(`${esc(c.nom)} (Garde-robe)`); }
   return parts.join(', ') || 'rien';
 }

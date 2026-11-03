@@ -108,6 +108,7 @@ Object.assign(Hud.prototype, {
       ...(r.items || []).map(it => { const d = Items.get(it.id); return d ? `<span class="vy-q-gain">${esc(d.name)}${(it.count || 1) > 1 ? ` × ${it.count}` : ''}</span>` : ''; }),
       r.faction ? `<span class="vy-q-gain faction">points de faction</span>` : '',
       r.marcheurs ? `<span class="vy-q-gain faction">confiance des Francs-Marcheurs</span>` : '',
+      ...(typeof Garderobe !== 'undefined' ? [].concat(r.cosmetique || []).map(id => { const c = Garderobe.get(id); return c ? `<span class="vy-q-gain cosmetique">${esc(c.nom)}</span>` : ''; }) : []),
     ].filter(Boolean).join('');
     const peut = finie ? null : this.objectifQuete(q.id);
     const abandon = enCours && Quests.canAbandon(ch, q.id).ok ? `<button class="vy-bouton vy-bouton--petit vy-bouton--fantome" data-act="abandon" data-id="${q.id}" title="L'avancement sera perdu ; la quête redeviendra disponible.">Abandonner</button>` : '';

@@ -1,5 +1,5 @@
 #app { --fac-fil: #e2c690; --fac-fil-fort: #c9a66b; --fac-dechirure: #c9a8ff; --fac-dechirure-fort: #a66cff; --fac-marcheurs: #8db585; }
-#app[data-ui-theme="ardoise"] { --fac-fil: #7a5f35; --fac-fil-fort: #8e7144; --fac-dechirure: #5a2a80; --fac-dechirure-fort: #6b2fa0; --fac-marcheurs: #3f6e38; }
+#app[data-ui-theme="ardoise"], #app[data-ui-theme="aube"] { --fac-fil: #7a5f35; --fac-fil-fort: #8e7144; --fac-dechirure: #5a2a80; --fac-dechirure-fort: #6b2fa0; --fac-marcheurs: #3f6e38; }
 .vy-faction--fil, .vy-faction-carte--fil, .vy-serment-fait--fil { --fac: var(--fac-fil); --fac-fort: var(--fac-fil-fort); }
 .vy-faction--dechirure, .vy-faction-carte--dechirure, .vy-serment-fait--dechirure { --fac: var(--fac-dechirure); --fac-fort: var(--fac-dechirure-fort); }
 .vy-embleme { display: block; flex: none; filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.45)); }

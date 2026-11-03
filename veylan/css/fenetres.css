@@ -4,6 +4,8 @@
 #app[data-ui-theme="royal"] { --fen-fond: #0f1b33; --fen-fond-2: #142446; --fen-tete: #1a2f5c; --fen-accent: #9cc3ff; --fen-filet: rgba(156, 195, 255, 0.22); }
 #app[data-ui-theme="braise"] { --fen-fond: #1d1210; --fen-fond-2: #281816; --fen-tete: #3a1d17; --fen-accent: #f39a7e; --fen-filet: rgba(243, 154, 126, 0.22); }
 #app[data-ui-theme="cimes"] { --fen-fond: #101c15; --fen-fond-2: #16261c; --fen-tete: #1d3526; --fen-accent: #a9cf9f; --fen-filet: rgba(169, 207, 159, 0.22); }
+#app[data-ui-theme="cendrees"] { --fen-fond: #15101c; --fen-fond-2: #1d1627; --fen-tete: #2a1d3a; --fen-accent: #bf95ff; --fen-filet: rgba(191, 149, 255, 0.24); }
+#app[data-ui-theme="aube"] { --fen-fond: #f3ead8; --fen-fond-2: #e9dcc2; --fen-tete: #dcc9a2; --fen-accent: #9a6a1f; --fen-actif: #a3561a; --fen-texte: #241c10; --fen-texte-2: #6a5a3c; --fen-filet: rgba(154, 106, 31, 0.3); }
 #app[data-ui-theme="ardoise"] { --fen-fond: #ece6d8; --fen-fond-2: #e0d8c6; --fen-tete: #cfc4ad; --fen-accent: #7a5f35; --fen-actif: #006f94; --fen-texte: #1d1a14; --fen-texte-2: #5d5547; --fen-filet: rgba(122, 95, 53, 0.28); }
 
 .vy-fenetres { position: absolute; inset: var(--zs-haut) var(--zs-droite) var(--zs-bas) var(--zs-gauche); pointer-events: none; z-index: 15; overflow: hidden; }
@@ -216,7 +218,7 @@
   .vy-fenetre { left: 4px !important; right: 4px; top: 4px !important; bottom: 4px; width: auto; max-height: none; }
 }
 
-#app[data-ui-theme="ardoise"] .vy-pic, #app[data-ui-theme="ardoise"] .vy-pastille { filter: drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.75)); }
+#app[data-ui-theme="ardoise"] .vy-pic, #app[data-ui-theme="ardoise"] .vy-pastille, #app[data-ui-theme="aube"] .vy-pic, #app[data-ui-theme="aube"] .vy-pastille { filter: drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.75)); }
 
 .vy-fenetre--carte { height: min(640px, calc(100% - 72px)); }
 .vy-fenetre--carte .vy-fenetre__corps { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 8px 10px 10px; }
@@ -357,7 +359,7 @@
 .vy-q-pied { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 6px; }
 .vy-q-pied__ressort { flex: 1; }
 .vy-q-pied .vy-bouton svg { width: 15px; height: 15px; }
-#app[data-ui-theme="ardoise"] .vy-q-etape.fait .vy-q-case { color: #fff; background: #3f6b3b; }
+#app[data-ui-theme="ardoise"] .vy-q-etape.fait .vy-q-case, #app[data-ui-theme="aube"] .vy-q-etape.fait .vy-q-case { color: #fff; background: #3f6b3b; }
 @media (max-width: 600px) {
   .vy-quetes { grid-template-columns: minmax(0, 1fr); }
   .vy-quetes.vue-fiche .vy-quetes__liste { display: none; }

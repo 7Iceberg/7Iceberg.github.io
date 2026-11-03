@@ -192,6 +192,7 @@ Fenetres.ICON = (() => {
     carnet: s('<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="M10 8l1.5 1.5L14 7"/>'),
     carte: s('<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>'),
     journal: s('<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>'),
+    garderobe: s('<path d="M12 4.5a1.5 1.5 0 0 1 1.5 1.5c0 1-1.5 1.2-1.5 2.5v.5"/><path d="M12 9.5l8 5.5v1.5H4V15z"/><path d="M7 17v3M17 17v3"/>'),
     options: s('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>'),
     recherche: s('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>'),
     tout: s('<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>'),

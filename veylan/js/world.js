@@ -533,9 +533,10 @@ class World {
     const touched = Quests.onEvent(this.ch, { type: 'inventory' });
     this.afterEvents(touched);
     this.emit('quest', { type: 'complete', id, rewards: r });
-    if (r.first) this.emit('reward', { title: `Quête terminée : ${r.quest.name}`, xp: r.xp, fils: r.fils, items: r.items, levels: r.levels, spellPoints: r.spellPoints || 0, titre: r.title || null });
+    if (r.first) this.emit('reward', { title: `Quête terminée : ${r.quest.name}`, xp: r.xp, fils: r.fils, items: r.items, levels: r.levels, spellPoints: r.spellPoints || 0, titre: r.title || null, cosmetiques: r.cosmetiques || [] });
     if (r.spellPoints) this.toast(`+${r.spellPoints} point${r.spellPoints > 1 ? 's' : ''} de sort (fenêtre Sorts).`);
     if (r.title) this.toast(`Titre reçu : ${r.title}.`);
+    for (const c of r.cosmetiques || []) this.toast(World.texteCosmetique(c));
     this.emit('gain', { source: 'quete', xp: r.xp, fils: r.fils, items: r.items.map(it => ({ id: it.id, count: it.count || 1 })) });
     if (r.levels) this.emit('levelUp', { level: this.ch.level, levels: r.levels });
     this.factionEvents(r.events);
@@ -1000,7 +1001,7 @@ class World {
     if (this.combat.entrainement) return this.finEntrainement(d);
     const ch = this.ch;
     delete ch.fight;
-    const result = { victory: d.victory, xp: 0, gained: 0, levels: 0, fils: 0, drops: [], achievements: [], quests: [], dungeon: null };
+    const result = { victory: d.victory, xp: 0, gained: 0, levels: 0, fils: 0, drops: [], achievements: [], quests: [], dungeon: null, cosmetiques: [] };
     const monsters = this.combat.entities.filter(e => e.team === 'monster' && !e.isSummon);
     const chal = this.combat.challenge;
     const knotCount = this.combat.knots ? this.combat.knots.size : 0;
@@ -1020,7 +1021,10 @@ class World {
       for (const e of monsters) {
         result.xp += e.xp * veille.xp(e.def.id);
         ch.counters.kills[e.def.id] = (ch.counters.kills[e.def.id] || 0) + 1;
-        if (e.boss && !ch.counters.bosses.includes(e.def.id)) ch.counters.bosses.push(e.def.id);
+        if (e.boss && !ch.counters.bosses.includes(e.def.id)) {
+          ch.counters.bosses.push(e.def.id);
+          if (typeof Garderobe !== 'undefined') for (const c of Garderobe.pourSource('boss', e.def.id)) result.cosmetiques.push(...Garderobe.donner(c.id, 'boss:' + e.def.id));
+        }
         const purse = 1 + (e.lootBonus || 0) / 100;
         result.fils += Math.round((1 + Math.floor(this.rng() * 3)) * e.level * purse);
         for (const drop of Items.dropsOf(e.def.id)) {
@@ -1192,6 +1196,8 @@ class World {
     this.emit('save');
   }
 }
+
+World.texteCosmetique = e => (e.collection ? `Collection « ${e.collection.nom} » complète : ${e.cosmetique.nom} entre dans ta Garde-robe.` : `Garde-robe : ${e.cosmetique.nom}.`);
 
 World.NIVEAU_EPREUVE = 5;
 World.TOURS_EPREUVE = 8;

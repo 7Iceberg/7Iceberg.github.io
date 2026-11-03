@@ -95,7 +95,7 @@ class HudJeu {
       '<div class="vy-panneau__bas">' +
       `<button type="button" class="vy-panneau__emote" aria-label="Émotes" aria-expanded="false">${J.emote}</button>` +
       `<button type="button" class="vy-panneau__discussion" aria-label="Discussion">${Discussion.ICONE}<span>Discussion</span><span class="vy-panneau__nonlu" hidden></span></button></div>` +
-      `<div class="vy-emotes hidden" role="menu" aria-label="Émotes">${HudJeu.EMOTES.map(([id, label]) => `<button type="button" role="menuitem" data-emote="${id}" title="${label}" aria-label="${label}">${J['e_' + id]}</button>`).join('')}</div>`;
+      `<div class="vy-emotes hidden" role="menu" aria-label="Émotes">${HudJeu.menuEmotes()}</div>`;
     this.grille = p.querySelector('.vy-panneau__grille');
     this.q = s => p.querySelector(s);
     p.addEventListener('click', evt => this.clic(evt));
@@ -653,6 +653,7 @@ class HudJeu {
   basculerEmotes(on) {
     const box = this.q('.vy-emotes'), b = this.q('.vy-panneau__emote');
     const open = on != null ? on : box.classList.contains('hidden');
+    if (open) { const html = HudJeu.menuEmotes(); if (box.innerHTML !== html) box.innerHTML = html; }
     box.classList.toggle('hidden', !open);
     b.setAttribute('aria-expanded', String(open));
   }
@@ -666,7 +667,7 @@ class HudJeu {
       this.stage.appendChild(this.bulleEmote);
     }
     const el = this.bulleEmote;
-    const label = (HudJeu.EMOTES.find(e => e[0] === id) || [])[1] || '';
+    const label = (HudJeu.emotesDe().find(e => e[0] === id) || [])[1] || '';
     el.innerHTML = HudJeu.ICON['e_' + id] || '';
     el.setAttribute('aria-label', `${this.ch.name} : ${label}`);
     el.classList.remove('hidden', 'sort');
@@ -727,6 +728,8 @@ class HudJeu {
 
 HudJeu.BIENTOT = [['metiers', 'Métiers'], ['familiers', 'Familiers'], ['montures', 'Montures'], ['guilde', 'Guilde'], ['boutique', 'Boutique cosmétique']];
 HudJeu.EMOTES = [['salut', 'Saluer'], ['joie', 'Se réjouir'], ['merci', 'Remercier'], ['doute', 'S\'interroger'], ['repos', 'Se reposer']];
+HudJeu.emotesDe = () => HudJeu.EMOTES.concat(typeof Garderobe !== 'undefined' ? Garderobe.emotes() : []);
+HudJeu.menuEmotes = () => HudJeu.emotesDe().map(([id, label]) => `<button type="button" role="menuitem" data-emote="${id}" title="${label}" aria-label="${label}">${HudJeu.ICON['e_' + id] || HudJeu.ICON.emote}</button>`).join('');
 
 HudJeu.avancement = (ch, t) => {
   if (t.done) return 1;
@@ -765,6 +768,8 @@ HudJeu.ICON = (() => {
     e_merci: s('<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>'),
     e_doute: s('<path d="M9 9a3 3 0 1 1 4.5 2.6c-1 .6-1.5 1.3-1.5 2.4v.5"/><path d="M12 18h.01"/>'),
     e_repos: s('<path d="M5 8h5l-5 6h5M13 5h4l-4 5h4M15 15h3l-3 4h3"/>'),
+    e_danse: s('<circle cx="12" cy="5" r="2"/><path d="M12 7.5l-4 4 3 1.5-1.5 6.5M12 7.5l5 2.5-1.5 3.5M11 13l4 2.5 2 4"/>'),
+    e_defi: s('<path d="M12 21V11"/><path d="M8.5 11.5V8a1.5 1.5 0 0 1 3 0v3M11.5 8V5.5a1.5 1.5 0 0 1 3 0V11M14.5 7.5a1.5 1.5 0 0 1 3 0v4.5c0 3-1.5 5-4 6"/><path d="M8.5 11l-2-1.5a1.4 1.4 0 0 0-2 1.7l2.5 4"/>'),
   };
 })();
 

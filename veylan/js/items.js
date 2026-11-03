@@ -78,7 +78,7 @@ const Items = (() => {
       defs.set(w.id, { id: w.id, name: w.name, kind: 'weapon', slot: 'arme', type: w.type, element: w.element, level: w.level, set: null, lore: w.lore || '', stats: statsFromProfile(budget(w.level) * 0.7, w.profile), source: w.source || 'craft', from: w.from || null, spell: weaponSpell(w) });
     }
     for (const c of C.consumables || []) {
-      defs.set(c.id, { id: c.id, name: c.name, kind: 'consumable', sub: c.kind, level: c.level, heal: c.heal || 0, price: c.price || 5, lore: c.lore || '', stats: {}, stat: c.stat || null, value: c.value || 0 });
+      defs.set(c.id, { id: c.id, name: c.name, kind: 'consumable', sub: c.kind, level: c.level, heal: c.heal || 0, price: c.price || 5, lore: c.lore || '', stats: {}, stat: c.stat || null, value: c.value || 0, cosmetique: c.cosmetique || null });
     }
     for (const k of DATA.knots || []) {
       defs.set(k.id, { id: k.id, name: k.name, kind: 'knot', level: k.level, lore: k.desc, price: 20 + k.level * 6, stats: {} });

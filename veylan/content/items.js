@@ -517,6 +517,8 @@
 
   R('coiffe_pilou', 'tailleur', [['plume_de_pilou', 5], ['duvet_de_pilou', 1], ['herbe_de_veille', 1]]);
   R('cape_pilou', 'tailleur', [['plume_de_pilou', 6], ['duvet_de_pilou', 1]]);
+  R('teinture_de_lin_bleu', 'tailleur', [['herbe_de_veille', 3], ['soie_de_tissefil', 2], ['plume_de_pilou', 2]]);
+  R('teinture_de_safran', 'tailleur', [['herbe_de_veille', 4], ['cire_de_veilloche', 2], ['plume_de_pilou', 2]]);
   R('amulette_pilou', 'bijoutier', [['bec_de_pilou', 2], ['plume_de_pilou', 3], ['pierre_de_calcaire', 2]]);
   R('anneau_pilou', 'bijoutier', [['bec_de_pilou', 2], ['duvet_de_pilou', 1], ['pierre_de_calcaire', 3], ['plume_de_pilou', 1]]);
   R('bottes_pilou', 'cordonnier', [['plume_de_pilou', 4], ['duvet_de_pilou', 1], ['bois_de_cime', 2]]);
@@ -946,6 +948,10 @@
   );
 
   C.consumables.push(
+    { id: 'teinture_de_lin_bleu', name: 'Teinture de lin bleu', kind: 'teinture', level: 4, price: 30, cosmetique: 'teinture_lin_bleu',
+      lore: 'Un pot de bleu profond, broyé dans les champs d\'Ervane. Utilisée, elle entre dans ta Garde-robe pour toujours.' },
+    { id: 'teinture_de_safran', name: 'Teinture de safran', kind: 'teinture', level: 6, price: 40, cosmetique: 'teinture_safran',
+      lore: 'Un jaune chaud, tiré des fleurs des Clairières et fixé à la cire. Utilisée, elle entre dans ta Garde-robe pour toujours.' },
     { id: 'pain_d_algue', name: 'Pain d\'Algue', kind: 'pain', level: 36, heal: 320, price: 64,
       lore: 'Pain vert de Marsalée, salé à l\'eau de mer. Il se garde un mois et remet d\'aplomb en une bouchée.' },
     { id: 'pain_des_effilures', name: 'Pain des Effilures', kind: 'pain', level: 46, heal: 420, price: 84,

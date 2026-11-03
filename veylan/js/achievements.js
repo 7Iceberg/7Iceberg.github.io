@@ -31,7 +31,7 @@ const Achievements = (() => {
     }
   }
 
-  const hasReward = a => { const r = a.rewards || {}; return !!(r.xp || r.fils || (r.items || []).length); };
+  const hasReward = a => { const r = a.rewards || {}; return !!(r.xp || r.fils || (r.items || []).length || r.cosmetique); };
 
   function check(ch) {
     const out = [];
@@ -63,6 +63,7 @@ const Achievements = (() => {
     if (r.xp) { const g = ch.gainXp(r.xp); got.xp = g.gained; got.levels = g.levels; }
     if (r.fils) { ch.fils += r.fils; ch.counters.filsEarned += r.fils; }
     for (const it of r.items || []) if (Items.get(it.id)) { ch.addItem(it.id, it.count || 1); got.items.push({ id: it.id, count: it.count || 1 }); }
+    got.cosmetiques = r.cosmetique && typeof Garderobe !== 'undefined' ? [].concat(r.cosmetique).flatMap(cid => Garderobe.donner(cid, 'succes:' + a.id)) : [];
     return got;
   }
 

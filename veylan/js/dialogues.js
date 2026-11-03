@@ -470,6 +470,8 @@ class Conversation {
     if (r.xp) parts.push(`${r.xp} XP`);
     if (r.fils) parts.push(`${r.fils} Dragmes`);
     for (const it of r.items || []) { const d = Items.get(it.id); parts.push(`${it.count || 1} ${d ? d.name : it.id}`); }
+    if (typeof Garderobe !== 'undefined') for (const e of r.cosmetiques || []) parts.push(`${e.cosmetique.nom} (Garde-robe)`);
+    if (typeof Garderobe !== 'undefined' && !r.cosmetiques) for (const id of [].concat(r.cosmetique || [])) { const c = Garderobe.get(id); if (c) parts.push(`${c.nom} (Garde-robe)`); }
     return parts.join(', ') || 'rien';
   }
 }

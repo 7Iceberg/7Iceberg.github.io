@@ -1550,7 +1550,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const pos = (x, y) => (salle ? [x + 0.5, y + 0.5] : [x, y]);
     const fig = this.figures;
     const [px, py] = pos(p.rx, p.ry);
-    const veilleur = { kind: 'entity', shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, team: 'player', facing: p.facing, look: ch.look, gender: ch.gender, scale: 1, x: px, y: py, h: H(px, py), normale: N(px, py), bob: p.moving ? Math.abs(Math.sin(now / 70)) * 3 : Math.sin(now / 900) * 0.8, joueur: true };
+    const ap = ch.lookAffiche();
+    const veilleur = { kind: 'entity', shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, team: 'player', facing: p.facing, look: ap.look, auraCos: this.qualite === 'basse' ? null : ap.auraCos, lueur: ap.lueur, gender: ch.gender, scale: 1, x: px, y: py, h: H(px, py), normale: N(px, py), bob: p.moving ? Math.abs(Math.sin(now / 70)) * 3 : Math.sin(now / 900) * 0.8, joueur: true };
     veilleur.cle = fig.cleFigure(veilleur); veilleur.peindre = fig.peindreFigure(veilleur);
     if (fig.heros && !enCombat) { veilleur.heros = true; veilleur.bouge = !!p.moving; }
     if (!enCombat) out.push(veilleur);

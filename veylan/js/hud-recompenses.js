@@ -70,11 +70,13 @@ Object.assign(Hud.prototype, {
     const ch = this.world.ch, list = Achievements.pending(ch), combat = this.world.state === 'combat';
     const rows = list.map(a => {
       const r = a.rewards || {}, items = r.items || [];
+      const cos = typeof Garderobe !== 'undefined' ? [].concat(r.cosmetique || []).map(Garderobe.get).filter(Boolean) : [];
       const cases = [];
       for (let i = 0; i < CASES; i++) {
-        const it = items[i], d = it && Items.get(it.id);
+        const it = items[i], d = it && Items.get(it.id), c = !d && cos[i - items.length];
         cases.push(d
           ? `<span class="vy-case" data-rarete="${Items.rarity(d)}" title="${esc(d.name)}${it.count > 1 ? ' ×' + it.count : ''}"><span class="vy-case__icone">${Hud.picto(d)}</span>${it.count > 1 ? `<span class="vy-case__nombre">${it.count}</span>` : ''}</span>`
+          : c ? `<span class="vy-case" data-rarete="${c.rarete}" title="${esc(c.nom)} (Garde-robe)"><span class="vy-case__icone">${Hud.pictoCosmetique ? Hud.pictoCosmetique(c) : ''}</span></span>`
           : '<span class="vy-case vy-case--vide" aria-hidden="true"></span>');
       }
       const gains = [r.xp ? `<span class="vy-recompense__xp"><b>${nf(r.xp)}</b> XP</span>` : '', r.fils ? `<span class="vy-recompense__fils"><b>${nf(r.fils)}</b> Dragmes</span>` : ''].join('');
@@ -110,6 +112,7 @@ Object.assign(Hud.prototype, {
     const xp = list.reduce((s, g) => s + g.xp, 0), fils = list.reduce((s, g) => s + g.fils, 0);
     const objets = [];
     for (const g of list) for (const it of g.items) { const d = Items.get(it.id); if (d) objets.push(d.name + (it.count > 1 ? ' ×' + it.count : '')); }
+    for (const g of list) for (const e of g.cosmetiques || []) { this.chat('gain', World.texteCosmetique(e)); this.toast(World.texteCosmetique(e)); }
     if (xp) this.chat('gain', `Tu as gagné ${nf(xp)} points d'expérience.`);
     if (fils) this.chat('gain', `Tu as obtenu ${nf(fils)} Dragmes.`);
     for (const o of objets) this.chat('gain', `Tu as obtenu ${o}.`);

@@ -32,6 +32,7 @@ const Save = (() => {
   for (const k of ['spellRanks', 'spellPoints', 'autoSpells']) ALLOWED.add(k);
   ALLOWED.add('look');
   ALLOWED.add('origine');
+  for (const k of ['porte', 'ensemblesLook']) ALLOWED.add(k);
   const ORIGINES = ['orsane', 'ervane'];
 
   const plateauDe = id => {
@@ -285,6 +286,10 @@ const Save = (() => {
     const look = Character.cleanLook(o.look, o.classId);
     o.look = look.look;
     for (const e of look.errors) bad(e);
+    if (typeof Garderobe !== 'undefined') {
+      const p = Garderobe.nettoyerPorte(o.porte); o.porte = p.porte; for (const e of p.errors) bad(e);
+      const l = Garderobe.nettoyerLooks(o.ensemblesLook); o.ensemblesLook = l.looks; for (const e of l.errors) bad(e);
+    }
     if (o.fight && typeof o.fight !== 'object') o.fight = null;
     if (o.mapTimers && typeof o.mapTimers !== 'object') o.mapTimers = {};
     o.flags = Object.assign({}, o.flags && typeof o.flags === 'object' ? { tampered: !!o.flags.tampered } : {});

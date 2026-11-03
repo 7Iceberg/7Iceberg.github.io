@@ -2217,7 +2217,7 @@ for (const [cid, c] of Object.entries(DATA.classes)) {
       progress: ['Le Reflet t\'attend sur la cour du Dojo, sur les Terrasses. Demande-la à Saya.', `Ton Reflet frappe comme toi. ${maitre} dit que c\'est là toute la difficulté.`],
       done: [`${maitre} a regardé le combat depuis la statue. Il dit que le geste est là, et que le reste viendra.`, `Le Temple te reconnaît : ${titre}. Et une page de ce que les Voies ont appris est à toi.`],
     },
-    rewards: { xp: 955, fils: 80, spellPoints: 1, title: titre },
+    rewards: { xp: 955, fils: 80, spellPoints: 1, title: titre, cosmetique: 'blason_voie' },
   });
 }
 }

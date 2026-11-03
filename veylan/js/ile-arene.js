@@ -281,7 +281,7 @@ void main() {
         }
         e._traceHp = hpF; e._traceT = now;
         const s = {
-          kind: 'entity', shape: e.shape, color: e.color, glyph: e.glyph, name: e.name, look: e.def.look, gender: e.def.gender,
+          kind: 'entity', shape: e.shape, color: e.color, glyph: e.glyph, name: e.name, look: e.def.look, auraCos: this.ile.qualite === 'basse' ? null : e.def.auraCos, lueur: e.def.lueur, gender: e.def.gender,
           team: e.team, flash: now < (e.flashUntil || 0), motif: e.team === 'monster' ? Renderer.motifOf(e.def.id) : null, noyau: e.def.noyau || null,
           scale: (e.boss ? 1.3 : (e.isSummon && !e.ally ? 0.8 : 1)) * (telephone ? (e.team === 'monster' ? 1.3 : 1.12) : 1),
           alpha: (e.alpha == null ? 1 : e.alpha) * (e.hasState('invisible') ? 0.45 : 1),

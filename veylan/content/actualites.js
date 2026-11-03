@@ -1,6 +1,8 @@
 DATA.version = 'Prototype 0.9';
 
 DATA.actualites = [
+  { id: 'garde_robe', date: '2026-11-03', art: 'fenetres', titre: 'La Garde-robe',
+    texte: 'Teintures, lueurs de lanterne, auras, blasons, émotes et thèmes d\'interface se gagnent en jouant : succès, premières victoires contre les boss, paliers de la Veille, quêtes de Voie, teintures du tailleur. Tout ce qu\'un personnage gagne sert à tous les autres. La fenêtre Garde-robe (touche G) essaie tout le catalogue, possédé ou non, et garde cinq looks. Jamais de puissance : seulement de l\'allure.' },
   { id: 'ervane', date: '2026-10-20', art: 'carte', titre: 'Ervane, l\'île de l\'Éveil',
     texte: 'Tout nouveau Veilleur s\'éveille désormais sur Ervane, une île en 3D amarrée au-dessus des Cimes. On y marche librement, on combat sur le terrain même, et Varek t\'apprend le jeu jusqu\'au Puits de l\'Amarre. La Nacelle te descend ensuite à Orsane, au niveau 8.' },
   { id: 'factions', date: '2026-10-15', art: 'factions', titre: 'L\'Aube contre la Chaîne',

@@ -90,6 +90,7 @@ Object.assign(Hud.prototype, {
     const r = () => this.fen.render('sac');
     const actions = {
       onglet: d => { s.onglet = d.onglet; s.filtre = ''; s.page = 0; r(); },
+      garderobe: () => this.toggleWin('garderobe'),
       page: d => { s.page += Number(d.sens) || 0; r(); },
       pick: d => { if (this.invIgnore()) return; if (ch().has(d.id)) { s.sel = { de: 'sac', id: d.id }; r(); } },
       slot: d => {
@@ -219,7 +220,8 @@ Object.assign(Hud.prototype, {
     }
     const f = this.inv.facing === -1 ? -1 : 1;
     c.save(); c.translate(W / 2, sol); c.scale(S * f, S); c.lineJoin = 'round'; c.lineCap = 'round';
-    try { painter.drawBody(c, { x: 0, y: 0 }, { shape: 'player', color: cls.color, glyph: cls.glyph, team: 'player', look: ch.look, gender: ch.gender, facing: f }); } catch (e) {   }
+    const ap = ch.lookAffiche();
+    try { painter.drawBody(c, { x: 0, y: 0 }, { shape: 'player', color: cls.color, glyph: cls.glyph, team: 'player', look: ap.look, auraCos: ap.auraCos, lueur: ap.lueur, gender: ch.gender, facing: f }); } catch (e) {   }
     c.restore();
   },
 
@@ -503,11 +505,15 @@ Object.assign(Hud.prototype, {
       ? `<select id="inv-titre" aria-label="Titre affiché"><option value="">aucun</option>${ch.titles.map(t => `<option ${ch.title === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`
       : '<p class="muted vy-note">Les succès donnent des titres.</p>';
     const actuel = document.getElementById('app').dataset.uiTheme;
-    const themes = Hud.THEMES.map(([id, label, fond, accent]) => `<button class="vy-theme${actuel === id ? ' on' : ''}" data-act="theme" data-theme="${id}" aria-pressed="${actuel === id}"><span class="vy-theme__apercu" style="--f:${fond};--a:${accent}"></span>${label}</button>`).join('');
+    const themes = Hud.themesDisponibles().map(([id, label, fond, accent]) => `<button class="vy-theme${actuel === id ? ' on' : ''}" data-act="theme" data-theme="${id}" aria-pressed="${actuel === id}"><span class="vy-theme__apercu" style="--f:${fond};--a:${accent}"></span>${label}</button>`).join('');
+    const porte = typeof Garderobe !== 'undefined' ? Garderobe.TYPES_PORTES.map(t => { const c = Garderobe.get(ch.porte && ch.porte[t]); return `<span class="vy-inv__porte"><small>${Garderobe.TYPE_LABEL[t]}</small>${c ? esc(c.nom) : '<span class="muted">aucune</span>'}</span>`; }).join('') : '';
+    const n = typeof Garderobe !== 'undefined' ? Garderobe.possedes().length : 0;
     return `<div class="vy-inv__vue" data-defile="apparence">
       <div class="vy-sous"><span>Titre affiché</span></div>${titres}
-      <div class="vy-sous"><span>Cosmétiques</span><span class="vy-bientot">bientôt</span></div>
-      <p class="muted vy-note">Les tenues et teintures arriveront avec la boutique de cosmétiques : jamais de puissance à vendre, seulement de l'allure.</p>
+      <div class="vy-sous"><span>Garde-robe</span><span class="muted">${n} cosmétique${n > 1 ? 's' : ''}</span></div>
+      <div class="vy-inv__portes">${porte}</div>
+      <p class="muted vy-note">Teintures, lueurs, auras, blasons, émotes et thèmes se gagnent en jouant et servent à tous tes personnages. Jamais de puissance : seulement de l'allure.</p>
+      <div class="vy-ensembles"><button class="vy-bouton vy-bouton--petit" data-act="garderobe">Ouvrir la Garde-robe</button></div>
       <div class="vy-sous"><span>Thème de l'interface</span></div><div class="vy-themes">${themes}</div>
     </div>`;
   },

@@ -9,7 +9,7 @@ class Character {
       quests: { active: {}, done: [] },
       counters: { fights: 0, wins: 0, kills: {}, maps: [], crafts: 0, gathers: 0, filsEarned: 0, dungeons: [], dungeonTurns: {}, bosses: [], questsDone: 0, feats: {} },
       achievements: [], pos: null, relay: null, relays: [], dungeon: null, autoStats: true, playTime: 0, knots: [], ensembles: [], voie: null, scrolls: {},
-      look: null,
+      look: null, porte: null, ensemblesLook: [],
     }, data || {});
     if (!this.coffre || typeof this.coffre !== 'object') this.coffre = { items: {}, fils: 0 };
     if (!this.coffre.items || typeof this.coffre.items !== 'object') this.coffre.items = {};
@@ -24,6 +24,8 @@ class Character {
     this.name = String(this.name || 'Veilleur').slice(0, 16);
     if (!DATA.classes[this.classId]) this.classId = DATA.defaultClass;
     this.look = Character.cleanLook(this.look, this.classId).look;
+    this.porte = typeof Garderobe !== 'undefined' ? Garderobe.nettoyerPorte(this.porte).porte : Object.assign(Character.porteDefaut(), this.porte && typeof this.porte === 'object' ? this.porte : {});
+    this.ensemblesLook = typeof Garderobe !== 'undefined' ? Garderobe.nettoyerLooks(this.ensemblesLook).looks : (Array.isArray(this.ensemblesLook) ? this.ensemblesLook.slice(0, 5) : []);
     const main = this.classDef.mainStat;
     this.scrolls = Object.assign({ vita: 0, sagesse: 0, force: 0, intel: 0, chance: 0, agi: 0 }, this.scrolls || {});
     if (base && !(this.v >= 3)) { this.resetStats(); if (this.autoStats) this.autoAllocate(); }
@@ -72,6 +74,19 @@ class Character {
   static defaultLook(classId) {
     const c = DATA.classes[classId] || DATA.classes[DATA.defaultClass];
     return Util.defaultLook(c.color);
+  }
+
+  static porteDefaut() { return { teinture: null, lueur: null, aura: null, blason: null, theme: null }; }
+
+  lookAffiche() {
+    if (typeof Garderobe === 'undefined') return { look: this.look, auraCos: null, lueur: null, blason: null };
+    const cle = `${Garderobe.version()}|${JSON.stringify(this.porte)}|${this.look ? this.look.tete + (this.look.couleurs || []).join('') : ''}`;
+    const cache = this._lookAffiche;
+    if (cache && cache.cle === cle) return cache.valeur;
+    const l = Garderobe.lookPorte(this);
+    const valeur = { look: l.look, auraCos: l.aura ? l.aura.data : null, lueur: l.lueur && l.lueur.data ? l.lueur.data.effet || null : null, blason: l.blason ? l.blason.data : null };
+    Object.defineProperty(this, '_lookAffiche', { value: { cle, valeur }, writable: true, enumerable: false, configurable: true });
+    return valeur;
   }
 
   static cleanLook(look, classId) {
@@ -172,8 +187,9 @@ class Character {
     for (const id of spells) { const v = this.spellFor(id); if (v) extraSpells[id] = v; }
     const weapon = this.equipment.arme ? Items.get(this.equipment.arme) : null;
     if (weapon && weapon.spell) { extraSpells.arme = weapon.spell; spells.push('arme'); }
+    const ap = this.lookAffiche();
     return {
-      name: this.name, classId: this.classId, level: this.level, shape: 'player', glyph: c.glyph, color: c.color, look: this.look, gender: this.gender,
+      name: this.name, classId: this.classId, level: this.level, shape: 'player', glyph: c.glyph, color: c.color, look: ap.look, auraCos: ap.auraCos, lueur: ap.lueur, gender: this.gender,
       hp: d.hpMax, hpCurrent: this.hp, pa: d.pa, pm: d.pm, initiative: d.initiative, resist: Object.assign({}, c.resist),
       spells, extraSpells, stats: d.stats, dmgFlat: d.dmgFlat, crit: d.crit, title: this.title, tacle: d.tacle, fuite: d.fuite,
       scale: 1 + 0.03 * (this.level - 1),
@@ -445,6 +461,13 @@ class Character {
       if (!got) return `Tu sais déjà tout ce que ce parchemin peut t'apprendre (${DATA.rules.scrollMax} au plus).`;
       this.removeItem(id, 1);
       return `${d.name} : +${got} ${Items.STAT_LABEL[d.stat]} de base.`;
+    }
+    if (d.sub === 'teinture') {
+      if (typeof Garderobe === 'undefined' || !Garderobe.get(d.cosmetique)) return null;
+      if (Garderobe.possede(d.cosmetique)) return 'Cette teinture est déjà dans ta Garde-robe.';
+      this.removeItem(id, 1);
+      const entres = Garderobe.donner(d.cosmetique, 'artisanat:' + id);
+      return `${d.name} : ${entres.length ? Garderobe.get(d.cosmetique).nom + ' entre dans ta Garde-robe.' : 'rien.'}`;
     }
     if (d.sub === 'potion') {
       this.removeItem(id, 1);

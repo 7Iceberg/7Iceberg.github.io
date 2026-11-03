@@ -36,6 +36,7 @@ const MENUS = [
   ['faction', 'Faction', 'F', I.faction],
   ['succes', 'Succès', 'U', I.succes],
   ['carnet', 'Carnet du Veilleur', 'B', I.carnet],
+  ['garderobe', 'Garde-robe', 'G', I.garderobe],
   ['carte', 'Carte du monde', 'M', I.carte],
   ['journal', 'Journal', 'J', I.journal],
   ['options', 'Options', 'O', I.options],
@@ -70,7 +71,7 @@ Object.assign(Hud.prototype, {
     this.world.on('map', () => { this.refreshVital(); this.drawMinimap(true); });
     this.combat.on('log', d => this.pushJournal('combat', d.msg, d.kind));
     setInterval(() => this.drawMinimap(false), 350);
-    this.applyTheme(this.loadTheme());
+    this.applyTheme(this.themeDuPersonnage() || this.loadTheme());
     this.appliquerVerre(this.loadOpacite());
     this.appliquerTaille(this.loadTaille());
     this.initInventaire();
@@ -90,7 +91,7 @@ Object.assign(Hud.prototype, {
 
   toggleWin(id) {
     if (this.fen.isOpen(ALIAS[id] || id)) this.fen.close(ALIAS[id] || id);
-    else ({ carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), succes: () => this.openAchievements(), carnet: () => this.openCarnet(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu() }[id] || (() => {}))();
+    else ({ carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), succes: () => this.openAchievements(), carnet: () => this.openCarnet(), garderobe: () => this.openGarderobe(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu() }[id] || (() => {}))();
     this.syncMenus();
   },
 
@@ -221,6 +222,20 @@ Object.assign(Hud.prototype, {
       return t || 'duality';
     } catch (e) { return 'duality'; }
   },
+  themeDuPersonnage() {
+    const ch = this.world && this.world.ch;
+    if (typeof Garderobe === 'undefined' || !ch || !ch.porte || !ch.porte.theme) return null;
+    const c = Garderobe.get(ch.porte.theme);
+    return c && c.type === 'theme' && Garderobe.possede(c.id) && c.data && Array.isArray(c.data.theme) ? c.data.theme[0] : null;
+  },
+  choisirTheme(t) {
+    const ch = this.world && this.world.ch;
+    const c = typeof Garderobe !== 'undefined' ? Garderobe.themeDe(t) : null;
+    if (c && !Garderobe.possede(c.id)) { this.toast(`Pas encore dans ta Garde-robe. ${Garderobe.texteSource(c)}.`); return false; }
+    this.applyTheme(t);
+    if (ch && typeof Garderobe !== 'undefined') { if (!ch.porte) ch.porte = Garderobe.porteDefaut(); ch.porte.theme = c ? c.id : null; this.world.emit('save'); }
+    return true;
+  },
   applyTheme(t) {
     document.getElementById('app').dataset.uiTheme = t;
     if (t === 'duality' && document.fonts && document.fonts.load) {
@@ -280,6 +295,7 @@ Hud.OPACITE = 90;
 
 Hud.THEMES = [['duality', 'Duality', '#121019', '#ff8a3d'], ['nuit', 'Nuit d\'Orsane', '#172334', '#c9a66b'], ['royal', 'Bleu des Cimes', '#13264a', '#7fb4ff'], ['braise', 'Braise de Kaldum', '#2a1714', '#f07a5c'], ['cimes', 'Vert des Cimes', '#15261c', '#8db585'], ['ardoise', 'Ardoise claire', '#d9d2c3', '#8e7144']];
 Hud.MENUS = MENUS;
+Hud.themesDisponibles = () => Hud.THEMES.concat(typeof Garderobe !== 'undefined' ? Garderobe.themes() : []);
 Hud.STAT = STAT;
 Hud.pic = pic;
 })();

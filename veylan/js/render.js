@@ -93,7 +93,8 @@ class Renderer {
 
   static heroKey(s) {
     const L = Renderer.heroLook(s);
-    return `${L.tete}${L.couleurs.join('')}|${s.gender === 'm' ? 'm' : 'f'}|${Renderer.FACINGS.includes(s.facing) ? s.facing : 'se'}`;
+    const cos = (s.auraCos ? `${s.auraCos.forme || ''}${s.auraCos.couleur || ''}` : '') + '|' + (s.lueur || '');
+    return `${L.tete}${L.couleurs.join('')}|${s.gender === 'm' ? 'm' : 'f'}|${Renderer.FACINGS.includes(s.facing) ? s.facing : 'se'}|${cos}`;
   }
 
   static flipOf(s) { return typeof s.facing === 'number' ? s.facing : 1; }
@@ -2627,7 +2628,7 @@ class Renderer {
       const hop = moving ? Math.abs(Math.sin((e.rx + e.ry) * Math.PI)) * 5 : 0;
       return {
         kind: 'entity', rx: e.rx, ry: e.ry, shape: e.shape, color: e.color, glyph: e.glyph, name: e.name,
-        scale: e.boss ? 1.35 : (e.isSummon && !e.ally ? 0.8 : 1), alpha: (e.alpha == null ? 1 : e.alpha) * (e.hasState('invisible') ? 0.45 : 1), look: e.def.look,
+        scale: e.boss ? 1.35 : (e.isSummon && !e.ally ? 0.8 : 1), alpha: (e.alpha == null ? 1 : e.alpha) * (e.hasState('invisible') ? 0.45 : 1), look: e.def.look, auraCos: this.quality === 'basse' ? null : e.def.auraCos, lueur: e.def.lueur,
         team: e.team, flash: now < e.flashUntil, current: cb.actor === e, immune: e.immuneElement,
         hp: e.hp / e.hpMax, shield: e.shield / e.hpMax, bob: hop, motif: e.team === 'monster' ? Renderer.motifOf(e.def.id) : null,
         facing: e.shape === 'player' ? e.facing || Renderer.faceFoe(cb, e) : 1, gender: e.def.gender,
@@ -2642,7 +2643,8 @@ class Renderer {
     const out = [];
     const ch = w.ch, cls = DATA.classes[ch.classId];
     const p = w.player;
-    out.push({ kind: 'entity', rx: p.rx, ry: p.ry, shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, scale: 1, alpha: 1, team: 'player', facing: p.facing, look: ch.look, gender: ch.gender, bob: p.moving ? Math.abs(Math.sin(now / 90)) * 3.5 : 0, label: null, phase: 0, insigne: Factions.insigne(ch) });
+    const ap = ch.lookAffiche();
+    out.push({ kind: 'entity', rx: p.rx, ry: p.ry, shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, scale: 1, alpha: 1, team: 'player', facing: p.facing, look: ap.look, auraCos: this.quality === 'basse' ? null : ap.auraCos, lueur: ap.lueur, gender: ch.gender, bob: p.moving ? Math.abs(Math.sin(now / 90)) * 3.5 : 0, label: null, phase: 0, insigne: Factions.insigne(ch) });
     for (const g of w.groups) {
       const def = DATA.monsters[g.monsters[0].id];
       out.push({ kind: 'entity', rx: g.rx, ry: g.ry, shape: def.shape, color: def.color, glyph: null, name: def.name, scale: def.boss || def.recherche ? 1.3 : 0.95, alpha: 1, team: 'monster', facing: 1, bob: Math.abs(Math.sin(now / 500 + g.idx)) * 1.5, badge: g.monsters.length > 1 ? `×${g.monsters.length}` : null, label: `${def.recherche ? 'Recherché : ' : ''}${def.name} niv. ${g.level}`, motif: Renderer.motifOf(g.monsters[0].id), phase: g.idx || 0 });
@@ -2967,6 +2969,7 @@ class Renderer {
     let path, box, eyesAt = null;
     switch (s.shape) {
       case 'player':
+        if (s.auraCos && !s.flash) this.drawAuraCos(c, p, s);
         return this.drawHero(c, p, s, color, ink, rim, top);
       case 'pnj':
         return this.drawNpc(c, p, { look: s.look || 'garde', phase: s.phase || 0 }, 0);
@@ -3341,11 +3344,39 @@ class Renderer {
     if (t !== 6) rimArc();
   }
 
+  drawAuraCos(c, p, s) {
+    const a = s.auraCos, col = /^#[0-9a-f]{6}$/i.test(a.couleur || '') ? a.couleur : '#ffffff';
+    const dot = Renderer.dot(col);
+    c.save();
+    c.globalCompositeOperation = 'lighter';
+    if (a.forme === 'brume') {
+      c.globalAlpha = 0.5; c.drawImage(dot, p.x - 30, p.y - 11, 60, 20);
+      c.globalAlpha = 0.32; c.drawImage(dot, p.x - 20, p.y - 6, 40, 12);
+    } else if (a.forme === 'braises') {
+      const pts = [[-13, -2, 3], [-6, 3, 2.2], [3, 4, 2.6], [11, 0, 3], [15, -5, 2], [-16, -8, 2], [7, -9, 2.2], [-2, -12, 1.8]];
+      for (const [dx, dy, r] of pts) { c.globalAlpha = 0.9; c.drawImage(dot, p.x + dx - r, p.y + dy - r, r * 2, r * 2); c.globalAlpha = 0.35; c.drawImage(dot, p.x + dx - r * 2.2, p.y + dy - r * 2.2, r * 4.4, r * 4.4); }
+    } else {
+      const n = 12;
+      for (let i = 0; i < n; i++) {
+        const t = (i / n) * Math.PI * 2, r = i % 2 ? 1.8 : 2.6;
+        const x = p.x + Math.cos(t) * 19, y = p.y + 1 + Math.sin(t) * 7.5;
+        c.globalAlpha = 0.95; c.drawImage(dot, x - r, y - r, r * 2, r * 2);
+        c.globalAlpha = 0.3; c.drawImage(dot, x - r * 2.4, y - r * 2.4, r * 4.8, r * 4.8);
+      }
+    }
+    c.restore();
+  }
+
   drawProp(c, p, s, top, by, ink, col, T, back) {
     col = col || s.color; T = T || 1;
     const light = Renderer.mix(col, '#ffffff', 0.55);
     const ow = (inner, outer) => inner + (outer - inner) * T;
-    const glow = (x, y, r) => { c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.8; c.drawImage(Renderer.dot(col), x - r, y - r, r * 2, r * 2); c.restore(); };
+    const gm = s.lueur === 'vive' ? 1.7 : s.lueur === 'braise' ? 1.3 : 1;
+    const glow = (x, y, r) => {
+      c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.8; c.drawImage(Renderer.dot(col), x - r * gm, y - r * gm, r * 2 * gm, r * 2 * gm);
+      if (s.lueur === 'braise') { c.globalAlpha = 0.55; c.drawImage(Renderer.dot('#ffb070'), x - r * 0.6, y - r * 0.6, r * 1.2, r * 1.2); }
+      c.restore();
+    };
     const gem = (x, y, w, h) => {
       c.beginPath(); c.moveTo(x, y - h); c.lineTo(x + w, y); c.lineTo(x, y + h); c.lineTo(x - w, y); c.closePath();
       c.lineWidth = 2.2 * T; c.strokeStyle = ink; c.stroke(); c.fillStyle = light; c.fill();
