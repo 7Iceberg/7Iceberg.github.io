@@ -114,15 +114,22 @@ class Ile3D {
     const mode = Ile3D.modeleGlym();
     if (!mode) return;
     try {
-      const charger = (fichier, present) => present() ? Promise.resolve() : new Promise((ok, ko) => {
-        let src = 'js/' + fichier;
-        try { const ref = document.querySelector('script[src*="ile-3d.js"]'); if (ref && ref.src) src = new URL(fichier, ref.src).href; } catch (e) {   }
-        const el = document.createElement('script');
-        el.src = src; el.async = true;
-        el.onload = () => ok();
-        el.onerror = () => ko(new Error('js/' + fichier + ' introuvable'));
-        document.head.appendChild(el);
-      });
+      const enCours = Ile3D._scriptsModeles || (Ile3D._scriptsModeles = new Map());
+      const charger = (fichier, present) => {
+        if (present()) return Promise.resolve();
+        if (enCours.has(fichier)) return enCours.get(fichier);
+        const p = new Promise((ok, ko) => {
+          let src = 'js/' + fichier;
+          try { const ref = document.querySelector('script[src*="ile-3d.js"]'); if (ref && ref.src) src = new URL(fichier, ref.src).href; } catch (e) {   }
+          const el = document.createElement('script');
+          el.src = src; el.async = true;
+          el.onload = () => ok();
+          el.onerror = () => { enCours.delete(fichier); ko(new Error('js/' + fichier + ' introuvable')); };
+          document.head.appendChild(el);
+        });
+        enCours.set(fichier, p);
+        return p;
+      };
       await charger('modele-glym.js', () => typeof ModeleGlym === 'object');
       if (typeof ModeleGlym !== 'object') throw new Error('ModeleGlym absent');
       await charger('modele-lampignon.js', () => typeof ModeleLampignon === 'object').catch(e => console.warn('Lampignon modelé : ' + e.message));
@@ -388,6 +395,7 @@ class Ile3D {
       etape('Le monde modelé');
       await pause();
       let semis = null;
+      this.T.facteurSemis = this.telephone && this.T.largeur > 300 ? 0.72 : 1;
       if (rendu.modeles && IleCharge.modeles && IleCharge.modeles()) {
         try { await IleCharge.modelesScript(); if (typeof IleModeles === 'object') { semis = await IleModeles.chargerSemis(THREE, this.renderer); semis.poses = IleModeles.poses(semis, this.T, (u, v) => this.hauteur(u, v)); } } catch (e) { console.warn('Ervane : semis Meshy indisponible', e); semis = null; }
       }

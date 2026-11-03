@@ -371,7 +371,7 @@ function fabriqueIlePeinture() {
 
 
   function profondeurEau(T) {
-    const k = 2, W = Math.round(T.largeur * k), H = Math.round(T.hauteur * k), out = new Uint8Array(W * H * 4);
+    const k = T.largeur > 300 ? 1 : 2, W = Math.round(T.largeur * k), H = Math.round(T.hauteur * k), out = new Uint8Array(W * H * 4);
     const gN = M().graineDe(T.graine, 'ecume');
     for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
       const u = (i + 0.5) / k, v = (j + 0.5) / k, o = (j * W + i) * 4;

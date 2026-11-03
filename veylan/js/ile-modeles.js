@@ -474,10 +474,11 @@ const IleModeles = (() => {
       const g = bruitValeur(u / 9, v / 9, graine) * 0.7 + bruitValeur(u / 3.5, v / 3.5, graine + 7) * 0.3;
       const amas = (0.3 + Math.max(0, (g - 0.4) * 2.4)) * (c === 1 && marge < 2 ? 1.8 : 1);
       let acc = 0;
+      const fs = T.facteurSemis > 0 ? T.facteurSemis : 1;
       for (const regle of rg) {
         const [genre, densite, haut] = regle;
         if (regle.sols && !regle.sols.includes(T.sol ? T.sol[k] : 0)) { continue; }
-        acc += densite * pas * pas * amas;
+        acc += densite * pas * pas * amas * fs;
         if (r3 < acc) {
           out.push({ genre, u, v, h: haut[0] + (haut[1] - haut[0]) * r4, regle, r: hacheEntier(gu, gv, graine + 4) });
           break;
@@ -821,6 +822,12 @@ const IleModeles = (() => {
     dalles: { pas: 5, moyenne: [0.3113, 0.4039, 0.4353] }, paves: { pas: 3.5, moyenne: [0.1125, 0.0842, 0.0537] },
   };
   const TYPES_SOL = { vert: [0.1133, 0.2848, 0.11], dalles: [0.7406, 0.7182, 0.6209], terre: [0.3876, 0.3046, 0.1296], roche: [0.3487, 0.3233, 0.3142] };
+  const teinteDalles = hex => {
+    if (typeof hex !== 'string' || !/^#[0-9a-f]{6}$/i.test(hex)) return [1, 1, 1];
+    const c = [1, 3, 5].map(i => Math.pow(parseInt(hex.slice(i, i + 2), 16) / 255, 2.2));
+    const l = c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11;
+    return l > 0.001 ? c.map(x => Math.round(x / l * 1e4) / 1e4) : [1, 1, 1];
+  };
   const VILLAGES = [[210, 104, 36, 1], [175, 28, 14, 0.7]];
   const VILLAGES_PLATEAU = { ervane: { zone: 'ervane_mailles', centres: VILLAGES }, orsane: { zone: 'orsane_cimes', centres: [[222, 92, 62, 1]] } };
   async function texSol(THREE, nom, etc) {
@@ -877,7 +884,7 @@ const IleModeles = (() => {
       }
       return m - demi;
     };
-    const val = d => Math.round(255 * Math.max(0, Math.min(1, 0.5 - d / 2.4)));
+    const val = d => Math.round(255 * Math.max(0, Math.min(1, 0.5 - d / 3.2)));
     const lignes = T.lignes || [], places = T.places || [];
     const sentiers = lignes.filter(l => l.sorte === 'sentier' && l.pts), ruelles = lignes.filter(l => l.sorte === 'ruelle' && l.pts);
     const vil = new Float32Array(W * H);
@@ -890,7 +897,8 @@ const IleModeles = (() => {
         const d = Math.hypot(u - p.centre[0], v - p.centre[1]) - p.rayon;
         if (p.sol === 'terre') dT = Math.min(dT, d); else if (p.sol === 'calcaire') dR = Math.min(dR, d);
       }
-      data[i * 4] = val(dS); data[i * 4 + 1] = val(dR); data[i * 4 + 3] = val(dT);
+      const eau = T.eau && T.eau[i] === T.eau[i];
+      data[i * 4] = eau ? 0 : val(dS); data[i * 4 + 1] = eau ? 0 : val(dR); data[i * 4 + 3] = eau ? 0 : val(dT);
       const z = T.regionsZone && T.region ? T.regionsZone[T.region[i]] : null;
       vil[i] = z === VIL.zone ? 1 : 0;
       for (const V of VIL.centres) { const d = Math.hypot(u - V[0], v - V[1]); if (d < V[2]) vil[i] = Math.max(vil[i], V[3] * Math.min(1, (V[2] - d) / (V[2] * 0.3))); }
@@ -945,13 +953,15 @@ const IleModeles = (() => {
       vec4 cm = texture2D(solCarte, (q + 0.5) / solCarteTaille);
       float vil = cm.b;
       float nSe = NET(cm.r, ond * 0.45 + bz.b * 0.55), nR = NET(cm.g, 1.0 - ond), nT = NET(cm.a, ond);
+      // L'épaule du sentier : de la terre battue (la texture du chemin) sur 1,3 u, bord ondulé.
+      float nEp = smoothstep(0.06, 0.19, cm.r + (ond - 0.5) * 0.06) * (1.0 - nSe);
       nP = max(nP, nR);
-      nB = max(nB, max(nT, nSe));
+      nB = max(nB, max(nT, max(nSe, nEp)));
       // Les villages : des plaques de dalles dans l'herbe ; ailleurs, hors des bois, des plaques de terre.
       float vPl = bz.a * 0.75 + bz.r * 0.25 + (ond - 0.5) * 0.14;
       float plaque = smoothstep(0.575, 0.605, vPl) * vil;
       float terre = smoothstep(0.69, 0.72, bz.r * 0.6 + bz.a * 0.4 + (ond - 0.5) * 0.12) * (1.0 - tFor) * (1.0 - vil);
-      nV *= 1.0 - max(max(nR, nSe), nT);
+      nV *= 1.0 - max(max(max(nR, nSe), nT), nEp);
       float dP = nV * plaque, dB = nV * terre * (1.0 - plaque);
       float wV = nV - dP - dB;
       float wP = nP * (1.0 - nV) + dP;
@@ -961,8 +971,16 @@ const IleModeles = (() => {
       float dV = (wB - dB) * ilot;
       wB -= dV; wV += dV;
       float wG = max(0.0, 1.0 - wV - wP - wB);
-      // La couleur du lieu suit les bords nets.
-      vec3 c = max(cs + (wV - sV) * ${v3(TYPES_SOL.vert)} + (wP - sP) * ${v3(TYPES_SOL.dalles)} + (wB - sB) * ${v3(TYPES_SOL.terre)} + (wG - sG) * ${v3(TYPES_SOL.roche)}, vec3(0.0));
+      // La couleur du lieu suit les bords nets : la part de classe perdue retire autant de la couleur
+      // du lieu, la part gagnée apporte la couleur type de sa classe (l'herbe et la terre mises à la
+      // luminosité du lieu, k : 1 pour l'herbe d'Ervane ; l'herbe gagnée à moitié). Ajouter et
+      // retrancher les couleurs types telles quelles noircissait une épaule de terre sur la roche
+      // (toute la roche retirée) et cernait l'herbe sombre des Toiles d'un liseré vif. La classe
+      // résiduelle (roche, le reste des classes douces) ne retire rien quand elle s'efface.
+      float k = clamp(lumS / 0.214, 0.45, 1.3);
+      float gainV = max(wV - sV, 0.0) * 0.5, gainP = max(wP - sP, 0.0), gainB = max(wB - sB, 0.0), gainG = max(wG - sG, 0.0);
+      float perdu = clamp(max(sV - wV, 0.0) + max(sP - wP, 0.0) + max(sB - wB, 0.0), 0.0, 1.0);
+      vec3 c = cs * (1.0 - perdu) + gainV * ${v3(TYPES_SOL.vert)} * k + gainP * ${v3(TYPES_SOL.dalles)} + gainB * ${v3(TYPES_SOL.terre)} * k + gainG * ${v3(TYPES_SOL.roche)};
       float lumC = dot(c, vec3(0.3, 0.59, 0.11));
       #define TEX(s, p) pow(texture2D(s, q / p).rgb, vec3(2.2))
       #define LUM(v) dot(v, vec3(0.3, 0.59, 0.11))
@@ -994,7 +1012,7 @@ const IleModeles = (() => {
           anneau = smoothstep(P.z - 1.1, P.z - 0.7, d) * (1.0 - smoothstep(P.z - 0.35, P.z, d));
         }
       }
-      vec3 dalle = pow(texture2D(solDalles, qd / ${SOLS.dalles.pas.toFixed(1)}).rgb, vec3(2.2)) / LUM(moyDalles) * lumC * 0.82;
+      vec3 dalle = pow(texture2D(solDalles, qd / ${SOLS.dalles.pas.toFixed(1)}).rgb, vec3(2.2)) / LUM(moyDalles) * lumC * 0.82 * solTeinteDalles;
       dalle *= 1.0 + 0.35 * anneau;
       float fP = smoothstep(0.5, 0.7, cP + (0.5 - ond) * 0.7) * (1.0 - nV) + nV * smoothstep(0.605, 0.66, vPl) * vil;
       dalle *= 1.0 - 0.28 * clamp(1.0 - fP / max(wP, 0.001), 0.0, 1.0);
@@ -1072,8 +1090,11 @@ const IleModeles = (() => {
     uniforms.solLumieres = { value: Array.from({ length: MAX_LUMIERES }, (_, i) => lum[i] ? new THREE.Vector4(lum[i][0], lum[i][1], lum[i][2], lum[i][3]) : new THREE.Vector4(0, 0, 0, 0)) };
     uniforms.solNuit = NUIT_SOL;
     uniforms.solTemps = VENT;
+    const teinte = teinteDalles(ile.def && ile.def.rendu && ile.def.rendu.dalles);
+    uniforms.solTeinteDalles = { value: new THREE.Vector3(teinte[0], teinte[1], teinte[2]) };
+    ile.solTeinteDalles = teinte;
     ileSol = ile;
-    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + `\nuniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}]; uniform vec4 solParcelles[${MAX_PARCELLES * 2}]; uniform vec4 solLumieres[${MAX_LUMIERES}]; uniform float solNuit; uniform float solTemps;`;
+    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + `\nuniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}]; uniform vec4 solParcelles[${MAX_PARCELLES * 2}]; uniform vec4 solLumieres[${MAX_LUMIERES}]; uniform float solNuit; uniform float solTemps; uniform vec3 solTeinteDalles;`;
     for (const m of mats) {
       const prec = m.onBeforeCompile, cle = Object.prototype.hasOwnProperty.call(m, 'customProgramCacheKey') ? m.customProgramCacheKey : null;
       m.onBeforeCompile = (sh, r) => {
@@ -1090,10 +1111,11 @@ const IleModeles = (() => {
           .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_SOL)
           .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + GLSL_LUMIERES);
       };
-      m.customProgramCacheKey = () => 'sol-meshy-4/' + (cle ? cle.call(m) : '');
+      m.customProgramCacheKey = () => 'sol-meshy-5/' + (cle ? cle.call(m) : '');
       m.needsUpdate = true;
     }
     ile.solCarte = !!carte;
+    ile.solCarteTex = carte ? carte.t : null;
     return noms.reduce((a, n) => a + tx[n].octets, 0) + bz.octets + (carte ? carte.octets : 0);
   }
 

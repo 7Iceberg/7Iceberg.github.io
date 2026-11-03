@@ -282,7 +282,7 @@ const IleGlb = (() => {
     return M.idx.length / 3;
   }
 
-  function semerMeshy(G, mesh, mats, S, genre, fusionS) {
+  function semerMeshy(G, mesh, mats, S, genre, fusionS, facteur) {
     const g = S.genres[genre], restes = [];
     if (!g) return { tri: 0, restes: mats };
     let haut = 0;
@@ -293,6 +293,7 @@ const IleGlb = (() => {
       const e = m.elements, x = e[12], z = e[14];
       const nom = g.modele(m.teinte, hache(x, z, 1), x, z), M = nom && S.modeles[nom];
       if (!M) { restes.push(m); continue; }
+      if (facteur < 1 && hache(x, z, 3) >= facteur) continue;
       const sy = Math.hypot(e[4], e[5], e[6]) || 1, abs = g.absolu && g.absolu[nom];
       const k = abs ? abs / (M.hauteur * sy) : haut / M.hauteur * (g.facteur || 1);
       tri += cuire(fusionS, M, e, hache(x, z, 2) * Math.PI * 2, k, -0.06 * (abs ? abs / sy : haut));
@@ -374,7 +375,7 @@ const IleGlb = (() => {
       if (opts && opts.teinte) for (const m of mats) { const t = m.teinte ? opts.teinte(m.elements[12], m.elements[14], mesh.name || '', m.teinte) : null; if (t) m.teinte = t; }
       const genre = opts && opts.semis && opts.semis.formes[mesh.name];
       if (genre) {
-        const r = semerMeshy(G, mesh, mats, opts.semis, genre, fusionS);
+        const r = semerMeshy(G, mesh, mats, opts.semis, genre, fusionS, opts.facteurSemis > 0 ? opts.facteurSemis : 1);
         triangles += r.tri;
         if (!r.restes.length) continue;
         mats = r.restes;
@@ -432,8 +433,9 @@ const IleGlb = (() => {
     const glb = await lire(src);
     const semis = opts && opts.semis;
     const T = ile.T, cacher = T && typeof T.closA === 'function' ? (u, v) => T.closA(u, v) : null;
-    const groupe = construire(THREE, glb, { semis, cacher, teinte: ile.nuit && typeof ile.nuit.teinteGlb === 'function' ? (u, v, nom, t) => ile.nuit.teinteGlb(u, v, nom, t) : null });
+    const groupe = construire(THREE, glb, { semis, cacher, facteurSemis: T && T.facteurSemis > 0 ? T.facteurSemis : 1, teinte: ile.nuit && typeof ile.nuit.teinteGlb === 'function' ? (u, v, nom, t) => ile.nuit.teinteGlb(u, v, nom, t) : null });
     groupe.userData.source = src;
+    for (const o of [...groupe.children]) if (/^mo_eau/.test(o.name)) { groupe.remove(o); if (o.geometry) o.geometry.dispose(); }
     if (semis && groupe.userData.semisMeshy) { ile.octetsGeo = (ile.octetsGeo || 0) + groupe.userData.semisMeshy.octets; ile.octetsTex = (ile.octetsTex || 0) + semis.octets.tex; }
     {
       const vus = new Set();
@@ -452,7 +454,6 @@ const IleGlb = (() => {
     for (const t of ile.tuilesSol || []) { retirer(t.proche); retirer(t.loin); }
     for (const t of ile.tuilesDecor || []) { retirer(t.groupe); retirer(t.sil); }
     for (const H of [ile.herbe, ile.fleurs]) if (H && H.mesh) retirer(H.mesh);
-    retirer(ile.eau);
     for (const m of ile.decorFixe || []) retirer(m);
     retirer(ile.meshEscarpement); retirer(ile.meshFalaise); retirer(ile.meshChute);
     if (typeof Ile3D === 'function' && Ile3D.octetsGeo) {
@@ -460,13 +461,12 @@ const IleGlb = (() => {
       const prendre = o => { if (o) o.traverse(x => { if (x.geometry) geos.add(x.geometry); }); };
       for (const t of ile.tuilesSol || []) { prendre(t.proche); prendre(t.loin); }
       for (const t of ile.tuilesDecor || []) { prendre(t.groupe); prendre(t.sil); }
-      prendre(ile.eau);
       for (const m of ile.decorFixe || []) prendre(m);
       let libere = 0;
       for (const g of geos) { libere += Ile3D.octetsGeo(g); g.dispose(); }
       ile.octetsGeo = Math.max(0, (ile.octetsGeo || 0) - libere);
       groupe.userData.libere = libere;
-      const tex = ile.tex || {}, toiles = ['eau', 'touchesLin', 'falaise', 'touches', 'feuilles'], libres = new Set();
+      const tex = ile.tex || {}, toiles = ['falaise', 'touches', 'feuilles', 'lueur'], libres = new Set();
       let libereTex = 0;
       for (const k of ['matieres', 'poids1', 'poids2', 'teinte', 'grain', ...toiles]) {
         const t = tex[k];
@@ -485,6 +485,11 @@ const IleGlb = (() => {
       for (const m of Object.values(ile.mats || {})) if (m && m.isMaterial) vider(m);
       if (ile.mats && ile.mats.uSol) for (const u of Object.values(ile.mats.uSol)) if (u && libres.has(u.value)) u.value = null;
       if (ile.eau) ile.eau.traverse(o => { if (o.material) [].concat(o.material).forEach(vider); });
+      if (ile.matEauRef && ile.matEauRef.uniforms.bord && !ile.matEauRef.uniforms.bord.value) {
+        const blanc = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
+        blanc.needsUpdate = true;
+        ile.matEauRef.uniforms.bord.value = blanc;
+      }
       ile.octetsTex = Math.max(0, (ile.octetsTex || 0) - libereTex);
       groupe.userData.libereTex = libereTex;
     }
