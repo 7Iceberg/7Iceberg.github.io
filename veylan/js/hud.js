@@ -683,10 +683,14 @@ class Hud {
     const quests = r.quests.filter((t, i, arr) => arr.findIndex(x => x.quest === t.quest) === i).map(t => `<li>${esc(t.quest.name)} : ${t.finished ? 'terminée, à rendre à ' + esc(Quests.npcName(Quests.turnInOf(t.quest))) : esc(Quests.stepText(ch, t.quest.id))}</li>`).join('');
     const chal = r.challenge ? `<div class="row"><span>Défi : ${esc(r.challenge.name)}</span><b class="${r.challenge.success ? 'ok' : 'missing'}">${r.challenge.success ? `réussi, +${r.challenge.bonus} %` : 'raté'}</b></div>` : '';
     const epr = r.epreuveDojo ? `<div class="row"><span>Épreuve du jour</span><b>${r.epreuveDojo.tours} tour${r.epreuveDojo.tours > 1 ? 's' : ''}${r.epreuveDojo.sceaux ? ' · un Sceau de la Garde' : ` · plus de ${r.epreuveDojo.limite} tours, sans Sceau`}</b></div>` : '';
+    const fam = r.familier ? `<div class="row"><span>${esc(r.familier.nom)}</span><b>+${r.familier.xp} XP${r.familier.niveaux ? ` · niveau ${r.familier.niveau} !` : ''}</b></div>` : '';
+    if (r.familier && r.familier.niveaux) this.chat('gain', `${r.familier.nom} passe au niveau ${r.familier.niveau}.`);
+    const mont = r.monture ? `<div class="row"><span>${esc(r.monture.nom)} (${nfr(r.monture.cede)} XP cédés)</span><b>+${r.monture.xp} XP${r.monture.niveaux ? ` · niveau ${r.monture.niveau} !` : ''}</b></div>` : '';
+    if (r.monture && r.monture.niveaux) this.chat('gain', `${r.monture.nom} passe au niveau ${r.monture.niveau}.`);
     let dungeon = '';
     if (r.dungeon) dungeon = r.dungeon.cleared ? `<p class="big">Donjon terminé : ${esc(r.dungeon.def.name)} !</p>${r.dungeon.turns ? `<p class="muted">En ${r.dungeon.turns} tours, toutes salles comprises.</p>` : ''}` : `<p class="muted">Salle suivante : ${esc(r.dungeon.def.rooms[r.dungeon.next].name)}</p>`;
     const html = r.victory
-      ? `<p class="big win">Victoire</p>${dungeon}<div class="row"><span>Expérience</span><b>+${r.gained} XP${r.levels ? ` · niveau ${ch.level} !` : ''}</b></div><div class="row"><span>Dragmes</span><b>+${r.fils}</b></div>${chal}${epr}${r.veille ? `<div class="row"><span>Veille du jour</span><b class="ok">${esc(r.veille)}</b></div>` : ''}${r.knots ? `<div class="row"><span>Nœuds noués : ${r.knots}</span><b class="ok">+${r.knots * DATA.rules.knotBonus} %</b></div>` : ''}${drops ? `<h4>Butin</h4><ul>${drops}</ul>` : '<p class="muted">Aucun butin cette fois.</p>'}${quests ? `<h4>Quêtes</h4><ul>${quests}</ul>` : ''}${(r.avis || []).length ? `<h4>Avis de recherche</h4><ul>${r.avis.map(a => `<li>${esc(a.nom)} capturé : la prime t'attend à la tour de la Garde, sur la Place du Relais.</li>`).join('')}</ul>` : ''}${achs ? `<ul>${achs}</ul>` : ''}`
+      ? `<p class="big win">Victoire</p>${dungeon}<div class="row"><span>Expérience</span><b>+${r.gained} XP${r.levels ? ` · niveau ${ch.level} !` : ''}</b></div><div class="row"><span>Dragmes</span><b>+${r.fils}</b></div>${fam}${mont}${chal}${epr}${r.veille ? `<div class="row"><span>Veille du jour</span><b class="ok">${esc(r.veille)}</b></div>` : ''}${r.knots ? `<div class="row"><span>Nœuds noués : ${r.knots}</span><b class="ok">+${r.knots * DATA.rules.knotBonus} %</b></div>` : ''}${drops ? `<h4>Butin</h4><ul>${drops}</ul>` : '<p class="muted">Aucun butin cette fois.</p>'}${quests ? `<h4>Quêtes</h4><ul>${quests}</ul>` : ''}${(r.avis || []).length ? `<h4>Avis de recherche</h4><ul>${r.avis.map(a => `<li>${esc(a.nom)} capturé : la prime t'attend à la tour de la Garde, sur la Place du Relais.</li>`).join('')}</ul>` : ''}${achs ? `<ul>${achs}</ul>` : ''}`
       : `<p class="big lose">Défaite</p><p>Tu reviens au Relais de l'Aube avec la moitié de tes PV.${this.world.ch.dungeon ? '' : ''}</p>`;
     this.actions.cont = () => this.closePanel();
     this.openPanel('fightEnd', r.victory ? 'Combat gagné' : 'Combat perdu', `${html}<div class="row center"><button data-act="cont" class="primary">Continuer</button></div>`);
@@ -700,6 +704,7 @@ class Hud {
 function esc(s) {
   return Util.esc(s);
 }
+const nfr = n => Number(n || 0).toLocaleString('fr-FR');
 
 function rewardText(r) {
   r = r || {};

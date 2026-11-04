@@ -240,7 +240,7 @@ class World {
     const next = p.path[0];
     const dx = next.x - p.rx, dy = next.y - p.ry;
     const d = Math.abs(dx) + Math.abs(dy);
-    const step = p.speed * dt;
+    const step = p.speed * (typeof Montures !== 'undefined' ? Montures.vitesse(this.ch) : 1) * dt;
     p.facing = Grid.facing(dx, dy) || p.facing;
     if (d <= step) {
       p.rx = next.x; p.ry = next.y; p.x = next.x; p.y = next.y;
@@ -784,10 +784,12 @@ class World {
   }
 
   useItem(id) {
+    const d = Items.get(id);
     const r = this.ch.use(id);
     if (r === 'relais') { this.teleportToRelay(); return true; }
     if (r) this.toast(r);
     this.emit('update');
+    if (r && d && (d.sub === 'oeuf' || d.sub === 'monture')) this.emit('save');
     return !!r;
   }
 
@@ -1036,6 +1038,7 @@ class World {
         result.quests.push(...Quests.onEvent(ch, { type: 'kill', monster: e.def.id }));
       }
       result.xp = Math.round(result.xp * (1 + bonus / 100));
+      if (typeof Montures !== 'undefined') { result.monture = Montures.partCombat(ch, result.xp); if (result.monture) result.xp -= result.monture.cede; }
       if (this.combat.epreuveDojo) {
         const tours = this.combat.round || 1, limite = this.combat.epreuveDojo.limite;
         const prime = { tours, limite, xp: Math.round(40 * Math.pow(ch.level, 1.3)), fils: 30 + 5 * ch.level, sceaux: tours <= limite ? 1 : 0 };
@@ -1049,6 +1052,7 @@ class World {
       result.gained = g.gained; result.levels = g.levels;
       ch.fils += result.fils; ch.counters.filsEarned += result.fils;
       for (const dr of result.drops) ch.addItem(dr.id, dr.count);
+      if (typeof Familiers !== 'undefined') result.familier = Familiers.apresCombat(ch, this.zone && this.zone.region, monsters.length);
       if (!g.levels) ch.hp = Math.max(1, this.combat.player.hp);
       if (g.levels) result.quests.push(...Quests.onEvent(ch, { type: 'level', level: ch.level }));
       result.quests.push(...Quests.onEvent(ch, { type: 'inventory' }));

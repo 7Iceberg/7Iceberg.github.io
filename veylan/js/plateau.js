@@ -249,7 +249,7 @@ class Plateau {
   marcher(dt) {
     const w = this.world, p = w.player, ch = p.chemin;
     if (!ch) return;
-    const vmax = p.course ? 7 : 4.5, acc = vmax / 0.15;
+    const vmax = (p.course ? 7 : 4.5) * (typeof Montures !== 'undefined' ? Montures.vitesse(w.ch, true) : 1), acc = vmax / 0.15;
     const reste = ch.longueur - ch.s;
     p.vitesse = Math.min(vmax, p.vitesse + acc * dt, Math.sqrt(2 * acc * Math.max(0, reste)));
     if (p.vitesse < 0.05 && reste > 1e-3) p.vitesse = Math.min(vmax, 0.05 + acc * dt);

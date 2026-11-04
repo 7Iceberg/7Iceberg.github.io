@@ -179,8 +179,10 @@ const IleModeles = (() => {
     'v-rochers': { atlas: 5, case: [512, 256, 256] }, 'v-amanites': { atlas: 5, case: [768, 256, 256] }, 'v-pierre': { atlas: 5, case: [0, 512, 256] },
     'ch-choux': { atlas: 5, case: [256, 512, 256] }, 'ch-courges': { atlas: 5, case: [512, 512, 256] }, 'ch-epouvantail': { atlas: 5, case: [768, 512, 256] },
     'ch-gerbes': { atlas: 5, case: [0, 768, 256] }, 'ch-brouette': { atlas: 5, case: [256, 768, 256] },
+    'o-maison': { atlas: 6, case: [0, 0, 512] }, 'o-service': { atlas: 6, case: [512, 0, 512] },
+    'k-maison': { atlas: 6, case: [0, 512, 512] }, 'k-atelier': { atlas: 6, case: [512, 512, 512] },
   };
-  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024]];
+  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024], [1024, 1024]];
   const SOURCES = [['eau', 160, 148], ['feu', 130, 125], ['terre', 140, 166], ['air', 105, 120], [null, 92, 164]];
   let ICI = null;
   const ici = T => { if (T) ICI = T; return ICI; };
@@ -211,7 +213,7 @@ const IleModeles = (() => {
     galet: { modele: (t, h, x, z) => (dansSources(x, z) ? 's-dalle' : null), absolu: { 's-dalle': 0.22 } },
   };
   const OBJETS = {
-    maison: { modele: o => (!ervane() ? null : dansBois(o.u, o.v) ? 'b-cabane' : 'm-maison'), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: o.hauteur || 6 }), etire: o => !!o.service, angle: o => -(o.rot || 0) },
+    maison: { modele: o => (ICI && ICI.id === 'kaldum' ? (o.service ? 'k-atelier' : 'k-maison') : !ervane() ? (o.service ? 'o-service' : 'o-maison') : dansBois(o.u, o.v) ? 'b-cabane' : 'm-maison'), taille: o => { const k = ervane() ? 1 : 1.15; return { l: (o.taille || [6, 5])[0] * k, p: (o.taille || [6, 5])[1] * k, h: (o.hauteur || 6) * k }; }, etire: o => !!o.service, angle: o => -(o.rot || 0) },
     arbre_bobine: { modele: 'b-bobine', taille: () => ({ l: 9, p: 9, h: 18 }) },
     pieu: { modele: 'b-pieux', taille: () => ({ l: 2.6, p: 2.6, h: 2 }) },
     comptoir: { modele: 'm-etal', taille: o => ({ l: (o.taille || [5, 2])[0], p: (o.taille || [5, 2])[1], h: 3.6 }), angle: o => -(o.rot || 0) },
@@ -842,7 +844,7 @@ const IleModeles = (() => {
     'z-galeries': { pas: 6, moyenne: [0.0743, 0.0398, 0.022] },
     'z-fonderie': { pas: 6, moyenne: [0.0368, 0.0202, 0.0214] },
     'm-mur-cimes': { pas: 3.2, rapport: 0.737, moyenne: [0.7504, 0.589, 0.3993] }, 'm-toit-ardoise': { pas: 4.2, rapport: 0.777, moyenne: [0.0606, 0.1209, 0.1511] },
-    'm-mur-basalte': { pas: 3.6, rapport: 0.758, moyenne: [0.0555, 0.0454, 0.0393] }, 'm-bois-planches': { pas: 2.6, rapport: 0.792, moyenne: [0.3475, 0.1346, 0.0363] },
+    'm-mur-basalte': { pas: 5.4, rapport: 0.758, moyenne: [0.0555, 0.0454, 0.0393] }, 'm-bois-planches': { pas: 2.6, rapport: 0.792, moyenne: [0.3475, 0.1346, 0.0363] },
   };
   const ZONES_SOL = {
     ervane_mailles: 'z-mailles', ervane_sources: 'z-sources', ervane_murets: 'z-murets', ervane_bois: 'z-bois', ervane_amarre: 'z-amarre',
@@ -1250,7 +1252,7 @@ const IleModeles = (() => {
       // Le plan de la projection : de dessus pour les faces plates, sinon le plan vertical le plus
       // face à la normale (les rangs restent horizontaux, sur les toits aussi).
       vec2 qM = nM.y > 0.86 ? vMur.xz : (abs(nM.x) > abs(nM.z) ? vec2(vMur.z, vMur.y) : vec2(vMur.x, vMur.y));
-      #define MUR(i, tx) { float w = 1.0 - smoothstep(0.003, 0.009, distance(kc, murCle[i])); if (w > 0.0) { vec4 P = murPas[i]; vec3 t = pow(texture2D(tx, vec2(qM.x / P.x, qM.y / (P.x * P.y))).rgb, vec3(2.2)); float l = dot(t, vec3(0.3, 0.55, 0.15)) / max(dot(murMoy[i], vec3(0.3, 0.55, 0.15)), 0.01); vec3 tc = t / max(murMoy[i], vec3(0.02)); diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * mix(vec3(l), tc, murCouleur[i]), w * murForce); } }
+      #define MUR(i, tx) { float w = 1.0 - smoothstep(0.003, 0.009, distance(kc, murCle[i])); if (w > 0.0) { vec4 P = murPas[i]; vec3 t = pow(texture2D(tx, vec2(qM.x / P.x, qM.y / (P.x * P.y))).rgb, vec3(2.2)); float l = dot(t, vec3(0.3, 0.55, 0.15)) / max(dot(murMoy[i], vec3(0.3, 0.55, 0.15)), 0.01); vec3 tc = t / max(dot(murMoy[i], vec3(0.3, 0.55, 0.15)), 0.01); diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * mix(vec3(l), tc, murCouleur[i]), w * murForce); } }
       MUR(0, murTex0) MUR(1, murTex1) MUR(2, murTex2)
     }`;
   async function habillerMurs(THREE, ile) {
@@ -1282,7 +1284,7 @@ const IleModeles = (() => {
         sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vMur; varying vec3 vNormaleMur;\n' + decl)
           .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_MURS);
       };
-      m.customProgramCacheKey = () => 'murs-meshy-1/' + (cle ? cle.call(m) : '');
+      m.customProgramCacheKey = () => 'murs-meshy-2/' + (cle ? cle.call(m) : '');
       m.needsUpdate = true;
     }
     ile.murs = { matieres: liste.map(m => m.tex), force: uniforms.murForce, etc: noms.filter(n => tx[n].t.isCompressedTexture).length };

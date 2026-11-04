@@ -37,6 +37,8 @@ const MENUS = [
   ['succes', 'Succès', 'U', I.succes],
   ['carnet', 'Carnet du Veilleur', 'B', I.carnet],
   ['garderobe', 'Garde-robe', 'G', I.garderobe],
+  ['familiers', 'Familiers', 'K', I.familiers],
+  ['montures', 'Montures', 'L', I.montures],
   ['carte', 'Carte du monde', 'M', I.carte],
   ['journal', 'Journal', 'J', I.journal],
   ['options', 'Options', 'O', I.options],
@@ -91,7 +93,7 @@ Object.assign(Hud.prototype, {
 
   toggleWin(id) {
     if (this.fen.isOpen(ALIAS[id] || id)) this.fen.close(ALIAS[id] || id);
-    else ({ carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), succes: () => this.openAchievements(), carnet: () => this.openCarnet(), garderobe: () => this.openGarderobe(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu() }[id] || (() => {}))();
+    else ({ carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), succes: () => this.openAchievements(), carnet: () => this.openCarnet(), garderobe: () => this.openGarderobe(), familiers: () => this.openFamiliers(), montures: () => this.openMontures(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu() }[id] || (() => {}))();
     this.syncMenus();
   },
 

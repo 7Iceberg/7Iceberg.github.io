@@ -33,6 +33,8 @@ const Save = (() => {
   ALLOWED.add('look');
   ALLOWED.add('origine');
   for (const k of ['porte', 'ensemblesLook']) ALLOWED.add(k);
+  for (const k of ['familiers', 'familier']) ALLOWED.add(k);
+  ALLOWED.add('monture');
   const ORIGINES = ['orsane', 'ervane'];
 
   const plateauDe = id => {
@@ -290,6 +292,10 @@ const Save = (() => {
       const p = Garderobe.nettoyerPorte(o.porte); o.porte = p.porte; for (const e of p.errors) bad(e);
       const l = Garderobe.nettoyerLooks(o.ensemblesLook); o.ensemblesLook = l.looks; for (const e of l.errors) bad(e);
     }
+    if (typeof Familiers !== 'undefined') {
+      const f = Familiers.nettoyer(o.familiers, o.familier); o.familiers = f.familiers; o.familier = f.familier; for (const e of f.errors) bad(e);
+    }
+    if (typeof Montures !== 'undefined') { const m = Montures.nettoyer(o.monture); o.monture = m.monture; for (const e of m.errors) bad(e); }
     if (o.fight && typeof o.fight !== 'object') o.fight = null;
     if (o.mapTimers && typeof o.mapTimers !== 'object') o.mapTimers = {};
     o.flags = Object.assign({}, o.flags && typeof o.flags === 'object' ? { tampered: !!o.flags.tampered } : {});

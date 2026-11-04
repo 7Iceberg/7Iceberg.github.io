@@ -1354,7 +1354,7 @@ DATA.content.quests.push({
 DATA.content.dungeons.push({
   id: 'forge_morte', name: 'La Forge Morte', zone: 'kaldum_fonderie', level: [28, 30],
   entryMap: 'kaldum_fonderie_forge',
-  salles3d: { tuiles: 'forge', sol: 'basalte', paroi: 'basalte', lumiere: '#ff7a30', brume: '#2a1410' },
+  salles3d: { tuiles: 'forge', sol: 'basalte', paroi: 'basalte', lumiere: '#ffb070', brume: '#241e1c' },
   keyItem: null,
   description: "La forge de Dorm, ensevelie sous la Fonderie depuis la Grande Colère. Elle s'est rallumée, et c'est la chaleur de Kaldum qu'elle brûle.",
   rooms: [

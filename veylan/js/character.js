@@ -10,10 +10,14 @@ class Character {
       counters: { fights: 0, wins: 0, kills: {}, maps: [], crafts: 0, gathers: 0, filsEarned: 0, dungeons: [], dungeonTurns: {}, bosses: [], questsDone: 0, feats: {} },
       achievements: [], pos: null, relay: null, relays: [], dungeon: null, autoStats: true, playTime: 0, knots: [], ensembles: [], voie: null, scrolls: {},
       look: null, porte: null, ensemblesLook: [],
+      familiers: {}, familier: null,
+      monture: null,
     }, data || {});
     if (!this.coffre || typeof this.coffre !== 'object') this.coffre = { items: {}, fils: 0 };
     if (!this.coffre.items || typeof this.coffre.items !== 'object') this.coffre.items = {};
     if (!Number.isFinite(this.coffre.fils)) this.coffre.fils = 0;
+    if (!this.familiers || typeof this.familiers !== 'object' || Array.isArray(this.familiers)) this.familiers = {};
+    if (this.familier != null && !this.familiers[this.familier]) this.familier = null;
     const base = new.target === Character && data ? Character.defaults() : null;
     if (base) {
       this.stats = Object.assign(base.stats, this.stats || {});
@@ -158,6 +162,10 @@ class Character {
       const b = s && s.bonuses[setCount[setId]];
       if (b) { add(b); setBonuses.push({ set: s, count: setCount[setId], stats: b }); }
     }
+    const familier = typeof Familiers !== 'undefined' ? Familiers.bonusActif(this) : {};
+    add(familier);
+    const monture = typeof Montures !== 'undefined' ? Montures.bonusActif(this) : {};
+    add(monture);
     const hpMax = Math.round((60 + 5 * this.level + (total.vita || 0)) * c.hp / 120);
     const R = DATA.rules;
     const sum4 = (total.force || 0) + (total.intel || 0) + (total.chance || 0) + (total.agi || 0);
@@ -165,7 +173,7 @@ class Character {
     return {
       stats: total, hpMax, pa: 6 + extra.pa, pm: 3 + extra.pm,
       initiative: c.initiative + extra.init + sum4,
-      crit: 5 + extra.crit, dmgFlat: extra.dmg, setBonuses, setCount,
+      crit: 5 + extra.crit, dmgFlat: extra.dmg, setBonuses, setCount, familier, monture,
       tacle: Math.floor((total.agi || 0) / 10) + extra.tacle,
       fuite: Math.floor((total.agi || 0) / 10) + extra.fuite + (R.playerFuiteBase || 0),
       esquivePA: sag, esquivePM: sag, retraitPA: sag, retraitPM: sag,
@@ -468,6 +476,20 @@ class Character {
       this.removeItem(id, 1);
       const entres = Garderobe.donner(d.cosmetique, 'artisanat:' + id);
       return `${d.name} : ${entres.length ? Garderobe.get(d.cosmetique).nom + ' entre dans ta Garde-robe.' : 'rien.'}`;
+    }
+    if (d.sub === 'oeuf') {
+      if (typeof Familiers === 'undefined' || !Familiers.get(d.familier)) return null;
+      const r = Familiers.eclore(this, d.familier);
+      if (!r.ok) return r.raison;
+      this.removeItem(id, 1);
+      return this.familier === d.familier ? `${r.familier.nom} éclot et te suit.` : `${r.familier.nom} éclot : il t'attend dans tes Familiers (K).`;
+    }
+    if (d.sub === 'monture') {
+      if (typeof Montures === 'undefined' || !Montures.get(d.monture)) return null;
+      const r = Montures.donner(this, d.monture);
+      if (!r.ok) return r.raison;
+      this.removeItem(id, 1);
+      return `Tu montes ton ${r.monture.nom}. Il t'attend dans tes Montures (L).`;
     }
     if (d.sub === 'potion') {
       this.removeItem(id, 1);

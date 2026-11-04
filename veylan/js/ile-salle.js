@@ -20,7 +20,7 @@ const IleSalle = (() => {
   const hex = (h, k) => { const T = THREE_(), c = new T.Color(h); return [c.r * k, c.g * k, c.b * k]; };
   let THREE_ = () => window.THREE;
 
-  const TUILES = { claire: [1, 3, 3], amarre: [3, 3, 2], planches: [3, 3, 2], forge: [3, 3, 1], cuve: [3, 3, 2] };
+  const TUILES = { claire: [1, 3, 3], amarre: [3, 3, 2], planches: [3, 3, 2], forge: [4, 2, 1], cuve: [3, 3, 2] };
   const TEXTURES = ['terrier', 'toiles', 'boues', 'mine'];
   const IMAGES = {};
   function source(chemin) {

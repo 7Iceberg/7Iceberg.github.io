@@ -267,7 +267,8 @@ class HudJeu {
     const J = HudJeu.ICON, I = Fenetres.ICON;
     const r = this.enCombat
       ? [['quitter', 'Quitter le combat', J.quitter], ['tactique', 'Vue tactique', J.tactique, this.renderer.tactique], ['fiches', 'Fiches des combattants', J.fiches, this.app.classList.contains('vy-fiches')], ['defi', 'Défi du combat', I.succes]]
-      : [['degager', 'Vue dégagée', J.oeil, this.vueDegagee], ['carte', 'Carte du monde', I.carte], ['suivi', 'Quête suivie', J.epingle, !this.app.classList.contains('vy-sans-suivi')], ['journal', 'Journal', I.journal]];
+      : [['degager', 'Vue dégagée', J.oeil, this.vueDegagee], ['carte', 'Carte du monde', I.carte], ['suivi', 'Quête suivie', J.epingle, !this.app.classList.contains('vy-sans-suivi')], ['journal', 'Journal', I.journal]]
+        .concat(typeof Montures !== 'undefined' && Montures.de(this.ch) ? [['monture', Montures.montee(this.ch) ? 'Descendre de ta monture' : 'Monter ta monture', I.montures, Montures.montee(this.ch)]] : []);
     const sig = r.map(x => x[0] + (x[3] ? 1 : 0)).join('|');
     const box = this.q('.vy-panneau__rapides');
     if (box.dataset.sig === sig) return;
@@ -282,6 +283,7 @@ class HudJeu {
       case 'carte': this.hud.toggleWin('carte'); break;
       case 'suivi': app.classList.toggle('vy-sans-suivi'); break;
       case 'journal': this.hud.toggleWin('journal'); break;
+      case 'monture': this.hud.basculerMonture(); break;
       case 'quitter': this.demanderQuitter(); break;
       case 'tactique': this.renderer.tactique = !this.renderer.tactique; break;
       case 'fiches': app.classList.toggle('vy-fiches'); this.ui.renderInspect(); break;
@@ -726,7 +728,7 @@ class HudJeu {
   }
 }
 
-HudJeu.BIENTOT = [['metiers', 'Métiers'], ['familiers', 'Familiers'], ['montures', 'Montures'], ['guilde', 'Guilde'], ['boutique', 'Boutique cosmétique']];
+HudJeu.BIENTOT = [['metiers', 'Métiers'], ['guilde', 'Guilde'], ['boutique', 'Boutique cosmétique']];
 HudJeu.EMOTES = [['salut', 'Saluer'], ['joie', 'Se réjouir'], ['merci', 'Remercier'], ['doute', 'S\'interroger'], ['repos', 'Se reposer']];
 HudJeu.emotesDe = () => HudJeu.EMOTES.concat(typeof Garderobe !== 'undefined' ? Garderobe.emotes() : []);
 HudJeu.menuEmotes = () => HudJeu.emotesDe().map(([id, label]) => `<button type="button" role="menuitem" data-emote="${id}" title="${label}" aria-label="${label}">${HudJeu.ICON['e_' + id] || HudJeu.ICON.emote}</button>`).join('');

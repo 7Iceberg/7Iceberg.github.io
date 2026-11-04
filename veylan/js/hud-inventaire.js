@@ -103,6 +103,8 @@ Object.assign(Hud.prototype, {
         r();
       },
       noeudSlot: d => { if (this.invIgnore()) return; s.sel = { de: 'noeud', id: d.id }; r(); },
+      familierSlot: () => { if (this.invIgnore()) return; if (!this.fen.isOpen('familiers')) this.toggleWin('familiers'); },
+      montureSlot: () => { if (this.invIgnore()) return; if (!this.fen.isOpen('montures')) this.toggleWin('montures'); },
       fiche: d => { s.fiche = d.fiche; r(); },
       favori: d => { this.invFavori(d.id); r(); },
       ficheFermer: () => { s.sel = null; r(); },
@@ -173,6 +175,14 @@ Object.assign(Hud.prototype, {
         ? `<button class="vy-case vy-inv__slot vy-inv__noeud${choisi ? ' est-choisie' : ''}" data-rarete="epique" data-act="noeudSlot" data-id="${k.id}" data-depot="noeud" data-glisse="noeud" title="${esc(k.name)} : ${esc(k.desc)}" aria-label="Nœud noué : ${esc(k.name)}"><span class="vy-case__icone">${Hud.picto({ kind: 'knot' })}</span></button>`
         : `<span class="vy-case vy-case--emplacement vy-inv__slot vy-inv__noeud" data-depot="noeud" title="Nœud : libre. Glisse un Nœud ici pour le nouer." aria-label="Nœud libre"><span class="vy-case__icone">${Hud.picto({ kind: 'knot' })}</span></span>`);
     }
+    const fam = typeof Familiers !== 'undefined' ? Familiers.actif(ch) : null;
+    const famCase = fam
+      ? `<button class="vy-case vy-inv__slot vy-inv__fam" data-rarete="rare" data-act="familierSlot" title="${esc(fam.nom)}, niveau ${Familiers.niveauDe(ch, fam.id)} : ${esc(Familiers.texteBonus(Familiers.bonusActif(ch)))}. Toucher : la fenêtre Familiers." aria-label="Familier : ${esc(fam.nom)}, niveau ${Familiers.niveauDe(ch, fam.id)}"><span class="vy-case__icone">${Hud.pictoFamilier ? Hud.pictoFamilier(fam, 30) : ''}</span><span class="vy-case__niveau">${Familiers.niveauDe(ch, fam.id)}</span></button>`
+      : `<button class="vy-case vy-case--emplacement vy-inv__slot vy-inv__fam" data-act="familierSlot" title="Familier : aucun. Toucher : la fenêtre Familiers." aria-label="Familier : aucun"><span class="vy-case__icone">${(Fenetres.ICON && Fenetres.ICON.familiers) || ''}</span></button>`;
+    const mont = typeof Montures !== 'undefined' ? Montures.def(ch) : null;
+    const montCase = mont
+      ? `<button class="vy-case vy-inv__slot vy-inv__mont${Montures.montee(ch) ? ' est-montee' : ''}" data-rarete="epique" data-act="montureSlot" title="${esc(mont.nom)}, niveau ${Montures.niveau(ch)}${Montures.montee(ch) ? ', monté' : ', à pied'}. Toucher : la fenêtre Montures." aria-label="Monture : ${esc(mont.nom)}, niveau ${Montures.niveau(ch)}${Montures.montee(ch) ? ', montée' : ''}"><span class="vy-case__icone">${Hud.pictoFamilier ? Hud.pictoFamilier(mont, 30) : ''}</span><span class="vy-case__niveau">${Montures.niveau(ch)}</span></button>`
+      : `<button class="vy-case vy-case--emplacement vy-inv__slot vy-inv__mont" data-act="montureSlot" title="Monture : aucune. Toucher : la fenêtre Montures." aria-label="Monture : aucune"><span class="vy-case__icone">${(Fenetres.ICON && Fenetres.ICON.montures) || ''}</span></button>`;
     const ecailles = ECAILLES.map(n => `<span class="vy-case vy-inv__ecaille" title="${n} : bientôt" aria-label="${n}, bientôt" aria-disabled="true"><span class="vy-case__icone">${ICO.ecaille}</span><span class="vy-inv__cadenas">${ICO.cadenas}</span></span>`).join('');
     return `<section class="vy-inv__poupee" aria-label="Équipement porté">
       <div class="vy-inv__col">${col(GAUCHE)}</div>
@@ -185,6 +195,7 @@ Object.assign(Hud.prototype, {
       <div class="vy-inv__col">${col(DROITE)}</div>
       <div class="vy-inv__rangee">
         <div class="vy-inv__groupe"><div class="vy-inv__noeuds" title="Nœuds noués : chacun durcit les combats et ajoute ${DATA.rules.knotBonus} % d'XP et de butin">${noeuds.join('')}</div><small>Nœuds ${actifs.length} / ${DATA.rules.maxKnots}</small></div>
+        <div class="vy-inv__groupe"><div class="vy-inv__familier">${famCase}${montCase}</div><small>Familier · monture</small></div>
         <div class="vy-inv__groupe"><div class="vy-inv__ecailles">${ecailles}</div><small>Marques · <span class="vy-bientot">bientôt</span></small></div>
       </div>
     </section>`;
