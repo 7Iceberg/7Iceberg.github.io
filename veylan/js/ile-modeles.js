@@ -851,7 +851,7 @@ const IleModeles = (() => {
     herbe: { pas: 6, moyenne: [0.2304, 0.6006, 0.0767] }, foret: { pas: 6, moyenne: [0.0543, 0.0648, 0.0175] },
     chemin: { pas: 5, moyenne: [0.5536, 0.3036, 0.1161] }, roche: { pas: 7, moyenne: [0.2214, 0.1974, 0.1531] },
     dalles: { pas: 9, moyenne: [0.5818, 0.4363, 0.2154] }, paves: { pas: 4.5, moyenne: [0.4429, 0.4041, 0.2351] },
-    'z-mailles': { pas: 6, moyenne: [0.2104, 0.3778, 0.0569] }, 'z-sources': { pas: 6, moyenne: [0.0288, 0.1326, 0.0742] },
+    'z-mailles': { pas: 6, moyenne: [0.2104, 0.3778, 0.0569] }, 'z-sources': { pas: 6, moyenne: [0.1894, 0.5814, 0.3006] },
     'z-murets': { pas: 6, moyenne: [0.5452, 0.2876, 0.0531] }, 'z-bois': { pas: 6, moyenne: [0.0902, 0.0737, 0.0114] },
     'z-amarre': { pas: 6, moyenne: [0.2012, 0.2542, 0.1946] },
     'z-cimes': { pas: 6, moyenne: [0.1565, 0.5358, 0.0545] },
@@ -1067,13 +1067,24 @@ const IleModeles = (() => {
       float fZ = 0.0;
       // gH : le grain (comme avant) ; aZ : la couleur propre de la texture, à luminosité 1 ; fZ : la
       // force de la zone (0 pour une zone sans sol propre : son herbe reste celle d'avant).
-      #define GZ(s, m, f) { vec3 tz = TEX(s, 6.0); gH += mix(vec3(LUM(tz) / LUM(m)), tz / max(m, vec3(0.02)), 0.5) * w; aZ += tz / max(LUM(m), 0.01) * w * f; fZ += w * f; }
+      // Sans répétition visible (3.58) : l'herbe tirée deux fois, à 6 u et à 7,7 u tournée de 37° et
+      // décalée, mêlée par un bruit d'une douzaine d'u (une nappe sur l'autre) ; les traits et les fleurs de l'image
+      // ne s'alignent plus en rangées tous les 6 u.
+      vec2 qZa = q / 6.0, qZb = mat2(0.8, -0.6, 0.6, 0.8) * q / 7.7 + vec2(0.37, 0.71);
+      vec4 bzM = texture2D(solBruit, q / 13.0 + vec2(0.53, 0.29));
+      float mZ = smoothstep(0.32, 0.68, bzM.a * 0.6 + bzM.g * 0.4);
+      #define TEXZ(s) pow(mix(texture2D(s, qZa).rgb, texture2D(s, qZb).rgb, mZ), vec3(2.2))
+      #define GZ(s, m, f) { vec3 tz = TEXZ(s); gH += mix(vec3(LUM(tz) / LUM(m)), tz / max(m, vec3(0.02)), 0.5) * w; aZ += tz / max(LUM(m), 0.01) * w * f; fZ += w * f; }
       { float w = zw.r; if (w > 0.002) GZ(solZ0, moyZ0, solForceZ[0]) }
       { float w = zw.g; if (w > 0.002) GZ(solZ1, moyZ1, solForceZ[1]) }
       { float w = zw.b; if (w > 0.002) GZ(solZ2, moyZ2, solForceZ[2]) }
       { float w = zw.a; if (w > 0.002) GZ(solZ3, moyZ3, solForceZ[3]) }
       { float w = z4; if (w > 0.002) GZ(solZ4, moyZ4, solForceZ[4]) }
       aZ /= max(fZ, 0.001);
+      // Des nappes de teinte sur une vingtaine d'u : l'herbe tire tantôt vers le jaune-vert, tantôt
+      // vers le bleu-vert (environ 10 %), comme une prairie au soleil (3.58).
+      vec4 bzL = texture2D(solBruit, q / 19.0 + vec2(0.31, 0.17));
+      aZ *= mix(vec3(1.1, 1.06, 0.84), vec3(0.92, 0.98, 1.08), smoothstep(0.25, 0.75, bzL.g));
       vec3 gV = mix(gH, vec3(LUM(TEX(solForet, ${SOLS.foret.pas.toFixed(1)})) / LUM(moyForet)), tFor);
       gV = 1.0 + (clamp(gV, 0.0, 2.5) - 1.0) * 0.6;
       vec3 tC = TEX(solChemin, ${SOLS.chemin.pas.toFixed(1)});
@@ -1226,7 +1237,7 @@ const IleModeles = (() => {
           .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_SOL)
           .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + GLSL_LUMIERES);
       };
-      m.customProgramCacheKey = () => 'sol-meshy-12/' + (cle ? cle.call(m) : '');
+      m.customProgramCacheKey = () => 'sol-meshy-13/' + (cle ? cle.call(m) : '');
       m.needsUpdate = true;
     }
     ile.solCarte = !!carte;
