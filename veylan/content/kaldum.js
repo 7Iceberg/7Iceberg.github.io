@@ -1398,7 +1398,7 @@ DATA.content.dungeons.push({
         '#~~~~~~~~~~~~~#',
         '###############',
       ],
-      monsters: [{ id: 'cendrou', level: 29 }, { id: 'cendrou', level: 29 }, { id: 'cendrou', level: 30 }],
+      monsters: [{ id: 'cendrou', level: 29 }, { id: 'cendrou', level: 30 }, { id: 'kaldrik', level: 29 }],
     },
     {
       name: "L'Atelier",
@@ -1419,7 +1419,7 @@ DATA.content.dungeons.push({
         '#.............#',
         '###############',
       ],
-      monsters: [{ id: 'pioche_vive', level: 29 }, { id: 'pioche_vive', level: 30 }, { id: 'fumerolle', level: 29 }, { id: 'fumerolle', level: 30 }],
+      monsters: [{ id: 'pioche_vive', level: 29 }, { id: 'pioche_vive', level: 30 }, { id: 'fumerolle', level: 29 }, { id: 'molh', level: 28 }],
     },
     {
       name: "L'Enclume",
@@ -1623,7 +1623,7 @@ DATA.content.dungeons.push({
         '#~~~.......~~~#',
         '###############',
       ],
-      monsters: [{ id: 'cendrou', level: 27 }, { id: 'cendrou', level: 28 }, { id: 'cendril', level: 27 }, { id: 'cendril', level: 27 }],
+      monsters: [{ id: 'cendrou', level: 27 }, { id: 'cendrou', level: 28 }, { id: 'cendril', level: 27 }],
     },
     {
       name: 'Les fumées',

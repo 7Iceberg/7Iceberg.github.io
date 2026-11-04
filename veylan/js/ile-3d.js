@@ -415,6 +415,7 @@ class Ile3D {
       try { await IleCharge.glb(); if (typeof IleGlb === 'object') await IleGlb.poser(THREE, this, scene, IleGlb.source(rendu.monde), { semis }); } catch (e) { console.warn('Ervane : monde modelé indisponible', e); }
       this.semisMeshy = !!(semis && this.monde && this.monde.userData.semisMeshy);
       if (semis && this.monde) { try { this.octetsTex += await IleModeles.habillerSol(THREE, this); } catch (e) { console.warn('Ervane : sols Meshy indisponibles', e); } }
+      if (semis && this.monde && IleModeles.habillerMurs) { try { this.octetsTex += await IleModeles.habillerMurs(THREE, this); } catch (e) { console.warn('Ervane : murs Meshy indisponibles', e); } }
       if (semis && this.monde && IleModeles.cartes) { try { const c = await IleModeles.cartes(THREE, this); if (c) { this.cartesDenses = c; this.octetsGeo += c.octetsGeo; this.octetsTex += c.octetsTex; } } catch (e) { console.warn('Ervane : semis dense indisponible', e); } }
       if (semis && this.monde && IleModeles.fumees) { try { this.fumees = IleModeles.fumees(THREE, this, semis); } catch (e) { console.warn('Ervane : fumée indisponible', e); } }
     }

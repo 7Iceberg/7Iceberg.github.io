@@ -841,6 +841,8 @@ const IleModeles = (() => {
     'z-toiles': { pas: 6, moyenne: [0.0533, 0.07, 0.1249] },
     'z-galeries': { pas: 6, moyenne: [0.0743, 0.0398, 0.022] },
     'z-fonderie': { pas: 6, moyenne: [0.0368, 0.0202, 0.0214] },
+    'm-mur-cimes': { pas: 3.2, rapport: 0.737, moyenne: [0.7504, 0.589, 0.3993] }, 'm-toit-ardoise': { pas: 4.2, rapport: 0.777, moyenne: [0.0606, 0.1209, 0.1511] },
+    'm-mur-basalte': { pas: 3.6, rapport: 0.758, moyenne: [0.0555, 0.0454, 0.0393] }, 'm-bois-planches': { pas: 2.6, rapport: 0.792, moyenne: [0.3475, 0.1346, 0.0363] },
   };
   const ZONES_SOL = {
     ervane_mailles: 'z-mailles', ervane_sources: 'z-sources', ervane_murets: 'z-murets', ervane_bois: 'z-bois', ervane_amarre: 'z-amarre',
@@ -1228,12 +1230,70 @@ const IleModeles = (() => {
     t.needsUpdate = true;
     return t;
   }
+  const MURS = {
+    defaut: [
+      { cle: '#f0ead9', tex: 'm-mur-cimes', couleur: 0.8 },
+      { cle: '#4b5668', tex: 'm-toit-ardoise', couleur: 0.5 },
+      { cle: '#8f6f4d', tex: 'm-bois-planches', couleur: 0.35 },
+    ],
+    kaldum: [
+      { cle: '#6e625a', tex: 'm-mur-basalte', couleur: 0.6 },
+      { cle: '#3a3230', tex: 'm-toit-ardoise', couleur: 0 },
+      { cle: '#8f6f4d', tex: 'm-bois-planches', couleur: 0.35 },
+    ],
+  };
+  const NM = 3;
+  const GLSL_MURS = `
+    {
+      vec3 kc = vColor.rgb;
+      vec3 nM = normalize(vNormaleMur);
+      // Le plan de la projection : de dessus pour les faces plates, sinon le plan vertical le plus
+      // face à la normale (les rangs restent horizontaux, sur les toits aussi).
+      vec2 qM = nM.y > 0.86 ? vMur.xz : (abs(nM.x) > abs(nM.z) ? vec2(vMur.z, vMur.y) : vec2(vMur.x, vMur.y));
+      #define MUR(i, tx) { float w = 1.0 - smoothstep(0.003, 0.009, distance(kc, murCle[i])); if (w > 0.0) { vec4 P = murPas[i]; vec3 t = pow(texture2D(tx, vec2(qM.x / P.x, qM.y / (P.x * P.y))).rgb, vec3(2.2)); float l = dot(t, vec3(0.3, 0.55, 0.15)) / max(dot(murMoy[i], vec3(0.3, 0.55, 0.15)), 0.01); vec3 tc = t / max(murMoy[i], vec3(0.02)); diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * mix(vec3(l), tc, murCouleur[i]), w * murForce); } }
+      MUR(0, murTex0) MUR(1, murTex1) MUR(2, murTex2)
+    }`;
+  async function habillerMurs(THREE, ile) {
+    if (!ile || !ile.monde || !ile.T) return 0;
+    const mats = new Set();
+    ile.monde.traverse(o => { if (o.isMesh && o.material && o.material.vertexColors && o.material.name === 'mo_objets_cuits') mats.add(o.material); });
+    if (!mats.size) return 0;
+    const liste = (MURS[ile.T.id] || MURS.defaut).slice(0, NM);
+    const etc = etcLu(ile.renderer), tx = {};
+    const noms = [...new Set(liste.map(m => m.tex))];
+    await Promise.all(noms.map(async n => { tx[n] = await texSol(THREE, n, etc); }));
+    const lin = h => [1, 3, 5].map(i => { const v = parseInt(h.slice(i, i + 2), 16) / 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    const uniforms = {
+      murCle: { value: liste.map(m => new THREE.Vector3(...lin(m.cle))) },
+      murPas: { value: liste.map(m => new THREE.Vector4(SOLS[m.tex].pas, SOLS[m.tex].rapport || 1, 0, 0)) },
+      murMoy: { value: liste.map(m => tx[m.tex].moyenne) },
+      murCouleur: { value: liste.map(m => m.couleur) },
+      murForce: { value: 1 },
+    };
+    liste.forEach((m, i) => { uniforms['murTex' + i] = { value: tx[m.tex].t }; });
+    const decl = `uniform vec3 murCle[${NM}]; uniform vec4 murPas[${NM}]; uniform vec3 murMoy[${NM}]; uniform float murCouleur[${NM}]; uniform float murForce; uniform sampler2D murTex0; uniform sampler2D murTex1; uniform sampler2D murTex2;`;
+    for (const m of mats) {
+      const prec = m.onBeforeCompile, cle = Object.prototype.hasOwnProperty.call(m, 'customProgramCacheKey') ? m.customProgramCacheKey : null;
+      m.onBeforeCompile = (sh, r) => {
+        if (prec) prec(sh, r);
+        Object.assign(sh.uniforms, uniforms);
+        sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vMur; varying vec3 vNormaleMur;')
+          .replace('#include <project_vertex>', '#include <project_vertex>\nvMur = (modelMatrix * vec4(transformed, 1.0)).xyz; vNormaleMur = mat3(modelMatrix) * objectNormal;');
+        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vMur; varying vec3 vNormaleMur;\n' + decl)
+          .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_MURS);
+      };
+      m.customProgramCacheKey = () => 'murs-meshy-1/' + (cle ? cle.call(m) : '');
+      m.needsUpdate = true;
+    }
+    ile.murs = { matieres: liste.map(m => m.tex), force: uniforms.murForce, etc: noms.filter(n => tx[n].t.isCompressedTexture).length };
+    return noms.reduce((a, n) => a + tx[n].octets, 0);
+  }
   function bruitSolZones(THREE) {
     const t = new THREE.DataTexture(new Uint8Array([255, 0, 0, 0]), 1, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
     t.needsUpdate = true;
     return t;
   }
 
-  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, ATLAS, OBJETS, SOLS, VILLAGES, DENSE, CARTES_DENSES, OBSTACLES, cartes, fumees, lumieresSol, charger, chargerSemis, poses, posesObstacles, places, poser, animer, habillerSol };
+  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, ATLAS, OBJETS, SOLS, VILLAGES, DENSE, CARTES_DENSES, OBSTACLES, cartes, fumees, lumieresSol, charger, chargerSemis, poses, posesObstacles, places, poser, animer, habillerSol, habillerMurs };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = IleModeles;
