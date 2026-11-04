@@ -146,6 +146,7 @@ const IleModeles = (() => {
     base_arbre_haut_0: 'haut', base_arbre_haut_1: 'haut', base_arbre_pin_0: 'conifere', base_arbre_pin_1: 'conifere',
     base_arbre_tordu_0: 'tordu', base_arbre_mort_0: 'mort', base_rocher_0: 'rocher', base_buisson_0: 'buisson', base_buisson_1: 'buisson',
     base_fougere_0: 'fougere', base_fleurs_0: 'fleurs', base_galet_0: 'galet', base_borne_0: 'borne',
+    base_bruyere_0: 'bruyere', base_bruyere_1: 'bruyere',
   };
   const SEMIS = {
     arbre: { case: [0, 0, 512] }, arbre3: { case: [512, 0, 512] }, arbre2: { case: [0, 512, 512] },
@@ -192,6 +193,7 @@ const IleModeles = (() => {
     'at-etabli': { atlas: 8, case: [512, 768, 256] }, 'at-metier': { atlas: 8, case: [768, 768, 256] },
     'o-tour': { atlas: 9, case: [0, 0, 512] }, 'k-tour': { atlas: 9, case: [512, 0, 512] },
     'at-mannequin': { atlas: 9, case: [0, 512, 256] }, 'at-forge': { atlas: 9, case: [256, 512, 256] },
+    'o-roche': { atlas: 9, case: [512, 512, 256] }, 'o-buisson': { atlas: 9, case: [768, 512, 256] },
   };
   const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024]];
   const SOURCES = [['eau', 160, 148], ['feu', 130, 125], ['terre', 140, 166], ['air', 105, 120], [null, 92, 164]];
@@ -210,6 +212,7 @@ const IleModeles = (() => {
   };
   const chaud = t => !!t && t[0] > t[1] * 0.8;
   const sombre = t => !!t && t[1] < 0.2 && t[0] < 0.1;
+  const montagne = (x, z) => !!(ICI && ICI.id === 'orsane' && typeof ICI.zoneA === 'function' && /^orsane_(sentiers|eboulis)$/.test(ICI.zoneA(x, z) || ''));
   const GENRES = {
     feuillu: { modele: (t, h, x, z) => (dansBois(x, z) ? 'b-arbre' : chaud(t) || h < 0.2 ? 'arbre3' : 'arbre'), facteur: 1.05 },
     haut: { modele: (t, h, x, z) => (dansBois(x, z) ? 'b-arbre' : 'arbre2'), facteur: 1.0 },
@@ -217,8 +220,9 @@ const IleModeles = (() => {
     tordu: { modele: (t, h, x, z) => (dansAmarre(x, z) ? 'a-pin' : chaud(t) ? 'arbre3' : 'arbre'), facteur: 0.75 },
     borne: { modele: () => 'a-borne', facteur: 1.05 },
     mort: { modele: (t, h) => (h < 0.5 ? 'souche' : 'tronc'), absolu: { souche: 1.0, tronc: 0.9 } },
-    rocher: { modele: (t, h, x, z) => (dansBois(x, z) ? 'b-rocher' : h < 0.12 ? 'roc' : h < 0.26 ? 'cristal' : 'rocher2'), facteur: 1.25, absolu: { roc: 2.6, cristal: 1.3, 'b-rocher': 1.9 } },
-    buisson: { modele: (t, h, x, z) => (dansBois(x, z) && h < 0.3 ? 'b-champignons' : dansBois(x, z) && h < 0.45 ? 'b-tronc' : sombre(t) && h < 0.22 ? 'champignons' : 'buisson'), facteur: 1.15, absolu: { champignons: 1.1, 'b-champignons': 1.3, 'b-tronc': 0.9 } },
+    rocher: { modele: (t, h, x, z) => (dansBois(x, z) ? 'b-rocher' : h < 0.12 ? 'roc' : h < 0.26 ? 'cristal' : montagne(x, z) ? 'o-roche' : 'rocher2'), facteur: 1.25, absolu: { roc: 2.6, cristal: 1.3, 'b-rocher': 1.9 } },
+    buisson: { modele: (t, h, x, z) => (dansBois(x, z) && h < 0.3 ? 'b-champignons' : dansBois(x, z) && h < 0.45 ? 'b-tronc' : sombre(t) && h < 0.22 ? 'champignons' : montagne(x, z) ? 'o-buisson' : 'buisson'), facteur: 1.15, absolu: { champignons: 1.1, 'b-champignons': 1.3, 'b-tronc': 0.9 } },
+    bruyere: { modele: (t, h, x, z) => (montagne(x, z) ? 'o-buisson' : null), facteur: 1.15 },
     fougere: { modele: (t, h, x, z) => (dansBois(x, z) ? (h < 0.3 ? 'b-fougere' : null) : h < 0.18 ? 'fougeres' : null), absolu: { fougeres: 1.1, 'b-fougere': 1.2 } },
     fleurs: { modele: (t, h, x, z) => (dansSources(x, z) ? 's-fleurs-' + elementA(x, z, h) : null), absolu: { 's-fleurs-eau': 0.75, 's-fleurs-feu': 0.75, 's-fleurs-terre': 0.65, 's-fleurs-air': 0.75 } },
     galet: { modele: (t, h, x, z) => (dansSources(x, z) ? 's-dalle' : null), absolu: { 's-dalle': 0.22 } },
@@ -314,7 +318,8 @@ const IleModeles = (() => {
         if (vus.has(cle)) continue;
         vus.add(cle);
         if (typeof IleTerrain === 'object' && IleTerrain.caseAire && IleTerrain.caseAire(T, X, Y).c !== '.') continue;
-        const table = OBSTACLES[c], choix = table[a.style] || table.defaut, nom = choix[0], M = S.modeles[nom];
+        const table = OBSTACLES[c], choix = table[a.style] || table.defaut;
+        const nom = choix[0] === 'rocher2' && montagne(X + 0.5, Y + 0.5) && S.modeles['o-roche'] ? 'o-roche' : choix[0], M = S.modeles[nom];
         if (!M) continue;
         const u = X + 0.5, v = Y + 0.5, y = hauteur(u, v);
         if (!Number.isFinite(y)) continue;
@@ -424,9 +429,9 @@ const IleModeles = (() => {
     orsane_cimes: [['buisson', 0.005, [0.9, 1.2], ['v-buisson']], ['arbuste', 0.006, [0.55, 0.75], ['v-fleurs-blanc', 'v-fleurs-lavande']]],
     orsane_clairieres: [['arbre', 0.009, [3.0, 4.4], ['jt-ambre', 'jt-ambre', 'jt-vert']], ['buisson', 0.008, [0.9, 1.4], ['v-buisson']],
       ['arbuste', 0.006, [0.55, 0.8], ['v-fleurs-blanc', 'v-fleurs-blanc', 'v-fleurs-lavande']], ['rocher', 0.003, [0.8, 1.2], ['v-rochers']], ['amanite', 0.002, [0.45, 0.6], ['v-amanites']]],
-    orsane_sentiers: [['arbre', 0.004, [2.8, 4.0], ['jt-ambre', 'jt-rouille']], ['buisson', 0.006, [0.9, 1.3], ['v-buisson']], ['rocher', 0.008, [0.8, 1.3], ['v-rochers']]],
+    orsane_sentiers: [['arbre', 0.004, [2.8, 4.0], ['jt-ambre', 'jt-rouille']], ['buisson', 0.006, [0.8, 1.2], ['o-buisson']], ['rocher', 0.008, [0.8, 1.3], ['o-roche']]],
     orsane_toiles: [['amanite', 0.008, [0.45, 0.65], ['v-amanites']], ['buisson', 0.004, [0.9, 1.2], ['v-buisson']], ['rocher', 0.003, [0.8, 1.1], ['v-rochers']]],
-    orsane_eboulis: [['arbre', 0.002, [2.8, 3.8], ['jt-rouille']], ['buisson', 0.004, [0.8, 1.2], ['v-buisson']], ['rocher', 0.011, [0.8, 1.4], ['v-rochers']], ['rocher', 0.0025, [1.8, 2.9], ['v-rochers']]],
+    orsane_eboulis: [['arbre', 0.002, [2.8, 3.8], ['jt-rouille']], ['buisson', 0.004, [0.7, 1.1], ['o-buisson']], ['rocher', 0.011, [0.8, 1.4], ['o-roche']], ['rocher', 0.0025, [1.8, 2.9], ['o-roche']]],
     kaldum_ville: [['buisson', 0.003, [0.8, 1.1], ['v-buisson']], ['rocher', 0.002, [0.7, 1.0], ['v-rochers']]],
     kaldum_galeries: [['arbre', 0.0015, [2.6, 3.6], ['jt-rouille']], ['rocher', 0.012, [0.8, 1.5], ['v-rochers']]],
     kaldum_vapeurs: [['rocher', 0.008, [0.8, 1.3], ['v-rochers']], ['buisson', 0.002, [0.8, 1.1], ['v-buisson']]],
