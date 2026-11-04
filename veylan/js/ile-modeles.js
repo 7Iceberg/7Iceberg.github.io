@@ -190,8 +190,10 @@ const IleModeles = (() => {
     'k-tente': { atlas: 8, case: [512, 512, 256] }, 'k-brasero': { atlas: 8, case: [768, 512, 256] },
     'at-enclume': { atlas: 8, case: [0, 768, 256] }, 'at-alambic': { atlas: 8, case: [256, 768, 256] },
     'at-etabli': { atlas: 8, case: [512, 768, 256] }, 'at-metier': { atlas: 8, case: [768, 768, 256] },
+    'o-tour': { atlas: 9, case: [0, 0, 512] }, 'k-tour': { atlas: 9, case: [512, 0, 512] },
+    'at-mannequin': { atlas: 9, case: [0, 512, 256] }, 'at-forge': { atlas: 9, case: [256, 512, 256] },
   };
-  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024]];
+  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024]];
   const SOURCES = [['eau', 160, 148], ['feu', 130, 125], ['terre', 140, 166], ['air', 105, 120], [null, 92, 164]];
   let ICI = null;
   const ici = T => { if (T) ICI = T; return ICI; };
@@ -237,7 +239,7 @@ const IleModeles = (() => {
     rambarde: { modele: (o, T) => (T.objets.some(x => x.sorte === 'longue_vue' && Math.hypot(x.u - o.u, x.v - o.v) < 2) ? null : 's-barriere'),
       taille: () => ({ l: 3, p: 3, h: 1.35 }), copies: [-1.5, 1.5] },
     ratelier: { modele: 'm-armes', taille: () => ({ l: 4, p: 2.2, h: 1.9 }), angle: o => -(o.rot || 0) },
-    tour: { modele: (o, T) => (T && T.id === 'kaldum' ? null : 'm-tour'), taille: o => ({ l: (o.taille || [6, 6])[0], p: (o.taille || [6, 6])[1], h: 7 }) },
+    tour: { modele: (o, T) => (T && T.id === 'kaldum' ? 'k-tour' : !ervane() ? 'o-tour' : 'm-tour'), taille: o => (ervane() ? { l: (o.taille || [6, 6])[0], p: (o.taille || [6, 6])[1], h: 7 } : { l: (o.taille || [5, 5])[0] * 1.15, p: (o.taille || [5, 5])[1] * 1.15, h: 11 }), angle: o => -(o.rot || 0) },
     porte_de_forge: { modele: 'k-porte', taille: () => ({ l: 6.8, p: 5, h: 5 }), angle: o => -(o.rot || 0), decalage: [0, -1] },
     bouche_de_mine: { modele: 'k-mine', taille: () => ({ l: 6.6, p: 6, h: 4.2 }), angle: o => -(o.rot || 0), decalage: [0, -0.8] },
     statue: { modele: () => (!ervane() ? 'o-statue' : null), taille: () => ({ l: 1.4, p: 1.4, h: 2 }), angle: o => -(o.rot || 0), enfonce: () => -0.27 },
@@ -246,15 +248,16 @@ const IleModeles = (() => {
     puits_sec: { modele: 'mu-puits', taille: () => ({ l: 2.6, p: 2.6, h: 3.2 }) },
     ruine: { modele: o => (dansMurets(o.u, o.v) ? 'mu-ruine' : ervane() && dansAmarre(o.u, o.v) ? 'a-mur' : null), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 4.5 }), angle: o => -(o.rot || 0),
       murs: o => ervane() && dansAmarre(o.u, o.v) },
-    four: { modele: 'mu-four', taille: () => ({ l: 2.6, p: 2.6, h: 3 }) },
+    four: { modele: (o, T) => (!ervane() && ((T && T.objets) || []).some(x => x.sorte === 'enclume' && Math.hypot(x.u - o.u, x.v - o.v) < 9) ? 'at-forge' : 'mu-four'), taille: () => ({ l: 2.6, p: 2.6, h: 3 }), angle: o => -(o.rot || 0) },
+    mannequin: { modele: () => (!ervane() ? 'at-mannequin' : null), taille: () => ({ l: 1.4, p: 1.2, h: 2.1 }), angle: o => -(o.rot || 0) },
     terrier: { modele: 'mu-terrier', taille: () => ({ l: 3.6, p: 3.6, h: 9 }), enfonce: () => 0.12, angle: o => -(o.rot || 0) },
     arche_brisee: { modele: o => (dansAmarre(o.u, o.v) ? 'a-arcade' : null), taille: () => ({ l: 4.6, p: 4.6, h: 3.6 }), angle: o => -(o.rot || 0) },
     tente: { modele: () => (ICI && ICI.id === 'kaldum' ? 'k-tente' : 'a-tente'), taille: o => ({ l: (o.taille || [3, 3])[0] + 0.4, p: (o.taille || [3, 3])[1] + 0.4, h: 3 }), angle: o => -(o.rot || 0) },
     feu: { modele: () => (ICI && ICI.id === 'kaldum' ? 'k-brasero' : 'a-feu'), taille: () => (ICI && ICI.id === 'kaldum' ? { l: 1.8, p: 1.8, h: 2.2 } : { l: 2.2, p: 2.2, h: 9 }) },
-    enclume: { modele: () => (!ervane() ? 'at-enclume' : null), taille: () => ({ l: 1.2, p: 1.2, h: 1.15 }), angle: o => -(o.rot || 0) },
-    alambic: { modele: () => (!ervane() ? 'at-alambic' : null), taille: () => ({ l: 1.8, p: 1.4, h: 1.7 }), angle: o => -(o.rot || 0) },
-    etabli: { modele: () => (!ervane() ? 'at-etabli' : null), taille: () => ({ l: 2.1, p: 1.2, h: 1.5 }), angle: o => -(o.rot || 0) },
-    metier_tisser: { modele: () => (!ervane() ? 'at-metier' : null), taille: () => ({ l: 1.9, p: 1.6, h: 1.9 }), angle: o => -(o.rot || 0) },
+    enclume: { modele: () => (!ervane() ? 'at-enclume' : null), taille: () => ({ l: 1.5, p: 1.5, h: 1.45 }), angle: o => -(o.rot || 0) },
+    alambic: { modele: () => (!ervane() ? 'at-alambic' : null), taille: () => ({ l: 2.25, p: 1.75, h: 2.1 }), angle: o => -(o.rot || 0) },
+    etabli: { modele: () => (!ervane() ? 'at-etabli' : null), taille: () => ({ l: 2.6, p: 1.5, h: 1.9 }), angle: o => -(o.rot || 0) },
+    metier_tisser: { modele: () => (!ervane() ? 'at-metier' : null), taille: () => ({ l: 2.4, p: 2, h: 2.4 }), angle: o => -(o.rot || 0) },
     plateforme: { modele: 'a-ancre', taille: () => ({ l: 1.8, p: 1.8, h: 1.4 }), decalage: [1, -3] },
   };
   function poses(S, T, hauteur) {
