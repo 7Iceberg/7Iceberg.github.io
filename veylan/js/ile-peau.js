@@ -7,8 +7,11 @@ const IlePeau = (() => {
       arme: { fichier: 'assets/peaux/nerith-ancre.glb', os: 'RightHand', position: [0, 0.32, 0], rotation: [1, 0, 0, 0], echelle: 0.75 },
       clips: { repos: 'Idle', marche: { nom: 'Sneaky_Walk', vitesse: 0.5 }, course: { nom: 'RunFast', vitesse: 3.2 }, sort: { nom: 'Weapon_Combo', de: 0.05, a: 1.05 }, coup: { nom: 'Hit_Reaction', de: 0.02, a: 0.62 }, victoire: 'victory' },
       durees: { placement: 0, sort: 620, lacher: 0.5, pousse: 90, saut: 140 } },
+    lampignard: { fichier: 'assets/peaux/lampignard.glb', hauteur: 2.3, ombre: 1.0,
+      clips: { repos: 'Idle', marche: { nom: 'Slow_Orc_Walk', vitesse: 0.42 }, sort: { nom: 'Heavy_Hammer_Swing', de: 0.1, a: 1.6 }, coup: { nom: 'Hit_Reaction', de: 0.02, a: 0.62 }, victoire: 'victory' },
+      durees: { placement: 0, sort: 900, lacher: 0.6, pousse: 90, saut: 140 } },
   };
-  const MONSTRES = ['filin'];
+  const MONSTRES = ['filin', 'lampignard'];
   const TAU_CAP = 0.08, TAU_MARCHE = 0.12, TAU_GESTE = 0.08;
 
   function base() {

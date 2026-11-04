@@ -139,10 +139,10 @@ class Ile3D {
       let peaux = null;
       if (this.qualite !== 'basse') try {
         await IleCharge.peauScript();
-        if (typeof IlePeau === 'object') peaux = await IlePeau.parc(THREE, { telephone: this.telephone, qualite: this.qualite });
+        if (typeof IlePeau === 'object') peaux = await IlePeau.parc(THREE, { telephone: this.telephone, qualite: this.qualite, ids: Ile3D.peauxDu(this.world && this.world.plateau && this.world.plateau.id, IlePeau.MONSTRES) });
       } catch (e) { console.warn('Peaux Meshy : ' + e.message); }
       if (peaux) scene.add(peaux.groupe);
-      this.figures.modeles = peaux ? IlePeau.composer([parc, peaux]) : parc;
+      this.figures.modeles = peaux ? IlePeau.composer([peaux, parc]) : parc;
     } catch (e) { console.warn('Glym modelé : ' + e.message); }
   }
 
@@ -642,6 +642,14 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     cam.flush();
   }
 
+  static peauxDu(id, ids) {
+    const zones = typeof DATA === 'object' && DATA.content && DATA.content.zones;
+    if (!id || !zones) return ids;
+    const texte = [];
+    for (const z of zones) for (const m of z.maps || []) if (m.plateau === id) texte.push(JSON.stringify(m));
+    const tout = texte.join('');
+    return ids.filter(n => tout.includes('"' + n + '"'));
+  }
   static renduDe(def) { const r = def && def.rendu; return r && typeof r === 'object' ? r : {}; }
 
   static empreintePeinture(def) {

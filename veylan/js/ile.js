@@ -92,7 +92,7 @@ const Ile = (() => {
 
   function orsane3dAllume() {
     const p = parametres(), dev = enDev(p);
-    if (dev && p.orsane3d === '0') return false;
+    if (p.orsane3d === '0') return false;
     if (dev && (p.orsane3d === '1' || lire(local(), 'veylan.orsane3d.essai') === '1')) return true;
     return !!(typeof DATA === 'object' && DATA.ile && DATA.ile.orsane3d);
   }
