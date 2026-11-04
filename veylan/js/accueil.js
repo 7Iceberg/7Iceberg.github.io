@@ -477,7 +477,7 @@ class Accueil {
             <button class="e-nu classe-genre__btn${b.gender === 'f' ? ' on' : ''}" data-act="genre" data-g="f" role="radio" aria-checked="${b.gender === 'f'}">${ICONES.femme}<span>Femme</span></button>
             <button class="e-nu classe-genre__btn${b.gender === 'm' ? ' on' : ''}" data-act="genre" data-g="m" role="radio" aria-checked="${b.gender === 'm'}">${ICONES.homme}<span>Homme</span></button>
           </div>
-          <div class="classe-voie" role="radiogroup" aria-label="Voie élémentaire"><span class="classe-voie__titre">Voie</span>${voies}</div>
+          <!-- La voie élémentaire n'existe plus (docs/SCEAUX.md) : chaque sort garde son élément. -->
         </div>
         <div class="classe-actions">
           <button class="vy-bouton" data-act="quiz">${ICONES.boussole}<span>Recommandation</span></button>
@@ -491,7 +491,7 @@ class Accueil {
     const b = this.b, c = DATA.classes[b.classId], P = PROFILS[c.id] || { difficulte: 2, roles: [] };
     const roles = P.roles.map(r => { const R = ROLES[r]; return `<span class="classe-role" style="--r:${R[2]}" title="${R[0]}"><span class="classe-role__losange">${R[1]}</span><span class="classe-role__nom">${R[0]}</span></span>`; }).join('');
     const pips = [1, 2, 3].map(n => `<i class="${n <= P.difficulte ? 'on' : ''}"></i>`).join('');
-    const voie = b.voie ? ` · voie ${DATA.elements[b.voie].stat}` : '';
+    const voie = '';
     return `<div class="classe-roles" aria-label="Rôles">${roles}</div>
       <h2 class="classe-nom"><span class="classe-nom__nom">${esc(c.name)}</span><span class="classe-nom__epithete">${esc(epithete(c.title))}</span></h2>
       ${c.id === b.recommandee ? `<p class="classe-reco">${ICONES.etoile} Recommandée pour toi</p>` : ''}

@@ -36,18 +36,16 @@ Object.assign(Hud.prototype, {
         r();
       },
       valider: () => this.caracValider(),
+      sceaux: () => this.ouvrirSceaux(),
       fermerFeuille: () => { s.feuille = null; r(); },
       autonow: () => { const c = ch(), avant = Object.assign({}, c.stats); c.autoAllocate(); this.caracSignaler(avant); this.world.emit('update'); this.world.emit('save'); },
-      voie: d => {
-        const c = ch();
-        if (!c.setVoie(d.voie || null)) return;
-        this.toast(c.voie ? `Voie ${DATA.elements[c.voie].label.toLowerCase()} : tes sorts de dégâts frappent en ${DATA.elements[c.voie].label.toLowerCase()}, tes points sont rendus.` : 'Éléments d\'origine de la classe : tes points sont rendus.');
-        this.world.emit('update');
-        this.world.emit('save');
-      },
       reset: (d, b) => {
-        if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Confirmer'; return; }
-        ch().resetStats(); this.world.emit('update'); this.world.emit('save');
+        const c = ch(), prix = this.prixReinit(c);
+        if (prix > c.fils) { this.toast(`Réinitialiser coûte ${nf(prix)} Dragmes au niveau ${c.level} ; tu en as ${nf(c.fils)}.`); return; }
+        if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = prix ? `Confirmer (${nf(prix)} Dragmes)` : 'Confirmer'; return; }
+        c.fils -= prix;
+        c.resetStats(); this.world.emit('update'); this.world.emit('save');
+        if (prix) this.toast(`Caractéristiques et Sceaux rendus, contre ${nf(prix)} Dragmes.`);
       },
     };
     const onField = (el, kind) => {
@@ -67,8 +65,15 @@ Object.assign(Hud.prototype, {
     const ch = this.world.ch;
     let n = 0, v = ch.stats[stat], reste = ch.statPoints;
     for (;;) { const c = Character.pointCost(stat, v); if (reste < c) break; reste -= c; v++; n++; }
-    return { min: -ch.stats[stat], max: n };
+    let min = 0;
+    if (typeof Sceaux !== 'undefined' && ch.level <= Sceaux.D.regles.reinitGratuiteJusqua) {
+      const voie = Object.keys(Character.STAT_OF).find(x => Character.STAT_OF[x] === stat);
+      const poses = Sceaux.sceauxPoses(ch.sceauxEtat(), voie);
+      min = -Math.max(0, ch.stats[stat] - poses * Sceaux.D.regles.pointsParSceau);
+    }
+    return { min, max: n };
   },
+  prixReinit(ch) { return typeof Sceaux !== 'undefined' ? Sceaux.prixReinit(ch.level) : 0; },
 
   caracCout(stat, v) {
     const base = this.world.ch.stats[stat];
@@ -93,7 +98,7 @@ Object.assign(Hud.prototype, {
   caracSignaler(avant) {
     const ch = this.world.ch;
     let total = 0;
-    for (const k of Items.STATS) {
+    for (const k of Character.ALLOUABLES) {
       const points = ch.stats[k] - (avant[k] || 0);
       if (!points) continue;
       total += points;
@@ -118,8 +123,8 @@ Object.assign(Hud.prototype, {
       <div class="vy-caracs__corps" data-defile="caracs-${s.onglet}" role="tabpanel">${corps}</div>
       <footer class="vy-caracs__pied"><span class="vy-points${ch.statPoints ? ' on' : ''}" title="Points de caractéristique à répartir"><b>${ch.statPoints}</b> à répartir</span>
         <label class="vy-coche"><input type="checkbox" id="carac-auto" ${ch.autoStats ? 'checked' : ''}> Auto (${Items.STAT_LABEL[ch.mainStat]})</label>
-        <span class="vy-caracs__pied-boutons">${ch.statPoints ? '<button class="vy-bouton vy-bouton--petit" data-act="autonow" title="Tout poser dans la caractéristique de ta voie">Répartir</button>' : ''}
-        <button class="vy-bouton vy-bouton--petit vy-bouton--fantome" data-act="reset" title="Rend tous les points, gratuit jusqu'au niveau 30">Réinitialiser</button></span></footer>
+        <span class="vy-caracs__pied-boutons">${ch.statPoints ? `<button class="vy-bouton vy-bouton--petit" data-act="autonow" title="Tout poser en ${Items.STAT_LABEL[ch.mainStat]}, la caractéristique de ta classe">Répartir</button>` : ''}
+        <button class="vy-bouton vy-bouton--petit vy-bouton--fantome" data-act="reset" title="Rend tous les points et tous les Sceaux : ${this.prixReinit(ch) ? `${nf(this.prixReinit(ch))} Dragmes au niveau ${ch.level}` : `gratuit jusqu'au niveau ${typeof Sceaux !== 'undefined' ? Sceaux.D.regles.reinitGratuiteJusqua : 10}`}">Réinitialiser</button></span></footer>
     </div>${s.feuille ? this.caracFeuille(ch, d) : ''}`;
   },
 
@@ -143,7 +148,7 @@ Object.assign(Hud.prototype, {
       ligne('pp', 'Prospection', d.prospection, '100 + Aqua / 10 : les chances de butin en dépendent'),
       ch.classDef.summonGauge ? ligne('invoc', 'Jauge de meute', ch.classDef.summonGauge, 'Chaque bête coûte sa part de la jauge (Glym 1, Grouk 2, Molh 3), une de chaque espèce') : ligne('invoc', 'Invocations', DATA.rules.maxSummonsPerOwner, 'Invocations en jeu au plus'),
     ].join('');
-    const caracs = Items.STATS.map(k => {
+    const caracs = Character.ALLOUABLES.map(k => {
       const base = ch.stats[k], total = d.stats[k] || 0, cost = Character.pointCost(k, base), b = this.caracBornes(k);
       const label = Items.STAT_LABEL[k], detail = bonus.texte(k);
       const titre = `${label} : ${total}${detail ? ` (${base} de base, ${detail})` : ''}. Prochain point : ${pts(cost)}.`;
@@ -152,8 +157,33 @@ Object.assign(Hud.prototype, {
     }).join('');
     return `<div class="vy-caracs__resume">
       <div class="vy-caracs__vitaux">${vitaux}</div>
-      <div class="vy-caracs__liste"><div class="vy-sous"><span>Caractéristiques</span><span class="vy-caracs__reste${ch.statPoints ? ' on' : ''}">${pts(ch.statPoints)}</span></div>${caracs}</div>
+      <div class="vy-caracs__liste"><div class="vy-sous"><span>Caractéristiques</span>${this.boutonSceaux(ch)}<span class="vy-caracs__reste${ch.statPoints ? ' on' : ''}">${pts(ch.statPoints)}</span></div>${caracs}</div>
     </div>`;
+  },
+
+  boutonSceaux(ch) {
+    if (typeof ArbreSceaux === 'undefined' || typeof Sceaux === 'undefined') return '';
+    const e = this.etatSceaux(ch), sc = Sceaux.sceauxLibresTotal(e), p = Sceaux.pointsLibres(e);
+    const note = sc || '';
+    const svgArbre = svg('<circle cx="12" cy="18.5" r="2.5"/><circle cx="5" cy="6" r="2.5"/><circle cx="12" cy="5" r="2.5"/><circle cx="19" cy="6" r="2.5"/><path d="M12 16V7.5M6.2 8.2 10.6 16M17.8 8.2 13.4 16"/>');
+    return `<button type="button" class="vy-caracs__sceaux${sc || p ? ' on' : ''}" data-act="sceaux" title="Arbre des Sceaux : les quatre voies et leurs Sceaux${sc ? ` (${sc} à poser)` : ''}${p ? `, ${pts(p)} à répartir` : ''}" aria-label="Ouvrir l'Arbre des Sceaux">${svgArbre}<span>Sceaux</span>${note ? `<em>${note}</em>` : ''}</button>`;
+  },
+  etatSceaux(ch) { return ch.sceauxEtat(); },
+  ouvrirSceaux() {
+    const ch = this.world.ch;
+    const etat = this.etatSceaux(ch);
+    ArbreSceaux.ouvrir({
+      etat, jeu: true,
+      joueur: { nom: ch.name, titre: ch.classDef.name, xp: ch.level >= Character.MAX_LEVEL ? 0 : ch.xp, xpMax: ch.level >= Character.MAX_LEVEL ? 0 : Character.xpToNext(ch.level) },
+      surChangement: e => {
+        const avant = Object.assign({}, ch.stats);
+        ch.appliquerSceaux(e);
+        this.caracSignaler(avant);
+        this.world.emit('update');
+        this.world.emit('save');
+      },
+      surFermer: () => { if (this.fen.isOpen('carac')) this.fen.render('carac'); },
+    });
   },
 
 
@@ -166,35 +196,36 @@ Object.assign(Hud.prototype, {
     };
     const section = (titre, lignes) => `<tbody><tr class="vy-caracs__section"><th colspan="4" scope="colgroup">${titre}</th></tr>${lignes.join('')}</tbody>`;
     const sum4 = (st.force || 0) + (st.intel || 0) + (st.chance || 0) + (st.agi || 0);
-    const sag = Math.floor((st.sagesse || 0) / 10);
-    const primaires = Items.STATS.map(k => row(k, Items.STAT_LABEL[k], st[k], d.stats[k] || 0, '', bonus.texte(k) ? `Bonus : ${bonus.texte(k)}` : ''));
+    const SR = DATA.sceaux ? DATA.sceaux.regles : { pvBase: 60, pvParNiveau: 5 };
+    const primaires = Character.ALLOUABLES.concat(['vita', 'sagesse']).map(k => row(k, Items.STAT_LABEL[k], st[k] || 0, d.stats[k] || 0, '', bonus.texte(k) ? `Bonus : ${bonus.texte(k)}` : (k === 'vita' || k === 'sagesse' ? 'Ne se répartit plus : vient de l\'équipement et des parchemins' : '')));
+    const arbre = 'l\'Arbre des Sceaux et l\'équipement';
     const combat = [
-      row('pv', 'Points de vie', Math.round((60 + 5 * ch.level + (st.vita || 0)) * cls.hp / 120), d.hpMax, '', 'Points de vie maximum'),
+      row('pv', 'Points de vie', SR.pvBase + SR.pvParNiveau * ch.level, d.hpMax, '', `Points de vie maximum : ${SR.pvBase} + ${SR.pvParNiveau} par niveau, plus la Vitalité de l'équipement et ${SR.pvParSceau || 5} PV par Sceau posé`),
       row('pa', 'PA', 6, d.pa), row('pm', 'PM', 3, d.pm),
-      row('init', 'Initiative', cls.initiative + sum4, d.initiative),
-      row('pp', 'Prospection', 100 + Math.floor((st.chance || 0) / 10), d.prospection),
-      row('crit', 'Coups critiques', 5, d.crit, ' %', 'Chance de coup critique ; un critique fait × 1,5'),
+      row('init', 'Initiative', cls.initiative + sum4, d.initiative, '', 'Initiative de la classe, plus Terra, Ignis, Aqua et Aer, plus l\'arbre'),
+      row('pp', 'Prospection', 100 + Math.floor((d.stats.chance || 0) / 10), d.prospection, '', `100 + Aqua / 10, plus ${arbre}`),
+      row('crit', 'Coups critiques', 5, d.crit, ' %', 'Chance de coup critique ; un critique fait × 1,5, plus les dommages critiques'),
       row('invoc', 'Invocations', R.maxSummonsPerOwner, R.maxSummonsPerOwner),
     ];
     const secondaires = [
-      row('tacle', 'Tacle', Math.floor((st.agi || 0) / 10), d.tacle, '', 'Aer / 10'),
-      row('fuite', 'Fuite', Math.floor((st.agi || 0) / 10) + (R.playerFuiteBase || 0), d.fuite, '', `Aer / 10, plus ${R.playerFuiteBase || 0} de base`),
-      row('esquive', 'Esquive PA', sag, d.esquivePA, '', 'Sagesse / 10'), row('esquive', 'Esquive PM', sag, d.esquivePM, '', 'Sagesse / 10'),
-      row('retrait', 'Retrait PA', sag, d.retraitPA, '', 'Sagesse / 10'), row('retrait', 'Retrait PM', sag, d.retraitPM, '', 'Sagesse / 10'),
-      row('soins', 'Soins', st.intel || 0, d.soins, ' %', '+1 % par point d\'Ignis'),
-      row('sagesse', 'Expérience gagnée', st.sagesse || 0, d.stats.sagesse || 0, ' %', '+1 % par point de Sagesse'),
+      row('tacle', 'Tacle', Math.floor((d.stats.agi || 0) / 10), d.tacle, '', `Aer / 10, plus ${arbre}`),
+      row('fuite', 'Fuite', Math.floor((d.stats.agi || 0) / 10) + (R.playerFuiteBase || 0), d.fuite, '', `Aer / 10, plus ${R.playerFuiteBase || 0} de base, plus ${arbre}`),
+      row('esquive', 'Esquive PA', Math.floor((d.stats.sagesse || 0) / 10), d.esquivePA, '', `Sagesse / 10, plus ${arbre}`), row('esquive', 'Esquive PM', Math.floor((d.stats.sagesse || 0) / 10), d.esquivePM, '', `Sagesse / 10, plus ${arbre}`),
+      row('retrait', 'Retrait PA', Math.floor((d.stats.sagesse || 0) / 10), d.retraitPA, '', `Sagesse / 10, plus ${arbre}`), row('retrait', 'Retrait PM', Math.floor((d.stats.sagesse || 0) / 10), d.retraitPM, '', `Sagesse / 10, plus ${arbre}`),
+      row('soins', 'Soins', st.intel || 0, d.soins, ' %', '+1 % par point d\'Ignis, plus l\'arbre et l\'équipement'),
+      row('sagesse', 'Expérience gagnée', 0, d.stats.sagesse || 0, ' %', '+1 % par point de Sagesse (équipement et parchemins)'),
     ];
-    const dommages = [row('dmg', 'Dommages', 0, d.dmgFlat, '', 'Ajoutés à chaque coup')];
-    const resist = ['neutre', 'terre', 'feu', 'eau', 'air'].map(el => { const v = (cls.resist || {})[el] || 0; return `<tr><th scope="row"><span class="vy-pastille" style="--c:${DATA.elements[el].color}"></span>${DATA.elements[el].label}</th><td>${cell(v)}${v ? ' %' : ''}</td><td>${cell(0)}</td><td class="${v < 0 ? 'neg' : ''}"><b>${v} %</b></td></tr>`; });
+    const dommages = [row('dmg', 'Dommages', 0, d.dmgFlat, '', 'Ajoutés à chaque coup'), row('dmg', 'Dommages critiques', 0, d.dmgCrit || 0, '', 'Ajoutés à chaque coup critique'), row('dmg', 'Réduction des dégâts', 0, d.reduc || 0, '', 'Retirée de chaque coup reçu')];
+    const resist = ['neutre', 'terre', 'feu', 'eau', 'air'].map(el => { const v = (cls.resist || {})[el] || 0, t = (d.resist || {})[el] || 0; return `<tr><th scope="row"><span class="vy-pastille" style="--c:${DATA.elements[el].color}"></span>${DATA.elements[el].label}</th><td>${cell(v)}${v ? ' %' : ''}</td><td>${t - v ? `+${t - v} %` : cell(0)}</td><td class="${t < 0 ? 'neg' : ''}"><b>${t} %</b></td></tr>`; });
     return `<table class="vy-tableau vy-caracs__table"><thead><tr><th scope="col"><span class="vy-visuel">Caractéristique</span></th><th scope="col">Base</th><th scope="col">Bonus</th><th scope="col">Total</th></tr></thead>
-      ${section('Caractéristiques primaires', primaires)}${section('Combat', combat)}${section('Caractéristiques secondaires', secondaires)}${section('Dommages', dommages)}${section('Résistances de la classe', resist)}</table>
-      <p class="muted vy-note">Base : tes points, pour les caractéristiques ; ce qu'elles donnent, pour le reste. Bonus : parchemins, équipement et panoplies. Les dégâts par élément sont dans l'onglet Éléments.</p>`;
+      ${section('Caractéristiques primaires', primaires)}${section('Combat', combat)}${section('Caractéristiques secondaires', secondaires)}${section('Dommages', dommages)}${section('Résistances', resist)}</table>
+      <p class="muted vy-note">Base : tes points, pour les caractéristiques ; ce qu'elles donnent, pour le reste. Bonus : parchemins, équipement, panoplies et Sceaux. Les dégâts par élément sont dans l'onglet Éléments.</p>`;
   },
 
 
   caracElements(ch, d, cls) {
-    return `<div class="vy-caracs__elements"><div>${this.caracProfil(d)}</div><div>${this.caracParElement(ch, d, cls)}</div></div>${this.voieHtml(ch, cls)}
-      <p class="muted vy-note">Chaque niveau donne 5 points. Terra, Ignis, Aqua et Aer coûtent 1 point jusqu'à 100, 2 jusqu'à 200, 3 jusqu'à 300, 4 au-delà ; la Vitalité 1 point, la Sagesse 3. Un point d'élément ajoute 1 % aux dégâts de l'élément (et aux soins pour Ignis) ; Aer donne Tacle et Fuite, la Sagesse l'expérience, l'Esquive et le Retrait, Aqua la Prospection. Les parchemins ajoutent des points de base gratuits (${DATA.rules.scrollMax} au plus).</p>`;
+    return `<div class="vy-caracs__elements"><div>${this.caracProfil(d)}</div><div>${this.caracParElement(ch, d, cls)}</div></div>
+      <p class="muted vy-note">Chaque niveau donne 5 points. Terra, Ignis, Aqua et Aer coûtent 1 point jusqu'à 100, 2 jusqu'à 200, 3 jusqu'à 300, 4 au-delà. Un point ajoute 1 % aux dégâts de son élément (Terra : terre et neutre ; Ignis : aussi les soins) ; Aer donne Tacle et Fuite (un pour dix), Aqua la Prospection (un pour dix), Terra 5 de poids porté. Chaque dizaine donne un Sceau de la voie, à poser dans son arbre. Chaque sort garde son élément. La Vitalité et la Sagesse (expérience, Retrait et Esquive) viennent de l'équipement et des parchemins (${DATA.rules.scrollMax} au plus).</p>`;
   },
 
   voieHtml(ch, cls) {
@@ -207,7 +238,7 @@ Object.assign(Hud.prototype, {
   },
 
   caracProfil(d) {
-    const keys = Items.STATS;
+    const keys = Character.ALLOUABLES;
     const vals = keys.map(k => Math.max(0, d.stats[k] || 0));
     const max = Math.max(20, ...vals);
     const cx = 110, cy = 100, R = 70;
@@ -224,8 +255,8 @@ Object.assign(Hud.prototype, {
   caracParElement(ch, d, cls) {
     const rows = ['neutre', 'terre', 'feu', 'eau', 'air'].map(el => {
       const k = { terre: 'force', neutre: 'force', feu: 'intel', eau: 'chance', air: 'agi' }[el];
-      const res = (cls.resist || {})[el] || 0;
-      return `<tr><th scope="row"><span class="vy-pastille" style="--c:${DATA.elements[el].color}"></span>${DATA.elements[el].label}${DATA.elements[el].stat ? ` <small class="muted">${DATA.elements[el].stat}</small>` : ''}</th><td>+${d.stats[k] || 0} %</td><td class="${res < 0 ? 'neg' : ''}">${res} %</td></tr>`;
+      const res = (d.resist || {})[el] || 0, deg = (d.stats[k] || 0) + ((d.dmgPct || {})[el] || 0);
+      return `<tr><th scope="row"><span class="vy-pastille" style="--c:${DATA.elements[el].color}"></span>${DATA.elements[el].label}${DATA.elements[el].stat ? ` <small class="muted">${DATA.elements[el].stat}</small>` : ''}</th><td>+${deg} %</td><td class="${res < 0 ? 'neg' : ''}">${res} %</td></tr>`;
     }).join('');
     return `<div class="vy-sous"><span>Par élément</span></div><table class="vy-tableau"><thead><tr><th></th><th>Dégâts</th><th>Rés.</th></tr></thead><tbody>${rows}</tbody></table>`;
   },
@@ -265,7 +296,7 @@ Object.assign(Hud.prototype, {
           <div class="vy-caracs__apercu" aria-live="polite">${apercu}</div>
         </div>
         ${table}
-        <p class="muted vy-caracs__bonus">${bonusTxt ? `Bonus actuel : ${bonusTxt}.` : 'Aucun bonus pour l\'instant.'} Parchemins lus : ${(ch.scrolls || {})[k] || 0} / ${DATA.rules.scrollMax}.${base > 0 ? ' Retirer des points est gratuit jusqu\'au niveau 30.' : ''}</p>
+        <p class="muted vy-caracs__bonus">${bonusTxt ? `Bonus actuel : ${bonusTxt}.` : 'Aucun bonus pour l\'instant.'} Parchemins lus : ${(ch.scrolls || {})[k] || 0} / ${DATA.rules.scrollMax}.${base > 0 ? ` Retirer des points est gratuit jusqu'au niveau ${typeof Sceaux !== 'undefined' ? Sceaux.D.regles.reinitGratuiteJusqua : 10} ; ensuite, c'est la réinitialisation.` : ''}</p>
         <footer class="vy-feuille__pied"><button class="vy-bouton vy-bouton--petit vy-bouton--fantome" data-act="fermerFeuille">Annuler</button><button class="vy-bouton vy-bouton--primaire vy-bouton--petit" data-act="valider" ${v ? '' : 'disabled'}>Valider</button></footer>
       </section>`;
   },

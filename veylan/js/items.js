@@ -38,7 +38,7 @@ const Items = (() => {
 
   function weaponSpell(w) {
     const t = WEAPON_TYPES[w.type] || WEAPON_TYPES.epee;
-    const base = (4 + 0.9 * w.level) / (1 + 0.03 * (w.level - 1)) * t.mult;
+    const base = (4 + 0.9 * w.level) * t.mult;
     const effects = [];
     for (let i = 0; i < t.hits; i++) effects.push({ type: 'damage', min: Math.max(1, Math.round(base * 0.85)), max: Math.max(1, Math.round(base * 1.15)) });
     return {

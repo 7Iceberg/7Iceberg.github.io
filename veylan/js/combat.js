@@ -298,6 +298,8 @@ class Combat {
     if (e.alive) this.tickBraise(e);
     e.glyphThisTurn = false;
     e.telefragThisTurn = false;
+    e.aubaineTour = false;
+    if (e.turnsPlayed === 1 && e.aPassif('air_gk')) { e.pm += 1; this.log(`${e.name} est libre comme l'air : +1 PM.`); }
     e.turnStartPos = { x: e.x, y: e.y };
     if (e.alive) this.applyGlyphs(e);
     this.ageGlyphs(e);
@@ -353,6 +355,7 @@ class Combat {
     const e = this.actor;
     if (e.alive) this.fireTriggers(e, 'turnEnd', {});
     if (e.alive && e.rewind) this.rewindTurn(e);
+    e.resteFixe = !e.moved;
     if (e === this.player) this.hook('onTurnEnd', e);
     if (e.effects.some(f => f.type === 'state' && f.name === 'invisible' && f.revealAtEnd)) {
       e.effects = e.effects.filter(f => !(f.type === 'state' && f.name === 'invisible' && f.revealAtEnd));
@@ -516,7 +519,7 @@ class Combat {
     }
     const remaining = cells - moved;
     if (ef.type === 'push' && remaining > 0) {
-      this.dealDamage(caster, target, remaining * DATA.rules.pushDamagePerCell, null, { label: 'poussée bloquée' });
+      this.dealDamage(caster, target, remaining * (DATA.rules.pushDamagePerCell + (caster ? caster.poussee || 0 : 0)), null, { label: 'poussée bloquée' });
     } else if (moved) {
       this.log(`${target.name} est ${ef.type === 'push' ? 'poussé' : 'attiré'} de ${moved} case(s).`);
     }
@@ -668,6 +671,7 @@ class Combat {
     }
     const oath = t.effects.find(f => f.type === 'state' && f.name === 'sworn');
     if (oath && source && oath.by === source && source.alive) this.keepOath(source, t, oath);
+    if (source && source.alive && source === this.actor && t.team !== source.team && source.aPassif('air_dk')) { source.pm += 2; this.log(`${source.name} profite de la tempête : +2 PM.`); }
     this.hook('onKill', t);
     this.fireTriggers(t, 'death', { source });
     for (const s of this.summonsOf(t)) this.kill(s, `${s.name} disparaît avec ${t.name}.`);
@@ -1000,9 +1004,15 @@ class Combat {
         break;
       }
       case 'heal': {
-        const h = t.heal(Math.round(this.rand(ef.min, ef.max) * (ef.mult || 1) * (source ? source.scale || 1 : 1) * (source ? source.statFactor('feu') : 1)));
+        const fac = !source ? 1 : source.soinsPct != null ? 1 + Math.max(0, source.soinsPct) / 100 : (source.scale || 1) * source.statFactor('feu');
+        const brut = this.rand(ef.min, ef.max) * (ef.mult || 1) * fac + (source ? source.soinsFixes || 0 : 0);
+        const h = t.heal(Math.round(brut * (1 + (t.soinsRecus || 0) / 100)));
         this.emit('float', { x: t.x, y: t.y, text: '+' + h, color: '#6fdc8c' });
         this.log(`${t.name} récupère ${h} PV.`);
+        if (h > 0 && source && source !== t && source.alive && source.team === t.team && source.aPassif('feu_gk')) {
+          const r = source.heal(Math.round(h * 0.1));
+          if (r) this.log(`${source.name} récupère ${r} PV (Foyer Vivant).`);
+        }
         break;
       }
       case 'swap':
@@ -1065,7 +1075,7 @@ class Combat {
         this.log(`${t.name} porte un écho pendant ${turns} tour(s) : chaque PM perdu le fera résonner.`);
         break;
       case 'shield': {
-        const v = Math.round(ef.value * (source ? source.scale || 1 : 1));
+        const v = Math.round(ef.value * (source ? source.scale || 1 : 1) * (1 + (source ? source.boucliers || 0 : 0) / 100));
         t.addEffect({ type: 'shield', value: v, turns }, own);
         this.log(`${t.name} gagne un bouclier de ${v} points.`);
         break;
@@ -1156,7 +1166,7 @@ class Combat {
     const r = DATA.rules;
     const K = r.removalDodgeK;
     const base = t.team === 'player' && !t.isSummon ? r.removalDodgeBasePlayer : r.removalDodgeBase;
-    const p = base / 100 * (t.wisdom + K) / ((caster ? caster.wisdom : 0) + K) * Math.max(0, current) / max;
+    const p = base / 100 * (t.esquive(kind) + K) / ((caster ? caster.retrait(kind) : 0) + K) * Math.max(0, current) / max;
     return Math.max(r.removalDodgeMin / 100, Math.min(r.removalDodgeMax / 100, p));
   }
 
@@ -1180,6 +1190,10 @@ class Combat {
     if (dodged > 0) {
       this.emit('float', { x: t.x, y: t.y, text: 'esquive', color: '#ffffff' });
       this.log(`${t.name} esquive le retrait de ${dodged} ${kind.toUpperCase()}.`);
+    }
+    if (landed > 0 && caster && caster.alive && t.team !== caster.team && caster.aPassif('eau_gk')) {
+      const h = caster.heal(Math.round(caster.hpMax * 0.02 * landed));
+      if (h) this.log(`${caster.name} reprend ${h} PV (Marée Haute).`);
     }
     return landed;
   }
@@ -1231,14 +1245,23 @@ class Combat {
     let base = this.rand(ef.min, ef.max) * (ef.mult || 1);
     this.lastCrit = false;
     if (source) {
-      base = base * source.statFactor(element) * (source.scale || 1) + (source.dmgFlat || 0);
-      if (source.crit > 0 && this.rng() * 100 < source.crit) { base *= 1.5; this.lastCrit = true; }
+      let jet = base * source.statFactor(element) * (source.scale || 1);
+      if (source.crit > 0 && this.rng() * 100 < source.crit) { jet *= 1.5; this.lastCrit = true; }
+      base = jet + (source.dmgFlat || 0) + ((source.dmgFixe || {})[element] || 0) + (this.lastCrit ? source.dmgCrit || 0 : 0);
+      if (s && s.aoe && s.aoe.shape !== 'single' && source.aPassif('terre_dk')) mult += 0.1;
     }
     const pierce = !!(s && s.oathPierce && oath);
     if (source && !t.hasState('stunned') && !pierce) mult *= 1 - Math.min(90, Math.max(0, t.modifier('armor'))) / 100;
     if (source && !pierce && Grid.dist(source.pos, t.pos) <= 1 && t.modifier('guard') > 0) mult *= 1 - Math.min(90, t.modifier('guard')) / 100;
     if (this.isArmed(t)) mult *= 1 - t.kit.armed.reduction / 100;
-    return this.scaleByResist(t, element, base * Math.max(0, mult));
+    if (source && t.resteFixe && t.aPassif('terre_gk')) mult *= 0.9;
+    const avantRes = base * Math.max(0, mult) - (source && t.reduc ? t.reduc : 0);
+    const out = this.scaleByResist(t, element, Math.max(0, avantRes));
+    if (source && this.lastCrit) {
+      if (element === 'feu' && out > 0 && source.aPassif('feu_dk')) t.addEffect({ type: 'dot', element: 'feu', value: Math.max(1, Math.round(out * 0.05)), turns: 2 }, false);
+      if (source === this.actor && !source.aubaineTour && source.aPassif('eau_dk')) { source.aubaineTour = true; source.pm += 1; this.log(`${source.name} saisit l'aubaine : +1 PM.`); }
+    }
+    return out;
   }
 
   dealDamage(source, t, amount, element, opts) {

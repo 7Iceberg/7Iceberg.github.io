@@ -35,6 +35,7 @@ const Save = (() => {
   for (const k of ['porte', 'ensemblesLook']) ALLOWED.add(k);
   for (const k of ['familiers', 'familier']) ALLOWED.add(k);
   ALLOWED.add('monture');
+  ALLOWED.add('sceaux');
   const ORIGINES = ['orsane', 'ervane'];
 
   const plateauDe = id => {
@@ -125,11 +126,12 @@ const Save = (() => {
     for (const k in stats) { const v = statsOk ? o.stats[k] : 0; if (v == null) continue; if (!isInt(v, 0, 2000)) statsOk = false; else stats[k] = v; }
     if (!isInt(o.statPoints, 0, 5 * Character.MAX_LEVEL)) statsOk = false;
     const oldFormat = !(raw.v >= 3);
-    if (oldFormat) { for (const k in stats) stats[k] = 0; o.statPoints = 5 * (o.level - 1); }
+    if (oldFormat) { for (const k in stats) stats[k] = 0; o.statPoints = 5 * (o.level - 1); o.sceaux = null; }
     else if (!statsOk || Character.spentFor(stats) + o.statPoints !== 5 * (o.level - 1)) {
       bad('caractéristiques');
       for (const k in stats) stats[k] = 0;
       o.statPoints = 5 * (o.level - 1);
+      o.sceaux = null;
     }
     o.stats = stats;
     const scrolls = { vita: 0, sagesse: 0, force: 0, intel: 0, chance: 0, agi: 0 };
@@ -284,6 +286,17 @@ const Save = (() => {
     if (typeof o.playTime !== 'number' || !Number.isFinite(o.playTime) || o.playTime < 0) o.playTime = 0;
     o.autoStats = !!o.autoStats;
     if (o.voie != null && !Character.VOIES.includes(o.voie)) { bad('voie'); o.voie = null; }
+    if (o.sceaux != null) {
+      if (typeof Sceaux === 'undefined' || typeof o.sceaux !== 'object') o.sceaux = null;
+      else {
+        const caracs = { force: stats.force || 0, intel: stats.intel || 0, chance: stats.chance || 0, agi: stats.agi || 0 };
+        const e = Sceaux.valider({ niveau: o.level, caracs, rangs: o.sceaux.rangs, poses: o.sceaux.poses });
+        const garde = { rangs: e.rangs, poses: e.poses };
+        const plus = (a, b) => Object.keys(a || {}).some(k => (a[k] || 0) > (b[k] || 0));
+        if (plus(o.sceaux.rangs, garde.rangs)) bad('Sceaux');
+        o.sceaux = garde;
+      }
+    }
     o.gender = o.gender === 'm' ? 'm' : 'f';
     const look = Character.cleanLook(o.look, o.classId);
     o.look = look.look;

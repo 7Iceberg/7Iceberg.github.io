@@ -414,3 +414,14 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
   .vy-inv__onglets { overflow-x: auto; scrollbar-width: none; }
   .vy-inv__onglets::-webkit-scrollbar { display: none; }
 }
+
+.vy-caracs__sceaux { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px 4px 7px; border: 1.5px solid color-mix(in srgb, var(--vy-or) 60%, transparent); border-radius: 6px;
+  background: var(--vy-grain), linear-gradient(180deg, #22324a, #152030); color: var(--vy-or-clair); font: 700 10.5px var(--vy-font-ui); letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; box-shadow: var(--vy-relief); }
+.vy-caracs__sceaux svg { width: 15px; height: 15px; flex: none; }
+.vy-caracs__sceaux em { font-style: normal; min-width: 16px; padding: 0 4px; border-radius: 7px; text-align: center; font: 700 9.5px var(--vy-font-ui); background: var(--vy-succes); color: var(--vy-encre); letter-spacing: 0; }
+.vy-caracs__sceaux:hover { border-color: var(--vy-cristal); color: #fff; box-shadow: var(--vy-lueur-cristal); }
+.vy-caracs__sceaux.on { border-color: var(--vy-or); }
+#app.vy-verre .vy-caracs__sceaux { border: 1px solid rgba(var(--v-a-rgb), 0.45); border-radius: 8px; background: rgba(var(--v-a-rgb), 0.1); color: var(--v-texte, #f3f0f8); font-family: var(--vy-font-titre, "Rajdhani", sans-serif); font-size: 11px; letter-spacing: 1.6px; box-shadow: none; }
+#app.vy-verre .vy-caracs__sceaux svg { color: var(--v-a); }
+#app.vy-verre .vy-caracs__sceaux em { background: var(--v-degrade-oblique, var(--v-a)); color: #fff; font-family: var(--vy-font-ui, "Poppins", sans-serif); }
+#app.vy-verre .vy-caracs__sceaux:hover { background: rgba(var(--v-a-rgb), 0.2); border-color: rgba(var(--v-a-rgb), 0.8); color: #fff; }

@@ -14,7 +14,8 @@ class Entity {
     const mob = def.ai && !def.summon;
     this.scale = def.scale || (1 + R.monsterDamagePerLevel * steps) * (def.dmgMult || 1) * (mob ? R.monsterDamageMult : 1);
     const high = mob ? 1 + (R.monsterHpHighPerLevel || 0) * Math.max(0, this.level - (R.monsterHpHighFrom || 99)) : 1;
-    this.hpMax = Math.round(def.hp * (1 + R.monsterHpPerLevel * steps) * (mob ? R.monsterHpMult : 1) * high);
+    const compense = mob ? 1 + (R.monsterHpCompense || 0) * Math.max(0, this.level - 1) : 1;
+    this.hpMax = Math.max(1, Math.round(def.hp * (1 + R.monsterHpPerLevel * steps) * (mob ? R.monsterHpMult : 1) * high / compense));
     this.hp = this.hpMax;
     this.paMax = def.pa;
     this.pmMax = def.pm;
@@ -29,6 +30,18 @@ class Entity {
     this.tacle = def.tacle != null ? def.tacle : (wild && contact ? Math.floor(this.level / DATA.rules.monsterTacleDiv) : 0);
     this.fuite = def.fuite != null ? def.fuite : (wild ? Math.floor(this.level / DATA.rules.monsterFuiteDiv) : 0);
     this.crit = def.crit || 0;
+    this.dmgPct = def.dmgPct || {};
+    this.dmgFixe = def.dmgFixe || {};
+    this.dmgCrit = def.dmgCrit || 0;
+    this.reduc = def.reduc || 0;
+    this.soinsPct = def.soinsPct != null ? def.soinsPct : null;
+    this.soinsFixes = def.soinsFixes || 0;
+    this.soinsRecus = def.soinsRecus || 0;
+    this.boucliers = def.boucliers || 0;
+    this.poussee = def.poussee || 0;
+    this.esquivePts = { pa: def.esquivePA || 0, pm: def.esquivePM || 0 };
+    this.retraitPts = { pa: def.retraitPA || 0, pm: def.retraitPM || 0 };
+    this.passifs = new Set(def.passifs || []);
     this.spells = def.spells.slice();
     this.extraSpells = def.extraSpells || null;
     this.spellRanks = def.spellRanks || null;
@@ -77,7 +90,20 @@ class Entity {
   }
 
   statFactor(element) {
-    return 1 + Math.max(0, this.statFor(element)) / 100;
+    return 1 + Math.max(0, this.statFor(element) + (this.dmgPct[element] || 0)) / 100;
+  }
+
+  aPassif(id) { return !this.isSummon && this.passifs.has(id); }
+
+  esquive(kind) {
+    if (this.owner) return this.owner.esquive(kind);
+    if (this.def.ai) return this.wisdom;
+    return (this.esquivePts[kind] || 0) + Math.floor((this.stats.sagesse || 0) / 10);
+  }
+  retrait(kind) {
+    if (this.owner) return this.owner.retrait(kind);
+    if (this.def.ai) return this.wisdom;
+    return (this.retraitPts[kind] || 0) + Math.floor((this.stats.sagesse || 0) / 10);
   }
 
   get wisdom() {

@@ -12,6 +12,7 @@ class Character {
       look: null, porte: null, ensemblesLook: [],
       familiers: {}, familier: null,
       monture: null,
+      sceaux: null,
     }, data || {});
     if (!this.coffre || typeof this.coffre !== 'object') this.coffre = { items: {}, fils: 0 };
     if (!this.coffre.items || typeof this.coffre.items !== 'object') this.coffre.items = {};
@@ -40,6 +41,16 @@ class Character {
       this.autoAllocate();
       if (this.hp != null) this.hp = Math.min(this.hp, this.derived().hpMax);
     }
+    if (base && !(this.v >= 4)) {
+      const rendu = Character.spentFor({ vita: this.stats.vita || 0, sagesse: this.stats.sagesse || 0 });
+      this.stats.vita = 0; this.stats.sagesse = 0;
+      this.statPoints += rendu;
+      if (this.autoStats && rendu) this.autoAllocate();
+    }
+    this.voie = null;
+    if (this.sceaux && typeof this.sceaux === 'object') this.sceaux = { rangs: Object.assign({}, this.sceaux.rangs || {}), poses: Array.isArray(this.sceaux.poses) ? this.sceaux.poses : [] };
+    else this.sceaux = null;
+    this.sceauxNettoyer();
     if (base && typeof Quests !== 'undefined') for (const id in this.quests.active) { const q = Quests.get(id); if (q) Quests.giveStartItems(this, q); }
     if (!this.spellRanks || typeof this.spellRanks !== 'object' || !Number.isInteger(this.spellPoints)) {
       this.spellRanks = {};
@@ -51,7 +62,7 @@ class Character {
     if (!Array.isArray(this.achClaimed)) this.achClaimed = (this.achievements || []).slice();
     this.achClaimed = [...new Set(this.achClaimed)].filter(id => this.achievements.includes(id));
     if (this.hp == null) this.hp = this.derived().hpMax;
-    this.v = 3;
+    this.v = 4;
     if (!this.uid) this.uid = (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)).slice(0, 20);
     Object.defineProperty(this, 'integrity', { value: this.integrity || [], writable: true, enumerable: false });
   }
@@ -114,23 +125,10 @@ class Character {
 
   static get VOIES() { return ['terre', 'feu', 'eau', 'air']; }
   static get STAT_OF() { return { terre: 'force', feu: 'intel', eau: 'chance', air: 'agi' }; }
-  get mainStat() { return this.voie ? Character.STAT_OF[this.voie] : this.classDef.mainStat; }
-
-  setVoie(voie) {
-    voie = Character.VOIES.includes(voie) ? voie : null;
-    if (voie === this.voie) return false;
-    this.voie = voie;
-    this.resetStats();
-    if (this.autoStats) this.autoAllocate();
-    if (this.autoSpells) this.autoAllocateSpells();
-    return true;
-  }
-
-  spellFor(id) {
-    const s = DATA.spells[id];
-    if (!this.voie || !s || s.element === 'neutre' || s.element === this.voie) return null;
-    return Object.assign({}, s, { element: this.voie, effects: s.effects.map(ef => ef.element ? Object.assign({}, ef, { element: this.voie }) : ef) });
-  }
+  static get ALLOUABLES() { return ['force', 'intel', 'chance', 'agi']; }
+  get mainStat() { return this.classDef.mainStat; }
+  setVoie() { return false; }
+  spellFor() { return null; }
 
   static xpToNext(level) { return Math.round(20 * Math.pow(level, 2.4)); }
   static get UNLOCK() { return [1, 1, 1, 3, 6, 9, 13, 17, 21, 26]; }
@@ -166,21 +164,60 @@ class Character {
     add(familier);
     const monture = typeof Montures !== 'undefined' ? Montures.bonusActif(this) : {};
     add(monture);
-    const hpMax = Math.round((60 + 5 * this.level + (total.vita || 0)) * c.hp / 120);
     const R = DATA.rules;
+    const sc = this.sceauxBilan(), A = sc.arbre;
+    const a = k => A[k] || 0;
+    const S = DATA.sceaux ? DATA.sceaux.regles : { pvBase: 60, pvParNiveau: 5 };
+    const pvBrut = S.pvBase + S.pvParNiveau * this.level + (total.vita || 0) + sc.pv;
+    const part = R.pvDeClasse === true ? 1 : Number(R.pvDeClasse) || 0;
+    const hpMax = Math.round(pvBrut * (1 + part * (c.hp - 120) / 120));
     const sum4 = (total.force || 0) + (total.intel || 0) + (total.chance || 0) + (total.agi || 0);
-    const sag = Math.floor((total.sagesse || 0) / 10);
+    const resMax = DATA.sceaux ? DATA.sceaux.regles.resMax || 50 : 50;
+    const resist = Object.assign({}, c.resist);
+    for (const el of ['terre', 'feu', 'eau', 'air', 'neutre']) { const v = a('res_' + el) + a('resTous'); if (v) resist[el] = (resist[el] || 0) + v; resist[el] = Math.min(resMax, resist[el] || 0); }
+    const agi10 = Math.floor(Math.max(0, total.agi || 0) / 10), sag10 = Math.floor(Math.max(0, total.sagesse || 0) / 10);
     return {
-      stats: total, hpMax, pa: 6 + extra.pa, pm: 3 + extra.pm,
-      initiative: c.initiative + extra.init + sum4,
-      crit: 5 + extra.crit, dmgFlat: extra.dmg, setBonuses, setCount, familier, monture,
-      tacle: Math.floor((total.agi || 0) / 10) + extra.tacle,
-      fuite: Math.floor((total.agi || 0) / 10) + extra.fuite + (R.playerFuiteBase || 0),
-      esquivePA: sag, esquivePM: sag, retraitPA: sag, retraitPM: sag,
-      prospection: 100 + Math.floor((total.chance || 0) / 10) + extra.pp,
-      soins: (total.intel || 0) + extra.soin,
-      podsMax: Character.PODS_BASE + Character.PODS_TERRA * Math.max(0, total.force || 0),
+      stats: total, hpMax, pa: 6 + (this.level >= 100 ? 1 : 0) + extra.pa, pm: 3 + extra.pm,
+      initiative: c.initiative + extra.init + sum4 + a('init'),
+      crit: 5 + extra.crit + a('crit'), dmgFlat: extra.dmg, setBonuses, setCount, familier, monture,
+      tacle: agi10 + extra.tacle + a('tacle'),
+      fuite: agi10 + extra.fuite + (R.playerFuiteBase || 0) + a('fuite'),
+      esquivePA: sag10 + a('esquivePA'), esquivePM: sag10 + a('esquivePM'), retraitPA: sag10 + a('retraitPA'), retraitPM: sag10 + a('retraitPM'),
+      prospection: 100 + Math.floor(Math.max(0, total.chance || 0) / 10) + extra.pp + a('pp'),
+      soins: (total.intel || 0) + extra.soin + a('soins'),
+      podsMax: Character.PODS_BASE + Character.PODS_TERRA * Math.max(0, total.force || 0) + a('pods'),
+      resist, dmgPct: { terre: a('dmg_terre'), neutre: a('dmg_terre'), feu: a('dmg_feu'), eau: a('dmg_eau'), air: a('dmg_air') },
+      dmgFixe: { terre: a('fixe_terre'), neutre: a('fixe_terre'), feu: a('fixe_feu'), eau: a('fixe_eau'), air: a('fixe_air') },
+      dmgCrit: a('dmgCrit'), reduc: a('reduc'), soinsFixes: a('soinsFixes'), soinsRecus: a('soinsRecus'), boucliers: a('boucliers'), poussee: a('poussee'),
+      passifs: sc.passifs, sceauxPoses: sc.poses,
     };
+  }
+
+
+  sceauxEtat() {
+    const caracs = {}, depense = {};
+    for (const k of Character.ALLOUABLES) { caracs[k] = this.stats[k] || 0; depense[k] = Character.spentFor({ [k]: caracs[k] }); }
+    const s = this.sceaux || {};
+    return { niveau: this.level, caracs, depense, rangs: Object.assign({}, s.rangs || {}), poses: Array.isArray(s.poses) ? s.poses.slice() : [], dragmes: this.fils };
+  }
+  appliquerSceaux(e) {
+    for (const k of Character.ALLOUABLES) this.stats[k] = e.caracs[k] || 0;
+    this.statPoints = 5 * (this.level - 1) - Character.spentFor(this.stats);
+    this.sceaux = { rangs: Object.assign({}, e.rangs), poses: e.poses.slice(0, 20) };
+    this.fils = e.dragmes;
+    if (this.hp != null) this.hp = Math.min(this.hp, this.derived().hpMax);
+  }
+  sceauxNettoyer() {
+    if (typeof Sceaux === 'undefined' || !this.sceaux || !Object.keys(this.sceaux.rangs || {}).length) return;
+    const e = Sceaux.valider(this.sceauxEtat());
+    this.sceaux = { rangs: e.rangs, poses: e.poses };
+  }
+  sceauxBilan() {
+    const vide = { arbre: {}, pv: 0, poses: 0, passifs: [] };
+    if (typeof Sceaux === 'undefined' || !this.sceaux || !this.sceaux.rangs) return vide;
+    const b = Sceaux.bilan(this.sceauxEtat());
+    const passifs = Object.keys(this.sceaux.rangs).filter(id => this.sceaux.rangs[id] > 0 && Sceaux.D.noeuds[id] && Sceaux.D.noeuds[id].passif);
+    return { arbre: b.arbre, pv: b.pvArbre, poses: b.poses, passifs };
   }
 
   unlockedSpells() {
@@ -198,9 +235,11 @@ class Character {
     const ap = this.lookAffiche();
     return {
       name: this.name, classId: this.classId, level: this.level, shape: 'player', glyph: c.glyph, color: c.color, look: ap.look, auraCos: ap.auraCos, lueur: ap.lueur, gender: this.gender,
-      hp: d.hpMax, hpCurrent: this.hp, pa: d.pa, pm: d.pm, initiative: d.initiative, resist: Object.assign({}, c.resist),
+      hp: d.hpMax, hpCurrent: this.hp, pa: d.pa, pm: d.pm, initiative: d.initiative, resist: d.resist,
       spells, extraSpells, stats: d.stats, dmgFlat: d.dmgFlat, crit: d.crit, title: this.title, tacle: d.tacle, fuite: d.fuite,
-      scale: 1 + 0.03 * (this.level - 1),
+      scale: 1,
+      dmgPct: d.dmgPct, dmgFixe: d.dmgFixe, dmgCrit: d.dmgCrit, reduc: d.reduc, soinsPct: d.soins, soinsFixes: d.soinsFixes, soinsRecus: d.soinsRecus,
+      boucliers: d.boucliers, poussee: d.poussee, esquivePA: d.esquivePA, esquivePM: d.esquivePM, retraitPA: d.retraitPA, retraitPM: d.retraitPM, passifs: d.passifs,
       spellRanks: Object.assign({}, this.spellRanks),
     };
   }
@@ -246,6 +285,7 @@ class Character {
   }
 
   allocate(stat, n) {
+    if (!Character.ALLOUABLES.includes(stat)) return 0;
     n = n || 1;
     let spent = 0;
     for (let i = 0; i < n; i++) {
@@ -267,6 +307,7 @@ class Character {
       back += Character.pointCost(stat, this.stats[stat]);
     }
     this.statPoints += back;
+    this.sceauxNettoyer();
     this.hp = Math.min(this.hp, this.derived().hpMax);
     return back;
   }
@@ -281,6 +322,7 @@ class Character {
   resetStats() {
     for (const k in this.stats) this.stats[k] = 0;
     this.statPoints = 5 * (this.level - 1);
+    if (this.sceaux) this.sceaux = { rangs: {}, poses: [] };
     if (this.hp != null) this.hp = Math.min(this.hp, this.derived().hpMax);
   }
 
@@ -316,6 +358,19 @@ class Character {
   autoAllocate() {
     const main = this.mainStat;
     while (this.statPoints >= Character.pointCost(main, this.stats[main])) this.allocate(main, 1);
+    this.autoSceaux();
+  }
+
+  autoSceaux() {
+    if (typeof Sceaux === 'undefined') return 0;
+    const e = this.sceauxEtat();
+    let n = 0;
+    for (const v of Character.VOIES) {
+      const soin = v === 'feu' && /Soigneur|Soutien/.test(this.classDef.role || '');
+      n += Sceaux.autoPoser(e, v, soin ? 'g' : 'd');
+    }
+    if (n) this.sceaux = { rangs: e.rangs, poses: e.poses };
+    return n;
   }
 
 
