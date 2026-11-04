@@ -137,8 +137,8 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
     [24, '#060a1a', '#1f2c4c', '#6b7aa8', '#262f4c', '#000000', 0],
   ];
   const METEOS = {
-    clair: { nom: 'Clair', couv: 0.25, lum: 1, gris: 0, brume: 0.016, pluie: 0, neige: 0, mouille: 0, eclair: 0, etoiles: 1, aurore: 1 },
-    nuageux: { nom: 'Nuageux', couv: 0.62, lum: 0.8, gris: 0.25, brume: 0.019, pluie: 0, neige: 0, mouille: 0, eclair: 0, etoiles: 0.55, aurore: 0 },
+    clair: { nom: 'Clair', couv: 0.25, lum: 1, gris: 0, brume: 0.011, pluie: 0, neige: 0, mouille: 0, eclair: 0, etoiles: 1, aurore: 1 },
+    nuageux: { nom: 'Nuageux', couv: 0.62, lum: 0.8, gris: 0.25, brume: 0.015, pluie: 0, neige: 0, mouille: 0, eclair: 0, etoiles: 0.55, aurore: 0 },
     pluie: { nom: 'Pluie', couv: 0.92, lum: 0.55, gris: 0.55, brume: 0.026, pluie: 1, neige: 0, mouille: 1, eclair: 0, etoiles: 0, aurore: 0 },
     orage: { nom: 'Orage', couv: 1, lum: 0.42, gris: 0.62, brume: 0.028, pluie: 1, neige: 0, mouille: 1, eclair: 1.6, etoiles: 0, aurore: 0 },
     brume: { nom: 'Brume', couv: 0.5, lum: 0.65, gris: 0.5, brume: 0.055, pluie: 0, neige: 0, mouille: 0.3, eclair: 0, etoiles: 0.2, aurore: 0 },
@@ -191,7 +191,7 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
 
   const AUTOMNE = ['#b8432a', '#e0912e', '#c4602a', '#9a8a34'];
 
-  const LUM_JOUR = { hemi: ['#c6d4ef', '#544b3c', 0.62], cle: ['#fff2df', 1.28], chaud: ['#ffd2a0', 0.22], contre: ['#9fb4ff', 0.14] };
+  const LUM_JOUR = { hemi: ['#c6d4ef', '#544b3c', 0.71], cle: ['#fff2df', 1.36], chaud: ['#ffd2a0', 0.22], contre: ['#9fb4ff', 0.14] };
   const LUM_NUIT = { hemi: ['#3a4f8e', '#121220', 0.3], cle: ['#9cb4ff', 0.5], chaud: ['#ff9f5a', 0.04], contre: ['#8aa8ff', 0.55] };
 
   class Lisiere extends IleNuit.Nuit {
@@ -393,6 +393,10 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       const A = this.amb;
       this.densite = A.brume * (this.telephone ? 1.06 : 1);
       this.appliquer(A.nuit);
+      if (ile.voiles && Math.abs((this._voileNuit == null ? -1 : this._voileNuit) - A.nuit) > 0.01) {
+        this._voileNuit = A.nuit;
+        for (const soir of ile.voiles.querySelectorAll('.ile-voiles__soir')) soir.style.opacity = A.nuit.toFixed(2);
+      }
       if (ile.brumeVoulue && ile.brumeCle) ile.brumeVoulue.copy(this.brume(ile.brumeCle));
       super.maj(now, temps, joueur, hj, cam, tact);
       this.mouiller(A.mouille);

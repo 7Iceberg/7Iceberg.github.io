@@ -99,7 +99,7 @@ DATA.monsters.glaise_mere = M('glaise_mere', { name: 'La Glaise Mère', region: 
   desc: 'Boss des Boues Chaudes. L\'eau la soigne, le feu la cuit et lui fait prendre double deux tours. À moitié vie, elle s\'effrite en trois Gleks qui suivent la même règle.' });
 
 DATA.monsters.grand_tholou = M('grand_tholou', { name: 'Le Grand Tholou', region: 'kaldum', level: '22 à 30', boss: true, shape: 'circle', color: '#ffb37a',
-  hp: 300, pa: 6, pm: 2, initiative: 45, resist: { feu: 30 }, spells: ['m_ronron', 'm_chaleur', 'm_etincelle'], ai: 'support',
+  hp: 420, dmgMult: 2.6, pa: 6, pm: 2, initiative: 45, resist: { feu: 30 }, spells: ['m_ronron', 'm_chaleur', 'm_etincelle'], ai: 'support',
   triggers: [{ when: 'turnStart', do: [{ act: 'bond', pa: 2, range: 3 }] }],
   desc: 'Boss de la Mine. Donne deux de ses PA au plus gros de ses alliés ; séparé de lui de plus de trois cases, il panique et perd son tour.' });
 

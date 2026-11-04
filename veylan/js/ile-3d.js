@@ -65,7 +65,7 @@ class Ile3D {
     const voiles = this.voiles = document.createElement('div');
     voiles.className = 'ile-voiles';
     voiles.setAttribute('aria-hidden', 'true');
-    voiles.innerHTML = '<div class="ile-voiles__glacis"></div><div class="ile-voiles__vignette"></div><div class="ile-voiles__grain"></div>';
+    voiles.innerHTML = '<div class="ile-voiles__glacis"></div><div class="ile-voiles__vignette"></div><div class="ile-voiles__soir ile-voiles__soir--glacis"></div><div class="ile-voiles__soir ile-voiles__soir--vignette"></div><div class="ile-voiles__grain"></div>';
     this.stage.insertBefore(voiles, this.board);
     const r = this.renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: this.qualite === 'haute', alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: !!this.capture });
     r.outputEncoding = THREE.sRGBEncoding;
@@ -189,7 +189,10 @@ class Ile3D {
     if (!this.nuit && rendu.nuit && IleCharge.ambiance && IleCharge.ambiance() === 'nuit') {
       try { await IleCharge.nuit(); if (typeof IleNuit === 'object') this.nuit = new IleNuit.Nuit(THREE, this); } catch (e) { console.warn('Ervane : aperçu de nuit indisponible', e); this.nuit = null; }
     }
-    if (this.voiles) this.voiles.classList.toggle('nuit', !!this.nuit);
+    if (this.voiles) {
+      this.voiles.classList.toggle('nuit', !!this.nuit && this.nuit.style !== 'lisiere');
+      this.voiles.classList.toggle('lisiere', !!this.nuit && this.nuit.style === 'lisiere');
+    }
     const T = this.T = plateau.terrain, def = this.def = plateau.def;
     const temps = this.chargement = { debut: performance.now() };
     let t0 = performance.now();
