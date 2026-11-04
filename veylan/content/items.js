@@ -776,6 +776,20 @@
   });
 
   C.sets.push({
+    id: 'saunier', name: 'Panoplie du Saunier', family: [], level: 36,
+    profile: { intel: 55, vita: 30, chance: 15 },
+    pieces: [
+      { slot: 'coiffe', id: 'chapeau_du_saunier', name: 'Chapeau du Saunier', lore: 'Un large chapeau d\'algue tressée, blanchi par le sel. Il garde l\'ombre sur les yeux et la chaleur dans les idées.' },
+      { slot: 'amulette', id: 'amulette_du_saunier', name: 'Amulette du Saunier', lore: 'Un cristal de sel taillé, serti de cuivre. Il rougeoit dès qu\'on l\'approche d\'un feu.' },
+      { slot: 'anneau', id: 'anneau_du_saunier', name: 'Anneau du Saunier', lore: 'Une bague noircie par les braises des chaudrons. Elle ne refroidit jamais tout à fait.' },
+      { slot: 'ceinture', id: 'ceinture_du_saunier', name: 'Ceinture du Saunier', lore: 'Un tablier de toile salée, roulé à la taille. Il a vu bouillir plus de mer qu\'un navire n\'en traverse.' },
+      { slot: 'bottes', id: 'sabots_du_saunier', name: 'Sabots du Saunier', lore: 'Des sabots de bois flotté cerclés de fer. On marche sur la braise des bassins sans y penser.' },
+    ],
+    bonusProfile: { intel: 60, vita: 40 },
+    lore: 'Les sauniers de Marsalée font bouillir l\'eau de mer dans des chaudrons de galets, sur des feux de bois flotté qu\'ils ne laissent jamais s\'éteindre. Leur tenue garde la chaleur de ces feux : elle donne aux sorts ce que la mer donne au sel.',
+  });
+
+  C.sets.push({
     id: 'brisant', name: 'Panoplie du Brisant', family: ['brisant'], level: 38,
     profile: { chance: 50, force: 25, vita: 25 },
     pieces: [
@@ -927,6 +941,8 @@
       lore: 'Du bois flotté gainé d\'algue, un chas de Sivr au bout. Les sorts en sortent mouillés.' },
     { id: 'pelle_de_carapace', name: 'Pelle de Carapace', type: 'pelle', level: 37, element: 'terre', profile: { force: 50, vita: 50 }, source: 'craft',
       lore: 'Une carapace de Marnel au bout d\'un manche. Elle creuse la grève et les défenses.' },
+    { id: 'tisonnier_du_saunier', name: 'Tisonnier du Saunier', type: 'baguette', level: 38, element: 'feu', profile: { intel: 60, vita: 40 }, source: 'craft',
+      lore: 'La tige de fer qui ranime les feux des chaudrons. Au bout, une braise qui ne s\'éteint pas, même sous la pluie.' },
     { id: 'arc_de_bois_flotte', name: 'Arc de Bois Flotté', type: 'arc', level: 39, element: 'air', profile: { agi: 60, vita: 40 }, source: 'craft',
       lore: 'Le bois a trop voyagé pour avoir peur. La corde est une plume de Harpide tordue.' },
     { id: 'sabre_de_ressac', name: 'Sabre de Ressac', type: 'epee', level: 40, element: 'eau', profile: { chance: 60, vita: 40 }, source: 'craft',
@@ -976,6 +992,11 @@
   R('anneau_brisant', 'bijoutier', [['ecume_de_brisant', 9], ['remous_de_brisant', 5], ['coeur_de_brisant', 1], ['sel_de_marsalee', 8]]);
   R('ceinture_brisant', 'cordonnier', [['ecume_de_brisant', 10], ['remous_de_brisant', 4], ['pince_de_marnel', 3], ['bois_flotte', 6]]);
   R('bottes_brisant', 'cordonnier', [['ecume_de_brisant', 10], ['remous_de_brisant', 5], ['bois_flotte', 8]]);
+  R('chapeau_du_saunier', 'tailleur', [['algue_de_ressac', 9], ['sel_de_marsalee', 7], ['carapace_de_marnel', 1], ['bois_flotte', 6]]);
+  R('amulette_du_saunier', 'bijoutier', [['sel_de_marsalee', 10], ['coeur_de_brisant', 1], ['ecume_de_brisant', 6], ['galet_de_marnel', 6]]);
+  R('anneau_du_saunier', 'bijoutier', [['sel_de_marsalee', 9], ['carapace_de_marnel', 1], ['galet_de_marnel', 7], ['bois_flotte', 6]]);
+  R('ceinture_du_saunier', 'cordonnier', [['algue_de_ressac', 8], ['sel_de_marsalee', 8], ['pince_de_marnel', 4], ['bois_flotte', 4]]);
+  R('sabots_du_saunier', 'cordonnier', [['bois_flotte', 11], ['sel_de_marsalee', 7], ['remous_de_brisant', 4]]);
 
   R('coiffe_harpide', 'tailleur', [['plume_de_harpide', 10], ['serre_de_harpide', 5], ['oeil_de_harpide', 1], ['bois_flotte', 8]]);
   R('cape_harpide', 'tailleur', [['plume_de_harpide', 12], ['serre_de_harpide', 4], ['aile_de_sivr', 8]]);
@@ -1036,6 +1057,7 @@
 
   R('baguette_de_varech', 'forgeron', [['algue_de_ressac', 9], ['chas_de_sivr', 1], ['bois_flotte', 7], ['dard_de_sivr', 5]]);
   R('pelle_de_carapace', 'forgeron', [['carapace_de_marnel', 1], ['galet_de_marnel', 9], ['bois_flotte', 8], ['pince_de_marnel', 5]]);
+  R('tisonnier_du_saunier', 'forgeron', [['bois_flotte', 10], ['sel_de_marsalee', 8], ['remous_de_brisant', 4], ['coeur_de_brisant', 1]]);
   R('arc_de_bois_flotte', 'forgeron', [['bois_flotte', 10], ['aile_de_sivr', 6], ['plume_de_harpide', 4], ['dard_de_sivr', 4]]);
   R('sabre_de_ressac', 'forgeron', [['ecume_de_brisant', 10], ['remous_de_brisant', 4], ['coeur_de_brisant', 1], ['sel_de_marsalee', 9]]);
   R('hache_d_ardoise', 'forgeron', [['ardoise_des_effilures', 10], ['corne_de_vulk', 8], ['bois_flotte', 4], ['pierre_de_vulk', 3]]);

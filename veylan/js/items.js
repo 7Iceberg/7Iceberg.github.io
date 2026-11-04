@@ -17,7 +17,7 @@ const Items = (() => {
     hache:    { label: 'Hache',    pa: 5, range: [1, 1], hits: 1, mult: 1.45 },
   };
   const FULL_SET_EXTRA = { dorm: { pa: 1 }, cendrou: { pa: 1 }, pioche_vive: { pm: 1 }, fumerolle: { pm: 1 }, grand_grouk: { pm: 1 }, brimbe: { pm: 1 },
-    sivr: { pm: 1 }, brisant: { pa: 1 }, harpide: { pm: 1 }, vulk: { pa: 1 }, ferrel: { pm: 1 }, zhaal: { pa: 1 }, mere_des_brisants: { pa: 1, pm: 1 }, fendu: { pa: 1 } };
+    sivr: { pm: 1 }, saunier: { pa: 1 }, brisant: { pa: 1 }, harpide: { pm: 1 }, vulk: { pa: 1 }, ferrel: { pm: 1 }, zhaal: { pa: 1 }, mere_des_brisants: { pa: 1, pm: 1 }, fendu: { pa: 1 } };
   const EXTRA_COST = 0.6;
 
   const defs = new Map();

@@ -1109,6 +1109,9 @@ const IleModeles = (() => {
       // Les ombres des nuages qui passent, le jour (3.35) : un bruit lent qui glisse avec le vent.
       float nuage = texture2D(solBruit, (q + solTemps * vec2(1.1, 0.45)) / 150.0).r;
       col *= 1.0 - 0.2 * smoothstep(0.52, 0.72, nuage) * (1.0 - solNuit);
+      // Les ombres de contact du décor (3.48) : sous les arbres, au pied des maisons, des rochers et
+      // des murets, portées vers l'est ; plus douces la nuit, où la lune les efface.
+      col *= 1.0 - solOmbreForce * texture2D(solOmbres, vMonde.xz / solOmbresTaille).r * (1.0 - 0.6 * solNuit);
       // Les pentes raides : la roche, projetée de côté (sur le plan le plus face à la pente).
       vec3 nS = normalize(vNormaleMonde);
       vec2 qc = abs(nS.x) > abs(nS.z) ? vMonde.zy : vMonde.xy;
@@ -1158,6 +1161,11 @@ const IleModeles = (() => {
     uniforms.solBruit = { value: bz.t };
     uniforms.solCarte = { value: carte ? carte.t : bz.t };
     uniforms.solCarteTaille = { value: new THREE.Vector2(carte ? carte.W : 1, carte ? carte.H : 1) };
+    const om = ile.T && typeof ile.peindreOmbresDecor === 'function' ? carteOmbres(THREE, ile) : null;
+    uniforms.solOmbres = { value: om ? om.t : sansOmbre(THREE) };
+    uniforms.solOmbresTaille = { value: new THREE.Vector2(om ? om.L : 1, om ? om.P : 1) };
+    uniforms.solOmbreForce = { value: om ? OMBRE_SOL : 0 };
+    ile.solOmbres = om ? { W: om.W, H: om.H, moyenne: om.moyenne, force: uniforms.solOmbreForce } : null;
     const pl = ((ile.T && ile.T.places) || []).filter(p => (p.sol || 'calcaire') === 'calcaire' && p.rayon >= 5).slice(0, MAX_PLACES);
     uniforms.solPlaces = { value: Array.from({ length: MAX_PLACES }, (_, i) => pl[i] ? new THREE.Vector3(pl[i].centre[0], pl[i].centre[1], pl[i].rayon) : new THREE.Vector3(0, 0, 0)) };
     const pc = ((ile.T && ile.T.objets) || []).filter(o => o.sorte === 'parcelle' && CULTURES[o.culture]).slice(0, MAX_PARCELLES);
@@ -1177,7 +1185,7 @@ const IleModeles = (() => {
     const gainD = ile.def && ile.def.rendu && Number.isFinite(ile.def.rendu.dallesGain) ? Math.max(0, Math.min(1, ile.def.rendu.dallesGain)) : 1;
     uniforms.solGainDalles = { value: gainD };
     ileSol = ile;
-    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + Array.from({ length: NZ }, (_, i) => `\nuniform sampler2D solZ${i}; uniform vec3 moyZ${i};`).join('') + `\nuniform float solForceZ[${NZ}]; uniform sampler2D solZones; uniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}]; uniform vec4 solParcelles[${MAX_PARCELLES * 2}]; uniform vec4 solLumieres[${MAX_LUMIERES}]; uniform float solNuit; uniform float solTemps; uniform vec3 solTeinteDalles; uniform float solGainDalles;`;
+    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + Array.from({ length: NZ }, (_, i) => `\nuniform sampler2D solZ${i}; uniform vec3 moyZ${i};`).join('') + `\nuniform float solForceZ[${NZ}]; uniform sampler2D solZones; uniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}]; uniform vec4 solParcelles[${MAX_PARCELLES * 2}]; uniform vec4 solLumieres[${MAX_LUMIERES}]; uniform float solNuit; uniform float solTemps; uniform vec3 solTeinteDalles; uniform float solGainDalles; uniform sampler2D solOmbres; uniform vec2 solOmbresTaille; uniform float solOmbreForce;`;
     for (const m of mats) {
       const prec = m.onBeforeCompile, cle = Object.prototype.hasOwnProperty.call(m, 'customProgramCacheKey') ? m.customProgramCacheKey : null;
       m.onBeforeCompile = (sh, r) => {
@@ -1194,12 +1202,31 @@ const IleModeles = (() => {
           .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_SOL)
           .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + GLSL_LUMIERES);
       };
-      m.customProgramCacheKey = () => 'sol-meshy-11/' + (cle ? cle.call(m) : '');
+      m.customProgramCacheKey = () => 'sol-meshy-12/' + (cle ? cle.call(m) : '');
       m.needsUpdate = true;
     }
     ile.solCarte = !!carte;
     ile.solCarteTex = carte ? carte.t : null;
-    return aCharger.reduce((a, n) => a + tx[n].octets, 0) + bz.octets + (carte ? carte.octets : 0) + (cz ? cz.octets : 0);
+    return aCharger.reduce((a, n) => a + tx[n].octets, 0) + bz.octets + (carte ? carte.octets : 0) + (cz ? cz.octets : 0) + (om ? om.octets : 0);
+  }
+  const OMBRE_SOL = 0.6;
+  function carteOmbres(THREE, ile) {
+    const T = ile.T, k = 2, W = Math.round(T.largeur * k), H = Math.round(T.hauteur * k);
+    const a = ile.peindreOmbresDecor(T);
+    if (!a || a.length !== W * H) return null;
+    let s = 0; for (let i = 0; i < a.length; i++) s += a[i];
+    const d = new Uint8Array(W * H * 4);
+    for (let i = 0; i < a.length; i++) d[i * 4] = a[i];
+    const t = new THREE.DataTexture(d, W, H, THREE.RGBAFormat, THREE.UnsignedByteType);
+    t.magFilter = t.minFilter = THREE.LinearFilter;
+    t.generateMipmaps = false;
+    t.needsUpdate = true;
+    return { t, W, H, L: T.largeur, P: T.hauteur, octets: W * H * 4, moyenne: s / a.length / 255 };
+  }
+  function sansOmbre(THREE) {
+    const t = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
+    t.needsUpdate = true;
+    return t;
   }
   function bruitSolZones(THREE) {
     const t = new THREE.DataTexture(new Uint8Array([255, 0, 0, 0]), 1, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
