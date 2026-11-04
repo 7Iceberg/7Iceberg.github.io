@@ -194,8 +194,11 @@ const IleModeles = (() => {
     'o-tour': { atlas: 9, case: [0, 0, 512] }, 'k-tour': { atlas: 9, case: [512, 0, 512] },
     'at-mannequin': { atlas: 9, case: [0, 512, 256] }, 'at-forge': { atlas: 9, case: [256, 512, 256] },
     'o-roche': { atlas: 9, case: [512, 512, 256] }, 'o-buisson': { atlas: 9, case: [768, 512, 256] },
+    'k-roche': { atlas: 9, case: [0, 768, 256] }, 'k-souche': { atlas: 9, case: [256, 768, 256] },
+    'k-arbre': { atlas: 9, case: [512, 768, 256] }, 'k-buisson': { atlas: 9, case: [768, 768, 256] },
+    'k-cristaux': { atlas: 7, case: [768, 768, 256] }, 'k-fumerolle': { atlas: 10, case: [0, 0, 256] },
   };
-  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024]];
+  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [512, 256]];
   const SOURCES = [['eau', 160, 148], ['feu', 130, 125], ['terre', 140, 166], ['air', 105, 120], [null, 92, 164]];
   let ICI = null;
   const ici = T => { if (T) ICI = T; return ICI; };
@@ -212,17 +215,18 @@ const IleModeles = (() => {
   };
   const chaud = t => !!t && t[0] > t[1] * 0.8;
   const sombre = t => !!t && t[1] < 0.2 && t[0] < 0.1;
+  const volcan = () => !!(ICI && ICI.id === 'kaldum');
   const montagne = (x, z) => !!(ICI && ICI.id === 'orsane' && typeof ICI.zoneA === 'function' && /^orsane_(sentiers|eboulis)$/.test(ICI.zoneA(x, z) || ''));
   const GENRES = {
-    feuillu: { modele: (t, h, x, z) => (dansBois(x, z) ? 'b-arbre' : chaud(t) || h < 0.2 ? 'arbre3' : 'arbre'), facteur: 1.05 },
-    haut: { modele: (t, h, x, z) => (dansBois(x, z) ? 'b-arbre' : 'arbre2'), facteur: 1.0 },
-    conifere: { modele: () => 'arbre2', facteur: 1.0 },
-    tordu: { modele: (t, h, x, z) => (dansAmarre(x, z) ? 'a-pin' : chaud(t) ? 'arbre3' : 'arbre'), facteur: 0.75 },
+    feuillu: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansBois(x, z) ? 'b-arbre' : chaud(t) || h < 0.2 ? 'arbre3' : 'arbre'), facteur: 1.05 },
+    haut: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansBois(x, z) ? 'b-arbre' : 'arbre2'), facteur: 1.0 },
+    conifere: { modele: () => (volcan() ? 'k-arbre' : 'arbre2'), facteur: 1.0 },
+    tordu: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansAmarre(x, z) ? 'a-pin' : chaud(t) ? 'arbre3' : 'arbre'), facteur: 0.75 },
     borne: { modele: () => 'a-borne', facteur: 1.05 },
-    mort: { modele: (t, h) => (h < 0.5 ? 'souche' : 'tronc'), absolu: { souche: 1.0, tronc: 0.9 } },
-    rocher: { modele: (t, h, x, z) => (dansBois(x, z) ? 'b-rocher' : h < 0.12 ? 'roc' : h < 0.26 ? 'cristal' : montagne(x, z) ? 'o-roche' : 'rocher2'), facteur: 1.25, absolu: { roc: 2.6, cristal: 1.3, 'b-rocher': 1.9 } },
-    buisson: { modele: (t, h, x, z) => (dansBois(x, z) && h < 0.3 ? 'b-champignons' : dansBois(x, z) && h < 0.45 ? 'b-tronc' : sombre(t) && h < 0.22 ? 'champignons' : montagne(x, z) ? 'o-buisson' : 'buisson'), facteur: 1.15, absolu: { champignons: 1.1, 'b-champignons': 1.3, 'b-tronc': 0.9 } },
-    bruyere: { modele: (t, h, x, z) => (montagne(x, z) ? 'o-buisson' : null), facteur: 1.15 },
+    mort: { modele: (t, h) => (volcan() ? (h < 0.5 ? 'k-souche' : 'k-arbre') : h < 0.5 ? 'souche' : 'tronc'), absolu: { souche: 1.0, tronc: 0.9 } },
+    rocher: { modele: (t, h, x, z) => (volcan() ? (h < 0.08 ? 'k-cristaux' : 'k-roche') : dansBois(x, z) ? 'b-rocher' : h < 0.12 ? 'roc' : h < 0.26 ? 'cristal' : montagne(x, z) ? 'o-roche' : 'rocher2'), facteur: 1.25, absolu: { roc: 2.6, cristal: 1.3, 'b-rocher': 1.9 } },
+    buisson: { modele: (t, h, x, z) => (volcan() ? 'k-buisson' : dansBois(x, z) && h < 0.3 ? 'b-champignons' : dansBois(x, z) && h < 0.45 ? 'b-tronc' : sombre(t) && h < 0.22 ? 'champignons' : montagne(x, z) ? 'o-buisson' : 'buisson'), facteur: 1.15, absolu: { champignons: 1.1, 'b-champignons': 1.3, 'b-tronc': 0.9 } },
+    bruyere: { modele: (t, h, x, z) => (montagne(x, z) ? 'o-buisson' : volcan() ? 'k-buisson' : null), facteur: 1.15 },
     fougere: { modele: (t, h, x, z) => (dansBois(x, z) ? (h < 0.3 ? 'b-fougere' : null) : h < 0.18 ? 'fougeres' : null), absolu: { fougeres: 1.1, 'b-fougere': 1.2 } },
     fleurs: { modele: (t, h, x, z) => (dansSources(x, z) ? 's-fleurs-' + elementA(x, z, h) : null), absolu: { 's-fleurs-eau': 0.75, 's-fleurs-feu': 0.75, 's-fleurs-terre': 0.65, 's-fleurs-air': 0.75 } },
     galet: { modele: (t, h, x, z) => (dansSources(x, z) ? 's-dalle' : null), absolu: { 's-dalle': 0.22 } },
@@ -319,7 +323,8 @@ const IleModeles = (() => {
         vus.add(cle);
         if (typeof IleTerrain === 'object' && IleTerrain.caseAire && IleTerrain.caseAire(T, X, Y).c !== '.') continue;
         const table = OBSTACLES[c], choix = table[a.style] || table.defaut;
-        const nom = choix[0] === 'rocher2' && montagne(X + 0.5, Y + 0.5) && S.modeles['o-roche'] ? 'o-roche' : choix[0], M = S.modeles[nom];
+        const nom = choix[0] === 'rocher2' && volcan() && S.modeles['k-roche'] ? 'k-roche' : choix[0] === 'souche' && volcan() && S.modeles['k-souche'] ? 'k-souche'
+          : choix[0] === 'rocher2' && montagne(X + 0.5, Y + 0.5) && S.modeles['o-roche'] ? 'o-roche' : choix[0], M = S.modeles[nom];
         if (!M) continue;
         const u = X + 0.5, v = Y + 0.5, y = hauteur(u, v);
         if (!Number.isFinite(y)) continue;
@@ -432,10 +437,10 @@ const IleModeles = (() => {
     orsane_sentiers: [['arbre', 0.004, [2.8, 4.0], ['jt-ambre', 'jt-rouille']], ['buisson', 0.006, [0.8, 1.2], ['o-buisson']], ['rocher', 0.008, [0.8, 1.3], ['o-roche']]],
     orsane_toiles: [['amanite', 0.008, [0.45, 0.65], ['v-amanites']], ['buisson', 0.004, [0.9, 1.2], ['v-buisson']], ['rocher', 0.003, [0.8, 1.1], ['v-rochers']]],
     orsane_eboulis: [['arbre', 0.002, [2.8, 3.8], ['jt-rouille']], ['buisson', 0.004, [0.7, 1.1], ['o-buisson']], ['rocher', 0.011, [0.8, 1.4], ['o-roche']], ['rocher', 0.0025, [1.8, 2.9], ['o-roche']]],
-    kaldum_ville: [['buisson', 0.003, [0.8, 1.1], ['v-buisson']], ['rocher', 0.002, [0.7, 1.0], ['v-rochers']]],
-    kaldum_galeries: [['arbre', 0.0015, [2.6, 3.6], ['jt-rouille']], ['rocher', 0.012, [0.8, 1.5], ['v-rochers']]],
-    kaldum_vapeurs: [['rocher', 0.008, [0.8, 1.3], ['v-rochers']], ['buisson', 0.002, [0.8, 1.1], ['v-buisson']]],
-    kaldum_fonderie: [['arbre', 0.002, [2.6, 3.6], ['jt-rouille']], ['rocher', 0.009, [0.8, 1.4], ['v-rochers']]],
+    kaldum_ville: [['buisson', 0.003, [0.8, 1.1], ['k-buisson']], ['rocher', 0.002, [0.7, 1.0], ['k-roche']]],
+    kaldum_galeries: [['arbre', 0.0015, [2.6, 3.6], ['k-arbre']], ['rocher', 0.012, [0.8, 1.5], ['k-roche']], ['souche', 0.002, [0.6, 0.9], ['k-souche']]],
+    kaldum_vapeurs: [['rocher', 0.008, [0.8, 1.3], ['k-roche']], ['buisson', 0.002, [0.8, 1.1], ['k-buisson']], ['fumerolle', 0.0012, [1.1, 1.7], ['k-fumerolle']]],
+    kaldum_fonderie: [['arbre', 0.002, [2.6, 3.6], ['k-arbre']], ['rocher', 0.009, [0.8, 1.4], ['k-roche']], ['cristaux', 0.002, [0.7, 1.1], ['k-cristaux']], ['souche', 0.0015, [0.6, 0.9], ['k-souche']]],
   };
   const CARTES_DENSES = {
     ervane_mailles: [['herbe', 0.5, [0.7, 1.05], 0], ['fleurs', 0.05, [0.45, 0.6], 2]],
