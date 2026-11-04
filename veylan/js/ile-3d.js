@@ -382,7 +382,8 @@ class Ile3D {
       return g;
     };
     const fb = IleDecor.falaiseBord(T, this.telephone);
-    this.meshFalaise = parSecteurs(fb.geo, mats.falaise, this.qualite === 'basse' ? 1 : 24);
+    const avecMonde = !!(rendu.monde && IleCharge.monde && IleCharge.monde() === 'glb');
+    this.meshFalaise = parSecteurs(fb.geo, mats.falaise, this.qualite === 'basse' || !avecMonde ? 1 : 24);
     const ds = IleDecor.dessous(T, L, fb.suspendus, this.telephone);
     this.meshDessous = [];
     if (ds.roche) this.meshDessous.push(parSecteurs(ds.roche, mats.dessous, 1));
