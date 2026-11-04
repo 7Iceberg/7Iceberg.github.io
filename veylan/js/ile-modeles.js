@@ -186,8 +186,12 @@ const IleModeles = (() => {
     'o-lanterne': { atlas: 7, case: [512, 512, 256] }, 'k-lanterne': { atlas: 7, case: [768, 512, 256] },
     'o-statue': { atlas: 7, case: [512, 768, 256] },
     'k-porte': { atlas: 8, case: [0, 0, 512] }, 'k-mine': { atlas: 8, case: [512, 0, 512] },
+    'o-etal': { atlas: 8, case: [0, 512, 256] }, 'k-etal': { atlas: 8, case: [256, 512, 256] },
+    'k-tente': { atlas: 8, case: [512, 512, 256] }, 'k-brasero': { atlas: 8, case: [768, 512, 256] },
+    'at-enclume': { atlas: 8, case: [0, 768, 256] }, 'at-alambic': { atlas: 8, case: [256, 768, 256] },
+    'at-etabli': { atlas: 8, case: [512, 768, 256] }, 'at-metier': { atlas: 8, case: [768, 768, 256] },
   };
-  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 512]];
+  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024]];
   const SOURCES = [['eau', 160, 148], ['feu', 130, 125], ['terre', 140, 166], ['air', 105, 120], [null, 92, 164]];
   let ICI = null;
   const ici = T => { if (T) ICI = T; return ICI; };
@@ -222,7 +226,7 @@ const IleModeles = (() => {
     maison: { modele: o => (ICI && ICI.id === 'kaldum' ? (o.service ? 'k-atelier' : varianteMaison(o, ['k-maison', 'k-maison', 'k-maison2'])) : !ervane() ? (o.service ? 'o-service' : varianteMaison(o, ['o-maison', 'o-maison2', 'o-tourelle'])) : dansBois(o.u, o.v) ? 'b-cabane' : 'm-maison'), taille: o => { const k = ervane() ? 1 : 1.15; return { l: (o.taille || [6, 5])[0] * k, p: (o.taille || [6, 5])[1] * k, h: (o.hauteur || 6) * k }; }, etire: o => !!o.service, angle: o => -(o.rot || 0) },
     arbre_bobine: { modele: 'b-bobine', taille: () => ({ l: 9, p: 9, h: 18 }) },
     pieu: { modele: 'b-pieux', taille: () => ({ l: 2.6, p: 2.6, h: 2 }) },
-    comptoir: { modele: 'm-etal', taille: o => ({ l: (o.taille || [5, 2])[0], p: (o.taille || [5, 2])[1], h: 3.6 }), angle: o => -(o.rot || 0) },
+    comptoir: { modele: () => (ICI && ICI.id === 'kaldum' ? 'k-etal' : !ervane() ? 'o-etal' : 'm-etal'), taille: o => ({ l: (o.taille || [5, 2])[0], p: (o.taille || [5, 2])[1], h: 3.6 }), angle: o => -(o.rot || 0) },
     lanterne: { modele: () => (ICI && ICI.id === 'kaldum' ? 'k-lanterne' : !ervane() ? 'o-lanterne' : 'm-lanterne'), taille: () => ({ l: 9, p: 9, h: ervane() ? 2.6 : 3 }) },
     pierre_levee: { modele: o => (o.element ? 's-pierre-' + o.element : 'm-pierre'), taille: o => ({ l: 9, p: 9, h: o.element ? 2.6 : 2.4 }) },
     cairn: { modele: o => (dansMurets(o.u, o.v) ? 'mu-cairn' : 's-cairn'), taille: o => ({ l: 9, p: 9, h: (o.hauteur || 2) * 1.05 }) },
@@ -245,8 +249,12 @@ const IleModeles = (() => {
     four: { modele: 'mu-four', taille: () => ({ l: 2.6, p: 2.6, h: 3 }) },
     terrier: { modele: 'mu-terrier', taille: () => ({ l: 3.6, p: 3.6, h: 9 }), enfonce: () => 0.12, angle: o => -(o.rot || 0) },
     arche_brisee: { modele: o => (dansAmarre(o.u, o.v) ? 'a-arcade' : null), taille: () => ({ l: 4.6, p: 4.6, h: 3.6 }), angle: o => -(o.rot || 0) },
-    tente: { modele: 'a-tente', taille: o => ({ l: (o.taille || [3, 3])[0] + 0.4, p: (o.taille || [3, 3])[1] + 0.4, h: 3 }), angle: o => -(o.rot || 0) },
-    feu: { modele: 'a-feu', taille: () => ({ l: 2.2, p: 2.2, h: 9 }) },
+    tente: { modele: () => (ICI && ICI.id === 'kaldum' ? 'k-tente' : 'a-tente'), taille: o => ({ l: (o.taille || [3, 3])[0] + 0.4, p: (o.taille || [3, 3])[1] + 0.4, h: 3 }), angle: o => -(o.rot || 0) },
+    feu: { modele: () => (ICI && ICI.id === 'kaldum' ? 'k-brasero' : 'a-feu'), taille: () => (ICI && ICI.id === 'kaldum' ? { l: 1.8, p: 1.8, h: 2.2 } : { l: 2.2, p: 2.2, h: 9 }) },
+    enclume: { modele: () => (!ervane() ? 'at-enclume' : null), taille: () => ({ l: 1.2, p: 1.2, h: 1.15 }), angle: o => -(o.rot || 0) },
+    alambic: { modele: () => (!ervane() ? 'at-alambic' : null), taille: () => ({ l: 1.8, p: 1.4, h: 1.7 }), angle: o => -(o.rot || 0) },
+    etabli: { modele: () => (!ervane() ? 'at-etabli' : null), taille: () => ({ l: 2.1, p: 1.2, h: 1.5 }), angle: o => -(o.rot || 0) },
+    metier_tisser: { modele: () => (!ervane() ? 'at-metier' : null), taille: () => ({ l: 1.9, p: 1.6, h: 1.9 }), angle: o => -(o.rot || 0) },
     plateforme: { modele: 'a-ancre', taille: () => ({ l: 1.8, p: 1.8, h: 1.4 }), decalage: [1, -3] },
   };
   function poses(S, T, hauteur) {
