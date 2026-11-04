@@ -1592,6 +1592,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (fig.heros && !enCombat) { veilleur.heros = true; veilleur.bouge = !!p.moving; }
     if (!enCombat) out.push(veilleur);
     else for (const s of A.sprites(this.combat, now, fig, this.telephone)) out.push(s);
+    if (!enCombat && typeof Compagnons !== 'undefined') Compagnons.figures3D(w, out, veilleur, now, { pos, H, N, fig });
     for (const g of w.groups) {
       const [gx, gy] = pos(g.rx, g.ry);
       let fondu = 1;

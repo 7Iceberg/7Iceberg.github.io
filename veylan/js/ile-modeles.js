@@ -183,6 +183,7 @@ const IleModeles = (() => {
     'k-maison': { atlas: 6, case: [0, 512, 512] }, 'k-atelier': { atlas: 6, case: [512, 512, 512] },
     'o-maison2': { atlas: 7, case: [0, 0, 512] }, 'o-tourelle': { atlas: 7, case: [512, 0, 512] },
     'k-maison2': { atlas: 7, case: [0, 512, 512] },
+    'o-lanterne': { atlas: 7, case: [512, 512, 256] }, 'k-lanterne': { atlas: 7, case: [768, 512, 256] },
   };
   const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024]];
   const SOURCES = [['eau', 160, 148], ['feu', 130, 125], ['terre', 140, 166], ['air', 105, 120], [null, 92, 164]];
@@ -220,7 +221,7 @@ const IleModeles = (() => {
     arbre_bobine: { modele: 'b-bobine', taille: () => ({ l: 9, p: 9, h: 18 }) },
     pieu: { modele: 'b-pieux', taille: () => ({ l: 2.6, p: 2.6, h: 2 }) },
     comptoir: { modele: 'm-etal', taille: o => ({ l: (o.taille || [5, 2])[0], p: (o.taille || [5, 2])[1], h: 3.6 }), angle: o => -(o.rot || 0) },
-    lanterne: { modele: 'm-lanterne', taille: () => ({ l: 9, p: 9, h: 2.6 }) },
+    lanterne: { modele: () => (ICI && ICI.id === 'kaldum' ? 'k-lanterne' : !ervane() ? 'o-lanterne' : 'm-lanterne'), taille: () => ({ l: 9, p: 9, h: ervane() ? 2.6 : 3 }) },
     pierre_levee: { modele: o => (o.element ? 's-pierre-' + o.element : 'm-pierre'), taille: o => ({ l: 9, p: 9, h: o.element ? 2.6 : 2.4 }) },
     cairn: { modele: o => (dansMurets(o.u, o.v) ? 'mu-cairn' : 's-cairn'), taille: o => ({ l: 9, p: 9, h: (o.hauteur || 2) * 1.05 }) },
     source: { modele: o => ({ feu: 's-braise', eau: 's-claire', terre: 's-mousse' })[o.element],

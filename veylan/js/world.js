@@ -222,6 +222,7 @@ class World {
         this.updatePlayer(dt);
         for (const g of this.groups) this.updateGroup(g, dt);
       }
+      if (typeof Compagnons !== 'undefined') Compagnons.suivre(this, dt);
       for (const n of this.nodes) if (!n.ready && n.readyAt <= this.time) { n.ready = true; this.emit('update'); }
       this.regenAcc += dt;
       if (this.regenAcc >= 1) {

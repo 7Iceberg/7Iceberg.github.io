@@ -736,6 +736,7 @@ class RendererGL {
     }
     for (const n of w.npcs) out.push({ key: 'n' + n.id, kind: 'npc', rx: n.x, ry: n.y, look: n.def.look || 'marcheur', name: n.def.name, quest: this.marks[n.id], bob: Math.sin(now / 900 + n.x) * 0.8 });
     for (const n of w.nodes) out.push({ key: 'r' + n.idx, kind: 'node', rx: n.x, ry: n.y, resource: n.resource, ready: n.ready });
+    if (typeof Compagnons !== 'undefined') Compagnons.figures2D(w, out, now);
     return out;
   }
 
@@ -793,7 +794,7 @@ class RendererGL {
       if (!e || e.kind !== s.kind) { if (e) this.dropEnt(e); e = this.makeEnt(s); this.ents.set(s.key, e); }
       const p = this.cellToScreen(s.rx, s.ry);
       e.c.position.set(p.x, p.y);
-      e.c.zIndex = (s.rx + s.ry) * 10 + 6;
+      e.c.zIndex = (s.rx + s.ry + (s.zDecal || 0)) * 10 + 6;
       e.c.alpha = s.alpha == null ? 1 : s.alpha;
       e.ui.position.set(p.x, p.y);
       e.ui.alpha = e.c.alpha;
@@ -824,6 +825,7 @@ class RendererGL {
       this.updateInsigne(e, s, now, k);
       e.shadow.scale.set(0.42 * 0.8 * k, 0.42 * 0.8 * k);
       e.ringTeam.tint = s.team === 'player' ? 0x4a90ff : 0xff5a5a;
+      e.ringTeam.visible = !s.noRing;
       e.ringTeam.scale.set(0.38 * k, 0.38 * k);
       e.ringImmune.visible = !!s.immune;
       if (s.immune) { e.ringImmune.tint = Paint.toInt(DATA.elements[s.immune].color); e.ringImmune.scale.set(0.44 * k, 0.44 * k); }

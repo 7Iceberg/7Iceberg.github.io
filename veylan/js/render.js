@@ -2420,7 +2420,7 @@ class Renderer {
       d.fade += (target - d.fade) * Math.min(1, dt * 9);
       items.push(d);
     }
-    for (const s of sprites) { s.depth = s.rx + s.ry; items.push(s); }
+    for (const s of sprites) { s.depth = s.rx + s.ry + (s.zDecal || 0); items.push(s); }
     if (inCombat) {
       for (const [k, tmp] of this.combat.temp) {
         if (tmp.kind !== 'rock') continue;
@@ -2655,6 +2655,7 @@ class Renderer {
     }
     for (const n of w.npcs) out.push({ kind: 'npc', rx: n.x, ry: n.y, look: n.def.look || 'marcheur', name: n.def.name, quest: this.marks[n.id], bob: 0, phase: n.x * 1.3 + n.y });
     for (const n of w.nodes) out.push({ kind: 'node', rx: n.x, ry: n.y, resource: n.resource, ready: n.ready });
+    if (typeof Compagnons !== 'undefined') Compagnons.figures2D(w, out, now);
     return out;
   }
 
@@ -2666,7 +2667,7 @@ class Renderer {
     const k = s.scale;
     c.globalAlpha = s.alpha;
     this.softShadow(c, p.x + 2, p.y + 1, 19 * k, 8.5 * k, 0.85);
-    this.drawRings(c, p, s, now);
+    if (!s.noRing) this.drawRings(c, p, s, now);
     if (this.quality === 'haute' && this.nearLiquid(s.rx, s.ry)) this.drawReflection(c, p, s);
     const breath = this.reducedMotion ? 1 : 1 + 0.022 * Math.sin(now / 640 + (s.phase || 0));
     c.save();
