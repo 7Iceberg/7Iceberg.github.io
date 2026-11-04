@@ -184,8 +184,10 @@ const IleModeles = (() => {
     'o-maison2': { atlas: 7, case: [0, 0, 512] }, 'o-tourelle': { atlas: 7, case: [512, 0, 512] },
     'k-maison2': { atlas: 7, case: [0, 512, 512] },
     'o-lanterne': { atlas: 7, case: [512, 512, 256] }, 'k-lanterne': { atlas: 7, case: [768, 512, 256] },
+    'o-statue': { atlas: 7, case: [512, 768, 256] },
+    'k-porte': { atlas: 8, case: [0, 0, 512] }, 'k-mine': { atlas: 8, case: [512, 0, 512] },
   };
-  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024]];
+  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 512]];
   const SOURCES = [['eau', 160, 148], ['feu', 130, 125], ['terre', 140, 166], ['air', 105, 120], [null, 92, 164]];
   let ICI = null;
   const ici = T => { if (T) ICI = T; return ICI; };
@@ -232,6 +234,9 @@ const IleModeles = (() => {
       taille: () => ({ l: 3, p: 3, h: 1.35 }), copies: [-1.5, 1.5] },
     ratelier: { modele: 'm-armes', taille: () => ({ l: 4, p: 2.2, h: 1.9 }), angle: o => -(o.rot || 0) },
     tour: { modele: (o, T) => (T && T.id === 'kaldum' ? null : 'm-tour'), taille: o => ({ l: (o.taille || [6, 6])[0], p: (o.taille || [6, 6])[1], h: 7 }) },
+    porte_de_forge: { modele: 'k-porte', taille: () => ({ l: 6.8, p: 5, h: 5 }), angle: o => -(o.rot || 0), decalage: [0, -1] },
+    bouche_de_mine: { modele: 'k-mine', taille: () => ({ l: 6.6, p: 6, h: 4.2 }), angle: o => -(o.rot || 0), decalage: [0, -0.8] },
+    statue: { modele: () => (!ervane() ? 'o-statue' : null), taille: () => ({ l: 1.4, p: 1.4, h: 2 }), angle: o => -(o.rot || 0), enfonce: () => -0.27 },
     longue_vue: { modele: 'm-belvedere', taille: () => ({ l: 3, p: 2.2, h: 2.4 }) },
     tonneau: { modele: 'm-tonneaux', taille: () => ({ l: 2.2, p: 2.2, h: 1.6 }) },
     puits_sec: { modele: 'mu-puits', taille: () => ({ l: 2.6, p: 2.6, h: 3.2 }) },
