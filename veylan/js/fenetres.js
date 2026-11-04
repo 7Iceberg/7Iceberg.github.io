@@ -205,6 +205,7 @@ Fenetres.ICON = (() => {
     tourneG: s('<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/>'),
     tourneD: s('<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4.5h-4.5"/>'),
     recentrer: s('<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path d="M12 8l4 4-4 4-4-4z"/>'),
+    regard: s('<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.5"/>'),
     pleinEcran: s('<path d="M14 4h6v6M20 4l-6 6M10 20H4v-6M4 20l6-6"/>'),
     quitterPleinEcran: s('<path d="M20 10h-6V4M14 10l6-6M4 14h6v6M10 14l-6 6"/>'),
   };

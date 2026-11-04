@@ -6,6 +6,8 @@ class CameraIle {
     const cdef = (opts.def && opts.def.camera) || {};
     this.taille = (opts.def && opts.def.taille) || [240, 180];
     this.terrain = opts.terrain || null;
+    this.bloque = opts.bloque || null;
+    this.dLibre = Infinity;
     const ex = Object.assign({}, cdef.exploration || {}, opts.style || {});
     this.ouverture = ex.ouverture || 20;
     this.elevations = ex.elevation || [35, 45];
@@ -20,6 +22,16 @@ class CameraIle {
     this.vitCible = { x: 0, y: 0 };
     this.vitJoueur = { x: 0, y: 0 };
     this.joueurPrec = null;
+    this.regards = {
+      jeu: { ouverture: this.ouverture, elevations: this.elevations.slice(), leve: this.leve, champs: this.champs.slice(), champDefaut: this.champDefaut },
+      basse: { ouverture: 58, elevations: [5, 9], leve: 2.2, champs: [9, 22], champDefaut: telephone ? 12 : 14 },
+      iso: { ouverture: 6, elevations: [30, 30], leve: 0, champs: [16, 56], champDefaut: telephone ? 24 : 30, fixe: true },
+    };
+    this.regard = 'jeu';
+    this.passageRegard = null;
+    let garde = null;
+    try { garde = localStorage.getItem(CameraIle.CLE_REGARD); } catch (e) {   }
+    if (garde && garde !== 'jeu' && this.regards[garde]) this.poserRegard(garde);
     this.cam = new THREE.PerspectiveCamera(this.ouverture, 1, 1, 900);
     this.champ = this.champDefaut;
     this.cible = { x: 0, y: 0, h: 0 };
@@ -110,7 +122,8 @@ class CameraIle {
     const e = etat || (this.mode === 'carte' && this.carte ? this.etatCarte() : this.etatExploration());
     const cam = this.cam, az = e.az != null ? e.az : this.azimut;
     const aspect = this.vw && this.vh ? this.vw / this.vh : 1.6;
-    const d = e.dist != null ? e.dist : e.largeur / (2 * Math.tan(e.fov * Math.PI / 360) * aspect);
+    let d = e.dist != null ? e.dist : e.largeur / (2 * Math.tan(e.fov * Math.PI / 360) * aspect);
+    if (!etat && this.mode === 'exploration' && Number.isFinite(this.dLibre)) d = Math.min(d, this.dLibre);
     const hv = e.h + (e.leve || 0);
     cam.fov = e.fov;
     cam.position.set(e.x + Math.cos(e.el) * Math.sin(az) * d, hv + Math.sin(e.el) * d, e.y + Math.cos(e.el) * Math.cos(az) * d);
@@ -295,9 +308,108 @@ class CameraIle {
   }
   static diagonale(az) { return CameraIle.arc(Math.round((az - Math.PI / 4) / (Math.PI / 2)) * (Math.PI / 2) + Math.PI / 4); }
 
+
+  poserRegard(nom) {
+    const R = this.regards[nom];
+    this.regard = nom;
+    this.ouverture = R.ouverture; this.elevations = R.elevations.slice(); this.leve = R.leve;
+    this.champs = R.champs.slice(); this.champDefaut = R.champDefaut;
+    if (R.fixe) { this.azimut = CameraIle.diagonale(this.azimut); this.animAz = null; }
+  }
+  changerRegard(nom, immediat) {
+    if (this.mode !== 'exploration' || this.trans || this.retourCarte) return null;
+    const noms = Object.keys(this.regards);
+    const cible = nom || noms[(noms.indexOf(this.regard) + 1) % noms.length];
+    if (!this.regards[cible] || cible === this.regard) return null;
+    const de = { ouverture: this.ouverture, e0: this.elevations[0], e1: this.elevations[1], leve: this.leve, champ: this.champ }, az0 = this.azimut;
+    this.anim = null;
+    this.poserRegard(cible);
+    const vers = { ouverture: this.ouverture, e0: this.elevations[0], e1: this.elevations[1], leve: this.leve, champ: this.champDefaut };
+    if (cible === 'basse') { const cap = this.capDegage(); if (cap != null) { if (immediat || CameraIle.calme()) this.azimut = cap; else this.animAz = cap; } }
+    if (immediat || CameraIle.calme()) { this.passageRegard = null; this.champ = vers.champ; this.placer(); }
+    else {
+      if (this.regards[cible].fixe) { const diag = this.azimut; this.azimut = az0; this.animAz = Math.abs(CameraIle.arc(diag - az0)) < 1e-6 ? null : diag; }
+      this.ouverture = de.ouverture; this.elevations = [de.e0, de.e1]; this.leve = de.leve;
+      this.passageRegard = { de, vers, t0: null, duree: 500 };
+    }
+    try { localStorage.setItem(CameraIle.CLE_REGARD, cible); } catch (e) {   }
+    this.changed();
+    return cible;
+  }
+  majRegard(now) {
+    const p = this.passageRegard;
+    if (!p) return;
+    if (p.t0 == null) p.t0 = now;
+    const u = Math.max(0, Math.min(1, (now - p.t0) / p.duree)), e = u * u * (3 - 2 * u);
+    const m = (a, b) => a + (b - a) * e;
+    this.ouverture = m(p.de.ouverture, p.vers.ouverture);
+    this.elevations = [m(p.de.e0, p.vers.e0), m(p.de.e1, p.vers.e1)];
+    this.leve = m(p.de.leve, p.vers.leve);
+    this.champ = Math.exp(m(Math.log(p.de.champ), Math.log(p.vers.champ)));
+    if (u >= 1) this.passageRegard = null;
+    this.changed();
+  }
+  finirRegard() {
+    const p = this.passageRegard;
+    if (!p) return;
+    this.passageRegard = null;
+    this.ouverture = p.vers.ouverture; this.elevations = [p.vers.e0, p.vers.e1]; this.leve = p.vers.leve; this.champ = p.vers.champ;
+    if (this.regards[this.regard].fixe && this.animAz != null) { this.azimut = this.animAz; this.animAz = null; }
+  }
+  majDegagement(dt) {
+    const T = this.terrain;
+    if (this.mode !== 'exploration' || this.regard !== 'basse' || !T || typeof T.solBrutA !== 'function') { this.dLibre = Infinity; return; }
+    const e = this.etatExploration(), d0 = this.distance(e.largeur), sx = Math.sin(e.az), sy = Math.cos(e.az);
+    const ce = Math.cos(e.el), se = Math.sin(e.el), hv = e.h + (e.leve || 0);
+    let libre = d0, plein = 0, debut = 0;
+    for (let k = 1.2; k <= d0; k += 0.5) {
+      const x = e.x + sx * ce * k, y = e.y + sy * ce * k, ligne = hv + se * k, sol = T.solBrutA(x, y);
+      if (Number.isFinite(sol) && sol > ligne - 0.4) { libre = k - 0.8; break; }
+      if (this.bloque && this.bloque(x, y) && (!Number.isFinite(sol) || ligne - sol < 6)) {
+        if (!plein) debut = k;
+        plein++;
+        if (plein >= 3) { libre = debut - 0.8; break; }
+      } else plein = 0;
+    }
+    libre = Math.max(2.4, libre);
+    if (libre >= d0 - 0.01) libre = Infinity;
+    const cur = Number.isFinite(this.dLibre) ? this.dLibre : d0, vise = Number.isFinite(libre) ? libre : d0;
+    const tau = vise < cur ? 0.06 : 0.35, nouv = cur + (vise - cur) * (dt > 0 ? 1 - Math.exp(-dt / tau) : 1);
+    this.dLibre = !Number.isFinite(libre) && nouv >= d0 - 0.02 ? Infinity : nouv;
+  }
+  horizonCache(az, x, y, h) {
+    const T = this.terrain;
+    if (!T || typeof T.solBrutA !== 'function') return 0;
+    const R = this.regards.basse, d = this.distance(R.champDefaut), oeil = h + R.leve + Math.sin(R.elevations[0] * Math.PI / 180) * d;
+    const vx = -Math.sin(az), vy = -Math.cos(az);
+    let pire = -Infinity;
+    for (let k = 4; k <= 40; k += 2) {
+      const sol = T.solBrutA(x + vx * k, y + vy * k);
+      if (Number.isFinite(sol)) pire = Math.max(pire, Math.atan2(sol - oeil, k + d));
+    }
+    return Number.isFinite(pire) ? pire : 0;
+  }
+  capDegage() {
+    const x = this.joueur.x, y = this.joueur.y, h = this.joueur.h || 0;
+    const ici = this.horizonCache(this.azimut, x, y, h);
+    if (ici < 0.2) return null;
+    let meilleur = null, m = ici - 0.05;
+    for (let i = 1; i < 8; i++) {
+      const az = CameraIle.arc(this.azimut + i * Math.PI / 4), c = this.horizonCache(az, x, y, h);
+      if (c < m) { m = c; meilleur = az; }
+    }
+    return meilleur;
+  }
+  partIso() {
+    if (this.mode !== 'exploration') return 0;
+    const j = Math.min(this.regards.jeu.ouverture, this.regards.basse.ouverture), i = this.regards.iso.ouverture;
+    return Math.max(0, Math.min(1, (j - this.ouverture) / (j - i)));
+  }
+
   tourner(da) { if (da) this.tournerA(this.azimut + da); }
   tournerA(az) {
     if (this.mode === 'combat' || this.mode === 'carte' || this.trans || !Number.isFinite(az)) return;
+    if (this.regards[this.regard].fixe) return;
     this.animAz = null;
     const a = CameraIle.arc(az);
     if (a === this.azimut) return;
@@ -308,6 +420,7 @@ class CameraIle {
   tournerVers(az) {
     if (this.mode === 'carte') { this.carteTournerVers(az); return; }
     if (this.mode === 'combat' || this.trans || !Number.isFinite(az)) return;
+    if (this.regards[this.regard].fixe) return;
     if (CameraIle.calme()) { this.tournerA(az); return; }
     this.animAz = CameraIle.arc(az);
   }
@@ -342,6 +455,7 @@ class CameraIle {
   }
 
   sauter(x, y, h) {
+    this.finirRegard();
     if (x != null) { this.joueur.x = x; this.joueur.y = y; this.joueur.h = h || 0; }
     if (this.mode === 'carte') { this.decalage.x = 0; this.decalage.y = 0; this.cible.x = this.joueur.x; this.cible.y = this.joueur.y; this.cible.h = this.joueur.h; this.vitCible.x = 0; this.vitCible.y = 0; return; }
     if (this.mode === 'combat' || this.trans) {
@@ -389,6 +503,7 @@ class CameraIle {
 
 
   entrerCombat(aire, immediat) {
+    this.finirRegard();
     if (this.mode === 'carte') this.sortirCarte(true);
     this.retourCarte = null;
     const premier = this.mode !== 'combat';
@@ -592,6 +707,8 @@ class CameraIle {
       d.x *= k; d.y *= k;
       if (d.x * d.x + d.y * d.y < 0.0004) { d.x = 0; d.y = 0; this.revient = false; }
     }
+    if (this.passageRegard) this.majRegard(now);
+    this.majDegagement(dt);
     const a = this.anim;
     if (a) {
       const t = 1 - Math.exp(-dt * 12);
@@ -690,6 +807,7 @@ class CameraIle {
 
 
   entrerCarte(opts) {
+    this.finirRegard();
     if (this.mode !== 'exploration' || this.trans) return false;
     opts = opts || {};
     const C = CameraIle.CARTE;
@@ -958,7 +1076,7 @@ class CameraIle {
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
 
-  state() { return { zoom: this.zoom, x: this.vise.x, y: this.vise.y, fitZoom: this.fitZoom, atFit: this.atFit, width: this.vw, height: this.vh, champ: this.champ, mode: this.mode, passage: !!this.trans, carte: !!this.carte }; }
+  state() { return { zoom: this.zoom, x: this.vise.x, y: this.vise.y, fitZoom: this.fitZoom, atFit: this.atFit, width: this.vw, height: this.vh, champ: this.champ, mode: this.mode, passage: !!this.trans, carte: !!this.carte, regard: this.regard }; }
 
   changed() {
     this.dirty = true;
@@ -982,4 +1100,5 @@ class CameraIle {
   }
 }
 
+CameraIle.CLE_REGARD = 'veylan.regard';
 CameraIle.CARTE = { ouverture: 30, elevation: [50, 74], min: 0.11, max: 3.55, approche: 0.41, depart: 0.9, retour: 0.7, marge: 0.05 };

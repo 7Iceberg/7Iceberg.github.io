@@ -829,7 +829,48 @@ const IleModeles = (() => {
     herbe: { pas: 6, moyenne: [0.2304, 0.6006, 0.0767] }, foret: { pas: 6, moyenne: [0.0543, 0.0648, 0.0175] },
     chemin: { pas: 5, moyenne: [0.5536, 0.3036, 0.1161] }, roche: { pas: 7, moyenne: [0.2214, 0.1974, 0.1531] },
     dalles: { pas: 9, moyenne: [0.5818, 0.4363, 0.2154] }, paves: { pas: 4.5, moyenne: [0.4429, 0.4041, 0.2351] },
+    'z-mailles': { pas: 6, moyenne: [0.2104, 0.3778, 0.0569] }, 'z-sources': { pas: 6, moyenne: [0.0288, 0.1326, 0.0742] },
+    'z-murets': { pas: 6, moyenne: [0.5452, 0.2876, 0.0531] }, 'z-bois': { pas: 6, moyenne: [0.0902, 0.0737, 0.0114] },
+    'z-amarre': { pas: 6, moyenne: [0.2012, 0.2542, 0.1946] },
+    'z-cimes': { pas: 6, moyenne: [0.1565, 0.5358, 0.0545] },
+    'z-clairieres': { pas: 6, moyenne: [0.3115, 0.3306, 0.1033] },
+    'z-eboulis': { pas: 6, moyenne: [0.3976, 0.3374, 0.2523] },
+    'z-kville': { pas: 6, moyenne: [0.0273, 0.0219, 0.0171] },
+    'z-vapeurs': { pas: 6, moyenne: [0.7927, 0.6418, 0.3381] },
+    'z-sentiers': { pas: 6, moyenne: [0.4198, 0.2737, 0.0558] },
+    'z-toiles': { pas: 6, moyenne: [0.0533, 0.07, 0.1249] },
+    'z-galeries': { pas: 6, moyenne: [0.0743, 0.0398, 0.022] },
+    'z-fonderie': { pas: 6, moyenne: [0.0368, 0.0202, 0.0214] },
   };
+  const ZONES_SOL = {
+    ervane_mailles: 'z-mailles', ervane_sources: 'z-sources', ervane_murets: 'z-murets', ervane_bois: 'z-bois', ervane_amarre: 'z-amarre',
+    orsane_cimes: 'z-cimes', orsane_clairieres: 'z-clairieres', orsane_sentiers: 'z-sentiers', orsane_toiles: 'z-toiles', orsane_eboulis: 'z-eboulis',
+    kaldum_ville: 'z-kville', kaldum_galeries: 'z-galeries', kaldum_vapeurs: 'z-vapeurs', kaldum_fonderie: 'z-fonderie',
+  };
+  const NZ = 5;
+  function carteZones(THREE, T, zones) {
+    const W = T.W, H = T.H, n = Math.min(zones.length, NZ), k = new Float32Array(W * H * 4);
+    for (let v = 0; v < H; v++) for (let u = 0; u < W; u++) {
+      const z = zones.indexOf(T.zoneA(u + 0.5, v + 0.5));
+      if (z >= 0 && z < 4 && z < n) k[(v * W + u) * 4 + z] = 1;
+    }
+    const flou = (src, horiz) => {
+      const out = new Float32Array(src.length), r = 2;
+      for (let v = 0; v < H; v++) for (let u = 0; u < W; u++) for (let c = 0; c < 4; c++) {
+        let a = 0, m = 0;
+        for (let d = -r; d <= r; d++) { const x = horiz ? u + d : u, y = horiz ? v : v + d; if (x < 0 || y < 0 || x >= W || y >= H) continue; a += src[(y * W + x) * 4 + c]; m++; }
+        out[(v * W + u) * 4 + c] = a / m;
+      }
+      return out;
+    };
+    let f = k;
+    for (let p = 0; p < 2; p++) f = flou(flou(f, true), false);
+    const data = new Uint8Array(W * H * 4);
+    for (let i = 0; i < data.length; i++) data[i] = Math.round(f[i] * 255);
+    const t = new THREE.DataTexture(data, W, H, THREE.RGBAFormat, THREE.UnsignedByteType);
+    t.magFilter = t.minFilter = THREE.LinearFilter; t.generateMipmaps = false; t.needsUpdate = true;
+    return { t, octets: data.length };
+  }
   const TYPES_SOL = { vert: [0.1133, 0.2848, 0.11], dalles: [0.7406, 0.7182, 0.6209], terre: [0.3876, 0.3046, 0.1296], roche: [0.3487, 0.3233, 0.3142] };
   const teinteDalles = hex => {
     if (typeof hex !== 'string' || !/^#[0-9a-f]{6}$/i.test(hex)) return [1, 1, 1];
@@ -995,8 +1036,20 @@ const IleModeles = (() => {
       #define LUM(v) dot(v, vec3(0.3, 0.59, 0.11))
       // L'herbe peinte (tools/sols/meshy_sol.py) : son grain, ses reflets jaune-vert et ses creux bleu-vert à
       // moitié ; la litière de forêt en luminosité seule.
-      vec3 tH = TEX(solHerbe, ${SOLS.herbe.pas.toFixed(1)});
-      vec3 gH = mix(vec3(LUM(tH) / LUM(moyHerbe)), tH / max(moyHerbe, vec3(0.02)), 0.5);
+      // L'herbe de la zone (3.46) : la texture de chaque zone, mêlée par la carte des zones.
+      vec4 zw = texture2D(solZones, (q + 0.5) / solCarteTaille);
+      float z4 = max(0.0, 1.0 - zw.r - zw.g - zw.b - zw.a);
+      vec3 gH = vec3(0.0), aZ = vec3(0.0);
+      float fZ = 0.0;
+      // gH : le grain (comme avant) ; aZ : la couleur propre de la texture, à luminosité 1 ; fZ : la
+      // force de la zone (0 pour une zone sans sol propre : son herbe reste celle d'avant).
+      #define GZ(s, m, f) { vec3 tz = TEX(s, 6.0); gH += mix(vec3(LUM(tz) / LUM(m)), tz / max(m, vec3(0.02)), 0.5) * w; aZ += tz / max(LUM(m), 0.01) * w * f; fZ += w * f; }
+      { float w = zw.r; if (w > 0.002) GZ(solZ0, moyZ0, solForceZ[0]) }
+      { float w = zw.g; if (w > 0.002) GZ(solZ1, moyZ1, solForceZ[1]) }
+      { float w = zw.b; if (w > 0.002) GZ(solZ2, moyZ2, solForceZ[2]) }
+      { float w = zw.a; if (w > 0.002) GZ(solZ3, moyZ3, solForceZ[3]) }
+      { float w = z4; if (w > 0.002) GZ(solZ4, moyZ4, solForceZ[4]) }
+      aZ /= max(fZ, 0.001);
       vec3 gV = mix(gH, vec3(LUM(TEX(solForet, ${SOLS.foret.pas.toFixed(1)})) / LUM(moyForet)), tFor);
       gV = 1.0 + (clamp(gV, 0.0, 2.5) - 1.0) * 0.6;
       vec3 tC = TEX(solChemin, ${SOLS.chemin.pas.toFixed(1)});
@@ -1029,7 +1082,14 @@ const IleModeles = (() => {
       float fP = smoothstep(0.5, 0.7, cP + (0.5 - ond) * 0.7) * (1.0 - nV) + nV * smoothstep(0.605, 0.66, vPl) * vil;
       dalle *= 1.0 - 0.28 * clamp(1.0 - fP / max(wP, 0.001), 0.0, 1.0);
       float wS = wB * nSe;
-      vec3 col = c * (wV * gV + (wB - wS) * gB + wG * gG) + wP * dalle + wS * pave * lumC * 0.95;
+      // Le sol naturel de chaque zone prend la couleur peinte de sa texture (à la luminosité du lieu),
+      // pas seulement son grain : l'herbe (65 %), la terre nue hors des sentiers et des places (55 %),
+      // la roche à plat (45 %). Chaque zone a sa teinte, comme dans Dofus ; les sentiers, les dalles,
+      // les pavés et les pentes gardent les leurs.
+      vec3 nat = aZ * lumC * 1.05;
+      float natB = max(0.0, (wB - wS) * (1.0 - max(nEp, nT)));
+      vec3 col = wV * mix(c * gV, nat, 0.65 * fZ) + natB * mix(c * gB, nat, 0.55 * fZ) + c * ((wB - wS - natB) * gB)
+        + wG * mix(c * gG, nat, 0.45 * fZ) + wP * dalle + wS * pave * lumC * 0.95;
       // Les parcelles cultivées : la terre labourée en sillons le long du grand côté (le dessus plus
       // clair, le creux sombre), un bord tassé sans sillons, une lisière nette un peu ondulée.
       for (int i = 0; i < ${MAX_PARCELLES}; i++) {
@@ -1079,12 +1139,21 @@ const IleModeles = (() => {
     const mats = new Set();
     for (const o of ile.monde.children) if (/^mo_sol/.test(o.name) && o.material && o.material.vertexColors) mats.add(o.material);
     if (!mats.size) return 0;
-    const noms = ['herbe', 'foret', 'chemin', 'roche', 'dalles', 'paves'], tx = {};
+    const noms = ['foret', 'chemin', 'roche', 'dalles', 'paves'], tx = {};
     const etc = etcLu(ile.renderer);
-    await Promise.all(noms.map(async n => { tx[n] = await texSol(THREE, n, etc); }));
-    ile.solsEtc = noms.filter(n => tx[n].t.isCompressedTexture).length;
+    const zones = ile.T ? [...new Set(ile.T.regionsZone || [])].filter(Boolean).slice(0, NZ) : [];
+    const solsZ = Array.from({ length: NZ }, (_, i) => ZONES_SOL[zones[i]] || 'herbe');
+    const aCharger = [...new Set(noms.concat(solsZ))];
+    await Promise.all(aCharger.map(async n => { tx[n] = await texSol(THREE, n, etc); }));
+    ile.solsEtc = aCharger.filter(n => tx[n].t.isCompressedTexture).length;
+    ile.solsCharges = aCharger.length;
     const uniforms = {}, cap = n => n[0].toUpperCase() + n.slice(1);
     for (const n of noms) { uniforms['sol' + cap(n)] = { value: tx[n].t }; uniforms['moy' + cap(n)] = { value: tx[n].moyenne }; }
+    solsZ.forEach((n, i) => { uniforms['solZ' + i] = { value: tx[n].t }; uniforms['moyZ' + i] = { value: tx[n].moyenne }; });
+    uniforms.solForceZ = { value: solsZ.map(n => (n === 'herbe' ? 0 : 1)) };
+    const cz = ile.T && zones.length ? carteZones(THREE, ile.T, zones) : null;
+    uniforms.solZones = { value: cz ? cz.t : bruitSolZones(THREE) };
+    ile.solsZones = solsZ.slice(0, Math.max(zones.length, 1));
     const bz = bruitSol(THREE), carte = ile.T ? carteSol(THREE, ile.T) : null;
     uniforms.solBruit = { value: bz.t };
     uniforms.solCarte = { value: carte ? carte.t : bz.t };
@@ -1108,7 +1177,7 @@ const IleModeles = (() => {
     const gainD = ile.def && ile.def.rendu && Number.isFinite(ile.def.rendu.dallesGain) ? Math.max(0, Math.min(1, ile.def.rendu.dallesGain)) : 1;
     uniforms.solGainDalles = { value: gainD };
     ileSol = ile;
-    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + `\nuniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}]; uniform vec4 solParcelles[${MAX_PARCELLES * 2}]; uniform vec4 solLumieres[${MAX_LUMIERES}]; uniform float solNuit; uniform float solTemps; uniform vec3 solTeinteDalles; uniform float solGainDalles;`;
+    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + Array.from({ length: NZ }, (_, i) => `\nuniform sampler2D solZ${i}; uniform vec3 moyZ${i};`).join('') + `\nuniform float solForceZ[${NZ}]; uniform sampler2D solZones; uniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}]; uniform vec4 solParcelles[${MAX_PARCELLES * 2}]; uniform vec4 solLumieres[${MAX_LUMIERES}]; uniform float solNuit; uniform float solTemps; uniform vec3 solTeinteDalles; uniform float solGainDalles;`;
     for (const m of mats) {
       const prec = m.onBeforeCompile, cle = Object.prototype.hasOwnProperty.call(m, 'customProgramCacheKey') ? m.customProgramCacheKey : null;
       m.onBeforeCompile = (sh, r) => {
@@ -1125,12 +1194,17 @@ const IleModeles = (() => {
           .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_SOL)
           .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + GLSL_LUMIERES);
       };
-      m.customProgramCacheKey = () => 'sol-meshy-8/' + (cle ? cle.call(m) : '');
+      m.customProgramCacheKey = () => 'sol-meshy-11/' + (cle ? cle.call(m) : '');
       m.needsUpdate = true;
     }
     ile.solCarte = !!carte;
     ile.solCarteTex = carte ? carte.t : null;
-    return noms.reduce((a, n) => a + tx[n].octets, 0) + bz.octets + (carte ? carte.octets : 0);
+    return aCharger.reduce((a, n) => a + tx[n].octets, 0) + bz.octets + (carte ? carte.octets : 0) + (cz ? cz.octets : 0);
+  }
+  function bruitSolZones(THREE) {
+    const t = new THREE.DataTexture(new Uint8Array([255, 0, 0, 0]), 1, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
+    t.needsUpdate = true;
+    return t;
   }
 
   return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, ATLAS, OBJETS, SOLS, VILLAGES, DENSE, CARTES_DENSES, OBSTACLES, cartes, fumees, lumieresSol, charger, chargerSemis, poses, posesObstacles, places, poser, animer, habillerSol };

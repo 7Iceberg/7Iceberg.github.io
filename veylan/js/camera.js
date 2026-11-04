@@ -383,7 +383,7 @@ class CameraControls {
     const [a, b] = this.touches.values(), p = this.pinch, cam = this.camera;
     if (typeof cam.tournerA === 'function' && typeof p.az0 === 'number') {
       const ang = Math.atan2(b.y - a.y, b.x - a.x), da = Math.atan2(Math.sin(ang - p.a0), Math.cos(ang - p.a0));
-      if (!p.tourne && Math.abs(da) > 0.12) { p.tourne = true; p.a0 = ang; p.az0 = cam.azimut; }
+      if (!p.tourne && Math.abs(da) > 0.12) { p.tourne = true; p.a0 += Math.sign(da) * 0.12; p.az0 = cam.azimut; cam.tournerA(p.az0 + Math.atan2(Math.sin(ang - p.a0), Math.cos(ang - p.a0))); }
       else if (p.tourne) cam.tournerA(p.az0 + da);
     }
     const s = cam.clientToScreen((a.x + b.x) / 2, (a.y + b.y) / 2);
@@ -400,5 +400,6 @@ class CameraControls {
     else if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract') zoom(0.8);
     else if ((e.code === 'KeyQ' || e.code === 'KeyE') && !e.defaultPrevented && typeof cam.tournerVers === 'function') { e.preventDefault(); cam.tournerVers((cam.animAz != null ? cam.animAz : cam.azimut) + (e.code === 'KeyQ' ? -1 : 1) * Math.PI / 4); }
     else if ((e.key === '0' || e.code === 'Numpad0') && !(this.opts.zeroTaken && this.opts.zeroTaken(e))) { e.preventDefault(); cam.fit(true); }
+    else if (e.code === 'KeyR' && !e.defaultPrevented && typeof cam.changerRegard === 'function') { e.preventDefault(); cam.changerRegard(); }
   }
 }

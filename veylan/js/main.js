@@ -120,10 +120,24 @@
 
   const vue = document.getElementById('vue');
   vue.innerHTML = `<button id="vue-recentrer" class="vy-camera__bouton au-cadre" aria-label="Recentrer la vue (0)" title="Recentrer la vue (0)">${Fenetres.ICON.recentrer}</button>` +
+    `<button id="vue-regard" class="vy-camera__bouton" hidden>${Fenetres.ICON.regard}</button>` +
     (PleinEcran.disponible() ? '<button id="vue-plein-ecran" class="vy-camera__bouton" aria-pressed="false"></button>' : '');
   const recentrer = document.getElementById('vue-recentrer');
   recentrer.addEventListener('click', () => R.camera.fit(true));
   addEventListener('veylan:camera', evt => recentrer.classList.toggle('au-cadre', !!evt.detail.atFit));
+  const regard = document.getElementById('vue-regard');
+  const NOMS_REGARD = { jeu: 'la vue du jeu', basse: 'la vue basse', iso: 'la vue isométrique' };
+  const majRegard = () => {
+    const cam = R.camera, ok = !!cam && typeof cam.changerRegard === 'function' && cam.mode === 'exploration';
+    regard.hidden = !ok;
+    if (!ok) return;
+    const noms = Object.keys(cam.regards), suivant = noms[(noms.indexOf(cam.regard) + 1) % noms.length];
+    const label = `Passer à ${NOMS_REGARD[suivant] || suivant} (R)`;
+    if (regard.title !== label) { regard.title = label; regard.setAttribute('aria-label', label); }
+  };
+  regard.addEventListener('click', () => { const cam = R.camera; if (cam && typeof cam.changerRegard === 'function') cam.changerRegard(); majRegard(); });
+  addEventListener('veylan:camera', majRegard);
+  setInterval(majRegard, 1000);
   const pleinEcran = document.getElementById('vue-plein-ecran');
   if (pleinEcran) {
     const sync = () => {

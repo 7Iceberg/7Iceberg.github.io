@@ -431,7 +431,8 @@ class Ile3D {
     mats.uSol.etatCases.value = this.arene.texCases;
     this.marques3D(THREE, scene);
     if (this.nuit) { this.nuit.materiaux(); this.nuit.lucioles(scene); if (this.nuit.ciel3D) this.nuit.ciel3D(scene); }
-    const cam = this.camera = new CameraIle({ el: this.board, def, terrain: T, style: this.nuit && this.nuit.styleCamera ? this.nuit.styleCamera() : null });
+    const bloque = (x, y) => { const P = this.world && this.world.plateau; return !!(P && P.nav && typeof P.nav.libre === 'function' && !P.nav.libre(x, y) && T.eauA(x, y) == null && !(T.videA && T.videA(x, y))); };
+    const cam = this.camera = new CameraIle({ el: this.board, def, terrain: T, bloque, style: this.nuit && this.nuit.styleCamera ? this.nuit.styleCamera() : null });
     this.redimensionner();
     const p = world.player;
     cam.sauter(p.rx, p.ry, this.hauteur(p.rx, p.ry));
@@ -1392,10 +1393,14 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       if (t.loin) t.loin.visible = !proche && d < solMax;
     }
     const kNuit = this.nuit ? (this.nuit.kDetail || (this.telephone ? 0.8 : 0.85)) : 1;
-    const rDet = (this.qualite === 'haute' ? 60 : this.qualite === 'basse' ? 30 : 45) * kNuit, rSil = (this.qualite === 'haute' ? 120 : 80) * (this.nuit ? (this.nuit.kSil || 0.72) : 1);
+    let rDet = (this.qualite === 'haute' ? 60 : this.qualite === 'basse' ? 30 : 45) * kNuit, rSil = (this.qualite === 'haute' ? 120 : 80) * (this.nuit ? (this.nuit.kSil || 0.72) : 1);
+    const ri = !vol && cam.partIso ? cam.partIso() : 0;
+    if (ri > 0) { rDet += (Math.min(rDet, champ * 0.75 + 8) - rDet) * ri; rSil += (Math.min(rSil, champ * 0.6 + 10) - rSil) * ri; }
     const demi = IleDecor.TUILE / 2;
     const distMorceau = t => Math.hypot(Math.max(0, Math.abs(t.centre[0] - c.x) - demi), Math.max(0, Math.abs(t.centre[1] - c.y) - demi));
-    if (this.monde && typeof IleGlb === 'object' && IleGlb.portee && !tact) IleGlb.portee(this.monde, c, { sol: solMax, semis: rSil, reste: Math.max(rSil, 60) });
+    const reste = Math.max(rSil, 60) + (Math.min(Math.max(rSil, 60), champ * 0.9 + 20) - Math.max(rSil, 60)) * ri;
+    const solVu = Number.isFinite(solMax) ? solMax + (Math.min(solMax, champ * 0.9 + 14) - solMax) * ri : solMax;
+    if (this.monde && typeof IleGlb === 'object' && IleGlb.portee && !tact) IleGlb.portee(this.monde, c, { sol: solVu, semis: rSil, reste });
     for (const t of this.tuilesDecor) {
       const d = distMorceau(t);
       t.groupe.visible = d < rDet && !tact;
@@ -1537,6 +1542,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const kp = this.nuit ? 0.92 : 1.1, kl = this.nuit ? 2.0 : 2.7;
     if (f.isFogExp2) f.density = (this.nuit.densite || 0.016) * (1 - fc) + 0.0035 * fc;
     else { f.near = d * kp * (1 - fc) + (d + 30) * fc; f.far = d * kl * (1 - fc) + (d + 120) * fc; }
+    const ri = this.camera.partIso ? this.camera.partIso() : 0;
+    if (ri > 0 && f.isFogExp2) f.density = f.density * (1 - ri) + Math.min(f.density, 0.26 / d) * ri;
     const vol = this.camera.survolCarte ? this.camera.survolCarte() : null;
     if (vol) {
       const k = vol.progres;
