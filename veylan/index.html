@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0f141d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Veylan">
+  <title>Veylan</title>
+  <link rel="icon" href="assets/ui/icone-v.png" type="image/png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/ui/icone-apple.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preload" href="assets/ui/logo-veylan.webp" as="image">
+  <link rel="stylesheet" href="css/polices.css?v=20261104004220">
+  <link rel="stylesheet" href="css/tokens.css?v=20261104004220">
+  <link rel="stylesheet" href="css/components.css?v=20261104004220">
+  <link rel="stylesheet" href="css/style.css?v=20261104004220">
+  <link rel="stylesheet" href="css/fenetres.css?v=20261104004220">
+  <link rel="stylesheet" href="css/faction.css?v=20261104004220">
+  <link rel="stylesheet" href="css/sorts.css?v=20261104004220">
+  <link rel="stylesheet" href="css/fenetres-personnage.css?v=20261104004220">
+  <link rel="stylesheet" href="css/veille.css?v=20261104004220">
+  <link rel="stylesheet" href="css/garderobe.css?v=20261104004220">
+  <link rel="stylesheet" href="css/guide.css?v=20261104004220">
+  <link rel="stylesheet" href="css/jeu.css?v=20261104004220">
+  <link rel="stylesheet" href="css/accueil.css?v=20261104004220">
+  <link rel="stylesheet" href="css/verre.css?v=20261104004220">
+  <link rel="stylesheet" href="css/theme-duality.css?v=20261104004220">
+  <link rel="stylesheet" href="css/interface.css?v=20261104004220">
+  <link rel="stylesheet" href="css/notifs.css?v=20261104004220">
+  <link rel="stylesheet" href="css/voile-paysage.css?v=20261104004220">
+  <link rel="stylesheet" href="css/voile-medaille.css?v=20261104004220">
+</head>
+<body>
+  <div id="app" class="vy-ui vy-verre mode-explore">
+    <header id="topbar">
+      <div id="brand"><img src="assets/ui/logo-veylan.webp" alt="Veylan" width="74" height="30"></div>
+      <div id="timeline"></div>
+      <div id="challenge" class="hidden"></div>
+      <div id="round"></div>
+    </header>
+
+    <main id="stage">
+      <canvas id="board"></canvas>
+      <div id="banner" class="hidden"></div>
+      <div id="explore-hud">
+        <div id="player-bar"></div>
+        <div id="map-name"></div>
+        <div id="carte-info" class="vy-carte-info"></div>
+        <div id="tracker"></div>
+        <div id="bas-centre"><div id="vital" class="vy-vital"></div><div id="raccourcis" class="vy-raccourcis" aria-label="Raccourcis d'objets"></div></div>
+        <div id="lieu" class="vy-lieu" role="status"></div>
+        <button id="minicarte" class="vy-minicarte" aria-label="Ouvrir la carte"><canvas id="minicarte-cv"></canvas><span id="minicarte-nom"></span></button>
+      </div>
+      <nav id="menus" class="vy-menus" aria-label="Menus"></nav>
+      <div id="vue" class="vy-camera" role="group" aria-label="Vue"></div>
+      <div id="toasts"></div>
+    </main>
+
+    <aside id="panneau" class="vy-panneau" aria-label="Panneau de jeu"></aside>
+
+    <aside id="side">
+      <section id="inspect"></section>
+      <section id="log"></section>
+    </aside>
+
+    <footer id="hud">
+      <div id="stats"></div>
+      <div id="spells"></div>
+      <div id="actions">
+        <button id="ready" class="vy-bouton vy-bouton--primaire">Prêt</button>
+        <button id="end-turn" class="vy-bouton vy-bouton--primaire hidden">Fin de tour</button>
+      </div>
+    </footer>
+
+    <div id="fenetres" class="vy-fenetres"></div>
+    <div id="panel" class="hidden">
+      <section id="panel-box" class="vy-modale" role="dialog" aria-modal="true" aria-labelledby="panel-title">
+        <header class="vy-modale__tete"><h2 id="panel-title" class="vy-modale__titre"></h2><button id="panel-close" class="vy-bouton vy-bouton--icone vy-bouton--fantome" aria-label="Fermer">×</button></header>
+        <div id="panel-body" class="vy-modale__corps"></div>
+      </section>
+    </div>
+    <div id="title" class="vy-ui hidden"></div>
+  </div>
+  <div id="tooltip" class="vy-ui hidden"></div>
+
+  <script src="js/garde.js?v=20261104004220"></script>
+  <script src="js/util.js?v=20261104004220"></script>
+  <script src="js/logo.js?v=20261104004220"></script>
+  <script src="js/data.js?v=20261104004220"></script>
+  <script src="js/spell-names.js?v=20261104004220"></script>
+  <script src="js/data-bestiaire.js?v=20261104004220"></script>
+  <script src="js/data-donjons.js?v=20261104004220"></script>
+  <script src="js/content-init.js?v=20261104004220"></script>
+  <script src="content/items.js?v=20261104004220"></script>
+  <script src="content/cosmetiques.js?v=20261104004220"></script>
+  <script src="content/orsane.js?v=20261104004220"></script>
+  <script src="content/kaldum.js?v=20261104004220"></script>
+  <script src="content/achievements.js?v=20261104004220"></script>
+  <script src="content/veille.js?v=20261104004220"></script>
+  <script src="content/tutoriel.js?v=20261104004220"></script>
+  <script src="content/ervane-interrupteur.js?v=20261104004220"></script>
+  <script src="js/ile.js?v=20261104004220"></script>
+  <script src="js/noeuds.js?v=20261104004220"></script>
+  <script src="js/grid.js?v=20261104004220"></script>
+  <script src="js/entities.js?v=20261104004220"></script>
+  <script src="js/items.js?v=20261104004220"></script>
+  <script src="js/factions.js?v=20261104004220"></script>
+  <script src="js/garderobe.js?v=20261104004220"></script>
+  <script src="js/character.js?v=20261104004220"></script>
+  <script src="js/quests.js?v=20261104004220"></script>
+  <script src="js/achievements.js?v=20261104004220"></script>
+  <script src="js/veille.js?v=20261104004220"></script>
+  <script src="js/marche.js?v=20261104004220"></script>
+  <script src="js/avis.js?v=20261104004220"></script>
+  <script src="js/save.js?v=20261104004220"></script>
+  <script src="js/combat.js?v=20261104004220"></script>
+  <script src="js/challenges.js?v=20261104004220"></script>
+  <script src="js/world.js?v=20261104004220"></script>
+  <script src="js/atlas.js?v=20261104004220"></script>
+  <script src="js/camera.js?v=20261104004220"></script>
+  <script src="js/plein-ecran.js?v=20261104004220"></script>
+  <script src="js/render.js?v=20261104004220"></script>
+  <script src="js/entourage.js?v=20261104004220"></script>
+  <script src="vendor/pixi.min.js?v=20261104004220"></script>
+  <script src="vendor/pixi-filters.min.js?v=20261104004220"></script>
+  <script src="js/paint.js?v=20261104004220"></script>
+  <script src="js/render-gl.js?v=20261104004220"></script>
+  <script src="js/ile-charge.js?v=20261104004220"></script>
+  <script src="js/gemmes.js?v=20261104004220"></script>
+  <script src="js/son.js?v=20261104004220"></script>
+  <script src="js/sort-tuiles.js?v=20261104004220"></script>
+  <script src="js/sort-icones.js?v=20261104004220"></script>
+  <script src="js/ui.js?v=20261104004220"></script>
+  <script src="js/fenetres.js?v=20261104004220"></script>
+  <script src="js/hud.js?v=20261104004220"></script>
+  <script src="js/hud-fenetres.js?v=20261104004220"></script>
+  <script src="js/hud-interface.js?v=20261104004220"></script>
+  <script src="js/hud-notifs.js?v=20261104004220"></script>
+  <script src="js/hud-faction.js?v=20261104004220"></script>
+  <script src="js/hud-sorts.js?v=20261104004220"></script>
+  <script src="js/hud-inventaire.js?v=20261104004220"></script>
+  <script src="js/hud-caracteristiques.js?v=20261104004220"></script>
+  <script src="js/hud-quetes.js?v=20261104004220"></script>
+  <script src="js/hud-recompenses.js?v=20261104004220"></script>
+  <script src="js/hud-garderobe.js?v=20261104004220"></script>
+  <script src="js/carte-peinture.js?v=20261104004220"></script>
+  <script src="js/hud-carte.js?v=20261104004220"></script>
+  <script src="js/hud-veille.js?v=20261104004220"></script>
+  <script src="js/carte-3d.js?v=20261104004220"></script>
+  <script src="js/dialogues.js?v=20261104004220"></script>
+  <script src="js/guide.js?v=20261104004220"></script>
+  <script src="js/discussion.js?v=20261104004220"></script>
+  <script src="js/hud-jeu.js?v=20261104004220"></script>
+  <script src="js/titre-fx.js?v=20261104004220"></script>
+  <script src="content/actualites.js?v=20261104004220"></script>
+  <script src="js/noms.js?v=20261104004220"></script>
+  <script src="js/accueil-art.js?v=20261104004220"></script>
+  <script src="js/accueil.js?v=20261104004220"></script>
+  <script src="js/main.js?v=20261104004220"></script>
+</body>
+</html>

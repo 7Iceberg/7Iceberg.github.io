@@ -1084,7 +1084,7 @@ const IleModeles = (() => {
       float wS = wB * nSe;
       // Le sol naturel de chaque zone prend la couleur peinte de sa texture (à la luminosité du lieu),
       // pas seulement son grain : l'herbe (65 %), la terre nue hors des sentiers et des places (55 %),
-      // la roche à plat (45 %). Chaque zone a sa teinte, comme dans Dofus ; les sentiers, les dalles,
+      // la roche à plat (45 %). Chaque zone a sa teinte ; les sentiers, les dalles,
       // les pavés et les pentes gardent les leurs.
       vec3 nat = aZ * lumC * 1.05;
       float natB = max(0.0, (wB - wS) * (1.0 - max(nEp, nT)));
