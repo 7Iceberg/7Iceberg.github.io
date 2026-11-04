@@ -181,8 +181,10 @@ const IleModeles = (() => {
     'ch-gerbes': { atlas: 5, case: [0, 768, 256] }, 'ch-brouette': { atlas: 5, case: [256, 768, 256] },
     'o-maison': { atlas: 6, case: [0, 0, 512] }, 'o-service': { atlas: 6, case: [512, 0, 512] },
     'k-maison': { atlas: 6, case: [0, 512, 512] }, 'k-atelier': { atlas: 6, case: [512, 512, 512] },
+    'o-maison2': { atlas: 7, case: [0, 0, 512] }, 'o-tourelle': { atlas: 7, case: [512, 0, 512] },
+    'k-maison2': { atlas: 7, case: [0, 512, 512] },
   };
-  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024], [1024, 1024]];
+  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024]];
   const SOURCES = [['eau', 160, 148], ['feu', 130, 125], ['terre', 140, 166], ['air', 105, 120], [null, 92, 164]];
   let ICI = null;
   const ici = T => { if (T) ICI = T; return ICI; };
@@ -212,8 +214,9 @@ const IleModeles = (() => {
     fleurs: { modele: (t, h, x, z) => (dansSources(x, z) ? 's-fleurs-' + elementA(x, z, h) : null), absolu: { 's-fleurs-eau': 0.75, 's-fleurs-feu': 0.75, 's-fleurs-terre': 0.65, 's-fleurs-air': 0.75 } },
     galet: { modele: (t, h, x, z) => (dansSources(x, z) ? 's-dalle' : null), absolu: { 's-dalle': 0.22 } },
   };
+  const varianteMaison = (o, liste) => liste[Math.floor(hacheEntier(Math.round(o.u * 4), Math.round(o.v * 4), 53) * liste.length) % liste.length];
   const OBJETS = {
-    maison: { modele: o => (ICI && ICI.id === 'kaldum' ? (o.service ? 'k-atelier' : 'k-maison') : !ervane() ? (o.service ? 'o-service' : 'o-maison') : dansBois(o.u, o.v) ? 'b-cabane' : 'm-maison'), taille: o => { const k = ervane() ? 1 : 1.15; return { l: (o.taille || [6, 5])[0] * k, p: (o.taille || [6, 5])[1] * k, h: (o.hauteur || 6) * k }; }, etire: o => !!o.service, angle: o => -(o.rot || 0) },
+    maison: { modele: o => (ICI && ICI.id === 'kaldum' ? (o.service ? 'k-atelier' : varianteMaison(o, ['k-maison', 'k-maison', 'k-maison2'])) : !ervane() ? (o.service ? 'o-service' : varianteMaison(o, ['o-maison', 'o-maison2', 'o-tourelle'])) : dansBois(o.u, o.v) ? 'b-cabane' : 'm-maison'), taille: o => { const k = ervane() ? 1 : 1.15; return { l: (o.taille || [6, 5])[0] * k, p: (o.taille || [6, 5])[1] * k, h: (o.hauteur || 6) * k }; }, etire: o => !!o.service, angle: o => -(o.rot || 0) },
     arbre_bobine: { modele: 'b-bobine', taille: () => ({ l: 9, p: 9, h: 18 }) },
     pieu: { modele: 'b-pieux', taille: () => ({ l: 2.6, p: 2.6, h: 2 }) },
     comptoir: { modele: 'm-etal', taille: o => ({ l: (o.taille || [5, 2])[0], p: (o.taille || [5, 2])[1], h: 3.6 }), angle: o => -(o.rot || 0) },
