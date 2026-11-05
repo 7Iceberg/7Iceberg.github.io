@@ -16,6 +16,8 @@ class CameraIle {
     this.proche = ex.proche || null;
     this.inclinaison = 0;
     this.orbite = null;
+    this.elevSol = 0;
+    this.dSol = Infinity;
     if (ex.champMin > 0) this.champs[0] = Math.min(this.champs[0], ex.champMin);
     const telephone = CameraIle.telephone();
     this.champDefaut = ((opts.style && opts.style.champDefaut) || cdef.champDefaut || [26, 32])[telephone ? 0 : 1];
@@ -147,7 +149,8 @@ class CameraIle {
     return { x: i.left, y: i.top, w, h, cx: i.left + w / 2, cy: i.top + h / 2 };
   }
 
-  etatExploration() { return { x: this.cible.x, y: this.cible.y, h: this.cible.h, el: this.elevation(), largeur: this.champ, fov: this.ouverture, leve: this.leveA(), az: this.azimut }; }
+  etatExploration() { return { x: this.cible.x, y: this.cible.y, h: this.cible.h, el: this.elevationVue(), largeur: this.champ, fov: this.ouverture, leve: this.leveA(), az: this.azimut }; }
+  elevationVue() { const e = this.elevation(); return this.elevSol > 0 ? Math.max(e, Math.min(CameraIle.SOL.max * Math.PI / 180, e + this.elevSol)) : e; }
 
   placer(etat) {
     const e = etat || (this.mode === 'carte' && this.carte ? this.etatCarte() : this.etatExploration());
@@ -155,18 +158,21 @@ class CameraIle {
     const aspect = this.vw && this.vh ? this.vw / this.vh : 1.6;
     let d = e.dist != null ? e.dist : e.largeur / (2 * Math.tan(e.fov * Math.PI / 360) * aspect);
     if (!etat && this.mode === 'exploration' && Number.isFinite(this.dLibre)) d = Math.min(d, this.dLibre);
+    if (!etat && this.mode === 'exploration' && Number.isFinite(this.dSol)) d = Math.min(d, this.dSol);
     const hv = e.h + (e.leve || 0);
     cam.fov = e.fov;
     cam.position.set(e.x + Math.cos(e.el) * Math.sin(az) * d, hv + Math.sin(e.el) * d, e.y + Math.cos(e.el) * Math.cos(az) * d);
     const T = this.terrain;
+    let solCam = Infinity;
     if (T && typeof T.marcheA === 'function') {
       let h = T.marcheA(cam.position.x, cam.position.z);
       if (!Number.isFinite(h) && typeof T.solBrutA === 'function') h = T.solBrutA(cam.position.x, cam.position.z);
       if (Number.isFinite(h) && cam.position.y < h + 3) cam.position.y = h + 3;
+      if (Number.isFinite(h)) solCam = cam.position.y - h;
     }
     cam.up.set(0, 1, 0);
     cam.lookAt(e.x, hv, e.y);
-    cam.near = Math.max(1, Math.min(d * 0.25, 60));
+    cam.near = Math.max(1, Math.min(d * 0.25, 60, 1.2 * solCam));
     cam.far = Math.max(d * 6 + 200, this.loinMin || 0);
     cam.aspect = aspect;
     if (this.vw && this.vh) {
@@ -411,6 +417,52 @@ class CameraIle {
     const tau = vise < cur ? 0.06 : 0.35, nouv = cur + (vise - cur) * (dt > 0 ? 1 - Math.exp(-dt / tau) : 1);
     this.dLibre = !Number.isFinite(libre) && nouv >= d0 - 0.02 ? Infinity : nouv;
   }
+  majSol(dt) {
+    const T = this.terrain, S = CameraIle.SOL;
+    if (this.mode !== 'exploration' || this.regard === 'basse' || this.trans || !T || typeof T.solBrutA !== 'function') { this.elevSol = 0; this.dSol = Infinity; return; }
+    const base = this.elevation(), d = this.distance(this.champ);
+    const ici = this.besoinSol(this.cible.x, this.cible.y, this.cible.h, base, d);
+    const jv = this.vitJoueur, fx = this.cible.x + jv.x * S.anticipation, fy = this.cible.y + jv.y * S.anticipation;
+    let loin = ici;
+    if (Math.hypot(jv.x, jv.y) > 0.5) {
+      const hf = typeof T.marcheA === 'function' ? T.marcheA(fx, fy) : NaN;
+      loin = this.besoinSol(fx, fy, Number.isFinite(hf) ? this.cible.h + (hf - T.solBrutA(this.cible.x, this.cible.y)) : this.cible.h, base, d);
+    }
+    const k = tau => dt > 0 ? 1 - Math.exp(-dt / tau) : 1;
+    const visB = Math.min(ici.bras, loin.bras, d), d0 = Number.isFinite(this.dSol) ? this.dSol : d;
+    let nd = d0 + (visB - d0) * k(visB < d0 ? S.approche : S.recul);
+    nd = Math.min(nd, ici.bras + 0.3);
+    this.dSol = !Number.isFinite(Math.min(ici.bras, loin.bras)) && nd >= d - 0.02 ? Infinity : nd;
+    const vis = Math.max(ici.el, loin.el) - base, cur = this.elevSol || 0;
+    let v = cur + (vis - cur) * k(vis > cur ? S.montee : S.descente);
+    if (v < ici.el - base - S.ecart) v = ici.el - base - S.ecart;
+    this.elevSol = vis <= 0 && v < 1e-4 ? 0 : Math.max(0, v);
+  }
+  besoinSol(x0, y0, h, base, d) {
+    const T = this.terrain, S = CameraIle.SOL, haut = S.max * Math.PI / 180, max = Math.min(haut, base + S.levee * Math.PI / 180);
+    const r = { el: base, bras: Infinity };
+    if (!(base < max)) return r;
+    const sx = Math.sin(this.azimut), sy = Math.cos(this.azimut), l = this.leveA(), hv = h + l, tete = h + Math.max(l, S.tete);
+    const [m0, m1] = S.marge, n = S.points;
+    const libre = el => {
+      const cx = x0 + Math.cos(el) * sx * d, cy = y0 + Math.cos(el) * sy * d, ch = hv + Math.sin(el) * d;
+      for (let i = 1; i <= n; i++) {
+        const t = i / n, sol = T.solBrutA(x0 + (cx - x0) * t, y0 + (cy - y0) * t);
+        if (Number.isFinite(sol) && tete + (ch - tete) * t < sol + m0 + (m1 - m0) * t) return (i - 1) / n;
+      }
+      return 1;
+    };
+    if (libre(base) === 1) return r;
+    const chercher = (a, b) => { for (let k = 0; k < 8; k++) { const c = (a + b) / 2; if (libre(c) === 1) b = c; else a = c; } return b; };
+    const part = libre(max);
+    if (part === 1) { r.el = chercher(base, max); return r; }
+    r.el = max;
+    if (part * d - 1 < Math.max(S.brasMin, S.brasPart * d) && max < haut) r.el = libre(haut) === 1 ? chercher(max, haut) : haut;
+    const reste = libre(r.el);
+    if (reste < 1) r.bras = Math.max(2.4, reste * d - 1);
+    return r;
+  }
+
   horizonCache(az, x, y, h) {
     const T = this.terrain;
     if (!T || typeof T.solBrutA !== 'function') return 0;
@@ -713,7 +765,7 @@ class CameraIle {
     return { x: p.u, y: p.v, h: p.h, el: this.cadre.el, largeur: this.vw * v.s, fov: 2, leve: 0, az: this.azimutCombat };
   }
   etatRetour() {
-    return { x: this.joueur.x, y: this.joueur.y, h: this.joueur.h, el: this.elevation(), largeur: this.champ, fov: this.ouverture, leve: this.leveA(), az: this.azimut };
+    return { x: this.joueur.x, y: this.joueur.y, h: this.joueur.h, el: this.elevationVue(), largeur: this.champ, fov: this.ouverture, leve: this.leveA(), az: this.azimut };
   }
 
   suivreCombat(focus, u, h, v) { this.suiviCombat = u == null ? null : { focus, u, h, v }; }
@@ -784,11 +836,13 @@ class CameraIle {
     this.cible.y = ry.x; vc.y = ry.v;
     this.cible.h += (this.joueur.h - this.cible.h) * (1 - Math.exp(-dt * 5));
     this.borner();
+    const solAvant = this.elevSol;
+    this.majSol(dt);
     this.placer();
     const fit = Math.hypot(d.x, d.y) < 0.5 && Math.abs(this.champ / this.champDefaut - 1) < 0.02 && Math.abs(CameraIle.arc(this.azimut - this.azimutDefaut)) < 0.01;
     if (fit !== this.atFit) { this.atFit = fit; this.changed(); }
     if (this.retourCarte) { this.majRetourCarte(now); return true; }
-    return Math.abs(avant.x - this.cible.x) + Math.abs(avant.y - this.cible.y) + Math.abs(avant.h - this.cible.h) > 1e-4 || avant.c !== this.champ || avant.az !== this.azimut;
+    return Math.abs(avant.x - this.cible.x) + Math.abs(avant.y - this.cible.y) + Math.abs(avant.h - this.cible.h) > 1e-4 || avant.c !== this.champ || avant.az !== this.azimut || Math.abs(solAvant - this.elevSol) > 1e-5;
   }
 
   majPassage(now) {
@@ -1150,5 +1204,6 @@ class CameraIle {
 CameraIle.CLE_REGARD = 'veylan.regard';
 CameraIle.CARTE = { ouverture: 30, elevation: [50, 74], min: 0.11, max: 3.55, approche: 0.41, depart: 0.9, retour: 0.7, marge: 0.05 };
 CameraIle.MARGE_COMBAT = 0.06;
-CameraIle.SUIVI = { raideur: 4.2, avance: 0.22, avanceMax: 1.4, lissageMarche: 0.4, retour: 2.6, zoom: 0.14 };
-CameraIle.ORBITE = { tour: 0.007, pente: 0.16, min: 6, max: 72, leve: 2.6, lissage: 0.07 };
+CameraIle.SUIVI = { raideur: 3.8, avance: 0.22, avanceMax: 1.4, lissageMarche: 0.4, retour: 2.4, zoom: 0.17 };
+CameraIle.ORBITE = { tour: 0.006, pente: 0.135, min: 6, max: 72, leve: 2.6, lissage: 0.09 };
+CameraIle.SOL = { tete: 1.4, marge: [0.4, 3], points: 24, montee: 0.25, descente: 0.7, ecart: 0.035, max: 76, levee: 30, anticipation: 0.6, approche: 0.2, recul: 0.5, brasMin: 6, brasPart: 0.3 };

@@ -427,6 +427,7 @@ class Ile3D {
       const A = Ile3D.SOIR.arbres, arbres = this.soir && this.ambianceVoulue.arbres ? Object.assign({}, A, { detailCoeur: this.telephone ? A.detailCoeurTel : A.detailCoeur }) : null;
       try { await IleCharge.glb(); if (typeof IleGlb === 'object') await IleGlb.poser(THREE, this, scene, IleGlb.source(rendu.monde), { semis, arbres }); } catch (e) { console.warn('Ervane : monde modelé indisponible', e); }
       this.semisMeshy = !!(semis && this.monde && this.monde.userData.semisMeshy);
+      if (this.monde) this.fondreMonde(THREE);
       const LC = this.soir && this.ambianceVoulue.lointain && this.monde ? Ile3D.SOIR.lointain[plateau.id] : null;
       if (LC && IleGlb.lointain) { try { this.poserLointain(THREE, scene, LC); } catch (e) { console.warn('Ervane : décor lointain indisponible', e); } }
       if (semis && this.monde) { try { this.octetsTex += await IleModeles.habillerSol(THREE, this); } catch (e) { console.warn('Ervane : sols Meshy indisponibles', e); } }
@@ -985,15 +986,16 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     return this.uFondu;
   }
   fonduHouppiers(THREE, m, nom) {
-    const cylindre = nom === 'fronde', obstacle = nom === 'roche' || nom === 'acc';
+    const cylindre = nom === 'fronde' || nom === 'fronde_monde', obstacle = nom === 'roche' || nom === 'acc';
     const U = this.uniformesFondu(THREE);
     const prec = m.onBeforeCompile;
+    const cle0 = m.customProgramCacheKey ? String(m.customProgramCacheKey()) : '';
     m.onBeforeCompile = (sh, r) => {
       if (prec) prec(sh, r);
       sh.uniforms.fonduA = U.a; sh.uniforms.fonduB = U.b; sh.uniforms.fonduAire = U.aire; sh.uniforms.fonduDir = U.dir; sh.uniforms.fonduH = U.h;
       sh.uniforms.fonduOrig = U.orig; sh.uniforms.fonduCases = U.cases;
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vMondeF;')
-        .replace('#include <project_vertex>', '#include <project_vertex>\nvMondeF = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+        .replace('#include <project_vertex>', '#include <project_vertex>\n{ vec4 pF = vec4(transformed, 1.0);\n#ifdef USE_INSTANCING\npF = instanceMatrix * pF;\n#endif\nvMondeF = (modelMatrix * pF).xyz; }');
       sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
 varying vec3 vMondeF; uniform vec3 fonduA; uniform vec3 fonduB; uniform vec4 fonduAire; uniform vec3 fonduDir; uniform float fonduH;
 uniform vec2 fonduOrig; uniform sampler2D fonduCases;
@@ -1032,7 +1034,22 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
     if (f > 0.0 && bayer8(gl_FragCoord.xy) < f * 0.8) discard;
   }`);
     };
-    m.customProgramCacheKey = () => 'ile-fondu-' + nom;
+    m.customProgramCacheKey = () => 'ile-fondu-' + nom + '|' + cle0;
+  }
+
+  fondreMonde(THREE) {
+    const vues = new Set();
+    this.monde.traverse(o => {
+      if (!o.isMesh || /^mo_(sol|falaise|lignes|eau)/.test(o.name || '')) return;
+      for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+        if (!m || vues.has(m) || (m.userData && m.userData.fondu)) continue;
+        vues.add(m);
+        this.fonduHouppiers(THREE, m, 'fronde_monde');
+        m.userData.fondu = true;
+        m.needsUpdate = true;
+      }
+    });
+    this.monde.userData.fondus = vues.size;
   }
 
   clipAire(THREE, m) {
@@ -1830,7 +1847,9 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       const cd = cam.cadre;
       if (A && A.etat && cd) {
         this.uFondu.aire.value.set(A.x0 - 0.3, A.y0 - 0.3, A.x0 + 19, A.y0 + 19);
-        this.uFondu.dir.value.set(cd.dir[0], cd.dir[1], cd.dir[2]);
+        const fw = cam.courante && cam.courante.getWorldDirection ? cam.courante.getWorldDirection(this._dirF || (this._dirF = new (this.THREE || window.THREE).Vector3())) : null;
+        if (fw && fw.y < -0.05) this.uFondu.dir.value.set(-fw.x, -fw.y, -fw.z);
+        else this.uFondu.dir.value.set(cd.dir[0], cd.dir[1], cd.dir[2]);
         this.uFondu.h.value = cd.h;
         this.uFondu.orig.value.set(A.x0, A.y0);
         this.uFondu.cases.value = A.texCases;
