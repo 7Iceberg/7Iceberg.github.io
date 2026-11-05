@@ -271,16 +271,7 @@ void main() {
       if (this.etat !== 'ouverte') return [];
       const out = [], Hc = this.ile.highlights;
       for (const e of cb.entities) {
-        let mort = null;
-        if (!e.alive) {
-          const Dm = e._vuVivant && e.team === 'monster' && fig.modeles && fig.modeles.prend(e.def.id) ? fig.modeles.durees(e.def.id) : null;
-          if (!Dm || !Dm.mort) continue;
-          if (e._mortA == null) e._mortA = now;
-          if (now >= e._mortA + Dm.mort) continue;
-          mort = (now - e._mortA) / Dm.mort;
-        }
-        if (!cb.canSee(cb.player, e)) continue;
-        if (mort == null) { e._vuVivant = true; e._mortA = null; }
+        if (!e.alive || !cb.canSee(cb.player, e)) continue;
         const p = this.versMonde(e.rx, e.ry), h = this.ile.hauteur(p.u, p.v);
         const hpF = Math.max(0, Math.min(1, e.hp / e.hpMax));
         if (e._trace == null || hpF >= e._trace) e._trace = hpF;
@@ -309,7 +300,6 @@ void main() {
           s.modele = e.def.id; s.modeleCle = 'combat|' + e.id;
           const D = fig.modeles.durees(e.def.id);
           if (D) this.gesteFigure(s, e, D, now, cb);
-          if (mort != null) { s.geste = { type: 'mort', t: mort }; s.combat = null; s.cible = null; s.flash = false; }
         } else if (fig.heros && e === cb.player) {
           s.heros = true;
           this.gesteHeros(s, e, now, cb);

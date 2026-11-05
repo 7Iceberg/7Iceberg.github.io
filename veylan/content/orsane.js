@@ -266,7 +266,7 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['herbe_de_veille'],
       groups: [
-        { monsters: ['gelee_cousue', 'grouk'], level: [4, 6], respawn: 50 },
+        { monsters: ['grouk', 'grouk'], level: [4, 6], respawn: 50 },
         { monsters: ['grouk', 'pilou', 'pilou'], level: [4, 6], respawn: 50 },
         { monsters: ['grouk', 'grouk', 'pilou'], level: [5, 6], respawn: 50 },
         { monsters: ['kavou_bleu', 'kavou_roux'], level: [4, 6], respawn: 50 },

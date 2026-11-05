@@ -142,16 +142,7 @@ class Ile3D {
         if (typeof IlePeau === 'object') peaux = await IlePeau.parc(THREE, { telephone: this.telephone, qualite: this.qualite, ids: Ile3D.peauxDu(this.world && this.world.plateau && this.world.plateau.id, IlePeau.MONSTRES) });
       } catch (e) { console.warn('Peaux Meshy : ' + e.message); }
       if (peaux) scene.add(peaux.groupe);
-      let gelees = null;
-      const plateauId = this.world && this.world.plateau && this.world.plateau.id;
-      if (this.qualite !== 'basse' && typeof IlePeau === 'object' && Ile3D.peauxDu(plateauId, ['gelee_cousue']).length) try {
-        await charger('modele-gelee.js', () => typeof ModeleGelee === 'object');
-        let refraction = false;
-        try { refraction = new URLSearchParams(location.search).get('gelee') === 'refraction'; } catch (e) {   }
-        gelees = new ModeleGelee.Parc(THREE, { telephone: this.telephone, qualite: this.qualite, renderer: this.renderer, refraction });
-        scene.add(gelees.groupe);
-      } catch (e) { console.warn('Gelée cousue : ' + e.message); gelees = null; }
-      this.figures.modeles = peaux || gelees ? IlePeau.composer([peaux, gelees, parc]) : parc;
+      this.figures.modeles = peaux ? IlePeau.composer([peaux, parc]) : parc;
     } catch (e) { console.warn('Glym modelé : ' + e.message); }
   }
 
