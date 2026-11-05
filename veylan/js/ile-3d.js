@@ -6,9 +6,9 @@ class Ile3D {
     try { const p = new URLSearchParams(location.search); q = p.get('ambiance'); qo = p.get('ombres'); } catch (e) {   }
     const d = typeof DATA === 'object' && DATA && DATA.ile ? DATA.ile : {};
     const nom = q != null ? q : d.ambiance || '';
-    let qb = null, qa = null;
-    try { const p = new URLSearchParams(location.search); qb = p.get('bordures'); qa = p.get('arbres'); } catch (e) {   }
-    return { soir: nom === 'soir', ombres: qo !== '0', bordures: qb !== '0', arbres: qa !== '0' };
+    let qb = null, qa = null, ql = null;
+    try { const p = new URLSearchParams(location.search); qb = p.get('bordures'); qa = p.get('arbres'); ql = p.get('lointain'); } catch (e) {   }
+    return { soir: nom === 'soir', ombres: qo !== '0', bordures: qb !== '0', arbres: qa !== '0', lointain: ql === '1' };
   }
 
   static qualiteParDefaut() {
@@ -427,6 +427,8 @@ class Ile3D {
       const A = Ile3D.SOIR.arbres, arbres = this.soir && this.ambianceVoulue.arbres ? Object.assign({}, A, { detailCoeur: this.telephone ? A.detailCoeurTel : A.detailCoeur }) : null;
       try { await IleCharge.glb(); if (typeof IleGlb === 'object') await IleGlb.poser(THREE, this, scene, IleGlb.source(rendu.monde), { semis, arbres }); } catch (e) { console.warn('Ervane : monde modelé indisponible', e); }
       this.semisMeshy = !!(semis && this.monde && this.monde.userData.semisMeshy);
+      const LC = this.soir && this.ambianceVoulue.lointain && this.monde ? Ile3D.SOIR.lointain[plateau.id] : null;
+      if (LC && IleGlb.lointain) { try { this.poserLointain(THREE, scene, LC); } catch (e) { console.warn('Ervane : décor lointain indisponible', e); } }
       if (semis && this.monde) { try { this.octetsTex += await IleModeles.habillerSol(THREE, this); } catch (e) { console.warn('Ervane : sols Meshy indisponibles', e); } }
       if (semis && this.monde && IleModeles.habillerMurs) { try { this.octetsTex += await IleModeles.habillerMurs(THREE, this); } catch (e) { console.warn('Ervane : murs Meshy indisponibles', e); } }
       if (semis && this.monde && IleModeles.cartes) { try { const c = await IleModeles.cartes(THREE, this); if (c) { this.cartesDenses = c; this.octetsGeo += c.octetsGeo; this.octetsTex += c.octetsTex; } } catch (e) { console.warn('Ervane : semis dense indisponible', e); } }
@@ -454,7 +456,10 @@ class Ile3D {
     this.marques3D(THREE, scene);
     if (this.nuit) { this.nuit.materiaux(); this.nuit.lucioles(scene); if (this.nuit.ciel3D) this.nuit.ciel3D(scene); }
     const bloque = (x, y) => { const P = this.world && this.world.plateau; return !!(P && P.nav && typeof P.nav.libre === 'function' && !P.nav.libre(x, y) && T.eauA(x, y) == null && !(T.videA && T.videA(x, y))); };
-    const cam = this.camera = new CameraIle({ el: this.board, def, terrain: T, bloque, style: this.nuit && this.nuit.styleCamera ? this.nuit.styleCamera() : null });
+    const style0 = this.nuit && this.nuit.styleCamera ? this.nuit.styleCamera() : null;
+    const style = this.soir ? Object.assign({}, style0 || {}, Ile3D.SOIR.camera) : style0;
+    const cam = this.camera = new CameraIle({ el: this.board, def, terrain: T, bloque, style });
+    if (this.lointain) cam.loinMin = this.lointain.loin;
     this.redimensionner();
     const p = world.player;
     cam.sauter(p.rx, p.ry, this.hauteur(p.rx, p.ry));
@@ -926,6 +931,41 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     return m;
   }
 
+  prechauffer(camera) {
+    const THREE = window.THREE, R = this.renderer, scene = this.scene;
+    if (!this.monde || !THREE || !camera || !R) return;
+    this.prechauffe = true;
+    const t0 = performance.now(), etats = [];
+    scene.traverse(o => {
+      for (const m of [].concat(o.material || [])) {
+        if (!m) continue;
+        for (const k of ['map', 'emissiveMap', 'alphaMap', 'normalMap', 'bumpMap', 'aoMap', 'lightMap']) if (m[k] && m[k].isTexture && m[k].image) R.initTexture(m[k]);
+        if (m.uniforms) for (const u of Object.values(m.uniforms)) if (u && u.value && u.value.isTexture && u.value.image) R.initTexture(u.value);
+      }
+    });
+    const pris = [], mo = this.figures && this.figures.modeles;
+    for (const p of (mo && (mo.parcs || [mo])) || []) {
+      if (p && typeof p.troupe === 'function' && p.ids) for (const id of Object.keys(p.ids)) p.troupe(id);
+      if (!p || !p.modeles || !p.groupe) continue;
+      for (const M of Object.values(p.modeles)) {
+        if (!M || typeof M.prendre !== 'function' || typeof M.rendre !== 'function') continue;
+        const ex = M.prendre();
+        if (!ex || !ex.racine) continue;
+        if (!ex.racine.parent) p.groupe.add(ex.racine);
+        ex.racine.visible = true;
+        pris.push([M, ex]);
+      }
+    }
+    scene.traverse(o => { if (o.isMesh || o.isPoints || o.isLine || o.isSprite) { etats.push([o, o.visible, o.frustumCulled]); o.visible = true; o.frustumCulled = false; } });
+    const rt = new THREE.WebGLRenderTarget(1, 1), avant = R.getRenderTarget();
+    try { R.setRenderTarget(rt); R.render(scene, camera); } finally {
+      R.setRenderTarget(avant); rt.dispose();
+      for (const [o, v, f] of etats) { o.visible = v; o.frustumCulled = f; }
+      for (const [M, ex] of pris) M.rendre(ex);
+    }
+    this.msPrechauffage = Math.round(performance.now() - t0);
+  }
+
   suivreOmbres(cam) {
     const O = this.ombres, L = this.lum;
     if (!O || !L) return;
@@ -1319,7 +1359,23 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     this.bouffees = geo;
     const mesh = new THREE.Mesh(geo, m); mesh.frustumCulled = false; mesh.renderOrder = -1;
     scene.add(mesh);
+    this.meshBouffees = mesh;
     if (this.decorFixe) this.decorFixe.push(mesh);
+  }
+
+  poserLointain(THREE, scene, LC) {
+    const cfg = Object.assign({ etalonnage: Ile3D.SOIR.etalonnage }, Ile3D.SOIR.lointain.commun, LC);
+    const r = IleGlb.lointain(THREE, this, cfg, Ile3D.SOIR.arbres);
+    if (!r) return;
+    scene.add(r.groupe);
+    this.lointain = r;
+    this.octetsGeo += r.octets;
+    const retirer = o => { if (o && o.parent) o.parent.remove(o); };
+    retirer(this.meshFalaise);
+    for (const m of this.meshDessous || []) retirer(m);
+    for (const b of this.bancs || []) retirer(b);
+    retirer(this.meshBouffees);
+    this.meshFalaise = null; this.meshDessous = []; this.bancs = [];
   }
 
   halos(THREE, scene, liste) {
@@ -1700,6 +1756,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     }
     if (this.soir && this.monde && !this.monde.userData.etalonne) { this.etalonner(); this.preparerBordures(); }
     if (this.ombres) this.suivreOmbres(cam);
+    if (!this.prechauffe) this.prechauffer(cam.courante);
     const r = this.renderer;
     r.info.reset();
     r.render(this.scene, cam.courante);
@@ -2048,6 +2105,21 @@ Ile3D.SOIR = {
   elevation: 34, tour: -150, brume: 0.5, recul: 1.45, horizon: '#f2d6b4', horizonK: 0.35, zenith: '#3f78cc', zenithK: 0.25,
   ombre: { taille: 2048, demi: 34, avance: 0.45, biais: -0.0006, biaisNormal: 0.06 },
   bordures: { pasCarte: 0.45, pasCarteTel: 0.62, bande: [0.05, 0.18], densite: 0.62, pas: 0.5, pasTel: 0.7, epaule: 1.15, trou: 0.2, trouPied: 0.1, grappe: 0.5, taille: [0.85, 1.2], pied: 1.25, max: 3200, maxTel: 900, couleurs: ['#3b7a30', '#5a9a3a', '#93c257'] },
+  lointain: {
+    commun: {
+      pas: 3, pasTel: 4.5, anneaux: [-6, 0.6, 3, 6, 10, 15, 22, 31, 43, 58, 78, 104, 138, 182, 240, 320, 420, 540, 680, 850],
+      lissage: 0.7, rond: [40, 240], sousBord: 1.4, levre: 0.35, creux: 3, descente: 70, collines: 5, colline: 60,
+      montagnes: 120, pied: [300, 640], champs: 0.56, bois: 0.6, roche: [28, 75], neige: [96, 128], brumeMax: 0.8, loin: 1800,
+      lisiere: { pas: 8, pasTel: 11, rangs: [[3.5, 7, 'lisiere'], [10, 17, 'bosquet']], taille: [10, 15], trou: 14, trous: 0.12 },
+      bosquets: 120, bosquetsTel: 60, detail: 1, detailCoeur: 1, detailLoin: 0, presBord: 0.92, grain: 0.22,
+    },
+    orsane: { couleurs: { pres: ['#4c7c33', '#66913f'], champs: ['#9a9844', '#b6a351', '#7d983d', '#a2884a'], foret: ['#1d3c20'], roche: ['#7b8090'], neige: ['#e6ebf2'] } },
+    kaldum: {
+      couleurs: { pres: ['#4a433f', '#5b514a'], champs: ['#3d3431', '#68483a', '#544538'], foret: ['#29231f'], roche: ['#35323b'], neige: ['#7a3424'] },
+      arbres: { vert: ['#100e12', '#2a262e', '#55505b'], automne: ['#100e12', '#2a262e', '#55505b'] }, forme: 'rocher', montagnes: 150,
+    },
+  },
+  camera: { proche: { elevation: 10, leve: 2.4 }, champMin: 13 },
   arbres: {
     formes: { feuillu: 'large', haut: 'haut', conifere: 'haut', tordu: 'petit' },
     facteur: { feuillu: 1.05, haut: 1.0, conifere: 1.0, tordu: 0.8 },

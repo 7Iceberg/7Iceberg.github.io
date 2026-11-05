@@ -307,6 +307,9 @@ const IleGlb = (() => {
     large: { tronc: [0.34, 0.06, 0.034], coeurs: [[0.56, 0.28]], autour: [4, 5], loin: [0.17, 0.25], bas: [0.42, 0.58], rayon: [0.17, 0.22], sommet: [0.78, 0.18], ecrase: 0.86 },
     haut: { tronc: [0.42, 0.05, 0.03], coeurs: [[0.5, 0.21], [0.68, 0.18]], autour: [3, 3], loin: [0.1, 0.15], bas: [0.44, 0.7], rayon: [0.12, 0.15], sommet: [0.84, 0.13], ecrase: 0.94 },
     petit: { tronc: [0.3, 0.055, 0.034], coeurs: [[0.54, 0.28]], autour: [3, 3], loin: [0.15, 0.2], bas: [0.44, 0.58], rayon: [0.15, 0.19], sommet: [0.76, 0.16], ecrase: 0.86 },
+    lisiere: { tronc: [0.26, 0.05, 0.03], coeurs: [[0.52, 0.3]], autour: [3, 4], loin: [0.2, 0.28], bas: [0.4, 0.54], rayon: [0.2, 0.25], sommet: [0.76, 0.19], ecrase: 0.84 },
+    bosquet: { tronc: [0.24, 0.05, 0.03], coeurs: [[0.52, 0.32]], autour: [2, 2], loin: [0.2, 0.26], bas: [0.42, 0.52], rayon: [0.2, 0.25], sommet: [0.76, 0.2], ecrase: 0.84 },
+    rocher: { tronc: [0.02, 0.02, 0.02], coeurs: [[0.32, 0.36]], autour: [3, 4], loin: [0.24, 0.34], bas: [0.18, 0.3], rayon: [0.18, 0.26], sommet: [0.56, 0.22], ecrase: 0.7 },
   };
   function arbreRond(forme, graine, cfg, det, detCoeur) {
     let s = (graine * 7919 + 104729) % 233280;
@@ -377,8 +380,8 @@ const IleGlb = (() => {
     }
     return { cfg, modeles };
   }
-  function cuireRond(fusion, M, e, a, k, enf, automne) {
-    const ca = Math.cos(a), sa = Math.sin(a), cle = tuileDe(e[12], e[14]) + '|rond';
+  function cuireRond(fusion, M, e, a, k, enf, automne, cleForcee) {
+    const ca = Math.cos(a), sa = Math.sin(a), cle = cleForcee != null ? cleForcee : tuileDe(e[12], e[14]) + '|rond';
     let f = fusion.get(cle);
     if (!f) { f = { genre: 'rond', pos: [], nrm: [], col: [], idx: [], nVert: 0 }; fusion.set(cle, f); }
     const P = M.pos, N = M.nrm, C = automne ? M.colA : M.col, d = f.nVert;
@@ -420,6 +423,232 @@ float bruitR(vec3 x) {
     return mat;
   }
 
+  const lisse01 = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const h2 = (x, z) => { const v = Math.sin(x * 127.1 + z * 311.7) * 43758.5453; return v - Math.floor(v); };
+  function bruit2(x, z) {
+    const xi = Math.floor(x), zi = Math.floor(z), fx = x - xi, fz = z - zi, ux = fx * fx * (3 - 2 * fx), uz = fz * fz * (3 - 2 * fz);
+    const a = h2(xi, zi), b = h2(xi + 1, zi), c = h2(xi, zi + 1), d = h2(xi + 1, zi + 1);
+    return a + (b - a) * ux + (c - a) * uz + (a - b - c + d) * ux * uz;
+  }
+  const fbm2 = (x, z) => bruit2(x, z) * 0.55 + bruit2(x * 2.03 + 17.1, z * 2.03 + 3.7) * 0.3 + bruit2(x * 4.1 + 9.3, z * 4.1 + 21.5) * 0.15;
+  const melange = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  function espacer(pts, pas) {
+    const out = [pts[0]];
+    let acc = 0;
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i];
+      acc += Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (acc >= pas) { out.push(b); acc = 0; }
+    }
+    return out;
+  }
+  const FOG_PLAFOND = `#ifdef USE_FOG
+  #ifdef FOG_EXP2
+    float fogFactor = 1.0 - exp( - fogDensity * fogDensity * vFogDepth * vFogDepth );
+  #else
+    float fogFactor = smoothstep( fogNear, fogFar, vFogDepth );
+  #endif
+  gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, min( fogFactor, uBrumeMax ) );
+#endif`;
+  function plafonnerBrume(mat, max, cle) {
+    const avant = mat.onBeforeCompile;
+    mat.onBeforeCompile = (sh, r) => {
+      if (avant) avant(sh, r);
+      sh.uniforms.uBrumeMax = { value: max };
+      sh.fragmentShader = 'uniform float uBrumeMax;\n' + sh.fragmentShader.replace('#include <fog_fragment>', FOG_PLAFOND);
+    };
+    mat.customProgramCacheKey = () => cle;
+    return mat;
+  }
+  function lointain(THREE, ile, cfg, cfgArbres) {
+    const T = ile.T;
+    if (!T || !Array.isArray(T.contour) || T.contour.length < 8 || typeof T.videA !== 'function') return null;
+    const tel = !!ile.telephone, pas = tel ? cfg.pasTel : cfg.pas;
+    const P = espacer(T.contour, pas), N = P.length;
+    if (N < 8) return null;
+    const H = (u, v) => { const h = T.hauteurA(u, v); return Number.isFinite(h) ? h : NaN; };
+    const tan = i => { const a = P[(i - 1 + N) % N], b = P[(i + 1) % N]; const tx = b[0] - a[0], tz = b[1] - a[1], l = Math.hypot(tx, tz) || 1; return [tx / l, tz / l]; };
+    let vote = 0;
+    for (let i = 0; i < N; i++) {
+      const [tx, tz] = tan(i), p = P[i];
+      const de = T.videA(p[0] + tz * 2.5, p[1] - tx * 2.5), dd = T.videA(p[0] - tz * 2.5, p[1] + tx * 2.5);
+      if (de && !dd) vote++; else if (dd && !de) vote--;
+    }
+    const sens = vote >= 0 ? 1 : -1;
+    const n0 = P.map((p, i) => { const [tx, tz] = tan(i); return [tz * sens, -tx * sens]; });
+    const lisseN = w => {
+      if (w < 1) return n0;
+      const out = [];
+      for (let i = 0; i < N; i++) {
+        let x = 0, z = 0;
+        for (let j = -w; j <= w; j++) { const q = n0[((i + j) % N + N) % N]; x += q[0]; z += q[1]; }
+        const l = Math.hypot(x, z) || 1;
+        out.push([x / l, z / l]);
+      }
+      return out;
+    };
+    const hE = P.map((p, i) => { for (const r of [2.5, 4, 6, 9]) { const h = H(p[0] - n0[i][0] * r, p[1] - n0[i][1] * r); if (Number.isFinite(h)) return h; } return NaN; });
+    let hm = 0, nh = 0;
+    for (const h of hE) if (Number.isFinite(h)) { hm += h; nh++; }
+    hm = nh ? hm / nh : 0;
+    for (let i = 0; i < N; i++) if (!Number.isFinite(hE[i])) hE[i] = hm;
+    const hL = hE.map((_, i) => (hE[(i - 2 + N) % N] + 2 * hE[(i - 1 + N) % N] + 3 * hE[i] + 2 * hE[(i + 1) % N] + hE[(i + 2) % N]) / 9);
+    let cx = 0, cz = 0;
+    for (const p of P) { cx += p[0]; cz += p[1]; }
+    cx /= N; cz /= N;
+    const haut = (d, i, x, z) => {
+      if (d <= 0) return hL[i] - cfg.sousBord;
+      const base = hm - cfg.creux;
+      const coll = (fbm2(x / cfg.colline, z / cfg.colline) - 0.5) * 2 * cfg.collines * lisse01(6, 60, d);
+      const a = Math.atan2(z - cz, x - cx);
+      const crete = 1 - Math.abs(2 * fbm2(Math.cos(a) * 3.2 + 50, Math.sin(a) * 3.2 + 50) - 1);
+      const mont = cfg.montagnes * (0.2 + 0.8 * Math.pow(crete, 1.7)) * (0.55 + 0.45 * fbm2(x / 90, z / 90)) * lisse01(cfg.pied[0], cfg.pied[1], d);
+      return hL[i] + (base - hL[i]) * lisse01(0, cfg.descente, d) - cfg.levre * (1 - lisse01(0, 8, d)) + coll + mont;
+    };
+    const pal = {};
+    for (const k of Object.keys(cfg.couleurs)) pal[k] = [].concat(cfg.couleurs[k]).map(linHex);
+    const E = cfg.etalonnage, cT = new THREE.Color(), hsl = {};
+    const etalonne = hex => {
+      cT.set(hex).getHSL(hsl);
+      let { h, s: sa, l } = hsl;
+      if (E && h > E.vert[0] && h < E.vert[1] && sa > 0.16 && l < 0.72) { h += (E.vertTeinte - h) * E.vertVers; sa = Math.min(1, sa * E.vertSat + 0.04); l *= E.vertLum; }
+      cT.setHSL(h, sa, l).convertSRGBToLinear();
+      return [cT.r, cT.g, cT.b];
+    };
+    const regions = (ile.def && ile.def.regions) || [], parRegion = new Map();
+    const presA = i => {
+      const u = Math.floor(P[i][0] - n0[i][0] * 4), v = Math.floor(P[i][1] - n0[i][1] * 4);
+      const k = T.region && u >= 0 && v >= 0 && u < T.W && v < T.H ? T.region[v * T.W + u] : 255, R = regions[k];
+      if (!R || !R.palette || !R.palette.herbe) return null;
+      if (!parRegion.has(k)) { const a = etalonne(R.palette.herbe[0]), b = etalonne(R.palette.herbe[1]); parRegion.set(k, melange(a, b, 0.5).map(x => x * cfg.presBord)); }
+      return parRegion.get(k);
+    };
+    const pres0 = P.map((_, i) => presA(i));
+    const presL = P.map((_, i) => {
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let j = -4; j <= 4; j++) { const c = pres0[((i + j) % N + N) % N]; if (c) { r += c[0]; g += c[1]; b += c[2]; n++; } }
+      return n ? [r / n, g / n, b / n] : melange(pal.pres[0], pal.pres[1], 0.5);
+    });
+    const boisA = (x, z) => fbm2(x / 55 + 11, z / 55 + 5);
+    const couleur = (d, x, z, h, i) => {
+      let c = melange(pal.pres[0], pal.pres[1], fbm2(x / 30, z / 30));
+      c = melange(c, presL[i], 1 - lisse01(8, 90, d));
+      if (d > 36 && bruit2(x / 85 + 3.3, z / 85 + 7.7) > cfg.champs) {
+        const k = Math.floor(h2(Math.floor(x / 26), Math.floor(z / 19)) * pal.champs.length) % pal.champs.length;
+        c = melange(c, pal.champs[k], lisse01(36, 70, d));
+      }
+      c = melange(c, pal.foret[0], lisse01(cfg.bois - 0.05, cfg.bois + 0.05, boisA(x, z)) * lisse01(16, 40, d));
+      const rel = h - hm;
+      c = melange(c, pal.roche[0], lisse01(cfg.roche[0], cfg.roche[1], rel));
+      return melange(c, pal.neige[0], lisse01(cfg.neige[0], cfg.neige[1], rel));
+    };
+    const D = cfg.anneaux, K = D.length, nks = D.map(d => lisseN(Math.min(Math.floor(N / 3), Math.round(Math.max(0, d) * cfg.lissage / pas))));
+    const posA = (k, i, d) => {
+      const p = P[i], n = nks[k][i];
+      let x = p[0] + n[0] * d, z = p[1] + n[1] * d;
+      const r = lisse01(cfg.rond[0], cfg.rond[1], d);
+      if (r > 0) { const vx = p[0] - cx, vz = p[1] - cz, l = Math.hypot(vx, vz) || 1; x += (cx + vx / l * (l + d) - x) * r; z += (cz + vz / l * (l + d) - z) * r; }
+      return [x, z];
+    };
+    const pos = new Float32Array(N * K * 3), col = new Float32Array(N * K * 3);
+    for (let k = 0; k < K; k++) for (let i = 0; i < N; i++) {
+      const [x, z] = posA(k, i, D[k]), h = haut(D[k], i, x, z), o = (k * N + i) * 3, c = couleur(D[k], x, z, h, i);
+      pos[o] = x; pos[o + 1] = h; pos[o + 2] = z;
+      col[o] = Math.min(1, c[0]); col[o + 1] = Math.min(1, c[1]); col[o + 2] = Math.min(1, c[2]);
+    }
+    const idx = [];
+    for (let k = 0; k < K - 1; k++) for (let i = 0; i < N; i++) {
+      const a = k * N + i, b = k * N + (i + 1) % N, c = (k + 1) * N + i, e = (k + 1) * N + (i + 1) % N;
+      idx.push(a, c, b, b, c, e);
+    }
+    let ny = 0;
+    for (let t = 0; t < Math.min(idx.length, 3 * 400); t += 3) {
+      const A = idx[t] * 3, B = idx[t + 1] * 3, Cc = idx[t + 2] * 3;
+      const ux = pos[B] - pos[A], uz = pos[B + 2] - pos[A + 2], vx = pos[Cc] - pos[A], vz = pos[Cc + 2] - pos[A + 2];
+      ny += uz * vx - ux * vz;
+    }
+    if (ny < 0) for (let t = 0; t < idx.length; t += 3) { const q = idx[t + 1]; idx[t + 1] = idx[t + 2]; idx[t + 2] = q; }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    geo.setIndex(new THREE.BufferAttribute(N * K > 65535 ? new Uint32Array(idx) : new Uint16Array(idx), 1));
+    geo.computeVertexNormals();
+    geo.computeBoundingSphere();
+    const matTerre = new THREE.MeshLambertMaterial({ color: new THREE.Color(1, 1, 1), vertexColors: true, fog: true });
+    matTerre.onBeforeCompile = sh => {
+      sh.vertexShader = 'varying vec3 vPosR;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vPosR = position;');
+      sh.fragmentShader = 'varying vec3 vPosR;\n' + GLSL_BRUIT_R + sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n  diffuseColor.rgb *= 1.0 + (bruitR(vPosR * 0.55) - 0.5) * ' + cfg.grain.toFixed(3) + ' + (bruitR(vPosR * 2.1 + 5.0) - 0.5) * ' + (cfg.grain * 0.6).toFixed(3) + ';');
+    };
+    plafonnerBrume(matTerre, cfg.brumeMax, 'lointain-terre-2');
+    matTerre.name = 'lointain_terre';
+    const groupe = new THREE.Group();
+    groupe.name = 'lointain';
+    const terre = new THREE.Mesh(geo, matTerre);
+    terre.name = 'lointain terre';
+    terre.matrixAutoUpdate = false;
+    groupe.add(terre);
+    let triangles = idx.length / 3, octets = pos.byteLength + col.byteLength * 2 + geo.index.array.byteLength;
+    const L = cfg.lisiere, sorties = (ile.world && ile.world.plateau && ile.world.plateau.sorties) || [];
+    const libre = (x, z) => T.videA(x, z) && !sorties.some(s => Math.hypot(s.x - x, s.y - z) < L.trou);
+    const places = [];
+    const pasL = tel ? L.pasTel : L.pas, n3 = lisseN(3), forme = cfg.forme || null;
+    let acc = 0;
+    for (let i = 0; i < N; i++) {
+      acc += pas;
+      if (acc < pasL) continue;
+      acc = h2(i, 0.7) * pasL * 0.5;
+      L.rangs.forEach(([d0, d1, f], q) => {
+        if (h2(i * 0.37, q + 2.9) < L.trous) return;
+        const [tx, tz] = tan(i), gl = (h2(i * 5.3, q + 1.1) - 0.5) * pasL * 0.7;
+        const d = d0 + (d1 - d0) * h2(i * 1.7, q * 13.1), x = P[i][0] + n3[i][0] * d + tx * gl, z = P[i][1] + n3[i][1] * d + tz * gl;
+        if (!libre(x, z)) return;
+        places.push({ x, z, h: haut(d, i, x, z), taille: L.taille[0] + (L.taille[1] - L.taille[0]) * h2(i * 3.1, q + 5.2), forme: forme || f, g: i * 7 + q, loin: q > 0 });
+      });
+    }
+    const nB = tel ? cfg.bosquetsTel : cfg.bosquets;
+    for (let t = 0, essais = 0; t < nB && essais < nB * 12; essais++) {
+      const i = Math.floor(h2(essais * 1.13, 7.7) * N) % N, d = 22 + Math.pow(h2(essais * 2.71, 3.3), 1.6) * 238;
+      let k = 0;
+      while (k < K - 2 && D[k + 1] < d) k++;
+      const [x, z] = posA(k, i, d);
+      if (boisA(x, z) < cfg.bois + 0.02 || !libre(x, z)) continue;
+      places.push({ x, z, h: haut(d, i, x, z), taille: L.taille[0] * 1.1 + (L.taille[1] - L.taille[0]) * h2(essais, 9.9), forme: forme || 'bosquet', g: 1000 + essais, loin: true });
+      t++;
+    }
+    const ca = Object.assign({}, cfgArbres, cfg.arbres ? { palettes: Object.assign({}, cfgArbres.palettes, cfg.arbres) } : {});
+    const modeles = {}, variante = (f, loin) => {
+      const cle = f + (loin ? '-loin' : '');
+      if (!modeles[cle]) {
+        modeles[cle] = [];
+        for (let v = 0; v < 3; v++) modeles[cle].push(arbreRond(f, 500 + v * 17 + f.length, ca, loin ? cfg.detailLoin : cfg.detail, loin ? cfg.detailLoin : cfg.detailCoeur));
+      }
+      return modeles[cle];
+    };
+    const secteurs = new Map(), NS = 16;
+    for (const p of places) {
+      const V = variante(p.forme, p.loin), M = V[Math.floor(h2(p.g, 1.3) * V.length) % V.length];
+      const s = Math.floor(((Math.atan2(p.z - cz, p.x - cx) / (Math.PI * 2)) + 1) * NS) % NS;
+      const e = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, p.x, p.h - 0.3, p.z, 1];
+      triangles += cuireRond(secteurs, M, e, h2(p.g, 4.4) * Math.PI * 2, p.taille / M.hauteur, 0, false, s);
+    }
+    const matArbres = plafonnerBrume(matiereRonde(THREE, ca), cfg.brumeMax, 'lointain-arbres-1');
+    matArbres.name = 'lointain_arbres';
+    for (const [k, f] of secteurs) {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(f.pos), 3));
+      g.setAttribute('normal', normalesCompactes(THREE, f.nrm));
+      g.setAttribute('color', couleursCompactes(THREE, f.col) || new THREE.BufferAttribute(new Float32Array(f.col), 3));
+      g.setIndex(new THREE.BufferAttribute(f.nVert > 65535 ? new Uint32Array(f.idx) : new Uint16Array(f.idx), 1));
+      g.computeBoundingSphere();
+      const o = new THREE.Mesh(g, matArbres);
+      o.name = 'lointain arbres ' + k;
+      o.matrixAutoUpdate = false;
+      groupe.add(o);
+      octets += f.pos.length * 4 + f.nVert * 12 + f.idx.length * (f.nVert > 65535 ? 4 : 2);
+    }
+    return { groupe, triangles: Math.round(triangles), octets, arbres: places.length, anneaux: K, points: N, hm, loin: cfg.loin };
+  }
+
   function semerMeshy(G, mesh, mats, S, genre, fusionS, facteur, ronds, fusion) {
     const g = S.genres[genre], restes = [];
     if (!g) return { tri: 0, restes: mats };
@@ -433,7 +662,7 @@ float bruitR(vec3 x) {
       const nom = g.modele(m.teinte, hache(x, z, 1), x, z), M = nom && S.modeles[nom];
       if (!M) { restes.push(m); continue; }
       if (facteur < 1 && hache(x, z, 3) >= facteur) continue;
-      if (forme && /^arbre[23]?$/.test(nom)) {
+      if (forme && /^arbre[23]?$/.test(nom) && !(S.sombre && S.sombre(x, z))) {
         const V = ronds.modeles[forme], R = V[Math.floor(hache(x, z, 4) * V.length) % V.length];
         tri += cuireRond(fusion, R, e, hache(x, z, 2) * Math.PI * 2, haut / R.hauteur * (ronds.cfg.facteur[genre] || 1), -0.06 * haut, nom === 'arbre3');
         ronds.poses = (ronds.poses || 0) + 1;
@@ -689,6 +918,6 @@ float bruitR(vec3 x) {
     }
   }
 
-  return { source, octets, lire, analyser, construire, poser, parTuiles, tactique, mouiller, portee, arbreRond, TUILE };
+  return { source, octets, lire, analyser, construire, poser, parTuiles, tactique, mouiller, portee, arbreRond, lointain, TUILE };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = IleGlb;

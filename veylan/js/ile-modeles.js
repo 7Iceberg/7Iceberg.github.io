@@ -854,7 +854,7 @@ const IleModeles = (() => {
       return mat;
     });
     const tex = etc ? etc.reduce((a, t) => a + t.octets, 0) : ATLAS.reduce((a, [l, h]) => a + l * h * 4 * 4 / 3, 0);
-    return { modeles, mat: mats[0], mats, formes: FORMES, genres: GENRES, etc: !!etc, octets: { tex, geo } };
+    return { modeles, mat: mats[0], mats, formes: FORMES, genres: GENRES, etc: !!etc, octets: { tex, geo }, sombre: (x, z) => dansBois(x, z) };
   }
 
   const SOLS = {
