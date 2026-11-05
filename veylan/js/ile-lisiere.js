@@ -6,7 +6,7 @@ const IleLisiere = (() => {
 
   const CIEL_VS = `varying vec3 vDir;
 void main() { vDir = position; vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position = p.xyww; }`;
-  const CIEL_FS = `uniform float uT; uniform vec3 uLune, uHorizon, uZenith, uVoie, uSoleil, uSoleilCoul, uAstre, uNuageClair, uNuageSombre; uniform vec4 uEclair; uniform float uAurore, uEtoiles, uCouverture, uLueur;
+  const CIEL_FS = `uniform float uT; uniform vec3 uLune, uHorizon, uZenith, uVoie, uSoleil, uSoleilCoul, uAstre, uNuageClair, uNuageSombre; uniform vec4 uEclair, uDessous; uniform vec3 uMerHaut; uniform float uAurore, uEtoiles, uCouverture, uLueur;
 varying vec3 vDir;
 float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float br(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h21(i), h21(i + vec2(1.0, 0.0)), f.x), mix(h21(i + vec2(0.0, 1.0)), h21(i + 1.0), f.x), f.y); }
@@ -25,6 +25,20 @@ void main() {
   vec3 d = normalize(vDir); float y = d.y, az = atan(d.z, d.x);
   vec3 c = mix(uHorizon, mix(uHorizon, uZenith, 0.62), smoothstep(0.0, 0.22, y));
   c = mix(c, uZenith, smoothstep(0.2, 0.85, y));
+  // Sous l'horizon (3.65, l'île du ciel au soir) : une mer de nuages vue d'en haut, prise sur un plan
+  // sous l'île (la perspective juste : des moutons plus petits vers l'horizon) ; leurs dessus éclairés
+  // du côté du soleil, leurs flancs lavande, les creux plus profonds ; la brume de l'horizon au loin.
+  if (uDessous.w > 0.0 && y < 0.03) {
+    vec2 qd = d.xz / max(-y, 0.025) * 0.32 + vec2(uT * 0.003, uT * 0.0012);
+    float n = fbm(qd + 5.0);
+    vec2 vs = normalize(uSoleil.xz + vec2(1e-4));
+    float relief = clamp((n - fbm3(qd + 5.0 - vs * 0.1)) * 7.0 + 0.5, 0.0, 1.0);
+    float nuage = smoothstep(0.36, 0.6, n);
+    vec3 flanc = mix(uDessous.rgb, uMerHaut, 0.45), dessus = mix(uMerHaut, uSoleilCoul, 0.15);
+    vec3 mer = mix(uDessous.rgb, mix(flanc, dessus, relief), nuage);
+    mer = mix(mer, uHorizon, smoothstep(-0.2, 0.0, y));
+    c = mix(c, mer, uDessous.w * smoothstep(0.03, -0.03, y));
+  }
   // Le soleil : son disque, sa lueur, et à l'aube et au soir l'horizon qui rougit de son côté.
   float sd = dot(d, uSoleil);
   vec3 vers = normalize(vec3(uSoleil.x, 0.0, uSoleil.z) + 1e-4);
@@ -356,7 +370,7 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
           uZenith: { value: new THREE.Color() }, uSoleil: { value: new THREE.Vector3(0, -1, 0) }, uSoleilCoul: { value: new THREE.Color() }, uAstre: { value: new THREE.Vector3(-0.55, 0.27, -0.8).normalize() },
           uNuageClair: { value: new THREE.Color() }, uNuageSombre: { value: new THREE.Color() }, uEtoiles: { value: 1 }, uCouverture: { value: 0.25 }, uLueur: { value: 0 },
           uVoie: { value: new THREE.Vector3().crossVectors(new THREE.Vector3(-0.6, 0.08, -0.8).normalize(), new THREE.Vector3(0.55, 0.42, -0.72).normalize()).normalize() },
-          uEclair: { value: new THREE.Vector4(0, 0, 0, 0) }, uAurore: { value: 0.45 },
+          uEclair: { value: new THREE.Vector4(0, 0, 0, 0) }, uAurore: { value: 0.45 }, uDessous: { value: new THREE.Vector4(0, 0, 0, 0) }, uMerHaut: { value: new THREE.Color() },
         },
       }));
       dome.rotation.y = TOUR_DOME;
@@ -448,6 +462,11 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
         if (A.jour > 0.5) U.uAstre.value.copy(A.soleil); else U.uAstre.value.set(-0.55, 0.27, -0.8).normalize();
         U.uT.value = temps;
         U.uEclair.value.set(ec ? ec.az : 0, flash, ec ? ec.graine : 0, ec ? ec.trait : 0);
+        if (this.soir && this.soir.mer) {
+          const M = this.soir.mer, f = 1 - 0.7 * (A.nuit || 0), c = this.c1.set(M.abime).multiplyScalar(f);
+          U.uDessous.value.set(c.r, c.g, c.b, M.force);
+          U.uMerHaut.value.set(M.haut).multiplyScalar(f);
+        }
       }
       const W = this.meteo;
       if (W) {

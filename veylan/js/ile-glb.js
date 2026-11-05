@@ -605,6 +605,38 @@ float bruitR(vec3 x) {
         places.push({ x, z, h: haut(d, i, x, z), taille: L.taille[0] + (L.taille[1] - L.taille[0]) * h2(i * 3.1, q + 5.2), forme: forme || f, g: i * 7 + q, loin: q > 0 });
       });
     }
+    if (Array.isArray(T.echancrure) && T.echancrure.length > 3) {
+      const B = espacer(T.echancrure, pas), nB = B.length;
+      const dedans = (x, z) => { let c = false; for (let i = 0, j = nB - 1; i < nB; j = i++) { const a = B[i], b = B[j]; if ((a[1] > z) !== (b[1] > z) && x < (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
+      const hA = (x, z) => { let sh = 0, n = 0; for (let r = 4; r <= 12 && !n; r += 4) for (let a = 0; a < 12; a++) { const h = H(x + Math.cos(a * Math.PI / 6) * r, z + Math.sin(a * Math.PI / 6) * r); if (Number.isFinite(h)) { sh += h; n++; } } return n ? sh / n : hm; };
+      const tri = THREE.ShapeUtils.triangulateShape(B.map(p => new THREE.Vector2(p[0], p[1])), []);
+      if (tri.length) {
+        const pB = new Float32Array(nB * 3), cB = new Float32Array(nB * 3), iB = [];
+        B.forEach((p, k) => { const h = hA(p[0], p[1]) - cfg.levre - 0.4, c = melange(presL[0], pal.foret[0], 0.45); pB.set([p[0], h, p[1]], k * 3); cB.set(c, k * 3); });
+        for (const t of tri) iB.push(t[0], t[1], t[2]);
+        const A0 = iB[0] * 3, A1 = iB[1] * 3, A2 = iB[2] * 3;
+        if ((pB[A1 + 2] - pB[A0 + 2]) * (pB[A2] - pB[A0]) - (pB[A1] - pB[A0]) * (pB[A2 + 2] - pB[A0 + 2]) < 0) for (let t = 0; t < iB.length; t += 3) { const q = iB[t + 1]; iB[t + 1] = iB[t + 2]; iB[t + 2] = q; }
+        const gB = new THREE.BufferGeometry();
+        gB.setAttribute('position', new THREE.BufferAttribute(pB, 3));
+        gB.setAttribute('color', new THREE.BufferAttribute(cB, 3));
+        gB.setIndex(iB);
+        gB.computeVertexNormals();
+        gB.computeBoundingSphere();
+        const baie = new THREE.Mesh(gB, matTerre);
+        baie.name = 'lointain baie';
+        baie.matrixAutoUpdate = false;
+        groupe.add(baie);
+        triangles += iB.length / 3; octets += pB.byteLength * 2 + iB.length * 4;
+        let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+        for (const p of B) { x0 = Math.min(x0, p[0]); z0 = Math.min(z0, p[1]); x1 = Math.max(x1, p[0]); z1 = Math.max(z1, p[1]); }
+        const pasB = tel ? 9 : 7;
+        for (let z = z0 + pasB / 2; z < z1; z += pasB) for (let x = x0 + pasB / 2; x < x1; x += pasB) {
+          const jx = x + (h2(x, z) - 0.5) * pasB * 0.6, jz = z + (h2(z, x) - 0.5) * pasB * 0.6;
+          if (!dedans(jx, jz) || !libre(jx, jz)) continue;
+          places.push({ x: jx, z: jz, h: hA(jx, jz) - cfg.levre - 0.4, taille: L.taille[0] + (L.taille[1] - L.taille[0]) * h2(jx * 0.3, jz), forme: forme || 'lisiere', g: 3000 + places.length });
+        }
+      }
+    }
     const nB = tel ? cfg.bosquetsTel : cfg.bosquets;
     for (let t = 0, essais = 0; t < nB && essais < nB * 12; essais++) {
       const i = Math.floor(h2(essais * 1.13, 7.7) * N) % N, d = 22 + Math.pow(h2(essais * 2.71, 3.3), 1.6) * 238;

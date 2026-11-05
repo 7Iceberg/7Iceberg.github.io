@@ -8,7 +8,7 @@ class Ile3D {
     const nom = q != null ? q : d.ambiance || '';
     let qb = null, qa = null, ql = null;
     try { const p = new URLSearchParams(location.search); qb = p.get('bordures'); qa = p.get('arbres'); ql = p.get('lointain'); } catch (e) {   }
-    return { soir: nom === 'soir', ombres: qo !== '0', bordures: qb !== '0', arbres: qa !== '0', lointain: ql === '1' };
+    return { soir: nom === 'soir', ombres: qo !== '0', bordures: qb !== '0', arbres: qa !== '0', lointain: ql !== '0' };
   }
 
   static qualiteParDefaut() {
@@ -1282,8 +1282,10 @@ void main() {
     const R = IleTerrain.M.hasard(123), T = this.T;
     const cx = T.largeur / 2, cz = T.hauteur / 2;
     this.bancs = [];
-    const bancs = this.qualite === 'basse' ? [[-30, 8, '#aab3c6', 0.9]] : [[-46, 13, '#8e98b0', 0.95], [-34, 10, '#a7b0c4', 0.78], [-24, 7, '#c3cad8', 0.62]];
-    const sombre = new THREE.Color('#4f5a78'), cTmp = new THREE.Color();
+    let bancs = this.qualite === 'basse' ? [[-30, 8, '#aab3c6', 0.9]] : [[-46, 13, '#8e98b0', 0.95], [-34, 10, '#a7b0c4', 0.78], [-24, 7, '#c3cad8', 0.62]];
+    const MS = this.soir && Ile3D.SOIR.mer;
+    if (MS) bancs = bancs.map((b, k) => [b[0], b[1], MS.bancs[Math.min(MS.bancs.length - 1, bancs.length === 1 ? 1 : k)], b[3]]);
+    const sombre = new THREE.Color(MS ? MS.sombre : '#4f5a78'), cTmp = new THREE.Color();
     for (const [y, rep, teinte, op] of bancs) {
       const t = this.tex.banc.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep * 2, rep * 2); t.offset.set(R(), R());
       const g = new THREE.PlaneGeometry(1400, 1400, 28, 28), P = g.attributes.position, col = new Float32Array(P.count * 3);
@@ -2116,9 +2118,10 @@ Ile3D.SOIR = {
     orsane: { couleurs: { pres: ['#4c7c33', '#66913f'], champs: ['#9a9844', '#b6a351', '#7d983d', '#a2884a'], foret: ['#1d3c20'], roche: ['#7b8090'], neige: ['#e6ebf2'] } },
     kaldum: {
       couleurs: { pres: ['#4a433f', '#5b514a'], champs: ['#3d3431', '#68483a', '#544538'], foret: ['#29231f'], roche: ['#35323b'], neige: ['#7a3424'] },
-      arbres: { vert: ['#100e12', '#2a262e', '#55505b'], automne: ['#100e12', '#2a262e', '#55505b'] }, forme: 'rocher', montagnes: 150,
+      arbres: { vert: ['#1c1816', '#3d3530', '#6c5f54'], automne: ['#1c1816', '#3d3530', '#6c5f54'] }, forme: 'rocher', montagnes: 150,
     },
   },
+  mer: { abime: '#7a78ab', haut: '#f1c7a6', force: 1, bancs: ['#7b74a0', '#b08fa6', '#e2b393'], sombre: '#3d3e68' },
   camera: { proche: { elevation: 10, leve: 2.4 }, champMin: 13 },
   arbres: {
     formes: { feuillu: 'large', haut: 'haut', conifere: 'haut', tordu: 'petit' },
