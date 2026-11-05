@@ -266,7 +266,7 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['herbe_de_veille'],
       groups: [
-        { monsters: ['grouk', 'grouk'], level: [4, 6], respawn: 50 },
+        { monsters: ['gelee_cousue', 'grouk'], level: [4, 6], respawn: 50 },
         { monsters: ['grouk', 'pilou', 'pilou'], level: [4, 6], respawn: 50 },
         { monsters: ['grouk', 'grouk', 'pilou'], level: [5, 6], respawn: 50 },
         { monsters: ['kavou_bleu', 'kavou_roux'], level: [4, 6], respawn: 50 },
@@ -1265,8 +1265,8 @@ DATA.content.quests.push({
     { type: 'talk', npc: 'thoril', text: 'Revenir voir Thoril' },
   ],
   dialogue: {
-    offer: ['Avant les Veilloches, j\'élevais des Kavous. Quatre couleurs, une volière, aucun souci.', 'Puis l\'un d\'eux a picoré les quatre couleurs à la fois. Il a pris la volière, là-haut sur la Crête, et il change de teinte comme de chemise.', 'Regarde sa couleur avant de frapper. Le bleu craint le feu, le roux l\'eau, l\'ocre l\'air, le blanc la terre.'],
-    progress: ['Il change à chacun de ses tours. Un coup de sa couleur le soigne, un coup de la couleur opposée le plie en deux.'],
+    offer: ['Avant les Veilloches, j\'élevais des Kavous. Quatre couleurs, une volière, aucun souci.', 'Puis l\'un d\'eux a picoré les quatre couleurs à la fois. Il a pris la volière, là-haut sur la Crête, et il change de teinte comme de chemise.', 'Regarde sa couleur avant de frapper : il prend la peau du Kavou de la même teinte, en plus dure. Sa fiche te dira quoi lui envoyer.'],
+    progress: ['Il change à chacun de ses tours. Relis sa fiche à chaque fois : ce qui le plie en bleu glisse sur lui en roux.'],
     done: ['Le multicolore est tombé ? Volu en a éteint sa mèche de surprise.', 'Garde la volière si tu veux. Moi, je reste aux Veilloches : elles n\'ont qu\'une couleur, et elles s\'y tiennent.'],
   },
   rewards: { xp: 1454, fils: 60, items: [{ id: 'pain_de_grouk', count: 2 }] },

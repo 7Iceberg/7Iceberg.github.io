@@ -96,7 +96,7 @@
         recit: 'Une potion de Relais se brasse à l\'herbe de Veille, qui ne se ferme jamais la nuit. Les alchimistes la conseillent aux Veilleurs qui se perdent, c\'est-à-dire à tous.',
         bonus: { type: 'atelier', atelier: 'alchimiste', pct: 25 } },
       { voile: 5, element: 'eau', nom: 'Le Ciel bleu',
-        recit: 'Un Kavou prend la couleur du ciel sous lequel il a niché. Ceux du ciel bleu se gavent de pluie et ne craignent rien tant que le feu.',
+        recit: 'Un Kavou prend la couleur du ciel sous lequel il a niché. Ceux du ciel bleu boivent la pluie sans broncher ; c\'est la boue qui les gêne.',
         bonus: { type: 'xp_famille', famille: 'kavou', pct: 50 } },
       { voile: 6, element: 'eau', nom: 'La Rosée des Toiles',
         recit: 'Dans le Nid des Toiles, la rosée tient sur les fils jusqu\'au soir. La Fileuse s\'y abreuve, et ce qu\'elle tisse ensuite ne casse plus.',

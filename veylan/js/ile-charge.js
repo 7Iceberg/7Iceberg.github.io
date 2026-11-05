@@ -188,5 +188,15 @@ const IleCharge = (() => {
     return glb().then(() => (typeof IlePeau === 'object' ? null : script('js/ile-peau.js')));
   }
 
-  return { three, webgl, ambiance, vignette, style, lisiere, script, nuit, monde, glb, heros, herosScript, peauScript, modeles, modelesScript, faible, cache: { lire, ecrire, vider }, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
+  function reperes() {
+    let q;
+    try { q = new URLSearchParams(location.search).get('reperes'); } catch (e) { q = null; }
+    if (q === '0') return null;
+    return typeof DATA === 'object' && DATA && DATA.ile && DATA.ile.reperes && DATA.ile.reperesActifs !== false ? 'oui' : null;
+  }
+  function reperesScript() {
+    return glb().then(() => (typeof IleReperes === 'object' ? null : script('js/ile-reperes.js')));
+  }
+
+  return { three, webgl, ambiance, vignette, style, lisiere, script, nuit, monde, glb, heros, herosScript, peauScript, modeles, modelesScript, reperes, reperesScript, faible, cache: { lire, ecrire, vider }, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
 })();

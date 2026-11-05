@@ -200,10 +200,38 @@ Object.assign(Hud.prototype, {
     if (def.porte) dot(def.porte.u, def.porte.v, '#a66cff', 3);
     for (const n of w.npcs) dot(n.x, n.y, '#f2e2c9', 2.4);
     for (const g of w.groups) dot(g.rx != null ? g.rx : g.x, g.ry != null ? g.ry : g.y, '#f07a5c', 2.6);
+    this.monumentsMini(c, W, H, iso);
     dot(p.x, p.y, '#00c2ff', 3.4);
     const pos = typeof Atlas === 'object' && Atlas.coordsOf(w.mapId);
     const label = document.getElementById('minicarte-nom');
     if (label) label.textContent = def.name ? def.name + (pos ? ` [${pos[0]},${pos[1]}]` : '') : '';
+  },
+
+  monumentsMini(c, W, H, iso) {
+    const P = this.world.plateau, p = this.world.player;
+    if (!P || typeof Hud.monuments !== 'function' || typeof CartePeinture !== 'object') return;
+    const cx = W / 2, cy = H / 2, m = 8;
+    for (const r of Hud.monuments(P.id)) {
+      const d = Math.hypot(r.u - p.x, r.v - p.y);
+      if (d > 320) continue;
+      const q = iso(r.u, r.v), dedans = q.x > m && q.x < W - m && q.y > m && q.y < H - m;
+      let x = q.x, y = q.y, k = 1;
+      if (!dedans) {
+        const dx = q.x - cx, dy = q.y - cy, t = Math.min((W / 2 - m) / Math.max(1e-6, Math.abs(dx)), (H / 2 - m) / Math.max(1e-6, Math.abs(dy)));
+        x = cx + dx * t; y = cy + dy * t; k = 0.78;
+        const a = Math.atan2(dy, dx), L = 5.5;
+        c.save(); c.translate(x + Math.cos(a) * 7 * k, y + Math.sin(a) * 7 * k); c.rotate(a);
+        c.fillStyle = '#ffcf5a'; c.strokeStyle = 'rgba(20,24,40,0.7)'; c.lineWidth = 1;
+        c.beginPath(); c.moveTo(L, 0); c.lineTo(0, -L * 0.6); c.lineTo(0, L * 0.6); c.closePath(); c.fill(); c.stroke();
+        c.restore();
+      }
+      const art = CartePeinture.pastille('monument', Math.round(18 * k * Math.min(2, window.devicePixelRatio || 1)));
+      if (!art) continue;
+      const e = 18 * k / (art.r * 2);
+      c.globalAlpha = dedans ? 1 : 0.9;
+      c.drawImage(art.canvas, x - art.ax * e, y - art.ay * e, art.canvas.width * e, art.canvas.height * e);
+      c.globalAlpha = 1;
+    }
   },
 
 

@@ -470,10 +470,12 @@ class Guide {
     const glyms = Object.keys(M).filter(id => /^glym_/.test(id) && M[id].region === 'ervane' && !M[id].boss).map(id => M[id]);
     const dans = group && Array.isArray(group.monsters) ? group.monsters.map(m => M[m.id]).filter(Boolean) : [];
     for (const e of this.elementsDeClasse()) {
-      const craint = d => !!(d.resist && d.resist[e] < 0), resiste = d => !!(d.resist && d.resist[e] > 0);
-      const faible = dans.find(craint) || glyms.find(craint);
+      const val = d => (d.resist && d.resist[e]) || 0;
+      const plusFaible = l => l.filter(d => val(d) < 0).sort((a, b) => val(a) - val(b))[0];
+      const plusFort = l => l.filter(d => val(d) > 0).sort((a, b) => val(b) - val(a))[0];
+      const faible = plusFaible(dans) || plusFaible(glyms);
       if (!faible) continue;
-      return { element: e, faible, resiste: dans.find(resiste) || glyms.find(resiste) || null, dansFiche: dans.includes(faible) };
+      return { element: e, faible, resiste: plusFort(dans) || plusFort(glyms) || null, dansFiche: dans.includes(faible) };
     }
     return null;
   }
@@ -599,7 +601,8 @@ class Guide {
           if (!a) break;
           fiche = a;
           const p = w.player, craint = g2 => g2.monsters.some(m => DATA.monsters[m.id] && DATA.monsters[m.id].resist && DATA.monsters[m.id].resist[a.element] < 0);
-          const g = w.groups.filter(craint).sort((g1, g2) => Grid.dist(g1, p) - Grid.dist(g2, p))[0];
+          const proche = l => l.sort((g1, g2) => Grid.dist(g1, p) - Grid.dist(g2, p))[0];
+          const g = proche(w.groups.filter(g2 => g2.monsters.some(m => m.id === a.faible.id))) || proche(w.groups.filter(craint));
           if (g) ground = { group: g };
           break;
         }

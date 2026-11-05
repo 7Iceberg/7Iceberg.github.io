@@ -1535,14 +1535,13 @@ class Combat {
   cycleColor(e, cycle) {
     e.colorIndex = ((e.colorIndex == null ? -1 : e.colorIndex) + 1) % cycle.length;
     const c = cycle[e.colorIndex];
-    e.baseResist = e.baseResist || Object.assign({}, e.resist);
-    e.resist = Object.assign({}, e.baseResist);
-    e.resist[c.weak] = -100;
-    e.absorbElement = c.element;
+    e.resist = Object.assign({ feu: 0, eau: 0, air: 0, terre: 0, neutre: 0 }, c.resist || {});
     e.color = c.color;
     if (c.spell) e.spells = [c.spell];
-    const label = el => DATA.elements[el].label.toLowerCase();
-    this.log(`${e.name} vire au ${c.name} : ${label(c.element)} le soigne, ${label(c.weak)} le blesse double.`, 'system');
+    const a = { feu: 'au feu', eau: 'à l\'eau', air: 'à l\'air', terre: 'à la terre', neutre: 'au neutre' };
+    const liste = f => Object.keys(e.resist).filter(k => f(e.resist[k])).map(k => a[k]).join(' et ');
+    const fort = liste(v => v > 0), faible = liste(v => v < 0);
+    this.log(`${e.name} vire au ${c.name} : il résiste ${fort || 'à rien'}${faible ? ', il est sensible ' + faible : ''}.`, 'system');
   }
 
   cocoon(e, a) {

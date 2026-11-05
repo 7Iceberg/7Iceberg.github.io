@@ -142,7 +142,16 @@ class Ile3D {
         if (typeof IlePeau === 'object') peaux = await IlePeau.parc(THREE, { telephone: this.telephone, qualite: this.qualite, ids: Ile3D.peauxDu(this.world && this.world.plateau && this.world.plateau.id, IlePeau.MONSTRES) });
       } catch (e) { console.warn('Peaux Meshy : ' + e.message); }
       if (peaux) scene.add(peaux.groupe);
-      this.figures.modeles = peaux ? IlePeau.composer([peaux, parc]) : parc;
+      let gelees = null;
+      const plateauId = this.world && this.world.plateau && this.world.plateau.id;
+      if (this.qualite !== 'basse' && typeof IlePeau === 'object' && Ile3D.peauxDu(plateauId, ['gelee_cousue']).length) try {
+        await charger('modele-gelee.js', () => typeof ModeleGelee === 'object');
+        let refraction = false;
+        try { refraction = new URLSearchParams(location.search).get('gelee') === 'refraction'; } catch (e) {   }
+        gelees = new ModeleGelee.Parc(THREE, { telephone: this.telephone, qualite: this.qualite, renderer: this.renderer, refraction });
+        scene.add(gelees.groupe);
+      } catch (e) { console.warn('Gelée cousue : ' + e.message); gelees = null; }
+      this.figures.modeles = peaux || gelees ? IlePeau.composer([peaux, gelees, parc]) : parc;
     } catch (e) { console.warn('Glym modelé : ' + e.message); }
   }
 
@@ -421,6 +430,10 @@ class Ile3D {
     }
     if (this.monde && rendu.modeles && IleCharge.modeles && IleCharge.modeles()) {
       try { await IleCharge.modelesScript(); if (typeof IleModeles === 'object') this.modeles = await IleModeles.poser(THREE, this); } catch (e) { console.warn('Ervane : modèles Meshy indisponibles', e); }
+    }
+    this.reperesGeants = null;
+    if (IleCharge.reperes && IleCharge.reperes() && ((DATA.ile.reperes || {})[plateau.id] || []).length) {
+      try { await IleCharge.reperesScript(); if (typeof IleReperes === 'object') this.reperesGeants = await IleReperes.poser(THREE, this); } catch (e) { console.warn('Ervane : repères géants indisponibles', e); }
     }
     if (await this.chargerHeros(THREE, etape)) fini('heros');
 
@@ -1198,6 +1211,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (this.figures) this.figures.liberer();
     if (this.carteIle) { this.carteIle.liberer(); this.carteIle = null; }
     this.modeles = null;
+    this.reperesGeants = null;
     this.heros = null;
     if (this.arene) { this.arene.liberer(); this.arene = null; }
     if (this.rampe) this.rampe.dispose();
@@ -1414,6 +1428,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const reste = Math.max(rSil, 60) + (Math.min(Math.max(rSil, 60), champ * 0.9 + 20) - Math.max(rSil, 60)) * ri;
     const solVu = Number.isFinite(solMax) ? solMax + (Math.min(solMax, champ * 0.9 + 14) - solMax) * ri : solMax;
     if (this.monde && typeof IleGlb === 'object' && IleGlb.portee && !tact) IleGlb.portee(this.monde, c, { sol: solVu, semis: rSil, reste });
+    if (this.reperesGeants && typeof IleReperes === 'object') IleReperes.voir(this.reperesGeants, c, { tact, vol: !!vol, nuit: this.nuit ? (this.nuit.amb ? this.nuit.amb.nuit : 1) : 0, t: this.temps });
     for (const t of this.tuilesDecor) {
       const d = distMorceau(t);
       t.groupe.visible = d < rDet && !tact;

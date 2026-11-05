@@ -238,10 +238,17 @@ const IleTerrain = (() => {
     parcelle: o => { const t = o.taille || [8, 6]; return [{ rect: true, x: 0, y: 0, l: t[0], p: t[1] }]; },
     porte_de_forge: o => [{ x: -1.35, y: 0, r: 0.5 }, { x: 1.35, y: 0, r: 0.5 }, { rect: true, x: 0, y: -1.75, l: 5.2, p: 2.6 }, { x: -2.9, y: -0.9, r: 1.0 }, { x: 2.9, y: -0.9, r: 0.9 }, { x: -2.1, y: 0.6, r: 0.3 }, { x: 2.1, y: 0.6, r: 0.3 }],
     bouche_de_mine: o => [{ rect: true, x: 0, y: -1.6, l: 5.0, p: 3.0 }, { x: -2.6, y: -1.3, r: 1.0 }, { x: 2.7, y: -1.4, r: 0.9 }].concat(o.genre === 'mine' ? [{ x: 2.0, y: 1.0, r: 0.75 }] : []),
+    repere: o => (o.formes || []).map(f => ({ rect: true, x: f[0], y: f[1], l: f[2], p: f[3] })),
     fil_d_or: () => [], plateforme: () => [], cerf_volant: () => [], rambarde: () => [], auvent: () => [],
   };
 
-  const SANS_TIRAGE = new Set(['parcelle']);
+  function reperesDe(def) {
+    const R = typeof DATA !== 'undefined' && DATA.ile && DATA.ile.reperes;
+    if (!R || !def || !Array.isArray(R[def.id])) return [];
+    return R[def.id].filter(r => R.modeles && R.modeles[r.modele]).map(r => ({ sorte: 'repere', modele: r.modele, u: r.u, v: r.v, rot: r.rot || 0, formes: R.modeles[r.modele].empreinte || [] }));
+  }
+
+  const SANS_TIRAGE = new Set(['parcelle', 'repere']);
   const MARGE_CLOS = 0.4;
   const dansRect = (liste, u, v, m) => liste.some(o => o.empreinte.some(f => {
     if (!f.rect) return false;
@@ -561,7 +568,7 @@ const IleTerrain = (() => {
       else if (eauQ[i] === eauQ[i]) sol[i] = M_.terre;
     }
 
-    const objets = (def.objets || []).map((o, k) => {
+    const objets = (def.objets || []).concat(reperesDe(def)).map((o, k) => {
       const c = cos(o.rot || 0), s = sin(o.rot || 0);
       const formes = (EMPREINTES[o.sorte] || (() => []))(o).map(f => {
         if (f.anneau) return { anneau: true, u: o.u, v: o.v, r1: f.r1, r2: f.r2 };

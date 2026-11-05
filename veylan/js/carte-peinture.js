@@ -643,6 +643,7 @@ const CartePeinture = (() => {
   }
 
   const PASTILLES = {
+    monument: ['#9fb0cf', '#55678f', '#28324f'],
     relais: ['#6fd8f2', '#1f97c4', '#0d5a80'],
     donjon: ['#b996ff', '#7a4fd0', '#43258a'],
     artisan: ['#f3aa72', '#c06a34', '#773916'],
@@ -660,7 +661,14 @@ const CartePeinture = (() => {
   function picto(c, kind, sub, x, y, s) {
     const blanc = '#ffffff', encre = '#3a2508';
     c.save(); c.translate(x, y); c.lineCap = 'round'; c.lineJoin = 'round';
-    if (kind === 'relais') {
+    if (kind === 'monument') {
+      c.fillStyle = blanc;
+      c.fillRect(-s * 0.62, s * 0.62, s * 1.24, s * 0.26);
+      poly(c, [[-s * 0.42, s * 0.62], [-s * 0.26, -s * 0.38], [s * 0.26, -s * 0.38], [s * 0.42, s * 0.62]]); c.fill();
+      poly(c, [[-s * 0.36, -s * 0.38], [0, -s * 0.95], [s * 0.36, -s * 0.38]]); c.fill();
+      c.fillStyle = '#ffcf5a'; c.fillRect(-s * 0.13, -s * 0.33, s * 0.26, s * 0.26);
+      c.fillStyle = '#28324f'; c.fillRect(-s * 0.1, s * 0.2, s * 0.2, s * 0.42);
+    } else if (kind === 'relais') {
       c.fillStyle = blanc; poly(c, [[0, -s], [s * 0.62, 0], [0, s], [-s * 0.62, 0]]); c.fill();
       c.fillStyle = '#9fe6ff'; poly(c, [[0, -s], [s * 0.62, 0], [0, 0]]); c.fill();
       c.fillStyle = '#c9f2ff'; poly(c, [[0, 0], [-s * 0.62, 0], [0, s]]); c.fill();
