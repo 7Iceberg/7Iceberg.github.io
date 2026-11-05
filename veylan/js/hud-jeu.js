@@ -849,41 +849,102 @@ class FicheGroupe {
 
   dessinerApercu() {
     const boite = this.el.querySelector('.vy-fiche-groupe__apercu'), bouton = this.el.querySelector('[data-act="apercu"]');
+    if (this.anim) { cancelAnimationFrame(this.anim); this.anim = 0; }
     if (!boite) return;
     const ouvert = !!FicheGroupe.apercuOuvert;
     if (bouton) { bouton.classList.toggle('on', ouvert); bouton.setAttribute('aria-expanded', String(ouvert)); }
     boite.classList.toggle('hidden', !ouvert);
-    if (!ouvert) { boite.innerHTML = ''; return; }
+    if (!ouvert) { boite.innerHTML = ''; this.jeu.world.apercuTerrain = null; return; }
     const a = this.d && this.jeu.world.apercuCombat ? this.jeu.world.apercuCombat(this.d.group) : null;
+    this.jeu.world.apercuTerrain = a && a.map.ancre ? a : null;
     if (!a) { boite.innerHTML = '<p class="vy-fiche-groupe__note">Pas d\'aperçu pour ce combat.</p>'; return; }
-    const { map, disposition: d, fenetre: f } = a, C = 9;
+    const { map, disposition: d, fenetre: f } = a;
+    const L = 208, TW = L / Math.max(f.w, f.h) * 0.98, TH = TW / 2, HB = TH * 0.8;
+    const W = L, H = Math.ceil((f.w + f.h) * TH / 2 + HB + 6);
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
     const cv = document.createElement('canvas');
-    cv.width = f.w * C; cv.height = f.h * C;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
     cv.setAttribute('role', 'img');
     cv.setAttribute('aria-label', `Aire du combat : ${d.libelle}, départ à ${d.distance} cases`);
     const g = cv.getContext('2d');
-    const dedans = c => c.x >= f.x0 && c.y >= f.y0 && c.x < f.x0 + f.w && c.y < f.y0 + f.h;
     const cle = c => c.x + ',' + c.y;
     const bleues = new Set(d.bleues.map(cle)), rouges = new Map(d.rouges.map((c, i) => [cle(c), i]));
-    for (let y = 0; y < f.h; y++) for (let x = 0; x < f.w; x++) {
-      const X = f.x0 + x, Y = f.y0 + y, k = X + ',' + Y;
-      let col;
-      if (Grid.walkable(map, X, Y)) col = '#d8ccb0';
-      else col = Grid.blocksSight(map, X, Y) ? '#3a3530' : '#5c8fae';
-      if (bleues.has(k)) col = '#3f86f0';
-      if (rouges.has(k)) {
-        const m = a.monstres[rouges.get(k)], def = m && DATA.monsters[m.id];
-        col = ['rempart', 'cogneur', 'chargeur'].includes(Placement.roleDe(def)) ? '#d8433a' : '#ef8a35';
+    const ecran = (x, y) => ({ x: W / 2 + (x - y) * TW / 2 + (f.h - f.w) * TW / 4, y: HB + 3 + (x + y + 1) * TH / 2 });
+    const losange = (p, k, dy = 0) => {
+      const w = TW / 2 * k, h = TH / 2 * k;
+      g.beginPath(); g.moveTo(p.x, p.y - h + dy); g.lineTo(p.x + w, p.y + dy); g.lineTo(p.x, p.y + h + dy); g.lineTo(p.x - w, p.y + dy); g.closePath();
+    };
+    const S = Renderer.HL;
+    const presents = new Set();
+    const cases = [];
+    for (let y = 0; y < f.h; y++) for (let x = 0; x < f.w; x++) cases.push({ x, y, X: f.x0 + x, Y: f.y0 + y });
+    cases.sort((p, q) => (p.x + p.y) - (q.x + q.y) || p.x - q.x);
+    const pion = (p, couleur, r) => {
+      g.fillStyle = 'rgba(2,4,12,0.45)'; g.beginPath(); g.ellipse(p.x, p.y + 1, r * 1.1, r * 0.55, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = couleur; g.strokeStyle = 'rgba(2,4,12,0.75)'; g.lineWidth = 1.2;
+      g.beginPath(); g.arc(p.x, p.y - r * 0.9, r, 0, Math.PI * 2); g.fill(); g.stroke();
+    };
+    const dessiner = now => {
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, W, H);
+      const souffle = 0.72 + 0.28 * Math.sin(now / 340);
+      for (const c of cases) {
+        const k = Grid.tile(map, c.X, c.Y), p = ecran(c.x, c.y);
+        if (k === Grid.HOLE) continue;
+        losange(p, 1);
+        if (k === Grid.WATER) { g.fillStyle = S.eau.fill; g.fill(); g.strokeStyle = S.eau.edge; g.lineWidth = 0.8; g.stroke(); presents.add('eau'); continue; }
+        g.fillStyle = 'rgba(214,226,190,0.13)'; g.fill();
+        g.strokeStyle = 'rgba(220,232,255,0.16)'; g.lineWidth = 0.8; g.stroke();
       }
-      g.fillStyle = col; g.fillRect(x * C, y * C, C - 1, C - 1);
-    }
-    if (d.joueur && dedans(d.joueur)) { g.strokeStyle = '#ffffff'; g.lineWidth = 2; g.strokeRect((d.joueur.x - f.x0) * C + 1, (d.joueur.y - f.y0) * C + 1, C - 3, C - 3); }
+      for (const c of cases) {
+        const k = cle({ x: c.X, y: c.Y });
+        const st = bleues.has(k) ? 'departJ' : rouges.has(k) ? 'departM' : null;
+        if (!st) continue;
+        const p = ecran(c.x, c.y);
+        losange(p, 0.88);
+        g.globalAlpha = st === 'departJ' ? souffle : 1;
+        g.fillStyle = S[st].fill; g.fill(); g.fill();
+        g.globalAlpha = 1;
+        g.lineWidth = 2.2; g.strokeStyle = 'rgba(2,4,12,0.5)'; g.stroke();
+        g.lineWidth = 1.1; g.strokeStyle = S[st].edge; g.stroke();
+      }
+      for (const c of cases) {
+        const k = Grid.tile(map, c.X, c.Y), p = ecran(c.x, c.y);
+        if (k === Grid.ROCK || k === Grid.TREE) {
+          presents.add('obstacle');
+          const arbre = k === Grid.TREE, h = arbre ? HB * 1.25 : HB, s = 0.82;
+          const w = TW / 2 * s, hh = TH / 2 * s;
+          g.fillStyle = arbre ? '#3f5e3a' : '#5d5850';
+          g.beginPath(); g.moveTo(p.x - w, p.y); g.lineTo(p.x, p.y + hh); g.lineTo(p.x, p.y + hh - h); g.lineTo(p.x - w, p.y - h); g.closePath(); g.fill();
+          g.fillStyle = arbre ? '#4d7246' : '#726c62';
+          g.beginPath(); g.moveTo(p.x + w, p.y); g.lineTo(p.x, p.y + hh); g.lineTo(p.x, p.y + hh - h); g.lineTo(p.x + w, p.y - h); g.closePath(); g.fill();
+          losange(p, s, -h); g.fillStyle = arbre ? '#6f9a5e' : '#a29b8d'; g.fill();
+          g.lineWidth = 0.8; g.strokeStyle = 'rgba(2,4,12,0.45)'; g.stroke();
+        }
+        const kc = cle({ x: c.X, y: c.Y });
+        if (rouges.has(kc)) {
+          const m = a.monstres[rouges.get(kc)], def = m && DATA.monsters[m.id];
+          pion(p, (def && def.color) || '#d8433a', TH * 0.42);
+        } else if (d.joueur && d.joueur.x === c.X && d.joueur.y === c.Y) pion(p, '#ffffff', TH * 0.42);
+      }
+    };
+    dessiner(performance.now());
     boite.innerHTML = `<p class="vy-fiche-groupe__note"><b>${Util.esc(d.libelle)}</b> · départ à ${d.distance} cases</p>`;
     boite.appendChild(cv);
     const leg = document.createElement('p');
     leg.className = 'vy-fiche-groupe__legende';
-    leg.innerHTML = '<span style="--c:#3f86f0">toi</span><span style="--c:#d8433a">devant</span><span style="--c:#ef8a35">derrière</span><span style="--c:#3a3530">bloque la vue</span><span style="--c:#5c8fae">bloque le passage</span>';
+    const item = (f, e, t) => `<span style="--f:${f};--e:${e}">${t}</span>`;
+    leg.innerHTML = item(S.departJ.fill, S.departJ.edge, 'tes cases') + item(S.departM.fill, S.departM.edge, 'monstres') +
+      (presents.has('obstacle') ? item('#a29b8d', '#5d5850', 'obstacle') : '') + (presents.has('eau') ? item(S.eau.fill, S.eau.edge, 'eau') : '');
     boite.appendChild(leg);
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const boucle = now => {
+      if (!cv.isConnected || !FicheGroupe.apercuOuvert) { this.anim = 0; return; }
+      dessiner(now);
+      this.anim = requestAnimationFrame(boucle);
+    };
+    this.anim = requestAnimationFrame(boucle);
   }
 
   placer() {
@@ -896,11 +957,17 @@ class FicheGroupe {
     const gx = q.x - hr.left, gy = q.y - hr.top;
     const local = r => ({ left: r.left - hr.left, top: r.top - hr.top, right: r.right - hr.left, bottom: r.bottom - hr.top });
     const genes = [{ left: gx - 22 * k, top: gy - 52 * k, right: gx + 22 * k, bottom: gy + 8 * k, poids: 1 }];
+    const ap = this.jeu.world.apercuTerrain, an = ap && ap.map && ap.map.ancre;
+    if (an) {
+      const coins = [[an.x0, an.y0], [an.x0 + 15, an.y0], [an.x0, an.y0 + 15], [an.x0 + 15, an.y0 + 15]].map(([u, v]) => UI.cellClient(R, u, v));
+      genes.push({ left: Math.min(...coins.map(c => c.x)) - hr.left, top: Math.min(...coins.map(c => c.y)) - hr.top, right: Math.max(...coins.map(c => c.x)) - hr.left, bottom: Math.max(...coins.map(c => c.y)) - hr.top, poids: 0.5 });
+    }
     for (const b of document.querySelectorAll('.vy-guide:not(.hidden)')) {
       for (const part of b.querySelectorAll('.vy-guide__boite, .vy-guide__portrait')) genes.push(Object.assign(local(part.getBoundingClientRect()), { poids: 3 }));
     }
     const recouvre = (x, y) => genes.reduce((s, r) => s + r.poids * Math.max(0, Math.min(x + w, r.right) - Math.max(x, r.left)) * Math.max(0, Math.min(y + h, r.bottom) - Math.max(y, r.top)), 0);
     const essais = [[gx - w / 2, gy - 58 * k - h], [gx + 30 * k, gy - 28 * k - h / 2], [gx - 30 * k - w, gy - 28 * k - h / 2], [gx - w / 2, gy + 16 * k]];
+    if (an) essais.push([6, gy - h / 2], [hr.width - w - 6, gy - h / 2]);
     let best = null;
     for (const [x0, y0] of essais) {
       const x = Math.max(6, Math.min(hr.width - w - 6, x0)), y = Math.max(6, Math.min(hr.height - h - 6, y0));
@@ -913,6 +980,8 @@ class FicheGroupe {
   get ouverte() { return !!this.d; }
 
   cacher(relacher) {
+    if (this.anim) { cancelAnimationFrame(this.anim); this.anim = 0; }
+    if (this.jeu && this.jeu.world) this.jeu.world.apercuTerrain = null;
     if (!this.d) return;
     if (relacher) this.jeu.world.releaseGroup(this.d.group);
     this.d = null;

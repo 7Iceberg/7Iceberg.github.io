@@ -36,6 +36,7 @@ const Save = (() => {
   for (const k of ['familiers', 'familier']) ALLOWED.add(k);
   ALLOWED.add('monture');
   ALLOWED.add('sceaux');
+  ALLOWED.add('placements');
   const ORIGINES = ['orsane', 'ervane'];
 
   const plateauDe = id => {
@@ -311,6 +312,13 @@ const Save = (() => {
     if (typeof Montures !== 'undefined') { const m = Montures.nettoyer(o.monture); o.monture = m.monture; for (const e of m.errors) bad(e); }
     if (o.fight && typeof o.fight !== 'object') o.fight = null;
     if (o.mapTimers && typeof o.mapTimers !== 'object') o.mapTimers = {};
+    if (o.placements != null) {
+      const p = {};
+      if (typeof o.placements === 'object' && !Array.isArray(o.placements)) {
+        for (const [k, v] of Object.entries(o.placements)) if (typeof k === 'string' && k.length <= 80 && (v === 1 || v === 2)) p[k] = v;
+      }
+      o.placements = p;
+    }
     o.flags = Object.assign({}, o.flags && typeof o.flags === 'object' ? { tampered: !!o.flags.tampered } : {});
     if (typeof o.uid !== 'string' || !UID.test(o.uid)) o.uid = null;
     if (o.tuto != null) {

@@ -1,1 +1,1 @@
-DATA.ile = { active: true, plateau: 'ervane', naissance: { map: 'ervane_mailles_place', lieu: 'eveil' }, modeleGlym: 'tous', monde: 'glb', style: 'lisiere', heure: 'cycle', heureDepart: 9.5, meteo: 'clair', heros: true, orsane3d: true };
+DATA.ile = { active: true, plateau: 'ervane', naissance: { map: 'ervane_mailles_place', lieu: 'eveil' }, modeleGlym: 'tous', monde: 'glb', style: 'lisiere', heure: 'cycle', heureDepart: 9.5, meteo: 'clair', heros: true, orsane3d: true, ambiance: 'soir' };

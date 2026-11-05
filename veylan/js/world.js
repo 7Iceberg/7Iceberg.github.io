@@ -926,13 +926,19 @@ class World {
 
   clePlacement(group) { return (group.carte || this.mapId) + '#' + group.idx; }
   surIle(group) { return /^ervane_/.test((group && group.carte) || this.mapId || ''); }
-  rangPlacement(group) { return (this.rangsPlacement && this.rangsPlacement[this.clePlacement(group)]) || 0; }
+  rangPlacement(group) { const r = this.ch && this.ch.placements; return (r && r[this.clePlacement(group)]) || 0; }
+  avancerPlacement(cle) {
+    if (!this.ch) return;
+    const r = this.ch.placements = this.ch.placements || {};
+    const n = ((r[cle] || 0) + 1) % Placement.NOMS.length;
+    if (n) r[cle] = n; else delete r[cle];
+  }
 
   placementDe(group, arene, monsters, joueur) {
     if (!group || (this.mapDef && this.mapDef.room) || this.combatAuto || typeof Placement !== 'object') return null;
     const liste = monsters || group.monsters;
     const ile = this.surIle(group);
-    const bornes = ile ? { min: 4, cible: 5 } : {};
+    const bornes = ile ? Placement.ILE : {};
     if (arene) return Placement.disposer(Object.assign({ map: arene.map, groupe: arene.cg, joueur: joueur || arene.cj, monstres: liste, rang: this.rangPlacement(group) }, bornes));
     const libre = (x, y) => Grid.walkable(this.map, x, y) && (!this.blockedForPlayer(x, y) || (x === group.x && y === group.y));
     return Placement.disposer(Object.assign({ map: this.map, groupe: { x: group.x, y: group.y }, joueur: joueur || { x: this.player.x, y: this.player.y }, monstres: liste, rang: this.rangPlacement(group), libre }, bornes));
@@ -1051,7 +1057,7 @@ class World {
     delete ch.fight;
     const result = { victory: d.victory, xp: 0, gained: 0, levels: 0, fils: 0, drops: [], achievements: [], quests: [], dungeon: null, cosmetiques: [] };
     const monsters = this.combat.entities.filter(e => e.team === 'monster' && !e.isSummon);
-    if (d.victory && this.dispositionEnCours) { this.rangsPlacement = this.rangsPlacement || {}; const k = this.dispositionEnCours.cle; this.rangsPlacement[k] = (this.rangsPlacement[k] || 0) + 1; }
+    if (d.victory && this.dispositionEnCours) this.avancerPlacement(this.dispositionEnCours.cle);
     const chal = this.combat.challenge;
     const knotCount = this.combat.knots ? this.combat.knots.size : 0;
     const bonus = (d.victory && chal && chal.success ? chal.bonus : 0) + (d.victory ? knotCount * DATA.rules.knotBonus : 0);

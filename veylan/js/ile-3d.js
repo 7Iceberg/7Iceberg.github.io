@@ -6,7 +6,9 @@ class Ile3D {
     try { const p = new URLSearchParams(location.search); q = p.get('ambiance'); qo = p.get('ombres'); } catch (e) {   }
     const d = typeof DATA === 'object' && DATA && DATA.ile ? DATA.ile : {};
     const nom = q != null ? q : d.ambiance || '';
-    return { soir: nom === 'soir', ombres: qo !== '0' };
+    let qb = null;
+    try { qb = new URLSearchParams(location.search).get('bordures'); } catch (e) {   }
+    return { soir: nom === 'soir', ombres: qo !== '0', bordures: qb !== '0' };
   }
 
   static qualiteParDefaut() {
@@ -801,6 +803,128 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     this.monde.userData.etalonnes = n;
   }
 
+  preparerBordures() {
+    const THREE = window.THREE, T = this.T, tel = this.telephone, B = Ile3D.SOIR.bordures;
+    if (!T || this.bordures || this.qualite === 'basse' || !this.ambianceVoulue.bordures) return;
+    const IM = IleTerrain.M, R = IM.hasard(IM.cle('bordures-soir')), nav = this.world && this.world.plateau && this.world.plateau.nav;
+    const mats = [], cols = [], m4 = new THREE.Matrix4(), qu = new THREE.Quaternion(), eu = new THREE.Euler(0, 0, 0, 'YXZ'), po = new THREE.Vector3(), sc = new THREE.Vector3();
+    const W = T.W, H = T.H, dS = (u, v) => { const i = Math.round(v), j = Math.round(u); return i < 0 || j < 0 || i >= H || j >= W ? 0 : T.distSentier[i * W + j]; };
+    const places = T.places || [];
+    const libre = (u, v) => !places.some(p => Math.hypot(p.centre[0] - u, p.centre[1] - v) < p.rayon + 0.6);
+    let n = 0, sorte = 'chemins';
+    const compte = { chemins: 0, pieds: 0 };
+    const poser = (x, z, pied) => {
+      if (!libre(x, z) || (T.dans && !T.dans(x, z)) || (T.videA && T.videA(x, z))) return;
+      if (nav && !pied) { const c = nav.caseDe(x, z); if (c < 0 || !nav.ouvertStatique(c)) return; }
+      const y = T.marcheA(x, z);
+      if (!Number.isFinite(y) || T.profondeurA(x, z) > 0.01) return;
+      const s = (B.taille[0] + R() * (B.taille[1] - B.taille[0])) * (pied ? B.pied : 1);
+      eu.set((R() - 0.5) * 0.14, R() * 6.28, (R() - 0.5) * 0.14, 'YXZ'); qu.setFromEuler(eu);
+      m4.compose(po.set(x, y - 0.05, z), qu, sc.set(s * (0.9 + R() * 0.35), s * (0.75 + R() * 0.45) * (pied ? 1.25 : 1), s * (0.9 + R() * 0.35)));
+      for (let q = 0; q < 16; q++) mats.push(m4.elements[q]);
+      const f = (pied ? 0.8 : 0.9) + R() * 0.18;
+      cols.push(f * (0.96 + R() * 0.06), f, f * (0.9 + R() * 0.12));
+      n++; compte[sorte]++;
+    };
+    const pas = tel ? B.pasTel : B.pas;
+    const longer = (pts, marge, ecart, pied, garder) => {
+      for (let k = 1; k < pts.length; k++) {
+        const [x0, z0] = pts[k - 1], [x1, z1] = pts[k], dx = x1 - x0, dz = z1 - z0, L = Math.hypot(dx, dz);
+        if (L < 1e-6) continue;
+        const tx = dx / L, tz = dz / L, nx = -tz, nz = tx;
+        for (let d = R() * pas; d < L; d += pas * (0.65 + R() * 0.7)) {
+          const bx = x0 + tx * d, bz = z0 + tz * d;
+          for (const cote of [-1, 1]) {
+            if (R() < (pied ? B.trouPied : B.trou)) continue;
+            const o = marge + R() * ecart, x = bx + nx * o * cote + (R() - 0.5) * 0.2, z = bz + nz * o * cote + (R() - 0.5) * 0.2;
+            if (garder && !garder(x, z)) continue;
+            poser(x, z, pied);
+            if (!pied && R() < B.grappe) { const o2 = o + 0.35 + R() * 0.45; const x2 = bx + nx * o2 * cote + (R() - 0.5) * 0.3, z2 = bz + nz * o2 * cote + (R() - 0.5) * 0.3; if (!garder || garder(x2, z2)) poser(x2, z2, false); }
+          }
+        }
+      }
+    };
+    const carte = this.solCarteTex && this.solCarteTex.image && this.solCarteTex.image.data;
+    if (carte) {
+      const CW = this.solCarteTex.image.width, CH = this.solCarteTex.image.height, D = carte;
+      const lire = (u, v) => { const i = Math.floor(u), j = Math.floor(v); if (i < 0 || j < 0 || i >= CW || j >= CH) return 0; const o = (j * CW + i) * 4; return Math.max(D[o], D[o + 1], D[o + 3]) / 255; };
+      const lisse = (u, v) => { const x = u - 0.5, y = v - 0.5, i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j; return (lire(i, j) * (1 - fx) + lire(i + 1, j) * fx) * (1 - fy) + (lire(i, j + 1) * (1 - fx) + lire(i + 1, j + 1) * fx) * fy; };
+      const pc = tel ? B.pasCarteTel : B.pasCarte;
+      for (let v = pc / 2; v < T.hauteur; v += pc) for (let u = pc / 2; u < T.largeur; u += pc) {
+        const x = u + (R() - 0.5) * pc, z = v + (R() - 0.5) * pc, q = lisse(x, z);
+        if (q <= B.bande[0] || q >= B.bande[1]) continue;
+        const amas = IM.fbm(x / 6, z / 6, 4471, 2);
+        if (R() > B.densite * (0.35 + 1.3 * Math.max(0, Math.min(1, (amas - 0.3) / 0.4)))) continue;
+        poser(x, z, false);
+      }
+    } else {
+      for (const l of T.lignes || []) if (l.sorte === 'sentier' || l.sorte === 'ruelle') longer(l.pts, l.demi + B.epaule, 0.6, false, (x, z) => dS(x, z) >= B.epaule - 0.2);
+    }
+    sorte = 'pieds';
+    for (const l of T.lignes || []) if (l.sorte === 'muret' || l.sorte === 'haie') longer(l.pts, l.demi + 0.08, 0.3, true, null);
+    sorte = 'pieds';
+    for (const o of T.objets || []) {
+      if (o.sorte !== 'barriere' && o.sorte !== 'parcelle') continue;
+      for (const f of o.empreinte || []) {
+        if (!f.rect) continue;
+        const coin = (a, b) => [f.u + a * f.c - b * f.s, f.v + a * f.s + b * f.c];
+        if (o.sorte === 'barriere') longer([coin(-f.l, 0), coin(f.l, 0)], f.p + 0.08, 0.3, true, null);
+        else { const m = 0.25, A = coin(-f.l - m, -f.p - m), Bq = coin(f.l + m, -f.p - m), Cq = coin(f.l + m, f.p + m), D = coin(-f.l - m, f.p + m); longer([A, Bq, Cq, D, A], 0.02, 0.25, true, null); }
+      }
+    }
+    if (!n) return;
+    this.bordures = this.semisProche(THREE, this.geoTouffeTrapue(THREE, tel), this.matBordures(THREE), mats, cols, tel ? B.maxTel : B.max);
+    this.bordures.mesh.name = 'bordures';
+    this.bordures.mesh.receiveShadow = !!this.ombres;
+    this.bordures.candidates = n;
+    this.bordures.compte = compte;
+  }
+
+  geoTouffeTrapue(THREE, tel) {
+    const B = Ile3D.SOIR.bordures, lin = h => new THREE.Color(h).convertSRGBToLinear();
+    const cBord = lin(B.couleurs[0]), cMi = lin(B.couleurs[1]), cHaut = lin(B.couleurs[2]);
+    const p = [], c = [], nrm = [], idx = [], seg = tel ? 6 : 9;
+    const sommet = (x, y, z, col, nx, ny, nz) => { const l = Math.hypot(nx, ny, nz) || 1; p.push(x, y, z); c.push(col.r, col.g, col.b); nrm.push(nx / l, ny / l, nz / l); return p.length / 3 - 1; };
+    const haut = sommet(0, 0.34, 0, cHaut, 0, 1, 0), r1 = [], r2 = [];
+    for (let k = 0; k < seg; k++) {
+      const a = k / seg * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a), ab = (k + 0.5) / seg * Math.PI * 2;
+      r1.push(sommet(ca * 0.2, 0.25, sa * 0.2, cMi, ca * 0.5, 1, sa * 0.5));
+      r2.push(sommet(ca * 0.3, 0.05, sa * 0.3, cBord, ca, 0.55, sa));
+      r2.push(sommet(Math.cos(ab) * 0.42, 0.09, Math.sin(ab) * 0.42, cBord, Math.cos(ab), 0.6, Math.sin(ab)));
+    }
+    for (let k = 0; k < seg; k++) {
+      const k1 = (k + 1) % seg, a = r2[2 * k], pt = r2[2 * k + 1], b = r2[2 * k1];
+      idx.push(haut, r1[k], r1[k1]);
+      idx.push(r1[k], a, pt, r1[k], pt, r1[k1], r1[k1], pt, b);
+    }
+    for (let k = 0; k < 3; k++) {
+      const a = k / 3 * Math.PI * 2 + 0.5, ca = Math.cos(a), sa = Math.sin(a), w = 0.07;
+      const b0 = sommet(ca * 0.08 - sa * w, 0.22, sa * 0.08 + ca * w, cMi, ca * 0.3, 1, sa * 0.3);
+      const b1 = sommet(ca * 0.08 + sa * w, 0.22, sa * 0.08 - ca * w, cMi, ca * 0.3, 1, sa * 0.3);
+      const t = sommet(ca * 0.26, 0.4 + (k % 2) * 0.05, sa * 0.26, cHaut, ca * 0.3, 1, sa * 0.3);
+      idx.push(b0, b1, t);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(c, 3));
+    g.setIndex(idx);
+    g.computeBoundingSphere();
+    return g;
+  }
+
+  matBordures(THREE) {
+    const m = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+    this.ventHerbe(THREE, m);
+    const vent = m.onBeforeCompile;
+    m.onBeforeCompile = (sh, r) => {
+      vent(sh, r);
+      sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', THREE.ShaderChunk.normal_fragment_begin.replace('gl_FrontFacing ? 1.0 : - 1.0', '1.0'));
+    };
+    m.customProgramCacheKey = () => 'ile-bordures';
+    return m;
+  }
+
   suivreOmbres(cam) {
     const O = this.ombres, L = this.lum;
     if (!O || !L) return;
@@ -887,7 +1011,13 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
   matHerbe(THREE, rampe) {
     if (this._matHerbe) return this._matHerbe;
     const m = new THREE.MeshToonMaterial({ gradientMap: rampe, vertexColors: true });
-    this.uHerbe = { temps: { value: 0 }, joueur: { value: new THREE.Vector3() } };
+    this.ventHerbe(THREE, m);
+    m.customProgramCacheKey = () => 'ile-herbe';
+    this._matHerbe = m;
+    return m;
+  }
+  ventHerbe(THREE, m) {
+    if (!this.uHerbe) this.uHerbe = { temps: { value: 0 }, joueur: { value: new THREE.Vector3() } };
     m.onBeforeCompile = sh => {
       Object.assign(sh.uniforms, this.uHerbe);
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float temps; uniform vec3 joueur;')
@@ -909,9 +1039,6 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
   transformed.y -= pousse * 0.4;
   #endif`);
     };
-    m.customProgramCacheKey = () => 'ile-herbe';
-    this._matHerbe = m;
-    return m;
   }
 
   preparerHerbe(THREE, D, cartes, L, rampe) {
@@ -1005,7 +1132,7 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
   majHerbe(x, y) {
     const r0 = Math.min(this.telephone ? 20 : 30, this.camera.champ * (this.telephone ? 0.72 : 0.85));
     const rayon = this.qualite === 'basse' ? r0 * 0.75 : r0;
-    for (const H of [this.herbe, this.fleurs, this.touffesNuit]) if (H) this.majSemis(H, x, y, rayon);
+    for (const H of [this.herbe, this.fleurs, this.touffesNuit, this.bordures]) if (H) this.majSemis(H, x, y, rayon);
   }
 
   majSemis(H, x, y, rayon) {
@@ -1302,7 +1429,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (this.arene) { this.arene.liberer(); this.arene = null; }
     if (this.rampe) this.rampe.dispose();
     if (this.mats) for (const m of Object.values(this.mats)) if (m && m.isMaterial) m.dispose();
-    this._matHerbe = null; this.herbe = null; this.fleurs = null; this.touffesNuit = null; this.nuit = null; this.lum = null;
+    this._matHerbe = null; this.herbe = null; this.fleurs = null; this.touffesNuit = null; this.bordures = null; this.nuit = null; this.lum = null;
     this.scene = null; this.figures = null; this.tex = {}; this.pret = false; this.plateauId = null;
     this.tuilesSol = []; this.tuilesDecor = [];
     this.decor = null; this.prepSol = null; this.T = null; this.def = null; this.cibles = null; this.lanternes = null;
@@ -1476,7 +1603,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this.appliquerDensite();
     if (this.matEauRef) this.matEauRef.uniforms.anime.value = q === 'basse' ? 0 : 1;
     if (this.bouffees) this.bouffees.instanceCount = Math.min(this.bouffees.instanceCount, q === 'basse' ? 18 : this.telephone ? 34 : 56);
-    for (const H of [this.herbe, this.fleurs, this.touffesNuit]) if (H) H.centre = null;
+    for (const H of [this.herbe, this.fleurs, this.touffesNuit, this.bordures]) if (H) H.centre = null;
   }
 
   image(now) {
@@ -1520,8 +1647,9 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       t.groupe.visible = d < rDet && !tact;
       if (t.sil) t.sil.visible = d >= rDet && d < rSil && !tact;
     }
-    for (const H of [this.herbe, this.fleurs, this.touffesNuit]) if (H) H.mesh.visible = !tact;
-    if (this.touffesNuit) this.touffesNuit.mesh.visible = !tact && !(A && A.etat);
+    for (const H of [this.herbe, this.fleurs, this.touffesNuit, this.bordures]) if (H) H.mesh.visible = !tact;
+    if (this.touffesNuit) this.touffesNuit.mesh.visible = !tact && !(A && A.etat && A.etat !== 'apercu');
+    if (this.bordures) this.bordures.mesh.visible = !tact && !(A && A.etat && A.etat !== 'apercu');
     if (this.eau) this.eau.visible = !tact;
     for (const m of this.decorFixe || []) m.visible = !tact;
     if (this.meshFalaise && this.meshFalaise.children && !tact) {
@@ -1531,9 +1659,9 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       for (const m of this.meshDessous || []) m.visible = un;
     }
     if (this.monde && typeof IleGlb === 'object' && IleGlb.tactique && this.mondeTactique !== tact) { IleGlb.tactique(this.monde, tact); this.mondeTactique = tact; }
-    if (this.meshChute) this.meshChute.visible = !tact && !(A && A.etat);
+    if (this.meshChute) this.meshChute.visible = !tact && !(A && A.etat && A.etat !== 'apercu');
     if (K && K.lod) K.survolLod(survol);
-    if (survol) for (const H of [this.herbe, this.fleurs, this.touffesNuit]) if (H) H.mesh.visible = false;
+    if (survol) for (const H of [this.herbe, this.fleurs, this.touffesNuit, this.bordures]) if (H) H.mesh.visible = false;
     if (this.uHerbe) { this.uHerbe.temps.value = this.temps; this.uHerbe.joueur.value.set(p.rx, hp, p.ry); }
     if (this.uFondu) {
       const vis = this.enArene ? this.cibleFondu() : { u: p.rx, v: p.ry };
@@ -1569,7 +1697,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       const e = this.enArene && this.combat && this.combat.player, q = e ? A.versMonde(e.rx, e.ry) : { u: p.rx, v: p.ry };
       this.nuit.maj(now, this.temps, { x: q.u, y: q.v }, this.hauteur(q.u, q.v), cam, tact || !!vol);
     }
-    if (this.soir && this.monde && !this.monde.userData.etalonne) this.etalonner();
+    if (this.soir && this.monde && !this.monde.userData.etalonne) { this.etalonner(); this.preparerBordures(); }
     if (this.ombres) this.suivreOmbres(cam);
     const r = this.renderer;
     r.info.reset();
@@ -1611,6 +1739,13 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       if (!this.salle) cam.sortirCombat();
     }
     if (A.etat === 'fermeture' && !cam.trans) A.eteindre();
+    const ap = !ici && w && w.state === 'explore' ? w.apercuTerrain : null;
+    const voulu = !!(ap && ap.map && ap.map.ancre && !this.salle && ap.map.ancre.plateau === this.plateauId && A.apercu(ap.map, ap.disposition));
+    if (voulu) this.mats.uSol.aireO.value.set(A.x0, A.y0);
+    const dtA = this._tApercu != null && now > this._tApercu ? Math.min(0.1, (now - this._tApercu) / 1000) : 0;
+    this._tApercu = now;
+    this.apercuK = Math.max(0, Math.min(1, (this.apercuK || 0) + (voulu ? 1 : -1) * dtA / 0.15));
+    if (!voulu && A.etat === 'apercu' && this.apercuK <= 0) A.finApercu();
     cam.setTactique(ici && this.tactique);
     if (ici && (!this._coinA || now - this._coinA > 250 || now < this._coinA)) {
       this._coinA = now;
@@ -1628,7 +1763,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       A.majCases(this.highlights, cb);
     }
     const u = this.mats.uSol;
-    u.aireOn.value = A.etat ? Math.max(0, Math.min(1, cam.fondu)) : 0;
+    u.aireOn.value = A.etat === 'apercu' ? this.apercuK : A.etat ? Math.max(0, Math.min(1, cam.fondu)) : 0;
     u.tempsSol.value = now / 1000;
     u.tactiqueSol.value = ici && this.tactique ? 1 : 0;
     if (u.grilleSol) u.grilleSol.value = typeof UI === 'function' && UI.reglage && !UI.reglage('grille') ? 0 : 1;
@@ -1692,22 +1827,20 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (vol && vol.largeur > (typeof IleCarte === 'object' ? IleCarte.FIGURES_MAX : 60)) return out;
     const rayon = vol ? vol.largeur * 0.8 + 12 : (this.camera ? this.camera.champ : 30) * 1.4 + 12;
     const A = this.arene, enCombat = this.enArene;
-    if (enCombat && this.tactique) return A.sprites(this.combat, now, this.figures, this.telephone);
-    const dansAire = enCombat ? (x, y) => x > A.x0 - 2 && x < A.x0 + 17 && y > A.y0 - 2 && y < A.y0 + 17 : () => false;
-    const loin = (x, y) => Math.abs(x - c.x) > rayon || Math.abs(y - c.y) > rayon || dansAire(x, y);
+    if (enCombat) return A.sprites(this.combat, now, this.figures, this.telephone);
+    const loin = (x, y) => Math.abs(x - c.x) > rayon || Math.abs(y - c.y) > rayon;
     const H = (x, y) => this.hauteur(x, y);
     const N = (x, y) => this.normale(x, y);
-    const salle = !!this.salle && !enCombat;
+    const salle = !!this.salle;
     const pos = (x, y) => (salle ? [x + 0.5, y + 0.5] : [x, y]);
     const fig = this.figures;
     const [px, py] = pos(p.rx, p.ry);
     const ap = ch.lookAffiche();
     const veilleur = { kind: 'entity', shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, team: 'player', facing: p.facing, look: ap.look, auraCos: this.qualite === 'basse' ? null : ap.auraCos, lueur: ap.lueur, gender: ch.gender, scale: 1, x: px, y: py, h: H(px, py), normale: N(px, py), bob: p.moving ? Math.abs(Math.sin(now / 70)) * 3 : Math.sin(now / 900) * 0.8, joueur: true };
     veilleur.cle = fig.cleFigure(veilleur); veilleur.peindre = fig.peindreFigure(veilleur);
-    if (fig.heros && !enCombat) { veilleur.heros = true; veilleur.bouge = !!p.moving; }
-    if (!enCombat) out.push(veilleur);
-    else for (const s of A.sprites(this.combat, now, fig, this.telephone)) out.push(s);
-    if (!enCombat && typeof Compagnons !== 'undefined') Compagnons.figures3D(w, out, veilleur, now, { pos, H, N, fig });
+    if (fig.heros) { veilleur.heros = true; veilleur.bouge = !!p.moving; }
+    out.push(veilleur);
+    if (typeof Compagnons !== 'undefined') Compagnons.figures3D(w, out, veilleur, now, { pos, H, N, fig });
     for (const g of w.groups) {
       const [gx, gy] = pos(g.rx, g.ry);
       let fondu = 1;
@@ -1731,7 +1864,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
         if (!def) return;
         const [x, y] = membres[k];
         const s = { kind: 'entity', shape: def.shape, color: def.color, glyph: null, team: 'monster', motif: Renderer.motifOf(m.id), noyau: def.noyau || null, scale: def.boss || def.recherche ? 1.3 : this.telephone ? 1.2 : 0.95, facing: prec.f, x, y, h: H(x, y), normale: N(x, y), bob: Math.sin(now / 500 + g.idx + k) * 1.5, alpha: fondu, cible: { type: 'groupe', ref: g } };
-        if (k === 0 && !enCombat && !vol) { s.label = `${def.recherche ? 'Recherché : ' : ''}${def.boss ? def.name.split(',')[0] : def.name} niv. ${g.level}`; s.labelSorte = 'ennemi'; if (g.monsters.length > 1) s.badge = `×${g.monsters.length}`; }
+        if (k === 0 && !vol) { s.label = `${def.recherche ? 'Recherché : ' : ''}${def.boss ? def.name.split(',')[0] : def.name} niv. ${g.level}`; s.labelSorte = 'ennemi'; if (g.monsters.length > 1) s.badge = `×${g.monsters.length}`; }
         if (fig.modeles && fig.modeles.prend(m.id)) { s.modele = m.id; s.modeleCle = `${g.nid || g.idx}|${k}`; }
         s.cle = fig.cleFigure(s); s.peindre = fig.peindreFigure(s);
         out.push(s);
@@ -1744,7 +1877,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     for (const n of w.npcs) {
       const [nx, ny] = pos(n.x, n.y);
       if (loin(nx, ny)) continue;
-      const s = { kind: 'npc', look: n.def.look || 'marcheur', x: nx, y: ny, h: H(nx, ny), normale: N(nx, ny), label: enCombat || vol ? null : n.def.name, labelSorte: 'nom', quest: enCombat || vol ? null : this.marques[n.id], bob: 0, cible: { type: 'pnj', ref: n } };
+      const s = { kind: 'npc', look: n.def.look || 'marcheur', x: nx, y: ny, h: H(nx, ny), normale: N(nx, ny), label: vol ? null : n.def.name, labelSorte: 'nom', quest: vol ? null : this.marques[n.id], bob: 0, cible: { type: 'pnj', ref: n } };
       s.cle = fig.cleFigure(s); s.peindre = fig.peindreFigure(s);
       out.push(s);
     }
@@ -1910,8 +2043,9 @@ void main() { float a = texture2D(carte, vUv).a * vA;
 }
 
 Ile3D.SOIR = {
-  lum: { hemi: ['#a9bde6', '#5c4630', 0.5], cle: ['#ffd9a6', 1.85], chaud: ['#ffb070', 0.16], contre: ['#90a8ff', 0.2] },
-  elevation: 31, tour: -150, brume: 0.5, recul: 1.45, horizon: '#f2d6b4', horizonK: 0.35, zenith: '#3f78cc', zenithK: 0.25,
+  lum: { hemi: ['#a9bde6', '#5c4630', 0.56], cle: ['#ffd9a6', 1.8], chaud: ['#ffb070', 0.16], contre: ['#90a8ff', 0.2] },
+  elevation: 34, tour: -150, brume: 0.5, recul: 1.45, horizon: '#f2d6b4', horizonK: 0.35, zenith: '#3f78cc', zenithK: 0.25,
   ombre: { taille: 2048, demi: 34, avance: 0.45, biais: -0.0006, biaisNormal: 0.06 },
+  bordures: { pasCarte: 0.45, pasCarteTel: 0.62, bande: [0.05, 0.18], densite: 0.62, pas: 0.5, pasTel: 0.7, epaule: 1.15, trou: 0.2, trouPied: 0.1, grappe: 0.5, taille: [0.85, 1.2], pied: 1.25, max: 3200, maxTel: 900, couleurs: ['#3b7a30', '#5a9a3a', '#93c257'] },
   etalonnage: { vert: [0.15, 0.47], vertTeinte: 0.3, vertVers: 0.45, vertSat: 1.3, vertLum: 0.76, pierreTeinte: 0.09, pierreSat: 0.07, pierreLum: 1.04, terreSat: 1.08, terreLum: 1.05 },
 };

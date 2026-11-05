@@ -147,6 +147,17 @@ void main() {
       this.eclats = []; this.projectiles = []; this.etincelles = []; this.chiffres = [];
       this.entrees = new Map();
       const H = (u, v) => this.ile.hauteur(u, v);
+      const { hMin, hMax, hMoy } = this.mesurer(map);
+      this.donnees.fill(0);
+      for (let y = 0; y < map.h && y < 16; y++) for (let x = 0; x < map.w && x < 16; x++) this.ecrireFixe(x, y);
+      this.texCases.needsUpdate = true;
+      const coin = (u, v) => { const h = H(u, v); return [u, v, Number.isFinite(h) ? h : hMoy]; };
+      const X1 = this.x0 + map.w, Y1 = this.y0 + map.h;
+      return { x0: this.x0, y0: this.y0, w: map.w, h: map.h, hMin, hMax, hMoy, coins: [coin(this.x0, this.y0), coin(X1, this.y0), coin(this.x0, Y1), coin(X1, Y1)] };
+    }
+
+    mesurer(map) {
+      const H = (u, v) => this.ile.hauteur(u, v);
       let hMin = Infinity, hMax = -Infinity, s = 0, n = 0;
       for (let y = 0; y <= N; y++) for (let x = 0; x <= N; x++) {
         const h = H(this.x0 + x, this.y0 + y);
@@ -156,12 +167,41 @@ void main() {
       for (let y = 0; y < map.h; y++) for (let x = 0; x < map.w; x++) if (map.cells[y][x] === Grid.FLOOR) { const h = H(this.x0 + x + 0.5, this.y0 + y + 0.5); if (Number.isFinite(h)) { s += h; n++; } }
       if (!Number.isFinite(hMin)) { hMin = 0; hMax = 0; }
       const hMoy = this.hMoy = n ? s / n : (hMin + hMax) / 2;
-      this.donnees.fill(0);
+      return { hMin, hMax, hMoy };
+    }
+
+    apercu(map, d) {
+      if (this.etat === 'ouverte' || this.etat === 'fermeture') return false;
+      const cle = c => c.x + ',' + c.y;
+      const sig = [map.ancre.x0, map.ancre.y0, d.bleues.map(cle).join(';'), d.rouges.map(cle).join(';'), d.joueur ? cle(d.joueur) : ''].join('|');
+      if (this.etat === 'apercu' && sig === this.sigApercu) return true;
+      this.sigApercu = sig;
+      this.map = map;
+      this.x0 = map.ancre.x0; this.y0 = map.ancre.y0;
+      this.etat = 'apercu';
+      this.sig = null;
+      this.mesurer(map);
+      const D = this.donnees;
+      D.fill(0);
+      const peindre = (c, fill, stroke, drapeaux) => {
+        if (!c || !Grid.inBounds(map, c.x, c.y) || c.x > 15 || c.y > 15) return;
+        const o = (c.y * 64 + c.x * 4) * 4, f = rgb(fill[0]), t = rgb(stroke[0]);
+        D[o] = f[0]; D[o + 1] = f[1]; D[o + 2] = f[2]; D[o + 3] = octet(fill[1] * 255);
+        D[o + 4] = t[0]; D[o + 5] = t[1]; D[o + 6] = t[2]; D[o + 7] = octet(stroke[1] * 255);
+        D[o + 9] |= drapeaux;
+      };
       for (let y = 0; y < map.h && y < 16; y++) for (let x = 0; x < map.w && x < 16; x++) this.ecrireFixe(x, y);
+      for (const c of d.bleues) peindre(c, [0x3f8fff, 0.55], [0x9fd7ff, 0.95], 4);
+      for (const c of d.rouges) peindre(c, [0xe83a3a, 0.56], [0xffa0a0, 0.9], 0);
+      if (d.joueur) peindre(d.joueur, [0x3f8fff, 0.55], [0x9fd7ff, 0.95], 1);
       this.texCases.needsUpdate = true;
-      const coin = (u, v) => { const h = H(u, v); return [u, v, Number.isFinite(h) ? h : hMoy]; };
-      const X1 = this.x0 + map.w, Y1 = this.y0 + map.h;
-      return { x0: this.x0, y0: this.y0, w: map.w, h: map.h, hMin, hMax, hMoy, coins: [coin(this.x0, this.y0), coin(X1, this.y0), coin(this.x0, Y1), coin(X1, Y1)] };
+      return true;
+    }
+    finApercu() {
+      if (this.etat !== 'apercu') return;
+      this.etat = null; this.map = null; this.sigApercu = null;
+      this.donnees.fill(0);
+      this.texCases.needsUpdate = true;
     }
 
     fermer() {

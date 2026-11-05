@@ -219,7 +219,10 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       this.solMax = this.telephone ? 36 : 64;
     }
 
-    styleCamera() { return { ouverture: 46, elevation: [11, 20], leve: 2.4, champDefaut: [22, 26] }; }
+    styleCamera() {
+      if (this.soir) return { ouverture: 32, elevation: [32, 44], leve: 0.8, champDefaut: [22, 28] };
+      return { ouverture: 46, elevation: [11, 20], leve: 2.4, champDefaut: [22, 26] };
+    }
 
     defDecor(def) {
       this.palettesJeu = (def.regions || []).map(r => r.palette || {});

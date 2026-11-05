@@ -36,8 +36,18 @@ const Placement = (() => {
       }
       return best;
     };
-    let nom = NOMS[((opts.rang || 0) % NOMS.length + NOMS.length) % NOMS.length];
+    let nom = opts.nom || NOMS[((opts.rang || 0) % NOMS.length + NOMS.length) % NOMS.length];
     if (nom === 'dispersee' && monstres.length < 2) nom = 'face';
+    if (!opts.nom) {
+      const debut = NOMS.indexOf(nom);
+      let premier = null;
+      for (let k = 0; k < NOMS.length; k++) {
+        const d = disposer(Object.assign({}, opts, { nom: NOMS[(debut + k) % NOMS.length] }));
+        if (d && d.nom !== 'proche') return d;
+        if (!premier) premier = d;
+      }
+      return premier;
+    }
 
     const ancres = nom === 'dispersee'
       ? [{ x: groupe.x + lat.x * 3, y: groupe.y + lat.y * 3 }, { x: groupe.x - lat.x * 3, y: groupe.y - lat.y * 3 }]
@@ -105,5 +115,30 @@ const Placement = (() => {
     };
   }
 
-  return { NOMS, LIBELLES, disposer, roleDe, MIN, MAX };
+  const ILE = { min: 4, cible: 5 };
+
+  function controlerAire(layout, monstres, ile) {
+    const map = Grid.create(layout);
+    let M = null;
+    layout.forEach((l, y) => { const x = l.indexOf('M'); if (x >= 0) M = { x, y }; });
+    const cas = { essais: 0, echecs: [], proches: [], remplacees: [], peuDeBleues: [], sansCouvert: [] };
+    if (!M) return cas;
+    const liste = monstres.map(id => ({ id }));
+    for (const [cote, dx, dy] of [['de l\'est', 2, 0], ['de l\'ouest', -2, 0], ['du sud', 0, 2], ['du nord', 0, -2]]) {
+      const joueur = { x: Math.max(0, Math.min(14, M.x + dx)), y: Math.max(0, Math.min(14, M.y + dy)) };
+      for (let rang = 0; rang < NOMS.length; rang++) {
+        const d = disposer(Object.assign({ map, groupe: M, joueur, monstres: liste, rang }, ile ? ILE : {}));
+        const quoi = 'rang ' + rang + ', arrivée ' + cote;
+        cas.essais++;
+        if (!d) { cas.echecs.push(quoi); continue; }
+        if (d.nom === 'proche') cas.proches.push(quoi + ' (' + d.distance + ' cases)');
+        if (d.disposition !== NOMS[rang]) cas.remplacees.push(quoi + ' : ' + d.disposition + ' au lieu de ' + NOMS[rang]);
+        if (d.bleues.length < BLEUES) cas.peuDeBleues.push(quoi + ' (' + d.bleues.length + ')');
+        if (d.bleues.every(c => d.rouges.some(r => Grid.hasLineOfSight(map, c, r)))) cas.sansCouvert.push(quoi);
+      }
+    }
+    return cas;
+  }
+
+  return { NOMS, LIBELLES, disposer, controlerAire, roleDe, MIN, MAX, ILE };
 })();
