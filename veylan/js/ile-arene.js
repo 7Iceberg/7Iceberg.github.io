@@ -153,7 +153,15 @@ void main() {
       this.texCases.needsUpdate = true;
       const coin = (u, v) => { const h = H(u, v); return [u, v, Number.isFinite(h) ? h : hMoy]; };
       const X1 = this.x0 + map.w, Y1 = this.y0 + map.h;
-      return { x0: this.x0, y0: this.y0, w: map.w, h: map.h, hMin, hMax, hMoy, coins: [coin(this.x0, this.y0), coin(X1, this.y0), coin(this.x0, Y1), coin(X1, Y1)] };
+      const points = [];
+      for (let y = 0; y < map.h; y++) for (let x = 0; x < map.w; x++) {
+        if (map.cells[y][x] === Grid.HOLE) continue;
+        for (const [u, v] of [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]]) {
+          const U = this.x0 + u, V = this.y0 + v, hs = this.ile.T && this.ile.T.marcheA ? this.ile.T.marcheA(U, V) : H(U, V);
+          if (Number.isFinite(hs)) points.push([U, V, hs]);
+        }
+      }
+      return { x0: this.x0, y0: this.y0, w: map.w, h: map.h, hMin, hMax, hMoy, points, coins: [coin(this.x0, this.y0), coin(X1, this.y0), coin(this.x0, Y1), coin(X1, Y1)] };
     }
 
     mesurer(map) {

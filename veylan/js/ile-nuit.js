@@ -486,6 +486,12 @@ void main() {
 
     maj(now, temps, joueur, hj, cam, tact) {
       const ile = this.ile;
+      const part = this.amb ? this.amb.nuit : 1;
+      const nuit = this._nuitSon ? part > 0.45 : part > 0.55;
+      if (nuit !== this._nuitSon && typeof document !== 'undefined') {
+        this._nuitSon = nuit;
+        try { document.dispatchEvent(new CustomEvent('veylan:nuit', { detail: nuit })); } catch (e) {   }
+      }
       if (this.flaque) {
         const respire = 0.94 + 0.06 * Math.sin(temps * 1.7);
         this.flaque.position.set(joueur.x, hj + 2.6, joueur.y);

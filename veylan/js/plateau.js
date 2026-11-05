@@ -276,6 +276,45 @@ class Plateau {
     if (ch.s >= ch.longueur - 1e-9) this.arriver();
   }
 
+  pasClavier(dir, dt, course) {
+    const w = this.world, p = w.player;
+    if (!dir) {
+      if (p.clavier) { p.clavier = false; p.moving = false; p.vitesse = 0; this.noterPosition(); }
+      return;
+    }
+    if (!p.clavier) {
+      p.chemin = null; p.path = []; p.onArrive = null; this.recherche = null; this.marque = null; this.departTrajet = null;
+      p.clavier = true; p.vitesse = 0;
+      p.horsSortie = !this.sortieProche();
+    }
+    const vmax = (course ? 7 : 4.5) * (typeof Montures !== 'undefined' ? Montures.vitesse(w.ch, true) : 1);
+    p.vitesse = Math.min(vmax, p.vitesse + vmax / 0.15 * dt);
+    p.course = !!course;
+    const pas = p.vitesse * dt, comp = this.composanteJoueur();
+    const ok = (x, y) => this.nav.libre(x, y) && this.nav.composanteA(x, y) === comp;
+    let x = p.x + dir.x * pas, y = p.y + dir.y * pas;
+    if (!ok(x, y)) {
+      if (Math.abs(dir.x) > 0.2 && ok(p.x + dir.x * pas, p.y)) y = p.y;
+      else if (Math.abs(dir.y) > 0.2 && ok(p.x, p.y + dir.y * pas)) x = p.x;
+      else { p.moving = false; p.vitesse = 0; return; }
+    }
+    const dx = x - p.x, dy = y - p.y;
+    p.x = x; p.y = y; p.rx = x; p.ry = y; p.moving = true;
+    p.facing = Grid.facing(dx, dy) || p.facing;
+    const vise = IleTerrain.M.atan2(dy, dx);
+    let d = vise - (p.cap || 0);
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    const lim = 4 * Math.PI * dt;
+    p.cap = (p.cap || 0) + Math.max(-lim, Math.min(lim, d));
+    const h = this.horloges;
+    h.position += dt;
+    if (h.position >= 1) { h.position = 0; this.noterPosition(); }
+    const s = this.sortieProche();
+    if (!s) p.horsSortie = true;
+    else if (p.horsSortie) { p.clavier = false; p.moving = false; p.vitesse = 0; w.sortirPlateau(s); }
+  }
+
   pointA(ch, s) {
     const c = ch.cum, n = ch.pts.length;
     if (s <= 0) return ch.pts[0];

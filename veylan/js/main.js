@@ -19,14 +19,27 @@
   const ui = new UI(combat, R);
   let world = null;
   let hud = null;
+  let nuitIle = false;
+  const regionDe = z => { const r = z && (z.region || z.palette); return r === 'ervane' ? 'ervane' : r === 'kaldum' ? 'kaldum' : 'orsane'; };
   const musiqueDuLieu = w => {
     if (!w) return 'accueil';
-    if (w.ch && w.ch.dungeon) return 'donjon';
-    const z = World.zoneOf(w.mapId);
-    const r = z && (z.region || z.palette);
-    return r === 'ervane' ? 'ervane' : r === 'kaldum' ? 'kaldum' : 'orsane';
+    if (w.ch && w.ch.dungeon) return [w.ch.dungeon.id, 'donjon'];
+    const z = World.zoneOf(w.mapId), r = regionDe(z);
+    const l = r === 'ervane' && nuitIle ? ['nuit'] : [];
+    if (z && z.id) l.push(z.id);
+    l.push(r);
+    return l;
+  };
+  const musiqueDuCombat = (w, boss) => {
+    if (boss) return [w && w.ch && w.ch.dungeon ? w.ch.dungeon.id + '_boss' : null, 'boss'];
+    const z = w && World.zoneOf(w.mapId);
+    return [z && z.id ? z.id + '_combat' : null, 'combat'];
   };
   Son.musique('accueil');
+  document.addEventListener('veylan:nuit', e => {
+    nuitIle = !!(e && e.detail);
+    if (world && !world.showCombat && !(world.ch && world.ch.dungeon)) Son.musique(musiqueDuLieu(world));
+  });
   combat.on('float', d => { if (/^-\d/.test(d.text)) Son.jouer('coup'); else if (/^\+\d+$/.test(d.text)) Son.jouer('soin'); });
   combat.on('fx', () => Son.jouer('sort'));
   combat.on('turn', e => { if (e === combat.player) Son.jouer('tour'); });
@@ -66,11 +79,13 @@
     if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist().catch(() => {}); } catch (e) {   } }
     Son.musique(musiqueDuLieu(world));
     world.on('map', () => Son.musique(musiqueDuLieu(world)));
-    world.on('fight', d => { const g = d && d.group; const boss = !!(g && g.monsters && g.monsters.some(m => DATA.monsters[m.id] && DATA.monsters[m.id].boss)); Son.musique(boss ? 'boss' : 'combat'); });
+    world.on('fight', d => { const g = d && d.group; const boss = !!(g && g.monsters && g.monsters.some(m => DATA.monsters[m.id] && DATA.monsters[m.id].boss)); Son.musique(musiqueDuCombat(world, boss)); });
     world.on('fightEnd', r => { Son.jouer(r && r.victory ? 'victoire' : 'defaite'); Son.musique(musiqueDuLieu(world)); });
     world.on('levelUp', () => Son.jouer('niveau'));
     world.on('gain', () => Son.jouer('butin'));
     world.on('reward', () => Son.jouer('butin'));
+    world.on('quest', q => { if (q && q.type === 'complete') Son.jouer('quete'); });
+    world.on('achievement', () => Son.jouer('succes'));
     VEYLAN.world = world;
     VEYLAN.hud = hud;
   }

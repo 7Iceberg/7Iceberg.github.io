@@ -1365,6 +1365,44 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     if (this.decorFixe) this.decorFixe.push(mesh);
   }
 
+  static clavier() {
+    if (Ile3D._clavier) return Ile3D._clavier;
+    const K = Ile3D._clavier = new Set();
+    if (typeof addEventListener !== 'function') return K;
+    const M = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight']);
+    const saisie = t => !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+    addEventListener('keydown', e => {
+      if (!M.has(e.code) || e.ctrlKey || e.metaKey || e.altKey || saisie(e.target)) return;
+      K.add(e.code);
+      if (e.code.startsWith('Arrow')) e.preventDefault();
+    });
+    addEventListener('keyup', e => K.delete(e.code));
+    addEventListener('blur', () => K.clear());
+    return K;
+  }
+  marcheClavier(dt) {
+    const w = this.world, P = w && w.plateau, cam = this.camera, K = Ile3D.clavier();
+    if (!P || typeof P.pasClavier !== 'function' || !cam) return;
+    let f = 0, r = 0;
+    if (w.state === 'explore' && !this.salle && !this.enArene && cam.mode === 'exploration' && !cam.trans) {
+      if (K.has('KeyW') || K.has('ArrowUp')) f++;
+      if (K.has('KeyS') || K.has('ArrowDown')) f--;
+      if (K.has('KeyD') || K.has('ArrowRight')) r++;
+      if (K.has('KeyA') || K.has('ArrowLeft')) r--;
+    }
+    if (!f && !r) { P.pasClavier(null, dt); return; }
+    const az = cam.azimut, x = -Math.sin(az) * f + Math.cos(az) * r, y = -Math.cos(az) * f - Math.sin(az) * r, l = Math.hypot(x, y) || 1;
+    P.pasClavier({ x: x / l, y: y / l }, dt, K.has('ShiftLeft') || K.has('ShiftRight'));
+  }
+
+  percerLointain(cam) {
+    const C = this.lointain.coupe, cc = cam.courante, a = cam.mode === 'combat' && cam.aire;
+    if (!cc) return;
+    C.cam.value.copy(cc.position);
+    if (a) { C.cible.value.set(a.x0 + a.w / 2, (a.hMoy || 0) + 1, a.y0 + a.h / 2); C.rayon.value = Ile3D.SOIR.lointain.commun.percee[1]; }
+    else { const c = cam.cible; C.cible.value.set(c.x, (c.h || 0) + 1, c.y); C.rayon.value = Ile3D.SOIR.lointain.commun.percee[0]; }
+  }
+
   poserLointain(THREE, scene, LC) {
     const cfg = Object.assign({ etalonnage: Ile3D.SOIR.etalonnage }, Ile3D.SOIR.lointain.commun, LC);
     const r = IleGlb.lointain(THREE, this, cfg, Ile3D.SOIR.arbres);
@@ -1673,6 +1711,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const dt = this.tempsPrec ? Math.min(0.1, Math.max(0, (now - this.tempsPrec) / 1000)) : 0.016;
     this.tempsPrec = now;
     this.temps += dt;
+    this.marcheClavier(dt);
     const hp = this.hauteur(p.rx, p.ry);
     this.majArene(now);
     cam.update(now, { x: p.rx, y: p.ry, h: hp }, p.moving);
@@ -1759,6 +1798,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (this.soir && this.monde && !this.monde.userData.etalonne) { this.etalonner(); this.preparerBordures(); }
     if (this.ombres) this.suivreOmbres(cam);
     if (!this.prechauffe) this.prechauffer(cam.courante);
+    if (this.lointain && this.lointain.coupe) this.percerLointain(cam);
     const r = this.renderer;
     r.info.reset();
     r.render(this.scene, cam.courante);
@@ -2114,6 +2154,7 @@ Ile3D.SOIR = {
       montagnes: 120, pied: [300, 640], champs: 0.56, bois: 0.6, roche: [28, 75], neige: [96, 128], brumeMax: 0.8, loin: 1800,
       lisiere: { pas: 8, pasTel: 11, rangs: [[3.5, 7, 'lisiere'], [10, 17, 'bosquet']], taille: [10, 15], trou: 14, trous: 0.12 },
       bosquets: 120, bosquetsTel: 60, detail: 1, detailCoeur: 1, detailLoin: 0, presBord: 0.92, grain: 0.22,
+      percee: [8, 13],
     },
     orsane: { couleurs: { pres: ['#4c7c33', '#66913f'], champs: ['#9a9844', '#b6a351', '#7d983d', '#a2884a'], foret: ['#1d3c20'], roche: ['#7b8090'], neige: ['#e6ebf2'] } },
     kaldum: {

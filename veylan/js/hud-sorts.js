@@ -389,7 +389,7 @@ Object.assign(Hud.prototype, {
     if (!b || !ch) return;
     const utile = ch.spellPoints > 0 && ch.unlockedSpells().some(id => ch.canRaiseSpell(id).ok);
     b.classList.toggle('a-placer', utile);
-    b.title = utile ? `Sorts (S) : ${plural(ch.spellPoints, 'point')} à placer` : 'Sorts (S)';
+    b.title = utile ? `Sorts (T) : ${plural(ch.spellPoints, 'point')} à placer` : 'Sorts (T)';
   },
 });
 

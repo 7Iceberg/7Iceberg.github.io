@@ -663,8 +663,24 @@ float bruitR(vec3 x) {
       const e = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, p.x, p.h - 0.3, p.z, 1];
       triangles += cuireRond(secteurs, M, e, h2(p.g, 4.4) * Math.PI * 2, p.taille / M.hauteur, 0, false, s);
     }
-    const matArbres = plafonnerBrume(matiereRonde(THREE, ca), cfg.brumeMax, 'lointain-arbres-1');
+    const matArbres = plafonnerBrume(matiereRonde(THREE, ca), cfg.brumeMax, 'lointain-arbres-2');
     matArbres.name = 'lointain_arbres';
+    const coupe = { cam: { value: new THREE.Vector3(0, -1e4, 0) }, cible: { value: new THREE.Vector3(0, -1e4, 1) }, rayon: { value: 0 } };
+    const avantR = matArbres.onBeforeCompile;
+    matArbres.onBeforeCompile = (sh, r) => {
+      avantR(sh, r);
+      sh.uniforms.uCoupeCam = coupe.cam; sh.uniforms.uCoupeCible = coupe.cible; sh.uniforms.uCoupeRayon = coupe.rayon;
+      sh.fragmentShader = 'uniform vec3 uCoupeCam, uCoupeCible;\nuniform float uCoupeRayon;\n' + sh.fragmentShader.replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
+  if (uCoupeRayon > 0.0) {
+    vec3 ab = uCoupeCible - uCoupeCam;
+    float tC = clamp(dot(vPosR - uCoupeCam, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
+    float k = 1.0 - smoothstep(uCoupeRayon * 0.75, uCoupeRayon, length(vPosR - (uCoupeCam + ab * tC)));
+    vec2 fc = floor(gl_FragCoord.xy);
+    float trame = fract(fc.x * 0.5 + fc.y * 0.25) + fract(fc.y * 0.5) * 0.125;
+    if (tC < 0.985 && k > 0.0 && (k > 0.97 || trame < k)) discard;
+  }`);
+    };
+    matArbres.userData.coupe = coupe;
     for (const [k, f] of secteurs) {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(f.pos), 3));
@@ -678,7 +694,7 @@ float bruitR(vec3 x) {
       groupe.add(o);
       octets += f.pos.length * 4 + f.nVert * 12 + f.idx.length * (f.nVert > 65535 ? 4 : 2);
     }
-    return { groupe, triangles: Math.round(triangles), octets, arbres: places.length, anneaux: K, points: N, hm, loin: cfg.loin };
+    return { groupe, triangles: Math.round(triangles), octets, arbres: places.length, anneaux: K, points: N, hm, loin: cfg.loin, coupe: matArbres.userData.coupe };
   }
 
   function semerMeshy(G, mesh, mats, S, genre, fusionS, facteur, ronds, fusion) {

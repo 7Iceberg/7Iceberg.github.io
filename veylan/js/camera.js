@@ -339,7 +339,8 @@ class CameraControls {
     if (!d.moved && Math.hypot(dx, dy) < 4) return;
     if (!d.moved) { d.moved = true; this.el.classList.add('glisse'); }
     d.x = e.clientX; d.y = e.clientY;
-    if (d.tourne) this.camera.tourner(dx * 0.007); else this.camera.panBy(dx, dy);
+    if (d.tourne && typeof this.camera.orbiter === 'function') this.camera.orbiter(dx, dy);
+    else if (d.tourne) this.camera.tourner(dx * 0.007); else this.camera.panBy(dx, dy);
   }
 
   up(e, cancel) {

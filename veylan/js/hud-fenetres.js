@@ -29,10 +29,10 @@ const pic = (k, size) => { const p = STAT[k] || VAL[k]; return p ? `<svg class="
 
 const MENUS = [
   ['carac', 'Caractéristiques', 'C', I.carac],
-  ['sorts', 'Sorts', 'S', I.sorts],
+  ['sorts', 'Sorts', 'T', I.sorts],
   ['perso', 'Personnage', 'P', I.perso],
   ['sac', 'Inventaire', 'I', I.sac],
-  ['quetes', 'Quêtes', 'Q', I.quetes],
+  ['quetes', 'Quêtes', 'H', I.quetes],
   ['faction', 'Faction', 'F', I.faction],
   ['succes', 'Succès', 'U', I.succes],
   ['carnet', 'Carnet du Veilleur', 'B', I.carnet],
