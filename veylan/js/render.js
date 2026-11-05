@@ -3541,8 +3541,4 @@ class Renderer {
     c.drawImage(s.cv, p.x - s.ax, p.y - s.ay, s.w, s.h);
   }
 
-  drawTree(c, p, P, n) { const R = this.res; if (!R) return; const s = R.trees[Math.floor(n * R.trees.length) % R.trees.length]; c.drawImage(s.cv, p.x - s.ax, p.y - s.ay, s.w, s.h); }
-  drawLantern(c, p) { const s = this.res && this.res.lamp; if (s) c.drawImage(s.cv, p.x - s.ax, p.y - s.ay, s.w, s.h); }
-  drawDoor(c, p) { const s = this.res && this.res.door; if (s) c.drawImage(s.cv, p.x - s.ax, p.y - s.ay, s.w, s.h); }
-  drawRelay(c, p) { const s = this.res && this.res.relay; if (s) c.drawImage(s.cv, p.x - s.ax, p.y - s.ay, s.w, s.h); }
 }

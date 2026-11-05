@@ -168,113 +168,6 @@ class Hud {
   }
 
 
-  openCharacter() { this.openCaracs(); this.openPerso(); }
-
-  openCharacterPanel() {
-    const render = () => {
-      const ch = this.world.ch;
-      const d = ch.derived();
-      const cls = ch.classDef;
-      const statRows = Items.STATS.map(k => {
-        const base = ch.stats[k], total = d.stats[k] || 0;
-        const can = ch.statPoints >= (k === 'vita' ? 1 : (ch.stats[k] >= 100 ? 2 : 1));
-        return `<div class="row stat-row"><span>${Items.STAT_LABEL[k]}</span><span><b>${total}</b>${total !== base ? ` <small>(${base} + ${total - base})</small>` : ''}</span>` +
-          `<span class="btns"><button data-act="alloc" data-stat="${k}" data-n="1" ${can ? '' : 'disabled'}>+1</button><button data-act="alloc" data-stat="${k}" data-n="5" ${can ? '' : 'disabled'}>+5</button></span></div>`;
-      }).join('');
-      const slots = Items.EQUIP_SLOTS.map(slot => {
-        const id = ch.equipment[slot];
-        const def = id ? Items.get(id) : null;
-        const label = { coiffe: 'Coiffe', cape: 'Cape', amulette: 'Amulette', anneau1: 'Anneau', anneau2: 'Anneau', ceinture: 'Ceinture', bottes: 'Bottes', arme: 'Arme' }[slot];
-        return `<div class="row slot"><span class="muted">${label}</span>${def ? `<span><b>${esc(def.name)}</b> <small>niv. ${def.level}</small><br><small>${Items.statLines(def.stats).join(', ')}</small></span><button data-act="unequip" data-slot="${slot}">Retirer</button>` : '<span class="muted">vide</span><span></span>'}</div>`;
-      }).join('');
-      const sets = d.setBonuses.map(b => `<div class="muted">${esc(b.set.name)} (${b.count}/${b.set.pieces.length}) : ${Items.statLines(b.stats).join(', ')}</div>`).join('');
-      const titles = ch.titles.length ? `<div class="row"><span>Titre</span><select data-act="title" id="title-select">${['<option value="">aucun</option>'].concat(ch.titles.map(t => `<option ${ch.title === t ? 'selected' : ''}>${esc(t)}</option>`)).join('')}</select></div>` : '';
-      return `<div class="cols"><div>
-        <h3 style="color:${cls.color}">${esc(ch.name)} <small>${cls.name}, ${cls.title}</small></h3>
-        <div class="row"><span>Niveau ${ch.level}</span><span>${ch.level >= Character.MAX_LEVEL ? 'maximum' : `${ch.xp} / ${Character.xpToNext(ch.level)} XP`}</span></div>
-        <div class="row"><span>PV</span><b>${ch.hp} / ${d.hpMax}</b></div>
-        <div class="row"><span>PA · PM</span><b>${d.pa} · ${d.pm}</b></div>
-        <div class="row"><span>Initiative · Critique</span><b>${d.initiative} · ${d.crit > 0 ? '+' : ''}${d.crit} %</b></div>
-        ${titles}
-        <h4>Caractéristiques <small class="muted">${ch.statPoints} point(s) à répartir</small></h4>
-        ${statRows}
-        <div class="row"><label><input type="checkbox" data-act="auto" ${ch.autoStats ? 'checked' : ''}> Répartition automatique (${Items.STAT_LABEL[cls.mainStat]})</label>${ch.statPoints ? '<button data-act="autonow">Répartir maintenant</button>' : ''}</div>
-        <p class="muted">${esc(cls.desc)}</p>
-      </div><div>
-        <h4>Équipement</h4>${slots}
-        ${sets ? `<h4>Bonus de panoplie</h4>${sets}` : ''}
-        ${this.knotsSection(ch)}
-        <h4>Sorts</h4><div class="muted">${ch.unlockedSpells().map(id => esc(DATA.spells[id].name)).join(', ')}${ch.level < Character.MAX_LEVEL ? `<br>Prochain sort au niveau ${nextUnlock(ch)}` : ''}</div>
-      </div></div>`;
-    };
-    const nextUnlock = ch => { const u = ch.classDef.spells.map(id => Character.unlockLevel(ch.classId, id)).filter(l => l > ch.level); return u.length ? Math.min(...u) : '-'; };
-    this.actions.alloc = d => { this.world.ch.allocate(d.stat, Number(d.n)); this.world.emit('update'); };
-    this.actions.unequip = d => { this.world.ch.unequip(d.slot); this.world.emit('update'); };
-    this.actions.auto = (d, b) => { this.world.ch.autoStats = b.checked; };
-    this.actions.autonow = () => { this.world.ch.autoAllocate(); this.world.emit('update'); };
-    this.openPanel('character', 'Personnage', render(), () => { this.el.panelBody.innerHTML = render(); });
-  }
-
-
-  openInventory(opts) {
-    opts = opts || {};
-    if (!opts.sell) return this.openSac();
-    this.invTab = this.invTab || 'equip';
-    const render = () => {
-      const ch = this.world.ch;
-      const entries = Object.entries(ch.inventory).map(([id, n]) => ({ def: Items.get(id), id, n })).filter(e => e.def);
-      const groups = { equip: entries.filter(e => e.def.kind === 'equip' || e.def.kind === 'weapon'), conso: entries.filter(e => e.def.kind === 'consumable' || e.def.kind === 'knot'), res: entries.filter(e => e.def.kind === 'resource') };
-      const tabs = [['equip', 'Équipement'], ['conso', 'Consommables'], ['res', 'Ressources']].map(([k, l]) => `<button class="tab${this.invTab === k ? ' on' : ''}" data-act="tab" data-tab="${k}" aria-pressed="${this.invTab === k}">${l} (${groups[k].length})</button>`).join('');
-      const list = groups[this.invTab].sort((a, b) => (a.def.level || 0) - (b.def.level || 0) || a.def.name.localeCompare(b.def.name));
-      if (!list.some(e => e.id === this.invSel)) this.invSel = list.length ? list[0].id : null;
-      const knots = ch.activeKnots();
-      const cells = list.map(e => {
-        const d = e.def, r = Items.rarity(d);
-        const locked = (d.kind === 'equip' || d.kind === 'weapon') && !ch.canEquip(e.id).ok;
-        return `<button class="vy-case${locked ? ' vy-case--bloquee' : ''}" data-rarete="${r}" data-act="pick" data-id="${e.id}" role="option" aria-selected="${e.id === this.invSel}" aria-label="${esc(d.name)}, ${Items.RARITY_LABEL[r].toLowerCase()}${e.n > 1 ? ', ' + e.n + ' exemplaires' : ''}" title="${esc(d.name)}">` +
-          `<span class="vy-case__icone">${Hud.picto(d)}</span>` +
-          (d.level > 1 ? `<span class="vy-case__niveau">${d.level}</span>` : '') +
-          (e.n > 1 ? `<span class="vy-case__nombre">${e.n}</span>` : '') +
-          (knots.includes(e.id) ? '<span class="vy-case__porte" title="Noué"></span>' : '') + `</button>`;
-      });
-      const empty = Math.max(0, Math.max(12, Math.ceil(cells.length / 6) * 6) - cells.length);
-      for (let i = 0; i < empty; i++) cells.push('<span class="vy-case vy-case--vide" aria-hidden="true"></span>');
-      const sel = list.find(e => e.id === this.invSel);
-      const detail = sel ? this.itemCard(sel, opts) : `<div class="vy-objet"><p class="muted">${this.invTab === 'res' ? 'Les ressources tombent des monstres et se récoltent sur les cartes.' : 'Rien ici pour l\'instant.'}</p></div>`;
-      return `<div class="tabs" role="tablist">${tabs}</div><div class="sac"><div class="vy-inventaire" role="listbox" aria-label="Contenu du sac">${cells.join('')}</div>${detail}</div>`;
-    };
-    const rerender = () => { this.el.panelBody.innerHTML = render(); };
-    this.actions.tab = d => { this.invTab = d.tab; this.invSel = null; rerender(); };
-    this.actions.pick = d => { this.invSel = d.id; rerender(); const b = this.el.panelBody.querySelector(`.vy-case[data-id="${d.id}"]`); if (b) b.focus({ preventScroll: true }); };
-    this.actions.equip = d => { this.world.equip(d.id); };
-    this.actions.use = d => { this.world.useItem(d.id); };
-    this.actions.knot = d => { const r = this.world.ch.toggleKnot(d.id); if (!r.ok) this.toast(r.reason); this.world.emit('update'); };
-    this.actions.sell = d => { this.world.sell(d.id, 1); };
-    this.openPanel(opts.sell ? 'shop' : 'inventory', opts.sell ? 'Vendre' : 'Sac', render(), rerender);
-  }
-
-  itemCard(e, opts) {
-    const ch = this.world.ch;
-    const d = e.def, r = Items.rarity(d);
-    const kindLabel = d.kind === 'weapon' ? (Items.WEAPON_TYPES[d.type] || {}).label || 'Arme' : d.kind === 'equip' ? d.slot.charAt(0).toUpperCase() + d.slot.slice(1) : d.kind === 'knot' ? 'Nœud' : d.kind === 'consumable' ? 'Consommable' : 'Ressource';
-    let btns = '';
-    if (d.kind === 'equip' || d.kind === 'weapon') { const c = ch.canEquip(e.id); btns = `<button class="vy-bouton vy-bouton--primaire" data-act="equip" data-id="${e.id}" ${c.ok ? '' : 'disabled title="' + esc(c.reason) + '"'}>Équiper</button>`; if (!c.ok) btns += `<span class="muted">${esc(c.reason)}</span>`; }
-    if (d.kind === 'consumable') btns = `<button class="vy-bouton vy-bouton--primaire" data-act="use" data-id="${e.id}">Utiliser</button>`;
-    if (d.kind === 'knot') btns = `<button class="vy-bouton vy-bouton--primaire" data-act="knot" data-id="${e.id}">${ch.activeKnots().includes(e.id) ? 'Dénouer' : 'Nouer'}</button>`;
-    if (opts.sell) btns += `<button class="vy-bouton vy-bouton--danger" data-act="sell" data-id="${e.id}">Vendre pour ${Items.sellPrice(d)} Dragmes</button>`;
-    const stats = Items.statLines(d.stats || {}).map(l => { const m = l.match(/^([+-]?\d+) (.+)$/); return m ? `<li><span>${esc(m[2])}</span><b>${m[1]}</b></li>` : `<li>${esc(l)}</li>`; });
-    if (d.spell) stats.push(`<li><span>Coup d'arme, ${d.spell.pa} PA</span><b>${d.spell.effects.map(x => x.min + '-' + x.max).join(' + ')} ${esc(DATA.elements[d.spell.element].label.toLowerCase())}</b></li>`);
-    if (d.kind === 'consumable' && d.heal) stats.push(`<li><span>Soin</span><b>${d.heal >= 999 ? 'tous les PV' : '+' + d.heal + ' PV'}</b></li>`);
-    const set = d.set ? Items.getSet(d.set) : null;
-    return `<article class="vy-objet" data-rarete="${r}">` +
-      `<header class="vy-objet__tete"><span class="vy-case" data-rarete="${r}" aria-hidden="true"><span class="vy-case__icone">${Hud.picto(d)}</span></span>` +
-      `<div><h3 class="vy-objet__nom">${esc(d.name)}</h3><p class="vy-objet__meta"><span class="vy-badge-rarete">${Items.RARITY_LABEL[r]}</span><span>${esc(kindLabel)}${d.level > 1 ? ' · niveau ' + d.level : ''}${e.n > 1 ? ' · ×' + e.n : ''}</span></p></div></header>` +
-      (stats.length ? `<ul class="vy-objet__stats">${stats.join('')}</ul>` : '') +
-      (set ? `<p class="vy-objet__meta">${esc(set.name)} · ${set.pieces.length} pièces</p>` : '') +
-      (d.lore ? `<p class="vy-objet__recit">${esc(d.lore)}</p>` : '') +
-      (btns ? `<div class="vy-objet__actions">${btns}</div>` : '') + `</article>`;
-  }
-
   static texteCle(w, d) {
     if (!d || !d.keyItem) return '';
     const e = w && w.etatCle ? w.etatCle(d) : null, nom = esc(Items.get(d.keyItem).name);
@@ -298,16 +191,6 @@ class Hud {
     if (d.image) return `<img class="vy-case__img" src="${esc(d.image)}" alt="" draggable="false">`;
     const k = d.kind === 'equip' ? d.slot : d.kind === 'weapon' ? 'arme' : d.kind === 'resource' ? 'ressource' : d.kind === 'consumable' ? 'consommable' : d.kind;
     return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[k] || P.ressource}</svg>`;
-  }
-
-
-  knotsSection(ch) {
-    const owned = (DATA.knots || []).filter(k => ch.has(k.id));
-    const active = ch.activeKnots();
-    if (!owned.length) return `<h4>Nœuds</h4><p class="muted">Aucun Nœud. Le tailleur en fabrique : chaque Nœud noué durcit les combats et ajoute ${DATA.rules.knotBonus} % d'XP et de butin.</p>`;
-    const rows = owned.map(k => `<div class="row"><span><b>${esc(k.name)}</b> <small class="muted">niv. ${k.level}</small><br><small>${esc(k.desc)}</small></span><span class="btns"><button data-act="knot" data-id="${k.id}">${active.includes(k.id) ? 'Dénouer' : 'Nouer'}</button></span></div>`).join('');
-    this.actions.knot = d => { const r = ch.toggleKnot(d.id); if (!r.ok) this.toast(r.reason); this.world.emit('update'); };
-    return `<h4>Nœuds <small class="muted">${active.length} / ${DATA.rules.maxKnots} noués · +${active.length * DATA.rules.knotBonus} %</small></h4>${rows}`;
   }
 
 
@@ -364,7 +247,9 @@ class Hud {
       ${coche('portee', 'Portée des sorts', 'en bleu, pour le sort choisi')}
       ${coche('cout', 'Coût du déplacement', 'les PM du chemin, au survol')}
       ${coche('barres', 'Barres de vie', 'au-dessus de chaque combattant ; sinon celui qu\'on vise et celui qui joue')}
-      ${coche('agression', 'Monstres agressifs', 'les élites et quelques familles hostiles attaquent à vue, hors des villes')}`;
+      ${coche('agression', 'Monstres agressifs', 'les élites et quelques familles hostiles attaquent à vue, hors des villes')}
+      <div class="row"><span>Bonus des défis</span><select id="opt-bonus-defi" aria-label="Bonus des défis">${[['', 'XP et butin'], ['xp', 'XP seulement (doublé)'], ['butin', 'Butin seulement (doublé)']].map(([v, l]) => `<option value="${v}"${(ch.bonusDefi || '') === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+      <div class="row"><span class="muted">${ch.bonusDefi === 'xp' ? 'Un défi réussi double son bonus, tout en expérience.' : ch.bonusDefi === 'butin' ? 'Un défi réussi double son bonus, tout en chances de butin.' : 'Un défi réussi ajoute son bonus à l\'expérience et aux chances de butin.'}</span></div>`;
     const curseur = (id, cls, label, v, min, max) => `<div class="row vy-reglage ${cls}"><label for="${id}">${label}</label><input type="range" id="${id}" min="${min}" max="${max}" step="5" value="${v}" style="--v:${v};--min:${min};--max:${max}" aria-valuetext="${v} %"><output for="${id}">${v} %</output></div>`;
     const opacite = () => curseur('opt-opacite', 'vy-opacite', 'Opacité des fonds', this.opacite || this.loadOpacite(), 40, 100) +
       curseur('opt-taille', 'vy-taille', 'Taille de l\'interface', this.taille || this.loadTaille(), 80, 130);
@@ -461,6 +346,7 @@ class Hud {
       if (el.id === 'opt-confirmer') { try { localStorage.setItem('veylan.confirmerSorts', el.checked ? '1' : '0'); } catch (e) {   } }
       if (/^opt-combat-/.test(el.id)) { UI.regler(el.id.slice(11), el.checked); if (this.ui && this.ui.updateHighlights) this.ui.updateHighlights(); if (el.id === 'opt-combat-agression' && this.world) this.world.agression = el.checked; }
       if (el.id === 'opt-gaucher' && this.jeu) this.jeu.mettreGaucher(el.checked);
+      if (el.id === 'opt-bonus-defi') { if (el.value) ch.bonusDefi = el.value; else delete ch.bonusDefi; Save.write(ch); this.fen.render('options'); if (this.ui && this.ui.renderChallenge) this.ui.renderChallenge(); }
       if (el.id === 'opt-qualite-image') {
         UI.reglerQualiteImage(el.value);
         const V = typeof window === 'object' && window.VEYLAN;
@@ -532,7 +418,7 @@ class Hud {
       const sac = trie(ch.inventory).map(([id, n]) => ligne(id, n, 'bdeposer', 'Déposer')).join('') || '<p class="muted">Ton sac est vide.</p>';
       const coffre = trie(c.items).map(([id, n]) => ligne(id, n, 'bretirer', 'Retirer')).join('') || '<p class="muted">Le coffre est vide.</p>';
       return `<div class="banque"><section class="banque__col"><h4>Ton sac</h4><p class="banque__fils">${ch.fils} Dragmes <span class="btns">${fils('bdeposerfils', Math.min(100, ch.fils), 'Déposer 100')}${fils('bdeposerfils', ch.fils, 'Tout')}</span></p>${sac}</section>`
-        + `<section class="banque__col"><h4>Ton coffre</h4><p class="banque__fils">${c.fils} Dragmes <span class="btns">${fils('bretirerfils', Math.min(100, c.fils), 'Retirer 100')}${fils('bretirerfils', c.fils, 'Tout')}</span></p>${coffre}</section></div>`;
+        + `<section class="banque__col"><h4><img class="banque__coffre" src="assets/ui/objets/coffre-banque.png" alt="" draggable="false">Ton coffre</h4><p class="banque__fils">${c.fils} Dragmes <span class="btns">${fils('bretirerfils', Math.min(100, c.fils), 'Retirer 100')}${fils('bretirerfils', c.fils, 'Tout')}</span></p>${coffre}</section></div>`;
     };
     this.actions.bdeposer = d => { this.world.deposer(d.id, Number(d.n)); };
     this.actions.bretirer = d => { this.world.retirer(d.id, Number(d.n)); };
@@ -690,14 +576,15 @@ class Hud {
     const achs = r.achievements.map(a => `<li>Succès : ${esc(a.achievement.name)}${a.title ? ' · titre « ' + esc(a.title) + ' »' : ''}</li>`).join('')
       + (r.cosmetiques || []).map(e => `<li>${esc(World.texteCosmetique(e))}</li>`).join('');
     const quests = r.quests.filter((t, i, arr) => arr.findIndex(x => x.quest === t.quest) === i).map(t => `<li>${esc(t.quest.name)} : ${t.finished ? 'terminée, à rendre à ' + esc(Quests.npcName(Quests.turnInOf(t.quest))) : esc(Quests.stepText(ch, t.quest.id))}</li>`).join('');
-    const chal = r.challenge ? `<div class="row"><span>Défi : ${esc(r.challenge.name)}</span><b class="${r.challenge.success ? 'ok' : 'missing'}">${r.challenge.success ? `réussi, +${r.challenge.bonus} %` : 'raté'}</b></div>` : '';
+    const bd = r.bonusDefi || {}, vers = bd.mode === 'xp' ? ' d\'XP' : bd.mode === 'butin' ? ' de butin' : '';
+    const chal = (r.challenges || (r.challenge ? [r.challenge] : [])).map(c => `<div class="row"><span>Défi : ${esc(c.name)}</span><b class="${c.success ? 'ok' : 'missing'}">${c.success ? `réussi, +${bd.mode ? 2 * c.bonus : c.bonus} %${vers}` : 'raté'}</b></div>`).join('');
     const epr = r.epreuveDojo ? `<div class="row"><span>Épreuve du jour</span><b>${r.epreuveDojo.tours} tour${r.epreuveDojo.tours > 1 ? 's' : ''}${r.epreuveDojo.sceaux ? ' · un Insigne de la Garde' : ` · plus de ${r.epreuveDojo.limite} tours, sans Insigne`}</b></div>` : '';
     const fam = r.familier ? `<div class="row"><span>${esc(r.familier.nom)}</span><b>+${r.familier.xp} XP${r.familier.niveaux ? ` · niveau ${r.familier.niveau} !` : ''}</b></div>` : '';
     if (r.familier && r.familier.niveaux) this.chat('gain', `${r.familier.nom} passe au niveau ${r.familier.niveau}.`);
     const mont = r.monture ? `<div class="row"><span>${esc(r.monture.nom)} (${nfr(r.monture.cede)} XP cédés)</span><b>+${r.monture.xp} XP${r.monture.niveaux ? ` · niveau ${r.monture.niveau} !` : ''}</b></div>` : '';
     if (r.monture && r.monture.niveaux) this.chat('gain', `${r.monture.nom} passe au niveau ${r.monture.niveau}.`);
     let dungeon = '';
-    if (r.dungeon) dungeon = r.dungeon.cleared ? `<p class="big">Donjon terminé : ${esc(r.dungeon.def.name)} !</p>${r.dungeon.turns ? `<p class="muted">En ${r.dungeon.turns} tours, toutes salles comprises.</p>` : ''}` : `<p class="muted">Salle suivante : ${esc(r.dungeon.def.rooms[r.dungeon.next].name)}</p>`;
+    if (r.dungeon) dungeon = r.dungeon.cleared ? `<img class="vy-coffre-donjon" src="assets/ui/objets/coffre-donjon.png" alt="Le coffre du donjon, ouvert" draggable="false"><p class="big">Donjon terminé : ${esc(r.dungeon.def.name)} !</p>${r.dungeon.turns ? `<p class="muted">En ${r.dungeon.turns} tours, toutes salles comprises.</p>` : ''}` : `<p class="muted">Salle suivante : ${esc(r.dungeon.def.rooms[r.dungeon.next].name)}</p>`;
     const html = r.victory
       ? `<p class="big win">Victoire</p>${dungeon}<div class="row"><span>Expérience</span><b>+${r.gained} XP${r.levels ? ` · niveau ${ch.level} !` : ''}</b></div><div class="row"><span>Dragmes</span><b>+${r.fils}</b></div>${fam}${mont}${chal}${epr}${r.veille ? `<div class="row"><span>Veille du jour</span><b class="ok">${esc(r.veille)}</b></div>` : ''}${r.knots ? `<div class="row"><span>Nœuds noués : ${r.knots}</span><b class="ok">+${r.knots * DATA.rules.knotBonus} %</b></div>` : ''}${r.repos ? `<div class="row"><span>Repos de la zone</span><b class="ok">+${r.repos} %</b></div>` : ''}${drops ? `<h4>Butin</h4><ul>${drops}</ul>` : '<p class="muted">Aucun butin cette fois.</p>'}${quests ? `<h4>Quêtes</h4><ul>${quests}</ul>` : ''}${(r.avis || []).length ? `<h4>Avis de recherche</h4><ul>${r.avis.map(a => `<li>${esc(a.nom)} capturé : la prime t'attend à la tour de la Garde, sur la Place du Relais.</li>`).join('')}</ul>` : ''}${achs ? `<ul>${achs}</ul>` : ''}`
       : `<p class="big lose">Défaite</p><p>Tu reviens au Relais de l'Aube avec la moitié de tes PV.${this.world.ch.dungeon ? '' : ''}</p>`;

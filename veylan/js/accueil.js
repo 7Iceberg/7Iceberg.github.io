@@ -314,8 +314,8 @@ class Accueil {
     const A = DATA.actualites, a = A[this.actuIndex];
     const toiles = vue.querySelectorAll('.actus__toile');
     const avant = vue.querySelector('.actus__toile.on'), arriere = [...toiles].find(t => t !== avant);
-    if (surPlace) { AccueilArt.actu(avant, a.art); return; }
-    AccueilArt.actu(arriere, a.art);
+    if (surPlace) { AccueilArt.actu(avant, a.art, a.image); return; }
+    AccueilArt.actu(arriere, a.art, a.image);
     arriere.classList.add('on'); avant.classList.remove('on');
   }
 
@@ -878,7 +878,7 @@ class Accueil {
     const corps = `<article class="article"><canvas class="article__toile" aria-hidden="true"></canvas>
       <p class="article__date">${dateFr(a.date)}</p><p class="article__texte">${esc(a.texte)}</p></article>`;
     const f = this.ouvrirCalque('actu', esc(a.titre), corps, { classe: 'entree-modale--article', pied: '<button class="vy-bouton" data-act="actu-prec-lire">Précédente</button><button class="vy-bouton" data-act="actu-suiv-lire">Suivante</button><button class="vy-bouton vy-bouton--primaire" data-act="fermer-calque" data-focus>Fermer</button>' });
-    requestAnimationFrame(() => AccueilArt.actu(f.querySelector('.article__toile'), a.art));
+    requestAnimationFrame(() => AccueilArt.actu(f.querySelector('.article__toile'), a.art, a.image));
   }
 
   ouvrirQuiz() {

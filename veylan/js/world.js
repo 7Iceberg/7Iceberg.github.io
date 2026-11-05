@@ -1100,6 +1100,10 @@ class World {
     this.combat.entrainement = dojo;
     this.hpAvantDojo = dojo ? this.ch.hp : null;
     this.combat.challenge = dojo ? null : Challenges.pick(this.combat, this.rng);
+    if (!dojo && this.combat.challenge && this.mapDef && this.mapDef.room) {
+      const second = Challenges.pick(this.combat, this.rng, [this.combat.challenge.id]);
+      if (second) this.combat.challenges.push(second);
+    }
     this.combat.emit('challenge', this.combat.challenge);
     if (!dojo) {
       this.ch.counters.fights++;
@@ -1117,18 +1121,22 @@ class World {
     const result = { victory: d.victory, xp: 0, gained: 0, levels: 0, fils: 0, drops: [], achievements: [], quests: [], dungeon: null, cosmetiques: [] };
     const monsters = this.combat.entities.filter(e => e.team === 'monster' && !e.isSummon);
     if (d.victory && this.dispositionEnCours && !(this.mapDef && this.mapDef.room)) this.avancerPlacement(this.dispositionEnCours.cle);
-    const chal = this.combat.challenge;
+    const chal = this.combat.challenge, defis = this.combat.challenges.filter(Boolean);
     const knotCount = this.combat.knots ? this.combat.knots.size : 0;
-    let bonus = (d.victory && chal && chal.success ? chal.bonus : 0) + (d.victory ? knotCount * DATA.rules.knotBonus : 0);
+    const parDefi = d.victory ? Challenges.bonus(defis, ch.bonusDefi) : { xp: 0, butin: 0 };
+    let bonus = d.victory ? knotCount * DATA.rules.knotBonus : 0;
     if (d.victory && typeof Repos !== 'undefined' && !ch.dungeon && !this.combat.epreuveDojo && !(this.currentGroup && this.estDojo && this.estDojo(this.currentGroup)) && this.zone && this.zone.id) {
       result.repos = Repos.consommer(ch, this.zone.id, Date.now());
       bonus += result.repos;
     }
     result.knots = knotCount;
-    result.challenge = chal ? { name: chal.name, desc: chal.desc, success: chal.success, failed: chal.failed, bonus: chal.bonus } : null;
+    const resume = c => ({ name: c.name, desc: c.desc, success: c.success, failed: c.failed, bonus: c.bonus });
+    result.challenge = chal ? resume(chal) : null;
+    result.challenges = defis.map(resume);
+    result.bonusDefi = { mode: ch.bonusDefi || null, xp: parDefi.xp, butin: parDefi.butin };
     ch.counters.feats = ch.counters.feats || {};
     if (d.victory) for (const k in this.combat.feats || {}) ch.counters.feats[k] = (ch.counters.feats[k] || 0) + this.combat.feats[k];
-    if (d.victory && chal && chal.success) ch.counters.feats.defi = (ch.counters.feats.defi || 0) + 1;
+    if (d.victory) for (const c of defis) if (c.success) ch.counters.feats.defi = (ch.counters.feats.defi || 0) + 1;
     if (d.victory && knotCount) ch.counters.feats.noeuds_1 = (ch.counters.feats.noeuds_1 || 0) + 1;
     if (d.victory && knotCount >= 4) ch.counters.feats.noeuds_4 = (ch.counters.feats.noeuds_4 || 0) + 1;
     if (d.victory) {
@@ -1137,17 +1145,17 @@ class World {
       if (knotCount >= 3) plus('noeuds_3');
       const boss = monsters.filter(e => e.boss).map(e => e.def.id);
       for (const b of boss) F['noeudsboss.' + b] = Math.max(F['noeudsboss.' + b] || 0, knotCount);
-      if (chal && chal.success && chal.id) {
-        plus('defivu.' + chal.id);
-        for (const b of boss) plus(`bossdefi.${b}.${chal.id}`);
-        for (const id of new Set(monsters.map(e => e.def.id))) plus('killdefi.' + id);
+      for (const c of defis) if (c.success && c.id) {
+        plus('defivu.' + c.id);
+        for (const b of boss) plus(`bossdefi.${b}.${c.id}`);
       }
+      if (defis.some(c => c.success)) for (const id of new Set(monsters.map(e => e.def.id))) plus('killdefi.' + id);
     }
     if (d.victory) {
       ch.counters.wins++;
       const veille = World.veilleBonus(ch, { zone: this.zone && this.zone.id, dungeon: ch.dungeon && ch.dungeon.id, monsters: monsters.map(e => e.def.id) });
       result.veille = veille.texte;
-      const prospection = (ch.derived().prospection / 100) * (1 + bonus / 100) * veille.butin;
+      const prospection = (ch.derived().prospection / 100) * (1 + (bonus + parDefi.butin) / 100) * veille.butin;
       for (const e of monsters) {
         result.xp += e.xp * veille.xp(e.def.id);
         ch.counters.kills[e.def.id] = (ch.counters.kills[e.def.id] || 0) + 1;
@@ -1166,7 +1174,7 @@ class World {
         }
         result.quests.push(...Quests.onEvent(ch, { type: 'kill', monster: e.def.id }));
       }
-      result.xp = Math.round(result.xp * (1 + bonus / 100));
+      result.xp = Math.round(result.xp * (1 + (bonus + parDefi.xp) / 100));
       if (typeof Montures !== 'undefined') { result.monture = Montures.partCombat(ch, result.xp); if (result.monture) result.xp -= result.monture.cede; }
       if (this.combat.epreuveDojo) {
         const tours = this.combat.round || 1, limite = this.combat.epreuveDojo.limite;

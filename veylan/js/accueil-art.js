@@ -759,7 +759,41 @@ const AccueilArt = (() => {
     },
   };
 
-  function actu(cv, art) {
+  const captures = new Map();
+  function capture(nom, quand) {
+    let e = captures.get(nom);
+    if (!e) {
+      e = { etat: 'attente', img: new Image(), suite: [] };
+      captures.set(nom, e);
+      e.img.decoding = 'async';
+      e.img.onload = () => { e.etat = 'ok'; for (const f of e.suite.splice(0)) f(e); };
+      e.img.onerror = () => { e.etat = 'absente'; for (const f of e.suite.splice(0)) f(e); };
+      e.img.src = `assets/actus/${nom}`;
+    }
+    if (e.etat === 'attente') e.suite.push(quand); else quand(e);
+  }
+  function actu(cv, art, image) {
+    if (image) {
+      cv.dataset.image = image;
+      let pose = false;
+      capture(image, e => {
+        pose = true;
+        if (cv.dataset.image !== image) return;
+        if (e.etat !== 'ok') { actu(cv, art); return; }
+        const { c, w, h } = prepare(cv);
+        cv.style.background = `#0b1420 url("assets/actus/${image}") center / cover no-repeat`;
+        const v = c.createLinearGradient(0, 0, 0, h);
+        v.addColorStop(0, 'rgba(3,6,12,0.08)'); v.addColorStop(0.62, 'rgba(3,6,12,0.08)'); v.addColorStop(1, 'rgba(3,6,12,0.5)');
+        c.fillStyle = v; c.fillRect(0, 0, w, h);
+      });
+      if (!pose) { actuPeinte(cv, art); cv.dataset.image = image; }
+      return;
+    }
+    actuPeinte(cv, art);
+  }
+  function actuPeinte(cv, art) {
+    cv.style.background = '';
+    delete cv.dataset.image;
     const { c, w, h } = prepare(cv);
     plan(c, w, h, cc => (ACTUS[art] || ACTUS.carte)(cc));
     const v = c.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.75);

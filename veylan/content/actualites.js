@@ -1,12 +1,12 @@
 DATA.version = 'Prototype 0.9';
 
 DATA.actualites = [
-  { id: 'garde_robe', date: '2026-11-03', art: 'fenetres', titre: 'La Garde-robe',
+  { id: 'garde_robe', date: '2026-11-03', art: 'fenetres', image: 'garde-robe.webp', titre: 'La Garde-robe',
     texte: 'Teintures, lueurs de lanterne, auras, blasons, émotes et thèmes d\'interface se gagnent en jouant : succès, premières victoires contre les boss, paliers de la Veille, quêtes de Voie, teintures du tailleur. Tout ce qu\'un personnage gagne sert à tous les autres. La fenêtre Garde-robe (touche G) essaie tout le catalogue, possédé ou non, et garde cinq looks. Jamais de puissance : seulement de l\'allure.' },
   { id: 'ervane', date: '2026-10-20', art: 'carte', titre: 'Ervane, l\'île de l\'Éveil',
     texte: 'Tout nouveau Veilleur s\'éveille désormais sur Ervane, une île en 3D amarrée au-dessus des Cimes. On y marche librement, on combat sur le terrain même, et Varek t\'apprend le jeu jusqu\'au Puits de l\'Amarre. La Nacelle te descend ensuite à Orsane, au niveau 8.' },
   { id: 'factions', date: '2026-10-15', art: 'factions', titre: 'L\'Aube contre la Chaîne',
-    texte: 'Au niveau 20, à la Passe de Kaldum, tu prêtes serment à l\'Aube, qui garde les Marques et les dragons depuis Orsane, ou à la Chaîne, qui veut les lier depuis Kessane, au bord du gouffre. Tu peux aussi refuser : les Francs-Marcheurs de Thessa restent neutres et commercent avec tout le monde. Dix rangs, trois ordres par faction, et jamais de puissance de combat : des titres, des apparences, des raccourcis.' },
+    texte: 'Au niveau 39, à la Passe de Kaldum, tu prêtes serment à l\'Aube, qui garde les Marques et les dragons depuis Orsane, ou à la Chaîne, qui veut les lier depuis Kessane, au bord du gouffre. Tu peux aussi refuser : les Francs-Marcheurs de Thessa restent neutres et commercent avec tout le monde. Dix rangs, trois ordres par faction, et jamais de puissance de combat : des titres, des apparences, des raccourcis.' },
   { id: 'carte_du_monde', date: '2026-10-15', art: 'carte', titre: 'La carte du monde, peinte et en 3D',
     texte: 'Chaque carte a ses coordonnées [x, y] et se peint d\'après son vrai décor : prés, chemins, eau, forêts, toits, falaises et lave de Kaldum, avec des nuages sur ce que tu n\'as pas encore exploré. Des pastilles montrent les Relais, les donjons, les ateliers et les quêtes, et un appui long pose ton drapeau. La touche M l\'ouvre ; le bouton 3D dresse le continent en îles flottantes, à faire tourner du doigt.' },
   { id: 'grands_dragons', date: '2026-10-14', art: 'dragons', titre: 'Les sept Grands Dragons',
@@ -17,7 +17,7 @@ DATA.actualites = [
     texte: 'Le Sarkan jure contre un ennemi, fait monter sa Fureur au contact et la dépense dans le Verdict. Le Lyssar tire plus loin et plus fort tant qu\'il reste à l\'affût, et pose ses collets. La Nerith disparaît, vole PA, PM et boucliers, et vide les poches de ce qu\'elle achève.' },
   { id: 'caracteristiques', date: '2026-10-14', art: 'caracs', titre: 'Caractéristiques : cinq points par niveau',
     texte: 'Terra, Ignis, Aqua et Aer coûtent un point jusqu\'à 100, puis deux, trois et quatre par palier. La Vitalité se prend un pour un, la Sagesse trois pour un. Les parchemins offrent jusqu\'à 50 points de base, et Tacle, Fuite et Prospection suivent tes choix.' },
-  { id: 'interface_fenetres', date: '2026-10-14', art: 'fenetres', titre: 'Une interface en fenêtres',
+  { id: 'interface_fenetres', date: '2026-10-14', art: 'fenetres', image: 'livre-sorts.webp', titre: 'Une interface en fenêtres',
     texte: 'Caractéristiques, Personnage, Sac, Quêtes, Succès, Carnet, Carte, Journal et Options s\'ouvrent en fenêtres que l\'on déplace à sa guise, chacune avec sa touche. Le bloc vital, les raccourcis d\'objets et la mini-carte restent à portée de main, en exploration comme en combat.' },
 ];
 

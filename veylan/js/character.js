@@ -424,17 +424,6 @@ class Character {
 
   spellRank(id) { return Character.rangAuNiveau(this.classId, id, this.level) || 1; }
 
-  static damageRate(s) {
-    const sum = list => (list || []).reduce((n, ef) => n + (ef.type === 'damage' || ef.type === 'sacrifice' ? (ef.min + ef.max) / 2
-      : ef.type === 'dot' ? ef.value * ef.turns : ef.type === 'leap' ? sum(ef.effects) : ef.type === 'trap' ? 0.6 * sum(ef.effects) : 0), 0);
-    let d = sum(s.effects);
-    if (!d) return 0;
-    if (s.aoe && s.aoe.shape !== 'single') d *= 1.4;
-    if (s.bonusIfInvisible || s.furySpend || s.lowHpBonus || s.executeBelow) d *= 1.25;
-    if ((s.cooldown || 0) >= 2) d *= 0.7;
-    return d / Math.max(1, s.pa);
-  }
-
 
   activeKnots() { return (this.knots || []).filter(id => this.has(id)); }
   toggleKnot(id) {

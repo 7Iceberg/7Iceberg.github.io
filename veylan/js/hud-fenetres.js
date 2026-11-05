@@ -63,7 +63,7 @@ Object.assign(Hud.prototype, {
     this.journal = { combat: [], evenements: [] };
     this.journalTab = 'evenements';
     const bar = document.getElementById('menus');
-    bar.innerHTML = MENUS.map(([id, label, key, icon]) => `<button class="vy-menu" data-win="${id}" aria-label="${label} (${key})" title="${label} (${key})">${icon}<kbd>${key}</kbd></button>`).join('');
+    bar.innerHTML = MENUS.map(([id, label, key, icon]) => `<button class="vy-menu" data-win="${id}" aria-label="${label} (${key})">${icon}<kbd>${key}</kbd><span class="vy-menu__bulle" aria-hidden="true">${label}<kbd>${key}</kbd></span></button>`).join('');
     bar.addEventListener('click', evt => { const b = evt.target.closest('[data-win]'); if (b) this.toggleWin(b.dataset.win); });
     window.addEventListener('keydown', evt => {
       const t = evt.target;

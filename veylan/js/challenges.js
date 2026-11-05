@@ -53,12 +53,12 @@ const Challenges = (() => {
         st.element = st.element || s.element;
         if (s.element !== st.element) return `${DATA.elements[s.element].label} après ${DATA.elements[st.element].label}`;
       } },
-    { id: 'econome', name: 'Économe', bonus: 20, desc: 'Trois sorts au plus par tour.',
+    { id: 'econome', name: 'Économe', bonus: 10, desc: 'Trois sorts au plus par tour.',
       onTurnStart(c, st) { st.casts = 0; },
       onCast(c, st) { if (++st.casts > 3) return 'un quatrième sort dans le même tour'; } },
     { id: 'vite', name: 'Vite', bonus: 30, desc: 'Gagner en quatre tours ou moins.',
       onEnd(c, st, victory) { if (victory && c.round > 4) return `victoire au tour ${c.round}`; } },
-    { id: 'intact', name: 'Intact', bonus: 30, desc: 'Ne jamais descendre sous la moitié de ses PV.',
+    { id: 'intact', name: 'Intact', bonus: 15, desc: 'Ne jamais descendre sous la moitié de ses PV.',
       onDamage(c, st, e) { if (e.hp < e.hpMax / 2) return 'sous la moitié des PV'; } },
 
     { id: 'epargne', name: 'Épargné', bonus: 30, desc: 'Tuer en dernier le monstre désigné.',
@@ -232,14 +232,21 @@ const Challenges = (() => {
     }
   }
 
-  function pick(combatLike, rng) {
-    const ok = LIST.filter(d => !d.eligible || d.eligible(combatLike));
+  function pick(combatLike, rng, exclus) {
+    const ok = LIST.filter(d => (!d.eligible || d.eligible(combatLike)) && !(exclus || []).includes(d.id));
     const imposes = (typeof DATA === 'object' && DATA.succes && DATA.succes.defisBoss) || {};
     const boss = ((combatLike && combatLike.entities) || []).find(e => e.team === 'monster' && e.boss && imposes[e.def.id]);
     const impose = boss && ok.find(d => d.id === imposes[boss.def.id]);
     if (impose) return new Challenge(impose);
-    return new Challenge(ok[Math.floor(rng() * ok.length)]);
+    return ok.length ? new Challenge(ok[Math.floor(rng() * ok.length)]) : null;
   }
 
-  return { LIST, Challenge, pick, byId: id => LIST.find(d => d.id === id) };
+  function bonus(defis, mode) {
+    const n = (defis || []).reduce((s, d) => s + (d && d.success ? d.bonus : 0), 0);
+    if (mode === 'xp') return { xp: 2 * n, butin: 0 };
+    if (mode === 'butin') return { xp: 0, butin: 2 * n };
+    return { xp: n, butin: n };
+  }
+
+  return { LIST, Challenge, pick, bonus, byId: id => LIST.find(d => d.id === id) };
 })();

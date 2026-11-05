@@ -232,6 +232,15 @@ const SortIcones = (() => {
   }
 
   const cache = new Map();
+  function typeV3(id, s) {
+    const t = (s.effects || []).map(e => e.type);
+    if (t.includes('summon')) return 'invocation';
+    const T = IconesV3.TYPES || {};
+    if (T[id]) return T[id];
+    if (t.some(x => ['damage', 'dot', 'steal'].includes(x))) return 'degats';
+    if (t.some(x => ['teleport', 'swap', 'leap', 'retreat', 'push', 'pull'].includes(x))) return 'placement';
+    return 'soin';
+  }
 
   function spec(id, spell) {
     const s = spell || DATA.spells[id];
@@ -241,6 +250,15 @@ const SortIcones = (() => {
   function url(id, spell, px) {
     const s = spell || DATA.spells[id];
     if (!s || typeof document === 'undefined') return '';
+    if (typeof IconesV3 === 'object' && IconesV3.SUJETS[id]) {
+      px = Math.round(px || 64);
+      const el = s.element || 'neutre', rang = s.rank || 0, key = `v3|${id}|${el}|${rang}|${px}`;
+      if (!cache.has(key)) {
+        const svg = IconesV3.icone({ id, el: IconesV3.P[el] ? el : 'neutre', type: typeV3(id, s) }, px, { rang, epee: 'B' }).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+        cache.set(key, 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
+      }
+      return cache.get(key);
+    }
     if (typeof SortTuiles === 'object' && SortTuiles.a(id)) return SortTuiles.url(id, s.rank || 0);
     px = Math.round(px || 64);
     const key = `${id}|${s.element}|${px}`;

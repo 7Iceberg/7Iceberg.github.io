@@ -59,7 +59,7 @@ class Combat {
     const player = new Entity(DATA.classes[this.classId], 'player', this.nextId++, this.rng);
     this.player = player;
     this.feats = {};
-    this.challenge = null;
+    this.challenges = [];
     this.knots = new Set();
     this.entities.push(player);
     const reds = this.map.starts.monster.slice();
@@ -197,8 +197,10 @@ class Combat {
   }
 
   hook(name, ...args) {
-    if (this.challenge && this.challenge.event(name, this, ...args)) this.emit('challenge', this.challenge);
+    for (const c of this.challenges) if (c && c.event(name, this, ...args)) this.emit('challenge', c);
   }
+  get challenge() { return this.challenges[0] || null; }
+  set challenge(c) { this.challenges = c ? [c] : []; }
 
 
   tempAt(x, y) {

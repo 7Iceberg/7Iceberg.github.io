@@ -37,7 +37,7 @@ class UI {
       if (this.jeu) this.ruban('Prépare-toi !', { sorte: 'placement', ms: 1900, sous: UI.tactile() ? 'Touche une case bleue pour te placer' : 'Clique sur une case bleue pour te placer' });
     });
     combat.on('challenge', ch => this.renderChallenge(ch));
-    if (this.el.challenge) this.el.challenge.addEventListener('click', () => { const ch = combat.challenge; if (ch) this.banner(`${ch.name} : ${ch.desc}${ch.failed ? ' (raté : ' + ch.failed + ')' : ''}`, 2600); });
+    if (this.el.challenge) this.el.challenge.addEventListener('click', () => { const t = UI.texteDefis(combat); if (t) this.banner(t, 3200); });
     combat.on('start', () => { this.placementEndsAt = 0; this.refresh(); Bus.emit('battleStart', {}); });
     combat.on('turn', e => {
       this.selectedSpell = null;
@@ -646,15 +646,24 @@ class UI {
   }
 
 
-  renderChallenge(ch) {
+  renderChallenge() {
     const el = this.el.challenge;
     if (!el) return;
-    if (!ch) { el.classList.add('hidden'); return; }
+    const defis = ((this.combat && this.combat.challenges) || []).filter(Boolean);
+    if (!defis.length) { el.classList.add('hidden'); return; }
     el.classList.remove('hidden');
-    el.classList.toggle('failed', !!ch.failed);
-    el.classList.toggle('success', !!ch.success);
-    el.textContent = `Défi : ${ch.name} ${ch.failed ? '(raté)' : ch.success ? '(réussi)' : `+${ch.bonus} %`}`;
-    el.title = ch.desc + (ch.failed ? ` Raté : ${ch.failed}.` : '');
+    el.classList.toggle('failed', defis.every(c => c.failed));
+    el.classList.toggle('success', defis.every(c => c.success));
+    const etat = c => (c.failed ? '(raté)' : c.success ? '(réussi)' : `+${c.bonus} %`);
+    el.textContent = (defis.length > 1 ? 'Défis : ' : 'Défi : ') + defis.map(c => `${c.name} ${etat(c)}`).join(' · ');
+    el.title = defis.map(c => c.name + ' : ' + c.desc + (c.failed ? ` Raté : ${c.failed}.` : '')).join(' ');
+  }
+  static texteDefis(combat) {
+    const defis = ((combat && combat.challenges) || []).filter(Boolean);
+    if (!defis.length) return '';
+    const ch = combat.world && combat.world.ch, mode = (ch && ch.bonusDefi) || (typeof window === 'object' && window.VEYLAN && window.VEYLAN.world && window.VEYLAN.world.ch && window.VEYLAN.world.ch.bonusDefi);
+    const vers = mode === 'xp' ? ' (bonus doublé, en XP seulement)' : mode === 'butin' ? ' (bonus doublé, en butin seulement)' : '';
+    return defis.map(c => `${defis.length > 1 ? 'Défi' : 'Défi'} : ${c.name}. ${c.desc}${c.failed ? ' (raté : ' + c.failed + ')' : c.success ? ' (réussi)' : ` +${c.bonus} %`}`).join('  ') + vers;
   }
 
   describeEffect(f) {

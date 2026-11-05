@@ -291,7 +291,7 @@ class HudJeu {
       case 'quitter': this.demanderQuitter(); break;
       case 'tactique': this.renderer.tactique = !this.renderer.tactique; break;
       case 'fiches': app.classList.toggle('vy-fiches'); this.ui.renderInspect(); break;
-      case 'defi': { const c = this.combat.challenge; this.ui.banner(c ? `Défi : ${c.name}. ${c.desc}${c.failed ? ' (raté : ' + c.failed + ')' : c.success ? ' (réussi)' : ''}` : 'Pas de défi dans ce combat.', 2600); break; }
+      case 'defi': { this.ui.banner(UI.texteDefis(this.combat) || 'Pas de défi dans ce combat.', 3200); break; }
     }
     this.rafraichirRapides();
     if (b && b.isConnected) b.blur();

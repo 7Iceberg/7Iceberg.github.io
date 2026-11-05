@@ -22,7 +22,7 @@ Object.assign(Hud.prototype, {
     const max = G.niveauMax();
     const niveaux = G.DEBLOCAGES.map(d => `<li class="${d.niveau > max ? 'plus-tard' : ''}"><b>${d.niveau}</b><span>${esc(d.texte)}</span></li>`).join('');
     return `<div class="vy-mont vy-guilde">
-      <header class="vy-fam__tete"><div><b>Les guildes arrivent avec le serveur</b><small>une guilde par compte, ${R.membres} comptes au plus</small></div></header>
+      <header class="vy-fam__tete vy-guilde__tete"><span class="vy-guilde__armes" aria-hidden="true"><img src="assets/ui/objets/etendard.png" alt="" draggable="false"><img src="assets/ui/objets/blason.png" alt="" draggable="false"></span><div><b>Les guildes arrivent avec le serveur</b><small>une guilde par compte, ${R.membres} comptes au plus</small></div></header>
       <p class="vy-fam__desc">On en fonde une à ${['', 'un', 'deux', 'trois', 'quatre', 'cinq'][R.fondateurs] || R.fondateurs}, au Greffe des Francs-Marcheurs, dans la ville de Kaldum : une Charte signée par ${['', 'un', 'deux', 'trois', 'quatre', 'cinq'][R.fondateurs] || R.fondateurs} comptes (un personnage de niveau ${R.niveauFondateur} au moins), ${nf(R.prixCharte)} Dragmes. Une guilde ne donne jamais de force en combat : ses niveaux ouvrent du confort, de l'apparence et des services.</p>
       <div class="vy-mont__part"><h4>Ton don d'expérience <small>un aperçu : rien n'est prélevé avant le serveur</small></h4>
         <div class="vy-mont__parts" role="group" aria-label="Part de l'expérience donnée à la guilde">${parts}</div>

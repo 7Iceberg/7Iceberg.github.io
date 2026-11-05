@@ -37,6 +37,7 @@ const Save = (() => {
   ALLOWED.add('monture');
   ALLOWED.add('sceaux');
   ALLOWED.add('placements');
+  ALLOWED.add('bonusDefi');
   ALLOWED.add('repos');
   ALLOWED.add('rares');
   const ORIGINES = ['orsane', 'ervane'];
@@ -334,6 +335,7 @@ const Save = (() => {
     if (o.mapTimers && typeof o.mapTimers !== 'object') o.mapTimers = {};
     if (o.repos != null) o.repos = typeof Repos !== 'undefined' ? Repos.nettoyer(o.repos, Date.now()) : null;
     if (o.rares != null) o.rares = typeof Rares !== 'undefined' ? Rares.nettoyer(o.rares, Date.now()) : null;
+    if (o.bonusDefi != null && o.bonusDefi !== 'xp' && o.bonusDefi !== 'butin') delete o.bonusDefi;
     if (o.placements != null) {
       const p = {};
       if (typeof o.placements === 'object' && !Array.isArray(o.placements)) {
