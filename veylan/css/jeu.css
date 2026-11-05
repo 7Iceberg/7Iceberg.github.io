@@ -111,6 +111,8 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-fiche-groupe__tete > div { flex: 1; min-width: 0; text-align: center; padding-left: 24px; }
 .vy-fiche-groupe h3 { margin: 0; font: 700 14px/1.2 var(--vy-font-titre); letter-spacing: 0.06em; color: var(--vy-or-clair); text-transform: uppercase; }
 .vy-fiche-groupe__xp { margin: 2px 0 0; font: italic 600 12.5px var(--vy-font-ui); color: var(--vy-texte); }
+.vy-carte__repos { color: var(--vy-or-clair, #e6c36a); font-weight: 600; }
+.vy-fiche-groupe__repos { margin: 1px 0 0; font: 600 11.5px var(--vy-font-ui); color: var(--vy-or-clair, #e6c36a); }
 .vy-fiche-groupe__fermer { flex: none; width: 26px; height: 26px; padding: 5px; border: 0; border-radius: 50%; background: transparent; color: var(--vy-texte-2); cursor: pointer; }
 .vy-fiche-groupe__fermer svg { width: 100%; height: 100%; }
 .vy-fiche-groupe__fermer:hover { color: var(--vy-braise-clair); }

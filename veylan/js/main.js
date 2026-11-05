@@ -82,6 +82,8 @@
     world.on('fight', d => { const g = d && d.group; const boss = !!(g && g.monsters && g.monsters.some(m => DATA.monsters[m.id] && DATA.monsters[m.id].boss)); Son.musique(musiqueDuCombat(world, boss)); });
     world.on('fightEnd', r => { Son.jouer(r && r.victory ? 'victoire' : 'defaite'); Son.musique(musiqueDuLieu(world)); });
     world.on('levelUp', () => Son.jouer('niveau'));
+    world.agression = typeof UI === 'function' && UI.reglage ? UI.reglage('agression') : true;
+    world.on('alerte', g => { const d = g && g.monsters && DATA.monsters[g.monsters[0].id]; if (d) world.toast(`${d.name} t'a repéré !`); });
     world.on('gain', () => Son.jouer('butin'));
     world.on('reward', () => Son.jouer('butin'));
     world.on('quest', q => { if (q && q.type === 'complete') Son.jouer('quete'); });

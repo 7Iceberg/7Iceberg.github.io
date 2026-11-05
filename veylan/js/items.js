@@ -135,6 +135,8 @@ const Items = (() => {
 
   function dropsOf(monsterId) {
     build();
+    const rare = typeof DATA === 'object' && DATA.monsters && DATA.monsters[monsterId];
+    if (rare && rare.rare && rare.base) return dropsOf(rare.base).map(d => ({ id: d.id, rate: Math.min(100, d.rate * 2) }));
     const out = [];
     for (const s of sets.values()) if (s.family.includes(monsterId)) for (const id of s.pieces) out.push({ id, rate: 2.5 });
     for (const d of defs.values()) if ((d.kind === 'weapon' || d.kind === 'equip') && d.from === monsterId) out.push({ id: d.id, rate: 2 });

@@ -249,7 +249,8 @@ Object.assign(Hud.prototype, {
     const seen = new Set(ch.counters.maps);
     let html = `<h3>${esc(DATA.regions[r.id] || r.name)}</h3><p class="vy-carte__coord">${levels(r.level)}${r.open ? '' : ' · <b class="vy-carte__avenir">à venir</b>'}</p><p class="vy-note">${esc(r.desc)}</p>`;
     if (r.open) {
-      const rows = r.zones.map(z => { const n = z.maps.length, v = z.maps.filter(m => seen.has(m.id)).length; return `<li><span>${esc(z.name)} <small class="muted">${levels(z.level)}</small></span><b>${v} / ${n}</b></li>`; }).join('');
+      const repos = z => (typeof Repos !== 'undefined' ? Repos.valeur(ch, z.id, Date.now()) : 0);
+      const rows = r.zones.map(z => { const n = z.maps.length, v = z.maps.filter(m => seen.has(m.id)).length, rp = repos(z); return `<li><span>${esc(z.name)} <small class="muted">${levels(z.level)}</small>${rp ? ` <small class="vy-carte__repos" title="Repos de la zone : une victoire y rapporte plus d'XP et de butin">+${rp} %</small>` : ''}</span><b>${v} / ${n}</b></li>`; }).join('');
       html += `<div class="vy-sous"><span>Zones</span><span>explorées</span></div><ul class="vy-carte__liste">${rows}</ul>
         <div class="vy-carte__actions"><button class="vy-bouton vy-bouton--petit" data-act="voirRegion" data-id="${r.id}">Voir les cartes</button></div>`;
     } else html += '<p class="muted vy-note">Ces terres ne sont pas encore ouvertes. Le continent s\'ouvre une région après l\'autre.</p>';

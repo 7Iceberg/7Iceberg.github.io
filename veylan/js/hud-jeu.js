@@ -1043,8 +1043,9 @@ class FicheGroupe {
       return `<li data-monstre="${Util.esc(l.id)}"><span class="vy-pastille" style="--c:${def.color}"></span><span class="vy-fiche-groupe__nom">${Util.esc(def.name)}</span><small>niv. ${l.level}</small>${def.recherche ? '<small class="vy-fiche-groupe__recherche">recherché</small>' : ''}${l.n > 1 ? `<b>×${l.n}</b>` : ''}</li>` +
         (ile ? FicheGroupe.ligneResistances(def) : '');
     }).join('');
+    const wj = this.jeu.world, rep = typeof Repos !== 'undefined' && wj.zone && !wj.ch.dungeon && !wj.estDojo(g) ? Repos.valeur(wj.ch, wj.zone.id, Date.now()) : 0;
     this.el.innerHTML =
-      `<header class="vy-fiche-groupe__tete"><div><h3>Groupe niveau ${somme}</h3><p class="vy-fiche-groupe__xp" title="XP estimée, avant le bonus d'un Défi réussi">${d.xp} XP</p></div>` +
+      `<header class="vy-fiche-groupe__tete"><div><h3>Groupe niveau ${somme}</h3><p class="vy-fiche-groupe__xp" title="XP estimée, avant le bonus d'un Défi réussi">${d.xp} XP</p>${rep ? `<p class="vy-fiche-groupe__repos" title="La zone s'est reposée : une victoire ici rapporte plus d'XP et de butin, puis le bonus baisse">Repos de la zone : +${rep} %</p>` : ''}</div>` +
       `<button type="button" class="vy-fiche-groupe__fermer" data-act="fermer" aria-label="Fermer">${Fenetres.ICON.fermer}</button></header>` +
       `<ul class="vy-fiche-groupe__liste">${liste}</ul>` +
       `<p class="vy-fiche-groupe__difficulte" data-niveau="${d.difficulty}">${FicheGroupe.DIFFICULTE[d.difficulty] || ''}</p>` +

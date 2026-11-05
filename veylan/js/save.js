@@ -37,6 +37,8 @@ const Save = (() => {
   ALLOWED.add('monture');
   ALLOWED.add('sceaux');
   ALLOWED.add('placements');
+  ALLOWED.add('repos');
+  ALLOWED.add('rares');
   const ORIGINES = ['orsane', 'ervane'];
 
   const plateauDe = id => {
@@ -313,6 +315,8 @@ const Save = (() => {
     if (typeof Montures !== 'undefined') { const m = Montures.nettoyer(o.monture); o.monture = m.monture; for (const e of m.errors) bad(e); }
     if (o.fight && typeof o.fight !== 'object') o.fight = null;
     if (o.mapTimers && typeof o.mapTimers !== 'object') o.mapTimers = {};
+    if (o.repos != null) o.repos = typeof Repos !== 'undefined' ? Repos.nettoyer(o.repos, Date.now()) : null;
+    if (o.rares != null) o.rares = typeof Rares !== 'undefined' ? Rares.nettoyer(o.rares, Date.now()) : null;
     if (o.placements != null) {
       const p = {};
       if (typeof o.placements === 'object' && !Array.isArray(o.placements)) {

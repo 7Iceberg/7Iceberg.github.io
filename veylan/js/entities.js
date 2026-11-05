@@ -84,7 +84,7 @@ class Entity {
   static echellePv(level) { return DATA.echellePv(level); }
 
   static xpFor(def, level) {
-    return def && def.ai && !def.summon ? Math.round(8 * Math.pow(level / 2, 1.6)) * (def.boss ? 5 : 1) : 0;
+    return def && def.ai && !def.summon ? Math.round(8 * Math.pow(level / 2, 1.6)) * (def.boss ? 5 : def.rare && def.base ? 3 : 1) : 0;
   }
 
   static ecartEchelle(n) {

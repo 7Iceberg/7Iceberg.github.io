@@ -125,13 +125,17 @@ class Plateau {
   secteurDe(x, y) { return this.terrain.secteurA(x, y); }
 
 
-  creerGroupe(tpl, idx, carte) {
+  creerGroupe(tpl, idx, carte, hasard) {
     const a = tpl.aire || { x: 0, y: 0, errance: 5 };
     const cases = this.casesAire(carte, idx, a);
-    const cu = a.x + 7.5, cv = a.y + 7.5;
+    const cu = a.x + 7.5, cv = a.y + 7.5, rng = this.world.rng;
     let depart = [cu, cv];
-    if (cases.length) { let bd = Infinity; for (const c of cases) { const d = (c[0] - cu) * (c[0] - cu) + (c[1] - cv) * (c[1] - cv); if (d < bd) { bd = d; depart = c; } } }
-    const g = this.world.makeGroup(tpl, idx, { x: depart[0], y: depart[1] });
+    if (cases.length && hasard) depart = cases[Math.floor(rng() * cases.length)];
+    else if (cases.length) { let bd = Infinity; for (const c of cases) { const d = (c[0] - cu) * (c[0] - cu) + (c[1] - cv) * (c[1] - cv); if (d < bd) { bd = d; depart = c; } } }
+    let tire = this.tirage() ? Object.assign({}, tpl, { monsters: Groupes.tirer(tpl, this.reserveDe(carte), rng) }) : tpl;
+    if (tire !== tpl && typeof Rares === 'object') tire.monsters = Rares.placer(tire.monsters, this.world.ch, Date.now(), rng);
+    const g = this.world.makeGroup(tire, idx, { x: depart[0], y: depart[1] });
+    g.ne = this.world.time;
     g.carte = carte;
     g.aire = a;
     g.chemin = null;
@@ -210,6 +214,13 @@ class Plateau {
     g.chemin = { pts: r.points, k: 0, but: c };
   }
 
+  tirage() { return this.id !== 'ervane' && typeof Groupes === 'object'; }
+  reserveDe(carte) {
+    const R = this.reserves || (this.reserves = new Map());
+    if (!R.has(carte)) { const c = this.cartes.find(x => x.def.id === carte); R.set(carte, c ? Groupes.reserve(c.def) : null); }
+    return R.get(carte);
+  }
+
   reapparitions() {
     const w = this.world, p = w.player;
     const enCombat = w.showCombat && w.currentGroup;
@@ -222,11 +233,22 @@ class Plateau {
         const cu = a.x + 7.5, cv = a.y + 7.5;
         if (Plateau.dist({ x: cu, y: cv }, p) < 25) return;
         delete st.dead[i];
-        const g = this.creerGroupe(tpl, i, m.id);
+        const g = this.creerGroupe(tpl, i, m.id, this.tirage());
         g.naissance = w.time;
         w.groups.push(g);
         if (w.majRecherches) w.majRecherches();
       });
+    }
+    if (!this.tirage() || w.state === 'combat' || w.apercuTerrain) return;
+    for (let k = 0; k < w.groups.length; k++) {
+      const g = w.groups[k];
+      if (!g.carte || g.ne == null || w.time - g.ne < Plateau.RENOUVEAU || g === w.currentGroup || g.chemin || Plateau.dist(g, p) < 25) continue;
+      const c = this.cartes.find(x => x.def.id === g.carte), tpl = c && (c.def.groups || [])[g.idx];
+      if (!tpl || Groupes.fixe(tpl)) { g.ne = w.time; continue; }
+      const n = this.creerGroupe(tpl, g.idx, g.carte, true);
+      n.naissance = w.time;
+      w.groups[k] = n;
+      if (w.majRecherches) w.majRecherches();
     }
   }
 
@@ -244,6 +266,23 @@ class Plateau {
     if (h.zone >= 0.5) { h.zone = 0; this.annoncer(); }
     h.reapparition += dt;
     if (h.reapparition >= 1) { h.reapparition = 0; this.reapparitions(); }
+    this.agresser();
+  }
+
+  agresser() {
+    const w = this.world, p = w.player;
+    if (this.id === 'ervane' || typeof Agression !== 'object' || w.agression === false || w.state !== 'explore' || w.ch.dungeon || w.talkNpc) return;
+    for (const g of w.groups) {
+      if (g.hostile == null) g.hostile = Agression.hostile(g);
+      if (!g.hostile || g.hold) { g.alerte = null; continue; }
+      const c = this.cartes.find(x => x.def.id === g.carte);
+      if (c && c.zone && Agression.VILLES.has(c.zone.id)) continue;
+      const d = Plateau.dist(g, p);
+      if (g.alerte == null) {
+        if (d <= Agression.VUE && w.ch.level - g.level <= Agression.ECART && this.nav.voitSans([g.x, g.y], [p.x, p.y])) { g.alerte = w.time; w.emit('alerte', g); }
+      } else if (d > Agression.LACHE) g.alerte = null;
+      else if (w.time - g.alerte >= Agression.ALERTE) { g.alerte = null; w.emit('agression', g); w.attackGroup(g); return; }
+    }
   }
 
   marcher(dt) {
@@ -613,3 +652,5 @@ class Plateau {
     for (const b of this.nav.barrieres) this.nav.barriere(b.id, !!(b.quete && done.includes(b.quete)));
   }
 }
+
+Plateau.RENOUVEAU = 3600;

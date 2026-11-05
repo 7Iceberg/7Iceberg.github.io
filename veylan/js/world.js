@@ -121,10 +121,13 @@ class World {
     this.npcs = S.npcs.map((c, i) => ({ id: def.npcs[i], def: World.npcDef(def.npcs[i]) || { id: def.npcs[i], name: def.npcs[i], dialogue: ['...'] }, x: c.x, y: c.y }));
     this.nodes = S.nodes.map((c, i) => ({ idx: i, resource: def.nodes[i], x: c.x, y: c.y, ready: !(st.used[i] > this.time), readyAt: st.used[i] || 0 }));
     this.groups = [];
+    const tirer = typeof Groupes === 'object' && !def.room && !/^ervane/.test(mapId);
+    const reserve = tirer ? Groupes.reserve(def) : null;
     S.groups.forEach((c, i) => {
       const tpl = def.groups[i];
       if (!tpl || (st.dead[i] && st.dead[i] > this.time)) return;
-      this.groups.push(this.makeGroup(tpl, i, c));
+      const tire = reserve ? Object.assign({}, tpl, { monsters: Groupes.tirer(tpl, reserve, this.rng) }) : tpl;
+      this.groups.push(this.makeGroup(tire, i, c));
     });
     this.majRecherches();
     this.door = S.door ? { x: S.door.x, y: S.door.y, dungeon: def.dungeon } : null;
@@ -445,7 +448,8 @@ class World {
   groupXp(group) {
     const base = group.monsters.reduce((s, m) => s + Entity.xpFor(DATA.monsters[m.id], m.level), 0);
     const knots = this.ch.activeKnots().length * (DATA.rules.knotBonus || 0);
-    return this.ch.wisdomXp(Math.round(base * (1 + knots / 100)));
+    const repos = typeof Repos !== 'undefined' && this.zone && !this.ch.dungeon && !this.estDojo(group) ? Repos.valeur(this.ch, this.zone.id, Date.now()) : 0;
+    return this.ch.wisdomXp(Math.round(base * (1 + (knots + repos) / 100)));
   }
 
   groupDifficulty(group) {
@@ -924,7 +928,7 @@ class World {
   }
 
   clePlacement(group) { return (group.carte || this.mapId) + '#' + group.idx; }
-  surIle(group) { return /^ervane_/.test((group && group.carte) || this.mapId || ''); }
+  surIle(group) { return /^ervane_/.test((group && group.carte) || this.mapId || '') || !!(this.mapDef && this.mapDef.room && this.zone && /^ervane_/.test(this.zone.id || '')); }
   rangPlacement(group) { const r = this.ch && this.ch.placements; return (r && r[this.clePlacement(group)]) || 0; }
   avancerPlacement(cle) {
     if (!this.ch) return;
@@ -934,8 +938,15 @@ class World {
   }
 
   placementDe(group, arene, monsters, joueur) {
-    if (!group || (this.mapDef && this.mapDef.room) || this.combatAuto || typeof Placement !== 'object') return null;
+    if (!group || this.combatAuto || typeof Placement !== 'object') return null;
     const liste = monsters || group.monsters;
+    if (this.mapDef && this.mapDef.room) {
+      const sp = this.map.spots || {}, B = sp.playerStarts || [], R = sp.monsterStarts || [];
+      if (B.length && R.length) return { nom: 'salle', libelle: 'Salle', rouges: liste.map((m, i) => R[i % R.length]), bleues: B.slice(), joueur: B[0], distance: null, dessinee: true };
+      if (liste.some(m => DATA.monsters[m.id] && DATA.monsters[m.id].boss)) return null;
+      const libre = (x, y) => Grid.walkable(this.map, x, y) && (!this.blockedForPlayer(x, y) || (x === group.x && y === group.y));
+      return Placement.disposer({ map: this.map, groupe: { x: group.x, y: group.y }, joueur: joueur || { x: this.player.x, y: this.player.y }, monstres: liste, rang: 0, libre });
+    }
     const ile = this.surIle(group);
     const bornes = ile ? Placement.ILE : {};
     if (arene) return Placement.disposer(Object.assign({ map: arene.map, groupe: arene.cg, joueur: joueur || arene.cj, monstres: liste, rang: this.rangPlacement(group) }, bornes));
@@ -1035,7 +1046,7 @@ class World {
       playerCells: playerCells.length ? playerCells : [{ x: this.player.x, y: this.player.y }],
       monsterCells: monsterCells.length ? monsterCells : [{ x: group.x, y: group.y }],
       monsterAssign: !!disposition, playerStart: disposition ? disposition.joueur : null,
-      monsterPower: disposition && !this.surIle(group) ? (DATA.rules.puissanceADistance || 1) : 1,
+      monsterPower: disposition && !this.surIle(group) && !(this.mapDef && this.mapDef.room) ? (DATA.rules.puissanceADistance || 1) : 1,
     });
     this.combat.entrainement = dojo;
     this.hpAvantDojo = dojo ? this.ch.hp : null;
@@ -1056,10 +1067,14 @@ class World {
     delete ch.fight;
     const result = { victory: d.victory, xp: 0, gained: 0, levels: 0, fils: 0, drops: [], achievements: [], quests: [], dungeon: null, cosmetiques: [] };
     const monsters = this.combat.entities.filter(e => e.team === 'monster' && !e.isSummon);
-    if (d.victory && this.dispositionEnCours) this.avancerPlacement(this.dispositionEnCours.cle);
+    if (d.victory && this.dispositionEnCours && !(this.mapDef && this.mapDef.room)) this.avancerPlacement(this.dispositionEnCours.cle);
     const chal = this.combat.challenge;
     const knotCount = this.combat.knots ? this.combat.knots.size : 0;
-    const bonus = (d.victory && chal && chal.success ? chal.bonus : 0) + (d.victory ? knotCount * DATA.rules.knotBonus : 0);
+    let bonus = (d.victory && chal && chal.success ? chal.bonus : 0) + (d.victory ? knotCount * DATA.rules.knotBonus : 0);
+    if (d.victory && typeof Repos !== 'undefined' && !ch.dungeon && !this.combat.epreuveDojo && !(this.currentGroup && this.estDojo && this.estDojo(this.currentGroup)) && this.zone && this.zone.id) {
+      result.repos = Repos.consommer(ch, this.zone.id, Date.now());
+      bonus += result.repos;
+    }
     result.knots = knotCount;
     result.challenge = chal ? { name: chal.name, desc: chal.desc, success: chal.success, failed: chal.failed, bonus: chal.bonus } : null;
     ch.counters.feats = ch.counters.feats || {};
@@ -1075,6 +1090,7 @@ class World {
       for (const e of monsters) {
         result.xp += e.xp * veille.xp(e.def.id);
         ch.counters.kills[e.def.id] = (ch.counters.kills[e.def.id] || 0) + 1;
+        if (e.def.rare && e.def.base && typeof Rares !== 'undefined') Rares.vaincue(ch, e.def.id, Date.now(), this.rng);
         if (e.boss && !ch.counters.bosses.includes(e.def.id)) {
           ch.counters.bosses.push(e.def.id);
           if (typeof Garderobe !== 'undefined') for (const c of Garderobe.pourSource('boss', e.def.id)) result.cosmetiques.push(...Garderobe.donner(c.id, 'boss:' + e.def.id));
