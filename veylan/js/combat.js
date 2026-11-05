@@ -44,6 +44,7 @@ class Combat {
 
   setup(encounter, classId) {
     this.gen++;
+    this.puissanceMonstres = 1;
     this.clearTimer();
     this.busy = false;
     this.encounter = encounter;
@@ -104,14 +105,17 @@ class Combat {
     this.challenge = opts.challenge || null;
     this.knots = new Set(opts.knots || []);
     this.placementCells = { player: opts.playerCells.slice(), monster: opts.monsterCells.slice() };
+    this.puissanceMonstres = opts.monsterPower || 1;
     const reds = opts.monsterCells.slice();
-    for (const m of opts.monsters) {
+    opts.monsters.forEach((m, i) => {
       const e = new Entity(DATA.monsters[m.id], 'monster', this.nextId++, this.rng, m.level);
-      const c = reds.length ? reds.splice(Math.floor(this.rng() * reds.length), 1)[0] : this.freeCellNear(opts.monsterCells[0]);
+      e.scale *= this.puissanceMonstres;
+      const fixe = opts.monsterAssign && opts.monsterCells[i] && !this.entityAt(opts.monsterCells[i].x, opts.monsterCells[i].y) ? opts.monsterCells[i] : null;
+      const c = fixe || (opts.monsterAssign ? this.freeCellNear(opts.monsterCells[0]) : reds.length ? reds.splice(Math.floor(this.rng() * reds.length), 1)[0] : this.freeCellNear(opts.monsterCells[0]));
       if (c) this.place(e, c.x, c.y);
       this.entities.push(e);
-    }
-    const b = opts.playerCells[Math.floor(this.rng() * opts.playerCells.length)];
+    });
+    const b = opts.playerStart || opts.playerCells[Math.floor(this.rng() * opts.playerCells.length)];
     this.place(player, b.x, b.y);
     this.phase = 'placement';
     this.round = 0;
@@ -628,6 +632,7 @@ class Combat {
     const m = new Entity(def, team, this.nextId++, this.rng, level ? Math.max(lo, Math.min(hi, level)) : undefined);
     m.isSummon = !!asSummon;
     m.owner = m.isSummon ? (owner || null) : null;
+    if (team === 'monster' && !(m.isSummon && owner && def.summon && DATA.rules.summonsScaleWithOwner)) m.scale *= this.puissanceMonstres || 1;
     if (m.isSummon && owner && def.summon && DATA.rules.summonsScaleWithOwner) {
       m.scale = owner.scale || 1;
       if (owner.team === 'player') {

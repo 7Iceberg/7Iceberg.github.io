@@ -11,6 +11,7 @@ DATA.rules = {
   monsterHpCompense: 0.022,
   monsterHpPerLevel: 0.08,
   monsterDamageMult: 3,
+  puissanceADistance: 1.2,
   monsterHpMult: 1.4,
   monsterHpHighFrom: 12,
   monsterHpHighPerLevel: 0,

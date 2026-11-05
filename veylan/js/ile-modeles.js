@@ -1011,6 +1011,7 @@ const IleModeles = (() => {
     return out.slice(0, MAX_LUMIERES);
   }
   const NUIT_SOL = { value: 0 };
+  const SOIR_SOL = { value: 0 };
   let ileSol = null;
   const MAX_PLACES = 8;
   const MAX_PARCELLES = 6;
@@ -1163,6 +1164,13 @@ const IleModeles = (() => {
       vec3 tRs = pow(texture2D(solRoche, qc / ${SOLS.roche.pas.toFixed(1)}).rgb, vec3(2.2));
       vec3 gRs = mix(vec3(1.0), clamp(mix(vec3(LUM(tRs) / LUM(moyRoche)), tRs / max(moyRoche, vec3(0.02)), 0.3), 0.0, 2.5), 0.75);
       col = mix(cs * gRs, col, smoothstep(0.5, 0.78, abs(nS.y)));
+      // L'ambiance du soir (3.62) : l'herbe plus franche et plus profonde, tirée du vert pâle vers un
+      // vert-jaune (moins de bleu) ; ce qui n'est pas vert (chemins, dalles, roche, terre) ne bouge pas.
+      if (solSoir > 0.0) {
+        float lv = LUM(col), part = smoothstep(0.0, 0.06, col.g - max(col.r, col.b) * 0.9);
+        vec3 vert = max(mix(vec3(lv), col, 1.35), 0.0) * vec3(0.8, 1.0, 0.8) * 0.8;
+        col = mix(col, vert, part * solSoir);
+      }
       diffuseColor.rgb = diffuse * col;
     }`;
   const GLSL_LUMIERES = `
@@ -1223,6 +1231,7 @@ const IleModeles = (() => {
     const lum = lumieresSol(ile.T);
     uniforms.solLumieres = { value: Array.from({ length: MAX_LUMIERES }, (_, i) => lum[i] ? new THREE.Vector4(lum[i][0], lum[i][1], lum[i][2], lum[i][3]) : new THREE.Vector4(0, 0, 0, 0)) };
     uniforms.solNuit = NUIT_SOL;
+    uniforms.solSoir = SOIR_SOL;
     uniforms.solTemps = VENT;
     const teinte = teinteDalles(ile.def && ile.def.rendu && ile.def.rendu.dalles);
     uniforms.solTeinteDalles = { value: new THREE.Vector3(teinte[0], teinte[1], teinte[2]) };
@@ -1230,7 +1239,7 @@ const IleModeles = (() => {
     const gainD = ile.def && ile.def.rendu && Number.isFinite(ile.def.rendu.dallesGain) ? Math.max(0, Math.min(1, ile.def.rendu.dallesGain)) : 1;
     uniforms.solGainDalles = { value: gainD };
     ileSol = ile;
-    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + Array.from({ length: NZ }, (_, i) => `\nuniform sampler2D solZ${i}; uniform vec3 moyZ${i};`).join('') + `\nuniform float solForceZ[${NZ}]; uniform sampler2D solZones; uniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}]; uniform vec4 solParcelles[${MAX_PARCELLES * 2}]; uniform vec4 solLumieres[${MAX_LUMIERES}]; uniform float solNuit; uniform float solTemps; uniform vec3 solTeinteDalles; uniform float solGainDalles; uniform sampler2D solOmbres; uniform vec2 solOmbresTaille; uniform float solOmbreForce;`;
+    const decl = noms.map(n => `uniform sampler2D sol${cap(n)}; uniform vec3 moy${cap(n)};`).join('\n') + Array.from({ length: NZ }, (_, i) => `\nuniform sampler2D solZ${i}; uniform vec3 moyZ${i};`).join('') + `\nuniform float solForceZ[${NZ}]; uniform sampler2D solZones; uniform sampler2D solBruit; uniform sampler2D solCarte; uniform vec2 solCarteTaille; uniform vec3 solPlaces[${MAX_PLACES}]; uniform vec4 solParcelles[${MAX_PARCELLES * 2}]; uniform vec4 solLumieres[${MAX_LUMIERES}]; uniform float solNuit; uniform float solTemps; uniform vec3 solTeinteDalles; uniform float solGainDalles; uniform sampler2D solOmbres; uniform vec2 solOmbresTaille; uniform float solOmbreForce; uniform float solSoir;`;
     for (const m of mats) {
       const prec = m.onBeforeCompile, cle = Object.prototype.hasOwnProperty.call(m, 'customProgramCacheKey') ? m.customProgramCacheKey : null;
       m.onBeforeCompile = (sh, r) => {
@@ -1247,7 +1256,7 @@ const IleModeles = (() => {
           .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_SOL)
           .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + GLSL_LUMIERES);
       };
-      m.customProgramCacheKey = () => 'sol-meshy-13/' + (cle ? cle.call(m) : '');
+      m.customProgramCacheKey = () => 'sol-meshy-14/' + (cle ? cle.call(m) : '');
       m.needsUpdate = true;
     }
     ile.solCarte = !!carte;
@@ -1337,6 +1346,6 @@ const IleModeles = (() => {
     return t;
   }
 
-  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, ATLAS, OBJETS, SOLS, VILLAGES, DENSE, CARTES_DENSES, OBSTACLES, cartes, fumees, lumieresSol, charger, chargerSemis, poses, posesObstacles, places, poser, animer, habillerSol, habillerMurs };
+  return { FICHIERS, DIAMETRE_RELAIS, FORMES, SEMIS, ATLAS, OBJETS, SOLS, VILLAGES, DENSE, CARTES_DENSES, OBSTACLES, cartes, fumees, lumieresSol, charger, chargerSemis, poses, posesObstacles, places, poser, animer, habillerSol, habillerMurs, SOIR_SOL };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = IleModeles;

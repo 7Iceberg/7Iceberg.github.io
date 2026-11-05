@@ -1,6 +1,14 @@
 class Ile3D {
   static disponible() { return typeof IleCharge === 'object' && IleCharge.webgl(); }
 
+  static ambiance() {
+    let q = null, qo = null;
+    try { const p = new URLSearchParams(location.search); q = p.get('ambiance'); qo = p.get('ombres'); } catch (e) {   }
+    const d = typeof DATA === 'object' && DATA && DATA.ile ? DATA.ile : {};
+    const nom = q != null ? q : d.ambiance || '';
+    return { soir: nom === 'soir', ombres: qo !== '0' };
+  }
+
   static qualiteParDefaut() {
     let q = null;
     try { q = new URLSearchParams(location.search).get('quality'); } catch (e) {   }
@@ -29,6 +37,8 @@ class Ile3D {
     this.qualite = q.q;
     this.qualiteForcee = q.force;
     this.telephone = CameraIle.telephone();
+    this.ambianceVoulue = Ile3D.ambiance();
+    this.soir = this.ambianceVoulue.soir;
     this.chargement = {};
     this.octetsTex = 0;
     this.octetsGeo = 0;
@@ -564,6 +574,7 @@ class Ile3D {
     const contre = new THREE.DirectionalLight(new THREE.Color(style.lumiere), 0.14); contre.position.set(40, 30, 50);
     this.ponctuelle = new THREE.PointLight(new THREE.Color(style.lumiere), 0, 13, 1.6);
     scene.add(hemi, cle, contre, this.ponctuelle);
+    this.ombres = null;
     for (const l of (lanternes || []).slice(0, 4)) {
       const p = new THREE.PointLight(new THREE.Color(style.lumiere), 1.1, 8.5, 1.5);
       p.position.set(l.x, l.y + 0.3, l.z);
@@ -716,7 +727,91 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     this.ponctuelle = new THREE.PointLight(new THREE.Color('#ffb347'), 0, 13, 2);
     scene.add(hemi, cle, chaud, contre, this.ponctuelle);
     this.lum = { hemi, cle, chaud, contre, ponctuelle: this.ponctuelle };
+    this.ombres = null;
+    if (this.soir) this.lumieresSoir(scene);
     if (this.nuit) this.nuit.lumieres(scene, this.lum);
+  }
+
+  lumieresSoir(scene) {
+    const THREE = window.THREE, S = Ile3D.SOIR, L = this.lum, el = S.elevation * Math.PI / 180;
+    let tour = this.qualite === 'haute' && this.ambianceVoulue.ombres ? S.tour : 0;
+    try { const q = new URLSearchParams(location.search).get('soleil'); if (q != null && Number.isFinite(+q)) tour = +q; } catch (e) {   }
+    const L0 = IlePeinture.LUMIERE, a = tour * Math.PI / 180, Lp = { x: L0.x * Math.cos(a) - L0.y * Math.sin(a), y: L0.x * Math.sin(a) + L0.y * Math.cos(a) };
+    L.hemi.color.set(S.lum.hemi[0]); L.hemi.groundColor.set(S.lum.hemi[1]); L.hemi.intensity = S.lum.hemi[2];
+    for (const k of ['cle', 'chaud', 'contre']) { L[k].color.set(S.lum[k][0]); L[k].intensity = S.lum[k][1]; }
+    this.dirSoleil = new THREE.Vector3(Lp.x * Math.cos(el), Math.sin(el), Lp.y * Math.cos(el)).normalize();
+    L.cle.position.copy(this.dirSoleil).multiplyScalar(100);
+    const r = this.renderer;
+    if (this.qualite !== 'haute' || !this.ambianceVoulue.ombres || !r) return;
+    r.shadowMap.enabled = true;
+    r.shadowMap.type = THREE.PCFSoftShadowMap;
+    const O = S.ombre, sh = L.cle.shadow, oc = sh.camera;
+    L.cle.castShadow = true;
+    sh.mapSize.set(O.taille, O.taille);
+    sh.bias = O.biais; sh.normalBias = O.biaisNormal;
+    oc.left = -O.demi; oc.right = O.demi; oc.top = O.demi; oc.bottom = -O.demi; oc.near = 1; oc.far = 240;
+    oc.updateProjectionMatrix();
+    scene.add(L.cle.target);
+    this.ombres = { marque: false, centre: new THREE.Vector3(), texel: 2 * O.demi / O.taille, compte: 0 };
+  }
+
+  marquerOmbres() {
+    const O = this.ombres;
+    if (!O || O.marque || !this.monde) return;
+    O.marque = true;
+    const mats = new Set();
+    this.monde.traverse(o => {
+      if (!o.isMesh) return;
+      const nom = o.name || '', m = o.material;
+      if (/nuage|eau|luciole|brume/.test(nom) || (m && m.emissive && m.emissive.r + m.emissive.g + m.emissive.b > 0.6)) return;
+      o.castShadow = true; o.receiveShadow = true;
+      [].concat(m || []).forEach(x => mats.add(x));
+    });
+    for (const m of [this.meshFalaise, ...(this.meshDessous || [])]) if (m && m.isMesh) { m.receiveShadow = true; [].concat(m.material || []).forEach(x => mats.add(x)); }
+    for (const m of mats) if (m) m.needsUpdate = true;
+    O.compte = mats.size;
+  }
+
+  etalonner() {
+    const THREE = window.THREE, E = Ile3D.SOIR.etalonnage, vus = new Set(), c = new THREE.Color(), hsl = {};
+    this.monde.userData.etalonne = true;
+    if (typeof IleModeles === 'object' && IleModeles.SOIR_SOL) IleModeles.SOIR_SOL.value = 1;
+    let n = 0;
+    this.monde.traverse(o => {
+      const a = o.isMesh && o.geometry && o.geometry.getAttribute('color');
+      if (!a || vus.has(a.array) || /nuage|eau|luciole|brume/.test(o.name || '')) return;
+      vus.add(a.array);
+      const A = a.array, k = a.itemSize, q = a.normalized ? (A instanceof Uint8Array ? 255 : A instanceof Uint16Array ? 65535 : 1) : 1;
+      for (let i = 0; i < a.count; i++) {
+        const j = i * k;
+        c.setRGB(A[j] / q, A[j + 1] / q, A[j + 2] / q).convertLinearToSRGB().getHSL(hsl);
+        let { h, s: sa, l } = hsl;
+        if (h > E.vert[0] && h < E.vert[1] && sa > 0.16 && l < 0.72) {
+          h += (E.vertTeinte - h) * E.vertVers; sa = Math.min(1, sa * E.vertSat + 0.04); l *= E.vertLum;
+        } else if ((h > 0.62 || h < 0.03) && sa < 0.3) {
+          h = E.pierreTeinte; sa = sa * 0.8 + E.pierreSat; l = Math.min(1, l * E.pierreLum);
+        } else if (h >= 0.03 && h <= E.vert[0] && l > 0.35) {
+          sa = Math.min(1, sa * E.terreSat); l = Math.min(1, l * E.terreLum);
+        } else continue;
+        c.setHSL(h, sa, l).convertSRGBToLinear();
+        A[j] = c.r * q; A[j + 1] = c.g * q; A[j + 2] = c.b * q;
+      }
+      a.needsUpdate = true; n++;
+    });
+    this.monde.userData.etalonnes = n;
+  }
+
+  suivreOmbres(cam) {
+    const O = this.ombres, L = this.lum;
+    if (!O || !L) return;
+    this.marquerOmbres();
+    const c = cam.cible || { x: 0, y: 0, h: 0 }, cc = cam.courante, S = Ile3D.SOIR.ombre;
+    let fx = 0, fz = 0;
+    if (cc && !cc.isOrthographicCamera) { const d = cc.getWorldDirection(this._dirOmbre || (this._dirOmbre = new window.THREE.Vector3())); const l = Math.hypot(d.x, d.z) || 1; fx = d.x / l; fz = d.z / l; }
+    const av = S.demi * S.avance, t = O.texel * 4;
+    O.centre.set(Math.round((c.x + fx * av) / t) * t, c.h || 0, Math.round((c.y + fz * av) / t) * t);
+    L.cle.target.position.copy(O.centre); L.cle.target.updateMatrixWorld();
+    L.cle.position.copy(this.dirSoleil).multiplyScalar(120).add(O.centre);
   }
 
   uniformesFondu(THREE) {
@@ -1474,6 +1569,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       const e = this.enArene && this.combat && this.combat.player, q = e ? A.versMonde(e.rx, e.ry) : { u: p.rx, v: p.ry };
       this.nuit.maj(now, this.temps, { x: q.u, y: q.v }, this.hauteur(q.u, q.v), cam, tact || !!vol);
     }
+    if (this.soir && this.monde && !this.monde.userData.etalonne) this.etalonner();
+    if (this.ombres) this.suivreOmbres(cam);
     const r = this.renderer;
     r.info.reset();
     r.render(this.scene, cam.courante);
@@ -1553,12 +1650,16 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const THREE = window.THREE, c = this.camera.vise;
     const k = this.T.regionA(c.x, c.y), reg = (this.def.regions || [])[k];
     const col = (reg && reg.palette && reg.palette.brume) || '#a9c3d6';
-    if (this.brumeCle !== col) { this.brumeCle = col; this.brumeVoulue = this.nuit ? this.nuit.brume(col) : new THREE.Color(col); }
+    if (this.brumeCle !== col) {
+      this.brumeCle = col; this.brumeVoulue = this.nuit ? this.nuit.brume(col) : new THREE.Color(col);
+      if (this.soir && !this.nuit) this.brumeVoulue.lerp(new THREE.Color(Ile3D.SOIR.horizon), Ile3D.SOIR.horizonK);
+    }
     const f = this.scene.fog;
     const a = 1 - Math.exp(-dt * 2.2);
     f.color.lerp(this.brumeVoulue, a);
     const d = this.camera.distance(), fc = this.camera.fondu || 0;
-    const kp = this.nuit ? 0.92 : 1.1, kl = this.nuit ? 2.0 : 2.7;
+    const ks = this.soir && !this.nuit ? Ile3D.SOIR.recul : 1;
+    const kp = (this.nuit ? 0.92 : 1.1) * ks, kl = (this.nuit ? 2.0 : 2.7) * ks;
     if (f.isFogExp2) f.density = (this.nuit.densite || 0.016) * (1 - fc) + 0.0035 * fc;
     else { f.near = d * kp * (1 - fc) + (d + 30) * fc; f.far = d * kl * (1 - fc) + (d + 120) * fc; }
     const ri = this.camera.partIso ? this.camera.partIso() : 0;
@@ -1807,3 +1908,10 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     };
   }
 }
+
+Ile3D.SOIR = {
+  lum: { hemi: ['#a9bde6', '#5c4630', 0.5], cle: ['#ffd9a6', 1.85], chaud: ['#ffb070', 0.16], contre: ['#90a8ff', 0.2] },
+  elevation: 31, tour: -150, brume: 0.5, recul: 1.45, horizon: '#f2d6b4', horizonK: 0.35, zenith: '#3f78cc', zenithK: 0.25,
+  ombre: { taille: 2048, demi: 34, avance: 0.45, biais: -0.0006, biaisNormal: 0.06 },
+  etalonnage: { vert: [0.15, 0.47], vertTeinte: 0.3, vertVers: 0.45, vertSat: 1.3, vertLum: 0.76, pierreTeinte: 0.09, pierreSat: 0.07, pierreLum: 1.04, terreSat: 1.08, terreLum: 1.05 },
+};

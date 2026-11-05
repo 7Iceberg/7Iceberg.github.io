@@ -924,6 +924,46 @@ class World {
     return cells.slice(0, n);
   }
 
+  clePlacement(group) { return (group.carte || this.mapId) + '#' + group.idx; }
+  surIle(group) { return /^ervane_/.test((group && group.carte) || this.mapId || ''); }
+  rangPlacement(group) { return (this.rangsPlacement && this.rangsPlacement[this.clePlacement(group)]) || 0; }
+
+  placementDe(group, arene, monsters, joueur) {
+    if (!group || (this.mapDef && this.mapDef.room) || this.combatAuto || typeof Placement !== 'object') return null;
+    const liste = monsters || group.monsters;
+    const ile = this.surIle(group);
+    const bornes = ile ? { min: 4, cible: 5 } : {};
+    if (arene) return Placement.disposer(Object.assign({ map: arene.map, groupe: arene.cg, joueur: joueur || arene.cj, monstres: liste, rang: this.rangPlacement(group) }, bornes));
+    const libre = (x, y) => Grid.walkable(this.map, x, y) && (!this.blockedForPlayer(x, y) || (x === group.x && y === group.y));
+    return Placement.disposer(Object.assign({ map: this.map, groupe: { x: group.x, y: group.y }, joueur: joueur || { x: this.player.x, y: this.player.y }, monstres: liste, rang: this.rangPlacement(group), libre }, bornes));
+  }
+
+  apercuCombat(group) {
+    if (!group || !this.groups.includes(group) || this.estDojo(group)) return null;
+    let arene = null, joueur = null;
+    if (this.plateau) {
+      const p = this.player, dx = p.x - group.x, dy = p.y - group.y, l = Math.hypot(dx, dy) || 1;
+      arene = this.plateau.arene(group, { x: group.x + dx / l * 1.5, y: group.y + dy / l * 1.5 });
+      if (!arene) return null;
+    } else {
+      const v = Grid.neighbors ? Grid.neighbors(this.map, { x: group.x, y: group.y }) : [];
+      const libres = v.filter(c => Grid.walkable(this.map, c.x, c.y) && !this.blockedForPlayer(c.x, c.y));
+      libres.sort((a, b) => Grid.dist(a, this.player) - Grid.dist(b, this.player));
+      joueur = libres[0] || { x: this.player.x, y: this.player.y };
+    }
+    const d = this.placementDe(group, arene, null, joueur);
+    if (!d) return null;
+    const map = arene ? arene.map : this.map;
+    return { map, disposition: d, monstres: group.monsters, fenetre: arene ? { x0: 0, y0: 0, w: 15, h: 15 } : this.fenetreApercu(map, d) };
+  }
+
+  fenetreApercu(map, d) {
+    const toutes = d.rouges.concat(d.bleues);
+    const cx = Math.round(toutes.reduce((a, c) => a + c.x, 0) / toutes.length), cy = Math.round(toutes.reduce((a, c) => a + c.y, 0) / toutes.length);
+    const x0 = Math.max(0, Math.min(map.w - 15, cx - 7)), y0 = Math.max(0, Math.min(map.h - 15, cy - 7));
+    return { x0, y0, w: Math.min(15, map.w), h: Math.min(15, map.h) };
+  }
+
   estDojo(group) { return !!(group && group.tpl && group.tpl.dojo); }
   entrainement() {
     if (this.state !== 'explore' && this.state !== 'dialogue' && this.state !== 'panel') return false;
@@ -978,14 +1018,19 @@ class World {
     const dojo = this.estDojo(group);
     if (dojo) monsters = monsters.map(m => Object.assign({}, m, { level: this.ch.level }));
     else if (knots.includes('noeud_de_meute') && monsters.length < 6) monsters = monsters.concat([monsters[Math.floor(this.rng() * monsters.length)]]);
-    const monsterCells = arene ? arene.monsterCells : this.cellsAround({ x: group.x, y: group.y }, 6, [this.player]);
-    const playerCells = arene ? arene.playerCells : this.cellsAround({ x: this.player.x, y: this.player.y }, 6, monsterCells);
+    let monsterCells = arene ? arene.monsterCells : this.cellsAround({ x: group.x, y: group.y }, 6, [this.player]);
+    let playerCells = arene ? arene.playerCells : this.cellsAround({ x: this.player.x, y: this.player.y }, 6, monsterCells);
+    const disposition = dojo ? null : this.placementDe(group, arene, monsters);
+    if (disposition) { monsterCells = disposition.rouges; playerCells = disposition.bleues; }
+    this.dispositionEnCours = disposition ? { cle: this.clePlacement(group), nom: disposition.nom } : null;
     const names = [...new Set(group.monsters.map(m => DATA.monsters[m.id].name))].join(', ');
     this.combat.setupFight({
       id: this.mapId, name: `${names} (niveau ${group.level})`, map: arene ? arene.map : this.map,
       player: this.ch.toEntityDef(), monsters, knots,
       playerCells: playerCells.length ? playerCells : [{ x: this.player.x, y: this.player.y }],
       monsterCells: monsterCells.length ? monsterCells : [{ x: group.x, y: group.y }],
+      monsterAssign: !!disposition, playerStart: disposition ? disposition.joueur : null,
+      monsterPower: disposition && !this.surIle(group) ? (DATA.rules.puissanceADistance || 1) : 1,
     });
     this.combat.entrainement = dojo;
     this.hpAvantDojo = dojo ? this.ch.hp : null;
@@ -1006,6 +1051,7 @@ class World {
     delete ch.fight;
     const result = { victory: d.victory, xp: 0, gained: 0, levels: 0, fils: 0, drops: [], achievements: [], quests: [], dungeon: null, cosmetiques: [] };
     const monsters = this.combat.entities.filter(e => e.team === 'monster' && !e.isSummon);
+    if (d.victory && this.dispositionEnCours) { this.rangsPlacement = this.rangsPlacement || {}; const k = this.dispositionEnCours.cle; this.rangsPlacement[k] = (this.rangsPlacement[k] || 0) + 1; }
     const chal = this.combat.challenge;
     const knotCount = this.combat.knots ? this.combat.knots.size : 0;
     const bonus = (d.victory && chal && chal.success ? chal.bonus : 0) + (d.victory ? knotCount * DATA.rules.knotBonus : 0);

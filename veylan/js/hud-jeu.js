@@ -788,6 +788,7 @@ class FicheGroupe {
       if (!b || !this.d) return;
       const g = this.d.group, w = jeu.world;
       if (b.dataset.act === 'attaquer') { this.cacher(false); w.attackGroup(g); }
+      if (b.dataset.act === 'apercu') { FicheGroupe.apercuOuvert = !FicheGroupe.apercuOuvert; this.dessinerApercu(); this.placer(); }
       if (b.dataset.act === 'fiche') {
         const def = DATA.monsters[g.monsters[0].id];
         this.cacher(true);
@@ -835,12 +836,54 @@ class FicheGroupe {
       `<button type="button" class="vy-fiche-groupe__fermer" data-act="fermer" aria-label="Fermer">${Fenetres.ICON.fermer}</button></header>` +
       `<ul class="vy-fiche-groupe__liste">${liste}</ul>` +
       `<p class="vy-fiche-groupe__difficulte" data-niveau="${d.difficulty}">${FicheGroupe.DIFFICULTE[d.difficulty] || ''}</p>` +
+      `<button type="button" class="vy-fiche-groupe__voir" data-act="apercu" aria-expanded="false" title="Voir l'aire du combat et les cases de départ">${Fenetres.ICON.tout}<span>Aire du combat</span></button>` +
+      '<div class="vy-fiche-groupe__apercu hidden"></div>' +
       `<footer class="vy-fiche-groupe__pied"><button type="button" class="vy-bouton vy-bouton--petit" data-act="fiche" title="Le Carnet du Veilleur">${Fenetres.ICON.carnet}<span>Fiche</span></button>` +
       '<button type="button" class="vy-bouton vy-bouton--primaire vy-fiche-groupe__attaquer" data-act="attaquer">Attaquer</button></footer>';
     this.el.classList.remove('hidden');
+    this.dessinerApercu();
     if (this.lacher) this.lacher();
     this.lacher = UI.ancrer(() => this.placer());
     this.placer();
+  }
+
+  dessinerApercu() {
+    const boite = this.el.querySelector('.vy-fiche-groupe__apercu'), bouton = this.el.querySelector('[data-act="apercu"]');
+    if (!boite) return;
+    const ouvert = !!FicheGroupe.apercuOuvert;
+    if (bouton) { bouton.classList.toggle('on', ouvert); bouton.setAttribute('aria-expanded', String(ouvert)); }
+    boite.classList.toggle('hidden', !ouvert);
+    if (!ouvert) { boite.innerHTML = ''; return; }
+    const a = this.d && this.jeu.world.apercuCombat ? this.jeu.world.apercuCombat(this.d.group) : null;
+    if (!a) { boite.innerHTML = '<p class="vy-fiche-groupe__note">Pas d\'aperçu pour ce combat.</p>'; return; }
+    const { map, disposition: d, fenetre: f } = a, C = 9;
+    const cv = document.createElement('canvas');
+    cv.width = f.w * C; cv.height = f.h * C;
+    cv.setAttribute('role', 'img');
+    cv.setAttribute('aria-label', `Aire du combat : ${d.libelle}, départ à ${d.distance} cases`);
+    const g = cv.getContext('2d');
+    const dedans = c => c.x >= f.x0 && c.y >= f.y0 && c.x < f.x0 + f.w && c.y < f.y0 + f.h;
+    const cle = c => c.x + ',' + c.y;
+    const bleues = new Set(d.bleues.map(cle)), rouges = new Map(d.rouges.map((c, i) => [cle(c), i]));
+    for (let y = 0; y < f.h; y++) for (let x = 0; x < f.w; x++) {
+      const X = f.x0 + x, Y = f.y0 + y, k = X + ',' + Y;
+      let col;
+      if (Grid.walkable(map, X, Y)) col = '#d8ccb0';
+      else col = Grid.blocksSight(map, X, Y) ? '#3a3530' : '#5c8fae';
+      if (bleues.has(k)) col = '#3f86f0';
+      if (rouges.has(k)) {
+        const m = a.monstres[rouges.get(k)], def = m && DATA.monsters[m.id];
+        col = ['rempart', 'cogneur', 'chargeur'].includes(Placement.roleDe(def)) ? '#d8433a' : '#ef8a35';
+      }
+      g.fillStyle = col; g.fillRect(x * C, y * C, C - 1, C - 1);
+    }
+    if (d.joueur && dedans(d.joueur)) { g.strokeStyle = '#ffffff'; g.lineWidth = 2; g.strokeRect((d.joueur.x - f.x0) * C + 1, (d.joueur.y - f.y0) * C + 1, C - 3, C - 3); }
+    boite.innerHTML = `<p class="vy-fiche-groupe__note"><b>${Util.esc(d.libelle)}</b> · départ à ${d.distance} cases</p>`;
+    boite.appendChild(cv);
+    const leg = document.createElement('p');
+    leg.className = 'vy-fiche-groupe__legende';
+    leg.innerHTML = '<span style="--c:#3f86f0">toi</span><span style="--c:#d8433a">devant</span><span style="--c:#ef8a35">derrière</span><span style="--c:#3a3530">bloque la vue</span><span style="--c:#5c8fae">bloque le passage</span>';
+    boite.appendChild(leg);
   }
 
   placer() {

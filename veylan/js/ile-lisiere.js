@@ -148,7 +148,7 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
     const a = (h - 6.25) / 12.75 * Math.PI, jour = h > 6.25 && h < 19;
     return [Math.cos(a) * 0.88, jour ? Math.sin(a) * 0.8 : -0.25 - 0.2 * Math.abs(Math.sin(a)), -0.5];
   }
-  function ambiance(THREE, h, meteo) {
+  function ambiance(THREE, h, meteo, soir) {
     h = ((h % 24) + 24) % 24;
     let i = 0; while (HEURES[i + 1][0] <= h && i < HEURES.length - 2) i++;
     const A = HEURES[i], B = HEURES[i + 1], k = (h - A[0]) / (B[0] - A[0]);
@@ -157,13 +157,20 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
     const s = new THREE.Vector3(...soleil(h)).normalize();
     const jour = lisse(-0.12, 0.25, s.y), nuit = 1 - jour;
     const griser = c => { const l = c.r * 0.3 + c.g * 0.55 + c.b * 0.15; return c.lerp(new THREE.Color(l, l, l * 1.06), M.gris).multiplyScalar(1 - 0.35 * M.gris); };
-    return {
+    const amb = {
       h, meteo, jour, nuit, soleil: s,
       zenith: griser(mel(1)), horizon: griser(mel(2)), nuageClair: griser(mel(3)), nuageSombre: griser(mel(4)),
       soleilCoul: mel(5).multiplyScalar(1 - M.couv * 0.75), lueur: (A[6] + (B[6] - A[6]) * k) * (1 - M.gris),
       couv: M.couv, lum: M.lum, brume: M.brume * (1 + 0.15 * nuit), pluie: M.pluie, neige: M.neige, mouille: M.mouille, eclair: M.eclair,
       etoiles: nuit * M.etoiles, aurore: nuit * M.aurore,
     };
+    if (soir) {
+      const kj = jour * (1 - M.gris);
+      amb.horizon.lerp(new THREE.Color(soir.horizon), soir.horizonK * kj);
+      amb.zenith.lerp(new THREE.Color(soir.zenith), soir.zenithK * kj);
+      amb.brume *= 1 - (1 - soir.brume) * jour;
+    }
+    return amb;
   }
 
   function orage(t, frequence) {
@@ -199,8 +206,9 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       super(THREE, ile);
       this.style = 'lisiere';
       this.reglage = reglage();
+      this.soir = ile.soir && typeof Ile3D === 'function' ? Ile3D.SOIR : null;
       this.heure = this.reglage.heure;
-      this.amb = ambiance(THREE, this.heure, this.reglage.meteo);
+      this.amb = ambiance(THREE, this.heure, this.reglage.meteo, this.soir);
       this.densite = this.amb.brume * (this.telephone ? 1.06 : 1);
       this.compte.lisiere = 1;
       this.compte.automne = 0;
@@ -387,7 +395,7 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       const THREE = this.THREE, ile = this.ile;
       if (this.reglage.cycle) {
         this.heure = (this.heure + (this._tPrec ? Math.min(0.1, temps - this._tPrec) : 0) * 24 / 720) % 24;
-        this.amb = ambiance(THREE, this.heure, this.reglage.meteo);
+        this.amb = ambiance(THREE, this.heure, this.reglage.meteo, this.soir);
       }
       this._tPrec = temps;
       const A = this.amb;
@@ -413,10 +421,11 @@ void main() { float d = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(0
       const L = this.L;
       if (L) {
         const j = A.jour, lum = A.lum, c0 = this.c0, c1 = this.c1;
+        const LJ = this.soir ? this.soir.lum : LUM_JOUR;
         const mel = (lumiere, cle, k, sol) => {
-          lumiere.color.copy(c0.set(LUM_NUIT[cle][0])).lerp(c1.set(LUM_JOUR[cle][0]), j);
-          if (sol) lumiere.groundColor.copy(c0.set(LUM_NUIT[cle][1])).lerp(c1.set(LUM_JOUR[cle][1]), j);
-          const i0 = LUM_NUIT[cle][k], i1 = LUM_JOUR[cle][k];
+          lumiere.color.copy(c0.set(LUM_NUIT[cle][0])).lerp(c1.set(LJ[cle][0]), j);
+          if (sol) lumiere.groundColor.copy(c0.set(LUM_NUIT[cle][1])).lerp(c1.set(LJ[cle][1]), j);
+          const i0 = LUM_NUIT[cle][k], i1 = LJ[cle][k];
           lumiere.intensity = (i0 + (i1 - i0) * j) * lum;
         };
         mel(L.hemi, 'hemi', 2, true); mel(L.cle, 'cle', 1); mel(L.chaud, 'chaud', 1); mel(L.contre, 'contre', 1);

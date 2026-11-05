@@ -23,7 +23,7 @@
     { id: 'combat_loin', bloc: 'combat', retour: 'groupe', attendre: { tourJoueur: true }, puisSi: { non: { peutFrapper: true } },
       say: 'Le Glym est encore loin. Touche **Fin du tour** : tu frapperas au prochain.',
       saySouris: 'Le Glym est encore loin. Clique sur **Fin du tour** : tu frapperas au prochain.',
-      cue: { type: 'ui', cible: '[data-ui="fin-tour"]', main: true }, until: { on: 'turnEnd', vers: 'combat_approche' } },
+      cue: { type: 'ui', cible: '[data-ui="fin-tour"]', main: true }, until: [{ cond: { peutFrapper: true } }, { on: 'turnEnd', vers: 'combat_approche' }] },
     { id: 'combat_pa', bloc: 'combat', retour: 'groupe', attendre: { tourJoueur: true }, puisSi: { peutFrapper: true },
       say: 'Tes {pa|Points d\'Action} lancent tes sorts ; ils reviennent à chaque tour. **Touche ce sort.**',
       saySouris: 'Tes {pa|Points d\'Action} lancent tes sorts ; ils reviennent à chaque tour. **Clique sur ce sort.**',

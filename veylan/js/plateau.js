@@ -505,12 +505,12 @@ class Plateau {
   }
 
 
-  arene(groupe) {
+  arene(groupe, joueur) {
     const a = groupe && groupe.tpl && groupe.tpl.aire;
     if (!a || !Array.isArray(a.layout) || a.layout.length !== 15 || a.layout.some(l => typeof l !== 'string' || l.length !== 15)) return null;
     const map = Grid.create(a.layout);
     map.ancre = { plateau: this.id, x0: a.x, y0: a.y };
-    const p = this.world.player;
+    const p = joueur || this.world.player;
     const dans = (u, v) => ({ x: Math.max(0, Math.min(14, Math.floor(u - a.x))), y: Math.max(0, Math.min(14, Math.floor(v - a.y))) });
     const sols = [];
     for (let y = 0; y < 15; y++) for (let x = 0; x < 15; x++) if (Grid.walkable(map, x, y)) sols.push({ x, y });
@@ -530,7 +530,7 @@ class Plateau {
     const monsterCells = this.world.cellsAround(cg, 6, [cj], map);
     const playerCells = this.world.cellsAround(cj, 6, monsterCells, map);
     return {
-      map,
+      map, cg, cj,
       monsterCells: monsterCells.length ? monsterCells : [cg],
       playerCells: playerCells.length ? playerCells : [cj],
     };
