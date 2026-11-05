@@ -34,6 +34,7 @@ const MENUS = [
   ['sac', 'Inventaire', 'I', I.sac],
   ['quetes', 'Quêtes', 'H', I.quetes],
   ['faction', 'Faction', 'F', I.faction],
+  ['guilde', 'Guilde', 'N', I.guilde],
   ['succes', 'Succès', 'U', I.succes],
   ['carnet', 'Carnet du Veilleur', 'B', I.carnet],
   ['garderobe', 'Garde-robe', 'G', I.garderobe],
@@ -93,7 +94,7 @@ Object.assign(Hud.prototype, {
 
   toggleWin(id) {
     if (this.fen.isOpen(ALIAS[id] || id)) this.fen.close(ALIAS[id] || id);
-    else ({ carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), succes: () => this.openAchievements(), carnet: () => this.openCarnet(), garderobe: () => this.openGarderobe(), familiers: () => this.openFamiliers(), montures: () => this.openMontures(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu() }[id] || (() => {}))();
+    else ({ carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), guilde: () => this.openGuilde(), succes: () => this.openAchievements(), carnet: () => this.openCarnet(), garderobe: () => this.openGarderobe(), familiers: () => this.openFamiliers(), montures: () => this.openMontures(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu() }[id] || (() => {}))();
     this.syncMenus();
   },
 

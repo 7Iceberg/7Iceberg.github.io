@@ -939,7 +939,7 @@ class HudJeu {
   }
 }
 
-HudJeu.BIENTOT = [['metiers', 'Métiers'], ['guilde', 'Guilde'], ['boutique', 'Boutique cosmétique']];
+HudJeu.BIENTOT = [['metiers', 'Métiers'], ['boutique', 'Boutique cosmétique']];
 HudJeu.EMOTES = [['salut', 'Saluer'], ['joie', 'Se réjouir'], ['merci', 'Remercier'], ['doute', 'S\'interroger'], ['repos', 'Se reposer']];
 HudJeu.emotesDe = () => HudJeu.EMOTES.concat(typeof Garderobe !== 'undefined' ? Garderobe.emotes() : []);
 HudJeu.menuEmotes = () => HudJeu.emotesDe().map(([id, label]) => `<button type="button" role="menuitem" data-emote="${id}" title="${label}" aria-label="${label}">${HudJeu.ICON['e_' + id] || HudJeu.ICON.emote}</button>`).join('');

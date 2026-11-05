@@ -69,3 +69,13 @@
   .vy-inv__rangee { flex-wrap: wrap; row-gap: 6px; }
   .vy-inv__fam, .vy-inv__mont { --inv-slot: 32px; }
 }
+
+.vy-fenetre--guilde { --largeur: 620px; }
+.vy-guilde__calcul { margin: 6px 0 0; font: 500 12px/1.45 var(--vy-font-ui); color: var(--fen-texte-2); }
+.vy-guilde__calcul b { color: var(--fen-texte); }
+.vy-guilde__niveaux, .vy-guilde__ensuite { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.vy-guilde__niveaux li { display: grid; grid-template-columns: 30px 1fr; gap: 8px; align-items: baseline; font: 500 12px/1.35 var(--vy-font-ui); color: var(--fen-texte); }
+.vy-guilde__niveaux li b { text-align: right; color: var(--fen-accent); font-variant-numeric: tabular-nums; }
+.vy-guilde__niveaux li.plus-tard { opacity: 0.6; }
+.vy-guilde__ensuite li { font: 500 12px/1.45 var(--vy-font-ui); color: var(--fen-texte-2); }
+.vy-guilde__ensuite li b { color: var(--fen-texte); }
