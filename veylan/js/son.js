@@ -5,6 +5,8 @@ const Son = (() => {
   const PISTES = { accueil: 'theme', ervane: 'ervane', orsane: 'orsane', kaldum: 'kaldum', donjon: 'donjon', combat: 'combat', boss: 'boss', nuit: 'nuit' };
   const DISPONIBLES = new Set(['accueil', 'ervane', 'combat', 'orsane', 'boss', 'donjon', 'kaldum', 'nuit']);
   const BOUCLES = { accueil: { pause: 3 }, ervane: { pause: 1.5 }, orsane: { pause: 1.5 }, donjon: { pause: 1.5 }, kaldum: { pause: 1.5 }, nuit: { pause: 2 } };
+  const JINGLES = { victoire: 'jingle_victoire', defaite: 'jingle_defaite', niveau: 'jingle_niveau', quete: 'jingle_quete', succes: 'jingle_succes' };
+  const JINGLES_DISPONIBLES = new Set(['victoire', 'defaite', 'niveau', 'quete', 'succes']);
   const ATTENUES = { victoire: 1.6, defaite: 1.8, niveau: 1.2, quete: 1.2, succes: 1.4 };
   const DEFAUT = { actif: true, musique: 60, bruitages: 80 };
 
@@ -51,6 +53,7 @@ const Son = (() => {
     if (c.state === 'suspended') c.resume().catch(() => {});
     pret = true;
     deverrouillerLecteurs();
+    chargerJingles();
     if (pisteVoulue) jouerPiste(pisteVoulue);
     return true;
   }
@@ -104,9 +107,46 @@ const Son = (() => {
   };
   function jouer(nom) {
     if (!reglages.actif || !pret || !ctx || !BRUITS[nom]) return false;
-    try { BRUITS[nom](ctx, gainBruits); } catch (e) { return false; }
-    if (ATTENUES[nom]) attenuer(ATTENUES[nom]);
+    let duree = 0;
+    try {
+      duree = jouerJingle(nom);
+      if (!duree) BRUITS[nom](ctx, gainBruits);
+    } catch (e) { return false; }
+    if (duree >= 0 && ATTENUES[nom]) attenuer(duree > 0 ? duree : ATTENUES[nom]);
     return true;
+  }
+
+  const tamponsJingles = {};
+  function chargerJingles() {
+    if (!ctx || typeof fetch !== 'function' || (typeof location !== 'undefined' && location.protocol === 'file:')) return;
+    const ext = format();
+    if (!ext) return;
+    for (const nom of JINGLES_DISPONIBLES) {
+      if (tamponsJingles[nom] !== undefined || !JINGLES[nom]) continue;
+      tamponsJingles[nom] = 'charge';
+      fetch(DOSSIER + JINGLES[nom] + '.' + ext)
+        .then(r => (r.ok ? r.arrayBuffer() : null))
+        .then(d => (d ? new Promise((ok, ko) => ctx.decodeAudioData(d, ok, ko)) : null))
+        .then(b => { tamponsJingles[nom] = b || null; })
+        .catch(() => { tamponsJingles[nom] = null; });
+    }
+  }
+  function jouerJingle(nom) {
+    if (!JINGLES_DISPONIBLES.has(nom) || !JINGLES[nom]) return 0;
+    const b = tamponsJingles[nom];
+    if (b && typeof b === 'object') {
+      const src = ctx.createBufferSource(); src.buffer = b; src.connect(gainBruits); src.start();
+      return b.duration;
+    }
+    const ext = format();
+    if (typeof location !== 'undefined' && location.protocol === 'file:' && ext && typeof Audio !== 'undefined') {
+      const a = new Audio(DOSSIER + JINGLES[nom] + '.' + ext);
+      a.volume = Math.max(0, Math.min(1, reglages.bruitages / 100));
+      a.addEventListener('loadedmetadata', () => { if (ATTENUES[nom] && isFinite(a.duration)) attenuer(a.duration); }, { once: true });
+      a.play().catch(() => {});
+      return -1;
+    }
+    return 0;
   }
 
   const DIRECT = typeof location !== 'undefined' && location.protocol === 'file:';
@@ -257,7 +297,8 @@ const Son = (() => {
   }
 
   return {
-    PISTES, DISPONIBLES, BOUCLES, BRUITS: Object.keys(BRUITS), DOSSIER,
+    PISTES, DISPONIBLES, BOUCLES, JINGLES, JINGLES_DISPONIBLES, BRUITS: Object.keys(BRUITS), DOSSIER,
+    jingleCharge: nom => !!(tamponsJingles[nom] && typeof tamponsJingles[nom] === 'object'),
     reglages, regler, jouer, musique, deverrouiller, contexte,
     actif: () => reglages.actif, pret: () => pret,
     piste: () => (enCours ? enCours.cle : null), voulue: () => pisteVoulue, manquante: cle => !!manquantes[cle],

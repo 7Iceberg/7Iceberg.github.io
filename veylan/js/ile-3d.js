@@ -1384,16 +1384,17 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
   marcheClavier(dt) {
     const w = this.world, P = w && w.plateau, cam = this.camera, K = Ile3D.clavier();
     if (!P || typeof P.pasClavier !== 'function' || !cam) return;
-    let f = 0, r = 0;
+    let f = 0, t = 0;
     if (w.state === 'explore' && !this.salle && !this.enArene && cam.mode === 'exploration' && !cam.trans) {
       if (K.has('KeyW') || K.has('ArrowUp')) f++;
       if (K.has('KeyS') || K.has('ArrowDown')) f--;
-      if (K.has('KeyD') || K.has('ArrowRight')) r++;
-      if (K.has('KeyA') || K.has('ArrowLeft')) r--;
+      if (K.has('KeyA') || K.has('ArrowLeft')) t++;
+      if (K.has('KeyD') || K.has('ArrowRight')) t--;
     }
-    if (!f && !r) { P.pasClavier(null, dt); return; }
-    const az = cam.azimut, x = -Math.sin(az) * f + Math.cos(az) * r, y = -Math.cos(az) * f - Math.sin(az) * r, l = Math.hypot(x, y) || 1;
-    P.pasClavier({ x: x / l, y: y / l }, dt, K.has('ShiftLeft') || K.has('ShiftRight'));
+    if (t && typeof cam.orbiter === 'function') cam.orbiter(t * Ile3D.TOUR_CLAVIER * Math.min(dt, 0.1) / CameraIle.ORBITE.tour, 0);
+    if (!f) { P.pasClavier(null, dt); return; }
+    const az = cam.azimut;
+    P.pasClavier({ x: -Math.sin(az) * f, y: -Math.cos(az) * f }, dt, K.has('ShiftLeft') || K.has('ShiftRight'));
   }
 
   percerLointain(cam) {
@@ -2176,6 +2177,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const pas = 1 / 30, n = Math.max(1, Math.round(ms / 1000 / pas));
     let t = Math.max(performance.now(), this.horlogeTest || 0);
     for (let i = 0; i < n; i++) {
+      this.marcheClavier(pas);
       w.update(pas);
       t += pas * 1000;
       const p = w.player, q = this.versScene(p.rx, p.ry);
@@ -2221,6 +2223,7 @@ Ile3D.vecteurZone = (THREE, z) => {
   return v;
 };
 Ile3D.ZONE_FONDU = 1.1;
+Ile3D.TOUR_CLAVIER = 1.5;
 
 Ile3D.SOIR = {
   lum: { hemi: ['#a9bde6', '#5c4630', 0.56], cle: ['#ffd9a6', 1.8], chaud: ['#ffb070', 0.16], contre: ['#90a8ff', 0.2] },
