@@ -6,9 +6,9 @@ class Ile3D {
     try { const p = new URLSearchParams(location.search); q = p.get('ambiance'); qo = p.get('ombres'); } catch (e) {   }
     const d = typeof DATA === 'object' && DATA && DATA.ile ? DATA.ile : {};
     const nom = q != null ? q : d.ambiance || '';
-    let qb = null;
-    try { qb = new URLSearchParams(location.search).get('bordures'); } catch (e) {   }
-    return { soir: nom === 'soir', ombres: qo !== '0', bordures: qb !== '0' };
+    let qb = null, qa = null;
+    try { const p = new URLSearchParams(location.search); qb = p.get('bordures'); qa = p.get('arbres'); } catch (e) {   }
+    return { soir: nom === 'soir', ombres: qo !== '0', bordures: qb !== '0', arbres: qa !== '0' };
   }
 
   static qualiteParDefaut() {
@@ -424,7 +424,8 @@ class Ile3D {
       if (rendu.modeles && IleCharge.modeles && IleCharge.modeles()) {
         try { await IleCharge.modelesScript(); if (typeof IleModeles === 'object') { semis = await IleModeles.chargerSemis(THREE, this.renderer); semis.poses = IleModeles.poses(semis, this.T, (u, v) => this.hauteur(u, v)); } } catch (e) { console.warn('Ervane : semis Meshy indisponible', e); semis = null; }
       }
-      try { await IleCharge.glb(); if (typeof IleGlb === 'object') await IleGlb.poser(THREE, this, scene, IleGlb.source(rendu.monde), { semis }); } catch (e) { console.warn('Ervane : monde modelé indisponible', e); }
+      const A = Ile3D.SOIR.arbres, arbres = this.soir && this.ambianceVoulue.arbres ? Object.assign({}, A, { detailCoeur: this.telephone ? A.detailCoeurTel : A.detailCoeur }) : null;
+      try { await IleCharge.glb(); if (typeof IleGlb === 'object') await IleGlb.poser(THREE, this, scene, IleGlb.source(rendu.monde), { semis, arbres }); } catch (e) { console.warn('Ervane : monde modelé indisponible', e); }
       this.semisMeshy = !!(semis && this.monde && this.monde.userData.semisMeshy);
       if (semis && this.monde) { try { this.octetsTex += await IleModeles.habillerSol(THREE, this); } catch (e) { console.warn('Ervane : sols Meshy indisponibles', e); } }
       if (semis && this.monde && IleModeles.habillerMurs) { try { this.octetsTex += await IleModeles.habillerMurs(THREE, this); } catch (e) { console.warn('Ervane : murs Meshy indisponibles', e); } }
@@ -781,7 +782,7 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     let n = 0;
     this.monde.traverse(o => {
       const a = o.isMesh && o.geometry && o.geometry.getAttribute('color');
-      if (!a || vus.has(a.array) || /nuage|eau|luciole|brume/.test(o.name || '')) return;
+      if (!a || vus.has(a.array) || /nuage|eau|luciole|brume/.test(o.name || '') || (o.material && o.material.name === 'semis_rond')) return;
       vus.add(a.array);
       const A = a.array, k = a.itemSize, q = a.normalized ? (A instanceof Uint8Array ? 255 : A instanceof Uint16Array ? 65535 : 1) : 1;
       for (let i = 0; i < a.count; i++) {
@@ -2047,5 +2048,14 @@ Ile3D.SOIR = {
   elevation: 34, tour: -150, brume: 0.5, recul: 1.45, horizon: '#f2d6b4', horizonK: 0.35, zenith: '#3f78cc', zenithK: 0.25,
   ombre: { taille: 2048, demi: 34, avance: 0.45, biais: -0.0006, biaisNormal: 0.06 },
   bordures: { pasCarte: 0.45, pasCarteTel: 0.62, bande: [0.05, 0.18], densite: 0.62, pas: 0.5, pasTel: 0.7, epaule: 1.15, trou: 0.2, trouPied: 0.1, grappe: 0.5, taille: [0.85, 1.2], pied: 1.25, max: 3200, maxTel: 900, couleurs: ['#3b7a30', '#5a9a3a', '#93c257'] },
+  arbres: {
+    formes: { feuillu: 'large', haut: 'haut', conifere: 'haut', tordu: 'petit' },
+    facteur: { feuillu: 1.05, haut: 1.0, conifere: 1.0, tordu: 0.8 },
+    variantes: 4, detail: 1, detailCoeur: 2, detailCoeurTel: 1,
+    palettes: { vert: ['#091a0f', '#1b4020', '#527e2c'], automne: ['#2a1409', '#723914', '#bf862c'] },
+    tronc: ['#5a4232', '#2a1d16'],
+    masse: 0.62, bosse: 0.2, ecart: 0.12, coeur: 0.6, pli: 0.55,
+    feuilles: { frequence: 1.8, relief: 0.55, sombre: 0.72 },
+  },
   etalonnage: { vert: [0.15, 0.47], vertTeinte: 0.3, vertVers: 0.45, vertSat: 1.3, vertLum: 0.76, pierreTeinte: 0.09, pierreSat: 0.07, pierreLum: 1.04, terreSat: 1.08, terreLum: 1.05 },
 };
