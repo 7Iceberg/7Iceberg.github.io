@@ -806,11 +806,12 @@ class HudJeu {
     const pos = !room && typeof Atlas === 'object' ? Atlas.coordsOf(w.mapId) : null;
     const lv = room ? ((World.dungeonDef(def.dungeonId) || {}).level || (w.zone && w.zone.level)) : def.level;
     const niveau = Array.isArray(lv) ? (lv[0] === lv[1] ? `Niveau ${lv[0]}` : `Niveau ${lv[0]} à ${lv[1]}`) : '';
+    const maint = Date.now(), heure = !room && typeof Heure === 'object' ? `<span class="vy-carte-info__heure${Heure.crepuscule(maint) ? ' crepuscule' : ''}"> · ${Util.esc(Heure.libelle(maint))}</span>` : '';
     const tous = Quests.tracker(this.ch), suivie = this.hud && this.hud.quetesSuivie ? this.hud.quetesSuivie() : null;
     const t = (suivie && tous.find(x => x.quest.id === suivie)) || tous[0];
     const html = `<button type="button" class="vy-carte-info__carte" data-act="carte" aria-label="${Util.esc(zone)}, ${Util.esc(def.name)} : ouvrir la carte du monde">` +
       `<span class="vy-carte-info__titre"><b>${Util.esc(zone || def.name)}</b>${zone ? ` <span>(${Util.esc(def.name)})</span>` : ''}</span>` +
-      `<span class="vy-carte-info__ligne">${zone ? `<span class="vy-carte-info__lieu">${Util.esc(def.name)} · </span>` : ''}${pos ? `${pos[0]},${pos[1]}, ` : ''}${niveau}</span></button>` +
+      `<span class="vy-carte-info__ligne">${zone ? `<span class="vy-carte-info__lieu">${Util.esc(def.name)} · </span>` : ''}${pos ? `${pos[0]},${pos[1]}, ` : ''}${niveau}${heure}</span></button>` +
       (t ? `<button type="button" class="vy-carte-info__suivi${t.done ? ' fini' : ''}" data-act="quetes" aria-label="Quête suivie : ${Util.esc(t.quest.name)}, ${Util.esc(t.text)}">${HudJeu.ICON.epingle}<span><b>${Util.esc(t.quest.name)}</b><small>${Util.esc(t.text)}</small>` +
         `<i class="vy-carte-info__avance" aria-hidden="true"><i style="width:${Math.round(100 * HudJeu.avancement(this.ch, t))}%"></i></i></span></button>` : '');
     if (this.carteInfo.dataset.html !== html) { this.carteInfo.dataset.html = html; this.carteInfo.innerHTML = html; }
@@ -904,6 +905,7 @@ class HudJeu {
 
 
   tic() {
+    if (typeof Heure === 'object') { const l = Heure.libelle(Date.now()); if (l !== this.heureVue) { this.heureVue = l; this.rafraichirCarte(); } }
     this.rafraichirBadges();
     this.annoncerNiveau();
     this.rafraichirIndice();

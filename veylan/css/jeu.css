@@ -315,6 +315,7 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   .vy-carte-info__titre b { font: 700 12.5px var(--vy-font-titre); letter-spacing: 0.04em; color: var(--vy-or-clair); }
   .vy-carte-info__titre span { color: var(--vy-texte-2); }
   .vy-carte-info__ligne { font: 700 12px/1.25 var(--vy-font-ui); color: var(--vy-texte); font-variant-numeric: tabular-nums; }
+  .vy-carte-info__heure.crepuscule { color: var(--vy-or-clair, #f2d48a); }
   .vy-carte-info__suivi { flex-direction: row; align-items: center; gap: 7px; padding: 4px 10px 5px 7px; }
   .vy-carte-info__suivi > svg { flex: none; width: 17px; height: 17px; color: var(--vy-or); }
   .vy-carte-info__suivi > span { display: grid; min-width: 0; }

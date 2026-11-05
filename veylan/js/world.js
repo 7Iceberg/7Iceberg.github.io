@@ -125,7 +125,7 @@ class World {
     const reserve = tirer ? Groupes.reserve(def) : null;
     S.groups.forEach((c, i) => {
       const tpl = def.groups[i];
-      if (!tpl || (st.dead[i] && st.dead[i] > this.time)) return;
+      if (!tpl || (st.dead[i] && st.dead[i] > this.time) || !this.groupePermis(tpl, i, st, mapId)) return;
       const tire = reserve ? Object.assign({}, tpl, { monsters: Groupes.tirer(tpl, reserve, this.rng) }) : tpl;
       this.groups.push(this.makeGroup(tire, i, c));
     });
@@ -230,6 +230,7 @@ class World {
       this.regenAcc += dt;
       if (this.regenAcc >= 1) {
         this.regenAcc = 0;
+        if (!this.plateau && this.departsCrepuscule()) this.emit('update');
         const max = this.ch.derived().hpMax;
         if (!this.ch.dungeon && this.ch.hp < max) { this.ch.hp = Math.min(max, this.ch.hp + Math.ceil(max * 0.01)); this.emit('hp'); }
       }
@@ -981,6 +982,33 @@ class World {
   }
 
   estDojo(group) { return !!(group && group.tpl && group.tpl.dojo); }
+
+  groupePermis(tpl, i, st, carte) {
+    if (!tpl || !tpl.crepuscule || typeof Heure !== 'object') return true;
+    const t = Date.now(), chance = typeof Rares === 'object' ? Rares.CHANCE : 40;
+    const ok = Heure.crepuscule(t) && (this.chercheGroupe(tpl) || World.tirageMinute(`${carte || this.mapId}#${i}`, Math.floor(t / 60000)) * chance < 1);
+    if (!ok && st) st.dead[i] = this.time + World.ESSAI_CREPUSCULE;
+    return ok;
+  }
+  chercheGroupe(tpl) {
+    const actives = (this.ch && this.ch.quests && this.ch.quests.active) || {};
+    return Object.entries(actives).some(([id, a]) => {
+      const q = Quests.get(id);
+      return !!(q && a && Number.isInteger(a.step) && q.steps.slice(a.step).some(s => s.type === 'kill' && tpl.monsters.includes(s.monster)));
+    });
+  }
+  departsCrepuscule() {
+    if (typeof Heure !== 'object' || Heure.crepuscule(Date.now()) || this.apercuTerrain) return false;
+    const partis = this.groups.filter(g => g.tpl && g.tpl.crepuscule && g !== this.currentGroup && !g.hold);
+    if (!partis.length) return false;
+    this.groups = this.groups.filter(g => !partis.includes(g));
+    for (const g of partis) {
+      const carte = g.carte || this.mapId, st = this.mapStates[carte] || (this.mapStates[carte] = { dead: {}, used: {} });
+      st.dead[g.idx] = this.time + World.ESSAI_CREPUSCULE;
+    }
+    if (this.majRecherches) this.majRecherches();
+    return true;
+  }
   entrainement() {
     if (this.state !== 'explore' && this.state !== 'dialogue' && this.state !== 'panel') return false;
     const g = this.groups.filter(x => this.estDojo(x)).sort((a, b) => Math.hypot(a.x - this.player.x, a.y - this.player.y) - Math.hypot(b.x - this.player.x, b.y - this.player.y))[0];
@@ -1272,4 +1300,11 @@ class World {
 World.texteCosmetique = e => (e.collection ? `Collection « ${e.collection.nom} » complète : ${e.cosmetique.nom} entre dans ta Garde-robe.` : `Garde-robe : ${e.cosmetique.nom}.`);
 
 World.NIVEAU_EPREUVE = 9;
+World.ESSAI_CREPUSCULE = 60;
+World.tirageMinute = (cle, minute) => {
+  let h = 2166136261;
+  for (const c of `${cle}@${minute}`) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+  h ^= h >>> 13; h = Math.imul(h, 2246822507); h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+};
 World.TOURS_EPREUVE = 8;

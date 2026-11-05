@@ -75,7 +75,7 @@ class Plateau {
       const m = c.def, st = w.mapStates[m.id];
       for (const n of m.npcs || []) w.npcs.push({ id: n.id, def: World.npcDef(n.id) || { id: n.id, name: n.id, dialogue: ['...'] }, x: n.u, y: n.v, rx: n.u, ry: n.v, carte: m.id });
       (m.nodes || []).forEach((n, i) => w.nodes.push({ idx: i, carte: m.id, resource: n.resource, x: n.u, y: n.v, ready: !(st.used[i] > w.time), readyAt: st.used[i] || 0 }));
-      (m.groups || []).forEach((tpl, i) => { if (!(st.dead[i] && st.dead[i] > w.time)) w.groups.push(this.creerGroupe(tpl, i, m.id)); });
+      (m.groups || []).forEach((tpl, i) => { if (!(st.dead[i] && st.dead[i] > w.time) && w.groupePermis(tpl, i, st, m.id)) w.groups.push(this.creerGroupe(tpl, i, m.id)); });
       if (m.relay) this.relais.push({ carte: m.id, x: m.relay.u, y: m.relay.v });
       if (m.porte) this.portes.push({ carte: m.id, x: m.porte.u, y: m.porte.v, dungeon: m.dungeon || null });
     }
@@ -224,6 +224,7 @@ class Plateau {
   reapparitions() {
     const w = this.world, p = w.player;
     const enCombat = w.showCombat && w.currentGroup;
+    w.departsCrepuscule();
     for (const c of this.cartes) {
       const m = c.def, st = w.mapStates[m.id] || (w.mapStates[m.id] = { dead: {}, used: {} });
       (m.groups || []).forEach((tpl, i) => {
@@ -233,6 +234,7 @@ class Plateau {
         const cu = a.x + 7.5, cv = a.y + 7.5;
         if (Plateau.dist({ x: cu, y: cv }, p) < 25) return;
         delete st.dead[i];
+        if (!w.groupePermis(tpl, i, st, m.id)) return;
         const g = this.creerGroupe(tpl, i, m.id, this.tirage());
         g.naissance = w.time;
         w.groups.push(g);

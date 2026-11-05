@@ -34,6 +34,7 @@
         for (const [k, l] of CARDINAUX) mc.insertAdjacentHTML('beforeend', `<i class="vy-boussole__p" data-p="${k}" aria-hidden="true">${l}</i>`);
       }
       this.world.on('map', d => this.majLieu(d));
+      setInterval(() => this.majHeure(), 5000);
       if (this.world.mapDef) this.majLieu({ mapId: this.world.mapId, def: this.world.mapDef, zone: this.world.zone });
       window.addEventListener('resize', () => { this.placerBoussole(); this.appliquerInterface(true); if (this.editeur) this.majZones(); });
       window.addEventListener('keydown', evt => {
@@ -110,9 +111,18 @@
       const nom = def.name || '';
       el.innerHTML = (pos ? `<span class="vy-lieu__coord" title="Coordonnées de la carte">${ICO.epingle}${pos[0]},${pos[1]}</span>` : '') +
         `<b class="vy-lieu__nom">${esc(nom)}</b>` +
-        (zone && zone.name && zone.name !== nom ? `<small class="vy-lieu__zone">${esc(zone.name)}</small>` : '');
+        (zone && zone.name && zone.name !== nom ? `<small class="vy-lieu__zone">${esc(zone.name)}</small>` : '') +
+        (typeof Heure === 'object' && !String(id).includes('#') ? '<small class="vy-lieu__heure"></small>' : '');
+      this.majHeure();
       el.setAttribute('aria-label', `Lieu : ${nom}${zone && zone.name ? ', ' + zone.name : ''}${pos ? `, [${pos[0]},${pos[1]}]` : ''}`);
       if (this.editeur) this.majZones();
+    },
+    majHeure() {
+      const el = document.querySelector('#lieu .vy-lieu__heure');
+      if (!el || typeof Heure !== 'object') return;
+      const t = Date.now(), l = Heure.libelle(t);
+      if (el.textContent !== l) el.textContent = l;
+      el.classList.toggle('crepuscule', Heure.crepuscule(t));
     },
     placerBoussole() {
       const mc = document.getElementById('minicarte');

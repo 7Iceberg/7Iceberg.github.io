@@ -39,6 +39,11 @@
   font: 600 9.5px/1.2 var(--vy-font-titre, "Rajdhani", sans-serif); letter-spacing: 1.6px; text-transform: uppercase; color: #e9e3f3;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
+.vy-lieu__heure {
+  font: 600 9.5px/1.2 var(--vy-font-titre, "Rajdhani", sans-serif); letter-spacing: 1.4px; color: #d8d0e6;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+.vy-lieu__heure.crepuscule { color: var(--vy-or-clair, #f2d48a); }
 
 #vital, #raccourcis { transform-origin: 50% 100%; }
 #minicarte, #lieu { transform-origin: 100% 100%; }
