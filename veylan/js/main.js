@@ -1,5 +1,12 @@
 (async function () {
   const params = new URLSearchParams(location.search);
+  if (location.protocol === 'file:' && !navigator.webdriver) {
+    const avis = document.createElement('div');
+    avis.className = 'vy-avis-fichier'; avis.setAttribute('role', 'alert');
+    avis.innerHTML = '<p><b>Le jeu est ouvert sans serveur</b> : le navigateur refuse ses modèles 3D, et le monde s\'affiche en version simplifiée. Lance « Lancer Veylan » dans le dossier du jeu, ou joue en ligne : <a href="https://7iceberg.github.io/veylan/" target="_blank" rel="noopener">7iceberg.github.io/veylan</a>.</p><button type="button" aria-label="Fermer">×</button>';
+    avis.querySelector('button').addEventListener('click', () => avis.remove());
+    document.body.appendChild(avis);
+  }
   const DEV = Util.dev();
   if (DEV && params.get('reset')) { Save.clear(); Accueil.oublierMonde(); }
   let rendu = null;

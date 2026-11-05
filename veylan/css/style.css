@@ -421,3 +421,9 @@ select {
   #panel-body .sac > .vy-objet { position: sticky; bottom: 0; box-shadow: 0 -10px 24px rgba(0, 0, 0, 0.55); }
   #panel-body .sac .vy-objet__recit { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 }
+
+.vy-avis-fichier { position: fixed; z-index: 9999; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); width: min(720px, calc(100% - 16px)); display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: rgba(20, 16, 24, 0.94); border: 1px solid rgba(255, 168, 92, 0.6); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); color: #f3ede6; font: 500 13px/1.45 system-ui, sans-serif; }
+.vy-avis-fichier p { margin: 0; flex: 1; }
+.vy-avis-fichier b { color: #ffc27a; }
+.vy-avis-fichier a { color: #ffd9a8; }
+.vy-avis-fichier button { flex: none; width: 28px; height: 28px; border: 0; border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: #fff; font-size: 18px; cursor: pointer; }

@@ -8,7 +8,8 @@ const Son = (() => {
   const JINGLES = { victoire: 'jingle_victoire', defaite: 'jingle_defaite', niveau: 'jingle_niveau', quete: 'jingle_quete', succes: 'jingle_succes' };
   const JINGLES_DISPONIBLES = new Set(['victoire', 'defaite', 'niveau', 'quete', 'succes']);
   const ATTENUES = { victoire: 1.6, defaite: 1.8, niveau: 1.2, quete: 1.2, succes: 1.4 };
-  const DEFAUT = { actif: true, musique: 60, bruitages: 80 };
+  const DEFAUT = { actif: true, musique: 50, bruitages: 80, v: 2 };
+  const NIVEAUX = { theme: 0.72, ervane: 0.71, orsane: 0.71, kaldum: 0.71, donjon: 0.71, combat: 0.72, boss: 0.71, nuit: 1 };
 
   let ctx = null, maitre = null, gainMusique = null, gainAttenue = null, gainBruits = null;
   let pret = false;
@@ -19,7 +20,11 @@ const Son = (() => {
   let finAttenuation = 0;
 
   const reglages = (() => {
-    try { return Object.assign({}, DEFAUT, JSON.parse(localStorage.getItem(CLE) || '{}')); } catch (e) { return Object.assign({}, DEFAUT); }
+    try {
+      const lu = JSON.parse(localStorage.getItem(CLE) || '{}') || {};
+      if ((lu.v || 1) < 2 && lu.musique === 60) delete lu.musique;
+      return Object.assign({}, DEFAUT, lu, { v: 2 });
+    } catch (e) { return Object.assign({}, DEFAUT); }
   })();
   for (const k of ['musique', 'bruitages']) reglages[k] = Math.max(0, Math.min(100, Number(reglages[k]) || 0));
   reglages.actif = reglages.actif !== false;
@@ -161,6 +166,7 @@ const Son = (() => {
     return formatCache;
   }
   const fichier = cle => PISTES[cle] || cle;
+  const niveau = cle => (NIVEAUX[fichier(cle)] != null ? NIVEAUX[fichier(cle)] : 1);
   const disponible = cle => !!cle && DISPONIBLES.has(cle) && !manquantes[cle];
   function choisir(cles) {
     const l = (Array.isArray(cles) ? cles : [cles]).filter(c => typeof c === 'string' && c && (PISTES[c] || DISPONIBLES.has(c)));
@@ -268,7 +274,7 @@ const Son = (() => {
     if (l.direct) { l.fondu = 0; volumeDirect(e); } else { l.gain.gain.cancelScheduledValues(ctx.currentTime); l.gain.gain.setValueAtTime(0.0001, ctx.currentTime); }
     l.audio.src = DOSSIER + fichier(cle) + '.' + ext;
     enCours = e;
-    l.audio.play().then(() => { if (!e.arretee) fondre(e, 1, FONDU); }).catch(() => {
+    l.audio.play().then(() => { if (!e.arretee) fondre(e, niveau(cle), FONDU); }).catch(() => {
       if (enCours === e) enCours = null;
       liberer(e);
     });
