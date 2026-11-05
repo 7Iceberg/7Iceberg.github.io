@@ -108,7 +108,7 @@
       const id = (d && d.mapId) || w.mapId || '';
       const pos = typeof Atlas === 'object' && !String(id).includes('#') ? Atlas.coordsOf(id) : null;
       const zone = (d && d.zone) || w.zone;
-      const nom = def.name || '';
+      const nom = def.sousZone ? def.sousZone.charAt(0).toUpperCase() + def.sousZone.slice(1) : def.name || '';
       el.innerHTML = (pos ? `<span class="vy-lieu__coord" title="Coordonnées de la carte">${ICO.epingle}${pos[0]},${pos[1]}</span>` : '') +
         `<b class="vy-lieu__nom">${esc(nom)}</b>` +
         (zone && zone.name && zone.name !== nom ? `<small class="vy-lieu__zone">${esc(zone.name)}</small>` : '') +

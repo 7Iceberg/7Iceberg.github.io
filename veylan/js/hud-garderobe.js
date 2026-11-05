@@ -6,7 +6,7 @@ const ONGLETS = [['teinture', 'Teintures'], ['lueur', 'Lueurs'], ['aura', 'Auras
 const FILTRES = [['tous', 'Tous'], ['possedes', 'Possédés'], ['aobtenir', 'À obtenir']];
 const FACINGS = ['se', 'sw', 'nw', 'ne'];
 const APPUI_LONG = 480;
-const hex = c => (/^#[0-9a-f]{6}$/i.test(c || '') ? c : '#c9a66b');
+const hex = c => (/^#[0-9a-f]{6}$/i.test(c || '') ? c : '#ddaa72');
 const dateCourte = t => { try { return new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return ''; } };
 
 Hud.pictoCosmetique = c => {
@@ -246,7 +246,7 @@ Object.assign(Hud.prototype, {
     const looks = Array.isArray(ch.ensemblesLook) ? ch.ensemblesLook : [];
     const resume = p => Garderobe.TYPES_PORTES.map(t => Garderobe.get(p && p[t])).filter(Boolean).map(c => esc(c.nom)).join(', ') || 'rien de porté';
     const lignes = [];
-    for (let i = 0; i < Garderobe.MAX_LOOKS; i++) {
+    for (let i = 0; i < Garderobe.limiteLooks(); i++) {
       const l = looks[i];
       lignes.push(l
         ? `<div class="vy-gr__look"><span class="vy-gr__look-nom"><b>${esc(l.nom)}</b><small>${resume(l.porte)}</small></span>
@@ -254,7 +254,7 @@ Object.assign(Hud.prototype, {
         : `<div class="vy-gr__look vide"><span class="vy-gr__look-nom"><b>Look ${i + 1}</b><small>libre</small></span></div>`);
     }
     return `<div class="vy-gr__looks" data-defile="garderobe">${lignes.join('')}
-      <div class="vy-gr__look-nouveau"><input id="gr-look-nom" type="text" maxlength="24" placeholder="Nom du look" aria-label="Nom du look"><button class="vy-bouton vy-bouton--petit" data-act="lookEnregistrer" ${looks.length >= Garderobe.MAX_LOOKS ? 'disabled' : ''}>${I.plus} Enregistrer la tenue portée</button></div>
+      <div class="vy-gr__look-nouveau"><input id="gr-look-nom" type="text" maxlength="24" placeholder="Nom du look" aria-label="Nom du look"><button class="vy-bouton vy-bouton--petit" data-act="lookEnregistrer" ${looks.length >= Garderobe.limiteLooks() ? 'disabled' : ''}>${I.plus} Enregistrer la tenue portée</button></div>
       <p class="muted vy-note">Un look garde ce que tu portes (teinture, lueur, aura, blason, thème). Le remettre reprend chaque pièce encore dans ta Garde-robe. Cinq au plus.</p>
     </div>`;
   },

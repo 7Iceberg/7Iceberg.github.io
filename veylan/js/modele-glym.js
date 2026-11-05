@@ -875,7 +875,7 @@ void main() {
       this.halo = o.qualite !== 'basse';
       this.dos = !o.telephone && o.qualite === 'haute';
       this.hauteur = o.hauteur || 1.2;
-      this.ids = o.mode === 'tous' ? { glym_aqua: 'aqua', glym_ignis: 'ignis', glym_aer: 'aer', glym_terra: 'terra' } : { glym_aqua: 'aqua' };
+      this.ids = {};
       if (typeof ModeleLampignon === 'object') this.ids.lampignon = 'lampignon';
       if (typeof ModeleLampignard === 'object') this.ids.lampignard = 'lampignard';
       this.troupes = {};

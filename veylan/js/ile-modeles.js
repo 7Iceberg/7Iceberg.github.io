@@ -443,22 +443,26 @@ const IleModeles = (() => {
     kaldum_fonderie: [['arbre', 0.002, [2.6, 3.6], ['k-arbre']], ['rocher', 0.009, [0.8, 1.4], ['k-roche']], ['cristaux', 0.002, [0.7, 1.1], ['k-cristaux']], ['souche', 0.0015, [0.6, 0.9], ['k-souche']]],
   };
   const CARTES_DENSES = {
-    ervane_mailles: [['herbe', 0.5, [0.7, 1.05], 0], ['fleurs', 0.05, [0.45, 0.6], 2]],
-    ervane_sources: [['herbe', 0.7, [0.75, 1.15], 0], ['fleurs', 0.07, [0.45, 0.62], 2]],
-    ervane_murets: [['doree', 0.55, [0.75, 1.1], 1], ['herbe', 0.15, [0.7, 1.0], 0]],
-    ervane_amarre: [['doree', 0.3, [0.7, 1.0], 1], ['herbe', 0.12, [0.7, 1.0], 0]],
-    ervane_bois: [['herbe', 0.3, [0.7, 1.05], 0]],
-    orsane_cimes: [['herbe', 0.25, [0.7, 1.0], 0], ['fleurs', 0.04, [0.45, 0.6], 2]],
-    orsane_clairieres: [['herbe', 0.5, [0.75, 1.15], 0], ['fleurs', 0.05, [0.45, 0.62], 2]],
-    orsane_sentiers: [['doree', 0.35, [0.75, 1.1], 1], ['herbe', 0.12, [0.7, 1.0], 0]],
-    orsane_toiles: [['herbe', 0.2, [0.7, 1.0], 0]],
-    orsane_eboulis: [['doree', 0.25, [0.7, 1.0], 1], ['herbe', 0.08, [0.7, 1.0], 0]],
+    ervane_mailles: [['herbe', 0.3, [0.7, 1.05], 0], ['herbe_sombre', 0.2, [0.85, 1.2]], ['fleurs', 0.05, [0.45, 0.6], 2], ['fleurs_roses', 0.012, [0.8, 1.1]], ['fleurs_creme', 0.012, [0.8, 1.1]], ['jonquilles', 0.015, [0.7, 0.95]]],
+    ervane_sources: [['herbe', 0.4, [0.75, 1.15], 0], ['herbe_sombre', 0.3, [0.9, 1.25]], ['fleurs', 0.07, [0.45, 0.62], 2], ['herbe_fine', 0.12, [1.0, 1.4]], ['jonquilles', 0.03, [0.7, 0.95]]],
+    ervane_murets: [['doree', 0.55, [0.75, 1.1], 1], ['herbe', 0.15, [0.7, 1.0], 0], ['lavande', 0.08, [0.8, 1.1]], ['succulente', 0.012, [0.75, 1.05]]],
+    ervane_amarre: [['doree', 0.3, [0.7, 1.0], 1], ['herbe', 0.12, [0.7, 1.0], 0], ['herbe_fine', 0.08, [1.0, 1.35]], ['marine', 0.02, [0.75, 1.05]]],
+    ervane_bois: [['herbe', 0.3, [0.7, 1.05], 0], ['herbe_sombre', 0.35, [0.85, 1.25]], ['spore', 0.01, [1.0, 1.4]]],
+    orsane_cimes: [['herbe', 0.15, [0.7, 1.0], 0], ['herbe_sombre', 0.1, [0.85, 1.2]], ['fleurs', 0.04, [0.45, 0.6], 2], ['lavande', 0.03, [0.8, 1.1]]],
+    orsane_clairieres: [['herbe', 0.3, [0.75, 1.15], 0], ['herbe_sombre', 0.2, [0.9, 1.25]], ['fleurs', 0.05, [0.45, 0.62], 2], ['jonquilles', 0.02, [0.7, 0.95]], ['fleurs_roses', 0.008, [0.8, 1.1]], ['herbe_fine', 0.05, [1.0, 1.4]]],
+    orsane_sentiers: [['doree', 0.35, [0.75, 1.1], 1], ['herbe', 0.12, [0.7, 1.0], 0], ['herbe_fine', 0.05, [1.0, 1.35]]],
+    orsane_toiles: [['herbe', 0.2, [0.7, 1.0], 0], ['herbe_sombre', 0.25, [0.85, 1.25]], ['spore', 0.008, [1.0, 1.4]]],
+    orsane_eboulis: [['doree', 0.25, [0.7, 1.0], 1], ['herbe', 0.08, [0.7, 1.0], 0], ['succulente', 0.02, [0.75, 1.05]]],
     kaldum_ville: [['herbe', 0.12, [0.7, 1.0], 0]],
     kaldum_galeries: [['doree', 0.12, [0.7, 1.0], 1], ['herbe', 0.05, [0.7, 0.95], 0]],
-    kaldum_vapeurs: [['doree', 0.2, [0.7, 1.05], 1], ['herbe', 0.06, [0.7, 1.0], 0]],
+    kaldum_vapeurs: [['doree', 0.2, [0.7, 1.05], 1], ['herbe', 0.06, [0.7, 1.0], 0], ['succulente', 0.008, [0.75, 1.05]]],
     kaldum_fonderie: [['doree', 0.1, [0.7, 1.0], 1]],
   };
-  const SOLS_CARTES = { herbe: [0, 1, 5], doree: [1, 0, 2], fleurs: [0, 5] };
+  const SOLS_CARTES = {
+    herbe: [0, 1, 5], doree: [1, 0, 2], fleurs: [0, 5],
+    herbe_sombre: [5, 0, 1], herbe_fine: [0, 1, 5], lavande: [1, 0], jonquilles: [0, 5], fleurs_roses: [0], fleurs_creme: [0],
+    spore: [5, 0], marine: [2, 3, 0, 1], succulente: [3, 4, 2, 1],
+  };
   function hacheEntier(a, b, c) { let h = (a * 374761393 + b * 668265263 + c * 2147483647) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
   function bruitValeur(x, y, graine) {
     const x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
@@ -642,16 +646,39 @@ const IleModeles = (() => {
     return new Promise((ok, ko) => { const i = new Image(), u = URL.createObjectURL(blob); i.onload = () => { URL.revokeObjectURL(u); ok(i); }; i.onerror = ko; i.src = u; });
   }
 
-  const CASES_CARTES = { herbe: 0, doree: 1, fleurs: 2, lin: 3, ble: 4 };
+  const CASES_CARTES = {
+    herbe: 0, doree: 1, fleurs: 2, lin: 3, ble: 4,
+    herbe_sombre: 5, herbe_fine: 6, lavande: 7, jonquilles: 8, fleurs_roses: 9, fleurs_creme: 10, spore: 11, marine: 12, succulente: 13, lotus: 14,
+  };
+  const LIGNES_CARTES = 4;
+  const ZONES_NENUPHARS = { ervane_sources: 0.35, ervane_bois: 0.2, ervane_amarre: 0.2, orsane_clairieres: 0.2 };
+  function nenuphars(T) {
+    const out = [];
+    if (!T || !T.eauA || !T.zoneA) return out;
+    const pas = 1.3;
+    for (let gv = 0; gv * pas < T.H; gv++) for (let gu = 0; gu * pas < T.W; gu++) {
+      const u = (gu + hacheEntier(gu, gv, 5101)) * pas, v = (gv + hacheEntier(gu, gv, 5102)) * pas;
+      const part = ZONES_NENUPHARS[T.zoneA(u, v)];
+      if (!part) continue;
+      const e = T.eauA(u, v), p = T.profondeurA(u, v);
+      if (e == null || !(p > 0.15 && p < 1.4)) continue;
+      if ([[0.45, 0], [-0.45, 0], [0, 0.45], [0, -0.45]].some(([du, dv]) => !(T.profondeurA(u + du, v + dv) > 0.05))) continue;
+      const g = bruitValeur(u / 6, v / 6, 5103);
+      if (hacheEntier(gu, gv, 5104) > part * (0.3 + Math.max(0, (g - 0.35) * 3))) continue;
+      out.push({ genre: 'lotus', u, v, y: e + 0.015, h: 0.85 + hacheEntier(gu, gv, 5105) * 0.6, r: hacheEntier(gu, gv, 5106), plat: true });
+    }
+    return out;
+  }
   const VENT = { value: 0 };
   async function cartes(THREE, ile) {
     const T = ile && ile.T;
     ici(T);
     if (!T || !T.FX || !ile.monde) return null;
     for (const rg of Object.values(CARTES_DENSES)) for (const r of rg) r.sols = SOLS_CARTES[r[0]];
-    const pts = semerDense(T, CARTES_DENSES, 0.9, 1, 777).concat(cartesParcelles(T));
+    const pts = semerDense(T, CARTES_DENSES, 0.9, 1, 777).concat(cartesParcelles(T), nenuphars(T));
     if (!pts.length) return null;
-    const tex = await new Promise((ok, ko) => new THREE.TextureLoader().load(source('assets/decor/cartes.png'), ok, undefined, ko));
+    const tel = !!ile.telephone;
+    const tex = await new Promise((ok, ko) => new THREE.TextureLoader().load(source(tel ? 'assets/decor/cartes-tel.png' : 'assets/decor/cartes.png'), ok, undefined, ko));
     tex.encoding = THREE.sRGBEncoding;
     tex.anisotropy = 2;
     const mat = new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide, vertexColors: true, fog: true });
@@ -667,7 +694,7 @@ const IleModeles = (() => {
     mat.customProgramCacheKey = () => 'semis-cartes';
     const GRAND = 120, groupes = new Map();
     for (const p of pts) {
-      const y = ile.hauteur(p.u, p.v);
+      const y = p.plat ? p.y : ile.hauteur(p.u, p.v);
       if (!Number.isFinite(y)) continue;
       const k = Math.floor(p.u / GRAND) + ':' + Math.floor(p.v / GRAND);
       if (!groupes.has(k)) groupes.set(k, []);
@@ -680,11 +707,15 @@ const IleModeles = (() => {
       const I = nv > 65535 ? new Uint32Array(liste.length * 12) : new Uint16Array(liste.length * 12);
       liste.forEach(({ p, y }, q) => {
         const c = CASES_CARTES[p.genre] || 0, h = p.h, w = h * 1.15, a = p.r * Math.PI * 2, teinte = Math.round(205 + p.r * 50);
-        const u0 = ((c % 4) * 256 + 3) / 1024, u1 = ((c % 4 + 1) * 256 - 3) / 1024, ligne = Math.floor(c / 4);
-        const vHaut = 1 - ligne * 0.5 - 0.005, vBas = 0.5 - ligne * 0.5 + 0.005;
+        const u0 = ((c % 4) * 256 + 3) / 1024, u1 = ((c % 4 + 1) * 256 - 3) / 1024, ligne = Math.floor(c / 4), dl = 1 / LIGNES_CARTES;
+        const vHaut = 1 - ligne * dl - 0.0025, vBas = 1 - (ligne + 1) * dl + 0.0025;
         for (let f = 0; f < 2; f++) {
           const ca = Math.cos(a + f * Math.PI / 2) * w / 2, sa = Math.sin(a + f * Math.PI / 2) * w / 2, b = q * 8 + f * 4;
-          const coins = [[-ca, -0.04, -sa, u0, 0, 0], [ca, -0.04, sa, u1, 0, 0], [ca, h, sa, u1, 1, 1], [-ca, h, -sa, u0, 1, 1]];
+          const r2 = h / 2, ex = Math.cos(a) * r2, ez = Math.sin(a) * r2;
+          const coins = p.plat
+            ? (f ? [[0, 0, 0, u0, 0, 0], [0, 0, 0, u0, 0, 0], [0, 0, 0, u0, 0, 0], [0, 0, 0, u0, 0, 0]]
+              : [[-ex - ez, 0, -ez + ex, u0, 0, 0], [ex - ez, 0, ez + ex, u1, 0, 0], [ex + ez, 0, ez - ex, u1, 1, 0], [-ex + ez, 0, -ez - ex, u0, 1, 0]])
+            : [[-ca, -0.04, -sa, u0, 0, 0], [ca, -0.04, sa, u1, 0, 0], [ca, h, sa, u1, 1, 1], [-ca, h, -sa, u0, 1, 1]];
           coins.forEach(([dx, dy, dz, uu, vv, ve], i) => {
             const j = b + i;
             P[j * 3] = p.u + dx; P[j * 3 + 1] = y + dy; P[j * 3 + 2] = p.v + dz;
@@ -715,7 +746,7 @@ const IleModeles = (() => {
       n += liste.length;
     }
     console.log(`Ervane : semis dense, ${n} touffes et bouquets en ${meshes.length} maillages`);
-    return { meshes, mat, n, octetsGeo: octets, octetsTex: 1024 * 512 * 4 * 4 / 3 };
+    return { meshes, mat, n, octetsGeo: octets, octetsTex: (tel ? 512 * 512 : 1024 * 1024) * 4 * 4 / 3 };
   }
 
   const FUMEE = { hauteur: { value: 800 } };

@@ -123,10 +123,12 @@ class World {
     this.groups = [];
     const tirer = typeof Groupes === 'object' && !def.room && !/^ervane/.test(mapId);
     const reserve = tirer ? Groupes.reserve(def) : null;
+    const faune = typeof Groupes === 'object' && Groupes.faune && !def.room ? Groupes.faune(World.zoneOf(mapId), def) : null;
     S.groups.forEach((c, i) => {
       const tpl = def.groups[i];
       if (!tpl || (st.dead[i] && st.dead[i] > this.time) || !this.groupePermis(tpl, i, st, mapId)) return;
-      const tire = reserve ? Object.assign({}, tpl, { monsters: Groupes.tirer(tpl, reserve, this.rng) }) : tpl;
+      const tire = faune ? Object.assign({}, tpl, { monsters: Groupes.tirerFaune(tpl, faune, this.rng) })
+        : reserve ? Object.assign({}, tpl, { monsters: Groupes.tirer(tpl, reserve, this.rng) }) : tpl;
       this.groups.push(this.makeGroup(tire, i, c));
     });
     this.majRecherches();
@@ -899,13 +901,32 @@ class World {
     if (!d) return false;
     const c = this.canEnterDungeon(d);
     if (!c.ok) { this.toast(c.reason); return false; }
-    if (d.keyItem && !this.ch.has(d.keyItem)) { this.toast(`Il faut ${Items.get(d.keyItem).name} pour entrer.`); return false; }
-    if (d.keyItem) this.ch.removeItem(d.keyItem, 1);
+    if (d.keyItem && !this.ouvrirAvecCle(d)) return false;
     this.returnMap = { map: this.mapId, x: this.player.x, y: this.player.y };
     for (let i = 0; i < d.rooms.length; i++) delete this.mapStates[`${id}#${i}`];
     if (!this.enter(`${id}#0`, { relay: true })) return false;
     if (this.ch.dungeon && typeof Ile === 'object' && Ile.estPlateau(this.returnMap.map)) this.ch.dungeon.retour = { map: this.returnMap.map, x: Plateau.arrondi(this.returnMap.x), y: Plateau.arrondi(this.returnMap.y) };
     this.emit('save');
+    return true;
+  }
+
+  etatCle(d) {
+    if (!d || !d.keyItem) return null;
+    const T = this.ch.trousseau || {}, range = Object.prototype.hasOwnProperty.call(T, d.keyItem);
+    return { cle: d.keyItem, range, libre: range && T[d.keyItem] !== World.jourDojo(), sac: this.ch.count ? this.ch.count(d.keyItem) : (this.ch.has(d.keyItem) ? 1 : 0) };
+  }
+  ouvrirAvecCle(d) {
+    const e = this.etatCle(d), nom = Items.get(d.keyItem).name;
+    if (!this.ch.trousseau || typeof this.ch.trousseau !== 'object') this.ch.trousseau = {};
+    const jour = World.jourDojo();
+    if (e.libre) { this.ch.trousseau[d.keyItem] = jour; this.toast(`Ton trousseau ouvre ${d.name}.`); return true; }
+    if (!this.ch.has(d.keyItem)) {
+      this.toast(e.range ? `Ton trousseau a déjà ouvert ${d.name} aujourd'hui : il faut une autre ${nom}.` : `Il faut ${nom} pour entrer.`);
+      return false;
+    }
+    this.ch.removeItem(d.keyItem, 1);
+    this.ch.trousseau[d.keyItem] = jour;
+    this.toast(e.range ? `${nom} est prise du sac.` : `${nom} rejoint ton trousseau : demain, elle ouvrira ${d.name} sans en refaire.`);
     return true;
   }
 
@@ -1110,6 +1131,18 @@ class World {
     if (d.victory && chal && chal.success) ch.counters.feats.defi = (ch.counters.feats.defi || 0) + 1;
     if (d.victory && knotCount) ch.counters.feats.noeuds_1 = (ch.counters.feats.noeuds_1 || 0) + 1;
     if (d.victory && knotCount >= 4) ch.counters.feats.noeuds_4 = (ch.counters.feats.noeuds_4 || 0) + 1;
+    if (d.victory) {
+      const F = ch.counters.feats, plus = k => { F[k] = (F[k] || 0) + 1; };
+      if (knotCount >= 2) plus('noeuds_2');
+      if (knotCount >= 3) plus('noeuds_3');
+      const boss = monsters.filter(e => e.boss).map(e => e.def.id);
+      for (const b of boss) F['noeudsboss.' + b] = Math.max(F['noeudsboss.' + b] || 0, knotCount);
+      if (chal && chal.success && chal.id) {
+        plus('defivu.' + chal.id);
+        for (const b of boss) plus(`bossdefi.${b}.${chal.id}`);
+        for (const id of new Set(monsters.map(e => e.def.id))) plus('killdefi.' + id);
+      }
+    }
     if (d.victory) {
       ch.counters.wins++;
       const veille = World.veilleBonus(ch, { zone: this.zone && this.zone.id, dungeon: ch.dungeon && ch.dungeon.id, monsters: monsters.map(e => e.def.id) });

@@ -15,9 +15,9 @@ class TitreFx {
     this.loop = this.loop.bind(this);
     this.resize();
     addEventListener('resize', () => this.resize());
-    this.lueurCyan = TitreFx.lueur('0,194,255');
+    this.lueurCyan = TitreFx.lueur('82,210,244');
     this.lueurOr = TitreFx.lueur('230,198,140');
-    this.lueurViolet = TitreFx.lueur('166,108,255');
+    this.lueurViolet = TitreFx.lueur('151,100,214');
     this.start();
   }
 
@@ -240,7 +240,7 @@ class TitreFx {
       const reprise = t > 0.75 || (t > 0.4 && t < 0.55) || Math.random() < 0.25 ? 1 : 0.35;
       const scint = Math.min(1, t * 1.4) * reprise;
       const coeur = b.violet ? '235,220,255' : '225,248,255';
-      const halo = b.violet ? '166,108,255' : '0,194,255';
+      const halo = b.violet ? '151,100,214' : '82,210,244';
       const trait = (pts, k) => {
         g.beginPath();
         g.moveTo(pts[0].x, pts[0].y);

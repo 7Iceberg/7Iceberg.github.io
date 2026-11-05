@@ -29,6 +29,7 @@
   #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--caracs:not(.reduite) { height: min(calc(690px * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 72px)); }
   #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--inventaire:not(.reduite) { height: min(calc(640px * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 72px)); }
   #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--quetes:not(.reduite) { height: min(calc(620px * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 72px)); }
+  #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--succes:not(.reduite) { height: min(calc(700px * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 72px)); }
   #app.vy-verre[data-ui-theme="duality"] .vy-fenetre--sorts:not(.reduite) { height: min(calc(600px * var(--ui-z, 1) * var(--fen-z, 1)), calc(100% - 72px)); }
 }
 @media (orientation: landscape) and (max-height: 500px) {

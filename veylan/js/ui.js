@@ -162,6 +162,18 @@ class UI {
     try { v = localStorage.getItem('veylan.combat.' + nom); } catch (e) {   }
     return (M[nom] = v === '0' ? false : v === '1' ? true : !!UI.REGLAGES[nom]);
   }
+  static qualiteImage() {
+    let v = null;
+    try { v = localStorage.getItem('veylan.qualiteImage'); } catch (e) {   }
+    return v === 'haute' ? 'haute' : 'standard';
+  }
+  static reglerQualiteImage(v) {
+    try { localStorage.setItem('veylan.qualiteImage', v === 'haute' ? 'haute' : 'standard'); } catch (e) {   }
+  }
+  static densite(dpr, max) {
+    const d = (typeof dpr === 'number' && dpr) || 1;
+    return UI.qualiteImage() === 'haute' ? Math.min(2, Math.max(1.5, d)) : Math.min(d, max == null ? 2 : max);
+  }
   static regler(nom, on) {
     try { localStorage.setItem('veylan.combat.' + nom, on ? '1' : '0'); } catch (e) {   }
     if (UI._reglages) delete UI._reglages[nom];
@@ -806,7 +818,8 @@ class UI {
   }
 
   static buste(painter, e) {
-    const key = [e.shape, e.color, e.glyph || '', e.team, e.def && e.def.look || '', e.team === 'monster' && typeof Renderer === 'function' ? Renderer.motifOf(e.def.id) || '' : ''].join('|');
+    const figure = e.team === 'monster' && e.def && typeof Figures === 'object' ? Figures.de(e.def.id) : null;
+    const key = [e.shape, e.color, e.glyph || '', e.team, e.def && e.def.look || '', e.team === 'monster' && typeof Renderer === 'function' ? Renderer.motifOf(e.def.id) || '' : '', figure ? Figures.cle(figure) : ''].join('|');
     const cache = UI._bustes || (UI._bustes = new Map());
     if (cache.has(key)) return cache.get(key);
     const W = 44, H = 52, k = 2;
@@ -818,15 +831,19 @@ class UI {
     if (e.team === 'player') { bg.addColorStop(0, '#1d3d5c'); bg.addColorStop(1, '#0d1726'); } else { bg.addColorStop(0, '#4a1f1c'); bg.addColorStop(1, '#170d10'); }
     g.fillStyle = bg; g.fillRect(0, 0, W, H);
     const halo = g.createRadialGradient(W / 2, H * 0.42, 2, W / 2, H * 0.42, W * 0.6);
-    halo.addColorStop(0, e.team === 'player' ? 'rgba(0,194,255,0.28)' : 'rgba(240,122,92,0.26)'); halo.addColorStop(1, 'rgba(0,0,0,0)');
+    halo.addColorStop(0, e.team === 'player' ? 'rgba(82,210,244,0.28)' : 'rgba(239,117,116,0.26)'); halo.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = halo; g.fillRect(0, 0, W, H);
-    if (painter && typeof painter.drawBody === 'function') {
-      const s = { shape: e.shape, color: e.color, glyph: e.glyph, team: e.team, look: e.def && e.def.look, motif: e.team === 'monster' && typeof Renderer === 'function' ? Renderer.motifOf(e.def.id) : null };
+    const imFig = figure ? Figures.image(figure) : null;
+    if (imFig) {
+      const h = H * 0.7, w = h * imFig.naturalWidth / imFig.naturalHeight;
+      g.drawImage(imFig, (W - w) / 2, H - h - H * 0.12, w, h);
+    } else if (painter && typeof painter.drawBody === 'function') {
+      const s = { shape: e.shape, color: e.color, glyph: e.glyph, team: e.team, look: e.def && e.def.look, motif: e.team === 'monster' && typeof Renderer === 'function' ? Renderer.motifOf(e.def.id) : null, figure };
       g.save();
       g.translate(W / 2, H + 12);
       g.scale(1.12, 1.12);
       g.lineJoin = 'round'; g.lineCap = 'round';
-      try { painter.drawBody(g, { x: 0, y: 0 }, s); if (s.motif) painter.drawMotif(g, { x: 0, y: 0 }, s); } catch (err) {   }
+      try { const peinte = painter.drawBody(g, { x: 0, y: 0 }, s) === 'figure'; if (s.motif && !peinte) painter.drawMotif(g, { x: 0, y: 0 }, s); } catch (err) {   }
       g.restore();
     }
     const url = cv.toDataURL('image/png');
@@ -891,5 +908,5 @@ UI.REGLAGES = { grille: true, deplacement: true, portee: true, cout: true, barre
 UI.ICON = {
   non: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>',
   oui: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
-  pa: '<svg class="vy-sceau-pa" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2l8.5 4.9v9.8L12 21.8l-8.5-4.9V7.1z" fill="#c9a66b" stroke="#8e7144" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 5.4l5.7 3.3v6.6L12 18.6l-5.7-3.3V8.7z" fill="#f2dcaa"/><path d="M12 5.4l5.7 3.3L12 12 6.3 8.7z" fill="#fff3d2" opacity="0.7"/></svg>',
+  pa: '<svg class="vy-sceau-pa" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2l8.5 4.9v9.8L12 21.8l-8.5-4.9V7.1z" fill="#ddaa72" stroke="#a67349" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 5.4l5.7 3.3v6.6L12 18.6l-5.7-3.3V8.7z" fill="#f2dcaa"/><path d="M12 5.4l5.7 3.3L12 12 6.3 8.7z" fill="#fff3d2" opacity="0.7"/></svg>',
 };

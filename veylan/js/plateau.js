@@ -132,8 +132,10 @@ class Plateau {
     let depart = [cu, cv];
     if (cases.length && hasard) depart = cases[Math.floor(rng() * cases.length)];
     else if (cases.length) { let bd = Infinity; for (const c of cases) { const d = (c[0] - cu) * (c[0] - cu) + (c[1] - cv) * (c[1] - cv); if (d < bd) { bd = d; depart = c; } } }
-    let tire = this.tirage() ? Object.assign({}, tpl, { monsters: Groupes.tirer(tpl, this.reserveDe(carte), rng) }) : tpl;
-    if (tire !== tpl && typeof Rares === 'object') tire.monsters = Rares.placer(tire.monsters, this.world.ch, Date.now(), rng);
+    const f = this.fauneDe(carte);
+    let tire = f ? Object.assign({}, tpl, { monsters: Groupes.tirerFaune(tpl, f, rng) })
+      : this.tirage() ? Object.assign({}, tpl, { monsters: Groupes.tirer(tpl, this.reserveDe(carte), rng) }) : tpl;
+    if (tire !== tpl && this.id !== 'ervane' && typeof Rares === 'object') tire.monsters = Rares.placer(tire.monsters, this.world.ch, Date.now(), rng);
     const g = this.world.makeGroup(tire, idx, { x: depart[0], y: depart[1] });
     g.ne = this.world.time;
     g.carte = carte;
@@ -215,6 +217,12 @@ class Plateau {
   }
 
   tirage() { return this.id !== 'ervane' && typeof Groupes === 'object'; }
+  fauneDe(carte) {
+    if (typeof Groupes !== 'object' || !Groupes.faune) return null;
+    const F = this.faunes || (this.faunes = new Map());
+    if (!F.has(carte)) F.set(carte, Groupes.faune(World.zoneOf(carte), World.mapDef(carte)));
+    return F.get(carte);
+  }
   reserveDe(carte) {
     const R = this.reserves || (this.reserves = new Map());
     if (!R.has(carte)) { const c = this.cartes.find(x => x.def.id === carte); R.set(carte, c ? Groupes.reserve(c.def) : null); }
@@ -241,7 +249,7 @@ class Plateau {
         if (w.majRecherches) w.majRecherches();
       });
     }
-    if (!this.tirage() || w.state === 'combat' || w.apercuTerrain) return;
+    if (!(this.tirage() || this.id === 'ervane') || w.state === 'combat' || w.apercuTerrain) return;
     for (let k = 0; k < w.groups.length; k++) {
       const g = w.groups[k];
       if (!g.carte || g.ne == null || w.time - g.ne < Plateau.RENOUVEAU || g === w.currentGroup || g.chemin || Plateau.dist(g, p) < 25) continue;

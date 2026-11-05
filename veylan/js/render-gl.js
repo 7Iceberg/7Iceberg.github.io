@@ -51,7 +51,7 @@ class RendererGL {
     this.W = (m.w + m.h) * (Grid.TILE_W / 2) + 16;
     this.H = (m.w + m.h) * (Grid.TILE_H / 2) + 110 + this.cliffH;
     this.SH = this.painter.SH;
-    this.dpr = Math.min(2, Math.max(1, (typeof devicePixelRatio === 'number' && devicePixelRatio) || 1));
+    this.dpr = typeof UI === 'function' && UI.densite ? Math.max(1, UI.densite(devicePixelRatio, 2)) : Math.min(2, Math.max(1, (typeof devicePixelRatio === 'number' && devicePixelRatio) || 1));
     this.vw = 0; this.vh = 0;
     this.uiK = 1;
     this.camera = new Camera(canvas);
@@ -96,7 +96,7 @@ class RendererGL {
     const fit = () => {
       const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
       if (!w || !h || this.degraded) return;
-      this.dpr = Math.min(2, Math.max(1, (typeof devicePixelRatio === 'number' && devicePixelRatio) || 1));
+      this.dpr = typeof UI === 'function' && UI.densite ? Math.max(1, UI.densite(devicePixelRatio, 2)) : Math.min(2, Math.max(1, (typeof devicePixelRatio === 'number' && devicePixelRatio) || 1));
       this.painter.dpr = this.dpr;
       this.camera.setViewport(w, h);
       if (this.suspendu) return;
@@ -522,8 +522,8 @@ class RendererGL {
     const OS = 2, cv = Paint.canvas(88 * OS, 84 * OS), c = cv.getContext('2d');
     c.scale(OS, OS); c.lineJoin = 'round'; c.lineCap = 'round';
     const p = { x: 44, y: 76 };
-    this.painter.drawBody(c, p, s);
-    if (s.motif) this.painter.drawMotif(c, p, s);
+    const peinte = this.painter.drawBody(c, p, s) === 'figure';
+    if (s.motif && !peinte) this.painter.drawMotif(c, p, s);
     return { canvas: cv, ax: 44 * OS, ay: 76 * OS, scale: 1 / OS };
   }
   paintNpc(s) {
@@ -616,18 +616,18 @@ class RendererGL {
       const k = Grid.key(x, y);
       const tmp = inCombat ? cb.tempAt(x, y) : null;
       let fill = null, stroke = null, g = g0;
-      if (tmp && tmp.kind === 'water') { fill = [0x2f8fe0, 0.5]; stroke = [0x9fd7ff, 0.5]; }
+      if (tmp && tmp.kind === 'water') { fill = [0x113f8a, 0.6]; stroke = [0x78b4e6, 0.6]; }
       if (tmp && tmp.kind === 'fente') { fill = [0x120818, 0.92]; stroke = [0xbf95ff, 0.9]; }
       const gl = glyphs.length ? cb.glyphsAt(x, y) : [];
-      if (gl.length) { const ally = gl.some(gg => gg.affects === 'allies'); fill = ally ? [0x46c8be, 0.32] : [0xc85a3c, 0.32]; stroke = ally ? [0xa0fff0, 0.85] : [0xffbe96, 0.85]; }
+      if (gl.length) { const ally = gl.some(gg => gg.affects === 'allies'); fill = ally ? [0xf3bc72, 0.3] : [0x9764d6, 0.34]; stroke = ally ? [0xf7e2b4, 0.9] : [0xd6beff, 0.9]; }
       if (placement) {
-        if (cb.isStartCell('player', x, y)) { fill = [0x3f8fff, 0.55]; stroke = [0x9fd7ff, 0.95]; g = gd; }
-        else if (cb.isStartCell('monster', x, y)) { fill = [0xe04a4a, 0.45]; stroke = [0xff9c9c, 0.85]; }
+        if (cb.isStartCell('player', x, y)) { fill = [0x209fec, 0.55]; stroke = [0xacdded, 0.95]; g = gd; }
+        else if (cb.isStartCell('monster', x, y)) { fill = [0xd9424f, 0.45]; stroke = [0xffb2ac, 0.85]; }
       }
-      if (H.move.has(k)) { fill = [0x4fd47a, 0.4]; stroke = [0xa8ffc4, 0.6]; g = g0; }
-      if (H.range.has(k)) { fill = [0x4a90ff, 0.38]; stroke = [0xb8dcff, 0.5]; g = g0; }
+      if (H.move.has(k)) { fill = [0x80d697, 0.42]; stroke = [0xcef6d6, 0.7]; g = g0; }
+      if (H.range.has(k)) { fill = [0x209fec, 0.38]; stroke = [0xacdded, 0.55]; g = g0; }
       if (H.blocked.has(k)) { fill = [0x000000, 0.4]; stroke = null; g = g0; }
-      if (H.aoe.has(k)) { fill = [0xff9a30, 0.6]; stroke = [0xffe0a0, 0.95]; g = g0; }
+      if (H.aoe.has(k)) { fill = [0xef7574, 0.58]; stroke = [0xffd6d0, 0.95]; g = g0; }
       if (!fill) continue;
       const p = this.cellToScreen(x, y);
       dia(g, p, 0.94); g.fill({ color: fill[0], alpha: fill[1] });
@@ -714,7 +714,7 @@ class RendererGL {
       key: 'c' + e.id, kind: 'entity', rx: e.rx, ry: e.ry, shape: e.shape, color: e.color, glyph: e.glyph, name: e.name,
       scale: e.boss ? 1.35 : (e.isSummon && !e.ally ? 0.8 : 1), alpha: (e.alpha == null ? 1 : e.alpha) * (e.hasState('invisible') ? 0.45 : 1), look: e.def.look, auraCos: Renderer.qualityParam() === 'basse' ? null : e.def.auraCos, lueur: e.def.lueur,
       team: e.team, flash: performance.now() < e.flashUntil, current: cb.actor === e, immune: e.immuneElement, boss: e.boss,
-      hp: e.hp / e.hpMax, shield: e.shield / e.hpMax, bob: e.hop || 0, motif: e.team === 'monster' ? Renderer.motifOf(e.def.id) : null,
+      hp: e.hp / e.hpMax, shield: e.shield / e.hpMax, bob: e.hop || 0, motif: e.team === 'monster' ? Renderer.motifOf(e.def.id) : null, figure: e.team === 'monster' ? (typeof Figures === 'object' ? Figures.de(e.def.id) : null) : null,
       facing: e.shape === 'player' ? e.facing || Renderer.faceFoe(cb, e) : 1, gender: e.def.gender,
       stunned: e.hasState('stunned'), invuln: !!e.def.invulnerable || e.hasState('invulnerable'), armor: e.modifier('armor') > 0,
       lantern: e.effects.some(f => f.type === 'state' && f.farDodge),
@@ -728,7 +728,7 @@ class RendererGL {
     out.push({ key: 'player', kind: 'entity', rx: p.rx, ry: p.ry, shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, scale: 1, alpha: 1, team: 'player', facing: p.facing, look: ap.look, auraCos: Renderer.qualityParam() === 'basse' ? null : ap.auraCos, lueur: ap.lueur, gender: ch.gender, bob: p.moving ? Math.abs(Math.sin(now / 70)) * 3 : Math.sin(now / 900) * 0.8, aura: true, insigne: Factions.insigne(ch) });
     for (const g of w.groups) {
       const def = DATA.monsters[g.monsters[0].id];
-      out.push({ key: 'g' + g.idx, kind: 'entity', rx: g.rx, ry: g.ry, shape: def.shape, color: def.color, glyph: null, name: def.name, scale: def.boss ? 1.3 : 0.95, alpha: 1, team: 'monster', facing: 1, bob: Math.sin(now / 500 + g.idx) * 1.5, badge: g.monsters.length > 1 ? `×${g.monsters.length}` : null, label: `${def.name} niv. ${g.level}`, motif: Renderer.motifOf(g.monsters[0].id), boss: def.boss });
+      out.push({ key: 'g' + g.idx, kind: 'entity', rx: g.rx, ry: g.ry, shape: def.shape, color: def.color, glyph: null, name: def.name, scale: def.boss ? 1.3 : 0.95, alpha: 1, team: 'monster', figure: (typeof Figures === 'object' ? Figures.de(def.id) : null), facing: 1, bob: Math.sin(now / 500 + g.idx) * 1.5, badge: g.monsters.length > 1 ? `×${g.monsters.length}` : null, label: `${def.name} niv. ${g.level}`, motif: Renderer.motifOf(g.monsters[0].id), boss: def.boss });
     }
     if (!this.marksAt || now - this.marksAt > 500 || this.marksMap !== w.mapId) {
       this.marksAt = now; this.marksMap = w.mapId; this.marks = {};
@@ -819,12 +819,12 @@ class RendererGL {
       const k = s.scale;
       const hero = s.shape === 'player' ? '|' + Renderer.heroKey(s) : '';
       const allure = typeof s.look === 'string' ? s.look : '';
-      this.setBody(e, `body|${pid}|${s.shape}|${allure}|${s.color}|${s.glyph || ''}|${s.motif || ''}|${s.team}|${s.flash ? 1 : 0}${hero}`, () => this.paintFigure(s));
+      this.setBody(e, `body|${pid}|${s.shape}|${allure}|${s.color}|${s.glyph || ''}|${s.motif || ''}|${s.team}|${s.flash ? 1 : 0}${hero}|${typeof Figures === 'object' ? Figures.cle(s.figure) : ''}`, () => this.paintFigure(s));
       e.body.scale.set(e.baseScale * k * Renderer.flipOf(s), e.baseScale * k);
       e.body.position.set(0, -(s.bob || 0));
       this.updateInsigne(e, s, now, k);
       e.shadow.scale.set(0.42 * 0.8 * k, 0.42 * 0.8 * k);
-      e.ringTeam.tint = s.team === 'player' ? 0x4a90ff : 0xff5a5a;
+      e.ringTeam.tint = s.team === 'player' ? 0x52d2f4 : 0xef7574;
       e.ringTeam.visible = !s.noRing;
       e.ringTeam.scale.set(0.38 * k, 0.38 * k);
       e.ringImmune.visible = !!s.immune;

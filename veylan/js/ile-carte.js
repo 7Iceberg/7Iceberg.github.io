@@ -307,11 +307,20 @@ void main() {
         return [[(bx + x0) / 2, by], [(bx + x1) / 2, by], [bx, (by + y0) / 2], [bx, (by + y1) / 2]].map(([cx, cy]) => pose({ su: cx, sv: cy, n: 1, pts: s.pts }));
       };
       for (const [z, s] of parZone) { const [x, y] = pose(s); out.zones.push({ cle: 'z:' + z.id, sorte: 'zone', nom: z.name, sous: niv(z.level), x, y, aire: s.n, zone: z.id, autres: autres(s) }); }
+      const parSous = new Map(), reperes = [];
       for (const [id, s] of parSecteur) {
         const d = typeof World === 'function' && World.mapDef ? World.mapDef(id) : null;
         if (!d) continue;
-        const [x, y] = pose(s);
-        out.sousZones.push({ cle: 's:' + id, sorte: 'sousZone', nom: d.name.charAt(0).toUpperCase() + d.name.slice(1), x, y, aire: s.n, map: id });
+        const nom = d.sousZone || d.name, cle = d.sousZone ? 'sz:' + d.sousZone : id;
+        let g = parSous.get(cle);
+        if (!g) { g = { nom, map: id, s: { su: 0, sv: 0, n: 0, pts: [] }, plus: 0 }; parSous.set(cle, g); }
+        g.s.su += s.su; g.s.sv += s.sv; g.s.n += s.n; for (const p of s.pts) g.s.pts.push(p);
+        if (s.n > g.plus) { g.plus = s.n; g.map = id; }
+        if (d.sousZone && d.name.toLowerCase() !== d.sousZone.toLowerCase()) { const [x, y] = pose(s); reperes.push({ cle: 'r:' + id, sorte: 'lieu', nom: d.name.charAt(0).toUpperCase() + d.name.slice(1), x, y, aire: 0 }); }
+      }
+      for (const [cle, g] of parSous) {
+        const [x, y] = pose(g.s);
+        out.sousZones.push({ cle: 's:' + (cle.startsWith('sz:') ? g.map : cle), sorte: 'sousZone', nom: g.nom.charAt(0).toUpperCase() + g.nom.slice(1), x, y, aire: g.s.n, map: g.map });
       }
       const parNom = new Map(out.sousZones.map(n => [n.nom.toLowerCase(), n]));
       for (const l of [].concat(def.places || [], def.eaux || [])) {
@@ -322,6 +331,7 @@ void main() {
         if (sz) sz.proche = [p[0], p[1]];
         else out.lieux.push({ cle: 'l:' + l.id, sorte: 'lieu', nom, x: p[0], y: p[1], aire: 0 });
       }
+      for (const r of reperes) if (!out.lieux.some(l => l.nom.toLowerCase() === r.nom.toLowerCase()) && !out.sousZones.some(n => n.nom.toLowerCase() === r.nom.toLowerCase())) out.lieux.push(r);
       out.zones.sort((a, b) => b.aire - a.aire);
       out.sousZones.sort((a, b) => b.aire - a.aire);
       return out;

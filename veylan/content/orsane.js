@@ -5,7 +5,7 @@ DATA.content.zones.push({
   description: 'La capitale de l\'Aube, posée tout en haut du monde, blanche et dorée sous les lanternes. On y arrive Veilleur, on en repart avec une tâche.',
   maps: [
     {
-      id: 'orsane_cimes_place', name: 'Place du Relais', level: [1, 2],
+      id: 'orsane_cimes_place', name: 'Place du Relais', sousZone: 'la Place du Relais', level: [1, 2],
       layout: [
         'TTTTTT.n.TTTTTT',
         'T,,,,,...,,,,,T',
@@ -31,7 +31,7 @@ DATA.content.zones.push({
       relay: true,
     },
     {
-      id: 'orsane_cimes_terrasses', name: 'Les Terrasses', level: [1, 2],
+      id: 'orsane_cimes_terrasses', name: 'Les Terrasses', sousZone: 'les Terrasses', level: [1, 2],
       layout: [
         'ooooooooooooooo',
         'o,,,,,,,,,,,,,o',
@@ -57,7 +57,7 @@ DATA.content.zones.push({
       relay: false,
     },
     {
-      id: 'orsane_cimes_ateliers', name: 'Rue des Ateliers', level: [1, 2],
+      id: 'orsane_cimes_ateliers', name: 'Rue des Ateliers', sousZone: 'la Place du Relais', level: [1, 2],
       layout: [
         '###############',
         '#,,,,,,,,,,,,,#',
@@ -83,7 +83,7 @@ DATA.content.zones.push({
       relay: false,
     },
     {
-      id: 'orsane_cimes_porte', name: 'Porte des Clairières', level: [1, 4],
+      id: 'orsane_cimes_porte', name: 'Porte des Clairières', sousZone: 'la Porte des Clairières', level: [1, 4],
       layout: [
         'TTTTTTTnTTTTTTT',
         'T,,,,,,.,,,,,,T',
@@ -118,10 +118,11 @@ DATA.content.zones.push({
 DATA.content.zones.push({
   id: 'orsane_clairieres', name: 'Les Clairières d\'Orsane', region: 'orsane', level: [1, 12],
   palette: 'orsane',
+  faune: { monstres: { pilou: 30, grouk: 25, piouk: 15, groukin: 15, filin: 10 }, tailles: { 1: 30, 2: 45, 3: 20, 4: 5 } },
   description: 'Des prés en pente douce sous les murs de la ville, coupés de bosquets et d\'un ruisseau. Les Glyms y nichent, et depuis peu les Grouks y grognent.',
   maps: [
     {
-      id: 'orsane_clairieres_lisiere', name: 'Le Seuil des Prés', level: [1, 4],
+      id: 'orsane_clairieres_lisiere', name: 'Le Seuil des Prés', sousZone: 'les Prés', penche: { pilou: 1.5, piouk: 1.5 }, level: [1, 4],
       layout: [
         'TTTTTTTnTTTTTTT',
         'TT,,,,,.,,,,,TT',
@@ -143,15 +144,15 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['bois_de_cime', 'herbe_de_veille'],
       groups: [
-        { monsters: ['piouk', 'groukin'], level: [1, 4], respawn: 40 },
-        { monsters: ['pilou'], level: [1, 4], respawn: 40 },
-        { monsters: ['pilou', 'groukin'], level: [1, 4], respawn: 40 },
+        { taille: [1, 3], monsters: ['piouk', 'groukin'], level: [1, 4], respawn: 40 },
+        { taille: [1, 2], monsters: ['pilou'], level: [1, 4], respawn: 40 },
+        { taille: [1, 3], monsters: ['pilou', 'groukin'], level: [1, 4], respawn: 40 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_clairieres_pres', name: 'Les Prés aux Glyms', level: [1, 6],
+      id: 'orsane_clairieres_pres', name: 'Les Prés aux Glyms', sousZone: 'les Prés', penche: { pilou: 2, piouk: 2 }, level: [1, 6],
       layout: [
         'TTTTTTTnTTTTTTT',
         'T,,,,,,.,,,,,,T',
@@ -173,16 +174,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['bois_de_cime'],
       groups: [
-        { monsters: ['pilou'], level: [1, 6], respawn: 40 },
-        { monsters: ['pilou', 'groukin'], level: [1, 6], respawn: 40 },
-        { monsters: ['piouk', 'piouk'], level: [1, 6], respawn: 40 },
-        { monsters: ['pilou', 'groukin'], level: [3, 6], respawn: 40 },
+        { taille: [1, 2], monsters: ['pilou'], level: [1, 6], respawn: 40 },
+        { taille: [1, 3], monsters: ['pilou', 'groukin'], level: [1, 6], respawn: 40 },
+        { taille: [1, 3], monsters: ['piouk', 'piouk'], level: [1, 6], respawn: 40 },
+        { taille: [1, 3], monsters: ['pilou', 'groukin'], level: [3, 6], respawn: 40 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_clairieres_ruisseau', name: 'Le Ruisseau', level: [3, 8],
+      id: 'orsane_clairieres_ruisseau', name: 'Le Ruisseau', sousZone: 'le Bosquet', level: [3, 8],
       layout: [
         'TTTTTTTTTTTTTTT',
         'T,,,,,,~~,,,,,T',
@@ -204,16 +205,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['herbe_de_veille', 'bois_de_cime'],
       groups: [
-        { monsters: ['pilou', 'groukin'], level: [3, 8], respawn: 40 },
-        { monsters: ['grouk'], level: [5, 8], respawn: 45 },
-        { monsters: ['pilou', 'grouk'], level: [5, 8], respawn: 45 },
-        { monsters: ['groukin', 'groukin'], level: [3, 8], respawn: 40 },
+        { taille: [1, 3], monsters: ['pilou', 'groukin'], level: [3, 8], respawn: 40 },
+        { taille: [1, 2], monsters: ['grouk'], level: [5, 8], respawn: 45 },
+        { taille: [1, 3], monsters: ['pilou', 'grouk'], level: [5, 8], respawn: 45 },
+        { taille: [1, 3], monsters: ['groukin', 'groukin'], level: [3, 8], respawn: 40 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_clairieres_bosquet', name: 'Le Bosquet', level: [5, 10],
+      id: 'orsane_clairieres_bosquet', name: 'Le Bosquet', sousZone: 'le Bosquet', penche: { filin: 2 }, level: [5, 10],
       layout: [
         'TTTTTTTnTTTTTTT',
         'TT,,,,,.,,,,,TT',
@@ -235,16 +236,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['bois_de_cime', 'pierre_de_calcaire'],
       groups: [
-        { monsters: ['grouk', 'pilou'], level: [5, 10], respawn: 45 },
-        { monsters: ['filin', 'groukin'], level: [5, 10], respawn: 45 },
-        { monsters: ['grouk', 'grouk'], level: [5, 10], respawn: 45 },
-        { monsters: ['grouk', 'pilou', 'pilou'], level: [7, 10], respawn: 50 },
+        { taille: [1, 3], monsters: ['grouk', 'pilou'], level: [5, 10], respawn: 45 },
+        { taille: [1, 3], monsters: ['filin', 'groukin'], level: [5, 10], respawn: 45 },
+        { taille: [1, 3], monsters: ['grouk', 'grouk'], level: [5, 10], respawn: 45 },
+        { taille: [2, 4], monsters: ['grouk', 'pilou', 'pilou'], level: [7, 10], respawn: 50 },
       ],
       dungeon: 'grenier_des_pilous',
       relay: false,
     },
     {
-      id: 'orsane_clairieres_mare', name: 'La Mare aux Grouks', level: [7, 12],
+      id: 'orsane_clairieres_mare', name: 'La Mare aux Grouks', sousZone: 'la Mare aux Grouks', penche: { grouk: 2, groukin: 1.5 }, level: [7, 12],
       layout: [
         'TTTTTTTTTTTnTTT',
         'T,,,,,,,,,,.,,T',
@@ -266,16 +267,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['herbe_de_veille'],
       groups: [
-        { monsters: ['grouk', 'grouk'], level: [7, 12], respawn: 50 },
-        { monsters: ['grouk', 'pilou', 'pilou'], level: [7, 12], respawn: 50 },
-        { monsters: ['grouk', 'grouk', 'pilou'], level: [9, 12], respawn: 50 },
-        { monsters: ['kavou_bleu', 'kavou_roux'], level: [7, 12], respawn: 50 },
+        { taille: [1, 3], monsters: ['grouk', 'grouk'], level: [7, 12], respawn: 50 },
+        { taille: [2, 4], monsters: ['grouk', 'pilou', 'pilou'], level: [7, 12], respawn: 50 },
+        { taille: [2, 4], monsters: ['grouk', 'grouk', 'pilou'], level: [9, 12], respawn: 50 },
+        { fixe: true, monsters: ['kavou_bleu', 'kavou_roux'], level: [7, 12], respawn: 50 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_clairieres_oree', name: 'L\'Orée des Sentiers', level: [7, 12],
+      id: 'orsane_clairieres_oree', name: 'L\'Orée des Sentiers', sousZone: 'la Mare aux Grouks', penche: { grouk: 2 }, level: [7, 12],
       layout: [
         'TTTTTTTTnTTTTTT',
         'T,,,,,,,.,,,,,T',
@@ -297,10 +298,10 @@ DATA.content.zones.push({
       npcs: ['dalric'],
       nodes: ['bois_de_cime'],
       groups: [
-        { monsters: ['grouk', 'grouk'], level: [7, 12], respawn: 50 },
-        { monsters: ['pilou', 'pilou', 'grouk'], level: [7, 12], respawn: 50 },
-        { monsters: ['grouk', 'grouk', 'grouk'], level: [9, 12], respawn: 55 },
-        { monsters: ['kavou_ocre', 'kavou_blanc'], level: [7, 12], respawn: 50 },
+        { taille: [1, 3], monsters: ['grouk', 'grouk'], level: [7, 12], respawn: 50 },
+        { taille: [2, 4], monsters: ['pilou', 'pilou', 'grouk'], level: [7, 12], respawn: 50 },
+        { taille: [2, 4], monsters: ['grouk', 'grouk', 'grouk'], level: [9, 12], respawn: 55 },
+        { fixe: true, monsters: ['kavou_ocre', 'kavou_blanc'], level: [7, 12], respawn: 50 },
       ],
       dungeon: null,
       relay: false,
@@ -311,10 +312,11 @@ DATA.content.zones.push({
 DATA.content.zones.push({
   id: 'orsane_sentiers', name: 'Les Sentiers des Cimes', region: 'orsane', level: [9, 24],
   palette: 'orsane',
+  faune: { monstres: { grouk: 35, tissefil: 30, filin: 10, loche: 10, brim: 10 }, tailles: { 1: 5, 2: 35, 3: 45, 4: 15 } },
   description: 'Les chemins de pierre qui grimpent au-dessus des Clairières, entre rochers, corniches et un pont au-dessus du vide. Les Grouks y ont leurs tanières et les Tissefils commencent à y tendre leurs toiles.',
   maps: [
     {
-      id: 'orsane_sentiers_montee', name: 'La Montée', level: [9, 14],
+      id: 'orsane_sentiers_montee', name: 'La Montée', sousZone: 'la Montée', level: [9, 14],
       layout: [
         '###############',
         '#,,##,,,,,##,,#',
@@ -336,16 +338,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['pierre_de_calcaire', 'bois_noueux'],
       groups: [
-        { monsters: ['grouk', 'grouk'], level: [9, 14], respawn: 50 },
-        { monsters: ['filin', 'filin', 'grouk'], level: [9, 14], respawn: 50 },
-        { monsters: ['grouk', 'grouk', 'pilou'], level: [9, 14], respawn: 50 },
-        { monsters: ['grouk', 'tissefil'], level: [11, 14], respawn: 55 },
+        { taille: [1, 3], monsters: ['grouk', 'grouk'], level: [9, 14], respawn: 50 },
+        { taille: [2, 4], monsters: ['filin', 'filin', 'grouk'], level: [9, 14], respawn: 50 },
+        { taille: [2, 4], monsters: ['grouk', 'grouk', 'pilou'], level: [9, 14], respawn: 50 },
+        { taille: [1, 3], monsters: ['grouk', 'tissefil'], level: [11, 14], respawn: 55 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_sentiers_relais', name: 'Relais des Sentiers', level: [9, 16],
+      id: 'orsane_sentiers_relais', name: 'Relais des Sentiers', sousZone: 'la Montée', level: [9, 16],
       layout: [
         '######.n.######',
         '#,,,,,...,,,,,#',
@@ -367,15 +369,15 @@ DATA.content.zones.push({
       npcs: ['ravik'],
       nodes: ['pierre_de_calcaire'],
       groups: [
-        { monsters: ['kavou_bleu', 'kavou_roux', 'kavou_ocre'], level: [9, 12], respawn: 60 },
-        { monsters: ['grouk', 'grouk'], level: [9, 16], respawn: 55 },
-        { monsters: ['grouk', 'tissefil'], level: [11, 16], respawn: 55 },
+        { fixe: true, monsters: ['kavou_bleu', 'kavou_roux', 'kavou_ocre'], level: [9, 12], respawn: 60 },
+        { taille: [1, 3], monsters: ['grouk', 'grouk'], level: [9, 16], respawn: 55 },
+        { taille: [1, 3], monsters: ['grouk', 'tissefil'], level: [11, 16], respawn: 55 },
       ],
       dungeon: null,
       relay: true,
     },
     {
-      id: 'orsane_sentiers_corniche', name: 'La Corniche', level: [13, 20],
+      id: 'orsane_sentiers_corniche', name: 'La Corniche', sousZone: 'la Corniche', penche: { loche: 2 }, level: [13, 20],
       layout: [
         'ooooooooooooooo',
         'oo,,,,,,,,,,,,o',
@@ -397,16 +399,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['pierre_de_calcaire', 'bois_noueux'],
       groups: [
-        { monsters: ['grouk', 'grouk', 'tissefil'], level: [13, 20], respawn: 55 },
-        { monsters: ['tissefil', 'tissefil'], level: [13, 20], respawn: 55 },
-        { monsters: ['grouk', 'grouk', 'grouk'], level: [15, 20], respawn: 60 },
-        { monsters: ['loche', 'loche', 'tissefil'], level: [13, 20], respawn: 55 },
+        { taille: [2, 4], monsters: ['grouk', 'grouk', 'tissefil'], level: [13, 20], respawn: 55 },
+        { taille: [1, 3], monsters: ['tissefil', 'tissefil'], level: [13, 20], respawn: 55 },
+        { taille: [2, 4], monsters: ['grouk', 'grouk', 'grouk'], level: [15, 20], respawn: 60 },
+        { taille: [2, 4], monsters: ['loche', 'loche', 'tissefil'], level: [13, 20], respawn: 55 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_sentiers_pont', name: 'Le Pont du Vide', level: [15, 22],
+      id: 'orsane_sentiers_pont', name: 'Le Pont du Vide', sousZone: 'la Crête', penche: { brim: 2 }, level: [15, 22],
       layout: [
         '###############',
         '#,,,,,ooo,,,,,#',
@@ -428,16 +430,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['bois_noueux'],
       groups: [
-        { monsters: ['tissefil', 'tissefil', 'grouk'], level: [15, 22], respawn: 60 },
-        { monsters: ['grouk', 'grouk', 'tissefil'], level: [15, 22], respawn: 60 },
-        { monsters: ['brim', 'brim', 'tissefil'], level: [15, 22], respawn: 60 },
-        { monsters: ['tissefil', 'tissefil', 'tissefil'], level: [17, 22], respawn: 60 },
+        { taille: [2, 4], monsters: ['tissefil', 'tissefil', 'grouk'], level: [15, 22], respawn: 60 },
+        { taille: [2, 4], monsters: ['grouk', 'grouk', 'tissefil'], level: [15, 22], respawn: 60 },
+        { taille: [2, 4], monsters: ['brim', 'brim', 'tissefil'], level: [15, 22], respawn: 60 },
+        { taille: [2, 4], monsters: ['tissefil', 'tissefil', 'tissefil'], level: [17, 22], respawn: 60 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_sentiers_halte', name: 'La Halte de Thoril', level: [11, 18],
+      id: 'orsane_sentiers_halte', name: 'La Halte de Thoril', sousZone: 'la Corniche', penche: { loche: 2, filin: 1.5 }, level: [11, 18],
       layout: [
         '######.n.######',
         '#,,,,,...,,,,,#',
@@ -459,17 +461,17 @@ DATA.content.zones.push({
       npcs: ['thoril', 'osk'],
       nodes: ['bois_noueux', 'pierre_de_calcaire'],
       groups: [
-        { monsters: ['tissefil', 'grouk'], level: [11, 18], respawn: 55 },
-        { monsters: ['loche', 'loche', 'filin'], level: [11, 18], respawn: 55 },
-        { monsters: ['tissefil', 'tissefil'], level: [11, 18], respawn: 55 },
-        { monsters: ['grouk', 'grouk', 'tissefil'], level: [13, 18], respawn: 60 },
-        { monsters: ['glouton'], level: [13, 18], respawn: 90 },
+        { taille: [1, 3], monsters: ['tissefil', 'grouk'], level: [11, 18], respawn: 55 },
+        { taille: [2, 4], monsters: ['loche', 'loche', 'filin'], level: [11, 18], respawn: 55 },
+        { taille: [1, 3], monsters: ['tissefil', 'tissefil'], level: [11, 18], respawn: 55 },
+        { taille: [2, 4], monsters: ['grouk', 'grouk', 'tissefil'], level: [13, 18], respawn: 60 },
+        { fixe: true, monsters: ['glouton'], level: [13, 18], respawn: 90 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_sentiers_crete', name: 'La Crête', level: [17, 24],
+      id: 'orsane_sentiers_crete', name: 'La Crête', sousZone: 'la Crête', penche: { brim: 1.5, tissefil: 1.5 }, level: [17, 24],
       layout: [
         '###########n###',
         '#,,D,,,,,,,.,,#',
@@ -491,11 +493,11 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['pierre_de_calcaire'],
       groups: [
-        { monsters: ['grouk', 'grouk', 'tissefil'], level: [17, 24], respawn: 60 },
-        { monsters: ['tissefil', 'tissefil', 'grouk'], level: [17, 24], respawn: 60 },
-        { monsters: ['grouk', 'grouk', 'grouk'], level: [19, 24], respawn: 60 },
-        { monsters: ['oreth'], level: [19, 24], respawn: 300, crepuscule: true },
-        { monsters: ['tissefil', 'tissefil', 'tissefil', 'brim'], level: [19, 24], respawn: 65 },
+        { taille: [2, 4], monsters: ['grouk', 'grouk', 'tissefil'], level: [17, 24], respawn: 60 },
+        { taille: [2, 4], monsters: ['tissefil', 'tissefil', 'grouk'], level: [17, 24], respawn: 60 },
+        { taille: [2, 4], monsters: ['grouk', 'grouk', 'grouk'], level: [19, 24], respawn: 60 },
+        { taille: [1, 2], monsters: ['oreth'], level: [19, 24], respawn: 300, crepuscule: true },
+        { taille: [3, 4], monsters: ['tissefil', 'tissefil', 'tissefil', 'brim'], level: [19, 24], respawn: 65 },
       ],
       dungeon: 'voliere_des_kavous',
       relay: false,
@@ -506,10 +508,11 @@ DATA.content.zones.push({
 DATA.content.zones.push({
   id: 'orsane_toiles', name: 'Les Toiles', region: 'orsane', level: [19, 32],
   palette: 'orsane',
+  faune: { monstres: { tissefil: 40, veilloche: 25, tissefil_ancien: 10, veilloche_tissee: 10, grouk_cornu: 8 }, tailles: { 2: 20, 3: 50, 4: 30 } },
   description: 'Une forêt de pins morts tendue de fils gris, où les lanternes de l\'Aube brillent encore à travers les toiles. Les Tissefils y nichent et les Veilloches y veillent, plus nombreux chaque nuit.',
   maps: [
     {
-      id: 'orsane_toiles_entree', name: 'Le Seuil des Toiles', level: [19, 24],
+      id: 'orsane_toiles_entree', name: 'Le Seuil des Toiles', sousZone: 'les Fils Tendus', level: [19, 24],
       layout: [
         'TTTTTTTTTTTTTTT',
         'T,,,,,,,,,,,,,T',
@@ -531,16 +534,16 @@ DATA.content.zones.push({
       npcs: ['thevra'],
       nodes: ['bois_noueux'],
       groups: [
-        { monsters: ['tissefil', 'tissefil', 'tissefil'], level: [19, 24], respawn: 60 },
-        { monsters: ['grouk_cornu', 'tissefil', 'tissefil'], level: [19, 24], respawn: 60 },
-        { monsters: ['tissefil', 'tissefil', 'veilloche'], level: [19, 24], respawn: 60 },
-        { monsters: ['tissefil', 'veilloche', 'grouk'], level: [19, 24], respawn: 60 },
+        { taille: [2, 4], monsters: ['tissefil', 'tissefil', 'tissefil'], level: [19, 24], respawn: 60 },
+        { taille: [2, 4], monsters: ['grouk_cornu', 'tissefil', 'tissefil'], level: [19, 24], respawn: 60 },
+        { taille: [2, 4], monsters: ['tissefil', 'tissefil', 'veilloche'], level: [19, 24], respawn: 60 },
+        { taille: [2, 4], monsters: ['tissefil', 'veilloche', 'grouk'], level: [19, 24], respawn: 60 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_toiles_fils', name: 'Les Fils Tendus', level: [21, 26],
+      id: 'orsane_toiles_fils', name: 'Les Fils Tendus', sousZone: 'les Fils Tendus', level: [21, 26],
       layout: [
         'TTTTTTTTTTTTTTT',
         'TT,,,,,,,,,,,TT',
@@ -562,16 +565,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['herbe_de_veille', 'bois_noueux'],
       groups: [
-        { monsters: ['tissefil', 'tissefil', 'tissefil'], level: [21, 26], respawn: 60 },
-        { monsters: ['tissefil', 'tissefil', 'veilloche'], level: [21, 26], respawn: 60 },
-        { monsters: ['veilloche', 'veilloche', 'tissefil'], level: [23, 26], respawn: 65 },
-        { monsters: ['grouk_cornu', 'brim', 'brim'], level: [21, 26], respawn: 60 },
+        { taille: [2, 4], monsters: ['tissefil', 'tissefil', 'tissefil'], level: [21, 26], respawn: 60 },
+        { taille: [2, 4], monsters: ['tissefil', 'tissefil', 'veilloche'], level: [21, 26], respawn: 60 },
+        { taille: [2, 4], monsters: ['veilloche', 'veilloche', 'tissefil'], level: [23, 26], respawn: 65 },
+        { taille: [2, 4], monsters: ['grouk_cornu', 'brim', 'brim'], level: [21, 26], respawn: 60 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_toiles_lanternes', name: 'L\'Allée des Lanternes', level: [23, 30],
+      id: 'orsane_toiles_lanternes', name: 'L\'Allée des Lanternes', sousZone: 'l\'Allée des Lanternes', penche: { veilloche: 2, veilloche_tissee: 2 }, level: [23, 30],
       layout: [
         'TTTTTTTTTTTTTTT',
         'T,,,,,,,,,,,,,T',
@@ -593,17 +596,17 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['herbe_de_veille'],
       groups: [
-        { monsters: ['veilloche', 'veilloche', 'tissefil'], level: [23, 30], respawn: 65 },
-        { monsters: ['veilloche_tissee', 'veilloche', 'tissefil'], level: [27, 30], respawn: 65 },
-        { monsters: ['veilloche', 'tissefil', 'tissefil', 'tissefil'], level: [23, 30], respawn: 65 },
-        { monsters: ['kavou_pourpre', 'kavou_pourpre'], level: [23, 30], respawn: 65 },
-        { monsters: ['veilloche', 'veilloche', 'veilloche_tissee'], level: [25, 30], respawn: 65 },
+        { taille: [2, 4], monsters: ['veilloche', 'veilloche', 'tissefil'], level: [23, 30], respawn: 65 },
+        { taille: [2, 4], monsters: ['veilloche_tissee', 'veilloche', 'tissefil'], level: [27, 30], respawn: 65 },
+        { taille: [3, 4], monsters: ['veilloche', 'tissefil', 'tissefil', 'tissefil'], level: [23, 30], respawn: 65 },
+        { fixe: true, monsters: ['kavou_pourpre', 'kavou_pourpre'], level: [23, 30], respawn: 65 },
+        { taille: [2, 4], monsters: ['veilloche', 'veilloche', 'veilloche_tissee'], level: [25, 30], respawn: 65 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_toiles_nid', name: 'Le Nid des Toiles', level: [25, 32],
+      id: 'orsane_toiles_nid', name: 'Le Nid des Toiles', sousZone: 'le Nid des Toiles', penche: { tissefil_ancien: 2 }, level: [25, 32],
       layout: [
         'TTTTTTTnTTTTTTT',
         'TT,,,,,.,,,,,TT',
@@ -625,15 +628,15 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['bois_noueux'],
       groups: [
-        { monsters: ['tissefil_ancien', 'tissefil', 'tissefil', 'tissefil'], level: [25, 32], respawn: 90 },
-        { monsters: ['tissefil', 'tissefil', 'tissefil', 'tissefil'], level: [23, 32], respawn: 90 },
-        { monsters: ['tissefil', 'tissefil', 'tissefil', 'tissefil'], level: [23, 32], respawn: 90 },
+        { taille: [3, 4], monsters: ['tissefil_ancien', 'tissefil', 'tissefil', 'tissefil'], level: [25, 32], respawn: 90 },
+        { taille: [3, 4], monsters: ['tissefil', 'tissefil', 'tissefil', 'tissefil'], level: [23, 32], respawn: 90 },
+        { taille: [3, 4], monsters: ['tissefil', 'tissefil', 'tissefil', 'tissefil'], level: [23, 32], respawn: 90 },
       ],
       dungeon: 'nid_des_toiles',
       relay: false,
     },
     {
-      id: 'orsane_toiles_sortie', name: 'Le Bord des Éboulis', level: [25, 32],
+      id: 'orsane_toiles_sortie', name: 'Le Bord des Éboulis', sousZone: 'le Nid des Toiles', penche: { tissefil_ancien: 1.5 }, level: [25, 32],
       layout: [
         'TTTTTTTTTTTnTTT',
         'T,,,,,,,,,,.,,T',
@@ -655,10 +658,10 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['herbe_de_veille'],
       groups: [
-        { monsters: ['tissefil', 'tissefil', 'veilloche'], level: [23, 32], respawn: 65 },
-        { monsters: ['veilloche', 'veilloche', 'tissefil', 'tissefil'], level: [23, 32], respawn: 70 },
-        { monsters: ['tissefil', 'tissefil', 'tissefil', 'brimbe'], level: [23, 32], respawn: 70 },
-        { monsters: ['tissefil_ancien', 'tissefil_ancien', 'veilloche'], level: [25, 32], respawn: 70 },
+        { taille: [2, 4], monsters: ['tissefil', 'tissefil', 'veilloche'], level: [23, 32], respawn: 65 },
+        { taille: [3, 4], monsters: ['veilloche', 'veilloche', 'tissefil', 'tissefil'], level: [23, 32], respawn: 70 },
+        { taille: [3, 4], monsters: ['tissefil', 'tissefil', 'tissefil', 'brimbe'], level: [23, 32], respawn: 70 },
+        { taille: [2, 4], monsters: ['tissefil_ancien', 'tissefil_ancien', 'veilloche'], level: [25, 32], respawn: 70 },
       ],
       dungeon: null,
       relay: false,
@@ -669,10 +672,11 @@ DATA.content.zones.push({
 DATA.content.zones.push({
   id: 'orsane_eboulis', name: 'Les Éboulis', region: 'orsane', level: [27, 40],
   palette: 'orsane',
+  faune: { monstres: { brimbe: 35, grouk: 25, veilloche: 15, glek: 12, thelk: 10 }, tailles: { 2: 10, 3: 50, 4: 40 } },
   description: 'Le versant est des Cimes, un chaos de rochers tombés d\'on ne sait où. Les Brimbes y lancent leurs galets, les Grouks y creusent, et tout en haut s\'ouvre le Terrier.',
   maps: [
     {
-      id: 'orsane_eboulis_pente', name: 'La Pente aux Galets', level: [27, 32],
+      id: 'orsane_eboulis_pente', name: 'La Pente aux Galets', sousZone: 'la Pente aux Galets', penche: { glek: 2 }, level: [27, 32],
       layout: [
         '###############',
         '#,,#,,,,,,,#,,#',
@@ -694,16 +698,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['pierre_de_calcaire', 'pierre_de_calcaire'],
       groups: [
-        { monsters: ['brimbe', 'brimbe', 'grouk'], level: [27, 32], respawn: 70 },
-        { monsters: ['brimbe', 'grouk', 'grouk'], level: [27, 32], respawn: 70 },
-        { monsters: ['brimbe', 'brimbe', 'brimbe', 'veilloche'], level: [29, 32], respawn: 75 },
-        { monsters: ['glek', 'glek', 'brimbe'], level: [27, 32], respawn: 70 },
+        { taille: [2, 4], monsters: ['brimbe', 'brimbe', 'grouk'], level: [27, 32], respawn: 70 },
+        { taille: [2, 4], monsters: ['brimbe', 'grouk', 'grouk'], level: [27, 32], respawn: 70 },
+        { taille: [3, 4], monsters: ['brimbe', 'brimbe', 'brimbe', 'veilloche'], level: [29, 32], respawn: 75 },
+        { taille: [2, 4], monsters: ['glek', 'glek', 'brimbe'], level: [27, 32], respawn: 70 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_eboulis_relais', name: 'Relais des Éboulis', level: [27, 34],
+      id: 'orsane_eboulis_relais', name: 'Relais des Éboulis', sousZone: 'la Pente aux Galets', level: [27, 34],
       layout: [
         '#######n#######',
         '#,,,,,,.,,,,,,#',
@@ -725,15 +729,15 @@ DATA.content.zones.push({
       npcs: ['elkor', 'avreth', 'karvel', 'lekra'],
       nodes: ['pierre_de_calcaire'],
       groups: [
-        { monsters: ['veilloche_tissee', 'brimbe', 'brimbe'], level: [27, 34], respawn: 70 },
-        { monsters: ['brimbe', 'brimbe', 'veilloche'], level: [27, 34], respawn: 70 },
-        { monsters: ['grouk', 'grouk', 'brimbe'], level: [29, 34], respawn: 70 },
+        { taille: [2, 4], monsters: ['veilloche_tissee', 'brimbe', 'brimbe'], level: [27, 34], respawn: 70 },
+        { taille: [2, 4], monsters: ['brimbe', 'brimbe', 'veilloche'], level: [27, 34], respawn: 70 },
+        { taille: [2, 4], monsters: ['grouk', 'grouk', 'brimbe'], level: [29, 34], respawn: 70 },
       ],
       dungeon: null,
       relay: true,
     },
     {
-      id: 'orsane_eboulis_terrier', name: 'La Gueule du Terrier', level: [33, 40],
+      id: 'orsane_eboulis_terrier', name: 'La Gueule du Terrier', sousZone: 'le Chaos', penche: { grouk: 2 }, level: [33, 40],
       layout: [
         '###############',
         '#,,,,,#D#,,,,,#',
@@ -755,16 +759,16 @@ DATA.content.zones.push({
       npcs: ['kethril'],
       nodes: ['pierre_de_calcaire'],
       groups: [
-        { monsters: ['grouk', 'grouk', 'grouk', 'brimbe'], level: [33, 40], respawn: 75 },
-        { monsters: ['grouk', 'grouk', 'veilloche', 'brimbe'], level: [33, 40], respawn: 75 },
-        { monsters: ['grouk', 'grouk', 'grouk', 'grouk'], level: [35, 40], respawn: 80 },
-        { monsters: ['brimbe_fendue', 'brimbe', 'grouk', 'grouk'], level: [35, 40], respawn: 80 },
+        { taille: [3, 4], monsters: ['grouk', 'grouk', 'grouk', 'brimbe'], level: [33, 40], respawn: 75 },
+        { taille: [3, 4], monsters: ['grouk', 'grouk', 'veilloche', 'brimbe'], level: [33, 40], respawn: 75 },
+        { taille: [3, 4], monsters: ['grouk', 'grouk', 'grouk', 'grouk'], level: [35, 40], respawn: 80 },
+        { fixe: true, monsters: ['brimbe_fendue', 'brimbe', 'grouk', 'grouk'], level: [35, 40], respawn: 80 },
       ],
       dungeon: 'terrier_du_grand_grouk',
       relay: false,
     },
     {
-      id: 'orsane_eboulis_chaos', name: 'Le Chaos', level: [31, 38],
+      id: 'orsane_eboulis_chaos', name: 'Le Chaos', sousZone: 'le Chaos', penche: { thelk: 2, glek: 1.5 }, level: [31, 38],
       layout: [
         '###############',
         '#,,,,,,,,,,,,,#',
@@ -786,18 +790,18 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['pierre_de_calcaire', 'bois_noueux'],
       groups: [
-        { monsters: ['brimbe', 'brimbe', 'grouk'], level: [31, 38], respawn: 70 },
-        { monsters: ['brimbe', 'veilloche', 'grouk', 'grouk'], level: [29, 38], respawn: 75 },
-        { monsters: ['thelk', 'glek', 'glek'], level: [31, 38], respawn: 75 },
-        { monsters: ['brimbe', 'brimbe', 'brimbe', 'veilloche'], level: [29, 38], respawn: 75 },
-        { monsters: ['grouk', 'grouk', 'grouk', 'veilloche'], level: [29, 38], respawn: 75 },
-        { monsters: ['pilou_defait', 'pilou_defait', 'brimbe'], level: [31, 36], respawn: 75 },
+        { taille: [2, 4], monsters: ['brimbe', 'brimbe', 'grouk'], level: [31, 38], respawn: 70 },
+        { taille: [3, 4], monsters: ['brimbe', 'veilloche', 'grouk', 'grouk'], level: [29, 38], respawn: 75 },
+        { taille: [2, 4], monsters: ['thelk', 'glek', 'glek'], level: [31, 38], respawn: 75 },
+        { taille: [3, 4], monsters: ['brimbe', 'brimbe', 'brimbe', 'veilloche'], level: [29, 38], respawn: 75 },
+        { taille: [3, 4], monsters: ['grouk', 'grouk', 'grouk', 'veilloche'], level: [29, 38], respawn: 75 },
+        { fixe: true, monsters: ['pilou_defait', 'pilou_defait', 'brimbe'], level: [31, 36], respawn: 75 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_eboulis_passe', name: 'La Passe de Kaldum', level: [35, 40],
+      id: 'orsane_eboulis_passe', name: 'La Passe de Kaldum', sousZone: 'la Passe de Kaldum', penche: { thelk: 1.5, brimbe: 1.5 }, level: [35, 40],
       layout: [
         '###############',
         '##,,,,,,,,,,,##',
@@ -819,11 +823,11 @@ DATA.content.zones.push({
       npcs: ['ulkara'],
       nodes: ['pierre_de_calcaire'],
       groups: [
-        { monsters: ['brimbe', 'brimbe', 'veilloche'], level: [35, 40], respawn: 75 },
-        { monsters: ['thelk', 'thelk', 'brimbe'], level: [35, 40], respawn: 80 },
-        { monsters: ['korvath'], level: [43, 48], respawn: 600 },
-        { monsters: ['brimbe', 'brimbe', 'grouk', 'veilloche'], level: [35, 40], respawn: 80 },
-        { monsters: ['brimbe', 'brimbe', 'brimbe', 'brimbe'], level: [35, 40], respawn: 80 },
+        { taille: [2, 4], monsters: ['brimbe', 'brimbe', 'veilloche'], level: [35, 40], respawn: 75 },
+        { taille: [2, 4], monsters: ['thelk', 'thelk', 'brimbe'], level: [35, 40], respawn: 80 },
+        { taille: [1, 2], monsters: ['korvath'], level: [43, 48], respawn: 600 },
+        { taille: [3, 4], monsters: ['brimbe', 'brimbe', 'grouk', 'veilloche'], level: [35, 40], respawn: 80 },
+        { taille: [3, 4], monsters: ['brimbe', 'brimbe', 'brimbe', 'brimbe'], level: [35, 40], respawn: 80 },
       ],
       dungeon: null,
       relay: false,
@@ -1026,6 +1030,7 @@ DATA.content.quests.push({
 DATA.content.quests.push({
   id: 'orsane_grenier_des_pilous', name: 'Le Grenier des Glyms', level: 7, main: true,
   giver: 'varek', turnIn: 'orvak', requires: { level: 5, quests: ['orsane_lanternes_volees'] },
+  startItems: [{ id: 'cle_du_grenier', count: 1 }],
   steps: [
     { type: 'visit', map: 'orsane_clairieres_bosquet', text: 'Trouver la vieille grange du Bosquet' },
     { type: 'dungeon', dungeon: 'grenier_des_pilous', text: 'Reprendre les lanternes dans le Grenier des Glyms' },
@@ -1259,6 +1264,7 @@ DATA.content.quests.push({
 DATA.content.quests.push({
   id: 'orsane_kavous_de_thoril', name: 'Les Kavous de Thoril', level: 25, main: false,
   giver: 'thoril', requires: { level: 23, quests: [] },
+  startItems: [{ id: 'cle_de_la_voliere', count: 1 }],
   steps: [
     { type: 'visit', map: 'orsane_sentiers_crete', text: 'Trouver la vieille volière sur la Crête' },
     { type: 'dungeon', dungeon: 'voliere_des_kavous', text: 'Traverser la Volière des Kavous' },
@@ -1274,6 +1280,7 @@ DATA.content.quests.push({
 DATA.content.quests.push({
   id: 'orsane_cocon_de_thevra', name: 'Le cocon', level: 25, main: false,
   giver: 'thevra', requires: { level: 23, quests: [] },
+  startItems: [{ id: 'cle_du_nid', count: 1 }],
   steps: [
     { type: 'visit', map: 'orsane_toiles_nid', text: 'Descendre au Nid des Toiles' },
     { type: 'dungeon', dungeon: 'nid_des_toiles', text: 'Déchirer le cocon de la Fileuse au fond du Nid' },
@@ -1533,7 +1540,7 @@ DATA.content.dungeons.push({
   id: 'grenier_des_pilous', name: 'Le Grenier des Glyms', zone: 'orsane_clairieres', level: [7, 12],
   entryMap: 'orsane_clairieres_bosquet',
   salles3d: { tuiles: 'planches', sol: 'planches', paroi: 'bois', lumiere: '#f2c14e', brume: '#2b2418' },
-  keyItem: null,
+  keyItem: 'cle_du_grenier',
   description: 'Le grenier d\'une vieille grange du Bosquet, où les Glyms entassent toutes les lanternes qu\'ils chapardent. Ça sent la paille, la plume et la mèche brûlée.',
   rooms: [
     {
@@ -1608,7 +1615,7 @@ DATA.content.dungeons.push({
   id: 'voliere_des_kavous', name: 'La Volière des Kavous', zone: 'orsane_sentiers', level: [23, 28],
   entryMap: 'orsane_sentiers_crete',
   salles3d: { tuiles: 'claire', sol: 'dalles_claires', paroi: 'roche_grise', lumiere: '#e8d890', brume: '#262a38' },
-  keyItem: null,
+  keyItem: 'cle_de_la_voliere',
   description: 'La vieille volière de Thoril, accrochée à la Crête : un perchoir par couleur, et des Kavous partout. Au sommet, le Kavou Prisme change de couleur plus vite qu\'on ne change d\'avis.',
   rooms: [
     {
@@ -1725,7 +1732,7 @@ DATA.content.dungeons.push({
   id: 'nid_des_toiles', name: 'Le Nid des Toiles', zone: 'orsane_toiles', level: [23, 28],
   entryMap: 'orsane_toiles_nid',
   salles3d: { texture: 'toiles', sol: 'sous_bois', paroi: 'bois_mort', lumiere: '#c8e0a0', brume: '#1e2428' },
-  keyItem: null,
+  keyItem: 'cle_du_nid',
   description: 'Sous le Nid, les toiles descendent en galeries tièdes et serrées, où les Filins jouent et les Veilloches éclairent le travail. Tout au fond, la Fileuse dort dans son cocon, tenu par deux fils.',
   rooms: [
     {
@@ -2148,6 +2155,7 @@ DATA.content.quests.push({
 DATA.content.quests.push({
   id: 'remue_secret_du_grenier', name: 'Le secret du Grenier', level: 11, main: false, category: 'donjon',
   giver: 'kelthar', turnIn: 'fenna', requires: { level: 9, quests: ['orsane_grenier_des_pilous'] },
+  startItems: [{ id: 'cle_du_grenier', count: 1 }],
   steps: [
     { type: 'dungeon', dungeon: 'grenier_des_pilous', text: 'Retraverser le Grenier des Glyms jusqu\'au Chapardeur' },
     { type: 'talk', npc: 'fenna', text: 'Raconter à Fenna ce que cachait le Grenier' },

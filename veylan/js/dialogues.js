@@ -132,7 +132,7 @@ const Parole = {
       c.beginPath();
       c.moveTo(-7.2, top + 12.8); c.lineTo(-4.4, top + 12); c.lineTo(0, top + 14.8); c.lineTo(4.4, top + 12); c.lineTo(7.2, top + 12.8); c.lineTo(0, top + 17.4);
       c.closePath(); c.fill();
-      c.strokeStyle = '#e2c690'; c.lineWidth = 0.85;
+      c.strokeStyle = '#f3bc72'; c.lineWidth = 0.85;
       c.beginPath(); c.moveTo(-7.2, top + 12.8); c.lineTo(0, top + 17.4); c.lineTo(7.2, top + 12.8); c.stroke();
     }
     c.restore();

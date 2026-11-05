@@ -620,7 +620,7 @@ const CartePeinture = (() => {
     const c = cv.getContext('2d');
     c.drawImage(src, 0, 0);
     c.globalCompositeOperation = 'saturation'; c.fillStyle = '#808080'; c.fillRect(0, 0, cv.width, cv.height);
-    c.globalCompositeOperation = 'source-over'; c.fillStyle = rgba(P.brume, 0.62); c.fillRect(0, 0, cv.width, cv.height);
+    c.globalCompositeOperation = 'source-over'; c.fillStyle = rgba(mix(P.brume, '#141f36', 0.8), 0.8); c.fillRect(0, 0, cv.width, cv.height);
     brumes.set(id, cv);
     return cv;
   }
@@ -635,9 +635,9 @@ const CartePeinture = (() => {
     for (let k = 0; k < 6; k++) boules.push([40 + k * 35 + (R() - 0.5) * 16, 98 + (R() - 0.5) * 12, 26 + R() * 12]);
     for (let k = 0; k < 4; k++) boules.push([70 + k * 38 + (R() - 0.5) * 20, 66 + (R() - 0.5) * 16, 30 + R() * 16]);
     const boule = (x, y, r, col, a) => { const g = c.createRadialGradient(x - r * 0.25, y - r * 0.3, r * 0.1, x, y, r); g.addColorStop(0, rgba(col, a)); g.addColorStop(0.6, rgba(col, a * 0.85)); g.addColorStop(1, rgba(col, 0)); c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); };
-    for (const [x, y, r] of boules) boule(x + 4, y + 10, r, '#9fb0cc', 0.55);
-    for (const [x, y, r] of boules) boule(x, y, r, '#ffffff', 0.95);
-    for (const [x, y, r] of boules.slice(6)) boule(x - r * 0.2, y - r * 0.25, r * 0.55, '#ffffff', 0.8);
+    for (const [x, y, r] of boules) boule(x + 4, y + 10, r, '#0b1220', 0.6);
+    for (const [x, y, r] of boules) boule(x, y, r, '#33476e', 0.95);
+    for (const [x, y, r] of boules.slice(6)) boule(x - r * 0.2, y - r * 0.25, r * 0.55, '#7f97bd', 0.55);
     arts.set(key, cv);
     return cv;
   }

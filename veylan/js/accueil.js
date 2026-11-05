@@ -826,8 +826,8 @@ class Accueil {
 
   ouvrirReglages() {
     const app = document.getElementById('app');
-    const theme = app.dataset.uiTheme || Accueil.lire('veylan.theme') || 'duality';
-    const themes = (typeof Hud === 'function' && Hud.THEMES ? Hud.THEMES : [['nuit', 'Nuit d\'Orsane', '#172334', '#c9a66b']])
+    const theme = app.dataset.uiTheme || Accueil.lire('veylan.theme') || 'nuit';
+    const themes = (typeof Hud === 'function' && Hud.THEMES ? Hud.THEMES : [['nuit', 'Veylan', '#19233c', '#ddaa72']])
       .map(([id, label, fond, accent]) => `<button class="vy-theme${theme === id ? ' on' : ''}" data-act="theme" data-theme="${id}" aria-pressed="${theme === id}"><span class="vy-theme__apercu" style="--f:${fond};--a:${accent}"></span>${label}</button>`).join('');
     const pref = Accueil.lire('veylan.rendu') === 'canvas' ? 'canvas' : 'webgl';
     const force = new URLSearchParams(location.search).get('render') === 'canvas';
@@ -1090,8 +1090,8 @@ const FUTURES = { kaelum: { color: '#7a3b5e', glyph: 'Ka' }, lheth: { color: '#4
 const ROLES = (() => {
   const s = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
   return {
-    melee: ['Mêlée', s('<path d="M5 19L17 7M14 5h4v4M7 14l3 3M4 20l2-2"/>'), '#c9472f'],
-    distance: ['Distance', s('<path d="M4 20L18 6M13 5h6v6M4 20l3-1-2-2z"/>'), '#62865e'],
+    melee: ['Mêlée', s('<path d="M5 19L17 7M14 5h4v4M7 14l3 3M4 20l2-2"/>'), '#b83a44'],
+    distance: ['Distance', s('<path d="M4 20L18 6M13 5h6v6M4 20l3-1-2-2z"/>'), '#3e997e'],
     controle: ['Contrôle', s('<path d="M12 12m-2 0a2 2 0 1 0 4 0a4 4 0 1 0-8 0a6 6 0 1 0 12 0"/>'), '#7a52c7'],
     placement: ['Placement', s('<path d="M4 8h13l-3-3M20 16H7l3 3"/>'), '#0a8fc0'],
     soin: ['Soin', s('<path d="M12 5v14M5 12h14"/>'), '#4f8a4a'],
@@ -1102,7 +1102,7 @@ const ROLES = (() => {
     furtivite: ['Furtivité', s('<path d="M3 12s3.5-5 9-5 9 5 9 5-3.5 5-9 5-9-5-9-5z"/><path d="M4 4l16 16"/>'), '#5a3f8a'],
     endurance: ['Endurance', s('<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>'), '#a03c3c'],
     degats: ['Dégâts', s('<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-6 1 1 2 2 3 2 0-2 0-4 0-6z"/>'), '#c2502a'],
-    pieges: ['Pièges', s('<path d="M4 18h16M6 18l6-11 6 11M9 13h6"/>'), '#8e7144'],
+    pieges: ['Pièges', s('<path d="M4 18h16M6 18l6-11 6 11M9 13h6"/>'), '#a67349'],
     entrave: ['Entrave', s('<circle cx="12" cy="5" r="2"/><path d="M12 7v13M6 13a6 6 0 0 0 12 0M9 10h6"/>'), '#1f7f99'],
     larcin: ['Larcin', s('<circle cx="12" cy="13" r="6"/><path d="M12 10v6M10 12h4M9 4l3 3 3-3"/>'), '#9a7a2a'],
     zones: ['Zones', s('<circle cx="12" cy="12" r="2"/><circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="12" r="9"/>'), '#2a8f8a'],

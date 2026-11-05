@@ -54,7 +54,7 @@ const Items = (() => {
     built = true;
     const C = DATA.content || {};
     for (const r of C.resources || []) {
-      defs.set(r.id, { id: r.id, name: r.name, kind: 'resource', level: 1, lore: r.lore || '', price: r.price || 1, drops: r.drops || [], node: r.node || null, stats: {} });
+      defs.set(r.id, { id: r.id, name: r.name, kind: 'resource', level: 1, lore: r.lore || '', price: r.price || 1, drops: r.drops || [], node: r.node || null, stats: {}, image: r.image || null });
     }
     for (const s of C.sets || []) {
       const pieces = [];

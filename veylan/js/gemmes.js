@@ -10,8 +10,8 @@ const Gemmes = (() => {
   const voile = s => s > 0 ? `fill="#fff" fill-opacity="${f(0.04 + 0.36 * s)}"` : `fill="#000" fill-opacity="${f(0.05 + 0.4 * -s)}"`;
   const eventail = (c, o) => o.map((p, i) => { const q = o[(i + 1) % o.length]; return `<polygon points="${pts([c, p, q])}" ${voile(lumiere(c, p, q))}/>`; }).join('');
   const aretes = (c, o, op) => `<path d="${o.map(p => `M${f(c[0])} ${f(c[1])}L${f(p[0])} ${f(p[1])}`).join('')}" stroke="#fff" stroke-opacity="${op}" stroke-width=".8"/>`;
-  const serti = (o, id) => `<polygon points="${pts(o)}" fill="url(#${id}s)" stroke="#0b0710" stroke-width="2.4" stroke-linejoin="round"/>`;
-  const defsSerti = id => `<linearGradient id="${id}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a4456"/><stop offset=".45" stop-color="#211c29"/><stop offset="1" stop-color="#0f0b14"/></linearGradient>`;
+  const serti = (o, id) => `<polygon points="${pts(o)}" fill="url(#${id}s)" stroke="#080e1a" stroke-width="2.4" stroke-linejoin="round"/>`;
+  const defsSerti = id => `<linearGradient id="${id}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a4566"/><stop offset=".45" stop-color="#19233c"/><stop offset="1" stop-color="#080e1a"/></linearGradient>`;
   const aire = o => Math.abs(o.reduce((s, p, i) => { const q = o[(i + 1) % o.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
   const sous = (o, L) => {
     const r = [];
@@ -39,8 +39,8 @@ const Gemmes = (() => {
     const id = 'gem' + (++n);
     return `<svg class="vy-gem vy-gem--coeur" viewBox="0 0 100 92" aria-hidden="true"><defs>${defsSerti(id)}
       <clipPath id="${id}c"><polygon points="${pts(COEUR_IN)}"/></clipPath>
-      <linearGradient id="${id}v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7c86a3"/><stop offset=".5" stop-color="#454c66"/><stop offset="1" stop-color="#232838"/></linearGradient>
-      <linearGradient id="${id}l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff6a5c"/><stop offset=".45" stop-color="#e01f35"/><stop offset="1" stop-color="#7d0618"/></linearGradient>
+      <linearGradient id="${id}v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6d7ba0"/><stop offset=".5" stop-color="#2c3c62"/><stop offset="1" stop-color="#121c33"/></linearGradient>
+      <linearGradient id="${id}l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8f88"/><stop offset=".45" stop-color="#d9424f"/><stop offset="1" stop-color="#7a3034"/></linearGradient>
       <linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
       ${serti(COEUR, id)}
       <polygon points="${pts(COEUR_IN)}" fill="url(#${id}v)"/>
@@ -48,8 +48,8 @@ const Gemmes = (() => {
         <g class="vy-gem__liquide" transform="translate(0 0)">
           <rect x="0" y="0" width="100" height="100" fill="url(#${id}l)"/>
           <rect x="0" y="0" width="100" height="100" fill="url(#${id}r)"/>
-          <rect class="vy-gem__surface" x="0" y="0" width="100" height="3" fill="#ffb3a6" fill-opacity=".9"/>
-          <rect x="0" y="3" width="100" height="5" fill="#ff8574" fill-opacity=".3"/></g>
+          <rect class="vy-gem__surface" x="0" y="0" width="100" height="3" fill="#ffd2cc" fill-opacity=".9"/>
+          <rect x="0" y="3" width="100" height="5" fill="#ef7574" fill-opacity=".3"/></g>
         ${eventail(CC, COEUR_IN)}${aretes(CC, COEUR_IN, 0.16)}</g>
       <path d="M${pts(COEUR.slice(2, 6)).replace(/ /g, 'L')}M${pts(COEUR.slice(7, 11)).replace(/ /g, 'L')}" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
       <ellipse cx="29" cy="21" rx="10" ry="4.4" transform="rotate(-26 29 21)" fill="#fff" fill-opacity=".42"/>
@@ -57,8 +57,8 @@ const Gemmes = (() => {
   }
   const LOS = [[50, 2], [98, 50], [50, 98], [2, 50]], LC = [50, 50], LOS_IN = serre(LOS, LC, 0.84), LOS_T = serre(LOS, LC, 0.4);
   const TEINTES = {
-    pv: ['#ff8a7a', '#e01f35', '#6d0414', '#ffc0b5'], pa: ['#a6dcff', '#3f95f2', '#123f96', '#d8f0ff'],
-    pm: ['#b6ffa3', '#34b852', '#0d5220', '#e2ffd8'], xp: ['#ffbd7a', '#ff6f3d', '#c81d5c', '#ffe0c2'],
+    pv: ['#ff9f98', '#d9424f', '#7a3034', '#ffd2cc'], pa: ['#f7dca8', '#ddaa72', '#835737', '#f7f0de'],
+    pm: ['#bff0cb', '#5fc27e', '#1f5a46', '#dcf7e2'], xp: ['#d2b8ff', '#8a5fd0', '#3e207f', '#eadcff'],
   };
   function pierre(k) {
     const [c1, c2, c3, cs] = TEINTES[k] || TEINTES.pa, id = 'gem' + (++n), I = LOS_IN, T = LOS_T;
@@ -66,7 +66,7 @@ const Gemmes = (() => {
     const l = serre(LOS, LC, 0.93);
     return `<svg class="vy-gem vy-gem--pierre vy-gem--${k}" viewBox="0 0 100 100" aria-hidden="true"><defs>${defsSerti(id)}
       <clipPath id="${id}c"><polygon points="${pts(I)}"/></clipPath>
-      <linearGradient id="${id}v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6c7592"/><stop offset=".5" stop-color="#3b4158"/><stop offset="1" stop-color="#1d2130"/></linearGradient>
+      <linearGradient id="${id}v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b6a8f"/><stop offset=".5" stop-color="#22355d"/><stop offset="1" stop-color="#0f1728"/></linearGradient>
       <linearGradient id="${id}l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset=".5" stop-color="${c2}"/><stop offset="1" stop-color="${c3}"/></linearGradient>
       <linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
       ${serti(LOS, id)}

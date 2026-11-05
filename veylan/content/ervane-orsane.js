@@ -40,7 +40,17 @@
         const [x, y] = k.case;
         if (!m.layout || !m.layout[y] || m.layout[y][x] !== '.') throw new Error(`ervaneOrsane : la case ${x},${y} de ${m.id} n'est pas un sol libre`);
         m.layout[y] = m.layout[y].slice(0, x) + 'M' + m.layout[y].slice(x + 1);
-        m.groups = (m.groups || []).concat([{ monsters: k.monsters.slice(), level: apres.slice(), respawn: 45 }]);
+        m.groups = (m.groups || []).concat([{ fixe: true, monsters: k.monsters.slice(), level: apres.slice(), respawn: 45 }]);
+      }
+    }
+    if (ZONES[z.id] && z.faune && z.faune.monstres) {
+      const vers = (o, bas) => { const r = {}; for (const [id, p] of Object.entries(o || {})) { const a = adulte(id, bas); r[a] = Math.max(r[a] || 0, 0) + p; } return r; };
+      z.faune = Object.assign({}, z.faune, { monstres: vers(z.faune.monstres, z.level[0]) });
+      if (z.level[1] >= 20 && z.faune.monstres.grouk && !z.faune.monstres.grouk_cornu) z.faune.monstres.grouk_cornu = 8;
+      for (const m of z.maps || []) if (m.penche) {
+        const r = {};
+        for (const [id, k] of Object.entries(m.penche)) { const a = adulte(id, z.level[0]); r[a] = Math.max(r[a] || 1, k); }
+        m.penche = r;
       }
     }
   }

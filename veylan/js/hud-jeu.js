@@ -26,6 +26,7 @@ class HudJeu {
       if (!b) return;
       if (b.dataset.act === 'carte') this.hud.toggleWin('carte');
       if (b.dataset.act === 'quetes') this.hud.toggleWin('quetes');
+      if (b.dataset.act === 'succes') this.hud.toggleWin('succes');
     });
     this.fiche = new FicheGroupe(this);
     this.glisse = new Glisse(this);
@@ -41,6 +42,8 @@ class HudJeu {
     w.on('update', () => this.rafraichir());
     w.on('hp', () => this.rafraichirVie());
     w.on('questProgress', () => this.rafraichirCarte());
+    w.on('achievement', () => this.rafraichirCarte());
+    w.on('fightEnd', () => this.rafraichirCarte());
     w.on('fight', () => {
       this.page = 0;
       this.pageBarre = 0;
@@ -813,7 +816,12 @@ class HudJeu {
       `<span class="vy-carte-info__titre"><b>${Util.esc(zone || def.name)}</b>${zone ? ` <span>(${Util.esc(def.name)})</span>` : ''}</span>` +
       `<span class="vy-carte-info__ligne">${zone ? `<span class="vy-carte-info__lieu">${Util.esc(def.name)} · </span>` : ''}${pos ? `${pos[0]},${pos[1]}, ` : ''}${niveau}${heure}</span></button>` +
       (t ? `<button type="button" class="vy-carte-info__suivi${t.done ? ' fini' : ''}" data-act="quetes" aria-label="Quête suivie : ${Util.esc(t.quest.name)}, ${Util.esc(t.text)}">${HudJeu.ICON.epingle}<span><b>${Util.esc(t.quest.name)}</b><small>${Util.esc(t.text)}</small>` +
-        `<i class="vy-carte-info__avance" aria-hidden="true"><i style="width:${Math.round(100 * HudJeu.avancement(this.ch, t))}%"></i></i></span></button>` : '');
+        `<i class="vy-carte-info__avance" aria-hidden="true"><i style="width:${Math.round(100 * HudJeu.avancement(this.ch, t))}%"></i></i></span></button>` : '') +
+      (this.hud && this.hud.succesSuivis ? this.hud.succesSuivis() : []).map(id => {
+        const a = Achievements.get(id), v = Achievements.avancement(this.ch, a) || [0, 1], p = Achievements.progress(this.ch, a);
+        return `<button type="button" class="vy-carte-info__suivi vy-carte-info__succes" data-act="succes" aria-label="Succès suivi : ${Util.esc(a.name)}, ${Util.esc(p)}">${HudJeu.ICON.epingle}<span><b>${Util.esc(a.name)}</b><small>${Util.esc(p)}</small>` +
+          `<i class="vy-carte-info__avance" aria-hidden="true"><i style="width:${Math.round(100 * v[0] / v[1])}%"></i></i></span></button>`;
+      }).join('');
     if (this.carteInfo.dataset.html !== html) { this.carteInfo.dataset.html = html; this.carteInfo.innerHTML = html; }
   }
 
@@ -939,7 +947,7 @@ class HudJeu {
   }
 }
 
-HudJeu.BIENTOT = [['metiers', 'Métiers'], ['boutique', 'Boutique cosmétique']];
+HudJeu.BIENTOT = [['metiers', 'Métiers']];
 HudJeu.EMOTES = [['salut', 'Saluer'], ['joie', 'Se réjouir'], ['merci', 'Remercier'], ['doute', 'S\'interroger'], ['repos', 'Se reposer']];
 HudJeu.emotesDe = () => HudJeu.EMOTES.concat(typeof Garderobe !== 'undefined' ? Garderobe.emotes() : []);
 HudJeu.menuEmotes = () => HudJeu.emotesDe().map(([id, label]) => `<button type="button" role="menuitem" data-emote="${id}" title="${label}" aria-label="${label}">${HudJeu.ICON['e_' + id] || HudJeu.ICON.emote}</button>`).join('');

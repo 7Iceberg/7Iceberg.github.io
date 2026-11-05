@@ -9,22 +9,22 @@ function embleme(id, size) {
     return `<svg class="vy-embleme" viewBox="0 0 64 64" width="${z}" height="${z}" aria-hidden="true"><defs>` +
       `<radialGradient id="${u}c" cx="50%" cy="38%" r="62%"><stop offset="0" stop-color="#fffdf6"/><stop offset="1" stop-color="#e9dcc0"/></radialGradient>` +
       `<radialGradient id="${u}h" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffe7a8" stop-opacity=".9"/><stop offset="1" stop-color="#ffe7a8" stop-opacity="0"/></radialGradient></defs>` +
-      `<circle cx="32" cy="32" r="30" fill="url(#${u}c)" stroke="#8e7144" stroke-width="2.5"/><circle cx="32" cy="32" r="26.5" fill="none" stroke="#c9a66b" stroke-width="1"/>` +
+      `<circle cx="32" cy="32" r="30" fill="url(#${u}c)" stroke="#a67349" stroke-width="2.5"/><circle cx="32" cy="32" r="26.5" fill="none" stroke="#ddaa72" stroke-width="1"/>` +
       `<ellipse cx="32" cy="20" rx="19" ry="8" fill="url(#${u}h)"/>` +
       `<ellipse cx="32" cy="20" rx="13.5" ry="4.4" fill="none" stroke="#b8893d" stroke-width="2.6" stroke-dasharray="3.4 2.2" stroke-linecap="round"/>` +
-      `<path d="M32 27.5 C25 29 22 25 23.5 21.5" fill="none" stroke="#c9a66b" stroke-width="1.5" stroke-linecap="round"/>` +
-      `<path d="M32 25.5 L33.7 30 L32.7 52 L31.3 52 L30.3 30 Z" fill="#cfc8b8" stroke="#6e5530" stroke-width="1.1" stroke-linejoin="round"/>` +
+      `<path d="M32 27.5 C25 29 22 25 23.5 21.5" fill="none" stroke="#ddaa72" stroke-width="1.5" stroke-linecap="round"/>` +
+      `<path d="M32 25.5 L33.7 30 L32.7 52 L31.3 52 L30.3 30 Z" fill="#cfc8b8" stroke="#835737" stroke-width="1.1" stroke-linejoin="round"/>` +
       `<ellipse cx="32" cy="29.8" rx=".7" ry="1.7" fill="#fffdf6"/></svg>`;
   }
   return `<svg class="vy-embleme" viewBox="0 0 64 64" width="${z}" height="${z}" aria-hidden="true"><defs>` +
     `<radialGradient id="${u}c" cx="50%" cy="40%" r="62%"><stop offset="0" stop-color="#2a1638"/><stop offset="1" stop-color="#0f0814"/></radialGradient>` +
-    `<radialGradient id="${u}l" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#d6b8ff" stop-opacity=".95"/><stop offset=".45" stop-color="#a66cff" stop-opacity=".55"/><stop offset="1" stop-color="#a66cff" stop-opacity="0"/></radialGradient></defs>` +
+    `<radialGradient id="${u}l" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#d6b8ff" stop-opacity=".95"/><stop offset=".45" stop-color="#9764d6" stop-opacity=".55"/><stop offset="1" stop-color="#9764d6" stop-opacity="0"/></radialGradient></defs>` +
     `<circle cx="32" cy="32" r="30" fill="url(#${u}c)" stroke="#6b2fa0" stroke-width="2.5"/><circle cx="32" cy="32" r="26.5" fill="none" stroke="#3d1f55" stroke-width="1"/>` +
     `<ellipse cx="32" cy="31" rx="9" ry="19" fill="url(#${u}l)"/>` +
     `<path d="M21 15 Q32 11 43 15 L46.5 49 L40.5 45.5 L37 51 L33.5 45 L32 46.5 L30.5 45 L27 51 L23.5 45.5 L17.5 49 Z" fill="#1d0f27" stroke="#5a2a80" stroke-width="1.4" stroke-linejoin="round"/>` +
     `<path d="M32 16 L29.6 23 L34 28 L30.2 34 L33.8 39.5 L32 45.5 L30.4 39.5 L33.4 34 L29.3 28 L33 23 Z" fill="#c9a8ff"/>` +
     `<path d="M32 16 L29.6 23 L34 28 L30.2 34 L33.8 39.5 L32 45.5" fill="none" stroke="#f1e6ff" stroke-width=".9"/>` +
-    `<circle cx="32" cy="15" r="2.2" fill="#a66cff" stroke="#f1e6ff" stroke-width=".7"/></svg>`;
+    `<circle cx="32" cy="15" r="2.2" fill="#9764d6" stroke="#f1e6ff" stroke-width=".7"/></svg>`;
 }
 
 const answerWith = type => Quests.defs().find(q => q.steps.some(s => s.type === 'answer' && (s.options || []).some(o => (o.effects || []).some(e => e.type === type))));

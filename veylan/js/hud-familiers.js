@@ -2,7 +2,7 @@
 const esc = s => Util.esc(s);
 const nf = n => Number(n || 0).toLocaleString('fr-FR');
 
-Hud.pictoFamilier = (f, taille) => `<span class="vy-fam__picto" style="--c:${/^#[0-9a-f]{6}$/i.test(f.couleur || '') ? f.couleur : '#c9a66b'};--t:${taille || 40}px" aria-hidden="true">${esc(f.glyphe || f.nom.charAt(0))}</span>`;
+Hud.pictoFamilier = (f, taille) => `<span class="vy-fam__picto" style="--c:${/^#[0-9a-f]{6}$/i.test(f.couleur || '') ? f.couleur : '#ddaa72'};--t:${taille || 40}px" aria-hidden="true">${esc(f.glyphe || f.nom.charAt(0))}</span>`;
 
 Object.assign(Hud.prototype, {
   openFamiliers() {

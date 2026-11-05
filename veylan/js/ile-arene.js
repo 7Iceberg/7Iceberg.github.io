@@ -88,6 +88,104 @@ void main() {
         A.semer(16, (i, n) => { const a = i / n * Math.PI * 2 + hasard(-0.3, 0.3), v = hasard(0.6, 1.7); return { x: p.u, h: h + 0.3, z: p.v, vx: Math.cos(a) * v, vy: hasard(1.6, 3.0), vz: Math.sin(a) * v, vie: hasard(0.5, 0.85), max: 0.85, g: 7, couleur: ['#9ee04a', '#e4ff9c', '#6f9a32'][i % 3], taille: hasard(0.22, 0.38) }; });
       },
     },
+    braisille: {
+      couleur: '#ff8a3d',
+      depart(A, de, hde, vers) {
+        const dx = vers.u - de.u, dz = vers.v - de.v, l = Math.hypot(dx, dz) || 1;
+        A.semer(12, (i) => ({ x: de.u + dx / l * 0.35, h: hde, z: de.v + dz / l * 0.35, vx: dx / l * hasard(1.2, 2.6) + hasard(-0.5, 0.5), vy: hasard(0.4, 1.4), vz: dz / l * hasard(1.2, 2.6) + hasard(-0.5, 0.5), vie: hasard(0.35, 0.6), max: 0.6, g: 3.5, couleur: ['#ffb347', '#ff6a1f', '#ffe08a'][i % 3], taille: hasard(0.12, 0.22) }));
+      },
+      impact(A, c) {
+        const p = A.versMonde(c.x, c.y), h = A.ile.hauteur(p.u, p.v);
+        A.eclats.push({ x: c.x, y: c.y, couleur: '#ff6a1f', ne: null, duree: 520 });
+        A.semer(14, (i) => ({ x: p.u + hasard(-0.25, 0.25), h: h + hasard(0.05, 0.3), z: p.v + hasard(-0.25, 0.25), vx: hasard(-0.25, 0.25), vy: hasard(0.8, 1.7), vz: hasard(-0.25, 0.25), vie: hasard(0.45, 0.8), max: 0.8, g: -0.6, couleur: ['#ffe08a', '#ffb347', '#ff6a1f', '#d9341a'][i % 4], taille: hasard(0.2, 0.4) }));
+        A.semer(10, (i, n) => { const a = i / n * Math.PI * 2 + hasard(-0.4, 0.4), v = hasard(0.6, 1.5); return { x: p.u, h: h + 0.35, z: p.v, vx: Math.cos(a) * v, vy: hasard(1.2, 2.4), vz: Math.sin(a) * v, vie: hasard(0.5, 0.85), max: 0.85, g: 6, couleur: ['#ff8a3d', '#ffd27a'][i % 2], taille: hasard(0.1, 0.18) }; });
+      },
+    },
+    gouttelette: {
+      couleur: '#7fdcff',
+      depart(A, de, hde, vers) {
+        const dx = vers.u - de.u, dz = vers.v - de.v, l = Math.hypot(dx, dz) || 1;
+        A.semer(10, (i) => ({ x: de.u + dx / l * 0.3, h: hde, z: de.v + dz / l * 0.3, vx: dx / l * hasard(0.9, 2.0) + hasard(-0.3, 0.3), vy: hasard(0.5, 1.3), vz: dz / l * hasard(0.9, 2.0) + hasard(-0.3, 0.3), vie: hasard(0.35, 0.6), max: 0.6, g: 5, couleur: ['#7fdcff', '#c9f4ff', '#3fa9d8'][i % 3], taille: hasard(0.12, 0.22) }));
+      },
+      impact(A, c) {
+        const p = A.versMonde(c.x, c.y), h = A.ile.hauteur(p.u, p.v);
+        A.eclats.push({ x: c.x, y: c.y, couleur: '#bfefff', ne: null, duree: 640 });
+        A.semer(16, (i, n) => { const a = i / n * Math.PI * 2 + hasard(-0.3, 0.3), v = hasard(0.5, 1.4); return { x: p.u, h: h + 0.15, z: p.v, vx: Math.cos(a) * v, vy: hasard(1.4, 2.6), vz: Math.sin(a) * v, vie: hasard(0.45, 0.8), max: 0.8, g: 7, couleur: ['#7fdcff', '#e6fbff', '#3fa9d8'][i % 3], taille: hasard(0.14, 0.26) }; });
+      },
+    },
+    miel: {
+      couleur: '#ffc94a',
+      depart(A, de, hde, vers) {
+        const dx = vers.u - de.u, dz = vers.v - de.v, l = Math.hypot(dx, dz) || 1;
+        A.semer(10, (i) => ({ x: de.u, h: hde + 0.2, z: de.v, vx: dx / l * hasard(1.0, 1.8), vy: hasard(1.6, 2.4), vz: dz / l * hasard(1.0, 1.8), vie: hasard(0.5, 0.75), max: 0.75, g: 6, couleur: ['#ffc94a', '#f0a020', '#ffe08a'][i % 3], taille: hasard(0.12, 0.22) }));
+      },
+      impact(A, c) {
+        const p = A.versMonde(c.x, c.y), h = A.ile.hauteur(p.u, p.v);
+        A.eclats.push({ x: c.x, y: c.y, couleur: '#ffc94a', ne: null, duree: 700 });
+        A.semer(12, (i, n) => { const a = i / n * Math.PI * 2, v = hasard(0.4, 0.9); return { x: p.u, h: h + 0.1, z: p.v, vx: Math.cos(a) * v, vy: hasard(0.8, 1.6), vz: Math.sin(a) * v, vie: hasard(0.4, 0.7), max: 0.7, g: 8, couleur: ['#ffc94a', '#e89a20'][i % 2], taille: hasard(0.12, 0.2) }; });
+      },
+    },
+    saisie: {
+      couleur: '#7fe0a0',
+      depart(A, de, hde, vers) {
+        const dx = vers.u - de.u, dz = vers.v - de.v, l = Math.hypot(dx, dz) || 1;
+        A.semer(8, (i) => ({ x: de.u + dx / l * 0.3, h: hde + 0.1, z: de.v + dz / l * 0.3, vx: dx / l * hasard(2.5, 3.5), vy: hasard(0, 0.4), vz: dz / l * hasard(2.5, 3.5), vie: hasard(0.25, 0.4), max: 0.4, g: 0, couleur: ['#7fe0a0', '#c8f0b0'][i % 2], taille: hasard(0.08, 0.14) }));
+      },
+      impact(A, c) {
+        const p = A.versMonde(c.x, c.y), h = A.ile.hauteur(p.u, p.v);
+        A.eclats.push({ x: c.x, y: c.y, couleur: '#9fe8b0', ne: null, duree: 520 });
+        A.semer(14, (i, n) => { const a = i / n * Math.PI * 2, v = hasard(1.0, 1.6); return { x: p.u + Math.cos(a) * 0.35, h: h + 0.5, z: p.v + Math.sin(a) * 0.35, vx: -Math.cos(a) * v, vy: hasard(-0.4, 0.2), vz: -Math.sin(a) * v, vie: hasard(0.2, 0.35), max: 0.35, g: 0, couleur: ['#7fe0a0', '#e0ffe8'][i % 2], taille: hasard(0.08, 0.14) }; });
+      },
+    },
+    bogue: {
+      couleur: '#a86a3a',
+      depart(A, de, hde, vers) {
+        const dx = vers.u - de.u, dz = vers.v - de.v, l = Math.hypot(dx, dz) || 1;
+        A.semer(12, (i) => ({ x: de.u, h: hde + 0.3, z: de.v, vx: dx / l * hasard(2.0, 3.0) + hasard(-0.5, 0.5), vy: hasard(0.6, 1.4), vz: dz / l * hasard(2.0, 3.0) + hasard(-0.5, 0.5), vie: hasard(0.35, 0.55), max: 0.55, g: 5, couleur: ['#a86a3a', '#d9a060', '#6e4020'][i % 3], taille: hasard(0.07, 0.12) }));
+      },
+      impact(A, c) {
+        const p = A.versMonde(c.x, c.y), h = A.ile.hauteur(p.u, p.v);
+        A.eclats.push({ x: c.x, y: c.y, couleur: '#c8864a', ne: null, duree: 560 });
+        A.semer(14, (i, n) => { const a = i / n * Math.PI * 2 + hasard(-0.3, 0.3), v = hasard(0.8, 1.6); return { x: p.u, h: h + 0.2, z: p.v, vx: Math.cos(a) * v, vy: hasard(1.0, 2.0), vz: Math.sin(a) * v, vie: hasard(0.35, 0.6), max: 0.6, g: 9, couleur: ['#a86a3a', '#d9a060'][i % 2], taille: hasard(0.07, 0.13) }; });
+      },
+    },
+    corne: {
+      couleur: '#e0b060',
+      depart(A, de, hde, vers) {
+        const h = A.ile.hauteur(de.u, de.v);
+        A.semer(10, (i) => ({ x: de.u + hasard(-0.3, 0.3), h: h + 0.05, z: de.v + hasard(-0.3, 0.3), vx: hasard(-0.6, 0.6), vy: hasard(0.4, 1.0), vz: hasard(-0.6, 0.6), vie: hasard(0.4, 0.7), max: 0.7, g: 1, couleur: '#cbb894', taille: hasard(0.12, 0.22) }));
+      },
+      impact(A, c) {
+        const p = A.versMonde(c.x, c.y), h = A.ile.hauteur(p.u, p.v);
+        A.eclats.push({ x: c.x, y: c.y, couleur: '#ffcf6a', ne: null, duree: 600 });
+        A.semer(16, (i, n) => { const a = i / n * Math.PI * 2, v = hasard(0.9, 1.7); return { x: p.u, h: h + 0.3, z: p.v, vx: Math.cos(a) * v, vy: hasard(1.2, 2.4), vz: Math.sin(a) * v, vie: hasard(0.45, 0.75), max: 0.75, g: 8, couleur: ['#ffcf6a', '#e8a840', '#cbb894'][i % 3], taille: hasard(0.1, 0.2) }; });
+      },
+    },
+    motte: {
+      couleur: '#9a7a4a',
+      depart(A, de, hde, vers) {
+        const dx = vers.u - de.u, dz = vers.v - de.v, l = Math.hypot(dx, dz) || 1, h = A.ile.hauteur(de.u, de.v);
+        A.semer(14, (i) => { const f = hasard(0.2, 1); return { x: de.u + dx * f, h: h + 0.05, z: de.v + dz * f, vx: hasard(-0.4, 0.4), vy: hasard(0.8, 1.8), vz: hasard(-0.4, 0.4), vie: hasard(0.3, 0.55), max: 0.55, g: 6, couleur: ['#7a5a32', '#9a7a4a', '#5f7f2e'][i % 3], taille: hasard(0.08, 0.16) }; });
+      },
+      impact(A, c) {
+        const p = A.versMonde(c.x, c.y), h = A.ile.hauteur(p.u, p.v);
+        A.eclats.push({ x: c.x, y: c.y, couleur: '#b89a62', ne: null, duree: 620 });
+        A.semer(18, (i, n) => { const a = i / n * Math.PI * 2 + hasard(-0.3, 0.3), v = hasard(0.6, 1.5); return { x: p.u, h: h + 0.1, z: p.v, vx: Math.cos(a) * v, vy: hasard(1.8, 3.2), vz: Math.sin(a) * v, vie: hasard(0.5, 0.85), max: 0.85, g: 8, couleur: ['#6e4f2a', '#8f6d3f', '#6a8f34', '#a58a5c'][i % 4], taille: hasard(0.14, 0.3) }; });
+        A.semer(14, (i, n) => { const a = i / n * Math.PI * 2, v = hasard(1.0, 1.8); return { x: p.u, h: h + 0.05, z: p.v, vx: Math.cos(a) * v, vy: hasard(0.1, 0.35), vz: Math.sin(a) * v, vie: hasard(0.4, 0.7), max: 0.7, g: 0.5, couleur: '#cbb894', taille: hasard(0.12, 0.22) }; });
+      },
+    },
+    rafale: {
+      couleur: '#d9f2ff',
+      depart(A, de, hde, vers) {
+        const dx = vers.u - de.u, dz = vers.v - de.v, l = Math.hypot(dx, dz) || 1, ux = dx / l, uz = dz / l;
+        A.semer(18, (i) => { const v = hasard(2.2, 3.6), lat = hasard(-0.5, 0.5); return { x: de.u + ux * 0.25 - uz * lat * 0.3, h: hde + hasard(-0.15, 0.25), z: de.v + uz * 0.25 + ux * lat * 0.3, vx: ux * v - uz * lat, vy: hasard(-0.1, 0.5), vz: uz * v + ux * lat, vie: hasard(0.35, 0.6), max: 0.6, g: 0.6, couleur: ['#9fd86b', '#e8f8ff', '#6fb84a', '#c4ecff'][i % 4], taille: i % 2 ? hasard(0.08, 0.14) : hasard(0.14, 0.24) }; });
+      },
+      impact(A, c) {
+        const p = A.versMonde(c.x, c.y), h = A.ile.hauteur(p.u, p.v);
+        A.eclats.push({ x: c.x, y: c.y, couleur: '#d9f2ff', ne: null, duree: 560 });
+        A.semer(20, (i, n) => { const a = i / n * Math.PI * 2, r = hasard(0.25, 0.45), v = hasard(1.2, 2.0); return { x: p.u + Math.cos(a) * r, h: h + hasard(0.05, 0.4), z: p.v + Math.sin(a) * r, vx: -Math.sin(a) * v + Math.cos(a) * 0.3, vy: hasard(1.0, 2.2), vz: Math.cos(a) * v + Math.sin(a) * 0.3, vie: hasard(0.5, 0.9), max: 0.9, g: 1.5, couleur: ['#9fd86b', '#f2fbff', '#6fb84a', '#b9e3ff'][i % 4], taille: hasard(0.1, 0.22) }; });
+      },
+    },
   };
   class Arene {
     constructor(THREE, ile) {
@@ -103,6 +201,8 @@ void main() {
       this.etincelles = [];
       this.chiffres = [];
       this.entrees = new Map();
+      this.morts = new Map();
+      this.vus = new Set();
       this.rochers = new Map();
       this.donnees = new Uint8Array(64 * 16 * 4);
       const t = this.texCases = new THREE.DataTexture(this.donnees, 64, 16, THREE.RGBAFormat, THREE.UnsignedByteType);
@@ -146,6 +246,8 @@ void main() {
       this.sig = null;
       this.eclats = []; this.projectiles = []; this.etincelles = []; this.chiffres = [];
       this.entrees = new Map();
+      this.morts = new Map();
+      this.vus = new Set();
       const H = (u, v) => this.ile.hauteur(u, v);
       const { hMin, hMax, hMoy } = this.mesurer(map);
       this.donnees.fill(0);
@@ -270,16 +372,16 @@ void main() {
         const k = Grid.key(x, y), o = (y * 64 + x * 4) * 4;
         const tmp = cb.tempAt ? cb.tempAt(x, y) : null;
         let fill = null, stroke = null, respire = false, coupe = false;
-        if (tmp && tmp.kind === 'water') { fill = [0x2f8fe0, 0.5]; stroke = [0x9fd7ff, 0.5]; }
+        if (tmp && tmp.kind === 'water') { fill = [0x113f8a, 0.6]; stroke = [0x78b4e6, 0.6]; }
         if (tmp && tmp.kind === 'fente') { fill = [0x120818, 0.92]; stroke = [0xbf95ff, 0.9]; }
         if (placement) {
-          if (cb.isStartCell('player', x, y)) { fill = [0x3f8fff, 0.55]; stroke = [0x9fd7ff, 0.95]; respire = true; }
-          else if (cb.isStartCell('monster', x, y)) { fill = [0xe83a3a, 0.56]; stroke = [0xffa0a0, 0.9]; }
+          if (cb.isStartCell('player', x, y)) { fill = [0x209fec, 0.55]; stroke = [0xacdded, 0.95]; respire = true; }
+          else if (cb.isStartCell('monster', x, y)) { fill = [0xd9424f, 0.56]; stroke = [0xffb2ac, 0.9]; }
         }
-        if (H.move.has(k)) { fill = [0x3fd47f, 0.4]; stroke = [0xbaffd3, 0.8]; respire = false; }
-        if (H.range.has(k)) { fill = [0x3f8cff, 0.42]; stroke = [0xc2e2ff, 0.85]; respire = false; }
+        if (H.move.has(k)) { fill = [0x80d697, 0.42]; stroke = [0xcef6d6, 0.8]; respire = false; }
+        if (H.range.has(k)) { fill = [0x209fec, 0.42]; stroke = [0xacdded, 0.85]; respire = false; }
         if (H.blocked.has(k)) { fill = [0x0b1322, 0.5]; stroke = [0x4a5878, 0.6]; respire = false; coupe = true; }
-        if (H.aoe.has(k)) { fill = [0xff9a30, 0.6]; stroke = [0xffe0a0, 0.95]; respire = false; }
+        if (H.aoe.has(k)) { fill = [0xef7574, 0.6]; stroke = [0xffd6d0, 0.95]; respire = false; }
         if (fill) { const c = rgb(fill[0]); D[o] = c[0]; D[o + 1] = c[1]; D[o + 2] = c[2]; D[o + 3] = octet(fill[1] * 255); }
         if (stroke) { const c = rgb(stroke[0]); D[o + 4] = c[0]; D[o + 5] = c[1]; D[o + 6] = c[2]; D[o + 7] = octet(stroke[1] * 255); }
         this.ecrireFixe(x, y);
@@ -319,7 +421,15 @@ void main() {
       if (this.etat !== 'ouverte') return [];
       const out = [], Hc = this.ile.highlights;
       for (const e of cb.entities) {
-        if (!e.alive || !cb.canSee(cb.player, e)) continue;
+        let mort = null;
+        if (!e.alive) {
+          const Dm = this.vus.has(e.id) && e.team === 'monster' && fig.modeles && fig.modeles.prend(e.def.id) ? fig.modeles.durees(e.def.id) : null;
+          if (!Dm || !(Dm.mort > 0)) continue;
+          if (!this.morts.has(e.id)) this.morts.set(e.id, now);
+          mort = (now - this.morts.get(e.id)) / Dm.mort;
+          if (mort >= 1) continue;
+        } else if (!cb.canSee(cb.player, e)) continue;
+        else { this.vus.add(e.id); this.morts.delete(e.id); }
         const p = this.versMonde(e.rx, e.ry), h = this.ile.hauteur(p.u, p.v);
         const hpF = Math.max(0, Math.min(1, e.hp / e.hpMax));
         if (e._trace == null || hpF >= e._trace) e._trace = hpF;
@@ -330,7 +440,7 @@ void main() {
         e._traceHp = hpF; e._traceT = now;
         const s = {
           kind: 'entity', shape: e.shape, color: e.color, glyph: e.glyph, name: e.name, look: e.def.look, auraCos: this.ile.qualite === 'basse' ? null : e.def.auraCos, lueur: e.def.lueur, gender: e.def.gender,
-          team: e.team, flash: now < (e.flashUntil || 0), motif: e.team === 'monster' ? Renderer.motifOf(e.def.id) : null, noyau: e.def.noyau || null,
+          team: e.team, flash: now < (e.flashUntil || 0), motif: e.team === 'monster' ? Renderer.motifOf(e.def.id) : null, noyau: e.def.noyau || null, figure: e.team === 'monster' ? (typeof Figures === 'object' ? Figures.de(e.def.id) : null) : null,
           scale: (e.boss ? 1.3 : (e.isSummon && !e.ally ? 0.8 : 1)) * (telephone ? (e.team === 'monster' ? 1.3 : 1.12) : 1),
           alpha: (e.alpha == null ? 1 : e.alpha) * (e.hasState('invisible') ? 0.45 : 1),
           facing: e.shape === 'player' ? e.facing || Renderer.faceFoe(cb, e) : 1,
@@ -348,6 +458,7 @@ void main() {
           s.modele = e.def.id; s.modeleCle = 'combat|' + e.id;
           const D = fig.modeles.durees(e.def.id);
           if (D) this.gesteFigure(s, e, D, now, cb);
+          if (mort != null) { s.geste = { type: 'mort', t: mort }; s.combat = null; s.cible = null; s.flash = false; }
         } else if (fig.heros && e === cb.player) {
           s.heros = true;
           this.gesteHeros(s, e, now, cb);

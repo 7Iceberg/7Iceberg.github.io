@@ -2,9 +2,10 @@ const Garderobe = (() => {
   const CLE = 'veylan.garderobe';
   const TYPES = ['teinture', 'lueur', 'aura', 'blason', 'emote', 'theme'];
   const TYPES_PORTES = ['teinture', 'lueur', 'aura', 'blason', 'theme'];
-  const SOURCES = ['succes', 'boss', 'veille', 'quete', 'artisanat', 'collection', 'evenement'];
+  const SOURCES = ['succes', 'boss', 'veille', 'quete', 'artisanat', 'collection', 'evenement', 'boutique'];
   const RARETES = ['commun', 'rare', 'epique', 'legendaire'];
   const MAX_LOOKS = 5;
+  const limiteLooks = () => MAX_LOOKS + (typeof Boutique === 'object' && Boutique.avantage && Boutique.avantage('looks') ? 2 : 0);
   const MAX_JOURNAL = 400;
   const NOM_MAX = 24;
   const ID = /^[a-z0-9_]{1,40}$/;
@@ -103,6 +104,7 @@ const Garderobe = (() => {
       case 'artisanat': { const d = typeof Items !== 'undefined' && Items.get(s.id); return `Artisanat : ${d ? d.name : s.id}, fabriquée par le tailleur, à utiliser`; }
       case 'collection': { const k = collection(s.id); return `Collection : ${k ? k.nom : s.id}, complète`; }
       case 'evenement': return 'Un événement';
+      case 'boutique': return 'La Boutique des Voiles';
       default: return 'En jouant';
     }
   }
@@ -131,13 +133,14 @@ const Garderobe = (() => {
     if (list == null) return { looks: [], errors };
     if (!Array.isArray(list)) return { looks: [], errors: ['looks illisibles'] };
     const looks = [];
-    for (const l of list.slice(0, MAX_LOOKS)) {
+    const max = limiteLooks();
+    for (const l of list.slice(0, max)) {
       if (!l || typeof l !== 'object') { errors.push('look illisible'); continue; }
       const p = nettoyerPorte(l.porte, garderobe);
       for (const e of p.errors) errors.push('look : ' + e);
       looks.push({ nom: typeof l.nom === 'string' ? l.nom.slice(0, NOM_MAX) : `Look ${looks.length + 1}`, porte: p.porte });
     }
-    if (list.length > MAX_LOOKS) errors.push('looks : plus de cinq');
+    if (list.length > max) errors.push(max === MAX_LOOKS ? 'looks : plus de cinq' : 'looks : plus de sept');
     return { looks, errors };
   }
 
@@ -164,7 +167,7 @@ const Garderobe = (() => {
     const looks = looksDe(ch);
     const entree = { nom: (typeof nom === 'string' && nom.trim() ? nom.trim() : `Look ${(Number.isInteger(i) ? i : looks.length) + 1}`).slice(0, NOM_MAX), porte: Object.assign(porteDefaut(), porteDe(ch)) };
     if (Number.isInteger(i) && i >= 0 && i < looks.length) { looks[i] = entree; return { ok: true, i }; }
-    if (looks.length >= MAX_LOOKS) return { ok: false, raison: `Cinq looks au plus : supprime-en un d'abord.` };
+    if (looks.length >= limiteLooks()) return { ok: false, raison: limiteLooks() > MAX_LOOKS ? 'Sept looks au plus : supprime-en un d\'abord.' : 'Cinq looks au plus : supprime-en un d\'abord (Mécène Gardien : sept).' };
     looks.push(entree);
     return { ok: true, i: looks.length - 1 };
   }
@@ -230,10 +233,10 @@ const Garderobe = (() => {
   }
   const RARETE_LABEL = { commun: 'Commun', rare: 'Rare', epique: 'Épique', legendaire: 'Légendaire' };
   const TYPE_LABEL = { teinture: 'Teintures', lueur: 'Lueurs', aura: 'Auras', blason: 'Blasons', emote: 'Émotes', theme: 'Thèmes' };
-  const SOURCE_LABEL = { succes: 'Succès', boss: 'Boss', veille: 'Veille du jour', quete: 'Quêtes', artisanat: 'Artisanat', collection: 'Collections', evenement: 'Événements' };
+  const SOURCE_LABEL = { succes: 'Succès', boss: 'Boss', veille: 'Veille du jour', quete: 'Quêtes', artisanat: 'Artisanat', collection: 'Collections', evenement: 'Événements', boutique: 'Boutique' };
 
   return {
-    CLE, TYPES, TYPES_PORTES, SOURCES, RARETES, MAX_LOOKS, ID, RARETE_LABEL, TYPE_LABEL, SOURCE_LABEL,
+    CLE, TYPES, TYPES_PORTES, SOURCES, RARETES, MAX_LOOKS, limiteLooks, ID, RARETE_LABEL, TYPE_LABEL, SOURCE_LABEL,
     defs, get, collections, collection, valider, charger, etat, enregistrer, effacer, erreurs: () => derniersErreurs.slice(),
     possede, possedes, journal, quand, donner, pourSource, texteSource, version: () => version,
     porteDefaut, nettoyerPorte, nettoyerLooks, porter, retirer, porteId,

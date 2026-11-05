@@ -2138,16 +2138,16 @@ class Renderer {
 
   static get HL() {
     return {
-      departJ: { fill: 'rgba(56,150,255,0.42)', edge: 'rgba(160,215,255,1)' },
-      departM: { fill: 'rgba(235,64,56,0.38)', edge: 'rgba(255,155,135,0.95)' },
-      move: { fill: 'rgba(80,214,110,0.40)', edge: 'rgba(176,255,180,1)' },
-      range: { fill: 'rgba(36,140,255,0.42)', edge: 'rgba(140,208,255,1)' },
+      departJ: { fill: 'rgba(32,159,236,0.42)', edge: 'rgba(172,221,237,1)' },
+      departM: { fill: 'rgba(217,66,79,0.40)', edge: 'rgba(255,178,172,0.95)' },
+      move: { fill: 'rgba(128,214,151,0.40)', edge: 'rgba(206,246,214,1)' },
+      range: { fill: 'rgba(32,159,236,0.40)', edge: 'rgba(172,221,237,1)' },
       blocked: { fill: 'rgba(4,6,14,0.58)', edge: 'rgba(150,160,190,0.55)' },
-      aoe: { fill: 'rgba(255,150,36,0.6)', edge: 'rgba(255,240,170,1)' },
-      eau: { fill: 'rgba(40,120,200,0.58)', edge: 'rgba(150,210,255,0.7)' },
+      aoe: { fill: 'rgba(239,117,116,0.58)', edge: 'rgba(255,214,208,1)' },
+      eau: { fill: 'rgba(17,63,138,0.62)', edge: 'rgba(120,180,230,0.7)' },
       fente: { fill: 'rgba(16,6,26,0.92)', edge: 'rgba(196,128,255,0.9)' },
-      glyphe: { fill: 'rgba(70,200,190,0.32)', edge: 'rgba(160,255,240,0.85)' },
-      glypheE: { fill: 'rgba(200,90,60,0.32)', edge: 'rgba(255,190,150,0.85)' },
+      glyphe: { fill: 'rgba(243,188,114,0.30)', edge: 'rgba(247,226,180,0.9)' },
+      glypheE: { fill: 'rgba(151,100,214,0.34)', edge: 'rgba(214,190,255,0.9)' },
     };
   }
 
@@ -2630,7 +2630,7 @@ class Renderer {
         kind: 'entity', rx: e.rx, ry: e.ry, shape: e.shape, color: e.color, glyph: e.glyph, name: e.name,
         scale: e.boss ? 1.35 : (e.isSummon && !e.ally ? 0.8 : 1), alpha: (e.alpha == null ? 1 : e.alpha) * (e.hasState('invisible') ? 0.45 : 1), look: e.def.look, auraCos: this.quality === 'basse' ? null : e.def.auraCos, lueur: e.def.lueur,
         team: e.team, flash: now < e.flashUntil, current: cb.actor === e, immune: e.immuneElement,
-        hp: e.hp / e.hpMax, shield: e.shield / e.hpMax, bob: hop, motif: e.team === 'monster' ? Renderer.motifOf(e.def.id) : null,
+        hp: e.hp / e.hpMax, shield: e.shield / e.hpMax, bob: hop, motif: e.team === 'monster' ? Renderer.motifOf(e.def.id) : null, figure: e.team === 'monster' ? (typeof Figures === 'object' ? Figures.de(e.def.id) : null) : null,
         facing: e.shape === 'player' ? e.facing || Renderer.faceFoe(cb, e) : 1, gender: e.def.gender,
         stunned: e.hasState('stunned'), invuln: !!e.def.invulnerable || e.hasState('invulnerable'), armor: e.modifier('armor') > 0,
         lantern: e.effects.some(f => f.type === 'state' && f.farDodge), boss: e.boss, phase: (e.id || 0) * 1.7,
@@ -2647,7 +2647,7 @@ class Renderer {
     out.push({ kind: 'entity', rx: p.rx, ry: p.ry, shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, scale: 1, alpha: 1, team: 'player', facing: p.facing, look: ap.look, auraCos: this.quality === 'basse' ? null : ap.auraCos, lueur: ap.lueur, gender: ch.gender, bob: p.moving ? Math.abs(Math.sin(now / 90)) * 3.5 : 0, label: null, phase: 0, insigne: Factions.insigne(ch) });
     for (const g of w.groups) {
       const def = DATA.monsters[g.monsters[0].id];
-      out.push({ kind: 'entity', rx: g.rx, ry: g.ry, shape: def.shape, color: def.color, glyph: null, name: def.name, scale: def.boss || def.recherche ? 1.3 : 0.95, alpha: 1, team: 'monster', facing: 1, bob: Math.abs(Math.sin(now / 500 + g.idx)) * 1.5, badge: g.monsters.length > 1 ? `×${g.monsters.length}` : null, label: `${def.recherche ? 'Recherché : ' : ''}${def.name} niv. ${g.level}`, motif: Renderer.motifOf(g.monsters[0].id), phase: g.idx || 0 });
+      out.push({ kind: 'entity', rx: g.rx, ry: g.ry, shape: def.shape, color: def.color, glyph: null, name: def.name, scale: def.boss || def.recherche ? 1.3 : 0.95, alpha: 1, team: 'monster', figure: (typeof Figures === 'object' ? Figures.de(def.id) : null), facing: 1, bob: Math.abs(Math.sin(now / 500 + g.idx)) * 1.5, badge: g.monsters.length > 1 ? `×${g.monsters.length}` : null, label: `${def.recherche ? 'Recherché : ' : ''}${def.name} niv. ${g.level}`, motif: Renderer.motifOf(g.monsters[0].id), phase: g.idx || 0 });
     }
     if (!this.marksAt || now - this.marksAt > 500 || this.marksMap !== w.mapId) {
       this.marksAt = now; this.marksMap = w.mapId; this.marks = {};
@@ -2672,8 +2672,8 @@ class Renderer {
     const breath = this.reducedMotion ? 1 : 1 + 0.022 * Math.sin(now / 640 + (s.phase || 0));
     c.save();
     c.translate(p.x, p.y - (s.bob || 0)); c.scale(k * Renderer.flipOf(s), k * breath); c.translate(-p.x, -p.y);
-    this.drawBody(c, p, s);
-    if (s.motif) this.drawMotif(c, p, s);
+    const peinte = this.drawBody(c, p, s) === 'figure';
+    if (s.motif && !peinte) this.drawMotif(c, p, s);
     c.restore();
     if (s.insigne) this.drawInsigne(c, p, s, now);
     c.globalAlpha = 1;
@@ -2877,7 +2877,8 @@ class Renderer {
     const M = { pilou: 'bird', piouk: 'bird', sivr: 'bird', harpide: 'bird', grouk: 'horn', groukin: 'horn', grand_grouk: 'horn', vulk: 'horn', korvath: 'horn',
       tissefil: 'legs', tisseuse: 'legs', vrill: 'legs', veilloche: 'lamp', ferrel: 'lamp', lampignon: 'cap', lampignard: 'shaman', tholou: 'lamp', brimbe: 'pebble', molh: 'pebble', thane: 'pebble',
       kaldrik: 'ember', cendrou: 'ember', braise: 'ember', zhaal: 'ember', fumerolle: 'smoke', oubli: 'smoke', pioche_vive: 'pick', tourelle: 'pick', dorm: 'hammer',
-      marnel: 'shell', brisant: 'wave', mere_des_brisants: 'wave', noye: 'drip', thelk: 'drip', glek: 'drip', mache_voile: 'teeth', glouton: 'teeth', craneux: 'bones', porte_fente: 'crack', fendu: 'crack', oreth: 'star' };
+      marnel: 'shell', brisant: 'wave', mere_des_brisants: 'wave', noye: 'drip', thelk: 'drip', glek: 'drip', mache_voile: 'teeth', glouton: 'teeth', craneux: 'bones', porte_fente: 'crack', fendu: 'crack', oreth: 'star',
+      pistil: 'star', dorsefleur: 'shell', plic: 'drip', ruissel: 'drip', grand_ruissel: 'drip' };
     if (M[id]) return M[id];
     for (const k in M) if (id.startsWith(k)) return M[k];
     return null;
@@ -2963,6 +2964,7 @@ class Renderer {
   }
 
   drawBody(c, p, s) {
+    if (s.figure && typeof Figures === 'object') { const im = Figures.image(s.figure); if (im) { Figures.poser(c, p, s, im); return 'figure'; } }
     const color = s.flash ? '#ffffff' : s.color;
     const top = p.y - 42;
     const ink = Renderer.mix(s.color, '#0a0d18', 0.74);

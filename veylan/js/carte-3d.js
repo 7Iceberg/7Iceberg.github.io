@@ -38,7 +38,7 @@ class Carte3D {
     const image = () => new Promise(r => requestAnimationFrame(() => r()));
     const r = this.renderer = new THREE.WebGLRenderer({ antialias: !this.telephone, alpha: true, powerPreference: 'high-performance' });
     r.setClearColor(0x000000, 0);
-    r.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    r.setPixelRatio(typeof UI === 'function' && UI.densite ? UI.densite(window.devicePixelRatio, 2) : Math.min(2, window.devicePixelRatio || 1));
     r.outputEncoding = THREE.sRGBEncoding;
     r.shadowMap.enabled = !this.telephone;
     r.shadowMap.type = THREE.PCFSoftShadowMap;

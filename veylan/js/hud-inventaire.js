@@ -105,6 +105,7 @@ Object.assign(Hud.prototype, {
       noeudSlot: d => { if (this.invIgnore()) return; s.sel = { de: 'noeud', id: d.id }; r(); },
       familierSlot: () => { if (this.invIgnore()) return; if (!this.fen.isOpen('familiers')) this.toggleWin('familiers'); },
       montureSlot: () => { if (this.invIgnore()) return; if (!this.fen.isOpen('montures')) this.toggleWin('montures'); },
+      trousseauSlot: () => { if (this.invIgnore()) return; this.ouvrirTrousseau(); },
       fiche: d => { s.fiche = d.fiche; r(); },
       favori: d => { this.invFavori(d.id); r(); },
       ficheFermer: () => { s.sel = null; r(); },
@@ -183,6 +184,8 @@ Object.assign(Hud.prototype, {
     const montCase = mont
       ? `<button class="vy-case vy-inv__slot vy-inv__mont${Montures.montee(ch) ? ' est-montee' : ''}" data-rarete="epique" data-act="montureSlot" title="${esc(mont.nom)}, niveau ${Montures.niveau(ch)}${Montures.montee(ch) ? ', monté' : ', à pied'}. Toucher : la fenêtre Montures." aria-label="Monture : ${esc(mont.nom)}, niveau ${Montures.niveau(ch)}${Montures.montee(ch) ? ', montée' : ''}"><span class="vy-case__icone">${Hud.pictoFamilier ? Hud.pictoFamilier(mont, 30) : ''}</span><span class="vy-case__niveau">${Montures.niveau(ch)}</span></button>`
       : `<button class="vy-case vy-case--emplacement vy-inv__slot vy-inv__mont" data-act="montureSlot" title="Monture : aucune. Toucher : la fenêtre Montures." aria-label="Monture : aucune"><span class="vy-case__icone">${(Fenetres.ICON && Fenetres.ICON.montures) || ''}</span></button>`;
+    const tr = Object.keys(ch.trousseau || {});
+    const trCase = `<button class="vy-case${tr.length ? '' : ' vy-case--emplacement'} vy-inv__slot vy-inv__trousseau" data-rarete="${tr.length ? 'rare' : ''}" data-act="trousseauSlot" title="Trousseau : ${tr.length ? tr.length + (tr.length > 1 ? ' clés' : ' clé') : 'vide'}. Toucher : ses clés." aria-label="Trousseau, ${tr.length} clé${tr.length > 1 ? 's' : ''}"><span class="vy-case__icone"><img class="vy-case__img" src="assets/ui/objets/trousseau.png" alt="" draggable="false"></span>${tr.length ? `<span class="vy-case__nombre">${tr.length}</span>` : ''}</button>`;
     const ecailles = ECAILLES.map(n => `<span class="vy-case vy-inv__ecaille" title="${n} : bientôt" aria-label="${n}, bientôt" aria-disabled="true"><span class="vy-case__icone">${ICO.ecaille}</span><span class="vy-inv__cadenas">${ICO.cadenas}</span></span>`).join('');
     return `<section class="vy-inv__poupee" aria-label="Équipement porté">
       <div class="vy-inv__col">${col(GAUCHE)}</div>
@@ -196,9 +199,21 @@ Object.assign(Hud.prototype, {
       <div class="vy-inv__rangee">
         <div class="vy-inv__groupe"><div class="vy-inv__noeuds" title="Nœuds noués : chacun durcit les combats et ajoute ${DATA.rules.knotBonus} % d'XP et de butin">${noeuds.join('')}</div><small>Nœuds ${actifs.length} / ${DATA.rules.maxKnots}</small></div>
         <div class="vy-inv__groupe"><div class="vy-inv__familier">${famCase}${montCase}</div><small>Familier · monture</small></div>
+        <div class="vy-inv__groupe"><div class="vy-inv__familier">${trCase}</div><small>Trousseau</small></div>
         <div class="vy-inv__groupe"><div class="vy-inv__ecailles">${ecailles}</div><small>Marques · <span class="vy-bientot">bientôt</span></small></div>
       </div>
     </section>`;
+  },
+
+  ouvrirTrousseau() {
+    const w = this.world, ch = w.ch, T = ch.trousseau || {};
+    const donjons = (DATA.content.dungeons || []).filter(d => d.keyItem);
+    const lignes = donjons.filter(d => Object.prototype.hasOwnProperty.call(T, d.keyItem)).map(d => {
+      const e = w.etatCle(d), it = Items.get(d.keyItem);
+      return `<div class="row vy-trousseau__cle"><span class="vy-case" data-rarete="rare" aria-hidden="true"><span class="vy-case__icone">${Hud.picto(it)}</span></span><span><b>${esc(it.name)}</b><br><small class="muted">${esc(d.name)} · ${e.libre ? 'libre aujourd\'hui' : 'déjà ouvert aujourd\'hui : libre demain'}${e.sac ? ` · ${e.sac} dans le sac` : ''}</small></span></div>`;
+    });
+    const vide = '<p class="muted">Aucune clé. Une clé de donjon y est rangée la première fois qu\'elle ouvre son donjon ; ensuite, elle l\'ouvre une fois par jour sans en refaire.</p>';
+    this.openPanel('trousseau', 'Trousseau', `${lignes.length ? `<p class="muted">Chaque clé ouvre son donjon une fois par jour. Une seconde entrée le même jour prend une clé du sac.</p>${lignes.join('')}` : vide}`);
   },
 
   invSlot(ch, slot) {
@@ -220,7 +235,7 @@ Object.assign(Hud.prototype, {
     const ch = this.world.ch, cls = ch.classDef, sol = H - Math.max(22, H * 0.13);
     const S = Math.max(1, Math.min(W / 52, (sol - 6) / 66));
     const halo = c.createRadialGradient(W / 2, sol - 30 * S, 4, W / 2, sol - 30 * S, Math.max(W, H) * 0.62);
-    halo.addColorStop(0, 'rgba(0,194,255,0.17)'); halo.addColorStop(1, 'rgba(0,194,255,0)');
+    halo.addColorStop(0, 'rgba(82,210,244,0.17)'); halo.addColorStop(1, 'rgba(82,210,244,0)');
     c.fillStyle = halo; c.fillRect(0, 0, W, H);
     c.fillStyle = 'rgba(0,0,0,0.38)'; c.beginPath(); c.ellipse(W / 2, sol, 17 * S, 4.4 * S, 0, 0, Math.PI * 2); c.fill();
     const painter = this.renderer && (this.renderer.painter || this.renderer);

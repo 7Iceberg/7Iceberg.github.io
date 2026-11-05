@@ -6,7 +6,7 @@ DATA.content.zones.push({
   description: "La ville minière de Kaldum, taillée dans le basalte autour de ses forges. Les cheminées fument moins qu'avant, et tout le monde le remarque.",
   maps: [
     {
-      id: 'kaldum_ville_porte', name: 'La Porte de Kaldum', level: [39, 44],
+      id: 'kaldum_ville_porte', name: 'La Porte de Kaldum', sousZone: 'la Porte de Kaldum', level: [39, 44],
       layout: [
         '###############',
         '#.....#...,,,,#',
@@ -36,7 +36,7 @@ DATA.content.zones.push({
       relay: false,
     },
     {
-      id: 'kaldum_ville_place', name: 'La Place des Forges', level: [39, 44],
+      id: 'kaldum_ville_place', name: 'La Place des Forges', sousZone: 'la Place des Forges', level: [39, 44],
       layout: [
         '######n########',
         '#,,,,,.,,,,,,,#',
@@ -62,7 +62,7 @@ DATA.content.zones.push({
       relay: true,
     },
     {
-      id: 'kaldum_ville_ateliers', name: 'Les Ateliers', level: [39, 44],
+      id: 'kaldum_ville_ateliers', name: 'Les Ateliers', sousZone: 'la Place des Forges', level: [39, 44],
       layout: [
         '###############',
         '#~~~....#.....#',
@@ -88,7 +88,7 @@ DATA.content.zones.push({
       relay: false,
     },
     {
-      id: 'kaldum_ville_halle', name: 'La Halle des Mineurs', level: [39, 44],
+      id: 'kaldum_ville_halle', name: 'La Halle des Mineurs', sousZone: 'la Halle des Mineurs', level: [39, 44],
       layout: [
         '###############',
         '#..T.......T..#',
@@ -119,10 +119,11 @@ DATA.content.zones.push({
 DATA.content.zones.push({
   id: 'kaldum_galeries', name: 'Les Galeries de Kaldum', region: 'kaldum', level: [39, 50],
   palette: 'kaldum',
+  faune: { monstres: { molh: 35, kaldrik: 20, thelk: 15, molhin: 15, scorik: 10 }, tailles: { 2: 25, 3: 50, 4: 25 } },
   description: "Les galeries de la mine, étayées de basalte et éclairées au lichen. Depuis que les forges refroidissent, les Molhs s'y assoient et plus rien ne passe.",
   maps: [
     {
-      id: 'kaldum_galeries_entree', name: "L'Entrée des Galeries", level: [39, 44],
+      id: 'kaldum_galeries_entree', name: "L'Entrée des Galeries", sousZone: "l'Entrée des Galeries", level: [39, 44],
       layout: [
         '#######n#######',
         '#.....#.#.....#',
@@ -144,15 +145,15 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['basalte_de_kaldum', 'lichen_de_scorie'],
       groups: [
-        { monsters: ['molh', 'molh', 'molhin'], level: [39, 44], respawn: 45 },
-        { monsters: ['molh', 'molh', 'molh'], level: [39, 44], respawn: 50 },
-        { monsters: ['molhin', 'molhin', 'thelk'], level: [39, 44], respawn: 50 },
+        { taille: [2, 4], monsters: ['molh', 'molh', 'molhin'], level: [39, 44], respawn: 45 },
+        { taille: [2, 4], monsters: ['molh', 'molh', 'molh'], level: [39, 44], respawn: 50 },
+        { taille: [2, 4], monsters: ['molhin', 'molhin', 'thelk'], level: [39, 44], respawn: 50 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'kaldum_galeries_boyau', name: 'Le Boyau', level: [41, 46],
+      id: 'kaldum_galeries_boyau', name: 'Le Boyau', sousZone: "l'Entrée des Galeries", penche: { scorik: 2, thelk: 1.5 }, level: [41, 46],
       layout: [
         '#######n#######',
         '###...#.#...###',
@@ -174,17 +175,17 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['lichen_de_scorie'],
       groups: [
-        { monsters: ['molh', 'molh', 'molh'], level: [41, 46], respawn: 50 },
-        { monsters: ['molh', 'kaldrik'], level: [43, 48], respawn: 50 },
-        { monsters: ['scorik', 'scorik', 'molhin'], level: [41, 46], respawn: 50 },
-        { monsters: ['thelk', 'thelk'], level: [41, 46], respawn: 50 },
-        { monsters: ['molh', 'molh', 'kaldrik'], level: [43, 48], respawn: 55 },
+        { taille: [2, 4], monsters: ['molh', 'molh', 'molh'], level: [41, 46], respawn: 50 },
+        { taille: [1, 3], monsters: ['molh', 'kaldrik'], level: [43, 48], respawn: 50 },
+        { taille: [2, 4], monsters: ['scorik', 'scorik', 'molhin'], level: [41, 46], respawn: 50 },
+        { taille: [1, 3], monsters: ['thelk', 'thelk'], level: [41, 46], respawn: 50 },
+        { taille: [2, 4], monsters: ['molh', 'molh', 'kaldrik'], level: [43, 48], respawn: 55 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'kaldum_galeries_relais', name: 'Le Relais des Galeries', level: [43, 48],
+      id: 'kaldum_galeries_relais', name: 'Le Relais des Galeries', sousZone: 'le Relais des Galeries', level: [43, 48],
       layout: [
         '###############',
         '#.....#.......#',
@@ -206,15 +207,15 @@ DATA.content.zones.push({
       npcs: ['lethir'],
       nodes: ['basalte_de_kaldum', 'lichen_de_scorie'],
       groups: [
-        { monsters: ['molh', 'molh', 'kaldrik'], level: [43, 48], respawn: 55 },
-        { monsters: ['clou_vif', 'clou_vif', 'scorik'], level: [43, 48], respawn: 50 },
-        { monsters: ['kaldrik', 'kaldrik'], level: [45, 50], respawn: 50 },
+        { taille: [2, 4], monsters: ['molh', 'molh', 'kaldrik'], level: [43, 48], respawn: 55 },
+        { fixe: true, monsters: ['clou_vif', 'clou_vif', 'scorik'], level: [43, 48], respawn: 50 },
+        { taille: [1, 3], monsters: ['kaldrik', 'kaldrik'], level: [45, 50], respawn: 50 },
       ],
       dungeon: null,
       relay: true,
     },
     {
-      id: 'kaldum_galeries_eboulement', name: "L'Éboulement", level: [43, 48],
+      id: 'kaldum_galeries_eboulement', name: "L'Éboulement", sousZone: 'le Relais des Galeries', penche: { molh: 1.5, thelk: 1.5 }, level: [43, 48],
       layout: [
         '#######n#######',
         '#..#.......#..#',
@@ -236,16 +237,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['basalte_de_kaldum', 'lichen_de_scorie'],
       groups: [
-        { monsters: ['molh', 'molh', 'molh'], level: [43, 48], respawn: 50 },
-        { monsters: ['molh', 'molh', 'molh', 'molh'], level: [45, 50], respawn: 60 },
-        { monsters: ['thelk', 'thelk', 'molh'], level: [43, 48], respawn: 55 },
-        { monsters: ['molh', 'kaldrik', 'molh'], level: [45, 50], respawn: 55 },
+        { taille: [2, 4], monsters: ['molh', 'molh', 'molh'], level: [43, 48], respawn: 50 },
+        { taille: [3, 4], monsters: ['molh', 'molh', 'molh', 'molh'], level: [45, 50], respawn: 60 },
+        { taille: [2, 4], monsters: ['thelk', 'thelk', 'molh'], level: [43, 48], respawn: 55 },
+        { taille: [2, 4], monsters: ['molh', 'kaldrik', 'molh'], level: [45, 50], respawn: 55 },
       ],
       dungeon: 'boues_chaudes',
       relay: false,
     },
     {
-      id: 'kaldum_galeries_fond', name: 'Le Fond des Galeries', level: [45, 50],
+      id: 'kaldum_galeries_fond', name: 'Le Fond des Galeries', sousZone: 'le Fond des Galeries', penche: { kaldrik: 2 }, level: [45, 50],
       layout: [
         '###############',
         '#.....#.......#',
@@ -267,10 +268,10 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['basalte_de_kaldum'],
       groups: [
-        { monsters: ['kaldrik', 'kaldrik', 'molh'], level: [45, 50], respawn: 55 },
-        { monsters: ['molh', 'molh', 'kaldrik'], level: [45, 50], respawn: 55 },
-        { monsters: ['clou_vif', 'clou_vif', 'scorik', 'kaldrik'], level: [45, 50], respawn: 60 },
-        { monsters: ['kaldrik', 'molh', 'molh', 'kaldrik'], level: [47, 50], respawn: 60 },
+        { taille: [2, 4], monsters: ['kaldrik', 'kaldrik', 'molh'], level: [45, 50], respawn: 55 },
+        { taille: [2, 4], monsters: ['molh', 'molh', 'kaldrik'], level: [45, 50], respawn: 55 },
+        { fixe: true, monsters: ['clou_vif', 'clou_vif', 'scorik', 'kaldrik'], level: [45, 50], respawn: 60 },
+        { taille: [3, 4], monsters: ['kaldrik', 'molh', 'molh', 'kaldrik'], level: [47, 50], respawn: 60 },
       ],
       dungeon: null,
       relay: false,
@@ -281,10 +282,11 @@ DATA.content.zones.push({
 DATA.content.zones.push({
   id: 'kaldum_vapeurs', name: 'Les Vapeurs', region: 'kaldum', level: [47, 56],
   palette: 'kaldum',
+  faune: { monstres: { fumerolle: 35, pioche_vive: 25, tholou: 15, fumil: 13, cendril: 12 }, tailles: { 2: 25, 3: 50, 4: 25 } },
   description: "Sous le fond des galeries, la roche souffle. Les Fumerolles s'y effacent dans la vapeur et les Pioche-Vives y frappent de loin, sans jamais lâcher le manche.",
   maps: [
     {
-      id: 'kaldum_vapeurs_bouche', name: 'La Bouche des Vapeurs', level: [47, 52],
+      id: 'kaldum_vapeurs_bouche', name: 'La Bouche des Vapeurs', sousZone: 'la Bouche des Vapeurs', level: [47, 52],
       layout: [
         '#######n#######',
         '#.....#.#.....#',
@@ -306,15 +308,15 @@ DATA.content.zones.push({
       npcs: ['rukal'],
       nodes: ['lichen_de_scorie', 'basalte_de_kaldum'],
       groups: [
-        { monsters: ['fumerolle', 'fumerolle'], level: [47, 52], respawn: 45 },
-        { monsters: ['fumil', 'fumil', 'tholou'], level: [47, 52], respawn: 45 },
-        { monsters: ['fumerolle', 'fumerolle', 'fumerolle'], level: [49, 54], respawn: 50 },
+        { taille: [1, 3], monsters: ['fumerolle', 'fumerolle'], level: [47, 52], respawn: 45 },
+        { taille: [2, 4], monsters: ['fumil', 'fumil', 'tholou'], level: [47, 52], respawn: 45 },
+        { taille: [2, 4], monsters: ['fumerolle', 'fumerolle', 'fumerolle'], level: [49, 54], respawn: 50 },
       ],
       dungeon: 'mine_des_tholous',
       relay: false,
     },
     {
-      id: 'kaldum_vapeurs_etuves', name: 'Les Étuves', level: [49, 54],
+      id: 'kaldum_vapeurs_etuves', name: 'Les Étuves', sousZone: 'la Bouche des Vapeurs', penche: { cendril: 2, fumil: 1.5 }, level: [49, 54],
       layout: [
         '###############',
         '#.....~~......#',
@@ -336,17 +338,17 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['lichen_de_scorie'],
       groups: [
-        { monsters: ['fumerolle', 'fumerolle', 'pioche_vive'], level: [51, 56], respawn: 50 },
-        { monsters: ['fumerolle', 'pioche_vive'], level: [51, 56], respawn: 45 },
-        { monsters: ['cendril', 'cendril', 'fumil'], level: [49, 54], respawn: 50 },
-        { monsters: ['tholou', 'fumerolle', 'fumerolle'], level: [49, 54], respawn: 50 },
-        { monsters: ['fumerolle', 'fumerolle', 'fumerolle'], level: [49, 54], respawn: 50 },
+        { taille: [2, 4], monsters: ['fumerolle', 'fumerolle', 'pioche_vive'], level: [51, 56], respawn: 50 },
+        { taille: [1, 3], monsters: ['fumerolle', 'pioche_vive'], level: [51, 56], respawn: 45 },
+        { taille: [2, 4], monsters: ['cendril', 'cendril', 'fumil'], level: [49, 54], respawn: 50 },
+        { taille: [2, 4], monsters: ['tholou', 'fumerolle', 'fumerolle'], level: [49, 54], respawn: 50 },
+        { taille: [2, 4], monsters: ['fumerolle', 'fumerolle', 'fumerolle'], level: [49, 54], respawn: 50 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'kaldum_vapeurs_cuve', name: 'La Cuve des Cendrous', level: [53, 60],
+      id: 'kaldum_vapeurs_cuve', name: 'La Cuve des Cendrous', sousZone: 'la Cuve des Cendrous', penche: { cendril: 1.5 }, level: [53, 60],
       layout: [
         '###############',
         '#~~~~.....~~~~#',
@@ -368,16 +370,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['basalte_de_kaldum'],
       groups: [
-        { monsters: ['cendrou', 'cendrou', 'fumerolle', 'pioche_vive'], level: [53, 60], respawn: 70 },
-        { monsters: ['fumerolle_noire', 'kaldrik', 'cendril'], level: [53, 60], respawn: 70 },
-        { monsters: ['tholou_tisse', 'cendrou', 'fumerolle'], level: [53, 60], respawn: 70 },
-        { monsters: ['cendrou', 'pioche_vive', 'pioche_vive', 'fumerolle'], level: [53, 60], respawn: 70 },
+        { fixe: true, monsters: ['cendrou', 'cendrou', 'fumerolle', 'pioche_vive'], level: [53, 60], respawn: 70 },
+        { fixe: true, monsters: ['fumerolle_noire', 'kaldrik', 'cendril'], level: [53, 60], respawn: 70 },
+        { fixe: true, monsters: ['tholou_tisse', 'cendrou', 'fumerolle'], level: [53, 60], respawn: 70 },
+        { fixe: true, monsters: ['cendrou', 'pioche_vive', 'pioche_vive', 'fumerolle'], level: [53, 60], respawn: 70 },
       ],
       dungeon: 'cuve_des_cendrous',
       relay: false,
     },
     {
-      id: 'kaldum_vapeurs_souffleries', name: 'Les Souffleries', level: [51, 56],
+      id: 'kaldum_vapeurs_souffleries', name: 'Les Souffleries', sousZone: 'les Souffleries', penche: { pioche_vive: 2, tholou: 1.5 }, level: [51, 56],
       layout: [
         '#######n#######',
         '#.....#.#.....#',
@@ -399,17 +401,17 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['lichen_de_scorie', 'basalte_de_kaldum'],
       groups: [
-        { monsters: ['fumerolle', 'pioche_vive', 'pioche_vive'], level: [51, 56], respawn: 50 },
-        { monsters: ['tholou', 'tholou', 'pioche_vive'], level: [51, 56], respawn: 50 },
-        { monsters: ['fumerolle', 'fumerolle', 'pioche_vive'], level: [51, 56], respawn: 50 },
-        { monsters: ['thelk_ancien', 'fumerolle'], level: [51, 56], respawn: 60 },
-        { monsters: ['pioche_vive', 'pioche_vive', 'fumerolle', 'fumerolle'], level: [53, 56], respawn: 60 },
+        { taille: [2, 4], monsters: ['fumerolle', 'pioche_vive', 'pioche_vive'], level: [51, 56], respawn: 50 },
+        { taille: [2, 4], monsters: ['tholou', 'tholou', 'pioche_vive'], level: [51, 56], respawn: 50 },
+        { taille: [2, 4], monsters: ['fumerolle', 'fumerolle', 'pioche_vive'], level: [51, 56], respawn: 50 },
+        { fixe: true, monsters: ['thelk_ancien', 'fumerolle'], level: [51, 56], respawn: 60 },
+        { taille: [3, 4], monsters: ['pioche_vive', 'pioche_vive', 'fumerolle', 'fumerolle'], level: [53, 56], respawn: 60 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'kaldum_vapeurs_conduit', name: 'Le Conduit', level: [51, 56],
+      id: 'kaldum_vapeurs_conduit', name: 'Le Conduit', sousZone: 'les Souffleries', penche: { pioche_vive: 2 }, level: [51, 56],
       layout: [
         '#######n#######',
         '#.....#.#.....#',
@@ -431,9 +433,9 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['basalte_de_kaldum'],
       groups: [
-        { monsters: ['pioche_vive', 'pioche_vive', 'fumerolle'], level: [51, 56], respawn: 50 },
-        { monsters: ['tholou_tisse', 'fumerolle', 'fumerolle'], level: [51, 56], respawn: 55 },
-        { monsters: ['fumerolle', 'fumerolle', 'pioche_vive', 'pioche_vive'], level: [53, 56], respawn: 60 },
+        { taille: [2, 4], monsters: ['pioche_vive', 'pioche_vive', 'fumerolle'], level: [51, 56], respawn: 50 },
+        { fixe: true, monsters: ['tholou_tisse', 'fumerolle', 'fumerolle'], level: [51, 56], respawn: 55 },
+        { taille: [3, 4], monsters: ['fumerolle', 'fumerolle', 'pioche_vive', 'pioche_vive'], level: [53, 56], respawn: 60 },
       ],
       dungeon: null,
       relay: false,
@@ -444,10 +446,11 @@ DATA.content.zones.push({
 DATA.content.zones.push({
   id: 'kaldum_fonderie', name: 'La Fonderie', region: 'kaldum', level: [53, 60],
   palette: 'kaldum',
+  faune: { monstres: { kaldrik: 30, cendrou: 30, pioche_vive: 25, kaldrik_trempe: 8, fumerolle: 7 }, tailles: { 3: 55, 4: 45 } },
   description: "La grande fonderie de Kaldum, où la lave coule dans des rigoles de basalte. Les Cendrous y volent les braises et les emportent vers une porte que personne n'ouvrait plus.",
   maps: [
     {
-      id: 'kaldum_fonderie_entree', name: "L'Entrée de la Fonderie", level: [53, 58],
+      id: 'kaldum_fonderie_entree', name: "L'Entrée de la Fonderie", sousZone: "l'Entrée de la Fonderie", level: [53, 58],
       layout: [
         '###############',
         '#~~~.......~~~#',
@@ -469,16 +472,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['basalte_de_kaldum', 'lichen_de_scorie'],
       groups: [
-        { monsters: ['kaldrik', 'kaldrik', 'pioche_vive'], level: [53, 58], respawn: 50 },
-        { monsters: ['molh_ancien', 'kaldrik', 'kaldrik'], level: [53, 58], respawn: 55 },
-        { monsters: ['molh', 'kaldrik', 'pioche_vive'], level: [53, 58], respawn: 55 },
-        { monsters: ['kaldrik', 'pioche_vive', 'pioche_vive'], level: [53, 58], respawn: 50 },
+        { taille: [2, 4], monsters: ['kaldrik', 'kaldrik', 'pioche_vive'], level: [53, 58], respawn: 50 },
+        { fixe: true, monsters: ['molh_ancien', 'kaldrik', 'kaldrik'], level: [53, 58], respawn: 55 },
+        { taille: [2, 4], monsters: ['molh', 'kaldrik', 'pioche_vive'], level: [53, 58], respawn: 55 },
+        { taille: [2, 4], monsters: ['kaldrik', 'pioche_vive', 'pioche_vive'], level: [53, 58], respawn: 50 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'kaldum_fonderie_relais', name: 'Le Relais de la Fonderie', level: [53, 58],
+      id: 'kaldum_fonderie_relais', name: 'Le Relais de la Fonderie', sousZone: "l'Entrée de la Fonderie", level: [53, 58],
       layout: [
         '#######n#######',
         '#.....#.#.....#',
@@ -500,15 +503,15 @@ DATA.content.zones.push({
       npcs: ['kerath'],
       nodes: ['lichen_de_scorie'],
       groups: [
-        { monsters: ['kaldrik', 'kaldrik', 'cendrou'], level: [55, 60], respawn: 55 },
-        { monsters: ['kaldrik_trempe', 'kaldrik', 'kaldrik'], level: [55, 58], respawn: 55 },
-        { monsters: ['cendrou', 'pioche_vive', 'kaldrik'], level: [55, 60], respawn: 55 },
+        { taille: [2, 4], monsters: ['kaldrik', 'kaldrik', 'cendrou'], level: [55, 60], respawn: 55 },
+        { taille: [2, 4], monsters: ['kaldrik_trempe', 'kaldrik', 'kaldrik'], level: [55, 58], respawn: 55 },
+        { taille: [2, 4], monsters: ['cendrou', 'pioche_vive', 'kaldrik'], level: [55, 60], respawn: 55 },
       ],
       dungeon: null,
       relay: true,
     },
     {
-      id: 'kaldum_fonderie_coulees', name: 'Les Coulées', level: [55, 60],
+      id: 'kaldum_fonderie_coulees', name: 'Les Coulées', sousZone: 'les Coulées', penche: { cendrou: 2 }, level: [55, 60],
       layout: [
         '###############',
         '#~~~~~~~~~~~~~#',
@@ -530,16 +533,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['basalte_de_kaldum', 'lichen_de_scorie'],
       groups: [
-        { monsters: ['cendrou', 'cendrou', 'fumerolle'], level: [55, 60], respawn: 50 },
-        { monsters: ['cendrou', 'cendrou', 'kaldrik'], level: [55, 60], respawn: 55 },
-        { monsters: ['thelk_ancien', 'cendrou', 'cendrou'], level: [55, 60], respawn: 60 },
-        { monsters: ['cendrou', 'cendrou', 'cendrou', 'kaldrik'], level: [57, 60], respawn: 65 },
+        { taille: [2, 4], monsters: ['cendrou', 'cendrou', 'fumerolle'], level: [55, 60], respawn: 50 },
+        { taille: [2, 4], monsters: ['cendrou', 'cendrou', 'kaldrik'], level: [55, 60], respawn: 55 },
+        { fixe: true, monsters: ['thelk_ancien', 'cendrou', 'cendrou'], level: [55, 60], respawn: 60 },
+        { taille: [3, 4], monsters: ['cendrou', 'cendrou', 'cendrou', 'kaldrik'], level: [57, 60], respawn: 65 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'kaldum_fonderie_creusets', name: 'Les Creusets', level: [55, 60],
+      id: 'kaldum_fonderie_creusets', name: 'Les Creusets', sousZone: 'les Coulées', penche: { pioche_vive: 1.5, kaldrik_trempe: 2 }, level: [55, 60],
       layout: [
         '#######n#######',
         '#.....#.#.....#',
@@ -561,17 +564,17 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['basalte_de_kaldum'],
       groups: [
-        { monsters: ['cendrou', 'pioche_vive', 'kaldrik'], level: [55, 60], respawn: 55 },
-        { monsters: ['cendrou', 'cendrou', 'pioche_vive'], level: [55, 60], respawn: 55 },
-        { monsters: ['masse_vive', 'kaldrik_trempe', 'pioche_vive'], level: [55, 60], respawn: 60 },
-        { monsters: ['fumerolle_noire', 'kaldrik', 'cendrou'], level: [55, 60], respawn: 60 },
-        { monsters: ['kaldrik', 'kaldrik', 'cendrou', 'pioche_vive'], level: [57, 60], respawn: 65 },
+        { taille: [2, 4], monsters: ['cendrou', 'pioche_vive', 'kaldrik'], level: [55, 60], respawn: 55 },
+        { taille: [2, 4], monsters: ['cendrou', 'cendrou', 'pioche_vive'], level: [55, 60], respawn: 55 },
+        { fixe: true, monsters: ['masse_vive', 'kaldrik_trempe', 'pioche_vive'], level: [55, 60], respawn: 60 },
+        { fixe: true, monsters: ['fumerolle_noire', 'kaldrik', 'cendrou'], level: [55, 60], respawn: 60 },
+        { taille: [3, 4], monsters: ['kaldrik', 'kaldrik', 'cendrou', 'pioche_vive'], level: [57, 60], respawn: 65 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'kaldum_fonderie_forge', name: 'La Porte de la Forge Morte', level: [57, 60],
+      id: 'kaldum_fonderie_forge', name: 'La Porte de la Forge Morte', sousZone: 'la Porte de la Forge Morte', penche: { kaldrik_trempe: 2 }, level: [57, 60],
       layout: [
         '###############',
         '#~~~~~~.~~~~~~#',
@@ -593,9 +596,9 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['basalte_de_kaldum'],
       groups: [
-        { monsters: ['cendrou', 'cendrou', 'kaldrik', 'pioche_vive'], level: [57, 60], respawn: 65 },
-        { monsters: ['cendrou', 'pioche_vive', 'pioche_vive', 'kaldrik'], level: [57, 60], respawn: 65 },
-        { monsters: ['masse_vive', 'masse_vive', 'molh_ancien', 'kaldrik_trempe'], level: [57, 60], respawn: 70 },
+        { taille: [3, 4], monsters: ['cendrou', 'cendrou', 'kaldrik', 'pioche_vive'], level: [57, 60], respawn: 65 },
+        { taille: [3, 4], monsters: ['cendrou', 'pioche_vive', 'pioche_vive', 'kaldrik'], level: [57, 60], respawn: 65 },
+        { fixe: true, monsters: ['masse_vive', 'masse_vive', 'molh_ancien', 'kaldrik_trempe'], level: [57, 60], respawn: 70 },
       ],
       dungeon: 'forge_morte',
       relay: false,
@@ -814,6 +817,7 @@ DATA.content.quests.push({
 DATA.content.quests.push({
   id: 'kaldum_la_forge_morte', name: 'La Forge Morte', level: 57, main: true,
   giver: 'thorvek', requires: { level: 55, quests: ['kaldum_les_cendrous'] },
+  startItems: [{ id: 'cle_de_la_forge', count: 1 }],
   steps: [
     { type: 'talk', npc: 'kerath', text: 'Rejoindre Kerath au Relais de la Fonderie' },
     { type: 'visit', map: 'kaldum_fonderie_forge', text: 'Trouver la porte de la Forge Morte' },
@@ -1010,6 +1014,7 @@ DATA.content.quests.push({
 DATA.content.quests.push({
   id: 'kaldum_le_bain_de_lethir', name: 'Le bain de Lethir', level: 43, main: false,
   giver: 'lethir', requires: { level: 41, quests: [] },
+  startItems: [{ id: 'cle_des_boues', count: 1 }],
   steps: [
     { type: 'visit', map: 'kaldum_galeries_eboulement', text: 'Descendre jusqu\'à l\'Éboulement' },
     { type: 'dungeon', dungeon: 'boues_chaudes', text: 'Vaincre la Glaise Mère au fond des Boues Chaudes' },
@@ -1033,6 +1038,7 @@ DATA.content.quests.push({
 DATA.content.quests.push({
   id: 'kaldum_le_casse_croute_de_rukal', name: 'Le casse-croûte de Rukal', level: 51, main: false,
   giver: 'rukal', requires: { level: 49, quests: [] },
+  startItems: [{ id: 'cle_de_la_mine', count: 1 }],
   steps: [
     { type: 'dungeon', dungeon: 'mine_des_tholous', text: 'Descendre dans la Mine des Tholous' },
     { type: 'talk', npc: 'rukal', text: 'Rapporter son casse-croûte à Rukal' },
@@ -1055,6 +1061,7 @@ DATA.content.quests.push({
 DATA.content.quests.push({
   id: 'kaldum_la_sieste_de_rukal', name: 'La sieste de Rukal', level: 55, main: false,
   giver: 'rukal', requires: { level: 53, quests: [] },
+  startItems: [{ id: 'cle_de_la_cuve', count: 1 }],
   steps: [
     { type: 'visit', map: 'kaldum_vapeurs_cuve', text: 'Aller jusqu\'à la Cuve des Cendrous' },
     { type: 'dungeon', dungeon: 'cuve_des_cendrous', text: 'Éteindre Kraska, la Mère-Braise' },
@@ -1355,7 +1362,7 @@ DATA.content.dungeons.push({
   id: 'forge_morte', name: 'La Forge Morte', zone: 'kaldum_fonderie', level: [55, 60],
   entryMap: 'kaldum_fonderie_forge',
   salles3d: { tuiles: 'forge', sol: 'basalte', paroi: 'basalte', lumiere: '#ffb070', brume: '#241e1c' },
-  keyItem: null,
+  keyItem: 'cle_de_la_forge',
   description: "La forge de Dorm, ensevelie sous la Fonderie depuis la Grande Colère. Elle s'est rallumée, et c'est la chaleur de Kaldum qu'elle brûle.",
   rooms: [
     {
@@ -1451,7 +1458,7 @@ DATA.content.dungeons.push({
   id: 'boues_chaudes', name: 'Les Boues Chaudes', zone: 'kaldum_galeries', level: [39, 48],
   entryMap: 'kaldum_galeries_eboulement',
   salles3d: { texture: 'boues', sol: 'terre_battue', paroi: 'terre', lumiere: '#e8a860', brume: '#2a2018' },
-  keyItem: null,
+  keyItem: 'cle_des_boues',
   description: "Sous l'Éboulement, des bassins de boue tiède où les mineurs prenaient leur bain. La Glaise Mère s'y est levée, et ses petits Gleks barbotent partout.",
   rooms: [
     {
@@ -1526,7 +1533,7 @@ DATA.content.dungeons.push({
   id: 'mine_des_tholous', name: 'La Mine des Tholous', zone: 'kaldum_vapeurs', level: [47, 56],
   entryMap: 'kaldum_vapeurs_bouche',
   salles3d: { texture: 'mine', sol: 'terre_battue', paroi: 'bois', lumiere: '#f2c14e', brume: '#1e1a16' },
-  keyItem: null,
+  keyItem: 'cle_de_la_mine',
   description: "Une vieille mine abandonnée près de la Bouche des Vapeurs, devenue le dortoir le plus tiède de Kaldum. Les Tholous y ronronnent en tas, et le Grand Tholou ne quitte jamais son Molh.",
   rooms: [
     {
@@ -1601,7 +1608,7 @@ DATA.content.dungeons.push({
   id: 'cuve_des_cendrous', name: 'La Cuve des Cendrous', zone: 'kaldum_vapeurs', level: [51, 60],
   entryMap: 'kaldum_vapeurs_cuve',
   salles3d: { tuiles: 'cuve', sol: 'basalte', paroi: 'basalte', lumiere: '#d0c8b0', brume: '#262220' },
-  keyItem: null,
+  keyItem: 'cle_de_la_cuve',
   description: "Sous la Cuve, un puits de lave où les Cendrous portent les braises volées à la Fonderie. Au fond, Kraska, la Mère-Braise, les rallume une à une.",
   rooms: [
     {

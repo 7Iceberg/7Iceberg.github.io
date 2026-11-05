@@ -43,7 +43,13 @@
     { id: 'peau_du_grand_grouk', name: 'Peau du Grand Grouk', lore: 'Un pan de peau tanné par vingt ans de charges dans la roche.',
       drops: [{ monster: 'grand_grouk', rate: 50 }], node: null, price: 40 },
     { id: 'cle_du_terrier', name: 'Clé du Terrier', lore: 'Un coin de corne et de galets serrés dans du cuir. On le glisse sous la pierre de la Gueule, elle bascule, on entre. La pierre garde le coin.',
-      drops: [{ monster: 'grouk_cornu', rate: 3 }, { monster: 'grouk', rate: 1 }], node: null, price: 60 },
+      drops: [{ monster: 'grouk_cornu', rate: 3 }, { monster: 'grouk', rate: 1 }], node: null, image: 'assets/ui/objets/cle_du_terrier.png', price: 60 },
+    { id: 'cle_du_grenier', name: 'Clé du Grenier', lore: 'Un manche de bois tressé de paille, et dans la lucarne de l\'anneau un éclat de cristal que les Glyms regardent toujours un peu trop longtemps.',
+      drops: [{ monster: 'pilou', rate: 2 }, { monster: 'piouk', rate: 1 }], node: null, image: 'assets/ui/objets/cle_du_grenier.png', price: 30 },
+    { id: 'cle_de_la_voliere', name: 'Clé de la Volière', lore: 'Une clé dorée dont l\'anneau est une cage minuscule, porte ouverte ; deux plumes y pendent, une bleue et une rousse.',
+      drops: [{ monster: 'kavou_bleu', rate: 2 }, { monster: 'kavou_roux', rate: 2 }], node: null, image: 'assets/ui/objets/cle_de_la_voliere.png', price: 50 },
+    { id: 'cle_du_nid', name: 'Clé du Nid', lore: 'Un os fin enroulé de soie d\'argent ; une toile tient dans l\'anneau et vibre quand on approche du Nid.',
+      drops: [{ monster: 'tissefil', rate: 2 }, { monster: 'tissefil_ancien', rate: 3 }], node: null, image: 'assets/ui/objets/cle_du_nid.png', price: 50 },
 
     { id: 'lanterne_cabossee', name: 'Lanterne cabossée', lore: 'Une lanterne de l\'Aube reprise au Glym Chapardeur. Elle éclaire encore, mais de travers.',
       drops: [{ monster: 'pilou_chapardeur', rate: 100 }], node: null, price: 20 },
@@ -126,6 +132,14 @@
 
     { id: 'robe_de_kraska', name: 'Lambeau de robe de cendre', lore: 'Un pan de la robe de Kraska. Les coups glissent dessus, les explosions passent au travers.',
       drops: [{ monster: 'kraska', rate: 100 }], node: null, price: 55 },
+    { id: 'cle_des_boues', name: 'Clé des Boues', lore: 'De l\'argile cuite, orange et craquelée ; elle fume encore un peu, et sent la vase chaude.',
+      drops: [{ monster: 'thelk', rate: 2 }, { monster: 'glek', rate: 1 }], node: null, image: 'assets/ui/objets/cle_des_boues.png', price: 70 },
+    { id: 'cle_de_la_mine', name: 'Clé de la Mine', lore: 'Du fer brut, une lanterne de mineur grande comme le pouce en guise d\'anneau, et une touffe de poil de Tholou nouée au manche.',
+      drops: [{ monster: 'tholou', rate: 2 }, { monster: 'tholi', rate: 1 }], node: null, image: 'assets/ui/objets/cle_de_la_mine.png', price: 80 },
+    { id: 'cle_de_la_cuve', name: 'Clé de la Cuve', lore: 'Un cuivre qui rougeoie, un anneau en forme de flamme autour d\'une braise qui ne s\'éteint pas.',
+      drops: [{ monster: 'cendrou', rate: 2 }, { monster: 'cendril', rate: 1 }], node: null, image: 'assets/ui/objets/cle_de_la_cuve.png', price: 90 },
+    { id: 'cle_de_la_forge', name: 'Clé de la Forge', lore: 'Fer noirci, anneau en forme d\'enclume, panneton de basalte fendu. Elle pèse plus lourd que sa taille.',
+      drops: [{ monster: 'kaldrik', rate: 2 }, { monster: 'pioche_vive', rate: 2 }], node: null, image: 'assets/ui/objets/cle_de_la_forge.png', price: 100 },
     { id: 'coeur_de_kraska', name: 'Cœur de la Mère-Braise', lore: 'Il rougeoie encore et rallume tout ce qu\'on pose à côté, sac compris.',
       drops: [{ monster: 'kraska', rate: 50 }], node: null, price: 60 },
   );
@@ -627,6 +641,13 @@
 
   R('lame_de_cime', 'forgeron', [['bois_de_cime', 4], ['pierre_de_calcaire', 2], ['plume_de_pilou', 1]]);
   R('cle_du_terrier', 'forgeron', [['corne_de_grouk', 4], ['cuir_de_grouk', 6], ['galet_de_brimbe', 5], ['croc_de_grouk', 1]]);
+  R('cle_du_grenier', 'forgeron', [['plume_de_pilou', 4], ['duvet_de_pilou', 3], ['bois_de_cime', 2], ['bec_de_pilou', 1]]);
+  R('cle_de_la_voliere', 'forgeron', [['plume_de_kavou', 5], ['plume_de_pilou', 3], ['bois_de_cime', 2]]);
+  R('cle_du_nid', 'forgeron', [['soie_de_tissefil', 6], ['patte_de_tissefil', 3], ['venin_de_tissefil', 1]]);
+  R('cle_des_boues', 'forgeron', [['argile_de_thelk', 6], ['vapeur_de_fumerolle', 3], ['basalte_de_kaldum', 2]]);
+  R('cle_de_la_mine', 'forgeron', [['poil_de_tholou', 5], ['fer_de_pioche_vive', 3], ['lueur_de_veilloche', 1]]);
+  R('cle_de_la_cuve', 'forgeron', [['charbon_de_cendrou', 4], ['cendre_de_cendrou', 4], ['braise_de_kaldrik', 2]]);
+  R('cle_de_la_forge', 'forgeron', [['scorie_de_kaldrik', 5], ['fer_de_pioche_vive', 4], ['basalte_de_kaldum', 3], ['etincelle_de_pioche_vive', 1]]);
   R('lame_de_galet', 'forgeron', [['galet_de_brimbe', 7], ['bois_noueux', 3], ['ecaille_de_brimbe', 3]]);
   R('lame_de_scorie', 'forgeron', [['scorie_de_kaldrik', 9], ['poing_de_kaldrik', 3], ['basalte_de_kaldum', 5]]);
   R('dagues_de_venin', 'forgeron', [['venin_de_tissefil', 1], ['patte_de_tissefil', 4], ['bois_noueux', 3], ['pierre_de_calcaire', 4]]);

@@ -1,7 +1,7 @@
 (() => {
 const esc = s => Util.esc(s);
 const ICONE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4"/><path d="M12 12l2 2.5-2 2.5-2-2.5z"/></svg>';
-const element = el => DATA.elements[el] || { label: el, stat: el, color: '#c9a66b' };
+const element = el => DATA.elements[el] || { label: el, stat: el, color: '#ddaa72' };
 const semaine = el => { const s = element(el).stat; return /^[AEIOUaeiou]/.test(s) ? `Semaine d'${s}` : `Semaine de ${s}`; };
 const ETATS = { fait: 'déposée', manque: 'manquée', avenir: 'à venir', avant: 'avant ta première Veille', aujourdhui: 'à faire' };
 const emettre = (type, detail) => { try { window.dispatchEvent(new CustomEvent(type, { detail })); } catch (e) {   } };

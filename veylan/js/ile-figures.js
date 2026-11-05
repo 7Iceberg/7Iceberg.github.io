@@ -283,9 +283,9 @@ void main() {
         if (s.kind === 'npc') pt.drawNpc(g, { x: 44, y: 76 }, Object.assign({}, s, { bob: 0, phase: 0 }), 0);
         else if (s.kind === 'node') pt.drawNode(g, { x: 44, y: 76 }, Object.assign({}, s, { ready: true }));
         else {
-          pt.drawBody(g, { x: 44, y: 76 }, s);
-          if (s.motif) pt.drawMotif(g, { x: 44, y: 76 }, s);
-          if (s.noyau && typeof Paint === 'object' && Paint.noyau) Paint.noyau(g, { x: 44, y: 76 }, s);
+          const peinte = pt.drawBody(g, { x: 44, y: 76 }, s) === 'figure';
+          if (s.motif && !peinte) pt.drawMotif(g, { x: 44, y: 76 }, s);
+          if (s.noyau && !peinte && typeof Paint === 'object' && Paint.noyau) Paint.noyau(g, { x: 44, y: 76 }, s);
         }
       };
     }
@@ -295,7 +295,7 @@ void main() {
       if (s.kind === 'node') return `node|${s.nodeKind}`;
       const hero = s.shape === 'player' ? '|' + Renderer.heroKey(s) : '';
       const allure = typeof s.look === 'string' ? s.look : '';
-      return `body|${s.shape}|${allure}|${s.color}|${s.glyph || ''}|${s.motif || ''}|${s.noyau || ''}|${s.team}|${s.flash ? 1 : 0}${hero}`;
+      return `body|${s.shape}|${allure}|${s.color}|${s.glyph || ''}|${s.motif || ''}|${s.noyau || ''}|${s.team}|${s.flash ? 1 : 0}${hero}|${typeof Figures === 'object' ? Figures.cle(s.figure) : ''}`;
     }
 
 
@@ -429,6 +429,12 @@ void main() {
       this.majTextes(sprites.slice(0, n), cam, now, extras);
     }
 
+    hautFigure(s) {
+      const k = s.scale || 1, M = this.modeles;
+      const h = M && s.modele && typeof M.hauteur === 'function' ? M.hauteur(s.modele) : null;
+      return h ? (h + 0.32) * k : 1.86 * k;
+    }
+
     majCombat(sprites, cam, now) {
       let na = 0, nl = 0, nb = 0;
       const blanc = this._c || (this._c = new this.THREE.Color());
@@ -445,7 +451,7 @@ void main() {
       const barre = (s, dx, dy, w, h, couleur, a, jauge) => {
         if (nb >= MAX_BARRES) return;
         const k = s.scale || 1;
-        this.bAncre.setXYZ(nb, s.x, s.h + 1.86 * k, s.y);
+        this.bAncre.setXYZ(nb, s.x, s.h + this.hautFigure(s), s.y);
         this.bBoite.setXYZW(nb, dx, dy, w, h);
         blanc.set(couleur);
         this.bCouleur.setXYZW(nb, blanc.r, blanc.g, blanc.b, a * (s.alpha == null ? 1 : s.alpha));
@@ -491,7 +497,7 @@ void main() {
         const a = 1 - Math.max(0, Math.min(1, (d - 22) / 8));
         if (a <= 0.02) continue;
         const k = s.scale || 1;
-        const tete = s.h + 1.8 * k;
+        const tete = s.h + this.hautFigure(s) - 0.06 * k;
         if (s.label) {
           if (s.labelSorte === 'ennemi' && surVeilleur(s)) items.push({ x: s.x, y: tete, z: s.y, dy: s.badge ? 30 : 16, sorte: 'ennemi', texte: s.label, a });
           else items.push({ x: s.x, y: s.h, z: s.y, dy: -22, sorte: s.labelSorte || 'nom', texte: s.label, a });

@@ -14,7 +14,9 @@ class Character {
       familiers: {}, familier: null,
       monture: null,
       sceaux: null,
+      trousseau: {},
     }, data || {});
+    if (!this.trousseau || typeof this.trousseau !== 'object' || Array.isArray(this.trousseau)) this.trousseau = {};
     if (!this.coffre || typeof this.coffre !== 'object') this.coffre = { items: {}, fils: 0 };
     if (!this.coffre.items || typeof this.coffre.items !== 'object') this.coffre.items = {};
     if (!Number.isFinite(this.coffre.fils)) this.coffre.fils = 0;

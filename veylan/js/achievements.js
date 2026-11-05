@@ -1,6 +1,24 @@
 const Achievements = (() => {
   const defs = () => (DATA.content && DATA.content.achievements) || [];
-  const get = id => defs().find(a => a.id === id) || null;
+  let index = null, indexDe = null;
+  const get = id => { const d = defs(); if (indexDe !== d || index.size !== d.length) { index = new Map(d.map(a => [a.id, a])); indexDe = d; } return index.get(id) || null; };
+  const S = () => (typeof DATA === 'object' && DATA.succes) || null;
+  const classe = a => (S() && S().classement[a.id]) || null;
+  const points = a => (a && a.points != null ? a.points : (classe(a) || [0])[0]) || 0;
+  const score = ch => (ch.achievements || []).reduce((t, id) => t + points(get(id)), 0);
+  const total = ch => defs().filter(a => pourPerso(ch, a)).reduce((t, a) => t + points(a), 0);
+  const zoneDef = id => ((DATA.content && DATA.content.zones) || []).find(z => z.id === id);
+  const valeurIle = v => typeof v === 'string' && (/^ervane/.test(v) || v === 'puits_de_l_amarre' || (DATA.monsters[v] && DATA.monsters[v].region === 'ervane') || ((zoneDef(v) || {}).region === 'ervane'));
+  function ileSeule(a) {
+    const c = a.cond || {};
+    if (c.type === 'meta') { const l = (c.succes || []).map(get).filter(Boolean); return l.length > 0 && l.every(ileSeule); }
+    const vals = [];
+    for (const k in c) if (k !== 'type') [].concat(c[k]).forEach(v => vals.push(v));
+    return vals.some(valeurIle);
+  }
+  const pourPerso = (ch, a) => !a ? false : ch.origine === 'ervane' || (ch.achievements || []).includes(a.id) || !ileSeule(a);
+  const relaisPour = ch => ((DATA.content && DATA.content.zones) || []).filter(z => ch.origine === 'ervane' || z.region !== 'ervane').flatMap(z => (z.maps || []).filter(m => m.relay).map(m => m.id));
+  const cosmetiquesAGagner = () => (typeof Garderobe === 'object' ? Garderobe.defs() : []).filter(c => !c.source || c.source.genre !== 'evenement');
   const JAMAIS_CROISES = ['piouk', 'groukin'];
   const carnetCount = (ch, region) => { const k = ch.counters.kills || {}; return Object.keys(k).filter(id => DATA.monsters[id] && DATA.monsters[id].region === region && !DATA.monsters[id].summon).length
     + (region === 'orsane' && ch.origine === 'ervane' ? JAMAIS_CROISES.filter(id => DATA.monsters[id] && DATA.monsters[id].region === 'orsane' && !k[id]).length : 0); };
@@ -27,22 +45,41 @@ const Achievements = (() => {
       case 'gather': return k.gathers >= c.count;
       case 'fils': return k.filsEarned >= c.count;
       case 'set': { const s = Items.getSet(c.set); return !!s && (ch.derived().setCount[c.set] || 0) >= s.pieces.length; }
+      case 'bossDefi': return ((k.feats || {})[`bossdefi.${c.monster}.${c.defi}`] || 0) >= 1;
+      case 'noeudsBoss': return ((k.feats || {})[`noeudsboss.${c.monster}`] || 0) >= c.count;
+      case 'famille': { const l = presents(c.monstres); return l.length > 0 && l.every(m => c.defi ? ((k.feats || {})['killdefi.' + m] || 0) >= 1 : (k.kills[m] || 0) >= 1); }
+      case 'argentes': { const l = presents(c.monstres); return l.length > 0 && l.every(m => (k.kills[m] || 0) >= 1); }
+      case 'defisDistincts': return defisVus(ch) >= c.count;
+      case 'meta': { const l = enfants(ch, c); return l.length > 0 && l.every(a => (ch.achievements || []).includes(a.id)); }
+      case 'score': return score(ch) >= c.count;
+      case 'relais': return (ch.relays || []).filter(id => relaisPour(ch).includes(id)).length >= Math.min(c.count, relaisPour(ch).length) && relaisPour(ch).length > 0;
+      case 'faction': { const f = ch.faction || {}; if (c.jure) return typeof Factions === 'object' && Factions.isSworn(ch); if (c.rang) return !!f.id && (f.rank || 0) >= c.rang; if (c.marcheurs) return (f.marcheurs || 0) >= c.marcheurs; return false; }
+      case 'familier': { const fs = typeof Familiers === 'object' ? Object.keys(ch.familiers || {}).filter(id => Familiers.get(id)) : []; return c.niveau ? fs.some(id => Familiers.niveauDe(ch, id) >= c.niveau) : fs.length >= c.count; }
+      case 'monture': return typeof Montures === 'object' && !!Montures.de(ch) && (!c.niveau || Montures.niveau(ch) >= c.niveau);
+      case 'garderobe': { if (typeof Garderobe !== 'object') return false; const n = Garderobe.possedes().length; return n >= (c.count === 'tout' ? cosmetiquesAGagner().length : c.count); }
       default: return false;
     }
   }
+  const presents = l => (l || []).filter(m => DATA.monsters[m]);
+  const defisVus = ch => Object.keys((ch.counters && ch.counters.feats) || {}).filter(k => /^defivu\./.test(k) && ch.counters.feats[k] > 0).length;
+  const enfants = (ch, c) => (c.succes || []).map(get).filter(a => a && pourPerso(ch, a));
 
-  const hasReward = a => { const r = a.rewards || {}; return !!(r.xp || r.fils || (r.items || []).length || r.cosmetique); };
+  const hasReward = a => { const r = a.rewards || {}; return !!(r.xp || r.fils || (r.items || []).length || r.cosmetique || r.eclats); };
 
   function check(ch) {
     const out = [];
     ch.achClaimed = ch.achClaimed || [];
-    for (const a of defs()) {
-      if (ch.achievements.includes(a.id) || !met(ch, a.cond || {})) continue;
-      ch.achievements.push(a.id);
-      const r = a.rewards || {};
-      if (r.title && !ch.titles.includes(r.title)) ch.titles.push(r.title);
-      if (!hasReward(a)) ch.achClaimed.push(a.id);
-      out.push({ achievement: a, xp: r.xp || 0, levels: 0, fils: r.fils || 0, title: r.title || null, pending: hasReward(a) });
+    for (let encore = true; encore;) {
+      encore = false;
+      for (const a of defs()) {
+        if (ch.achievements.includes(a.id) || !met(ch, a.cond || {})) continue;
+        ch.achievements.push(a.id);
+        encore = true;
+        const r = a.rewards || {};
+        if (r.title && !ch.titles.includes(r.title)) ch.titles.push(r.title);
+        if (!hasReward(a)) ch.achClaimed.push(a.id);
+        out.push({ achievement: a, xp: r.xp || 0, levels: 0, fils: r.fils || 0, title: r.title || null, pending: hasReward(a), points: points(a) });
+      }
     }
     return out;
   }
@@ -64,10 +101,18 @@ const Achievements = (() => {
     if (r.fils) { ch.fils += r.fils; ch.counters.filsEarned += r.fils; }
     for (const it of r.items || []) if (Items.get(it.id)) { ch.addItem(it.id, it.count || 1); got.items.push({ id: it.id, count: it.count || 1 }); }
     got.cosmetiques = r.cosmetique && typeof Garderobe !== 'undefined' ? [].concat(r.cosmetique).flatMap(cid => Garderobe.donner(cid, 'succes:' + a.id)) : [];
+    got.eclats = r.eclats && typeof Boutique === 'object' ? r.eclats : 0;
+    got.fidelite = got.eclats ? Boutique.crediter(r.eclats, 'succès : ' + a.name) : [];
     return got;
   }
 
   function category(a) {
+    if (a.cat) return a.cat;
+    if (classe(a)) return classe(a)[1];
+    return ancienne(a);
+  }
+  const sousCategorie = a => a.sous || (classe(a) || [])[2] || 'Général';
+  function ancienne(a) {
     const c = a.cond || {};
     switch (c.type) {
       case 'maps': case 'zone': return 'Exploration';
@@ -102,25 +147,73 @@ const Achievements = (() => {
       case 'feat': return pair((k.feats || {})[c.key] || 0, c.count);
       case 'carnet': return pair(carnetCount(ch, c.region), c.count);
       case 'dungeonTurns': { const b = (k.dungeonTurns || {})[c.dungeon]; return ch.achievements.includes(a.id) ? 'fait' : b ? `meilleur : ${b} tours` : 'à faire'; }
+      case 'noeudsBoss': return pair((k.feats || {})[`noeudsboss.${c.monster}`] || 0, c.count);
+      case 'famille': { const l = presents(c.monstres); return pair(l.filter(m => c.defi ? ((k.feats || {})['killdefi.' + m] || 0) >= 1 : (k.kills[m] || 0) >= 1).length, l.length); }
+      case 'argentes': { const l = presents(c.monstres); return pair(l.filter(m => (k.kills[m] || 0) >= 1).length, l.length); }
+      case 'defisDistincts': return pair(defisVus(ch), c.count);
+      case 'meta': { const l = enfants(ch, c); return pair(l.filter(x => ch.achievements.includes(x.id)).length, l.length); }
+      case 'score': return pair(score(ch), c.count);
+      case 'relais': { const r = relaisPour(ch); return pair((ch.relays || []).filter(id => r.includes(id)).length, Math.min(c.count, r.length)); }
+      case 'faction': { const f = ch.faction || {}; return c.rang ? pair(f.id ? f.rank || 0 : 0, c.rang) : c.marcheurs ? pair(f.marcheurs || 0, c.marcheurs) : ch.achievements.includes(a.id) ? 'fait' : 'à faire'; }
+      case 'familier': { if (typeof Familiers !== 'object') return 'à faire'; const fs = Object.keys(ch.familiers || {}).filter(id => Familiers.get(id)); return c.niveau ? pair(Math.max(0, ...fs.map(id => Familiers.niveauDe(ch, id))), c.niveau) : pair(fs.length, c.count); }
+      case 'monture': return c.niveau && typeof Montures === 'object' ? pair(Montures.niveau(ch), c.niveau) : ch.achievements.includes(a.id) ? 'fait' : 'à faire';
+      case 'garderobe': { if (typeof Garderobe !== 'object') return 'à faire'; return pair(Garderobe.possedes().length, c.count === 'tout' ? cosmetiquesAGagner().length : c.count); }
       default: return ch.achievements.includes(a.id) ? 'fait' : 'à faire';
     }
   }
 
-  return { defs, get, met, check, pending, claim, hasReward, category, progress };
+  function avancement(ch, a) {
+    if ((ch.achievements || []).includes(a.id)) return [1, 1];
+    const m = /^(\d+)\/(\d+)$/.exec(progress(ch, a));
+    return m && +m[2] > 0 ? [+m[1], +m[2]] : null;
+  }
+
+  function explorerZones() {
+    const C = DATA.content;
+    if (!C || !C.zones || !C.achievements) return;
+    const article = n => n.replace(/^(Les|La|Le) /, m => m.toLowerCase()).replace(/^L'/, 'l\'');
+    const de = n => /^Les /.test(n) ? 'des ' + n.slice(4) : /^Le /.test(n) ? 'du ' + n.slice(3) : /^(La |L')/.test(n) ? 'de ' + article(n) : /^[AEIOUYÉÈÊ]/i.test(n) ? 'd\'' + n : 'de ' + n;
+    for (const z of C.zones) {
+      const id = `explorer_${z.id}`;
+      if (!(z.maps || []).length || C.achievements.some(a => a.id === id)) continue;
+      const [lo, hi] = z.level || [1, 1];
+      C.achievements.push({
+        id, name: `Explorer ${article(z.name)}`, desc: `Visiter les ${z.maps.length} cartes ${de(z.name)}.`,
+        cond: { type: 'zone', zone: z.id }, rewards: { xp: Math.round((lo + hi + 1) / 2 * 1.5) * 10 },
+      });
+    }
+  }
+
+  function integrer() {
+    explorerZones();
+    const C = DATA.content, src = S();
+    if (!C || !C.achievements || !src) return 0;
+    const ids = new Set(C.achievements.map(a => a.id));
+    const quetes = new Set((C.quests || []).map(q => q.id)), donjons = new Set((C.dungeons || []).map(d => d.id));
+    const max = (DATA.rules && DATA.rules.niveauMax) || 60;
+    const pret = c => {
+      switch (c.type) {
+        case 'dungeon': case 'dungeonTurns': return donjons.has(c.dungeon);
+        case 'bossDefi': case 'noeudsBoss': case 'kills': case 'boss': return !!DATA.monsters[c.monster];
+        case 'famille': case 'argentes': return presents(c.monstres).length > 0;
+        case 'zone': return !!zoneDef(c.zone);
+        case 'quest': return quetes.has(c.quest);
+        case 'questline': return (c.quests || []).length > 0 && c.quests.every(q => quetes.has(q));
+        case 'set': { const st = (typeof Items === 'object' && Items.getSet(c.set)) || (C.sets || []).find(x => x.id === c.set); return !!st && (st.level || 1) <= max; }
+        case 'meta': return (c.succes || []).some(id => ids.has(id));
+        default: return true;
+      }
+    };
+    let n = 0;
+    for (const a of src.nouveaux) {
+      if (ids.has(a.id) || !pret(a.cond || {})) continue;
+      C.achievements.push(JSON.parse(JSON.stringify(a)));
+      ids.add(a.id); n++;
+    }
+    return n;
+  }
+
+  return { defs, get, met, check, pending, claim, hasReward, category, sousCategorie, progress, avancement, points, score, total, ileSeule, pourPerso, integrer };
 })();
 
-(() => {
-  const C = DATA.content;
-  if (!C || !C.zones || !C.achievements) return;
-  const article = n => n.replace(/^(Les|La|Le) /, m => m.toLowerCase()).replace(/^L'/, 'l\'');
-  const de = n => /^Les /.test(n) ? 'des ' + n.slice(4) : /^Le /.test(n) ? 'du ' + n.slice(3) : /^(La |L')/.test(n) ? 'de ' + article(n) : /^[AEIOUYÉÈÊ]/i.test(n) ? 'd\'' + n : 'de ' + n;
-  for (const z of C.zones) {
-    const id = `explorer_${z.id}`;
-    if (!(z.maps || []).length || C.achievements.some(a => a.id === id)) continue;
-    const [lo, hi] = z.level || [1, 1];
-    C.achievements.push({
-      id, name: `Explorer ${article(z.name)}`, desc: `Visiter les ${z.maps.length} cartes ${de(z.name)}.`,
-      cond: { type: 'zone', zone: z.id }, rewards: { xp: Math.round((lo + hi + 1) / 2 * 1.5) * 10 },
-    });
-  }
-})();
+Achievements.integrer();

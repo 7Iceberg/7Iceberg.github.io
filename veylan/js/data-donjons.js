@@ -63,6 +63,7 @@ for (const c of PRISME) {
 }
 DATA.monsters.kavou_prisme = M('kavou_prisme', { name: 'Kavou Prisme', region: 'orsane', level: '23 à 32', boss: true, shape: 'circle', color: '#4fb3ff',
   hp: 240, dmgMult: 0.5, pa: 6, pm: 3, initiative: 90, resist: { eau: 40, neutre: 10, terre: -25 }, spells: ['m_prisme_eau'], ai: 'melee',
+  featFaille: 'prisme_faille',
   triggers: [{ when: 'fightStart', do: [{ act: 'cycleColor', cycle: PRISME }] }, { when: 'turnStart', do: [{ act: 'cycleColor', cycle: PRISME }] }],
   desc: 'Boss de la Volière. Change de couleur à chacun de ses tours et prend les résistances du Kavou de cette couleur, en plus marquées : relisez sa fiche à chaque tour.' });
 
@@ -83,6 +84,7 @@ DATA.monsters.braise_vive = M('braise_vive', { name: 'Braise vive', region: 'inv
   desc: 'Explose en mourant sur tout ce qui l\'entoure, la Mère-Braise comprise.' });
 DATA.monsters.kraska = M('kraska', { name: 'Kraska, la Mère-Braise', region: 'kaldum', level: '51 à 64', boss: true, shape: 'hex', color: '#ff6a2b',
   hp: 380, dmgMult: 0.6, pa: 6, pm: 2, initiative: 70, resist: { eau: 20, neutre: 10, feu: -15 }, spells: ['m_flamme', 'm_bouffee'], ai: 'ranged',
+  featExplosion: 'kraska_eteinte',
   triggers: [
     { when: 'fightStart', do: [{ act: 'armor', value: 60 }, { act: 'summon', monster: 'braise_vive', count: 2, max: 4 }, { act: 'log', text: 'Kraska s\'enveloppe de cendre : les coups glissent sur elle, pas les explosions.' }] },
     { when: 'turnStart', if: { every: 3 }, do: [{ act: 'summon', monster: 'braise_vive', count: 2, max: 4 }, { act: 'log', text: 'Kraska rallume deux braises.' }] },
@@ -100,7 +102,7 @@ DATA.monsters.glaise_mere = M('glaise_mere', { name: 'La Glaise Mère', region: 
 
 DATA.monsters.grand_tholou = M('grand_tholou', { name: 'Le Grand Tholou', region: 'kaldum', level: '43 à 60', boss: true, shape: 'circle', color: '#ffb37a',
   hp: 420, dmgMult: 2.6, pa: 6, pm: 2, initiative: 45, resist: { feu: 30, neutre: 10, terre: -15 }, spells: ['m_ronron', 'm_chaleur', 'm_etincelle'], ai: 'support',
-  triggers: [{ when: 'turnStart', do: [{ act: 'bond', pa: 2, range: 3 }] }],
+  triggers: [{ when: 'turnStart', do: [{ act: 'bond', pa: 2, range: 3, feat: 'tholou_panique' }] }],
   desc: 'Boss de la Mine. Donne deux de ses PA au plus gros de ses alliés ; séparé de lui de plus de trois cases, il panique et perd son tour.' });
 
 DATA.encounters.push(

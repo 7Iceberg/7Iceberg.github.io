@@ -96,7 +96,7 @@ class Ile3D {
   appliquerDensite() {
     const dpr = (typeof devicePixelRatio === 'number' && devicePixelRatio) || 1;
     const max = this.qualite === 'haute' ? 2 : this.qualite === 'moyenne' ? 1.5 : 1;
-    this.densite = Math.min(dpr, max);
+    this.densite = typeof UI === 'function' && UI.densite && this.qualite !== 'basse' ? UI.densite(dpr, max) : Math.min(dpr, max);
     if (this.renderer) this.renderer.setPixelRatio(this.densite);
     this.redimensionner();
   }
@@ -2030,7 +2030,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
         const def = DATA.monsters[m.id];
         if (!def) return;
         const [x, y] = membres[k];
-        const s = { kind: 'entity', shape: def.shape, color: def.color, glyph: null, team: 'monster', motif: Renderer.motifOf(m.id), noyau: def.noyau || null, scale: def.boss || def.recherche ? 1.3 : this.telephone ? 1.2 : 0.95, facing: prec.f, x, y, h: H(x, y), normale: N(x, y), bob: Math.sin(now / 500 + g.idx + k) * 1.5, alpha: fondu, cible: { type: 'groupe', ref: g } };
+        const s = { kind: 'entity', shape: def.shape, color: def.color, glyph: null, team: 'monster', motif: Renderer.motifOf(m.id), figure: (typeof Figures === 'object' ? Figures.de(m.id) : null), noyau: def.noyau || null, scale: def.boss || def.recherche ? 1.3 : this.telephone ? 1.2 : 0.95, facing: prec.f, x, y, h: H(x, y), normale: N(x, y), bob: Math.sin(now / 500 + g.idx + k) * 1.5, alpha: fondu, cible: { type: 'groupe', ref: g } };
         if (k === 0 && !vol) { s.label = `${g.alerte != null ? '! ' : ''}${def.recherche ? 'Recherché : ' : ''}${def.boss ? def.name.split(',')[0] : def.name} niv. ${g.level}`; s.labelSorte = 'ennemi'; if (g.monsters.length > 1) s.badge = `×${g.monsters.length}`; }
         if (fig.modeles && fig.modeles.prend(m.id)) { s.modele = m.id; s.modeleCle = `${g.nid || g.idx}|${k}`; }
         s.cle = fig.cleFigure(s); s.peindre = fig.peindreFigure(s);

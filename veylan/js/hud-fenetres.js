@@ -38,6 +38,7 @@ const MENUS = [
   ['succes', 'Succès', 'U', I.succes],
   ['carnet', 'Carnet du Veilleur', 'B', I.carnet],
   ['garderobe', 'Garde-robe', 'G', I.garderobe],
+  ['boutique', 'Boutique des Voiles', 'Y', I.boutique],
   ['familiers', 'Familiers', 'K', I.familiers],
   ['montures', 'Montures', 'L', I.montures],
   ['carte', 'Carte du monde', 'M', I.carte],
@@ -49,6 +50,15 @@ const ALIAS = { perso: 'sac' };
 Object.assign(Hud.prototype, {
   initFenetres() {
     this.fen = new Fenetres(document.getElementById('fenetres'));
+    const LIVRE = ['carac', 'sac', 'sorts', 'quetes', 'succes', 'familiers', 'montures', 'faction', 'carnet'];
+    const NOMS = { carac: 'Personnage', sac: 'Sac', carnet: 'Carnet' };
+    this.fen.livre = {
+      ids: LIVRE,
+      separer: ['familiers'],
+      onglets: LIVRE.map(id => { const m = MENUS.find(x => x[0] === id); return [id, NOMS[id] || m[1], m[2], m[3]]; }),
+      ouvrir: id => this.toggleWin(id),
+      point: id => { const ch = this.world && this.world.ch; return !!ch && ((id === 'carac' && ch.statPoints > 0) || (id === 'sorts' && ch.spellPoints > 0)); },
+    };
     window.addEventListener('veylan:ile-oubliee', () => { this.miniVue = null; });
     this.journal = { combat: [], evenements: [] };
     this.journalTab = 'evenements';
@@ -94,7 +104,7 @@ Object.assign(Hud.prototype, {
 
   toggleWin(id) {
     if (this.fen.isOpen(ALIAS[id] || id)) this.fen.close(ALIAS[id] || id);
-    else ({ carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), guilde: () => this.openGuilde(), succes: () => this.openAchievements(), carnet: () => this.openCarnet(), garderobe: () => this.openGarderobe(), familiers: () => this.openFamiliers(), montures: () => this.openMontures(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu() }[id] || (() => {}))();
+    else ({ carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), guilde: () => this.openGuilde(), succes: () => this.openAchievements(), boutique: () => this.openBoutique(), carnet: () => this.openCarnet(), garderobe: () => this.openGarderobe(), familiers: () => this.openFamiliers(), montures: () => this.openMontures(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu() }[id] || (() => {}))();
     this.syncMenus();
   },
 
@@ -124,6 +134,7 @@ Object.assign(Hud.prototype, {
       v.innerHTML = Gemmes.bloc(style, avecXp);
     }
     const xp = ch.xpProgress(), max = ch.level >= Character.MAX_LEVEL;
+    if (v.dataset.niveau !== String(ch.level)) v.dataset.niveau = ch.level;
     Gemmes.maj(v.firstElementChild, {
       hp: ch.hp, hpMax: d.hpMax, pa: d.pa, paMax: d.pa, pm: d.pm, pmMax: d.pm, xp,
       xpTexte: max ? 'max' : '', xpTitre: max ? `Niveau ${ch.level}, le plus haut` : `Niveau ${ch.level} : ${ch.xp} / ${Character.xpToNext(ch.level)} XP`,
@@ -163,16 +174,16 @@ Object.assign(Hud.prototype, {
       c.fillStyle = col[t] || col[0]; c.fill();
     }
     const dot = (x, y, color, r) => { const q = iso(x, y); c.beginPath(); c.arc(q.x, q.y, r, 0, Math.PI * 2); c.fillStyle = color; c.fill(); c.lineWidth = 1; c.strokeStyle = 'rgba(0,0,0,0.6)'; c.stroke(); };
-    for (const dir in (m.exits || {})) for (const e of m.exits[dir] || []) dot(e.x, e.y, '#e2c690', 1.6);
-    if (w.relay) dot(w.relay.x, w.relay.y, '#3fc8e9', 3);
-    if (w.door) dot(w.door.x, w.door.y, '#a66cff', 3);
-    for (const npc of w.npcs) dot(npc.x, npc.y, '#f2e2c9', 2.4);
-    for (const g of w.groups) dot(g.x, g.y, '#f07a5c', 2.6);
-    dot(Math.round(p.rx != null ? p.rx : p.x), Math.round(p.ry != null ? p.ry : p.y), '#00c2ff', 3.4);
+    for (const dir in (m.exits || {})) for (const e of m.exits[dir] || []) dot(e.x, e.y, '#f3bc72', 1.6);
+    if (w.relay) dot(w.relay.x, w.relay.y, '#52d2f4', 3);
+    if (w.door) dot(w.door.x, w.door.y, '#9764d6', 3);
+    for (const npc of w.npcs) dot(npc.x, npc.y, '#f7f0de', 2.4);
+    for (const g of w.groups) dot(g.x, g.y, '#ef7574', 2.6);
+    dot(Math.round(p.rx != null ? p.rx : p.x), Math.round(p.ry != null ? p.ry : p.y), '#209fec', 3.4);
     if (this.drawVoisins) this.drawVoisins(c, W);
     const pos = !w.mapId.includes('#') && typeof Atlas === 'object' && Atlas.coordsOf(w.mapId);
     const label = document.getElementById('minicarte-nom');
-    if (label) label.textContent = w.mapDef ? w.mapDef.name + (pos ? ` [${pos[0]},${pos[1]}]` : '') : '';
+    if (label) label.textContent = w.mapDef ? (w.mapDef.sousZone || w.mapDef.name) + (pos ? ` [${pos[0]},${pos[1]}]` : '') : '';
   },
 
   drawMinimapPlateau(cv, force) {
@@ -197,12 +208,12 @@ Object.assign(Hud.prototype, {
     c.restore();
     const dot = (x, y, color, r) => { const q = iso(x, y); if (q.x < -4 || q.y < -4 || q.x > W + 4 || q.y > H + 4) return; c.beginPath(); c.arc(q.x, q.y, r, 0, Math.PI * 2); c.fillStyle = color; c.fill(); c.lineWidth = 1; c.strokeStyle = 'rgba(0,0,0,0.6)'; c.stroke(); };
     const def = w.mapDef || {};
-    if (def.relay) dot(def.relay.u, def.relay.v, '#3fc8e9', 3);
-    if (def.porte) dot(def.porte.u, def.porte.v, '#a66cff', 3);
-    for (const n of w.npcs) dot(n.x, n.y, '#f2e2c9', 2.4);
-    for (const g of w.groups) dot(g.rx != null ? g.rx : g.x, g.ry != null ? g.ry : g.y, '#f07a5c', 2.6);
+    if (def.relay) dot(def.relay.u, def.relay.v, '#52d2f4', 3);
+    if (def.porte) dot(def.porte.u, def.porte.v, '#9764d6', 3);
+    for (const n of w.npcs) dot(n.x, n.y, '#f7f0de', 2.4);
+    for (const g of w.groups) dot(g.rx != null ? g.rx : g.x, g.ry != null ? g.ry : g.y, '#ef7574', 2.6);
     this.monumentsMini(c, W, H, iso);
-    dot(p.x, p.y, '#00c2ff', 3.4);
+    dot(p.x, p.y, '#209fec', 3.4);
     const pos = typeof Atlas === 'object' && Atlas.coordsOf(w.mapId);
     const label = document.getElementById('minicarte-nom');
     if (label) label.textContent = def.name ? def.name + (pos ? ` [${pos[0]},${pos[1]}]` : '') : '';
@@ -249,9 +260,9 @@ Object.assign(Hud.prototype, {
   loadTheme() {
     try {
       let t = localStorage.getItem('veylan.theme');
-      if (!localStorage.getItem('veylan.theme.duality')) { localStorage.setItem('veylan.theme.duality', '1'); if (!t || t === 'nuit') t = 'duality'; }
-      return t || 'duality';
-    } catch (e) { return 'duality'; }
+      if (!localStorage.getItem('veylan.theme.charte')) { localStorage.setItem('veylan.theme.charte', '1'); if (!t || t === 'duality') t = Hud.THEME_DEFAUT; }
+      return t || Hud.THEME_DEFAUT;
+    } catch (e) { return Hud.THEME_DEFAUT; }
   },
   themeDuPersonnage() {
     const ch = this.world && this.world.ch;
@@ -324,7 +335,8 @@ Object.assign(Hud.prototype, {
 
 Hud.OPACITE = 90;
 
-Hud.THEMES = [['duality', 'Duality', '#121019', '#ff8a3d'], ['nuit', 'Nuit d\'Orsane', '#172334', '#c9a66b'], ['royal', 'Bleu des Cimes', '#13264a', '#7fb4ff'], ['braise', 'Braise de Kaldum', '#2a1714', '#f07a5c'], ['cimes', 'Vert des Cimes', '#15261c', '#8db585'], ['ardoise', 'Ardoise claire', '#d9d2c3', '#8e7144']];
+Hud.THEME_DEFAUT = 'nuit';
+Hud.THEMES = [['nuit', 'Veylan', '#19233c', '#ddaa72'], ['royal', 'Bleu des Cimes', '#13264a', '#7fb4ff'], ['braise', 'Braise de Kaldum', '#2a1714', '#ef7574'], ['cimes', 'Vert des Cimes', '#15261c', '#80d697'], ['ardoise', 'Ardoise claire', '#d9d2c3', '#a67349'], ['duality', 'Duality', '#121019', '#ff8a3d']];
 Hud.MENUS = MENUS;
 Hud.themesDisponibles = () => Hud.THEMES.concat(typeof Garderobe !== 'undefined' ? Garderobe.themes() : []);
 Hud.STAT = STAT;

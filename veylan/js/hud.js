@@ -91,7 +91,7 @@ class Hud {
       this.barSig = sig;
       bar.innerHTML =
         `<div class="portrait" style="--c:${cls.color}">${cls.glyph}</div>` +
-        `<div class="pb-main"><div class="pb-name">${blason ? `<span class="pb-blason" style="color:${esc(blason.couleur || '#c9a66b')}" title="Blason" aria-hidden="true">${esc(blason.glyphe || '')}</span>` : ''}${esc(ch.name)} <small>${cls.name} · niveau ${ch.level}${ch.title ? ' · ' + esc(ch.title) : ''}</small></div>` +
+        `<div class="pb-main"><div class="pb-name">${blason ? `<span class="pb-blason" style="color:${esc(blason.couleur || '#ddaa72')}" title="Blason" aria-hidden="true">${esc(blason.glyphe || '')}</span>` : ''}${esc(ch.name)} <small>${cls.name} · niveau ${ch.level}${ch.title ? ' · ' + esc(ch.title) : ''}</small></div>` +
         Util.jauge('vie', ch.hp, d.hpMax, `${ch.hp} / ${d.hpMax}`, 'Points de vie') +
         Util.jauge('xp', xp, 100, null, 'Expérience', 'vy-jauge--fine') + `</div>` +
         `<div class="pb-fils">${ch.fils} <small>Dragmes</small>${ch.statPoints ? `<div class="pts">+${ch.statPoints} pts</div>` : ''}</div>`;
@@ -105,7 +105,9 @@ class Hud {
       if (b) b.classList.toggle('vy-menu--point', n > 0);
     }
     const tr = Quests.tracker(ch).slice(0, 3);
-    this.el.tracker.innerHTML = tr.map(t => `<div class="tq${t.quest.main ? ' main' : ''}${t.done ? ' done' : ''}"><b>${esc(t.quest.name)}</b><span>${esc(t.text)}</span></div>`).join('');
+    const succes = this.succesSuivis ? this.succesSuivis().map(Achievements.get).filter(Boolean) : [];
+    this.el.tracker.innerHTML = tr.map(t => `<div class="tq${t.quest.main ? ' main' : ''}${t.done ? ' done' : ''}"><b>${esc(t.quest.name)}</b><span>${esc(t.text)}</span></div>`).join('') +
+      succes.map(a => `<div class="tq succes"><b>${esc(a.name)}</b><span>Succès · ${esc(Achievements.progress(ch, a))}</span></div>`).join('');
   }
 
 
@@ -273,6 +275,13 @@ class Hud {
       (btns ? `<div class="vy-objet__actions">${btns}</div>` : '') + `</article>`;
   }
 
+  static texteCle(w, d) {
+    if (!d || !d.keyItem) return '';
+    const e = w && w.etatCle ? w.etatCle(d) : null, nom = esc(Items.get(d.keyItem).name);
+    if (!e || !e.range) return ` · clé : ${nom}${e && e.sac ? ` (${e.sac} dans le sac)` : ''}`;
+    return ` · clé : ${nom} (trousseau : ${e.libre ? 'libre aujourd\'hui' : 'déjà ouvert aujourd\'hui'}${e.sac ? `, ${e.sac} dans le sac` : ''})`;
+  }
+
   static picto(d) {
     const P = {
       coiffe: '<path d="M5 16a7 7 0 0 1 14 0v2H5z"/><path d="M12 6V4M9 16v2M15 16v2"/>',
@@ -286,6 +295,7 @@ class Hud {
       consommable: '<path d="M10 3h4v5l4 8a3 3 0 0 1-3 4H9a3 3 0 0 1-3-4l4-8z"/><path d="M8 14h8"/>',
       knot: '<path d="M8 8a4 4 0 1 1 4 4 4 4 0 1 0 4 4"/><path d="M16 8a4 4 0 1 0-4 4 4 4 0 1 1-4 4"/>',
     };
+    if (d.image) return `<img class="vy-case__img" src="${esc(d.image)}" alt="" draggable="false">`;
     const k = d.kind === 'equip' ? d.slot : d.kind === 'weapon' ? 'arme' : d.kind === 'resource' ? 'ressource' : d.kind === 'consumable' ? 'consommable' : d.kind;
     return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[k] || P.ressource}</svg>`;
   }
@@ -329,22 +339,6 @@ class Hud {
 
 
 
-  openAchievements() {
-    const render = () => {
-      const ch = this.world.ch;
-      const attente = Achievements.pending(ch).map(a => a.id);
-      const ileSeule = a => /ervane|puits_de_l_amarre|krobb/.test(JSON.stringify(a.cond || {}));
-      const defs = Achievements.defs().filter(a => ch.origine === 'ervane' || ch.achievements.includes(a.id) || !ileSeule(a));
-      const list = defs.map(a => {
-        const got = ch.achievements.includes(a.id);
-        const r = a.rewards || {};
-        return `<div class="row ach${got ? ' got' : ''}"><span><b>${esc(a.name)}</b><br><small>${esc(a.desc)}</small></span><span class="muted">${attente.includes(a.id) ? '<b>à réclamer</b>' : got ? 'obtenu' : Achievements.progress(ch, a)}<br><small>${[r.xp ? r.xp + ' XP' : '', r.fils ? r.fils + ' Dragmes' : '', r.title ? '« ' + esc(r.title) + ' »' : ''].filter(Boolean).join(' · ')}</small></span></div>`;
-      }).join('');
-      const n = attente.length;
-      return `<div class="row"><span class="muted">${ch.achievements.length} / ${defs.length} succès</span>${n ? `<button data-act="recompenses">${n} récompense${n > 1 ? 's' : ''} en attente</button>` : ''}</div>${list}`;
-    };
-    this.simpleWin('succes', 'Succès', render, { recompenses: () => this.openRecompenses() }, { width: 480 });
-  }
 
 
   openMenu() {
@@ -359,7 +353,9 @@ class Hud {
     };
     const jeu = () => `<h4>Jeu</h4>
       <div class="row"><label class="vy-coche"><input type="checkbox" id="opt-gaucher" ${this.jeu && this.jeu.gaucher ? 'checked' : ''}> Mode gaucher</label><span class="muted">le panneau de jeu passe à gauche</span></div>
-      ${PleinEcran.disponible() ? `<div class="row"><label class="vy-coche"><input type="checkbox" id="opt-plein-ecran"${PleinEcran.actif() ? ' checked' : ''}> Plein écran</label><span class="muted">sans la barre du navigateur</span></div>` : ''}`;
+      ${PleinEcran.disponible() ? `<div class="row"><label class="vy-coche"><input type="checkbox" id="opt-plein-ecran"${PleinEcran.actif() ? ' checked' : ''}> Plein écran</label><span class="muted">sans la barre du navigateur</span></div>` : ''}
+      <div class="row"><span>Qualité d'image</span><select id="opt-qualite-image" aria-label="Qualité d'image">${[['standard', 'Standard'], ['haute', 'Haute']].map(([v, l]) => `<option value="${v}"${UI.qualiteImage() === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+      <div class="row"><span class="muted">${UI.qualiteImage() === 'haute' ? 'Image plus fine (au moins 1,5 fois l\'écran) : demande plus à la carte graphique.' : 'Réglée par l\'appareil. Haute : contours plus lisses, plus de travail pour la carte graphique.'}</span></div>`;
     const coche = (nom, label, aide) => `<div class="row"><label class="vy-coche"><input type="checkbox" id="opt-combat-${nom}" ${UI.reglage(nom) ? 'checked' : ''}> ${label}</label><span class="muted">${aide}</span></div>`;
     const combat = () => `<h4>Combat</h4>
       <div class="row"><label class="vy-coche"><input type="checkbox" id="opt-confirmer" ${UI.confirmerSorts(null) ? 'checked' : ''}> Confirmer les sorts</label><span class="muted">un toucher sur la cible, puis la coche</span></div>
@@ -378,22 +374,26 @@ class Hud {
       <div class="row"><label class="vy-coche"><input type="checkbox" id="opt-son" ${Son.actif() ? 'checked' : ''}> Son</label><span class="muted">${Son.pret() ? 'la musique du lieu et les bruitages' : 'se lance au premier toucher'}</span></div>
       ${curseur('opt-musique', 'vy-musique', 'Musique', Son.reglages.musique, 0, 100)}
       ${curseur('opt-bruitages', 'vy-bruitages', 'Bruitages', Son.reglages.bruitages, 0, 100)}`;
-    const html = () => `${tuto()}${jeu()}${combat()}${son()}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div>
+    const SECTIONS = [['jeu', 'Jeu'], ['combat', 'Combat'], ['son', 'Son'], ['apparence', 'Apparence'], ['sauvegarde', 'Sauvegarde'], ['personnages', 'Personnages']];
+    const ouvre = id => `<section class="vy-opt__sec" id="opt-sec-${id}" data-sec="${id}">`;
+    const html = () => `<div class="vy-opt"><nav class="vy-opt__nav" aria-label="Sections des options">${SECTIONS.map(([id, l]) => `<button type="button" data-act="optAller" data-sec="${id}">${l}</button>`).join('')}</nav><div class="vy-opt__corps" data-defile="options">${ouvre('jeu')}${tuto()}${jeu()}</section>${ouvre('combat')}${combat()}</section>${ouvre('son')}${son()}</section>${ouvre('apparence')}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div>
       <h4>Bloc vital</h4><div class="vy-styles-vital" role="group" aria-label="Style du bloc vital">${vitaux()}</div>
       ${this.optionsNotifs ? this.optionsNotifs() : ''}
       ${opacite()}
       <div class="row"><span class="muted">Déplacer, cacher et régler les blocs du HUD</span><button data-act="editeur">Personnaliser l'interface</button></div>
       <div class="row"><span class="muted">Fenêtres déplacées trop loin ?</span><button data-act="replacer">Replacer les fenêtres</button></div>
+      </section>${ouvre('sauvegarde')}
       ${invite ? '<div class="row"><span>Partie d\'invité : rien n\'est enregistré sur cet appareil. Pour garder ce personnage, copie son code et importe-le depuis l\'accueil.</span></div>'
     : '<div class="row"><span>Partie sauvegardée automatiquement dans ce navigateur.</span><button data-act="savenow">Sauvegarder</button></div>'}
       <h4>Changer d'appareil</h4><p class="muted">Copie ce code, colle-le dans « Importer » sur l'autre appareil.</p>
       <textarea id="export-area" rows="3" readonly>${Save.exportText(ch)}</textarea>
       <div class="row"><button data-act="copy">Copier le code</button><button data-act="telecharger">Télécharger le fichier</button></div>
       ${invite ? '' : `<h4>Importer</h4><textarea id="import-area" rows="3" placeholder="Colle un code ici">${esc(this.importDraft || '')}</textarea><div class="row"><button data-act="import">Importer</button><button data-act="charger">Charger un fichier</button></div>`}
+      </section>${ouvre('personnages')}
       <h4>Temps de jeu</h4><p class="muted">${Math.floor(ch.playTime / 60)} min · ${ch.counters.wins} victoires sur ${ch.counters.fights} combats</p>
       <h4>Personnages</h4><div class="row"><span class="muted">${invite ? 'Quitter la partie d\'invité ramène à l\'accueil ; ce personnage sera perdu.' : 'Jusqu\'à cinq personnages par appareil. Celui-ci est sauvegardé avant de partir.'}</span><button data-act="newgame"${invite ? ' class="danger"' : ''}>${invite ? 'Quitter la partie' : 'Changer de personnage'}</button></div>
       <p class="muted">Raccourcis : ${Hud.MENUS.map(m => `${m[2]} ${m[1].toLowerCase()}`).join(' · ')} · Échap ferme la fenêtre du dessus.</p>
-      ${location.protocol === 'file:' || location.hostname === 'localhost' ? '<p class="muted">Laboratoire de combat : <a href="lab.html">lab.html</a></p>' : ''}`;
+      ${location.protocol === 'file:' || location.hostname === 'localhost' ? '<p class="muted">Laboratoire de combat : <a href="lab.html">lab.html</a></p>' : ''}</section></div></div>`;
     this.actions.savenow = () => { this.toast(Save.write(ch) ? 'Sauvegardé.' : 'Sauvegarde impossible ici.'); };
     this.actions.copy = () => { const ta = document.getElementById('export-area'); ta.select(); const fallback = () => this.toast('Sélectionne et copie le code.'); try { navigator.clipboard.writeText(ta.value).then(() => this.toast('Code copié.'), fallback); } catch (e) { fallback(); } };
     this.actions.telecharger = () => {
@@ -432,6 +432,7 @@ class Hud {
       theme: d => { this.choisirTheme(d.theme); this.fen.close('options'); this.openMenu(); },
       vital: d => { this.choisirVital(d.vital); this.fen.render('options'); },
       replacer: () => this.fen.resetPositions(),
+      optAller: d => { const el = document.getElementById('opt-sec-' + d.sec); if (el && el.parentElement) el.parentElement.scrollTo({ top: el.offsetTop - el.parentElement.offsetTop - 6, behavior: 'smooth' }); },
       editeur: () => { this.fen.close('options'); this.syncMenus(); this.ouvrirEditeur(); },
       notifStyle: d => { this.styleNotifs(d.style); this.fen.render('options'); },
       notifEssai: () => this.essaiNotifs(),
@@ -460,11 +461,18 @@ class Hud {
       if (el.id === 'opt-confirmer') { try { localStorage.setItem('veylan.confirmerSorts', el.checked ? '1' : '0'); } catch (e) {   } }
       if (/^opt-combat-/.test(el.id)) { UI.regler(el.id.slice(11), el.checked); if (this.ui && this.ui.updateHighlights) this.ui.updateHighlights(); if (el.id === 'opt-combat-agression' && this.world) this.world.agression = el.checked; }
       if (el.id === 'opt-gaucher' && this.jeu) this.jeu.mettreGaucher(el.checked);
+      if (el.id === 'opt-qualite-image') {
+        UI.reglerQualiteImage(el.value);
+        const V = typeof window === 'object' && window.VEYLAN;
+        if (V && V.ile && V.ile.appliquerDensite) V.ile.appliquerDensite();
+        if (typeof window === 'object' && typeof Event === 'function') window.dispatchEvent(new Event('resize'));
+        this.fen.render('options');
+      }
       if (el.id === 'opt-son') { Son.regler('actif', el.checked); if (el.checked) { Son.deverrouiller(); Son.jouer('butin'); } }
       if (el.id === 'opt-plein-ecran') PleinEcran.basculer().then(() => { if (this.fen.isOpen('options')) this.fen.render('options'); });
     };
     if (!this.suitPleinEcran) { this.suitPleinEcran = true; PleinEcran.surChangement(() => { if (this.fen.isOpen('options')) this.fen.render('options'); }); }
-    this.simpleWin('options', 'Options', html, actions, { width: 480, onField });
+    this.simpleWin('options', 'Options', html, actions, { width: 760, cls: 'vy-fenetre--options', onField });
   }
 
 
@@ -642,7 +650,7 @@ class Hud {
     const q = e.quete && Quests.get(e.quete);
     const entree = e.niveau || q ? `<p class="muted">Pour entrer : ${[e.niveau ? 'niveau ' + e.niveau : '', q ? 'la quête « ' + esc(q.name) + ' »' : ''].filter(Boolean).join(' et ')}${d.entreeEnCombat ? ' · le combat s\'engage à l\'entrée de chaque salle' : ''}.</p>` : '';
     this.actions.enterd = () => { if (!peut.ok) { this.toast(peut.reason); return; } this.closePanel(); this.world.enterDungeon(d.id); };
-    this.openPanel('dungeon', d.name, `<p>${esc(d.description || '')}</p><p class="muted">${lvl} · ${d.rooms.length} salles${d.keyItem ? ' · clé : ' + esc(Items.get(d.keyItem).name) : ''}</p>${entree}${peut.ok ? '' : `<p class="missing">${esc(peut.reason)}</p>`}<div class="row"><button data-act="enterd" class="primary"${peut.ok ? '' : ' disabled'}>Entrer</button></div>`);
+    this.openPanel('dungeon', d.name, `<p>${esc(d.description || '')}</p><p class="muted">${lvl} · ${d.rooms.length} salles${Hud.texteCle(this.world, d)}</p>${entree}${peut.ok ? '' : `<p class="missing">${esc(peut.reason)}</p>`}<div class="row"><button data-act="enterd" class="primary"${peut.ok ? '' : ' disabled'}>Entrer</button></div>`);
   }
 
   annoncerZone(d) {

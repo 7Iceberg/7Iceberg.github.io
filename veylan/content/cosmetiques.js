@@ -63,6 +63,72 @@
       description: 'Blanc et or : l\'interface de l\'Aube. La collection des Cimes, complète.', data: { theme: ['aube', 'Aube dorée', '#f3ead8', '#9a6a1f'] } },
   );
 
+  L.push(
+    { id: 'lueur_score_100', nom: 'Lueur de calcaire', type: 'lueur', rarete: 'commun', source: { genre: 'succes', id: 'score_100' }, collection: null,
+      description: 'Une lueur pâle, couleur de pierre. Cent points de succès.', data: { couleur: '#f7f0de', effet: 'douce' } },
+    { id: 'lueur_score_250', nom: 'Lueur de grès', type: 'lueur', rarete: 'commun', source: { genre: 'succes', id: 'score_250' }, collection: null,
+      description: 'Le grès chaud des Cimes au couchant. Deux cent cinquante points de succès.', data: { couleur: '#eecda6', effet: 'douce' } },
+    { id: 'lueur_score_500', nom: 'Lueur dorée', type: 'lueur', rarete: 'rare', source: { genre: 'succes', id: 'score_500' }, collection: null,
+      description: 'L\'or des arêtes du V. Cinq cents points de succès.', data: { couleur: '#ddaa72', effet: 'vive' } },
+    { id: 'lueur_score_1000', nom: 'Lueur d\'or vif', type: 'lueur', rarete: 'rare', source: { genre: 'succes', id: 'score_1000' }, collection: null,
+      description: 'Un or qui brille de lui-même. Mille points de succès.', data: { couleur: '#f3bc72', effet: 'vive' } },
+    { id: 'lueur_score_1500', nom: 'Lueur de cristal', type: 'lueur', rarete: 'epique', source: { genre: 'succes', id: 'score_1500' }, collection: null,
+      description: 'Le bleu du cristal qui traverse la pierre. Mille cinq cents points de succès.', data: { couleur: '#52d2f4', effet: 'vive' } },
+    { id: 'lueur_score_2500', nom: 'Lueur des deux réalités', type: 'lueur', rarete: 'legendaire', source: { genre: 'succes', id: 'score_2500' }, collection: null,
+      description: 'Le saphir profond du cœur du V : presque tout ce que Veylan offre, accompli.', data: { couleur: '#209fec', effet: 'braise' } },
+    { id: 'lueur_defis', nom: 'Lueur des douze Défis', type: 'lueur', rarete: 'rare', source: { genre: 'succes', id: 'tous_les_defis' }, collection: null,
+      description: 'Une lueur améthyste, pour qui a relevé chacun des douze Défis.', data: { couleur: '#ab7cf2', effet: 'vive' } },
+  );
+  L.push(
+    { id: 'blason_ervane', nom: 'Blason de l\'Éveil', type: 'blason', rarete: 'rare', source: { genre: 'succes', id: 'explorer_ervane' }, collection: null,
+      description: 'L\'île d\'Ervane parcourue en entier, des Mailles au Puits.', data: { glyphe: '◇', couleur: '#80d697' } },
+    { id: 'blason_orsane', nom: 'Blason des Cimes', type: 'blason', rarete: 'rare', source: { genre: 'succes', id: 'explorer_orsane' }, collection: null,
+      description: 'Chaque zone d\'Orsane visitée, des Cimes aux Éboulis.', data: { glyphe: '▲', couleur: '#ddaa72' } },
+    { id: 'blason_kaldum', nom: 'Blason des forges', type: 'blason', rarete: 'rare', source: { genre: 'succes', id: 'explorer_kaldum' }, collection: null,
+      description: 'Kaldum parcourue jusqu\'à la Fonderie, ses galeries comprises.', data: { glyphe: '⬢', couleur: '#ef7574' } },
+    { id: 'blason_patte', nom: 'Blason de la ménagerie', type: 'blason', rarete: 'epique', source: { genre: 'succes', id: 'tous_familiers' }, collection: null,
+      description: 'Chaque familier éclos et gardé. Une patte, frappée dans l\'or.', data: { glyphe: '✦', couleur: '#6eb19f' } },
+  );
+  L.push(
+    { id: 'aura_fil', nom: 'Le fil recousu', type: 'aura', rarete: 'legendaire', source: { genre: 'succes', id: 'le_monde_recousu' }, collection: null,
+      description: 'Un cercle d\'or sous les pas : Ervane, Orsane et Kaldum explorées en entier.', data: { couleur: '#f3bc72', forme: 'cercle' } },
+    { id: 'aura_trophees', nom: 'Brume du trappeur', type: 'aura', rarete: 'legendaire', source: { genre: 'succes', id: 'trappeur_du_fil' }, collection: null,
+      description: 'Une brume verte qui suit le pas : tout le Bestiaire accompli.', data: { couleur: '#80d697', forme: 'brume' } },
+    { id: 'aura_colosse', nom: 'Braises du colosse', type: 'aura', rarete: 'legendaire', source: { genre: 'succes', id: 'mission_veilleur' }, collection: null,
+      description: 'Des braises de cristal sous les pieds : tous les succès de donjon.', data: { couleur: '#52d2f4', forme: 'braises' } },
+  );
+
+  L.push(
+    { id: 'b_teinture_nuit', nom: 'Teinture nuit indigo', type: 'teinture', rarete: 'rare', source: { genre: 'boutique', id: 'b_teinture_nuit' }, collection: null,
+      description: 'Le bleu de nuit du ciel de Veylan, cousu d\'or.', data: { couleurs: ['#0f1728', '#22355d', '#ddaa72'] } },
+    { id: 'b_teinture_calcaire', nom: 'Teinture calcaire et or', type: 'teinture', rarete: 'rare', source: { genre: 'boutique', id: 'b_teinture_calcaire' }, collection: null,
+      description: 'La pierre pâle du V et ses arêtes d\'or.', data: { couleurs: ['#efe6d2', '#a67349', '#f3bc72'] } },
+    { id: 'b_teinture_amethyste', nom: 'Teinture améthyste', type: 'teinture', rarete: 'epique', source: { genre: 'boutique', id: 'b_teinture_amethyste' }, collection: null,
+      description: 'Violet profond et lavande, la couleur des voiles.', data: { couleurs: ['#3e207f', '#241448', '#ab7cf2'] } },
+    { id: 'b_teinture_rubis', nom: 'Teinture rubis des forges', type: 'teinture', rarete: 'epique', source: { genre: 'boutique', id: 'b_teinture_rubis' }, collection: null,
+      description: 'Rouge de forge et or sombre, pour qui revient de Kaldum.', data: { couleurs: ['#b83a44', '#5a1a20', '#ddaa72'] } },
+    { id: 'b_lueur_saphir', nom: 'Lueur de saphir', type: 'lueur', rarete: 'rare', source: { genre: 'boutique', id: 'b_lueur_saphir' }, collection: null,
+      description: 'Le cristal du logo dans la lanterne.', data: { couleur: '#209fec', effet: 'vive' } },
+    { id: 'b_lueur_rubis', nom: 'Lueur de rubis', type: 'lueur', rarete: 'rare', source: { genre: 'boutique', id: 'b_lueur_rubis' }, collection: null,
+      description: 'Une lanterne rouge, chaude comme une braise.', data: { couleur: '#ef7574', effet: 'braise' } },
+    { id: 'b_lueur_feuille', nom: 'Lueur de feuille', type: 'lueur', rarete: 'rare', source: { genre: 'boutique', id: 'b_lueur_feuille' }, collection: null,
+      description: 'Le vert tendre des Clairières au printemps.', data: { couleur: '#80d697', effet: 'douce' } },
+    { id: 'b_aura_vitrail', nom: 'Éclats de vitrail', type: 'aura', rarete: 'epique', source: { genre: 'boutique', id: 'b_aura_vitrail' }, collection: null,
+      description: 'Des éclats de cristal qui tombent sous les pas.', data: { couleur: '#52d2f4', forme: 'braises' } },
+    { id: 'b_aura_fil', nom: 'Le fil d\'or', type: 'aura', rarete: 'legendaire', source: { genre: 'boutique', id: 'b_aura_fil' }, collection: null,
+      description: 'Un cercle de fil d\'or qui recoud le sol où l\'on marche.', data: { couleur: '#f3bc72', forme: 'cercle' } },
+    { id: 'b_aura_brume', nom: 'Brume d\'améthyste', type: 'aura', rarete: 'epique', source: { genre: 'boutique', id: 'b_aura_brume' }, collection: null,
+      description: 'Une brume violette, basse, qui suit le pas.', data: { couleur: '#ab7cf2', forme: 'brume' } },
+    { id: 'b_blason_v', nom: 'Blason du V taillé', type: 'blason', rarete: 'epique', source: { genre: 'boutique', id: 'b_blason_v' }, collection: null,
+      description: 'Le V de Veylan, frappé dans l\'or à côté du nom.', data: { glyphe: 'V', couleur: '#ddaa72' } },
+    { id: 'b_blason_cristal', nom: 'Blason du cristal', type: 'blason', rarete: 'rare', source: { genre: 'boutique', id: 'b_blason_cristal' }, collection: null,
+      description: 'Un losange de cristal saphir à côté du nom.', data: { glyphe: '◆', couleur: '#52d2f4' } },
+    { id: 'b_theme_saphir', nom: 'Thème : Saphir', type: 'theme', rarete: 'epique', source: { genre: 'boutique', id: 'b_theme_saphir' }, collection: null,
+      description: 'L\'interface en nuit profonde et cristal.', data: { theme: ['saphir', 'Saphir', '#0b1730', '#52d2f4'] } },
+    { id: 'b_theme_amethyste', nom: 'Thème : Améthyste', type: 'theme', rarete: 'epique', source: { genre: 'boutique', id: 'b_theme_amethyste' }, collection: null,
+      description: 'L\'interface en violet de voile et lavande.', data: { theme: ['amethyste', 'Améthyste', '#140f24', '#ab7cf2'] } },
+  );
+
   K.push(
     { id: 'premiers_pas', nom: 'Les premiers pas', description: 'Ce que les premières semaines d\'un Veilleur rapportent.',
       cosmetiques: ['teinture_lin_bleu', 'teinture_mousse', 'lueur_dragme', 'aura_braises', 'emote_danse'], recompense: 'blason_premiers_pas' },

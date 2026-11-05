@@ -79,7 +79,7 @@ Object.assign(Hud.prototype, {
           : c ? `<span class="vy-case" data-rarete="${c.rarete}" title="${esc(c.nom)} (Garde-robe)"><span class="vy-case__icone">${Hud.pictoCosmetique ? Hud.pictoCosmetique(c) : ''}</span></span>`
           : '<span class="vy-case vy-case--vide" aria-hidden="true"></span>');
       }
-      const gains = [r.xp ? `<span class="vy-recompense__xp"><b>${nf(r.xp)}</b> XP</span>` : '', r.fils ? `<span class="vy-recompense__fils"><b>${nf(r.fils)}</b> Dragmes</span>` : ''].join('');
+      const gains = [r.xp ? `<span class="vy-recompense__xp"><b>${nf(r.xp)}</b> XP</span>` : '', r.fils ? `<span class="vy-recompense__fils"><b>${nf(r.fils)}</b> Dragmes</span>` : '', r.eclats ? `<span class="vy-recompense__eclats"><b>${nf(r.eclats)}</b> Éclats</span>` : ''].join('');
       return `<li class="vy-recompense" data-id="${a.id}">
         <div class="vy-recompense__tete"><b class="vy-recompense__nom">${esc(a.name)}</b><span class="vy-recompense__cat">${Achievements.category(a)}</span></div>
         <div class="vy-recompense__corps"><div class="vy-recompense__cases" role="list" aria-label="Objets">${cases.join('')}</div>
@@ -113,6 +113,9 @@ Object.assign(Hud.prototype, {
     const objets = [];
     for (const g of list) for (const it of g.items) { const d = Items.get(it.id); if (d) objets.push(d.name + (it.count > 1 ? ' ×' + it.count : '')); }
     for (const g of list) for (const e of g.cosmetiques || []) { this.chat('gain', World.texteCosmetique(e)); this.toast(World.texteCosmetique(e)); }
+    const eclats = list.reduce((t, g) => t + (g.eclats || 0), 0);
+    if (eclats) { this.chat('gain', `+${eclats} Éclats pour la Boutique des Voiles.`); this.toast(`+${eclats} Éclats`); }
+    for (const g of list) for (const d of g.fidelite || []) this.toast(d.article ? `Fidélité : ${d.article.nom} offert.` : `Fidélité : −${d.remise} % sur ton prochain panier.`);
     if (xp) this.chat('gain', `Tu as gagné ${nf(xp)} points d'expérience.`);
     if (fils) this.chat('gain', `Tu as obtenu ${nf(fils)} Dragmes.`);
     for (const o of objets) this.chat('gain', `Tu as obtenu ${o}.`);

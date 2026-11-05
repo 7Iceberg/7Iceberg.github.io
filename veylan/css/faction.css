@@ -1,5 +1,5 @@
-#app { --fac-fil: #e2c690; --fac-fil-fort: #c9a66b; --fac-dechirure: #c9a8ff; --fac-dechirure-fort: #a66cff; --fac-marcheurs: #8db585; }
-#app[data-ui-theme="ardoise"], #app[data-ui-theme="aube"] { --fac-fil: #7a5f35; --fac-fil-fort: #8e7144; --fac-dechirure: #5a2a80; --fac-dechirure-fort: #6b2fa0; --fac-marcheurs: #3f6e38; }
+#app { --fac-fil: #f3bc72; --fac-fil-fort: #ddaa72; --fac-dechirure: #c9a8ff; --fac-dechirure-fort: #9764d6; --fac-marcheurs: #80d697; }
+#app[data-ui-theme="ardoise"], #app[data-ui-theme="aube"] { --fac-fil: #7a5f35; --fac-fil-fort: #a67349; --fac-dechirure: #5a2a80; --fac-dechirure-fort: #6b2fa0; --fac-marcheurs: #3f6e38; }
 .vy-faction--fil, .vy-faction-carte--fil, .vy-serment-fait--fil { --fac: var(--fac-fil); --fac-fort: var(--fac-fil-fort); }
 .vy-faction--dechirure, .vy-faction-carte--dechirure, .vy-serment-fait--dechirure { --fac: var(--fac-dechirure); --fac-fort: var(--fac-dechirure-fort); }
 .vy-embleme { display: block; flex: none; filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.45)); }
@@ -17,9 +17,9 @@
 .vy-faction__etat { margin: 6px 0 0; padding: 6px 10px; border-left: 3px solid var(--fen-accent); background: rgba(0, 0, 0, 0.18); border-radius: 0 4px 4px 0; font-size: 12.5px; }
 
 .vy-jauge--faction { --_hauteur: 13px; }
-.vy-jauge--fil { --_remplissage: linear-gradient(180deg, #fff1c8, #c9a66b 60%, #8e7144); --_bord: rgba(226, 198, 144, 0.6); }
+.vy-jauge--fil { --_remplissage: linear-gradient(180deg, #fff1c8, #ddaa72 60%, #a67349); --_bord: rgba(243, 188, 114, 0.6); }
 .vy-jauge--dechirure { --_remplissage: linear-gradient(180deg, #e7d6ff, #8a4fd6 60%, #4a2370); --_bord: rgba(191, 149, 255, 0.55); }
-.vy-jauge--marcheurs { --_remplissage: linear-gradient(180deg, #d4ecc9, #6f9b63 60%, #3f5e37); --_bord: rgba(141, 181, 133, 0.55); --_hauteur: 10px; }
+.vy-jauge--marcheurs { --_remplissage: linear-gradient(180deg, #d4ecc9, #6f9b63 60%, #3f5e37); --_bord: rgba(128, 214, 151, 0.55); --_hauteur: 10px; }
 
 .vy-ordres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
 .vy-ordre { display: grid; gap: 2px; align-content: start; min-height: 58px; padding: 8px 9px; text-align: left; border: 1px solid var(--fen-filet); border-left: 3px solid var(--fac); border-radius: 5px; background: rgba(0, 0, 0, 0.2); color: var(--fen-texte); font: 600 12.5px var(--vy-font-ui); cursor: pointer; }
@@ -44,8 +44,8 @@
 
 .vy-faction-cartes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .vy-faction-carte { padding: 12px; border-radius: 6px; border: 1.5px solid color-mix(in srgb, var(--fac) 55%, transparent); }
-.vy-faction-carte--fil { background: linear-gradient(180deg, rgba(247, 240, 222, 0.1), rgba(201, 166, 107, 0.04)); }
-.vy-faction-carte--dechirure { background: linear-gradient(180deg, rgba(166, 108, 255, 0.14), rgba(20, 10, 28, 0.35)); }
+.vy-faction-carte--fil { background: linear-gradient(180deg, rgba(247, 240, 222, 0.1), rgba(221, 170, 114, 0.04)); }
+.vy-faction-carte--dechirure { background: linear-gradient(180deg, rgba(151, 100, 214, 0.14), rgba(20, 10, 28, 0.35)); }
 .vy-faction-carte .vy-embleme { margin: 0 auto 6px; }
 .vy-fenetre__corps .vy-faction-carte h3 { margin: 0; text-align: center; color: var(--fac); font-size: 16px; }
 .vy-faction-carte__cap { margin: 2px 0 6px; text-align: center; font-size: 11.5px; color: var(--fen-texte-2); }
@@ -72,21 +72,21 @@
   font: 400 12.5px/1.4 var(--vy-font-ui); transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 #panel-body .vy-banniere--fil {
-  color: #2a2116; border-color: #c9a66b;
+  color: #2a2116; border-color: #ddaa72;
   background: radial-gradient(120% 60% at 50% 0%, rgba(255, 231, 168, 0.55), transparent 70%), linear-gradient(180deg, #fbf6ea, #e9dcbf);
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 18px), 0 100%);
 }
 #panel-body .vy-banniere--dechirure {
   color: #efe3ff; border-color: #6b2fa0;
-  background: radial-gradient(60% 50% at 50% 55%, rgba(166, 108, 255, 0.32), transparent 75%), linear-gradient(180deg, #2b1638, #110a18);
+  background: radial-gradient(60% 50% at 50% 55%, rgba(151, 100, 214, 0.32), transparent 75%), linear-gradient(180deg, #2b1638, #110a18);
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 4px), 92% 100%, 84% calc(100% - 11px), 75% calc(100% - 2px), 66% calc(100% - 15px), 58% calc(100% - 3px), 50% calc(100% - 13px), 41% 100%, 33% calc(100% - 9px), 24% calc(100% - 1px), 16% calc(100% - 14px), 8% calc(100% - 4px), 0 100%);
 }
 #panel-body .vy-banniere:hover { transform: translateY(-2px); }
-#panel-body .vy-banniere--fil.on { box-shadow: inset 0 0 0 2px #e2c690, inset 0 0 30px rgba(226, 198, 144, 0.55); transform: translateY(-3px); }
-#panel-body .vy-banniere--dechirure.on { box-shadow: inset 0 0 0 2px #bf95ff, inset 0 0 30px rgba(166, 108, 255, 0.6); transform: translateY(-3px); }
+#panel-body .vy-banniere--fil.on { box-shadow: inset 0 0 0 2px #f3bc72, inset 0 0 30px rgba(243, 188, 114, 0.55); transform: translateY(-3px); }
+#panel-body .vy-banniere--dechirure.on { box-shadow: inset 0 0 0 2px #ab7cf2, inset 0 0 30px rgba(151, 100, 214, 0.6); transform: translateY(-3px); }
 .vy-banniere__tete { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .vy-banniere__nom { font: 700 17px/1.1 var(--vy-font-titre); letter-spacing: 0.06em; }
-.vy-banniere--fil .vy-banniere__nom { color: #6e5530; }
+.vy-banniere--fil .vy-banniere__nom { color: #835737; }
 .vy-banniere--dechirure .vy-banniere__nom { color: #d6b8ff; }
 .vy-banniere__veut { font-weight: 600; }
 .vy-banniere__cote { font-size: 11.5px; opacity: 0.9; }
@@ -95,7 +95,7 @@
 .vy-banniere__ordres { margin-top: 2px; font: 600 10.5px var(--vy-font-ui); letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8; }
 .vy-serment__pied { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
 .vy-choix .dialogue-actions { margin-top: 14px; }
-.dialogue-actions .quest-btn.answer { border-color: var(--vy-eclat-clair); color: var(--vy-texte); background: rgba(166, 108, 255, 0.12); }
+.dialogue-actions .quest-btn.answer { border-color: var(--vy-eclat-clair); color: var(--vy-texte); background: rgba(151, 100, 214, 0.12); }
 
 .vy-serment-fait { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; padding: 10px 12px; border-radius: 6px; border: 1.5px solid color-mix(in srgb, var(--fac) 60%, transparent); background: color-mix(in srgb, var(--fac) 10%, transparent); }
 .vy-serment-fait b { display: block; font: 700 16px/1.2 var(--vy-font-titre); color: var(--fac); letter-spacing: 0.04em; }

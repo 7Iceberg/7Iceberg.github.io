@@ -28,7 +28,7 @@ const Save = (() => {
   const seqOf = uid => Number(get(SEQ + uid)) || 0;
 
   const isInt = (v, min, max) => Number.isInteger(v) && v >= (min == null ? -Infinity : min) && v <= (max == null ? Infinity : max);
-  const ALLOWED = new Set(['classId', 'name', 'gender', 'level', 'xp', 'statPoints', 'stats', 'equipment', 'inventory', 'fils', 'hp', 'titles', 'title', 'quests', 'counters', 'achievements', 'achClaimed', 'veille', 'pos', 'relay', 'relays', 'dungeon', 'coffre', 'marche', 'avis', 'dojo', 'autoStats', 'playTime', 'knots', 'ensembles', 'fight', 'mapTimers', 'flags', 'v', 'uid', 'voie', 'scrolls', 'faction', 'tuto']);
+  const ALLOWED = new Set(['classId', 'name', 'gender', 'level', 'xp', 'statPoints', 'stats', 'equipment', 'inventory', 'fils', 'hp', 'titles', 'title', 'quests', 'counters', 'achievements', 'achClaimed', 'veille', 'pos', 'relay', 'relays', 'dungeon', 'coffre', 'marche', 'avis', 'dojo', 'trousseau', 'autoStats', 'playTime', 'knots', 'ensembles', 'fight', 'mapTimers', 'flags', 'v', 'uid', 'voie', 'scrolls', 'faction', 'tuto']);
   for (const k of ['variantes', 'spellRanks', 'spellPoints', 'autoSpells']) ALLOWED.add(k);
   ALLOWED.add('look');
   ALLOWED.add('origine');
@@ -174,6 +174,13 @@ const Save = (() => {
       if (!dj) bad('épreuve du Dojo');
       o.dojo = dj;
     }
+    if (o.trousseau != null) {
+      const cles = new Set(((DATA.content && DATA.content.dungeons) || []).map(d => d.keyItem).filter(Boolean)), t = {};
+      const src = o.trousseau && typeof o.trousseau === 'object' && !Array.isArray(o.trousseau) ? o.trousseau : {};
+      for (const [k, j] of Object.entries(src)) if (cles.has(k) && isInt(j, -100000, 1000000)) t[k] = j;
+      if (Object.keys(t).length !== Object.keys(src).length || src !== o.trousseau) bad('trousseau');
+      o.trousseau = t;
+    }
     if (o.marche != null) {
       const m = o.marche && typeof o.marche === 'object' ? o.marche : {}, vendus = {};
       if (m.vendus && typeof m.vendus === 'object') for (const id of Object.keys(m.vendus)) { if (Items.get(id) && isInt(m.vendus[id], 0, 99999)) vendus[id] = m.vendus[id]; else bad(`vente au Marché ${id}`); }
@@ -239,15 +246,25 @@ const Save = (() => {
       for (const e of f.errors) bad(e);
       o.faction = f.data;
     }
-    const tmp = { counters, level: o.level, origine: o.origine, achievements: [], quests: { done: quests.done }, derived: () => ({ setCount: {} }) };
     const achs = [];
+    const tmp = { counters, level: o.level, origine: o.origine, achievements: achs, quests: { done: quests.done }, derived: () => ({ setCount: {} }) };
+    const AILLEURS = ['set', 'relais', 'faction', 'familier', 'monture', 'garderobe'];
+    const SUITE = ['meta', 'score'];
+    const demandes = [];
     for (const id of Array.isArray(o.achievements) ? o.achievements : []) {
-      const a = Achievements.defs().find(x => x.id === id);
-      if (!a || achs.includes(id)) { bad(`succès ${id}`); continue; }
-      if (a.cond && a.cond.type !== 'set' && !Achievements.met(Object.assign({}, tmp, { questsDone: counters.questsDone }), a.cond)) { bad(`succès non mérité ${id}`); continue; }
-      achs.push(id);
+      const a = Achievements.get(id);
+      if (!a || demandes.some(x => x.id === id)) { bad(`succès ${id}`); continue; }
+      demandes.push(a);
     }
-    o.achievements = achs;
+    const merite = a => !a.cond || AILLEURS.includes(a.cond.type) || Achievements.met(tmp, a.cond);
+    for (const a of demandes) if (!SUITE.includes((a.cond || {}).type)) { if (merite(a)) achs.push(a.id); else bad(`succès non mérité ${a.id}`); }
+    let reste = demandes.filter(a => SUITE.includes((a.cond || {}).type));
+    for (let avance = true; avance && reste.length;) {
+      avance = false;
+      for (const a of reste.slice()) if (merite(a)) { achs.push(a.id); reste = reste.filter(x => x !== a); avance = true; }
+    }
+    for (const a of reste) bad(`succès non mérité ${a.id}`);
+    o.achievements = demandes.map(a => a.id).filter(id => achs.includes(id));
     if (!Array.isArray(o.achClaimed)) { if (raw.achClaimed !== undefined) bad('récompenses de succès'); o.achClaimed = achs.slice(); }
     else {
       const claimed = [];
@@ -257,7 +274,7 @@ const Save = (() => {
       }
       o.achClaimed = claimed;
     }
-    const earned = new Set(achs.map(id => (Achievements.defs().find(x => x.id === id).rewards || {}).title).filter(Boolean));
+    const earned = new Set(achs.map(id => (Achievements.get(id).rewards || {}).title).filter(Boolean));
     for (const t of Factions.titles(o.faction)) earned.add(t);
     o.titles = (Array.isArray(o.titles) ? o.titles : []).filter(t => { const ok = typeof t === 'string' && earned.has(t); if (!ok) bad('titre'); return ok; });
     if (o.title != null && !o.titles.includes(o.title)) { bad('titre affiché'); o.title = null; }

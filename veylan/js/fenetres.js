@@ -8,6 +8,8 @@ class Fenetres {
     this.layer.addEventListener('click', evt => {
       const box = evt.target.closest('.vy-fenetre');
       if (!box) return;
+      const onglet = evt.target.closest('[data-livre]');
+      if (onglet && this.livre) { if (onglet.dataset.livre !== box.dataset.id) this.livre.ouvrir(onglet.dataset.livre); return; }
       const w = this.wins.get(box.dataset.id);
       const b = evt.target.closest('[data-act]');
       if (!w || !b || !box.contains(b)) return;
@@ -42,8 +44,26 @@ class Fenetres {
 
   toggle(id, spec) { if (this.isOpen(id)) this.close(id); else this.open(id, spec); }
 
+  estLivre(id) { return !Fenetres.compact && window.innerHeight > 500 && !!this.livre && this.livre.ids.includes(id); }
+
+  railLivre(id) {
+    const L = this.livre;
+    return `<nav class="vy-livre__onglets" aria-label="Livre du Veilleur">` + L.onglets.map(([k, nom, touche, icone], i) =>
+      `${L.separer && L.separer.includes(k) && i ? '<span class="vy-livre__filet" aria-hidden="true"></span>' : ''}` +
+      `<button type="button" class="vy-livre__onglet${k === id ? ' on' : ''}" data-livre="${k}" aria-pressed="${k === id}">` +
+      `<span class="vy-livre__icone" aria-hidden="true">${icone || ''}</span><span class="vy-livre__nom">${nom}</span>` +
+      `<span class="vy-livre__point" hidden></span>${touche ? `<kbd>${touche}</kbd>` : ''}</button>`).join('') + '</nav>';
+  }
+
+  majLivre(w) {
+    const nav = w.box.querySelector('.vy-livre__onglets');
+    if (!nav || !this.livre.point) return;
+    for (const b of nav.querySelectorAll('[data-livre]')) b.querySelector('.vy-livre__point').hidden = !this.livre.point(b.dataset.livre);
+  }
+
   open(id, spec) {
     if (Fenetres.compact) for (const other of [...this.wins.keys()]) if (other !== id) this.close(other);
+    if (this.estLivre(id)) for (const other of [...this.wins.keys()]) if (other !== id && this.livre.ids.includes(other)) this.close(other);
     let w = this.wins.get(id);
     const created = !w;
     if (!w) {
@@ -61,6 +81,10 @@ class Fenetres {
       if (spec.width) box.style.setProperty('--largeur', spec.width + 'px');
       if ((spec.width || 420) <= 520) box.classList.add('vy-fenetre--etroite');
       if (spec.cls) box.classList.add(spec.cls);
+      if (this.estLivre(id)) {
+        box.classList.add('vy-fenetre--livre');
+        box.querySelector('.vy-fenetre__tete').insertAdjacentHTML('afterend', this.railLivre(id));
+      }
       this.layer.appendChild(box);
       w = { id, box, body: box.querySelector('.vy-fenetre__corps'), title: box.querySelector('.vy-fenetre__titre'), spec };
       this.wins.set(id, w);
@@ -92,6 +116,7 @@ class Fenetres {
     for (const [k, v] of scrolls) { const el = w.body.querySelector(`[data-defile="${k}"]`); if (el) el.scrollTop = v; }
     if (activeId) { const el = document.getElementById(activeId); if (el && w.body.contains(el)) { el.focus({ preventScroll: true }); if (caret != null && el.setSelectionRange) el.setSelectionRange(caret, caret); } }
     if (w.spec.after) w.spec.after(w.body);
+    if (w.box.classList.contains('vy-fenetre--livre')) this.majLivre(w);
   }
 
   refreshAll() { for (const id of this.wins.keys()) this.render(id); }
@@ -125,6 +150,10 @@ class Fenetres {
   place(w) {
     if (Fenetres.compact) return;
     const r = this.layer.getBoundingClientRect();
+    if (w.box.classList.contains('vy-fenetre--livre')) {
+      const lw = w.box.offsetWidth || 600, lh = w.box.offsetHeight || 500;
+      return this.moveTo(w, Math.round(r.width / 2 - lw / 2), Math.round(Math.max(8, Math.min(Math.max(64, (r.height - lh) / 2), r.height - lh - 8))));
+    }
     const saved = this.pos[w.id];
     const width = w.box.offsetWidth || 360, height = w.box.offsetHeight || 300;
     const y = Math.max(8, Math.min(64, r.height - height - 8));
@@ -195,6 +224,7 @@ Fenetres.ICON = (() => {
     montures: s('<path d="M7 20V12a5 5 0 0 1 10 0v8"/><path d="M4.5 20h5M14.5 20h5"/>'),
     guilde: s('<path d="M6 3h12v11l-6 6-6-6z"/><path d="M9 8h6M12 8v6"/>'),
     familiers: s('<circle cx="7" cy="9" r="1.8"/><circle cx="11" cy="6" r="1.8"/><circle cx="15.5" cy="7" r="1.8"/><circle cx="18" cy="11" r="1.8"/><path d="M8 16c0-2.5 2-4.5 4.5-4.5S17 13.5 17 16c0 1.8-1.4 3-3 3h-3c-1.6 0-3-1.2-3-3z"/>'),
+    boutique: s('<path d="M6 9h12l-1.5 11h-9z"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/><path d="M12 13l1 2-1 2-1-2z"/>'),
     garderobe: s('<path d="M12 4.5a1.5 1.5 0 0 1 1.5 1.5c0 1-1.5 1.2-1.5 2.5v.5"/><path d="M12 9.5l8 5.5v1.5H4V15z"/><path d="M7 17v3M17 17v3"/>'),
     options: s('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>'),
     recherche: s('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>'),

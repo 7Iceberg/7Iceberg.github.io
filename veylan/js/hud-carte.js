@@ -9,7 +9,7 @@ const REGION = {
   thessa: { roche: '#b9c7b4', sombre: '#5f7a74', encre: '#22403d', lanterne: '#35d6c8' },
   lisiere: { roche: '#b5aeb4', sombre: '#5c5466', encre: '#2a2432', lanterne: '#d08cff' },
   basvoiles: { roche: '#4a3b5c', sombre: '#1e1830', encre: '#0e0a16', lanterne: '#c0266e' },
-  voile: { roche: '#3a3550', sombre: '#16121f', encre: '#0b0812', lanterne: '#a66cff' },
+  voile: { roche: '#3a3550', sombre: '#16121f', encre: '#0b0812', lanterne: '#9764d6' },
 };
 const BASE = 100;
 const ZOOM = { cartes: [0.22, 2.6], monde: [0.7, 3] };
@@ -216,7 +216,7 @@ Object.assign(Hud.prototype, {
     if (id === here) html += `<p class="vy-carte__ici">${w.mapId === id ? 'Tu es ici.' : 'Tu es dans le donjon de cette carte.'}</p>`;
     if (!known) html += '<p class="muted vy-note">Carte inexplorée : va la découvrir pour en savoir plus.</p>';
     const ligne = (a, b) => `<li><span>${a}</span>${b ? `<b>${b}</b>` : ''}</li>`;
-    if (known && info.monsters.length) html += `<div class="vy-sous"><span>Monstres</span></div><ul class="vy-carte__liste">${info.monsters.map(m => ligne(m.def ? `<i class="vy-pastille" style="--c:${m.def.color || '#c9a66b'}"></i>${esc(m.def.name)}` : esc(m.id), levels(m.level))).join('')}</ul>`;
+    if (known && info.monsters.length) html += `<div class="vy-sous"><span>Monstres</span></div><ul class="vy-carte__liste">${info.monsters.map(m => ligne(m.def ? `<i class="vy-pastille" style="--c:${m.def.color || '#ddaa72'}"></i>${esc(m.def.name)}` : esc(m.id), levels(m.level))).join('')}</ul>`;
     if (known && info.resources.length) html += `<div class="vy-sous"><span>Récolte</span></div><ul class="vy-carte__liste">${info.resources.map(r => { const d = Items.get(r); return ligne(d ? esc(d.name) : esc(r), d && d.level > 1 ? 'niv. ' + d.level : ''); }).join('')}</ul>`;
     if (info.relay) {
       const reg = ch.relays.includes(id);
@@ -228,8 +228,7 @@ Object.assign(Hud.prototype, {
       }
     }
     for (const d of info.dungeons) {
-      const key = d.keyItem && Items.get(d.keyItem);
-      html += `<div class="vy-sous"><span>Donjon</span></div><p class="vy-note"><b>${esc(d.name)}</b> <span class="muted">${levels(d.level)} · ${d.rooms.length} salles${key ? ' · clé : ' + esc(key.name) : ''}${ch.counters.dungeons.includes(d.id) ? ' · terminé' : ''}</span></p>`;
+      html += `<div class="vy-sous"><span>Donjon</span></div><p class="vy-note"><b>${esc(d.name)}</b> <span class="muted">${levels(d.level)} · ${d.rooms.length} salles${Hud.texteCle(this.world, d)}${ch.counters.dungeons.includes(d.id) ? ' · terminé' : ''}</span></p>`;
     }
     const q = [];
     const marque = k => `<img class="vy-carte__marque" src="${CartePeinture.url(k)}" alt="" width="16" height="16">`;
@@ -566,7 +565,7 @@ Object.assign(Hud.prototype, {
     const v = (n, d) => st.getPropertyValue(n).trim() || d;
     const fond = v('--fen-fond', '#121c29');
     const [r, g, b] = hex(fond);
-    return { fond, fond2: v('--fen-fond-2', '#182536'), tete: v('--fen-tete', '#1c2a3d'), accent: v('--fen-accent', '#c9a66b'), actif: v('--fen-actif', '#00c2ff'), texte: v('--fen-texte', '#f2e2c9'), texte2: v('--fen-texte-2', '#a79f8f'), clair: (r * 0.3 + g * 0.59 + b * 0.11) > 140, titre: v('--vy-font-titre', 'serif'), ui: v('--vy-font-ui', 'sans-serif') };
+    return { fond, fond2: v('--fen-fond-2', '#182536'), tete: v('--fen-tete', '#1c2a3d'), accent: v('--fen-accent', '#ddaa72'), actif: v('--fen-actif', '#209fec'), texte: v('--fen-texte', '#f7f0de'), texte2: v('--fen-texte-2', '#b7a697'), clair: (r * 0.3 + g * 0.59 + b * 0.11) > 140, titre: v('--vy-font-titre', 'serif'), ui: v('--vy-font-ui', 'sans-serif') };
   },
 
   drawCarte() {
@@ -581,8 +580,15 @@ Object.assign(Hud.prototype, {
     const T = this.carteT = this.themeCarte();
     const P = this.carteP = this.projCarte(W, H);
     const bg = g.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#22406e'); bg.addColorStop(0.6, '#4a6797'); bg.addColorStop(1, '#7d7ea2');
+    bg.addColorStop(0, '#080e1a'); bg.addColorStop(0.55, '#0f1728'); bg.addColorStop(1, '#22355d');
     g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 90; i++) {
+      const x = hash('etoile' + i) * W, y = hash('etoilE' + i) * H, r = 0.4 + hash('Etoile' + i) * 1.1;
+      g.globalAlpha = 0.25 + hash('ETOILE' + i) * 0.55;
+      g.fillStyle = i % 7 ? '#f7f0de' : '#52d2f4';
+      g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    }
+    g.globalAlpha = 1;
     if (this.carte.tab === 'cartes') this.cielCarte(g, P);
     const D = this.donneesCarte();
     this.carteHits = [];
@@ -974,8 +980,8 @@ Object.assign(Hud.prototype, {
     const pts = [[-0.25, -0.62], [-0.08, -0.36], [-0.2, -0.12], [0.04, 0.1], [-0.06, 0.3], [0.16, 0.52]].map(([a, b]) => [X + a * R, Y + b * R]);
     g.save();
     g.lineJoin = 'round'; g.lineCap = 'round';
-    g.shadowColor = '#bf95ff'; g.shadowBlur = 12;
-    g.strokeStyle = 'rgba(166,108,255,0.9)'; g.lineWidth = 3.5;
+    g.shadowColor = '#ab7cf2'; g.shadowBlur = 12;
+    g.strokeStyle = 'rgba(151,100,214,0.9)'; g.lineWidth = 3.5;
     g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke();
     g.shadowBlur = 0; g.strokeStyle = '#f0d6ff'; g.lineWidth = 1.2; g.stroke();
     g.restore();
@@ -1003,7 +1009,7 @@ Object.assign(Hud.prototype, {
       const img = seen.includes(nid) ? CartePeinture.carte(nid) : CartePeinture.brume(nid);
       if (img) g.drawImage(img, x, y, k, k);
     }
-    g.strokeStyle = '#00c2ff'; g.lineWidth = 1.5; g.strokeRect(x0 + (k + gap) - 0.5, y0 + (k + gap) - 0.5, k + 1, k + 1);
+    g.strokeStyle = '#209fec'; g.lineWidth = 1.5; g.strokeRect(x0 + (k + gap) - 0.5, y0 + (k + gap) - 0.5, k + 1, k + 1);
   },
 });
 
@@ -1278,7 +1284,7 @@ Object.assign(Hud.prototype, {
         if (x.kind === 'temple') html += `<div class="vy-sous"><span>Temple des Voies</span></div><p class="vy-note">${esc(x.npc.name)} : les Insignes de la Garde, la statue vers Ervane.</p>`;
         if (x.kind === 'marchand') html += `<div class="vy-sous"><span>Marchand</span></div><p class="vy-note">${esc(x.npc.name)} vend de quoi tenir debout : parle-lui pour voir ses étals.</p>`;
         if (x.kind === 'artisan') html += `<div class="vy-sous"><span>Atelier</span></div><p class="vy-note">${esc(x.npc.name)}, ${esc(x.npc.title || ATELIERS[x.sub] || '')}.</p>`;
-        if (x.kind === 'donjon' && x.donjon) { const key = x.donjon.keyItem && Items.get(x.donjon.keyItem); html += `<div class="vy-sous"><span>Donjon</span></div><p class="vy-note"><b>${esc(x.donjon.name)}</b> <span class="muted">${levels(x.donjon.level)} · ${x.donjon.rooms.length} salles${key ? ' · clé : ' + esc(key.name) : ''}${ch.counters.dungeons.includes(x.donjon.id) ? ' · terminé' : ''}</span></p>`; }
+        if (x.kind === 'donjon' && x.donjon) { html += `<div class="vy-sous"><span>Donjon</span></div><p class="vy-note"><b>${esc(x.donjon.name)}</b> <span class="muted">${levels(x.donjon.level)} · ${x.donjon.rooms.length} salles${Hud.texteCle(this.world, x.donjon)}${ch.counters.dungeons.includes(x.donjon.id) ? ' · terminé' : ''}</span></p>`; }
         if (x.kind === 'monument') html += `<p class="vy-note">${esc(x.texte || '')}</p>`;
         if (x.kind === 'relais') {
           const reg = ch.relays.includes(x.map);

@@ -48,7 +48,7 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
   grid-area: poupee; min-width: 0;
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 10px; padding: 10px;
   border: 1px solid var(--fen-filet); border-radius: 7px;
-  background: radial-gradient(70% 60% at 50% 42%, rgba(0, 194, 255, 0.07), transparent 70%), linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
+  background: radial-gradient(70% 60% at 50% 42%, rgba(82, 210, 244, 0.07), transparent 70%), linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
 }
 .vy-inv__col { display: grid; gap: 6px; align-content: center; }
 .vy-inv__slot { width: var(--inv-slot); height: var(--inv-slot); min-height: 0; aspect-ratio: auto; }
@@ -84,7 +84,7 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-inv__invite { margin: 0; font: 600 14px var(--vy-font-ui); color: var(--fen-texte); }
 .vy-inv__astuce { margin: 0 auto; max-width: 36ch; font-size: 12px; color: var(--fen-texte-2); }
 .vy-inv__fiche--eclat { animation: vy-inv-eclat 0.8s var(--vy-courbe); }
-@keyframes vy-inv-eclat { from { box-shadow: 0 0 0 2px var(--fen-actif), 0 0 18px rgba(0, 194, 255, 0.5); } }
+@keyframes vy-inv-eclat { from { box-shadow: 0 0 0 2px var(--fen-actif), 0 0 18px rgba(82, 210, 244, 0.5); } }
 .vy-inv__fiche-tete { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 7px 10px 6px; background: rgba(255, 255, 255, 0.035); border-bottom: 1px solid var(--fen-filet); }
 .vy-fenetre__corps .vy-inv__fiche-nom { flex: 1; margin: 0; min-width: 0; font: 700 14px/1.25 var(--vy-font-ui); letter-spacing: 0; color: var(--_rt, var(--fen-texte)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vy-inv__fiche-niv { flex: none; font: 600 12px var(--vy-font-ui); color: var(--fen-texte-2); font-variant-numeric: tabular-nums; }
@@ -96,7 +96,7 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-inv__fiche-onglet { min-height: 28px; padding: 3px 9px; border: 1px solid var(--fen-filet); border-radius: 4px; background: rgba(0, 0, 0, 0.2); color: var(--fen-texte-2); font: 600 11.5px var(--vy-font-ui); cursor: pointer; }
 .vy-inv__fiche-onglet .court { display: none; }
 .vy-inv__fiche-onglet:hover { color: var(--fen-texte); }
-.vy-inv__fiche-onglet.on { color: var(--fen-actif); border-color: var(--fen-actif); background: rgba(0, 194, 255, 0.08); }
+.vy-inv__fiche-onglet.on { color: var(--fen-actif); border-color: var(--fen-actif); background: rgba(82, 210, 244, 0.08); }
 .vy-inv__fiche-corps { flex: 1; min-height: 0; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; padding: 8px 10px; }
 .vy-inv__fiche-icone { --vy-case: 64px; width: 64px; height: 64px; cursor: default; }
 .vy-inv__fiche-lignes { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
@@ -144,7 +144,7 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-inv__onglet { flex: 0 1 38px; min-width: 24px; height: 38px; padding: 0; display: grid; place-items: center; border: 1px solid var(--fen-filet); border-radius: 6px; background: rgba(0, 0, 0, 0.22); color: var(--fen-texte-2); cursor: pointer; }
 .vy-inv__onglet svg { width: 20px; height: 20px; display: block; }
 .vy-inv__onglet:hover { color: var(--fen-texte); border-color: color-mix(in srgb, var(--fen-actif) 50%, transparent); }
-.vy-inv__onglet.on { color: var(--fen-actif); border-color: var(--fen-actif); background: rgba(0, 194, 255, 0.09); box-shadow: inset 0 -2px 0 var(--fen-actif); }
+.vy-inv__onglet.on { color: var(--fen-actif); border-color: var(--fen-actif); background: rgba(82, 210, 244, 0.09); box-shadow: inset 0 -2px 0 var(--fen-actif); }
 .vy-inv__sep { flex: 1 1 0; min-width: 2px; }
 .vy-inv__outils { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 0.95fr); gap: 6px; }
 .vy-inv__outils select { width: 100%; min-width: 0; }
@@ -182,8 +182,8 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-inv-fantome .vy-case { width: 54px; height: 54px; transform: translate(-50%, -50%) scale(1.06); border-color: var(--vy-cristal); box-shadow: 0 12px 26px rgba(0, 0, 0, 0.55), var(--vy-lueur-cristal); }
 .vy-inv--glisse .vy-inv__depot--ok { outline: 2px dashed color-mix(in srgb, var(--fen-actif) 70%, transparent); outline-offset: 2px; }
 .vy-inv--glisse .vy-inv__depot--survol { outline: 2px solid var(--fen-actif); outline-offset: 2px; box-shadow: var(--vy-lueur-cristal); }
-.vy-inv--glisse .vy-inv__perso.vy-inv__depot--ok { background: rgba(0, 194, 255, 0.05); }
-.vy-inv--glisse .vy-inv__sac.vy-inv__depot--survol { background: rgba(0, 194, 255, 0.06); }
+.vy-inv--glisse .vy-inv__perso.vy-inv__depot--ok { background: rgba(82, 210, 244, 0.05); }
+.vy-inv--glisse .vy-inv__sac.vy-inv__depot--survol { background: rgba(82, 210, 244, 0.06); }
 .vy-inv__source { opacity: 0.35; }
 
 .vy-fenetre--caracs .vy-fenetre__corps { padding: 10px 12px 0; }
@@ -212,7 +212,7 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-caracs__nom { display: flex; flex-direction: column; min-width: 0; font-weight: 600; font-size: 13px; }
 .vy-caracs__nom small { font: 500 10.5px var(--vy-font-ui); color: var(--fen-texte-2); white-space: nowrap; }
 .vy-caracs__stat > b { min-width: 36px; text-align: right; font: 700 15px var(--vy-font-ui); font-variant-numeric: tabular-nums; }
-.vy-caracs__plus { width: 34px; height: 34px; padding: 8px; display: grid; place-items: center; border: 1.5px solid color-mix(in srgb, var(--vy-or) 75%, transparent); border-radius: 7px; background: var(--vy-grain), linear-gradient(180deg, #2a3a50, #172334); color: var(--vy-or-clair); cursor: pointer; box-shadow: var(--vy-relief); }
+.vy-caracs__plus { width: 34px; height: 34px; padding: 8px; display: grid; place-items: center; border: 1.5px solid color-mix(in srgb, var(--vy-or) 75%, transparent); border-radius: 7px; background: var(--vy-grain), linear-gradient(180deg, #2a3a50, #19233c); color: var(--vy-or-clair); cursor: pointer; box-shadow: var(--vy-relief); }
 .vy-caracs__plus svg { width: 100%; height: 100%; display: block; }
 .vy-caracs__plus:not(:disabled):hover { border-color: var(--vy-cristal); color: #fff; box-shadow: var(--vy-lueur-cristal); }
 .vy-caracs__plus:disabled { opacity: 0.3; cursor: default; }
@@ -241,7 +241,7 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-caracs__paliers { width: 100%; border-collapse: separate; border-spacing: 3px; font-size: 12px; font-variant-numeric: tabular-nums; }
 .vy-caracs__paliers th { padding: 4px 6px; text-align: left; font: 600 11px var(--vy-font-ui); color: var(--fen-texte-2); }
 .vy-caracs__paliers td { padding: 5px 4px; text-align: center; border-radius: 4px; background: rgba(255, 255, 255, 0.04); color: var(--fen-texte-2); }
-.vy-caracs__paliers td.actuel { background: rgba(0, 194, 255, 0.16); color: var(--fen-texte); font-weight: 700; box-shadow: inset 0 0 0 1px var(--fen-actif); }
+.vy-caracs__paliers td.actuel { background: rgba(82, 210, 244, 0.16); color: var(--fen-texte); font-weight: 700; box-shadow: inset 0 0 0 1px var(--fen-actif); }
 .vy-caracs__paliers td.vise { color: var(--vy-texte-or); box-shadow: inset 0 0 0 1px var(--vy-or-clair); }
 .vy-caracs__bonus { margin: 0; font-size: 11.5px; line-height: 1.45; }
 @container feuille (max-width: 400px) {
@@ -274,9 +274,9 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
   display: grid; place-items: center;
   border: 2px solid var(--vy-or-clair); border-radius: 12px;
   background: var(--vy-grain), radial-gradient(90% 85% at 50% 15%, rgba(242, 220, 170, 0.42), transparent 70%), linear-gradient(180deg, #3a4a62, #16222f);
-  color: #f6e3b8; cursor: pointer;
+  color: #f7f0de; cursor: pointer;
   transform: translateX(-50%);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), var(--vy-relief), 0 0 16px rgba(201, 166, 107, 0.35);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), var(--vy-relief), 0 0 16px rgba(221, 170, 114, 0.35);
   animation: recompenses-pouls 1.8s ease-in-out infinite;
   -webkit-tap-highlight-color: transparent;
 }
@@ -285,7 +285,7 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 #recompenses-btn:hover { border-color: var(--vy-cristal); color: #fff; }
 #recompenses-btn:active { transform: translateX(-50%) scale(0.96); }
 #recompenses-btn:focus-visible { outline: 2px solid var(--vy-focus); outline-offset: 3px; }
-#recompenses-btn .recompenses-btn__nombre { position: absolute; top: -9px; right: -9px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--vy-cristal); color: #03131d; font: 800 12px/22px var(--vy-font-ui); text-align: center; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2px #0b131d, 0 0 10px rgba(0, 194, 255, 0.6); }
+#recompenses-btn .recompenses-btn__nombre { position: absolute; top: -9px; right: -9px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--vy-cristal); color: #03131d; font: 800 12px/22px var(--vy-font-ui); text-align: center; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2px #0b131d, 0 0 10px rgba(82, 210, 244, 0.6); }
 #recompenses-btn::after { content: ""; position: absolute; inset: -3px; border: 2px solid rgba(242, 220, 170, 0.75); border-radius: 14px; pointer-events: none; animation: recompenses-onde 1.8s ease-out infinite; }
 @keyframes recompenses-pouls { 50% { transform: translateX(-50%) scale(1.06); } }
 @keyframes recompenses-onde { from { transform: scale(1); opacity: 0.85; } to { transform: scale(1.32); opacity: 0; } }
@@ -400,7 +400,7 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 #app:not(:has(.vy-fenetre[data-id="sac"])) .vy-inv__bulle { display: none; }
 .vy-inv__bulle header { display: flex; flex-direction: column; gap: 1px; margin-bottom: 6px; }
 .vy-inv__bulle header b { color: var(--_rt); font-size: 13.5px; }
-.vy-inv__bulle header small { color: var(--fen-texte-2, #a79f8f); font-size: 10.5px; }
+.vy-inv__bulle header small { color: var(--fen-texte-2, #b7a697); font-size: 10.5px; }
 .vy-inv__bulle header small span { color: var(--_rt); }
 .vy-inv__bulle .vy-inv__liste { font-size: 11.5px; }
 .vy-inv__bulle .vy-inv__liste li { padding: 2px 4px; }
@@ -425,3 +425,4 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 #app.vy-verre .vy-caracs__sceaux svg { color: var(--v-a); }
 #app.vy-verre .vy-caracs__sceaux em { background: var(--v-degrade-oblique, var(--v-a)); color: #fff; font-family: var(--vy-font-ui, "Poppins", sans-serif); }
 #app.vy-verre .vy-caracs__sceaux:hover { background: rgba(var(--v-a-rgb), 0.2); border-color: rgba(var(--v-a-rgb), 0.8); color: #fff; }
+.vy-recompense__eclats b { color: var(--vy-cristal, #52d2f4); }

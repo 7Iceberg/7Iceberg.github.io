@@ -79,7 +79,7 @@ class Discussion {
     } else {
       this.nonLues++;
       this.compter();
-      this.flotter(l);
+      if (type !== 'succes') this.flotter(l);
     }
   }
 
