@@ -5,9 +5,9 @@ const Son = (() => {
   const PISTES = { accueil: 'theme', ervane: 'ervane', orsane: 'orsane', kaldum: 'kaldum', donjon: 'donjon', combat: 'combat', boss: 'boss', nuit: 'nuit' };
   const DISPONIBLES = new Set(['accueil', 'ervane', 'combat', 'orsane', 'boss', 'donjon', 'kaldum', 'nuit']);
   const BOUCLES = { accueil: { pause: 3 }, ervane: { pause: 1.5 }, orsane: { pause: 1.5 }, donjon: { pause: 1.5 }, kaldum: { pause: 1.5 }, nuit: { pause: 2 } };
-  const JINGLES = { victoire: 'jingle_victoire', defaite: 'jingle_defaite', niveau: 'jingle_niveau', quete: 'jingle_quete', succes: 'jingle_succes' };
+  const JINGLES = { victoire: 'jingle_victoire', defaite: 'jingle_defaite', niveau: 'jingle_niveau', quete: 'jingle_quete', succes: 'jingle_succes', sceau: 'jingle_sceau', sceau_majeur: 'jingle_sceau_majeur' };
   const JINGLES_DISPONIBLES = new Set(['victoire', 'defaite', 'niveau', 'quete', 'succes']);
-  const ATTENUES = { victoire: 1.6, defaite: 1.8, niveau: 1.2, quete: 1.2, succes: 1.4 };
+  const ATTENUES = { victoire: 1.6, defaite: 1.8, niveau: 1.2, quete: 1.2, succes: 1.4, sceau: 1.4, sceau_majeur: 1.9 };
   const DEFAUT = { actif: true, musique: 50, bruitages: 80, v: 2 };
   const NIVEAUX = { theme: 0.72, ervane: 0.71, orsane: 0.71, kaldum: 0.71, donjon: 0.71, combat: 0.72, boss: 0.71, nuit: 1 };
   const NIVEAUX_JINGLES = { victoire: 0.53, defaite: 0.57, niveau: 0.59, quete: 0.59, succes: 0.56 };
@@ -109,6 +109,20 @@ const Son = (() => {
     victoire: (c, o) => [392, 523, 659, 784, 1046].forEach((f, i) => note(c, o, { type: 'triangle', f0: f, t: i === 4 ? 0.7 : 0.22, v: 0.24, delai: i * 0.12 })),
     defaite: (c, o) => [440, 415, 370, 311].forEach((f, i) => note(c, o, { type: 'sawtooth', f0: f, t: i === 3 ? 0.9 : 0.3, v: 0.14, delai: i * 0.22 })),
     quete: (c, o) => { [587, 784, 988].forEach((f, i) => note(c, o, { type: 'triangle', f0: f, t: i === 2 ? 0.5 : 0.16, v: 0.2, delai: i * 0.09 })); note(c, o, { type: 'sine', f0: 1976, t: 0.6, v: 0.06, delai: 0.2 }); },
+    sceau: (c, o) => {
+      note(c, o, { type: 'sine', f0: 140, f1: 55, t: 0.45, v: 0.56 });
+      souffle(c, o, { t: 0.35, v: 0.38, freq: 900, q: 0.9 });
+      souffle(c, o, { t: 0.4, v: 0.21, freq: 3200, q: 2, delai: 0.12 });
+      [1046, 1568, 2093].forEach((f, i) => note(c, o, { type: 'triangle', f0: f, t: 1.3, v: 0.22, delai: 0.25 + i * 0.045, attaque: 0.004 }));
+      [3136, 4186].forEach((f, i) => note(c, o, { type: 'sine', f0: f, t: 0.9, v: 0.07, delai: 0.42 + i * 0.09 }));
+    },
+    sceau_majeur: (c, o) => {
+      note(c, o, { type: 'sine', f0: 110, f1: 41, t: 0.7, v: 0.6 });
+      souffle(c, o, { t: 0.5, v: 0.4, freq: 700, q: 0.8 });
+      souffle(c, o, { t: 0.6, v: 0.22, freq: 2800, q: 1.8, delai: 0.15 });
+      [784, 1046, 1568, 2093].forEach((f, i) => note(c, o, { type: 'triangle', f0: f, t: 1.8, v: 0.2, delai: 0.3 + i * 0.06, attaque: 0.004 }));
+      [3136, 3951, 4699].forEach((f, i) => note(c, o, { type: 'sine', f0: f, t: 1.2, v: 0.06, delai: 0.5 + i * 0.11 }));
+    },
     succes: (c, o) => { [523, 784, 1046, 1568].forEach((f, i) => note(c, o, { type: 'triangle', f0: f, t: i === 3 ? 0.8 : 0.2, v: 0.2, delai: i * 0.08 })); note(c, o, { type: 'sine', f0: 2093, t: 0.9, v: 0.07, delai: 0.3 }); },
   };
   function jouer(nom) {

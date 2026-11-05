@@ -467,6 +467,7 @@ const ArbreSceaux = (() => {
     if (!c) return;
     const b = D.br[c.branche];
     jouerCine((cine) => {
+      if (typeof Son !== 'undefined' && Son.jouer) Son.jouer(c.couronne || c.passif ? 'sceau_majeur' : 'sceau');
       cine.className = 'cine';
       cine.setAttribute('style', couleur(b.couleur));
       const eclats = particules(16, (i) => `<i class="eclat" style="--r:${Math.round(i * 22.5 + Math.random() * 12)}deg;animation-delay:${(0.25 + Math.random() * 0.35).toFixed(2)}s"></i>`);
