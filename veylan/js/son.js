@@ -10,6 +10,7 @@ const Son = (() => {
   const ATTENUES = { victoire: 1.6, defaite: 1.8, niveau: 1.2, quete: 1.2, succes: 1.4 };
   const DEFAUT = { actif: true, musique: 50, bruitages: 80, v: 2 };
   const NIVEAUX = { theme: 0.72, ervane: 0.71, orsane: 0.71, kaldum: 0.71, donjon: 0.71, combat: 0.72, boss: 0.71, nuit: 1 };
+  const NIVEAUX_JINGLES = { victoire: 0.53, defaite: 0.57, niveau: 0.59, quete: 0.59, succes: 0.56 };
 
   let ctx = null, maitre = null, gainMusique = null, gainAttenue = null, gainBruits = null;
   let pret = false;
@@ -140,13 +141,15 @@ const Son = (() => {
     if (!JINGLES_DISPONIBLES.has(nom) || !JINGLES[nom]) return 0;
     const b = tamponsJingles[nom];
     if (b && typeof b === 'object') {
-      const src = ctx.createBufferSource(); src.buffer = b; src.connect(gainBruits); src.start();
+      const src = ctx.createBufferSource(), g = ctx.createGain();
+      src.buffer = b; g.gain.value = NIVEAUX_JINGLES[nom] != null ? NIVEAUX_JINGLES[nom] : 1;
+      src.connect(g); g.connect(gainBruits); src.start();
       return b.duration;
     }
     const ext = format();
     if (typeof location !== 'undefined' && location.protocol === 'file:' && ext && typeof Audio !== 'undefined') {
       const a = new Audio(DOSSIER + JINGLES[nom] + '.' + ext);
-      a.volume = Math.max(0, Math.min(1, reglages.bruitages / 100));
+      a.volume = Math.max(0, Math.min(1, reglages.bruitages / 100 * (NIVEAUX_JINGLES[nom] != null ? NIVEAUX_JINGLES[nom] : 1)));
       a.addEventListener('loadedmetadata', () => { if (ATTENUES[nom] && isFinite(a.duration)) attenuer(a.duration); }, { once: true });
       a.play().catch(() => {});
       return -1;
