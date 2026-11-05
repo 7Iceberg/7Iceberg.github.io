@@ -1274,7 +1274,7 @@ Object.assign(Hud.prototype, {
         if (x.kind === 'dojo') html += `<div class="vy-sous"><span>Dojo des Cimes</span></div><p class="vy-note">${esc(x.npc.name)} : l'entraînement contre les mannequins, l'épreuve du jour dès le niveau 5.</p>`;
         if (x.kind === 'metiers') html += `<div class="vy-sous"><span>Hôtel des Métiers</span></div><p class="vy-note">${esc(x.npc.name)} : les métiers et leurs ateliers.</p>`;
         if (x.kind === 'avis') html += `<div class="vy-sous"><span>Garde des Cimes</span></div><p class="vy-note">${esc(x.npc.name)} : les avis de recherche.</p>`;
-        if (x.kind === 'temple') html += `<div class="vy-sous"><span>Temple des Voies</span></div><p class="vy-note">${esc(x.npc.name)} : les Sceaux de la Garde, la statue vers Ervane.</p>`;
+        if (x.kind === 'temple') html += `<div class="vy-sous"><span>Temple des Voies</span></div><p class="vy-note">${esc(x.npc.name)} : les Insignes de la Garde, la statue vers Ervane.</p>`;
         if (x.kind === 'marchand') html += `<div class="vy-sous"><span>Marchand</span></div><p class="vy-note">${esc(x.npc.name)} vend de quoi tenir debout : parle-lui pour voir ses étals.</p>`;
         if (x.kind === 'artisan') html += `<div class="vy-sous"><span>Atelier</span></div><p class="vy-note">${esc(x.npc.name)}, ${esc(x.npc.title || ATELIERS[x.sub] || '')}.</p>`;
         if (x.kind === 'donjon' && x.donjon) { const key = x.donjon.keyItem && Items.get(x.donjon.keyItem); html += `<div class="vy-sous"><span>Donjon</span></div><p class="vy-note"><b>${esc(x.donjon.name)}</b> <span class="muted">${levels(x.donjon.level)} · ${x.donjon.rooms.length} salles${key ? ' · clé : ' + esc(key.name) : ''}${ch.counters.dungeons.includes(x.donjon.id) ? ' · terminé' : ''}</span></p>`; }

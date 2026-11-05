@@ -1,5 +1,5 @@
 const Veille = (() => {
-  const NIVEAU = 8;
+  const NIVEAU = 15;
   const RESERVE_MAX = 7;
   const CYCLE = 28;
   const SEMAINE = 7;
@@ -72,7 +72,7 @@ const Veille = (() => {
     const r = t.ressources[indexDe(n) % t.ressources.length];
     return { id: r.id, n: r.n, def: Items.get(r.id) };
   }
-  const xpDepot = level => Math.round(XP * Math.pow(level, 1.6));
+  const xpDepot = level => Math.round(XP * Math.pow(level / 2, 1.6));
 
 
   function statut(ch, opts) {

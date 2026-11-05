@@ -117,7 +117,7 @@ const Sceaux = (() => {
     return n;
   }
 
-  const prixReinit = niveau => (niveau <= R.reinitGratuiteJusqua ? 0 : R.reinitPrixParNiveau2 * niveau * niveau);
+  const prixReinit = niveau => (niveau <= R.reinitGratuiteJusqua ? 0 : Math.round(R.reinitPrixParNiveau2 * niveau * niveau));
   function reinitialiser(e, tout) {
     const prix = prixReinit(e.niveau);
     const rien = !Object.keys(e.rangs).length && (!tout || !pointsDepenses(e));

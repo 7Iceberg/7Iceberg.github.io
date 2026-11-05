@@ -367,7 +367,7 @@ class Scene {
     if (!ch) return;
     if (!this.voulu && !this.en3D && !this.supportVoulu()) return;
     if (this.nomSupport() !== 'Ervane') { this.repliOrsane(ch); return; }
-    const descendre = (ch.quests.done || []).includes('ervane_descente') || ch.level >= 8;
+    const descendre = (ch.quests.done || []).includes('ervane_descente') || ch.level >= 15;
     this.montrerVoile('Ervane ne s\'affiche pas sur cet appareil.', '');
     clearInterval(this.voileMinuterie);
     this.voileMinuterie = null;

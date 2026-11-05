@@ -5,23 +5,23 @@
     semaines: ['terre', 'feu', 'eau', 'air'],
 
     tranches: [
-      { niveaux: [8, 12], ressources: [
+      { niveaux: [15, 24], ressources: [
         { id: 'cuir_de_grouk', n: 8 }, { id: 'soie_de_tissefil', n: 6 }, { id: 'plume_de_kavou', n: 5 },
         { id: 'cire_de_veilloche', n: 5 }, { id: 'galet_de_brimbe', n: 5 }, { id: 'bois_noueux', n: 6 },
       ] },
-      { niveaux: [13, 17], ressources: [
+      { niveaux: [25, 34], ressources: [
         { id: 'cire_de_veilloche', n: 7 }, { id: 'patte_de_tissefil', n: 4 }, { id: 'galet_de_brimbe', n: 7 },
         { id: 'corne_de_grouk', n: 4 }, { id: 'herbe_de_veille', n: 9 }, { id: 'meche_de_veilloche', n: 3 },
       ] },
-      { niveaux: [18, 22], ressources: [
+      { niveaux: [35, 44], ressources: [
         { id: 'pierre_de_molh', n: 8 }, { id: 'ecaille_de_brimbe', n: 4 }, { id: 'argile_de_thelk', n: 5 },
         { id: 'meche_de_veilloche', n: 4 }, { id: 'poil_de_tholou', n: 5 }, { id: 'pierre_de_calcaire', n: 9 },
       ] },
-      { niveaux: [23, 27], ressources: [
+      { niveaux: [45, 54], ressources: [
         { id: 'scorie_de_kaldrik', n: 8 }, { id: 'vapeur_de_fumerolle', n: 7 }, { id: 'basalte_de_kaldum', n: 8 },
         { id: 'fer_de_pioche_vive', n: 6 }, { id: 'cendre_de_cendrou', n: 7 }, { id: 'mousse_de_molh', n: 5 },
       ] },
-      { niveaux: [28, 30], ressources: [
+      { niveaux: [55, 60], ressources: [
         { id: 'cendre_de_cendrou', n: 8 }, { id: 'suie_de_fumerolle', n: 5 }, { id: 'lichen_de_scorie', n: 9 },
         { id: 'poing_de_kaldrik', n: 5 }, { id: 'charbon_de_cendrou', n: 4 }, { id: 'manche_de_pioche_vive', n: 4 },
       ] },

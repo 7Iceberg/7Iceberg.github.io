@@ -9,6 +9,7 @@ class Character {
       quests: { active: {}, done: [] },
       counters: { fights: 0, wins: 0, kills: {}, maps: [], crafts: 0, gathers: 0, filsEarned: 0, dungeons: [], dungeonTurns: {}, bosses: [], questsDone: 0, feats: {} },
       achievements: [], pos: null, relay: null, relays: [], dungeon: null, autoStats: true, playTime: 0, knots: [], ensembles: [], voie: null, scrolls: {},
+      variantes: {},
       look: null, porte: null, ensemblesLook: [],
       familiers: {}, familier: null,
       monture: null,
@@ -27,6 +28,8 @@ class Character {
       this.counters = Object.assign(base.counters, this.counters || {});
     }
     this.name = String(this.name || 'Veilleur').slice(0, 16);
+    const vieille = DATA.classes[this.classId];
+    if (vieille && vieille.season && vieille.remplacee) { this.classId = vieille.remplacee; this.variantes = {}; }
     if (!DATA.classes[this.classId]) this.classId = DATA.defaultClass;
     this.look = Character.cleanLook(this.look, this.classId).look;
     this.porte = typeof Garderobe !== 'undefined' ? Garderobe.nettoyerPorte(this.porte).porte : Object.assign(Character.porteDefaut(), this.porte && typeof this.porte === 'object' ? this.porte : {});
@@ -52,17 +55,13 @@ class Character {
     else this.sceaux = null;
     this.sceauxNettoyer();
     if (base && typeof Quests !== 'undefined') for (const id in this.quests.active) { const q = Quests.get(id); if (q) Quests.giveStartItems(this, q); }
-    if (!this.spellRanks || typeof this.spellRanks !== 'object' || !Number.isInteger(this.spellPoints)) {
-      this.spellRanks = {};
-      this.spellPoints = this.level - 1;
-      if (typeof this.autoSpells !== 'boolean') this.autoSpells = this.autoStats !== false;
-      if (this.autoSpells) this.autoAllocateSpells();
-    }
-    if (typeof this.autoSpells !== 'boolean') this.autoSpells = true;
+    delete this.spellRanks; delete this.spellPoints; delete this.autoSpells;
+    this.variantes = this.variantesValides(this.variantes);
+    if (base && !(this.v >= 5) && this.autoStats && this.statPoints > 0) this.autoAllocate();
     if (!Array.isArray(this.achClaimed)) this.achClaimed = (this.achievements || []).slice();
     this.achClaimed = [...new Set(this.achClaimed)].filter(id => this.achievements.includes(id));
     if (this.hp == null) this.hp = this.derived().hpMax;
-    this.v = 4;
+    this.v = 5;
     if (!this.uid) this.uid = (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)).slice(0, 20);
     Object.defineProperty(this, 'integrity', { value: this.integrity || [], writable: true, enumerable: false });
   }
@@ -78,7 +77,7 @@ class Character {
 
   static create(classId, name, gender, voie, opts) {
     opts = opts || {};
-    const data = { classId, name: (name || '').trim() || 'Veilleur', gender: gender === 'm' ? 'm' : 'f', voie: Character.VOIES.includes(voie) ? voie : null, look: opts.look || null };
+    const data = { classId, name: (name || '').trim() || 'Veilleur', gender: gender === 'm' ? 'm' : 'f', voie: null, look: opts.look || null };
     if (typeof opts.tuto === 'string') data.tuto = { mode: opts.tuto, step: 0, done: opts.tuto === 'off' };
     else if (opts.tuto) data.tuto = opts.tuto;
     return new Character(data);
@@ -130,11 +129,10 @@ class Character {
   setVoie() { return false; }
   spellFor() { return null; }
 
-  static xpToNext(level) { return Math.round(20 * Math.pow(level, 2.4)); }
-  static get UNLOCK() { return [1, 1, 1, 3, 6, 9, 13, 17, 21, 26]; }
+  static xpToNext(level) { return Math.round(10 * Math.pow(level / 2, 2.4)); }
   static get PODS_BASE() { return 1000; }
   static get PODS_TERRA() { return 5; }
-  static get MAX_LEVEL() { return 30; }
+  static get MAX_LEVEL() { return (typeof DATA === 'object' && DATA.rules && DATA.rules.niveauMax) || 60; }
 
   get classDef() { return DATA.classes[this.classId]; }
 
@@ -167,7 +165,7 @@ class Character {
     const R = DATA.rules;
     const sc = this.sceauxBilan(), A = sc.arbre;
     const a = k => A[k] || 0;
-    const S = DATA.sceaux ? DATA.sceaux.regles : { pvBase: 60, pvParNiveau: 5 };
+    const S = DATA.sceaux ? DATA.sceaux.regles : { pvBase: 50, pvParNiveau: 5 };
     const pvBrut = S.pvBase + S.pvParNiveau * this.level + (total.vita || 0) + sc.pv;
     const part = R.pvDeClasse === true ? 1 : Number(R.pvDeClasse) || 0;
     const hpMax = Math.round(pvBrut * (1 + part * (c.hp - 120) / 120));
@@ -178,12 +176,12 @@ class Character {
     const agi10 = Math.floor(Math.max(0, total.agi || 0) / 10), sag10 = Math.floor(Math.max(0, total.sagesse || 0) / 10);
     return {
       stats: total, hpMax, pa: 6 + (this.level >= 100 ? 1 : 0) + extra.pa, pm: 3 + extra.pm,
-      initiative: c.initiative + extra.init + sum4 + a('init'),
-      crit: 5 + extra.crit + a('crit'), dmgFlat: extra.dmg, setBonuses, setCount, familier, monture,
-      tacle: agi10 + extra.tacle + a('tacle'),
+      initiative: extra.init + sum4 + a('init'),
+      crit: extra.crit + a('crit'), dmgFlat: extra.dmg, setBonuses, setCount, familier, monture,
+      tacle: agi10 + extra.tacle + a('tacle') + (c.tacle || 0),
       fuite: agi10 + extra.fuite + (R.playerFuiteBase || 0) + a('fuite'),
       esquivePA: sag10 + a('esquivePA'), esquivePM: sag10 + a('esquivePM'), retraitPA: sag10 + a('retraitPA'), retraitPM: sag10 + a('retraitPM'),
-      prospection: 100 + Math.floor(Math.max(0, total.chance || 0) / 10) + extra.pp + a('pp'),
+      prospection: 100 + Math.floor(Math.max(0, total.chance || 0) / 10) + extra.pp + a('pp') + (c.prospection || 0),
       soins: (total.intel || 0) + extra.soin + a('soins'),
       podsMax: Character.PODS_BASE + Character.PODS_TERRA * Math.max(0, total.force || 0) + a('pods'),
       resist, dmgPct: { terre: a('dmg_terre'), neutre: a('dmg_terre'), feu: a('dmg_feu'), eau: a('dmg_eau'), air: a('dmg_air') },
@@ -221,7 +219,36 @@ class Character {
   }
 
   unlockedSpells() {
-    return this.classDef.spells.filter((id, i) => (DATA.spells[id].unlock || Character.UNLOCK[i]) <= this.level);
+    const out = [];
+    this.classDef.paires.forEach(([base, vari], i) => {
+      if (vari && this.variantes[i] && Character.unlockLevel(this.classId, vari) <= this.level) out.push(vari);
+      else if (Character.unlockLevel(this.classId, base) <= this.level) out.push(base);
+    });
+    return out;
+  }
+
+  sortsObtenus() {
+    return this.classDef.spells.filter(id => Character.unlockLevel(this.classId, id) <= this.level);
+  }
+
+  choisirVariante(i, oui) {
+    const p = this.classDef.paires[i];
+    if (!p || !p[1]) return { ok: false, reason: 'Ce sort n\'a pas de variante.' };
+    if (oui && Character.unlockLevel(this.classId, p[1]) > this.level) return { ok: false, reason: `La variante s'obtient au niveau ${Character.unlockLevel(this.classId, p[1])}.` };
+    const v = Object.assign({}, this.variantes);
+    if (oui) v[i] = true; else delete v[i];
+    this.variantes = v;
+    return { ok: true };
+  }
+
+  variantesValides(v) {
+    const out = {};
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+    for (const k of Object.keys(v)) {
+      const i = Number(k), p = this.classDef.paires[i];
+      if (Number.isInteger(i) && v[k] === true && p && p[1]) out[i] = true;
+    }
+    return out;
   }
 
   toEntityDef() {
@@ -235,12 +262,12 @@ class Character {
     const ap = this.lookAffiche();
     return {
       name: this.name, classId: this.classId, level: this.level, shape: 'player', glyph: c.glyph, color: c.color, look: ap.look, auraCos: ap.auraCos, lueur: ap.lueur, gender: this.gender,
-      hp: d.hpMax, hpCurrent: this.hp, pa: d.pa, pm: d.pm, initiative: d.initiative, resist: d.resist,
+      hp: d.hpMax, hpCurrent: this.hp, pa: d.pa, pm: d.pm, initiative: Math.round(d.initiative * Math.max(0, Math.min(1, (this.hp == null ? d.hpMax : this.hp) / Math.max(1, d.hpMax)))), resist: d.resist,
       spells, extraSpells, stats: d.stats, dmgFlat: d.dmgFlat, crit: d.crit, title: this.title, tacle: d.tacle, fuite: d.fuite,
       scale: 1,
       dmgPct: d.dmgPct, dmgFixe: d.dmgFixe, dmgCrit: d.dmgCrit, reduc: d.reduc, soinsPct: d.soins, soinsFixes: d.soinsFixes, soinsRecus: d.soinsRecus,
       boucliers: d.boucliers, poussee: d.poussee, esquivePA: d.esquivePA, esquivePM: d.esquivePM, retraitPA: d.retraitPA, retraitPM: d.retraitPM, passifs: d.passifs,
-      spellRanks: Object.assign({}, this.spellRanks),
+      spellRanks: Object.fromEntries(spells.filter(id => id !== 'arme').map(id => [id, this.spellRank(id)])),
     };
   }
 
@@ -256,12 +283,10 @@ class Character {
       this.xp -= Character.xpToNext(this.level);
       this.level++;
       this.statPoints += 5;
-      this.spellPoints += 1;
       levels++;
     }
     if (levels) {
       if (this.autoStats) this.autoAllocate();
-      if (this.autoSpells) this.autoAllocateSpells();
       this.hp = this.derived().hpMax;
     }
     return { gained, levels };
@@ -374,65 +399,28 @@ class Character {
   }
 
 
-  static rankCost(rank) { return DATA.spellRanks.costs[rank - 1] || Infinity; }
-
-  static spellPointsFor(ranks) {
-    let n = 0;
-    for (const id in ranks || {}) for (let r = 1; r < ranks[id]; r++) n += Character.rankCost(r);
-    return n;
-  }
-
   static unlockLevel(classId, id) {
-    const i = DATA.classes[classId] ? DATA.classes[classId].spells.indexOf(id) : -1;
-    return i < 0 ? Infinity : (DATA.spells[id].unlock || Character.UNLOCK[i]);
+    const p = DATA.paireDe(classId, id);
+    if (!p) return Infinity;
+    return DATA.spells[id].unlock || (p.variante ? DATA.calendrier.variantes : DATA.calendrier.bases)[p.i];
   }
 
-  spellRank(id) { return (this.spellRanks && this.spellRanks[id]) || 1; }
-
-  canRaiseSpell(id, from, points) {
-    const R = DATA.spellRanks;
-    from = from || this.spellRank(id);
-    points = points == null ? this.spellPoints : points;
-    const unlock = Character.unlockLevel(this.classId, id);
-    if (!Number.isFinite(unlock)) return { ok: false, reason: 'Ce sort n\'est pas de ta classe.' };
-    if (unlock > this.level) return { ok: false, reason: `Ce sort se débloque au niveau ${unlock}.`, level: unlock };
-    if (from >= R.max) return { ok: false, reason: 'Rang maximum atteint.' };
-    if (R.levels[from] > this.level) return { ok: false, reason: `Rang ${from + 1} : niveau ${R.levels[from]} requis.`, level: R.levels[from] };
-    const cost = Character.rankCost(from);
-    if (points < cost) return { ok: false, reason: `Rang ${from + 1} : ${cost} point${cost > 1 ? 's' : ''} de sort.`, cost };
-    return { ok: true, cost };
+  static rangAuNiveau(classId, id, level) {
+    const u = Character.unlockLevel(classId, id);
+    if (!(u <= level)) return 0;
+    const p = DATA.paireDe(classId, id), R = DATA.spellRanks;
+    return 1 + (p.variante ? R.ecartsVariante : R.ecarts).filter(e => u + e <= level).length;
   }
 
-  raiseSpell(id) {
-    const c = this.canRaiseSpell(id);
-    if (!c.ok) return c;
-    this.spellPoints -= c.cost;
-    this.spellRanks = Object.assign({}, this.spellRanks, { [id]: this.spellRank(id) + 1 });
-    return { ok: true, rank: this.spellRanks[id], cost: c.cost };
+  static niveauxDesRangs(classId, id) {
+    const u = Character.unlockLevel(classId, id);
+    if (!Number.isFinite(u)) return [];
+    const p = DATA.paireDe(classId, id), R = DATA.spellRanks;
+    const max = (typeof SCEAUX_DATA !== 'undefined' && SCEAUX_DATA.regles.niveauMax) || 300;
+    return [u].concat((p.variante ? R.ecartsVariante : R.ecarts).map(e => u + e).filter(l => l <= max));
   }
 
-  resetSpells() {
-    this.spellRanks = {};
-    this.spellPoints = this.level - 1;
-  }
-
-  autoAllocateSpells() {
-    this.resetSpells();
-    for (const id of this.spellPriority()) while (this.canRaiseSpell(id).ok) this.raiseSpell(id);
-  }
-
-  spellPriority() {
-    const STAT = { terre: 'force', neutre: 'force', feu: 'intel', eau: 'chance', air: 'agi' };
-    const list = this.unlockedSpells().map(id => {
-      const s = this.spellFor(id) || DATA.spells[id];
-      const rate = Character.damageRate(s);
-      const care = s.effects.some(ef => ef.type === 'heal' || ef.type === 'shield');
-      const group = rate > 0 ? (STAT[s.element] === this.mainStat ? 0 : 1) : (care ? 2 : 3);
-      return { id, group, rate, unlock: Character.unlockLevel(this.classId, id) };
-    });
-    list.sort((a, b) => a.group - b.group || b.rate - a.rate || a.unlock - b.unlock);
-    return list.map(x => x.id);
-  }
+  spellRank(id) { return Character.rangAuNiveau(this.classId, id, this.level) || 1; }
 
   static damageRate(s) {
     const sum = list => (list || []).reduce((n, ef) => n + (ef.type === 'damage' || ef.type === 'sacrifice' ? (ef.min + ef.max) / 2

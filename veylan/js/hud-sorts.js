@@ -1,10 +1,10 @@
 (() => {
 const I = Fenetres.ICON;
 const esc = s => Util.esc(s);
-const R = () => DATA.spellRanks;
 
 const TYPES = [['tous', 'Tous'], ['degats', 'Dégâts'], ['soin', 'Soin'], ['bouclier', 'Bouclier'], ['deplacement', 'Déplacement'], ['controle', 'Contrôle'], ['invocation', 'Invocation'], ['piege', 'Piège'], ['autres', 'Autres']];
 const VERROU = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+const COCHE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const CIBLE = { free: 'case libre', enemy: 'ennemi', ally: 'allié', summon: 'invocation alliée', entity: 'une créature', any: 'toute case' };
 
 function typesOf(s) {
@@ -37,11 +37,13 @@ const jet = ef => { const v = DATA.rankShown(ef); return v.min === v.max ? `${v.
 const pct = m => `+${Math.round((m - 1) * 100)} %`;
 
 function lignes(ef, s, crit) {
-  const critique = () => crit ? [['Coup critique', `${Math.round(ef.min * (ef.mult || 1) * 1.5)} à ${Math.round(ef.max * (ef.mult || 1) * 1.5)} ${el(s.element)}`]] : [];
+  const k = DATA.critJetDe(s), aCrit = crit && DATA.critDe(s) > 0;
+  const jetCrit = () => `${Math.round(ef.min * (ef.mult || 1) * k)} à ${Math.round(ef.max * (ef.mult || 1) * k)}`;
+  const critique = () => aCrit ? [['Coup critique', `${jetCrit()} ${el(s.element)}`]] : [];
   const sous = list => list.map(([l, v]) => [l, v, true]);
   switch (ef.type) {
     case 'damage': return [['Dégâts', `${jet(ef)} ${el(s.element)}`]].concat(critique());
-    case 'heal': return [['Soin', `${jet(ef)} PV`]];
+    case 'heal': return [['Soin', `${jet(ef)} PV`]].concat(aCrit ? [['Coup critique', `${jetCrit()} PV`]] : []);
     case 'sacrifice': return [['Sacrifice', `${jet(ef)} ${el(s.element)}, à ${plural(ef.radius, 'case')} de la bête`]].concat(critique());
     case 'shield': return [['Bouclier', `${Math.round(ef.value)} (${tours(ef.duration)})`]];
     case 'echo': return [['Écho', `${tours(ef.turns)} : ${Math.round(ef.min * (ef.mult || 1))} à ${Math.round(ef.max * (ef.mult || 1))} ${el(ef.element)} à chaque PM perdu, ${ef.uses} fois au plus`]];
@@ -89,6 +91,9 @@ function propres(s) {
   if (s.braiseCost) out.push(['Braise', `coûte ${s.braiseCost}`]);
   if (s.braise) out.push(['Braise', `+${s.braise} si la cible est touchée`]);
   if (s.braiseSpend) out.push(['Braise soufflée', `+${s.braiseSpend} % par point`]);
+  const cr = Object.values(DATA.classes).find(c => c.reserve && c.spells.includes(s.id));
+  if (cr && s.reserve) out.push([cr.reserve.nom, `+${s.reserve} si la cible est touchée`]);
+  if (cr && s.reserveSpend) out.push([`${cr.reserve.nom} dépensée`, `+${s.reserveSpend} % par point (dégâts et boucliers)`]);
   if (s.oathPierce) out.push(['Contre le juré', 'ni esquive ni armure']);
   if (s.affutBonus) out.push(['À l\'affût', `+${s.affutBonus} % de dégâts`]);
   if (s.keepsAffut) out.push(['Affût', 'gardé']);
@@ -123,64 +128,32 @@ Object.assign(Hud.prototype, {
     if (!this.sorts) {
       let niveaux = true;
       try { niveaux = localStorage.getItem('veylan.sorts.niveaux') !== '0'; } catch (e) {   }
-      this.sorts = { sel: null, filtre: 'tous', cherche: '', niveaux, vue: null, pending: {}, modal: null };
+      this.sorts = { sel: null, filtre: 'tous', cherche: '', niveaux, vue: null };
     }
     return this.sorts;
   },
 
   sortVu(id) { return this.world.ch.spellFor(id) || DATA.spells[id]; },
-  sortRang(id) { return this.world.ch.spellRank(id) + (this.sortsState().pending[id] || 0); },
-
-  sortsCout(id) {
-    const ch = this.world.ch, P = this.sortsState().pending;
-    let n = 0;
-    for (const k of id ? [id] : Object.keys(P)) for (let i = 0; i < (P[k] || 0); i++) n += Character.rankCost(ch.spellRank(k) + i);
-    return n;
-  },
-  sortsReste() { return this.world.ch.spellPoints - this.sortsCout(); },
-
-  sortsPurge() {
-    const ch = this.world.ch, S = this.sortsState();
-    const kept = {};
-    let left = ch.spellPoints;
-    for (const [id, n] of Object.entries(S.pending)) {
-      let r = ch.spellRank(id), k = 0;
-      while (k < n) { const c = ch.canRaiseSpell(id, r, left); if (!c.ok) break; left -= c.cost; r++; k++; }
-      if (k) kept[id] = k;
-    }
-    S.pending = kept;
-  },
 
   openSorts() {
     const S = this.sortsState();
     const ch = () => this.world.ch;
-    const guard = () => { if (this.world.state === 'combat') { this.toast('Pas pendant un combat.'); return false; } return true; };
     const redraw = () => this.fen.render('sorts');
     const actions = {
       choisir: d => { S.sel = d.id; S.vue = null; redraw(); },
       vue: d => { S.vue = Number(d.rang); redraw(); },
-      plus: d => {
-        if (!guard()) return;
-        const c = ch().canRaiseSpell(d.id, this.sortRang(d.id), this.sortsReste());
+      equiper: d => {
+        if (this.world.state === 'combat') { this.toast('Pas pendant un combat.'); return; }
+        const p = DATA.paireDe(ch().classId, d.id);
+        if (!p) return;
+        const r = ch().choisirVariante(p.i, p.variante);
         S.sel = d.id; S.vue = null;
-        if (c.ok) S.pending[d.id] = (S.pending[d.id] || 0) + 1; else this.toast(c.reason);
+        if (!r.ok) { this.toast(r.reason); redraw(); return; }
+        window.dispatchEvent(new CustomEvent('veylan:spellVariant', { detail: { paire: p.i, id: d.id } }));
+        this.toast(`${this.sortVu(d.id).name} prend sa place dans ta barre de sorts.`);
+        this.world.emit('save');
+        this.world.emit('update');
         redraw();
-      },
-      moins: d => {
-        if (!(S.pending[d.id] > 0)) return;
-        if (--S.pending[d.id] <= 0) delete S.pending[d.id];
-        S.sel = d.id; S.vue = null; redraw();
-      },
-      annuler: () => { S.pending = {}; S.vue = null; redraw(); },
-      valider: () => { if (guard() && Object.keys(S.pending).length) { S.modal = 'valider'; redraw(); } },
-      reinit: () => { if (guard()) { S.modal = 'reinit'; redraw(); } },
-      oui: () => {
-        if (S.modal === 'reinit') this.sortsReset();
-        else this.sortsValider(S.modal === 'fermer');
-      },
-      non: () => {
-        if (S.modal === 'fermer') { S.pending = {}; S.modal = null; this.fen.close('sorts', true); return; }
-        S.modal = null; redraw();
       },
     };
     const onField = (target, kind) => {
@@ -191,140 +164,86 @@ Object.assign(Hud.prototype, {
         try { localStorage.setItem('veylan.sorts.niveaux', S.niveaux ? '1' : '0'); } catch (e) {   }
         redraw();
       }
-      if (target.id === 'sorts-auto' && kind === 'change') {
-        if (!guard()) { target.checked = ch().autoSpells; return; }
-        ch().autoSpells = target.checked;
-        if (target.checked) { S.pending = {}; ch().autoAllocateSpells(); this.toast('Répartition automatique : tes points de sort vont d\'abord à tes sorts de dégâts.'); }
-        this.world.emit('save');
-        this.world.emit('update');
-      }
     };
-    const after = body => { const b = body.querySelector('.vy-sorts__modale [data-act="oui"]'); if (b && !body.contains(document.activeElement)) b.focus({ preventScroll: true }); };
-    this.simpleWin('sorts', 'Sorts', () => this.renderSorts(), actions, { width: 880, cls: 'vy-fenetre--sorts', onField, after, beforeClose: () => this.sortsAvantFermeture() });
-  },
-
-  sortsAvantFermeture() {
-    const S = this.sortsState();
-    if (S.modal) { S.modal = null; this.fen.render('sorts'); return false; }
-    if (Object.keys(S.pending).length) { S.modal = 'fermer'; this.fen.render('sorts'); return false; }
-    S.vue = null;
-    return true;
-  },
-
-  sortsValider(fermer) {
-    const ch = this.world.ch, S = this.sortsState();
-    const montes = [];
-    for (const [id, n] of Object.entries(S.pending)) for (let i = 0; i < n; i++) { if (!ch.raiseSpell(id).ok) break; if (!montes.includes(id)) montes.push(id); }
-    S.pending = {}; S.modal = null; S.vue = null;
-    if (montes.length) {
-      ch.autoSpells = false;
-      for (const id of montes) window.dispatchEvent(new CustomEvent('veylan:spellUpgraded', { detail: { id, rank: ch.spellRank(id) } }));
-      window.dispatchEvent(new CustomEvent('veylan:chat', { detail: { type: 'systeme', text: 'Les changements de tes sorts sont enregistrés.' } }));
-      this.world.emit('save');
-    }
-    if (fermer) this.fen.close('sorts', true);
-    this.world.emit('update');
-  },
-
-  sortsReset() {
-    const ch = this.world.ch, S = this.sortsState();
-    const rendus = Character.spellPointsFor(ch.spellRanks);
-    ch.resetSpells();
-    ch.autoSpells = false;
-    S.pending = {}; S.modal = null; S.vue = null;
-    this.toast(rendus ? `Sorts remis au rang 1 : ${plural(rendus, 'point')} de sort rendu${rendus > 1 ? 's' : ''}.` : 'Tes sorts sont déjà tous au rang 1.');
-    this.world.emit('save');
-    this.world.emit('update');
+    this.simpleWin('sorts', 'Sorts', () => this.renderSorts(), actions, { width: 880, cls: 'vy-fenetre--sorts', onField, beforeClose: () => { S.vue = null; return true; } });
   },
 
   renderSorts() {
     const ch = this.world.ch, S = this.sortsState();
-    this.sortsPurge();
-    const ids = ch.classDef.spells.slice().sort((a, b) => Character.unlockLevel(ch.classId, a) - Character.unlockLevel(ch.classId, b) || ch.classDef.spells.indexOf(a) - ch.classDef.spells.indexOf(b));
+    const ids = [];
+    for (const [base, vari] of ch.classDef.paires) { ids.push(base); if (vari) ids.push(vari); }
     if (!ids.includes(S.sel)) S.sel = ids[0];
-    const reste = this.sortsReste();
     const enCombat = this.world.state === 'combat';
-    const plie = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const plie = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
     const cherche = plie(S.cherche.trim());
     const shown = ids.filter(id => (S.filtre === 'tous' || typesOf(DATA.spells[id]).has(S.filtre)) && (!cherche || plie(this.sortVu(id).name).includes(cherche)));
     if (shown.length && !shown.includes(S.sel)) { S.sel = shown[0]; S.vue = null; }
-    const rows = shown.map(id => this.sortLigne(id, reste, enCombat)).join('') || `<li class="vy-sorts__vide muted">${cherche ? 'Aucun sort à ce nom.' : 'Aucun sort de ce type.'}</li>`;
+    const equipes = new Set(ch.unlockedSpells());
+    const rows = shown.map(id => this.sortLigne(id, equipes, enCombat)).join('') || `<li class="vy-sorts__vide muted">${cherche ? 'Aucun sort à ce nom.' : 'Aucun sort de ce type.'}</li>`;
     const options = TYPES.map(([k, l]) => `<option value="${k}" ${S.filtre === k ? 'selected' : ''}>${l}</option>`).join('');
-    const unlocked = ch.unlockedSpells().length;
-    const prevu = Object.keys(S.pending).length > 0;
-    const pied = (prevu
-      ? `<button class="vy-bouton vy-bouton--petit vy-bouton--fantome" data-act="annuler">Annuler</button><button class="vy-bouton vy-bouton--petit vy-bouton--primaire" data-act="valider">Valider</button>`
-      : `<button class="vy-bouton vy-bouton--petit vy-bouton--fantome" data-act="reinit" ${Object.keys(ch.spellRanks).length && !enCombat ? '' : 'disabled'} title="Gratuit : tous tes points de sort te sont rendus">Réinitialiser tout</button>`) +
-      `<label class="vy-coche" title="À chaque niveau, tes points vont d'abord à tes sorts de dégâts, puis aux autres"><input type="checkbox" id="sorts-auto" ${ch.autoSpells ? 'checked' : ''} ${enCombat ? 'disabled' : ''}> Répartition automatique des sorts</label>` +
-      `<span class="vy-sorts__capital${reste > 0 ? ' on' : ''}">Capital de points : <b>${reste}</b></span>`;
+    const obtenus = ch.sortsObtenus().length;
+    const prochains = ids.map(id => Character.unlockLevel(ch.classId, id)).filter(l => l > ch.level);
+    const prochain = prochains.length ? Math.min(...prochains) : null;
+    const pied = `<span class="vy-sorts__info">Les rangs montent seuls avec ton niveau. Une paire : le sort de base ou sa variante, un seul dans ta barre.</span>` +
+      `<span class="vy-sorts__capital">${prochain ? `Prochain sort : <b>niveau ${prochain}</b>` : 'Tous tes sorts sont obtenus'}</span>`;
     const loupe = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>';
     return `<div class="vy-sorts">
       <section class="vy-sorts__gauche" aria-label="Sorts de la classe">
         <div class="vy-sorts__outils">
-          <span class="vy-sorts__classe"><b>Sorts de classe</b><small>${esc(ch.classDef.name)} · <span class="vy-sorts__compte">${unlocked} / ${ids.length}</span></small></span>
+          <span class="vy-sorts__classe"><b>Sorts de classe</b><small>${esc(ch.classDef.name)} · <span class="vy-sorts__compte">${obtenus} / ${ids.length}</span></small></span>
           <label class="vy-recherche vy-sorts__recherche">${loupe}<input id="sorts-recherche" type="search" placeholder="Rechercher…" value="${esc(S.cherche)}" aria-label="Rechercher un sort"></label>
           <select id="sorts-filtre" aria-label="Type de sort">${options}</select>
         </div>
         <ul class="vy-sorts__liste${S.niveaux ? ' niveaux' : ''}" data-defile="sorts-liste" role="listbox" aria-label="Sorts">${rows}</ul>
-        <label class="vy-coche vy-sorts__niveaux"><input type="checkbox" id="sorts-niveaux" ${S.niveaux ? 'checked' : ''}> Afficher tous les niveaux d'obtention</label>
+        <label class="vy-coche vy-sorts__niveaux"><input type="checkbox" id="sorts-niveaux" ${S.niveaux ? 'checked' : ''}> Afficher tous les niveaux d'obtention et de rang</label>
       </section>
-      ${this.sortFiche(S.sel)}
+      ${this.sortFiche(S.sel, equipes)}
     </div>
-    <footer class="vy-fen-pied vy-sorts__pied">${pied}</footer>
-    ${S.modal ? this.sortsModale() : ''}`;
+    <footer class="vy-fen-pied vy-sorts__pied">${pied}</footer>`;
   },
 
-  sortLigne(id, reste, enCombat) {
+  sortLigne(id, equipes, enCombat) {
     const ch = this.world.ch, S = this.sortsState();
     const s = this.sortVu(id);
+    const p = DATA.paireDe(ch.classId, id);
     const unlock = Character.unlockLevel(ch.classId, id);
     const locked = unlock > ch.level;
-    const base = ch.spellRank(id), p = S.pending[id] || 0, rank = base + p;
-    const pips = Array.from({ length: R().max }, (_, i) => {
-      const r = i + 1;
-      const cls = r <= base ? 'on' : r <= rank ? 'prevu' : R().levels[i] > ch.level ? 'verrou' : '';
-      return `<i class="${cls}"></i>`;
-    }).join('');
-    const obt = [unlock, Math.max(unlock, R().levels[R().max - 1])].filter((v, i, a) => a.indexOf(v) === i)
-      .map(n => `<i class="${n <= ch.level ? 'ok' : ''}">${n}</i>`).join('');
+    const niveaux = Character.niveauxDesRangs(ch.classId, id);
+    const rank = locked ? 0 : ch.spellRank(id);
+    const pips = niveaux.map((lv, i) => `<i class="${i < rank ? 'on' : lv > ch.level ? 'verrou' : ''}"></i>`).join('');
+    const obt = niveaux.map(n => `<i class="${n <= ch.level ? 'ok' : ''}">${n}</i>`).join('');
     const teinte = (DATA.elements[s.element] || DATA.elements.neutre).color;
-    const name = `<button class="vy-sort__choix" data-act="choisir" data-id="${id}" aria-label="${esc(s.name)}, rang ${rank}${locked ? `, se débloque au niveau ${unlock}` : ''}">` +
+    const autre = p ? ch.classDef.paires[p.i][p.variante ? 0 : 1] : null;
+    const cls = ['vy-sort', S.sel === id ? 'on' : '', locked ? 'bloque' : '', p && p.variante ? 'variante' : '', equipes.has(id) ? 'equipe' : ''].filter(Boolean).join(' ');
+    const name = `<button class="vy-sort__choix" data-act="choisir" data-id="${id}" aria-label="${esc(s.name)}${p && p.variante ? ', variante' : ''}${locked ? `, s'obtient au niveau ${unlock}` : `, rang ${rank}`}${equipes.has(id) ? ', équipé' : ''}">` +
       `<img class="vy-sort__icone" src="${SortIcones.url(id, s, 88)}" width="44" height="44" alt="">` +
-      `<span class="vy-sort__nom"><span>${esc(s.name)}</span><small>${s.pa} PA · ${el(s.element)}</small></span></button>`;
+      `<span class="vy-sort__nom"><span>${esc(s.name)}</span><small>${p && p.variante ? 'Variante · ' : ''}${s.pa} PA · ${el(s.element)}</small></span></button>`;
     const obtention = `<span class="vy-sort__obt" aria-hidden="true">${obt}</span>`;
-    if (locked) {
-      return `<li class="vy-sort bloque${S.sel === id ? ' on' : ''}" role="option" aria-selected="${S.sel === id}" style="--el:${teinte}">${obtention}${name}` +
-        `<span class="vy-sort__niveau">${VERROU}niveau ${unlock}</span><span class="vy-sort__points" aria-hidden="true">·</span></li>`;
-    }
-    const c = ch.canRaiseSpell(id, rank, reste);
-    const plusOk = c.ok && !enCombat;
-    const next = rank < R().max ? rank + 1 : null;
-    const plusTitle = !next ? 'Rang maximum' : c.ok ? `Rang ${next} : ${plural(c.cost, 'point')}` : c.reason;
-    const moins = p > 0
-      ? `<button class="vy-sort__moins" data-act="moins" data-id="${id}" aria-label="Retirer un rang prévu à ${esc(s.name)}" title="Retirer un rang prévu">${I.moins}</button>`
-      : `<button class="vy-sort__moins" disabled aria-label="Rangs validés : « Réinitialiser tout » les rend" title="Rangs validés : « Réinitialiser tout » les rend">${VERROU}</button>`;
-    const plus = `<button class="vy-sort__plus" data-act="plus" data-id="${id}" ${plusOk ? '' : 'disabled'} aria-label="${esc(s.name)} : ${esc(plusTitle)}" title="${esc(plusTitle)}">` +
-      `${next && R().levels[rank] > ch.level ? VERROU : I.plus}${next && c.cost != null && R().levels[rank] <= ch.level ? `<span class="vy-sort__cout">${Character.rankCost(rank)}</span>` : ''}</button>`;
-    const cout = this.sortsCout(id);
-    return `<li class="vy-sort${S.sel === id ? ' on' : ''}${p ? ' prevu' : ''}" role="option" aria-selected="${S.sel === id}" style="--el:${teinte}">${obtention}${name}` +
-      `<span class="vy-sort__rang">${moins}<span class="vy-sort__valeur"><b>${rank}</b><span class="vy-pips" aria-hidden="true">${pips}</span></span>${plus}</span>` +
-      `<span class="vy-sort__points${cout ? ' on' : ''}" title="${cout ? `${plural(cout, 'point')} prévu${cout > 1 ? 's' : ''}` : 'Rien de prévu'}">${cout ? '−' + cout : '·'}</span></li>`;
+    let etat;
+    if (locked) etat = `<span class="vy-sort__niveau">${VERROU}niveau ${unlock}</span>`;
+    else etat = `<span class="vy-sort__rang" title="Rang ${rank} sur ${niveaux.length}"><span class="vy-sort__valeur"><b>${rank}</b><span class="vy-pips" aria-hidden="true">${pips}</span></span></span>`;
+    let equip = '<span class="vy-sort__equipe" aria-hidden="true">·</span>';
+    if (equipes.has(id)) equip = `<span class="vy-sort__equipe on" title="Dans ta barre de sorts">${COCHE}</span>`;
+    else if (!locked && autre) equip = `<button class="vy-sort__equiper" data-act="equiper" data-id="${id}" ${enCombat ? 'disabled' : ''} title="Équiper à la place de ${esc(this.sortVu(autre).name)}" aria-label="Équiper ${esc(s.name)} à la place de ${esc(this.sortVu(autre).name)}">⇄</button>`;
+    return `<li class="${cls}" role="option" aria-selected="${S.sel === id}" style="--el:${teinte}">${obtention}${name}${etat}${equip}</li>`;
   },
 
-  sortFiche(id) {
+  sortFiche(id, equipes) {
     const ch = this.world.ch, S = this.sortsState(), d = ch.derived();
     const base0 = this.sortVu(id);
+    const p = DATA.paireDe(ch.classId, id);
     const unlock = Character.unlockLevel(ch.classId, id);
     const locked = unlock > ch.level;
-    const acquis = ch.spellRank(id), actuel = this.sortRang(id);
-    const vue = Math.max(1, Math.min(R().max, S.vue || actuel));
+    const niveaux = Character.niveauxDesRangs(ch.classId, id);
+    const max = Math.max(1, niveaux.length);
+    const actuel = locked ? 1 : ch.spellRank(id);
+    const vue = Math.max(1, Math.min(max, S.vue || actuel));
     const s = DATA.spellAtRank(base0, vue);
-    const needLevel = r => Math.max(unlock, R().levels[r - 1]);
-    const tabs = Array.from({ length: R().max }, (_, i) => {
-      const r = i + 1, lv = needLevel(r);
-      const cls = locked ? 'verrou' : [r <= acquis ? 'acquis' : r <= actuel ? 'prevu' : '', r === actuel ? 'actuel' : '', lv > ch.level ? 'verrou' : ''].filter(Boolean).join(' ');
-      const title = lv > ch.level ? `Rang ${r} : niveau ${lv} requis` : r === actuel ? `Rang ${r} : ton rang${r > acquis ? ' (prévu)' : ''}` : `Rang ${r}`;
-      return `<button class="vy-rang ${cls}" role="tab" aria-selected="${r === vue}" data-act="vue" data-rang="${r}" title="${title}">${lv > ch.level ? VERROU : '<i class="vy-rang__etoile" aria-hidden="true"></i>'}<b>${r}</b>${lv > ch.level ? `<small>niv. ${lv}</small>` : ''}</button>`;
+    const tabs = niveaux.map((lv, i) => {
+      const r = i + 1;
+      const cls = [lv <= ch.level ? 'acquis' : 'verrou', r === actuel && !locked ? 'actuel' : ''].filter(Boolean).join(' ');
+      const title = lv > ch.level ? `Rang ${r} : au niveau ${lv}` : r === actuel ? `Rang ${r} : ton rang` : `Rang ${r}`;
+      return `<button class="vy-rang ${cls}" role="tab" aria-selected="${r === vue}" data-act="vue" data-rang="${r}" title="${title}">${lv > ch.level ? VERROU : '<i class="vy-rang__etoile" aria-hidden="true"></i>'}<b>${r}</b><small>niv. ${lv}</small></button>`;
     }).join('');
     const dmg = s.effects.some(ef => ef.type === 'damage' || ef.type === 'sacrifice' || ((ef.type === 'trap' || ef.type === 'leap') && ef.effects.some(x => x.type === 'damage')));
     const carac = [['Coût', `<b>${s.pa}</b> PA`]];
@@ -339,23 +258,27 @@ Object.assign(Hud.prototype, {
     if (zone) carac.push(['Zone', `${zone}${s.affects === 'allies' ? ', alliés' : s.affects === 'enemies' ? ', ennemis' : ''}`]);
     carac.push(['Relance', s.cooldown ? `<b>${plural(s.cooldown, 'tour')}</b>` : 'sans relance']);
     if (s.maxPerTurn) carac.push(['Utilisations', `<b>${s.maxPerTurn}</b> par tour`]);
-    if (dmg) carac.push(['Critique', `<b>${d.crit} %</b> <small>(dégâts × 1,5)</small>`]);
+    if (dmg || s.effects.some(ef => ef.type === 'heal')) carac.push(['Critique', DATA.critDe(s) > 0 ? `<b>${DATA.chanceCrit(d, s)} %</b> <small>(${DATA.critDe(s)} % du sort${d.crit ? ` ${d.crit > 0 ? '+' : '−'} ${Math.abs(d.crit)} % de Critique` : ''})</small>` : 'jamais']);
     const fx = [], crits = [];
     if (DATA.rankScales(s) && vue > 1) fx.push(['Bonus de rang', `${pct(DATA.rankMult(s, vue))} <small>dégâts, soins, boucliers</small>`]);
     for (const ef of s.effects.concat(s.selfEffects || [])) for (const [l, v, sub] of lignes(ef, s, true)) (l === 'Coup critique' ? crits : fx).push([l, esc(v), sub]);
     fx.push(...propres(s).map(([l, v]) => [l, esc(v)]));
     const ul = list => list.map(([l, v, sub]) => `<li${sub ? ' class="sous"' : ''}><span>${esc(l)}</span><b>${v}</b></li>`).join('');
     let suivant = '';
-    if (vue < R().max) {
-      const lv = needLevel(vue + 1), cost = Character.rankCost(vue);
+    if (vue < max) {
       const ch2 = changements(base0, vue + 1);
-      suivant = `<div class="vy-sous vy-sous--suivant"><span>Au rang ${vue + 1}</span><span>${plural(cost, 'point')}${lv > ch.level ? ` · niveau ${lv}` : ''}</span></div>` +
+      suivant = `<div class="vy-sous vy-sous--suivant"><span>Au rang ${vue + 1}</span><span>niveau ${niveaux[vue]}</span></div>` +
         `<ul class="vy-effets vy-effets--suivant">${ch2.map(([l, a, b]) => `<li><span>${esc(l)}</span><b><s>${esc(a)}</s> → ${esc(b)}</b></li>`).join('')}</ul>`;
     }
-    const statut = locked ? `Se débloque au niveau ${unlock}` : vue === actuel ? `Rang ${actuel}${actuel > acquis ? ' prévu' : ''} sur ${R().max}` : `Aperçu du rang ${vue} · ton rang : ${actuel}`;
+    let paire = '';
+    if (p) {
+      const autre = ch.classDef.paires[p.i][p.variante ? 0 : 1];
+      if (autre) paire = `<p class="vy-fiche-sort__meta">${p.variante ? 'Variante de' : 'Sa variante :'} <b>${esc(this.sortVu(autre).name)}</b>${p.variante ? '' : ` (niveau ${Character.unlockLevel(ch.classId, autre)})`} · ${equipes.has(id) ? 'dans ta barre' : equipes.has(autre) ? 'l\'autre est dans ta barre' : 'pas encore obtenus'}</p>`;
+    }
+    const statut = locked ? `S'obtient au niveau ${unlock}` : vue === actuel ? `Rang ${actuel} sur ${max}` : `Aperçu du rang ${vue} · ton rang : ${actuel}`;
     return `<article class="vy-sorts__fiche" data-defile="sorts-fiche" aria-label="${esc(s.name)}">
       <header class="vy-fiche-sort"><img class="vy-fiche-sort__icone${locked ? ' bloque' : ''}" src="${SortIcones.url(id, Object.assign({}, base0, { rank: locked ? 0 : vue }), 144)}" width="64" height="64" alt="">
-        <div><h3 class="vy-fiche-sort__nom">${esc(s.name)}</h3><p class="vy-fiche-sort__meta">${statut}</p><p class="vy-fiche-sort__meta">Niveau requis : <b>${needLevel(vue)}</b> · ${esc(DATA.elements[s.element].label)}</p></div></header>
+        <div><h3 class="vy-fiche-sort__nom">${esc(s.name)}</h3><p class="vy-fiche-sort__meta">${statut}</p><p class="vy-fiche-sort__meta">Niveau requis : <b>${niveaux[vue - 1] || unlock}</b> · ${esc(DATA.elements[s.element].label)}</p>${paire}</div></header>
       <nav class="vy-rangs" role="tablist" aria-label="Rangs du sort">${tabs}</nav>
       <dl class="vy-carac-sort">${carac.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
       ${s.desc ? `<p class="vy-fiche-sort__recit">${esc(s.desc)}</p>` : ''}
@@ -366,30 +289,9 @@ Object.assign(Hud.prototype, {
     </article>`;
   },
 
-  sortsModale() {
-    const ch = this.world.ch, S = this.sortsState();
-    let q, detail;
-    if (S.modal === 'reinit') {
-      const n = Character.spellPointsFor(ch.spellRanks);
-      q = 'Réinitialiser tous tes sorts ?';
-      detail = `<p class="muted">Ils repartent du rang 1 et tes ${plural(n, 'point')} de sort te ${n > 1 ? 'sont rendus' : 'est rendu'}, gratuitement.${ch.autoSpells ? ' La répartition automatique sera coupée.' : ''}</p>`;
-    } else {
-      q = 'Valider les changements ?';
-      const items = Object.entries(S.pending).map(([id, n]) => `<li><span>${esc(this.sortVu(id).name)}</span><b>rang ${ch.spellRank(id)} → ${ch.spellRank(id) + n}</b></li>`).join('');
-      detail = `<ul class="vy-sorts__resume">${items}</ul><p class="muted">${plural(this.sortsCout(), 'point')} de sort${ch.autoSpells ? ' · la répartition automatique sera coupée' : ''}.</p>`;
-    }
-    return `<div class="vy-sorts__voile"><div class="vy-sorts__modale" role="alertdialog" aria-modal="true" aria-labelledby="sorts-question">
-      <h3>Confirmation</h3><p id="sorts-question" class="vy-sorts__question">${q}</p>${detail}
-      <div class="vy-sorts__choix"><button class="vy-bouton vy-bouton--primaire" data-act="oui">Oui</button><button class="vy-bouton" data-act="non">Non</button></div></div></div>`;
-  },
-
   marquerSorts() {
     const b = document.querySelector('#menus [data-win="sorts"]');
-    const ch = this.world && this.world.ch;
-    if (!b || !ch) return;
-    const utile = ch.spellPoints > 0 && ch.unlockedSpells().some(id => ch.canRaiseSpell(id).ok);
-    b.classList.toggle('a-placer', utile);
-    b.title = utile ? `Sorts (T) : ${plural(ch.spellPoints, 'point')} à placer` : 'Sorts (T)';
+    if (b) { b.classList.remove('a-placer'); b.title = 'Sorts (T)'; }
   },
 });
 

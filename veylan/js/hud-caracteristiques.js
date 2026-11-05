@@ -144,7 +144,7 @@ Object.assign(Hud.prototype, {
       ligne('pv', 'Points de vie', `${ch.hp} / ${d.hpMax}`),
       ligne('pa', 'PA', d.pa, 'Points d\'action'),
       ligne('pm', 'PM', d.pm, 'Points de mouvement'),
-      ligne('init', 'Initiative', d.initiative, 'Initiative de la classe, plus Terra, Ignis, Aqua et Aer'),
+      ligne('init', 'Initiative', d.initiative, 'Terra, Ignis, Aqua et Aer ; en combat, elle baisse avec les PV perdus'),
       ligne('pp', 'Prospection', d.prospection, '100 + Aqua / 10 : les chances de butin en dépendent'),
       ch.classDef.summonGauge ? ligne('invoc', 'Jauge de meute', ch.classDef.summonGauge, 'Chaque bête coûte sa part de la jauge (Glym 1, Grouk 2, Molh 3), une de chaque espèce') : ligne('invoc', 'Invocations', DATA.rules.maxSummonsPerOwner, 'Invocations en jeu au plus'),
     ].join('');
@@ -196,22 +196,23 @@ Object.assign(Hud.prototype, {
     };
     const section = (titre, lignes) => `<tbody><tr class="vy-caracs__section"><th colspan="4" scope="colgroup">${titre}</th></tr>${lignes.join('')}</tbody>`;
     const sum4 = (st.force || 0) + (st.intel || 0) + (st.chance || 0) + (st.agi || 0);
-    const SR = DATA.sceaux ? DATA.sceaux.regles : { pvBase: 60, pvParNiveau: 5 };
+    const SR = DATA.sceaux ? DATA.sceaux.regles : { pvBase: 50, pvParNiveau: 5 };
     const primaires = Character.ALLOUABLES.concat(['vita', 'sagesse']).map(k => row(k, Items.STAT_LABEL[k], st[k] || 0, d.stats[k] || 0, '', bonus.texte(k) ? `Bonus : ${bonus.texte(k)}` : (k === 'vita' || k === 'sagesse' ? 'Ne se répartit plus : vient de l\'équipement et des parchemins' : '')));
     const arbre = 'l\'Arbre des Sceaux et l\'équipement';
     const combat = [
       row('pv', 'Points de vie', SR.pvBase + SR.pvParNiveau * ch.level, d.hpMax, '', `Points de vie maximum : ${SR.pvBase} + ${SR.pvParNiveau} par niveau, plus la Vitalité de l'équipement et ${SR.pvParSceau || 5} PV par Sceau posé`),
       row('pa', 'PA', 6, d.pa), row('pm', 'PM', 3, d.pm),
-      row('init', 'Initiative', cls.initiative + sum4, d.initiative, '', 'Initiative de la classe, plus Terra, Ignis, Aqua et Aer, plus l\'arbre'),
+      row('init', 'Initiative', sum4, d.initiative, '', 'Terra, Ignis, Aqua et Aer, plus l\'arbre ; en combat, elle baisse avec les PV perdus'),
       row('pp', 'Prospection', 100 + Math.floor((d.stats.chance || 0) / 10), d.prospection, '', `100 + Aqua / 10, plus ${arbre}`),
-      row('crit', 'Coups critiques', 5, d.crit, ' %', 'Chance de coup critique ; un critique fait × 1,5, plus les dommages critiques'),
+      row('crit', 'Critique', 0, d.crit, ' %', 'S\'ajoute au taux de critique de chaque sort ; un critique prend le jet critique du sort, plus les dommages critiques'),
       row('invoc', 'Invocations', R.maxSummonsPerOwner, R.maxSummonsPerOwner),
-    ];
+      (() => { const f = Math.round((DATA.bonusFormat(ch.level) - 1) * 100); return f > 0 ? row('dmg', 'Format court', 0, f, ' %', 'Tes dégâts suivent la solidité des monstres de ton niveau : un combat court jusqu\'au niveau 50, puis de plus en plus long jusqu\'au 200, où les combats deviennent longs') : null; })(),
+    ].filter(Boolean);
     const secondaires = [
       row('tacle', 'Tacle', Math.floor((d.stats.agi || 0) / 10), d.tacle, '', `Aer / 10, plus ${arbre}`),
       row('fuite', 'Fuite', Math.floor((d.stats.agi || 0) / 10) + (R.playerFuiteBase || 0), d.fuite, '', `Aer / 10, plus ${R.playerFuiteBase || 0} de base, plus ${arbre}`),
-      row('esquive', 'Esquive PA', Math.floor((d.stats.sagesse || 0) / 10), d.esquivePA, '', `Sagesse / 10, plus ${arbre}`), row('esquive', 'Esquive PM', Math.floor((d.stats.sagesse || 0) / 10), d.esquivePM, '', `Sagesse / 10, plus ${arbre}`),
-      row('retrait', 'Retrait PA', Math.floor((d.stats.sagesse || 0) / 10), d.retraitPA, '', `Sagesse / 10, plus ${arbre}`), row('retrait', 'Retrait PM', Math.floor((d.stats.sagesse || 0) / 10), d.retraitPM, '', `Sagesse / 10, plus ${arbre}`),
+      row('esquive', 'Esquive PA', Math.floor((d.stats.sagesse || 0) / 10), d.esquivePA, '', `Sagesse / 10, plus ${arbre}. Un PA qu'on te retire passe avec 50 % × Retrait de l'ennemi / ton Esquive × tes PA restants / maximum (de 10 à 90 %)`), row('esquive', 'Esquive PM', Math.floor((d.stats.sagesse || 0) / 10), d.esquivePM, '', `Sagesse / 10, plus ${arbre}. Un PM qu'on te retire passe avec 50 % × Retrait de l'ennemi / ton Esquive × tes PM restants / maximum (de 10 à 90 %)`),
+      row('retrait', 'Retrait PA', Math.floor((d.stats.sagesse || 0) / 10), d.retraitPA, '', `Sagesse / 10, plus ${arbre}. Un PA que tu retires passe avec 50 % × ton Retrait / l'Esquive de la cible × ses PA restants / maximum (de 10 à 90 %)`), row('retrait', 'Retrait PM', Math.floor((d.stats.sagesse || 0) / 10), d.retraitPM, '', `Sagesse / 10, plus ${arbre}. Un PM que tu retires passe avec 50 % × ton Retrait / l'Esquive de la cible × ses PM restants / maximum (de 10 à 90 %)`),
       row('soins', 'Soins', st.intel || 0, d.soins, ' %', '+1 % par point d\'Ignis, plus l\'arbre et l\'équipement'),
       row('sagesse', 'Expérience gagnée', 0, d.stats.sagesse || 0, ' %', '+1 % par point de Sagesse (équipement et parchemins)'),
     ];
@@ -226,15 +227,6 @@ Object.assign(Hud.prototype, {
   caracElements(ch, d, cls) {
     return `<div class="vy-caracs__elements"><div>${this.caracProfil(d)}</div><div>${this.caracParElement(ch, d, cls)}</div></div>
       <p class="muted vy-note">Chaque niveau donne 5 points. Terra, Ignis, Aqua et Aer coûtent 1 point jusqu'à 100, 2 jusqu'à 200, 3 jusqu'à 300, 4 au-delà. Un point ajoute 1 % aux dégâts de son élément (Terra : terre et neutre ; Ignis : aussi les soins) ; Aer donne Tacle et Fuite (un pour dix), Aqua la Prospection (un pour dix), Terra 5 de poids porté. Chaque dizaine donne un Sceau de la voie, à poser dans son arbre. Chaque sort garde son élément. La Vitalité et la Sagesse (expérience, Retrait et Esquive) viennent de l'équipement et des parchemins (${DATA.rules.scrollMax} au plus).</p>`;
-  },
-
-  voieHtml(ch, cls) {
-    const orig = [...new Set(cls.spells.map(id => DATA.spells[id].element).filter(e => e !== 'neutre'))].map(e => DATA.elements[e].label.toLowerCase()).join(', ');
-    const btn = (v, label, color, title) => `<button class="vy-voie${(ch.voie || null) === v ? ' on' : ''}" data-act="voie" data-voie="${v || ''}" aria-pressed="${(ch.voie || null) === v}" style="--c:${color}" title="${title}">${label}</button>`;
-    const btns = [btn(null, 'Origine', 'var(--fen-accent)', `Les éléments de la classe : ${orig}`)]
-      .concat(Character.VOIES.map(v => btn(v, `${DATA.elements[v].stat} <small>${DATA.elements[v].label.toLowerCase()}</small>`, DATA.elements[v].color, `${DATA.elements[v].stat} : ${DATA.elements[v].desc} Tous les sorts de dégâts en ${DATA.elements[v].label.toLowerCase()}.`))).join('');
-    return `<div class="vy-sous"><span>Voie élémentaire</span></div><div class="vy-voies" role="group" aria-label="Voie élémentaire">${btns}</div>
-      <p class="muted vy-note">${ch.voie ? `Tes sorts de dégâts frappent en ${DATA.elements[ch.voie].label.toLowerCase()} ; ta caractéristique est ${Items.STAT_LABEL[ch.mainStat]}.` : `Éléments d'origine : ${orig}.`} Changer de voie rend tes points, gratuitement.</p>`;
   },
 
   caracProfil(d) {

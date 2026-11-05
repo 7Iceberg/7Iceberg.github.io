@@ -3,8 +3,8 @@ const Son = (() => {
   const DOSSIER = 'assets/son/';
   const FONDU = 1.5;
   const PISTES = { accueil: 'theme', ervane: 'ervane', orsane: 'orsane', kaldum: 'kaldum', donjon: 'donjon', combat: 'combat', boss: 'boss', nuit: 'nuit' };
-  const DISPONIBLES = new Set(['accueil']);
-  const BOUCLES = { accueil: { pause: 3 } };
+  const DISPONIBLES = new Set(['accueil', 'ervane', 'combat', 'orsane', 'boss', 'donjon', 'kaldum']);
+  const BOUCLES = { accueil: { pause: 3 }, ervane: { pause: 1.5 }, orsane: { pause: 1.5 }, donjon: { pause: 1.5 }, kaldum: { pause: 1.5 } };
   const ATTENUES = { victoire: 1.6, defaite: 1.8, niveau: 1.2, quete: 1.2, succes: 1.4 };
   const DEFAUT = { actif: true, musique: 60, bruitages: 80 };
 

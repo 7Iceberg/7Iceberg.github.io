@@ -1,8 +1,8 @@
 const Marche = (() => {
   const GENRES = {
-    equipements: { nom: 'le comptoir des équipements', est: d => d.kind === 'equip' || d.kind === 'weapon', bonus: 1.5, achat: 1.0, niveauMax: 12 },
+    equipements: { nom: 'le comptoir des équipements', est: d => d.kind === 'equip' || d.kind === 'weapon', bonus: 1.5, achat: 1.0, niveauMax: 23 },
     ressources: { nom: 'le comptoir des ressources', est: d => d.kind === 'resource', bonus: 1.2, achat: 1.6, niveauMax: 99 },
-    vivres: { nom: 'le comptoir des vivres', est: d => d.kind === 'consumable' && d.sub !== 'parchemin' && d.sub !== 'monture', bonus: 1.4, achat: 1.0, niveauMax: 20 },
+    vivres: { nom: 'le comptoir des vivres', est: d => d.kind === 'consumable' && d.sub !== 'parchemin' && d.sub !== 'monture', bonus: 1.4, achat: 1.0, niveauMax: 39 },
   };
   const aLEtal = d => d.source !== 'drop' && d.sub !== 'parchemin' && d.sub !== 'oeuf';
   const ETAL = 6, BAISSE = 0.05, PLANCHER = 0.5;

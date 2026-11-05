@@ -120,7 +120,7 @@ const Achievements = (() => {
     const [lo, hi] = z.level || [1, 1];
     C.achievements.push({
       id, name: `Explorer ${article(z.name)}`, desc: `Visiter les ${z.maps.length} cartes ${de(z.name)}.`,
-      cond: { type: 'zone', zone: z.id }, rewards: { xp: Math.round((lo + hi) * 1.5) * 10 },
+      cond: { type: 'zone', zone: z.id }, rewards: { xp: Math.round((lo + hi + 1) / 2 * 1.5) * 10 },
     });
   }
 })();

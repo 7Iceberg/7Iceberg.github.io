@@ -69,7 +69,7 @@ const Avis = (() => {
   function echanger(ch, id) {
     const e = ECHANGES.find(x => x.id === id);
     if (!e || (typeof Items === 'object' && !Items.get(id))) return { ok: false, reason: 'Le Temple n\'échange pas cela.' };
-    if (!ch.has(SCEAU, e.sceaux)) return { ok: false, reason: `Il te faut ${e.sceaux} Sceau${e.sceaux > 1 ? 'x' : ''} de la Garde.` };
+    if (!ch.has(SCEAU, e.sceaux)) return { ok: false, reason: `Il te faut ${e.sceaux} Insigne${e.sceaux > 1 ? 's' : ''} de la Garde.` };
     ch.removeItem(SCEAU, e.sceaux);
     ch.addItem(id, 1);
     return { ok: true, echange: e };

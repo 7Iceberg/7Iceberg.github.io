@@ -220,7 +220,6 @@ const Quests = (() => {
     for (const it of r.items || []) { ch.addItem(it.id, it.count || 1); out.items.push(it); }
     if (r.faction && Factions.requirementsMet(ch, q.requires || {})) out.events.push(...Factions.addPoints(ch, r.faction));
     if (r.marcheurs) out.events.push(...Factions.addMarcheurs(ch, r.marcheurs));
-    if (r.spellPoints) { ch.spellPoints = (ch.spellPoints || 0) + r.spellPoints; out.spellPoints = r.spellPoints; }
     if (r.title && Array.isArray(ch.titles) && !ch.titles.includes(r.title)) { ch.titles.push(r.title); out.title = r.title; }
     if (r.cosmetique && typeof Garderobe !== 'undefined') out.cosmetiques = [].concat(r.cosmetique).flatMap(cid => Garderobe.donner(cid, 'quete:' + q.id));
     return out;

@@ -1,20 +1,20 @@
 (() => {
 DATA.knots = [
-  { id: 'noeud_lourd', name: 'Nœud Lourd', level: 6, desc: 'Tu as 1 PM de moins pendant tout le combat.',
+  { id: 'noeud_lourd', name: 'Nœud Lourd', level: 11, desc: 'Tu as 1 PM de moins pendant tout le combat.',
     recipe: [{ id: 'cuir_de_grouk', count: 6 }, { id: 'bois_noueux', count: 3 }] },
-  { id: 'noeud_de_garde', name: 'Nœud de Garde', level: 8, desc: 'Les monstres commencent avec un bouclier d\'un cinquième de leurs PV.',
+  { id: 'noeud_de_garde', name: 'Nœud de Garde', level: 15, desc: 'Les monstres commencent avec un bouclier d\'un cinquième de leurs PV.',
     recipe: [{ id: 'cire_de_veilloche', count: 6 }, { id: 'lueur_de_veilloche', count: 1 }] },
-  { id: 'noeud_de_meute', name: 'Nœud de Meute', level: 10, desc: 'Un monstre de plus dans chaque groupe.',
+  { id: 'noeud_de_meute', name: 'Nœud de Meute', level: 19, desc: 'Un monstre de plus dans chaque groupe.',
     recipe: [{ id: 'plume_de_pilou', count: 10 }, { id: 'cuir_de_grouk', count: 6 }] },
-  { id: 'noeud_d_ombre', name: 'Nœud d\'Ombre', level: 12, desc: 'Un monstre au hasard est invisible un tour sur deux.',
+  { id: 'noeud_d_ombre', name: 'Nœud d\'Ombre', level: 23, desc: 'Un monstre au hasard est invisible un tour sur deux.',
     recipe: [{ id: 'soie_de_tissefil', count: 8 }, { id: 'venin_de_tissefil', count: 1 }] },
-  { id: 'noeud_de_fer', name: 'Nœud de Fer', level: 16, desc: 'Les monstres ne peuvent plus être poussés, attirés ni déplacés.',
+  { id: 'noeud_de_fer', name: 'Nœud de Fer', level: 31, desc: 'Les monstres ne peuvent plus être poussés, attirés ni déplacés.',
     recipe: [{ id: 'galet_de_brimbe', count: 8 }, { id: 'herbe_de_veille', count: 4 }] },
-  { id: 'noeud_serre', name: 'Nœud Serré', level: 18, desc: 'Tu commences le combat avec 2 PA de moins à ton premier tour.',
+  { id: 'noeud_serre', name: 'Nœud Serré', level: 35, desc: 'Tu commences le combat avec 2 PA de moins à ton premier tour.',
     recipe: [{ id: 'soie_de_tissefil', count: 6 }, { id: 'galet_de_brimbe', count: 6 }] },
-  { id: 'noeud_de_braise', name: 'Nœud de Braise', level: 22, desc: 'Chaque coup d\'un monstre te brûle : 4 dégâts de feu par tour pendant deux tours.',
+  { id: 'noeud_de_braise', name: 'Nœud de Braise', level: 43, desc: 'Chaque coup d\'un monstre te brûle : 4 dégâts de feu par tour pendant deux tours.',
     recipe: [{ id: 'braise_de_kaldrik', count: 3 }, { id: 'scorie_de_kaldrik', count: 8 }] },
-  { id: 'noeud_de_sang', name: 'Nœud de Sang', level: 26, desc: 'Les monstres récupèrent 10 % des dégâts qu\'ils t\'infligent.',
+  { id: 'noeud_de_sang', name: 'Nœud de Sang', level: 51, desc: 'Les monstres récupèrent 10 % des dégâts qu\'ils t\'infligent.',
     recipe: [{ id: 'cendre_de_cendrou', count: 8 }, { id: 'suie_de_fumerolle', count: 4 }] },
 ];
 DATA.rules.maxKnots = 4;

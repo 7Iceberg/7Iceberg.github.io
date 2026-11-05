@@ -9,11 +9,11 @@
       description: 'Un jeune Molh apprivoisé par Kavra. Lent au départ, il ne s\'arrête plus une fois lancé : on traverse les cartes plus vite, et sa masse protège (de la Vitalité, quand on le monte).' },
   );
 
-  for (const m of M) C.consumables.push({ id: m.objet.id, name: m.objet.nom, kind: 'monture', level: 20, price: 1, rarity: 'epique', monture: m.id, lore: m.objet.lore });
+  for (const m of M) C.consumables.push({ id: m.objet.id, name: m.objet.nom, kind: 'monture', level: DATA.rules.montureNiveau || 50, price: 1, rarity: 'epique', monture: m.id, lore: m.objet.lore });
 
   C.quests.push({
-    id: 'kaldum_un_molh_qui_suit', name: 'Un Molh qui suit', level: 22, main: false,
-    giver: 'kavra', requires: { level: 22, quests: ['kaldum_le_pari_de_kavra'] },
+    id: 'kaldum_un_molh_qui_suit', name: 'Un Molh qui suit', level: 50, main: false,
+    giver: 'kavra', requires: { level: 50, quests: ['kaldum_le_pari_de_kavra'] },
     steps: [
       { type: 'kill', monster: 'molh', count: 5, text: 'Écarter cinq grands Molhs de celui qui suit Kavra' },
       { type: 'collect', item: 'pierre_de_molh', count: 6, text: 'Rapporter six pierres de Molh, encore chaudes, pour l\'appâter' },
@@ -34,8 +34,8 @@
   });
 
   C.quests.push({
-    id: 'kaldum_la_selle_de_basalte', name: 'La selle de basalte', level: 23, main: false,
-    giver: 'kavra', requires: { level: 23, quests: ['kaldum_un_molh_qui_suit'] },
+    id: 'kaldum_la_selle_de_basalte', name: 'La selle de basalte', level: 50, main: false,
+    giver: 'kavra', requires: { level: 50, quests: ['kaldum_un_molh_qui_suit'] },
     steps: [
       { type: 'gather', resource: 'basalte_de_kaldum', count: 6, text: 'Tailler six blocs de basalte pour la selle' },
       { type: 'talk', npc: 'tharik', text: 'Faire forger un mors chez Lurvik, aux Ateliers' },

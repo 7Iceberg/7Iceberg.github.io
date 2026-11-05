@@ -423,17 +423,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .classe-genre__btn svg { width: 20px; height: 20px; }
 .classe-genre__btn.on { color: var(--vy-texte-or); border-color: var(--vy-or-clair); background: linear-gradient(180deg, #2b3c55, #18263a); box-shadow: var(--vy-lueur-or), var(--vy-relief); }
 @media (hover: hover) { .classe-genre__btn:not(.on):hover { border-color: var(--vy-cristal); color: #fff; } }
-.classe-voie { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
-.classe-voie__titre { flex-basis: 100%; margin: 0 0 2px; font: 600 11px/1 var(--vy-font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--vy-texte-2); }
-.classe-voie__btn {
-  display: inline-flex; align-items: center; gap: 5px; min-height: 34px; padding: 0 9px;
-  font: 600 12px/1 var(--vy-font-ui); color: var(--vy-texte); border-radius: 999px;
-  border: 1.5px solid color-mix(in srgb, var(--e) 40%, transparent); background: color-mix(in srgb, var(--e) 9%, #0b1320);
-  transition: border-color var(--vy-duree-courte), background var(--vy-duree-courte), box-shadow var(--vy-duree);
-}
-.classe-voie__btn::before { content: ""; width: 7px; height: 7px; flex: none; transform: rotate(45deg); background: var(--e); }
-.classe-voie__btn.on { color: #fff; border-color: var(--e); background: color-mix(in srgb, var(--e) 26%, #0b1320); box-shadow: 0 0 10px color-mix(in srgb, var(--e) 45%, transparent); }
-@media (hover: hover) { .classe-voie__btn:not(.on):hover { border-color: var(--e); } }
 .classe-actions { position: relative; z-index: 3; grid-column: 2; grid-row: 2; align-self: end; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .classe-actions .vy-bouton { min-height: 52px; font-size: 15px; }
 .classe-actions .vy-bouton svg { width: 20px; height: 20px; }
@@ -660,8 +649,6 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
   .classe-case__reco svg { width: 10px; height: 10px; }
   .classe-case__cadenas { top: 50%; width: 24px; height: 24px; }
   .classe-genre__btn { min-height: 38px; font-size: 13px; }
-  .classe-voie { gap: 4px; }
-  .classe-voie__btn { min-height: 30px; padding: 0 8px; font-size: 11px; }
   .classe-actions .vy-bouton { min-height: 44px; font-size: 14px; }
 
   .quiz--fin { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "buste sur" "buste classe" "buste desc" "buste actions"; justify-items: start; align-items: center; column-gap: 22px; row-gap: 2px; text-align: left; }

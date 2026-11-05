@@ -534,8 +534,7 @@ class World {
     const touched = Quests.onEvent(this.ch, { type: 'inventory' });
     this.afterEvents(touched);
     this.emit('quest', { type: 'complete', id, rewards: r });
-    if (r.first) this.emit('reward', { title: `Quête terminée : ${r.quest.name}`, xp: r.xp, fils: r.fils, items: r.items, levels: r.levels, spellPoints: r.spellPoints || 0, titre: r.title || null, cosmetiques: r.cosmetiques || [] });
-    if (r.spellPoints) this.toast(`+${r.spellPoints} point${r.spellPoints > 1 ? 's' : ''} de sort (fenêtre Sorts).`);
+    if (r.first) this.emit('reward', { title: `Quête terminée : ${r.quest.name}`, xp: r.xp, fils: r.fils, items: r.items, levels: r.levels, titre: r.title || null, cosmetiques: r.cosmetiques || [] });
     if (r.title) this.toast(`Titre reçu : ${r.title}.`);
     for (const c of r.cosmetiques || []) this.toast(World.texteCosmetique(c));
     this.emit('gain', { source: 'quete', xp: r.xp, fils: r.fils, items: r.items.map(it => ({ id: it.id, count: it.count || 1 })) });
@@ -1081,7 +1080,7 @@ class World {
           if (typeof Garderobe !== 'undefined') for (const c of Garderobe.pourSource('boss', e.def.id)) result.cosmetiques.push(...Garderobe.donner(c.id, 'boss:' + e.def.id));
         }
         const purse = 1 + (e.lootBonus || 0) / 100;
-        result.fils += Math.round((1 + Math.floor(this.rng() * 3)) * e.level * purse);
+        result.fils += Math.round((1 + Math.floor(this.rng() * 3)) * (e.level + 1) / 2 * purse);
         for (const drop of Items.dropsOf(e.def.id)) {
           if (this.rng() * 100 < drop.rate * prospection * purse) {
             const found = result.drops.find(x => x.id === drop.id);
@@ -1094,7 +1093,7 @@ class World {
       if (typeof Montures !== 'undefined') { result.monture = Montures.partCombat(ch, result.xp); if (result.monture) result.xp -= result.monture.cede; }
       if (this.combat.epreuveDojo) {
         const tours = this.combat.round || 1, limite = this.combat.epreuveDojo.limite;
-        const prime = { tours, limite, xp: Math.round(40 * Math.pow(ch.level, 1.3)), fils: 30 + 5 * ch.level, sceaux: tours <= limite ? 1 : 0 };
+        const prime = { tours, limite, xp: Math.round(40 * Math.pow(ch.level / 2, 1.3)), fils: Math.round(30 + 2.5 * ch.level), sceaux: tours <= limite ? 1 : 0 };
         result.epreuveDojo = prime;
         result.xp += prime.xp; result.fils += prime.fils;
         if (prime.sceaux) { const found = result.drops.find(x => x.id === 'sceau_de_la_garde'); if (found) found.count += prime.sceaux; else result.drops.push({ id: 'sceau_de_la_garde', count: prime.sceaux }); }
@@ -1256,5 +1255,5 @@ class World {
 
 World.texteCosmetique = e => (e.collection ? `Collection « ${e.collection.nom} » complète : ${e.cosmetique.nom} entre dans ta Garde-robe.` : `Garde-robe : ${e.cosmetique.nom}.`);
 
-World.NIVEAU_EPREUVE = 5;
+World.NIVEAU_EPREUVE = 9;
 World.TOURS_EPREUVE = 8;

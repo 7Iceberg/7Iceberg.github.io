@@ -95,6 +95,9 @@ html, body {
 .ile-voiles.nuit .ile-voiles__glacis { background: linear-gradient(180deg, rgba(8, 14, 44, 0.42) 0%, rgba(8, 14, 44, 0.12) 42%, rgba(6, 10, 32, 0.3) 100%); mix-blend-mode: multiply; }
 .ile-voiles.nuit .ile-voiles__vignette { background: radial-gradient(ellipse 70% 66% at 50% 54%, rgba(0, 0, 0, 0) 40%, rgba(4, 8, 26, 0.62) 100%); }
 .ile-voiles__soir { opacity: 0; }
+.ile-voiles__zone { opacity: 0; visibility: hidden; }
+.ile-voiles__zone--lavis { background: var(--zone-lavis, transparent); mix-blend-mode: soft-light; }
+.ile-voiles__zone--bord { background: radial-gradient(ellipse 78% 72% at 50% 52%, rgba(0, 0, 0, 0) 44%, var(--zone-bord, transparent) 100%); }
 .ile-voiles.lisiere .ile-voiles__soir--glacis { background: linear-gradient(180deg, rgba(8, 14, 44, 0.42) 0%, rgba(8, 14, 44, 0.12) 42%, rgba(6, 10, 32, 0.3) 100%); mix-blend-mode: multiply; }
 .ile-voiles.lisiere .ile-voiles__soir--vignette { background: radial-gradient(ellipse 70% 66% at 50% 54%, rgba(0, 0, 0, 0) 40%, rgba(4, 8, 26, 0.62) 100%); }
 

@@ -149,7 +149,7 @@ class Combat {
   start() {
     if (this.phase !== 'placement') return;
     this.phase = 'battle';
-    this.order = this.entities.slice().sort((a, b) => b.initiative - a.initiative);
+    this.order = this.ordreDesTours();
     this.round = 1;
     this.turnIndex = -1;
     this.log('Le combat commence.', 'system');
@@ -158,6 +158,26 @@ class Combat {
     this.hook('onStart');
     this.emit('start');
     this.nextTurn();
+  }
+
+  ordreDesTours() {
+    const parInit = (a, b) => b.initiative - a.initiative;
+    if (!DATA.rules.tourAlterne) return this.entities.slice().sort(parInit);
+    const maitre = e => e.isSummon && e.owner && this.entities.includes(e.owner) ? e.owner : null;
+    const chefs = this.entities.filter(e => !maitre(e));
+    const camps = {};
+    for (const e of chefs.sort(parInit)) (camps[e.team] = camps[e.team] || []).push(e);
+    const listes = Object.values(camps).sort((a, b) => b[0].initiative - a[0].initiative);
+    const ordre = [];
+    for (let i = 0; listes.some(l => i < l.length); i++) for (const l of listes) if (i < l.length) ordre.push(l[i]);
+    for (const e of this.entities) {
+      const m = maitre(e);
+      if (!m) continue;
+      let k = ordre.indexOf(m);
+      while (k + 1 < ordre.length && maitre(ordre[k + 1]) === m) k++;
+      ordre.splice(k + 1, 0, e);
+    }
+    return ordre;
   }
 
   applyKnots() {
@@ -710,9 +730,9 @@ class Combat {
 
   rangeOf(e, s, from) {
     if (s.target === 'self' || s.range[1] < 2) return s.range;
-    let bonus = Math.max(0, e.modifier('range'));
+    let bonus = e.modifier('range');
     if (this.isAffut(e, from)) bonus += e.kit.affut.range || 0;
-    return bonus ? [s.range[0], s.range[1] + bonus] : s.range;
+    return bonus ? [s.range[0], Math.max(s.range[0], s.range[1] + bonus)] : s.range;
   }
 
   oathOn(t, by) {
@@ -742,6 +762,19 @@ class Combat {
   isArmed(e) {
     const a = e && e.kit && e.kit.armed;
     return !!a && !this.summonsOf(e).some(s => s.def.id === a.summon);
+  }
+
+  gainReserve(e, n) {
+    const k = e.kit && e.kit.reserve;
+    if (!k || !e.alive || !(n > 0)) return;
+    const avant = e.reserve || 0;
+    e.reserve = Math.min(k.max, avant + n);
+    if (e.reserve > avant) this.log(`${e.name} : ${k.nom} ${e.reserve} / ${k.max}.`, e.team);
+  }
+  bonusReserve(source, s) {
+    if (!s || !s.reserveSpend || !source) return 0;
+    const r = this.castCtx && this.castCtx.caster === source ? this.castCtx.reserve : (source.reserve || 0);
+    return s.reserveSpend * r / 100;
   }
 
   gainFury(e, n) {
@@ -922,7 +955,7 @@ class Combat {
     if (!check.ok) return check;
     const s = this.spellOf(spellId, e);
     this.busy = true;
-    const ctx = this.castCtx = { caster: e, spell: s, fury: e.fury, braise: e.braise || 0, hitFoe: false, kills: [] };
+    const ctx = this.castCtx = { caster: e, spell: s, fury: e.fury, braise: e.braise || 0, reserve: e.reserve || 0, hitFoe: false, kills: [] };
     try {
       e.pa -= s.pa;
       e.casts[spellId] = (e.casts[spellId] || 0) + 1;
@@ -930,6 +963,7 @@ class Combat {
       if (s.furySpend && e.fury > 0) { this.log(`${e.name} dépense ${e.fury} de Fureur.`, e.team); e.fury = 0; }
       if (s.braiseCost) { e.braise = Math.max(0, (e.braise || 0) - s.braiseCost); this.log(`${e.name} dépense ${s.braiseCost} de Braise.`, e.team); }
       if (s.braiseSpend && (e.braise || 0) > 0) { this.log(`${e.name} souffle ${e.braise} de Braise.`, e.team); e.braise = 0; }
+      if (s.reserveSpend && (e.reserve || 0) > 0 && e.kit && e.kit.reserve) { this.log(`${e.name} dépense ${e.reserve} de ${e.kit.reserve.nom}.`, e.team); e.reserve = 0; }
       const center = s.target === 'self' ? e.pos : { x: cell.x, y: cell.y };
       const cells = this.zoneCells(e, s, center, e.pos);
       this.log(`${e.name} lance ${s.name}.`, e.team);
@@ -974,6 +1008,7 @@ class Combat {
       for (const ef of s.selfEffects || []) this.applySelfEffect(e, ef, s);
       if (s.fury && ctx.hitFoe) this.gainFury(e, s.fury);
       if (s.braise && ctx.hitFoe) this.gainBraise(e, s.braise);
+      if (s.reserve && ctx.hitFoe) this.gainReserve(e, s.reserve);
       if (s.onKill && ctx.kills.length && e.alive) for (const ef of s.onKill) this.applySelfEffect(e, ef, s);
     } finally {
       this.busy = false;
@@ -1010,10 +1045,12 @@ class Combat {
       }
       case 'heal': {
         const fac = !source ? 1 : source.soinsPct != null ? 1 + Math.max(0, source.soinsPct) / 100 : (source.scale || 1) * source.statFactor('feu');
-        const brut = this.rand(ef.min, ef.max) * (ef.mult || 1) * fac + (source ? source.soinsFixes || 0 : 0);
+        const chance = source ? DATA.chanceCrit(source, s) : 0;
+        const critSoin = chance > 0 && this.rng() * 100 < chance;
+        const brut = this.rand(ef.min, ef.max) * (ef.mult || 1) * (critSoin ? DATA.critJetDe(s) : 1) * fac + (source ? source.soinsFixes || 0 : 0);
         const h = t.heal(Math.round(brut * (1 + (t.soinsRecus || 0) / 100)));
         this.emit('float', { x: t.x, y: t.y, text: '+' + h, color: '#6fdc8c' });
-        this.log(`${t.name} récupère ${h} PV.`);
+        this.log(`${t.name} récupère ${h} PV${critSoin ? ' (soin critique)' : ''}.`);
         if (h > 0 && source && source !== t && source.alive && source.team === t.team && source.aPassif('feu_gk')) {
           const r = source.heal(Math.round(h * 0.1));
           if (r) this.log(`${source.name} récupère ${r} PV (Foyer Vivant).`);
@@ -1080,7 +1117,7 @@ class Combat {
         this.log(`${t.name} porte un écho pendant ${turns} tour(s) : chaque PM perdu le fera résonner.`);
         break;
       case 'shield': {
-        const v = Math.round(ef.value * (source ? source.scale || 1 : 1) * (1 + (source ? source.boucliers || 0 : 0) / 100));
+        const v = Math.round(ef.value * (source ? source.scale || 1 : 1) * (1 + (source ? source.boucliers || 0 : 0) / 100) * (1 + this.bonusReserve(source, this.castCtx && this.castCtx.caster === source ? this.castCtx.spell : null)));
         t.addEffect({ type: 'shield', value: v, turns }, own);
         this.log(`${t.name} gagne un bouclier de ${v} points.`);
         break;
@@ -1108,7 +1145,7 @@ class Combat {
         break;
       case 'range':
         t.addEffect({ type: 'range', value: ef.value, turns }, own);
-        this.log(`${t.name} : +${ef.value} de portée pendant ${turns} tour(s).`);
+        this.log(`${t.name} : ${ef.value > 0 ? '+' : '−'}${Math.abs(ef.value)} de portée pendant ${turns} tour(s).`);
         break;
       case 'guard':
         t.addEffect({ type: 'guard', value: ef.value, turns }, own);
@@ -1144,7 +1181,7 @@ class Combat {
 
   dotValue(source, ef) {
     if (!source) return ef.value;
-    return Math.max(1, Math.round(ef.value * (source.scale || 1) * source.statFactor(ef.element)));
+    return Math.max(1, Math.round(ef.value * (source.scale || 1) * source.statFactor(ef.element) * this.bonusFormat(source)));
   }
 
   tackle(e) {
@@ -1169,10 +1206,10 @@ class Combat {
     if (!(max > 0)) return 1;
     if (current == null) current = t === this.actor ? t[kind] : Math.max(0, max + t.modifier(kind));
     const r = DATA.rules;
-    const K = r.removalDodgeK;
-    const base = t.team === 'player' && !t.isSummon ? r.removalDodgeBasePlayer : r.removalDodgeBase;
-    const p = base / 100 * (t.esquive(kind) + K) / ((caster ? caster.retrait(kind) : 0) + K) * Math.max(0, current) / max;
-    return Math.max(r.removalDodgeMin / 100, Math.min(r.removalDodgeMax / 100, p));
+    const retrait = Math.max(1, caster ? caster.retrait(kind) : 0), esquive = Math.max(1, t.esquive(kind));
+    const rapport = Math.min(r.retraitRapportMax || Infinity, retrait / esquive);
+    const passe = r.retraitBase / 100 * rapport * Math.max(0, current) / max;
+    return 1 - Math.max(r.retraitMin / 100, Math.min(r.retraitMax / 100, passe));
   }
 
   removalLanded(caster, t, kind, n) {
@@ -1196,6 +1233,8 @@ class Combat {
       this.emit('float', { x: t.x, y: t.y, text: 'esquive', color: '#ffffff' });
       this.log(`${t.name} esquive le retrait de ${dodged} ${kind.toUpperCase()}.`);
     }
+    const kr = caster && caster.kit && caster.kit.reserve;
+    if (landed > 0 && t.team !== caster.team && kr && kr.gain === 'retrait' && (!kr.seul || kr.seul === kind)) this.gainReserve(caster, landed * (kr.par || 1));
     if (landed > 0 && caster && caster.alive && t.team !== caster.team && caster.aPassif('eau_gk')) {
       const h = caster.heal(Math.round(caster.hpMax * 0.02 * landed));
       if (h) this.log(`${caster.name} reprend ${h} PV (Marée Haute).`);
@@ -1226,6 +1265,12 @@ class Combat {
     return Math.max(0, Math.round(base * (1 - this.resistOf(t, element) / 100)));
   }
 
+  bonusFormat(source) {
+    if (!source || source.team !== 'player') return 1;
+    const m = source.owner || source.caller;
+    return DATA.bonusFormat((m && m.level) || source.level || 1);
+  }
+
   rollDamage(source, t, element, ef, s) {
     let mult = 1 + (source ? source.modifier('power') / 100 : 0) + t.modifier('vuln') / 100;
     const oath = source ? this.oathOn(t, source) : null;
@@ -1242,6 +1287,7 @@ class Combat {
         const fury = this.castCtx && this.castCtx.caster === source ? this.castCtx.fury : source.fury;
         mult *= 1 + s.furySpend * fury / 100;
       }
+      mult *= 1 + this.bonusReserve(source, s);
       if (s.braiseSpend) {
         const braise = this.castCtx && this.castCtx.caster === source ? this.castCtx.braise : (source.braise || 0);
         mult *= 1 + s.braiseSpend * braise / 100;
@@ -1250,8 +1296,9 @@ class Combat {
     let base = this.rand(ef.min, ef.max) * (ef.mult || 1);
     this.lastCrit = false;
     if (source) {
-      let jet = base * source.statFactor(element) * (source.scale || 1);
-      if (source.crit > 0 && this.rng() * 100 < source.crit) { jet *= 1.5; this.lastCrit = true; }
+      let jet = base * source.statFactor(element) * (source.scale || 1) * this.bonusFormat(source);
+      const chance = DATA.chanceCrit(source, s);
+      if (chance > 0 && this.rng() * 100 < chance) { jet *= DATA.critJetDe(s); this.lastCrit = true; }
       base = jet + (source.dmgFlat || 0) + ((source.dmgFixe || {})[element] || 0) + (this.lastCrit ? source.dmgCrit || 0 : 0);
       if (s && s.aoe && s.aoe.shape !== 'single' && source.aPassif('terre_dk')) mult += 0.1;
     }
@@ -1260,7 +1307,7 @@ class Combat {
     if (source && !pierce && Grid.dist(source.pos, t.pos) <= 1 && t.modifier('guard') > 0) mult *= 1 - Math.min(90, t.modifier('guard')) / 100;
     if (this.isArmed(t)) mult *= 1 - t.kit.armed.reduction / 100;
     if (source && t.resteFixe && t.aPassif('terre_gk')) mult *= 0.9;
-    const avantRes = base * Math.max(0, mult) - (source && t.reduc ? t.reduc : 0);
+    const avantRes = base * Math.max(0, mult) - (source && t.reduc ? t.reduc : 0) - (source && this.lastCrit && t.resCrit ? t.resCrit : 0);
     const out = this.scaleByResist(t, element, Math.max(0, avantRes));
     if (source && this.lastCrit) {
       if (element === 'feu' && out > 0 && source.aPassif('feu_dk')) t.addEffect({ type: 'dot', element: 'feu', value: Math.max(1, Math.round(out * 0.05)), turns: 2 }, false);
@@ -1322,9 +1369,13 @@ class Combat {
       }
       if (this.castCtx && this.castCtx.caster === source && t.team !== source.team && r.dealt + r.absorbed > 0) this.castCtx.hitFoe = true;
       if (t.kit && t.kit.fury && t.alive && source.team !== t.team && dist <= 1 && r.dealt + r.absorbed > 0) this.gainFury(t, t.kit.fury.onMeleeHit || 0);
+      if (source.team !== t.team && r.dealt + r.absorbed > 0) for (const v of this.entities) {
+        const k = v.kit && v.kit.reserve;
+        if (k && k.gain === 'allie' && v.alive && v.team === t.team && Grid.dist(v.pos, t.pos) <= (k.rayon || 2)) this.gainReserve(v, k.par || 1);
+      }
       const oath = this.oathOn(source);
       if (oath && oath.burn && oath.by && oath.by.alive && t !== oath.by && t.team === oath.by.team && r.dealt > 0 && !opts.oathBurn && source.alive) {
-        this.dealDamage(oath.by, source, this.scaleByResist(source, 'feu', Math.round(oath.burn * (oath.by.scale || 1))), 'feu', { label: 'serment', oathBurn: true });
+        this.dealDamage(oath.by, source, this.scaleByResist(source, 'feu', Math.round(oath.burn * (oath.by.scale || 1) * this.bonusFormat(oath.by))), 'feu', { label: 'serment', oathBurn: true });
       }
     }
     if (t === this.player) this.hook('onDamage', t);

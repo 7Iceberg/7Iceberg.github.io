@@ -6,9 +6,9 @@ class Ile3D {
     try { const p = new URLSearchParams(location.search); q = p.get('ambiance'); qo = p.get('ombres'); } catch (e) {   }
     const d = typeof DATA === 'object' && DATA && DATA.ile ? DATA.ile : {};
     const nom = q != null ? q : d.ambiance || '';
-    let qb = null, qa = null, ql = null;
-    try { const p = new URLSearchParams(location.search); qb = p.get('bordures'); qa = p.get('arbres'); ql = p.get('lointain'); } catch (e) {   }
-    return { soir: nom === 'soir', ombres: qo !== '0', bordures: qb !== '0', arbres: qa !== '0', lointain: ql !== '0' };
+    let qb = null, qa = null, ql = null, qz = null;
+    try { const p = new URLSearchParams(location.search); qb = p.get('bordures'); qa = p.get('arbres'); ql = p.get('lointain'); qz = p.get('zones'); } catch (e) {   }
+    return { soir: nom === 'soir', ombres: qo !== '0', bordures: qb !== '0', arbres: qa !== '0', lointain: ql !== '0', zones: qz !== '0' };
   }
 
   static qualiteParDefaut() {
@@ -77,7 +77,7 @@ class Ile3D {
     const voiles = this.voiles = document.createElement('div');
     voiles.className = 'ile-voiles';
     voiles.setAttribute('aria-hidden', 'true');
-    voiles.innerHTML = '<div class="ile-voiles__glacis"></div><div class="ile-voiles__vignette"></div><div class="ile-voiles__soir ile-voiles__soir--glacis"></div><div class="ile-voiles__soir ile-voiles__soir--vignette"></div><div class="ile-voiles__grain"></div>';
+    voiles.innerHTML = '<div class="ile-voiles__glacis"></div><div class="ile-voiles__vignette"></div><div class="ile-voiles__zone ile-voiles__zone--lavis"></div><div class="ile-voiles__zone ile-voiles__zone--bord"></div><div class="ile-voiles__soir ile-voiles__soir--glacis"></div><div class="ile-voiles__soir ile-voiles__soir--vignette"></div><div class="ile-voiles__grain"></div>';
     this.stage.insertBefore(voiles, this.board);
     const r = this.renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: this.qualite === 'haute', alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: !!this.capture });
     r.outputEncoding = THREE.sRGBEncoding;
@@ -561,6 +561,7 @@ class Ile3D {
     mats.uSol.etatCases.value = this.arene.texCases;
     this.marques3D(THREE, scene);
     this.salle = { id: mapId, map: world.map, aire: S.aire, style, index };
+    this.effacerZone();
     this.T = null; this.def = null; this.plateauId = null;
     const cam = this.camera = new CameraIle({ el: this.board, def: { taille: [15, 15], camera: { champ: [10, 30], champDefaut: [18, 22] } }, terrain: null });
     this.redimensionner();
@@ -1403,6 +1404,64 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     else { const c = cam.cible; C.cible.value.set(c.x, (c.h || 0) + 1, c.y); C.rayon.value = Ile3D.SOIR.lointain.commun.percee[0]; }
   }
 
+  ambianceZone(dt, cam, tact, vol) {
+    const THREE = window.THREE, Z = Ile3D.SOIR.zones, L = this.lum;
+    if (!this.soir || !this.ambianceVoulue.zones || !Z || !this.T || !this.def || !L) return;
+    const c = cam.vise || cam.cible;
+    if (!c) return;
+    const k = this.T.regionA(c.x, c.y), reg = (this.def.regions || [])[k], id = reg && reg.zone;
+    let za = this.zoneAmb;
+    if (!za) {
+      za = this.zoneAmb = { id: null, cible: null, etat: null, base: null, ecrit: null, css: {}, c: new THREE.Color(), changements: 0 };
+    }
+    if (id && id !== za.id) {
+      za.id = id; za.changements++;
+      za.cible = Ile3D.vecteurZone(THREE, Z[id] || Z.neutre);
+      if (!za.etat) za.etat = za.cible.slice();
+    }
+    if (!za.etat) return;
+    const a = 1 - Math.exp(-Math.max(0, dt) / Ile3D.ZONE_FONDU), E = za.etat, C = za.cible;
+    for (let i = 0; i < E.length; i++) E[i] += (C[i] - E[i]) * a;
+    const lum = [L.cle, L.hemi], ecrit = za.ecrit;
+    const inchange = ecrit && lum.every((l, i) => l.intensity === ecrit[i][0] && l.color.r === ecrit[i][1] && l.color.g === ecrit[i][2]) && L.hemi.groundColor.r === ecrit[2];
+    if (inchange && za.base) {
+      lum.forEach((l, i) => { const b = za.base[i]; l.intensity = b[0]; l.color.setRGB(b[1], b[2], b[3]); });
+      L.hemi.groundColor.setRGB(za.base[2][0], za.base[2][1], za.base[2][2]);
+    } else {
+      za.base = [...lum.map(l => [l.intensity, l.color.r, l.color.g, l.color.b]), [L.hemi.groundColor.r, L.hemi.groundColor.g, L.hemi.groundColor.b]];
+    }
+    const A = this.nuit && this.nuit.amb, jour = A ? A.jour : 1, col = za.c;
+    L.cle.color.lerp(col.setRGB(E[0], E[1], E[2]), E[3] * jour); L.cle.intensity *= 1 + (E[4] - 1) * jour;
+    L.hemi.color.lerp(col.setRGB(E[5], E[6], E[7]), E[8] * jour); L.hemi.intensity *= 1 + (E[9] - 1) * jour;
+    L.hemi.groundColor.lerp(col.setRGB(E[10], E[11], E[12]), E[13] * jour);
+    za.ecrit = [...lum.map(l => [l.intensity, l.color.r, l.color.g]), L.hemi.groundColor.r];
+    za.brume = za.brume || new THREE.Color();
+    za.brume.setRGB(E[14], E[15], E[16]); za.brumeK = E[17] * (0.4 + 0.6 * jour); za.brumeF = 1 + (E[18] - 1) * (0.5 + 0.5 * jour);
+    const v = this.voiles;
+    if (!v) return;
+    const doux = (tact ? 0.25 : cam.enCombat ? 0.6 : 1) * (1 - (vol ? vol.progres : 0)) * (0.45 + 0.55 * jour);
+    const hexa = (r, g, b) => '#' + col.setRGB(r, g, b).convertLinearToSRGB().getHexString();
+    const couches = za.couches || (za.couches = [v.querySelector('.ile-voiles__zone--lavis'), v.querySelector('.ile-voiles__zone--bord')]);
+    const valeurs = [[hexa(E[19], E[20], E[21]), E[22] * doux, '--zone-lavis'], [hexa(E[23], E[24], E[25]), E[26] * doux, '--zone-bord']];
+    valeurs.forEach(([hex, op, nom], i) => {
+      const el = couches[i], css = za.css[i] || (za.css[i] = {});
+      if (!el) return;
+      if (css.hex !== hex) { css.hex = hex; v.style.setProperty(nom, hex); }
+      const o = Math.round(op * 200) / 200;
+      if (css.op !== o) { css.op = o; el.style.opacity = String(o); el.style.visibility = o > 0.004 ? 'visible' : 'hidden'; }
+    });
+  }
+
+  effacerZone() {
+    const za = this.zoneAmb, L = this.lum;
+    if (za && za.couches) for (const el of za.couches) if (el) { el.style.opacity = '0'; el.style.visibility = 'hidden'; }
+    if (za && za.base && L && L.cle && L.hemi) {
+      [L.cle, L.hemi].forEach((l, i) => { const b = za.base[i]; l.intensity = b[0]; l.color.setRGB(b[1], b[2], b[3]); });
+      L.hemi.groundColor.setRGB(za.base[2][0], za.base[2][1], za.base[2][2]);
+    }
+    this.zoneAmb = null;
+  }
+
   poserLointain(THREE, scene, LC) {
     const cfg = Object.assign({ etalonnage: Ile3D.SOIR.etalonnage }, Ile3D.SOIR.lointain.commun, LC);
     const r = IleGlb.lointain(THREE, this, cfg, Ile3D.SOIR.arbres);
@@ -1536,6 +1595,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this.meshEscarpement = null; this.meshFalaise = null; this.meshDessous = null; this.meshChute = null;
     this.marque = null; this.survol = null; this.repere = null; this.points = null; this.traces = null;
     this.salle = null;
+    this.effacerZone();
     this.directions.clear();
     if (this.camera) this.camera.terrain = null;
     this.marques = {}; this.marquesA = 0; this.brumeCle = null; this.cielHex = null;
@@ -1795,6 +1855,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       const e = this.enArene && this.combat && this.combat.player, q = e ? A.versMonde(e.rx, e.ry) : { u: p.rx, v: p.ry };
       this.nuit.maj(now, this.temps, { x: q.u, y: q.v }, this.hauteur(q.u, q.v), cam, tact || !!vol);
     }
+    this.ambianceZone(dt, cam, tact, vol);
     if (this.soir && this.monde && !this.monde.userData.etalonne) { this.etalonner(); this.preparerBordures(); }
     if (this.ombres) this.suivreOmbres(cam);
     if (!this.prechauffe) this.prechauffer(cam.courante);
@@ -1891,12 +1952,17 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     }
     const f = this.scene.fog;
     const a = 1 - Math.exp(-dt * 2.2);
-    f.color.lerp(this.brumeVoulue, a);
+    const za = this.zoneAmb && this.zoneAmb.brume ? this.zoneAmb : null;
+    f.color.lerp(za ? (this._brumeZ || (this._brumeZ = new THREE.Color())).copy(this.brumeVoulue).lerp(za.brume, za.brumeK) : this.brumeVoulue, a);
     const d = this.camera.distance(), fc = this.camera.fondu || 0;
     const ks = this.soir && !this.nuit ? Ile3D.SOIR.recul : 1;
     const kp = (this.nuit ? 0.92 : 1.1) * ks, kl = (this.nuit ? 2.0 : 2.7) * ks;
     if (f.isFogExp2) f.density = (this.nuit.densite || 0.016) * (1 - fc) + 0.0035 * fc;
     else { f.near = d * kp * (1 - fc) + (d + 30) * fc; f.far = d * kl * (1 - fc) + (d + 120) * fc; }
+    if (za && za.brumeF !== 1) {
+      const fz = 1 + (za.brumeF - 1) * (1 - fc);
+      if (f.isFogExp2) f.density *= fz; else { f.near /= fz; f.far /= fz; }
+    }
     const ri = this.camera.partIso ? this.camera.partIso() : 0;
     if (ri > 0 && f.isFogExp2) f.density = f.density * (1 - ri) + Math.min(f.density, 0.26 / d) * ri;
     const vol = this.camera.survolCarte ? this.camera.survolCarte() : null;
@@ -2142,6 +2208,20 @@ void main() { float a = texture2D(carte, vUv).a * vA;
   }
 }
 
+Ile3D.vecteurZone = (THREE, z) => {
+  const N = Ile3D.SOIR.zones.neutre, v = [], c = new THREE.Color();
+  const pris = (cle, i, d) => (z && z[cle] && z[cle][i] != null ? z[cle][i] : N[cle][i] != null ? N[cle][i] : d);
+  const coul = cle => { c.set(pris(cle, 0, '#ffffff')); v.push(c.r, c.g, c.b); };
+  coul('cle'); v.push(pris('cle', 1, 0), pris('cle', 2, 1));
+  coul('hemi'); v.push(pris('hemi', 1, 0), pris('hemi', 2, 1));
+  coul('sol'); v.push(pris('sol', 1, 0));
+  coul('brume'); v.push(pris('brume', 1, 0), pris('brume', 2, 1));
+  coul('lavis'); v.push(pris('lavis', 1, 0));
+  coul('bord'); v.push(pris('bord', 1, 0));
+  return v;
+};
+Ile3D.ZONE_FONDU = 1.1;
+
 Ile3D.SOIR = {
   lum: { hemi: ['#a9bde6', '#5c4630', 0.56], cle: ['#ffd9a6', 1.8], chaud: ['#ffb070', 0.16], contre: ['#90a8ff', 0.2] },
   elevation: 34, tour: -150, brume: 0.5, recul: 1.45, horizon: '#f2d6b4', horizonK: 0.35, zenith: '#3f78cc', zenithK: 0.25,
@@ -2172,6 +2252,23 @@ Ile3D.SOIR = {
     tronc: ['#5a4232', '#2a1d16'],
     masse: 0.62, bosse: 0.2, ecart: 0.12, coeur: 0.6, pli: 0.55,
     feuilles: { frequence: 1.8, relief: 0.55, sombre: 0.72 },
+  },
+  zones: {
+    neutre: { cle: ['#ffffff', 0, 1], hemi: ['#ffffff', 0, 1], sol: ['#000000', 0], brume: ['#ffffff', 0, 1], lavis: ['#808080', 0], bord: ['#000000', 0] },
+    ervane_mailles: { cle: ['#ffcf98', 0.25, 1.03], hemi: ['#cfc4d8', 0.15, 1], sol: ['#6b4a2c', 0.2], brume: ['#f0cc98', 0.3, 0.95], lavis: ['#ffb25c', 0.07], bord: ['#3b2412', 0.16] },
+    ervane_sources: { cle: ['#fff2d8', 0.3, 1.06], hemi: ['#a6d0ea', 0.3, 0.96], sol: ['#34503a', 0.3], brume: ['#a4d6dc', 0.4, 0.9], lavis: ['#7fe0d0', 0.06], bord: ['#10303a', 0.16] },
+    ervane_murets: { cle: ['#fff0d0', 0.3, 1.04], hemi: ['#d0d8e8', 0.25, 1], sol: ['#5e4a30', 0.25], brume: ['#e2d6b4', 0.4, 0.88], lavis: ['#ffe0a0', 0.06], bord: ['#3c2c10', 0.14] },
+    ervane_bois: { cle: ['#eef2c0', 0.35, 0.86], hemi: ['#78a094', 0.45, 0.88], sol: ['#1e2a1c', 0.4], brume: ['#6c9a8a', 0.5, 1.3], lavis: ['#2f7a5a', 0.1], bord: ['#06140e', 0.34] },
+    ervane_amarre: { cle: ['#ffd2bc', 0.3, 0.96], hemi: ['#aea2d6', 0.4, 1], sol: ['#3a2a40', 0.35], brume: ['#a294c0', 0.45, 1.12], lavis: ['#9a70d0', 0.08], bord: ['#160c26', 0.26] },
+    orsane_cimes: { cle: ['#fff0d8', 0.35, 1.04], hemi: ['#c4d4f0', 0.3, 1.1], sol: ['#6a5a48', 0.2], brume: ['#d0dcea', 0.4, 0.85], lavis: ['#fff2d8', 0.06], bord: ['#1a2238', 0.12] },
+    orsane_clairieres: { cle: ['#ffe0a0', 0.3, 1.08], hemi: ['#bcd8b0', 0.3, 1.05], sol: ['#4a5a2a', 0.3], brume: ['#c8dca8', 0.4, 0.9], lavis: ['#d8ff70', 0.08], bord: ['#1c2a0c', 0.16] },
+    orsane_sentiers: { cle: ['#fff4e6', 0.3, 1], hemi: ['#a8bce0', 0.35, 1], sol: ['#4a4a50', 0.3], brume: ['#a8b8d6', 0.45, 1], lavis: ['#a0c0ff', 0.06], bord: ['#141c30', 0.2] },
+    orsane_toiles: { cle: ['#e4d4ee', 0.3, 0.94], hemi: ['#9a94b8', 0.35, 0.96], sol: ['#241c2a', 0.3], brume: ['#8e86a8', 0.45, 1.15], lavis: ['#6a4a90', 0.06], bord: ['#0c0816', 0.28] },
+    orsane_eboulis: { cle: ['#ffe2b8', 0.35, 1.02], hemi: ['#c8c0b0', 0.35, 1], sol: ['#5a4a38', 0.3], brume: ['#c8b8a0', 0.45, 1.1], lavis: ['#ffd8a0', 0.07], bord: ['#2a1e12', 0.2] },
+    kaldum_ville: { cle: ['#ffb070', 0.45, 0.96], hemi: ['#b09080', 0.45, 0.9], sol: ['#3a1c10', 0.45], brume: ['#a07860', 0.5, 1.15], lavis: ['#ff8a3a', 0.12], bord: ['#1c0804', 0.36] },
+    kaldum_galeries: { cle: ['#ffb880', 0.4, 0.82], hemi: ['#8a7a78', 0.5, 0.82], sol: ['#20140e', 0.5], brume: ['#6e605a', 0.55, 1.3], lavis: ['#ff9a50', 0.08], bord: ['#0c0604', 0.46] },
+    kaldum_vapeurs: { cle: ['#fff0c8', 0.35, 0.96], hemi: ['#d0c8b0', 0.45, 1.05], sol: ['#4a4436', 0.35], brume: ['#c8c0a8', 0.6, 1.5], lavis: ['#f0e0a0', 0.1], bord: ['#262014', 0.24] },
+    kaldum_fonderie: { cle: ['#ff9a60', 0.4, 1], hemi: ['#a07870', 0.4, 0.9], sol: ['#4a1408', 0.4], brume: ['#9a5c48', 0.45, 1.15], lavis: ['#ff6a30', 0.08], bord: ['#200402', 0.36] },
   },
   etalonnage: { vert: [0.15, 0.47], vertTeinte: 0.3, vertVers: 0.45, vertSat: 1.3, vertLum: 0.76, pierreTeinte: 0.09, pierreSat: 0.07, pierreLum: 1.04, terreSat: 1.08, terreLum: 1.05 },
 };

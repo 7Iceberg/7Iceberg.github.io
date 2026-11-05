@@ -18,12 +18,12 @@ ACH.push({ id: 'dissipeur_de_fumerolles', name: 'Dissipeur de Fumerolles', desc:
 ACH.push({ id: 'emousseur_de_pioches', name: 'Émousseur de Pioches', desc: 'Vaincre vingt-cinq Pioches-Vives.', cond: { type: 'kills', monster: 'pioche_vive', count: 25 }, rewards: { xp: 1000, fils: 150 } });
 ACH.push({ id: 'eteigneur_de_cendrous', name: 'Éteigneur de Cendrous', desc: 'Vaincre vingt-cinq Cendrous.', cond: { type: 'kills', monster: 'cendrou', count: 25 }, rewards: { xp: 1100, fils: 170 } });
 
-ACH.push({ id: 'niveau_5', name: 'Pied ferme', desc: 'Atteindre le niveau 5.', cond: { type: 'level', level: 5 }, rewards: { xp: 80, fils: 20 } });
-ACH.push({ id: 'niveau_10', name: 'Sur les Sentiers', desc: 'Atteindre le niveau 10.', cond: { type: 'level', level: 10 }, rewards: { xp: 200, fils: 50, cosmetique: 'emote_defi' } });
-ACH.push({ id: 'niveau_15', name: 'Entre les Toiles', desc: 'Atteindre le niveau 15.', cond: { type: 'level', level: 15 }, rewards: { xp: 400, fils: 80 } });
-ACH.push({ id: 'niveau_20', name: 'Veilleur des Cimes', desc: 'Atteindre le niveau 20. Orsane est derrière toi.', cond: { type: 'level', level: 20 }, rewards: { xp: 700, fils: 150, title: 'Veilleur des Cimes' } });
-ACH.push({ id: 'niveau_25', name: 'Dans la roche chaude', desc: 'Atteindre le niveau 25.', cond: { type: 'level', level: 25 }, rewards: { xp: 1000, fils: 200 } });
-ACH.push({ id: 'niveau_30', name: 'Trempé à la forge', desc: 'Atteindre le niveau 30.', cond: { type: 'level', level: 30 }, rewards: { xp: 1500, fils: 300, title: 'Forgé à Kaldum' } });
+ACH.push({ id: 'niveau_5', name: 'Pied ferme', desc: 'Atteindre le niveau 10.', cond: { type: 'level', level: 10 }, rewards: { xp: 80, fils: 20 } });
+ACH.push({ id: 'niveau_10', name: 'Sur les Sentiers', desc: 'Atteindre le niveau 20.', cond: { type: 'level', level: 20 }, rewards: { xp: 200, fils: 50, cosmetique: 'emote_defi' } });
+ACH.push({ id: 'niveau_15', name: 'Entre les Toiles', desc: 'Atteindre le niveau 30.', cond: { type: 'level', level: 30 }, rewards: { xp: 400, fils: 80 } });
+ACH.push({ id: 'niveau_20', name: 'Veilleur des Cimes', desc: 'Atteindre le niveau 40. Orsane est derrière toi.', cond: { type: 'level', level: 40 }, rewards: { xp: 700, fils: 150, title: 'Veilleur des Cimes' } });
+ACH.push({ id: 'niveau_25', name: 'Dans la roche chaude', desc: 'Atteindre le niveau 50.', cond: { type: 'level', level: 50 }, rewards: { xp: 1000, fils: 200 } });
+ACH.push({ id: 'niveau_30', name: 'Trempé à la forge', desc: 'Atteindre le niveau 60.', cond: { type: 'level', level: 60 }, rewards: { xp: 1500, fils: 300, title: 'Forgé à Kaldum' } });
 
 ACH.push({ id: 'donjon_grenier', name: 'Tout le monde descend du grenier', desc: 'Terminer le Grenier des Glyms.', cond: { type: 'dungeon', dungeon: 'grenier_des_pilous' }, rewards: { xp: 150, fils: 30 } });
 ACH.push({ id: 'defi_grenier', name: 'Bonk', desc: 'Faire lâcher sa lanterne au Glym Chapardeur trois fois, en le frappant au contact.', cond: { type: 'feat', key: 'lanterne_reprise', count: 3 }, rewards: { xp: 200, fils: 40, title: 'Repreneur de lanternes' } });

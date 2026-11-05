@@ -161,7 +161,7 @@
   });
 
   C.sets.push({
-    id: 'pilou', name: 'Panoplie du Glym', family: ['pilou'], level: 3,
+    id: 'pilou', name: 'Panoplie du Glym', family: ['pilou'], level: 5,
     profile: { agi: 50, vita: 30, sagesse: 20 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_pilou', name: 'Coiffe du Glym', lore: 'Une couronne de plumes bleues. De loin, les Glyms la prennent pour un des leurs.' },
@@ -175,7 +175,7 @@
   });
 
   C.sets.push({
-    id: 'grouk', name: 'Panoplie du Grouk', family: ['grouk'], level: 6,
+    id: 'grouk', name: 'Panoplie du Grouk', family: ['grouk'], level: 11,
     profile: { force: 50, vita: 40, sagesse: 10 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_grouk', name: 'Coiffe du Grouk', lore: 'Deux cornes sur un casque de cuir. Baisser la tête devient une stratégie.' },
@@ -189,7 +189,7 @@
   });
 
   C.sets.push({
-    id: 'tissefil', name: 'Panoplie du Tissefil', family: ['tissefil'], level: 9,
+    id: 'tissefil', name: 'Panoplie du Tissefil', family: ['tissefil'], level: 17,
     profile: { intel: 50, sagesse: 30, vita: 20 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_tissefil', name: 'Coiffe du Tissefil', lore: 'Un voile de soie qui couvre les yeux sans gêner la vue. Personne ne sait comment.' },
@@ -204,7 +204,7 @@
   });
 
   C.sets.push({
-    id: 'veilloche', name: 'Panoplie de la Veilloche', family: ['veilloche'], level: 12,
+    id: 'veilloche', name: 'Panoplie de la Veilloche', family: ['veilloche'], level: 23,
     profile: { intel: 45, sagesse: 35, vita: 20 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_veilloche', name: 'Coiffe de la Veilloche', lore: 'Une mèche y brûle sans flamme. Pratique pour lire la nuit, moins pour se cacher.' },
@@ -218,7 +218,7 @@
   });
 
   C.sets.push({
-    id: 'brimbe', name: 'Panoplie de la Brimbe', family: ['brimbe'], level: 14,
+    id: 'brimbe', name: 'Panoplie de la Brimbe', family: ['brimbe'], level: 27,
     profile: { chance: 40, agi: 35, vita: 25 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_brimbe', name: 'Coiffe de la Brimbe', lore: 'Un casque d\'écailles avec un œil de Brimbe serti au front. Il regarde où vous ne regardez pas.' },
@@ -232,7 +232,7 @@
   });
 
   C.sets.push({
-    id: 'grand_grouk', name: 'Panoplie du Grand Grouk', family: ['grand_grouk'], level: 18,
+    id: 'grand_grouk', name: 'Panoplie du Grand Grouk', family: ['grand_grouk'], level: 35,
     profile: { force: 30, chance: 20, vita: 35, sagesse: 15 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_grand_grouk', name: 'Coiffe du Grand Grouk', lore: 'Les deux grands crocs encadrent le visage. On a l\'air redoutable, et un peu idiot.' },
@@ -247,7 +247,7 @@
   });
 
   C.sets.push({
-    id: 'molh', name: 'Panoplie du Molh', family: ['molh'], level: 21,
+    id: 'molh', name: 'Panoplie du Molh', family: ['molh'], level: 41,
     profile: { force: 30, intel: 20, vita: 40, sagesse: 10 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_molh', name: 'Coiffe du Molh', lore: 'Un bloc de pierre creusé à la mesure du crâne. Rien ne passe au travers, pas même les idées.' },
@@ -261,7 +261,7 @@
   });
 
   C.sets.push({
-    id: 'kaldrik', name: 'Panoplie du Rakthul', family: ['kaldrik'], level: 23,
+    id: 'kaldrik', name: 'Panoplie du Rakthul', family: ['kaldrik'], level: 45,
     profile: { force: 35, intel: 35, vita: 30 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_kaldrik', name: 'Coiffe du Rakthul', lore: 'Un heaume de scorie. Il tient chaud en hiver et trop chaud le reste du temps.' },
@@ -275,7 +275,7 @@
   });
 
   C.sets.push({
-    id: 'fumerolle', name: 'Panoplie de la Fumerolle', family: ['fumerolle'], level: 25,
+    id: 'fumerolle', name: 'Panoplie de la Fumerolle', family: ['fumerolle'], level: 49,
     profile: { intel: 30, chance: 30, agi: 15, vita: 25 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_fumerolle', name: 'Coiffe de la Fumerolle', lore: 'Un voile de vapeur qui ne retombe jamais. Les contours du visage se brouillent.' },
@@ -289,7 +289,7 @@
   });
 
   C.sets.push({
-    id: 'pioche_vive', name: 'Panoplie de la Pioche-Vive', family: ['pioche_vive'], level: 27,
+    id: 'pioche_vive', name: 'Panoplie de la Pioche-Vive', family: ['pioche_vive'], level: 53,
     profile: { agi: 45, force: 30, vita: 25 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_pioche_vive', name: 'Coiffe de la Pioche-Vive', lore: 'Un casque de fer vif. Il frémit quand une veine de métal passe à portée.' },
@@ -304,7 +304,7 @@
   });
 
   C.sets.push({
-    id: 'cendrou', name: 'Panoplie du Cendrou', family: ['cendrou'], level: 29,
+    id: 'cendrou', name: 'Panoplie du Cendrou', family: ['cendrou'], level: 57,
     profile: { intel: 50, sagesse: 25, vita: 25 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_cendrou', name: 'Coiffe du Cendrou', lore: 'Un casque de charbon dense. On en sort les cheveux gris, mais l\'esprit vif.' },
@@ -318,7 +318,7 @@
   });
 
   C.sets.push({
-    id: 'dorm', name: 'Panoplie de Dorm', family: ['dorm'], level: 30,
+    id: 'dorm', name: 'Panoplie de Dorm', family: ['dorm'], level: 59,
     profile: { force: 35, vita: 30, intel: 25, sagesse: 10 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_dorm', name: 'Coiffe de Dorm', lore: 'Un heaume de forgeron, noir de suie. Il a vu des siècles de feu et n\'en parle à personne.' },
@@ -334,145 +334,145 @@
 
 
   C.items.push(
-    { id: 'capuche_de_soie', name: 'Capuche de Soie', slot: 'coiffe', level: 11, profile: { chance: 50, agi: 30, vita: 20 }, source: 'craft',
+    { id: 'capuche_de_soie', name: 'Capuche de Soie', slot: 'coiffe', level: 21, profile: { chance: 50, agi: 30, vita: 20 }, source: 'craft',
       lore: 'Légère et glissante ; les coups passent à côté, les regards aussi.' },
-    { id: 'heaume_de_calcaire', name: 'Heaume de Calcaire', slot: 'coiffe', level: 16, profile: { vita: 50, force: 30, sagesse: 20 }, source: 'craft',
+    { id: 'heaume_de_calcaire', name: 'Heaume de Calcaire', slot: 'coiffe', level: 31, profile: { vita: 50, force: 30, sagesse: 20 }, source: 'craft',
       lore: 'Taillé dans la pierre blanche des Cimes. Lourd, mais rien ne le traverse.' },
-    { id: 'capuche_de_lichen', name: 'Capuche de Lichen', slot: 'coiffe', level: 20, profile: { chance: 50, sagesse: 30, vita: 20 }, source: 'craft',
+    { id: 'capuche_de_lichen', name: 'Capuche de Lichen', slot: 'coiffe', level: 39, profile: { chance: 50, sagesse: 30, vita: 20 }, source: 'craft',
       lore: 'Du lichen de scorie tressé sur de la mousse. Elle pousse encore, et elle porte chance, dit le cordonnier qui ne la fait pas.' },
-    { id: 'couronne_de_braise', name: 'Couronne de Braise', slot: 'coiffe', level: 24, profile: { intel: 60, sagesse: 20, vita: 20 }, source: 'craft',
+    { id: 'couronne_de_braise', name: 'Couronne de Braise', slot: 'coiffe', level: 47, profile: { intel: 60, sagesse: 20, vita: 20 }, source: 'craft',
       lore: 'Un cercle de scorie où brûle une braise. Les idées viennent chaudes.' },
-    { id: 'casque_de_fer_vif', name: 'Casque de Fer Vif', slot: 'coiffe', level: 28, profile: { agi: 50, chance: 30, vita: 20 }, source: 'drop', from: 'pioche_vive',
+    { id: 'casque_de_fer_vif', name: 'Casque de Fer Vif', slot: 'coiffe', level: 55, profile: { agi: 50, chance: 30, vita: 20 }, source: 'drop', from: 'pioche_vive',
       lore: 'Il frémit avant chaque coup, un quart de seconde avant vous.' },
 
-    { id: 'cape_de_plumes', name: 'Cape de Plumes', slot: 'cape', level: 4, profile: { agi: 60, vita: 40 }, source: 'craft',
+    { id: 'cape_de_plumes', name: 'Cape de Plumes', slot: 'cape', level: 7, profile: { agi: 60, vita: 40 }, source: 'craft',
       lore: 'Mille plumes de Glym. Elle ne fait pas voler, mais elle fait croire.' },
-    { id: 'voile_d_oreth', name: 'Manteau d\'Oreth', slot: 'cape', level: 12, profile: { agi: 45, sagesse: 35, vita: 20 }, source: 'craft',
+    { id: 'voile_d_oreth', name: 'Manteau d\'Oreth', slot: 'cape', level: 23, profile: { agi: 45, sagesse: 35, vita: 20 }, source: 'craft',
       lore: 'Un brin d\'Oreth tissé dans des plumes de Kavou. Il luit au crépuscule, et tout le monde demande où on l\'a trouvé.' },
-    { id: 'manteau_de_cuir', name: 'Manteau de Cuir', slot: 'cape', level: 8, profile: { vita: 50, force: 50 }, source: 'craft',
+    { id: 'manteau_de_cuir', name: 'Manteau de Cuir', slot: 'cape', level: 15, profile: { vita: 50, force: 50 }, source: 'craft',
       lore: 'Du cuir de Grouk cousu double. Il protège, il pèse, il sent le Grouk.' },
-    { id: 'voile_de_cire', name: 'Manteau de Cire', slot: 'cape', level: 13, profile: { sagesse: 60, vita: 40 }, source: 'craft',
+    { id: 'voile_de_cire', name: 'Manteau de Cire', slot: 'cape', level: 25, profile: { sagesse: 60, vita: 40 }, source: 'craft',
       lore: 'Un voile tiède qui sent la bougie ; on apprend plus vite dessous.' },
-    { id: 'cape_d_ecailles', name: 'Cape d\'Écailles', slot: 'cape', level: 17, profile: { chance: 50, force: 30, vita: 20 }, source: 'craft',
+    { id: 'cape_d_ecailles', name: 'Cape d\'Écailles', slot: 'cape', level: 33, profile: { chance: 50, force: 30, vita: 20 }, source: 'craft',
       lore: 'Des écailles de Brimbe sur du cuir. Elle cliquette quand on court.' },
-    { id: 'manteau_de_scorie', name: 'Manteau de Scorie', slot: 'cape', level: 22, profile: { force: 40, intel: 40, vita: 20 }, source: 'craft',
+    { id: 'manteau_de_scorie', name: 'Manteau de Scorie', slot: 'cape', level: 43, profile: { force: 40, intel: 40, vita: 20 }, source: 'craft',
       lore: 'Souple comme du cuir, chaud comme une forge. À éviter en été.' },
-    { id: 'cape_de_suie', name: 'Cape de Suie', slot: 'cape', level: 26, profile: { agi: 50, intel: 30, vita: 20 }, source: 'drop', from: 'fumerolle',
+    { id: 'cape_de_suie', name: 'Cape de Suie', slot: 'cape', level: 51, profile: { agi: 50, intel: 30, vita: 20 }, source: 'drop', from: 'fumerolle',
       lore: 'Noire et légère ; elle tache tout, sauf la réputation.' },
 
-    { id: 'amulette_de_bec', name: 'Amulette de Bec', slot: 'amulette', level: 5, profile: { agi: 50, chance: 30, vita: 20 }, source: 'craft',
+    { id: 'amulette_de_bec', name: 'Amulette de Bec', slot: 'amulette', level: 9, profile: { agi: 50, chance: 30, vita: 20 }, source: 'craft',
       lore: 'Un bec de Glym sur une ficelle. Il pointe toujours vers le prochain repas.' },
-    { id: 'pendentif_de_meche', name: 'Pendentif de Mèche', slot: 'amulette', level: 10, profile: { intel: 50, sagesse: 50 }, source: 'craft',
+    { id: 'pendentif_de_meche', name: 'Pendentif de Mèche', slot: 'amulette', level: 19, profile: { intel: 50, sagesse: 50 }, source: 'craft',
       lore: 'Une mèche de Veilloche dans un écrin de cire. Elle éclaire le dedans.' },
-    { id: 'amulette_de_galet', name: 'Amulette de Galet', slot: 'amulette', level: 15, profile: { force: 50, chance: 50 }, source: 'craft',
+    { id: 'amulette_de_galet', name: 'Amulette de Galet', slot: 'amulette', level: 29, profile: { force: 50, chance: 50 }, source: 'craft',
       lore: 'Un galet de Brimbe poli par des années de lancers. Il connaît la trajectoire.' },
-    { id: 'collier_de_mousse', name: 'Collier de Mousse', slot: 'amulette', level: 20, profile: { vita: 60, sagesse: 40 }, source: 'craft',
+    { id: 'collier_de_mousse', name: 'Collier de Mousse', slot: 'amulette', level: 39, profile: { vita: 60, sagesse: 40 }, source: 'craft',
       lore: 'De la mousse de Molh tressée. Elle pousse encore un peu, doucement.' },
-    { id: 'amulette_du_col', name: 'Amulette du Col', slot: 'amulette', level: 24, profile: { force: 45, vita: 40, sagesse: 15 }, source: 'craft',
+    { id: 'amulette_du_col', name: 'Amulette du Col', slot: 'amulette', level: 47, profile: { force: 45, vita: 40, sagesse: 15 }, source: 'craft',
       lore: 'Un éclat du cœur de Korvath serti dans de la glaise cuite. Lourde, et celui qui la porte ne recule plus.' },
-    { id: 'amulette_de_vapeur', name: 'Amulette de Vapeur', slot: 'amulette', level: 25, profile: { intel: 50, agi: 50 }, source: 'craft',
+    { id: 'amulette_de_vapeur', name: 'Amulette de Vapeur', slot: 'amulette', level: 49, profile: { intel: 50, agi: 50 }, source: 'craft',
       lore: 'Une fiole de vapeur de Fumerolle. Elle tourne, et vous aussi.' },
-    { id: 'collier_de_noyau', name: 'Collier de Noyau', slot: 'amulette', level: 29, profile: { chance: 50, intel: 30, vita: 20 }, source: 'drop', from: 'cendrou',
+    { id: 'collier_de_noyau', name: 'Collier de Noyau', slot: 'amulette', level: 57, profile: { chance: 50, intel: 30, vita: 20 }, source: 'drop', from: 'cendrou',
       lore: 'Un noyau de Cendrou serti de fer. Il chauffe quand la chance tourne.' },
 
-    { id: 'anneau_de_corne', name: 'Anneau de Corne', slot: 'anneau', level: 6, profile: { force: 70, vita: 30 }, source: 'craft',
+    { id: 'anneau_de_corne', name: 'Anneau de Corne', slot: 'anneau', level: 11, profile: { force: 70, vita: 30 }, source: 'craft',
       lore: 'Un bout de corne de Grouk, évidé et poli. On serre le poing plus fort.' },
-    { id: 'anneau_de_veille', name: 'Anneau de Veille', slot: 'anneau', level: 8, profile: { intel: 70, vita: 30 }, source: 'craft',
+    { id: 'anneau_de_veille', name: 'Anneau de Veille', slot: 'anneau', level: 15, profile: { intel: 70, vita: 30 }, source: 'craft',
       lore: 'De la cire durcie autour d\'un brin d\'herbe de veille. Il réchauffe les sorts.' },
-    { id: 'anneau_de_venin', name: 'Anneau de Venin', slot: 'anneau', level: 11, profile: { chance: 60, agi: 40 }, source: 'craft',
+    { id: 'anneau_de_venin', name: 'Anneau de Venin', slot: 'anneau', level: 21, profile: { chance: 60, agi: 40 }, source: 'craft',
       lore: 'Une goutte de venin sous verre. Elle n\'engourdit que les adversaires, en principe.' },
-    { id: 'anneau_de_calcaire', name: 'Anneau de Calcaire', slot: 'anneau', level: 17, profile: { vita: 50, sagesse: 50 }, source: 'craft',
+    { id: 'anneau_de_calcaire', name: 'Anneau de Calcaire', slot: 'anneau', level: 33, profile: { vita: 50, sagesse: 50 }, source: 'craft',
       lore: 'Taillé dans la pierre blanche. Il rappelle qu\'il faut tenir, et apprendre.' },
-    { id: 'anneau_de_poing', name: 'Anneau de Poing', slot: 'anneau', level: 23, profile: { force: 60, intel: 40 }, source: 'craft',
+    { id: 'anneau_de_poing', name: 'Anneau de Poing', slot: 'anneau', level: 45, profile: { force: 60, intel: 40 }, source: 'craft',
       lore: 'Forgé dans un poing de Rakthul. Il n\'a jamais appris à s\'ouvrir.' },
-    { id: 'anneau_de_lichen', name: 'Anneau de Lichen', slot: 'anneau', level: 27, profile: { chance: 50, force: 50 }, source: 'craft',
+    { id: 'anneau_de_lichen', name: 'Anneau de Lichen', slot: 'anneau', level: 53, profile: { chance: 50, force: 50 }, source: 'craft',
       lore: 'Du lichen de scorie pris dans le basalte. Ça pousse sur tout, même sur la chance.' },
-    { id: 'anneau_d_etincelle', name: 'Anneau d\'Étincelle', slot: 'anneau', level: 30, profile: { agi: 50, intel: 50 }, source: 'drop', from: 'pioche_vive',
+    { id: 'anneau_d_etincelle', name: 'Anneau d\'Étincelle', slot: 'anneau', level: 59, profile: { agi: 50, intel: 50 }, source: 'drop', from: 'pioche_vive',
       lore: 'Une étincelle de Pioche-Vive court tout autour. Elle ne s\'arrête jamais.' },
 
-    { id: 'ceinture_de_plume', name: 'Ceinture de Plume', slot: 'ceinture', level: 3, profile: { agi: 60, vita: 40 }, source: 'craft',
+    { id: 'ceinture_de_plume', name: 'Ceinture de Plume', slot: 'ceinture', level: 5, profile: { agi: 60, vita: 40 }, source: 'craft',
       lore: 'Des plumes tressées sur une ficelle. Elle tient, et elle allège.' },
-    { id: 'ceinture_de_cire', name: 'Ceinture de Cire', slot: 'ceinture', level: 12, profile: { sagesse: 50, intel: 30, vita: 20 }, source: 'craft',
+    { id: 'ceinture_de_cire', name: 'Ceinture de Cire', slot: 'ceinture', level: 23, profile: { sagesse: 50, intel: 30, vita: 20 }, source: 'craft',
       lore: 'Souple à la chaleur du corps. Elle apprend la forme de celui qui la porte.' },
-    { id: 'ceinture_de_cuir_epais', name: 'Ceinture de Cuir Épais', slot: 'ceinture', level: 19, profile: { vita: 60, force: 40 }, source: 'craft',
+    { id: 'ceinture_de_cuir_epais', name: 'Ceinture de Cuir Épais', slot: 'ceinture', level: 37, profile: { vita: 60, force: 40 }, source: 'craft',
       lore: 'Trois épaisseurs de cuir de Grouk. Elle tient le ventre et le reste.' },
-    { id: 'ceinture_de_suie', name: 'Ceinture de Suie', slot: 'ceinture', level: 26, profile: { chance: 50, agi: 50 }, source: 'craft',
+    { id: 'ceinture_de_suie', name: 'Ceinture de Suie', slot: 'ceinture', level: 51, profile: { chance: 50, agi: 50 }, source: 'craft',
       lore: 'Noire, légère, elle glisse d\'un côté à l\'autre, comme sa Fumerolle.' },
-    { id: 'ceinture_de_charbon', name: 'Ceinture de Charbon', slot: 'ceinture', level: 29, profile: { intel: 50, vita: 50 }, source: 'craft',
+    { id: 'ceinture_de_charbon', name: 'Ceinture de Charbon', slot: 'ceinture', level: 57, profile: { intel: 50, vita: 50 }, source: 'craft',
       lore: 'Des blocs de charbon montés sur cuir. Elle tient chaud trois jours de suite.' },
 
-    { id: 'sandales_de_duvet', name: 'Sandales de Duvet', slot: 'bottes', level: 2, profile: { agi: 50, vita: 50 }, source: 'craft',
+    { id: 'sandales_de_duvet', name: 'Sandales de Duvet', slot: 'bottes', level: 3, profile: { agi: 50, vita: 50 }, source: 'craft',
       lore: 'Du duvet et de la ficelle. On marche sur un nuage qui aurait des trous.' },
-    { id: 'bottes_de_cuir', name: 'Bottes de Cuir', slot: 'bottes', level: 7, profile: { force: 50, vita: 50 }, source: 'drop', from: 'grouk',
+    { id: 'bottes_de_cuir', name: 'Bottes de Cuir', slot: 'bottes', level: 13, profile: { force: 50, vita: 50 }, source: 'drop', from: 'grouk',
       lore: 'Des bottes de Grouk, enfin, de cuir de Grouk. Elles chargent presque toutes seules.' },
-    { id: 'bottes_de_soie', name: 'Bottes de Soie', slot: 'bottes', level: 12, profile: { chance: 60, agi: 40 }, source: 'craft',
+    { id: 'bottes_de_soie', name: 'Bottes de Soie', slot: 'bottes', level: 23, profile: { chance: 60, agi: 40 }, source: 'craft',
       lore: 'Si fines qu\'on sent les cailloux. Si légères qu\'on ne les sent pas longtemps.' },
-    { id: 'bottes_de_basalte', name: 'Bottes de Basalte', slot: 'bottes', level: 21, profile: { force: 50, vita: 50 }, source: 'craft',
+    { id: 'bottes_de_basalte', name: 'Bottes de Basalte', slot: 'bottes', level: 41, profile: { force: 50, vita: 50 }, source: 'craft',
       lore: 'Semelles de roche noire. Chaque pas est un argument.' },
-    { id: 'bottes_de_fer_vif', name: 'Bottes de Fer Vif', slot: 'bottes', level: 28, profile: { agi: 60, chance: 40 }, source: 'craft',
+    { id: 'bottes_de_fer_vif', name: 'Bottes de Fer Vif', slot: 'bottes', level: 55, profile: { agi: 60, chance: 40 }, source: 'craft',
       lore: 'Le fer frémit à chaque pas et vous pousse en avant. Difficile de rester en place.' },
   );
 
 
   C.weapons.push(
-    { id: 'lame_de_cime', name: 'Lame de Cime', type: 'epee', level: 3, element: 'air', profile: { agi: 60, vita: 40 }, source: 'craft',
+    { id: 'lame_de_cime', name: 'Lame de Cime', type: 'epee', level: 5, element: 'air', profile: { agi: 60, vita: 40 }, source: 'craft',
       lore: 'Une lame de bois de cime durcie au feu. Elle siffle plus qu\'elle ne coupe, mais elle siffle bien.' },
-    { id: 'lame_de_galet', name: 'Lame de Galet', type: 'epee', level: 14, element: 'terre', profile: { force: 60, vita: 40 }, source: 'craft',
+    { id: 'lame_de_galet', name: 'Lame de Galet', type: 'epee', level: 27, element: 'terre', profile: { force: 60, vita: 40 }, source: 'craft',
       lore: 'Du galet de Brimbe taillé en tranchant. Lourde, nette, sans surprise.' },
-    { id: 'lame_de_scorie', name: 'Lame de Scorie', type: 'epee', level: 26, element: 'feu', profile: { intel: 50, force: 30, vita: 20 }, source: 'craft',
+    { id: 'lame_de_scorie', name: 'Lame de Scorie', type: 'epee', level: 51, element: 'feu', profile: { intel: 50, force: 30, vita: 20 }, source: 'craft',
       lore: 'Forgée dans la scorie de Rakthul ; le tranchant reste chaud toute la journée.' },
 
-    { id: 'dagues_de_bec', name: 'Dagues de Bec', type: 'dague', level: 2, element: 'air', profile: { agi: 70, vita: 30 }, source: 'drop', from: 'pilou',
+    { id: 'dagues_de_bec', name: 'Dagues de Bec', type: 'dague', level: 3, element: 'air', profile: { agi: 70, vita: 30 }, source: 'drop', from: 'pilou',
       lore: 'Deux becs de Glym sur des manches de bois. Elles pincent deux fois.' },
-    { id: 'dagues_de_venin', name: 'Dagues de Venin', type: 'dague', level: 13, element: 'eau', profile: { chance: 60, agi: 40 }, source: 'craft',
+    { id: 'dagues_de_venin', name: 'Dagues de Venin', type: 'dague', level: 25, element: 'eau', profile: { chance: 60, agi: 40 }, source: 'craft',
       lore: 'Trempées dans le venin de Tissefil. La première engourdit, la seconde décide.' },
-    { id: 'dagues_de_suie', name: 'Dagues de Suie', type: 'dague', level: 25, element: 'feu', profile: { intel: 50, agi: 50 }, source: 'drop', from: 'fumerolle',
+    { id: 'dagues_de_suie', name: 'Dagues de Suie', type: 'dague', level: 49, element: 'feu', profile: { intel: 50, agi: 50 }, source: 'drop', from: 'fumerolle',
       lore: 'On ne les voit pas venir, et après, on ne voit plus grand-chose.' },
 
-    { id: 'arc_de_cime', name: 'Arc de Cime', type: 'arc', level: 4, element: 'air', profile: { agi: 60, vita: 40 }, source: 'craft',
+    { id: 'arc_de_cime', name: 'Arc de Cime', type: 'arc', level: 7, element: 'air', profile: { agi: 60, vita: 40 }, source: 'craft',
       lore: 'Bois de cime et corde de plumes tressées. Il tire droit si on le laisse faire.' },
-    { id: 'arc_de_corne', name: 'Arc de Corne', type: 'arc', level: 15, element: 'terre', profile: { force: 60, agi: 40 }, source: 'craft',
+    { id: 'arc_de_corne', name: 'Arc de Corne', type: 'arc', level: 29, element: 'terre', profile: { force: 60, agi: 40 }, source: 'craft',
       lore: 'Deux cornes de Grouk pour les branches. Il faut des bras, puis ça part loin.' },
-    { id: 'arc_de_vapeur', name: 'Arc de Vapeur', type: 'arc', level: 22, element: 'air', profile: { agi: 60, vita: 40 }, source: 'craft',
+    { id: 'arc_de_vapeur', name: 'Arc de Vapeur', type: 'arc', level: 43, element: 'air', profile: { agi: 60, vita: 40 }, source: 'craft',
       lore: 'La corde est un fil de vapeur tenu par deux crochets de cuivre. Elle siffle avant que la flèche parte.' },
-    { id: 'arc_de_fer_vif', name: 'Arc de Fer Vif', type: 'arc', level: 27, element: 'eau', profile: { chance: 60, agi: 40 }, source: 'craft',
+    { id: 'arc_de_fer_vif', name: 'Arc de Fer Vif', type: 'arc', level: 53, element: 'eau', profile: { chance: 60, agi: 40 }, source: 'craft',
       lore: 'Le fer vif tend la corde tout seul. L\'archer n\'a plus qu\'à viser, et parfois pas.' },
 
-    { id: 'baguette_de_duvet', name: 'Baguette de Duvet', type: 'baguette', level: 3, element: 'eau', profile: { chance: 60, vita: 40 }, source: 'craft',
+    { id: 'baguette_de_duvet', name: 'Baguette de Duvet', type: 'baguette', level: 5, element: 'eau', profile: { chance: 60, vita: 40 }, source: 'craft',
       lore: 'Une tige de bois de cime emplumée de duvet. Les premiers sorts partent de là.' },
-    { id: 'baguette_de_meche', name: 'Baguette de Mèche', type: 'baguette', level: 12, element: 'feu', profile: { intel: 60, sagesse: 40 }, source: 'craft',
+    { id: 'baguette_de_meche', name: 'Baguette de Mèche', type: 'baguette', level: 23, element: 'feu', profile: { intel: 60, sagesse: 40 }, source: 'craft',
       lore: 'Une mèche de Veilloche au bout d\'un bois noueux. Elle éclaire et elle brûle.' },
-    { id: 'baguette_de_braise', name: 'Baguette de Braise', type: 'baguette', level: 24, element: 'feu', profile: { intel: 70, vita: 30 }, source: 'craft',
+    { id: 'baguette_de_braise', name: 'Baguette de Braise', type: 'baguette', level: 47, element: 'feu', profile: { intel: 70, vita: 30 }, source: 'craft',
       lore: 'Une braise de Rakthul sertie dans la scorie. Les sorts en sortent déjà chauds.' },
 
-    { id: 'baton_de_cime', name: 'Bâton de Cime', type: 'baton', level: 5, element: 'terre', profile: { force: 50, vita: 50 }, source: 'craft',
+    { id: 'baton_de_cime', name: 'Bâton de Cime', type: 'baton', level: 9, element: 'terre', profile: { force: 50, vita: 50 }, source: 'craft',
       lore: 'Un bâton de bois noueux, lourd au bout. Il frappe en croix et en silence.' },
-    { id: 'baton_de_cire', name: 'Bâton de Cire', type: 'baton', level: 13, element: 'feu', profile: { intel: 50, sagesse: 30, vita: 20 }, source: 'craft',
+    { id: 'baton_de_cire', name: 'Bâton de Cire', type: 'baton', level: 25, element: 'feu', profile: { intel: 50, sagesse: 30, vita: 20 }, source: 'craft',
       lore: 'Du bois noueux gainé de cire de Veilloche. Il réchauffe les mains et les alliés.' },
-    { id: 'baton_de_lichen', name: 'Bâton de Lichen', type: 'baton', level: 26, element: 'eau', profile: { chance: 60, sagesse: 40 }, source: 'craft',
+    { id: 'baton_de_lichen', name: 'Bâton de Lichen', type: 'baton', level: 51, element: 'eau', profile: { chance: 60, sagesse: 40 }, source: 'craft',
       lore: 'Un manche de Pioche-Vive couvert de lichen. Il pousse encore un peu chaque nuit.' },
 
-    { id: 'masse_de_calcaire', name: 'Masse de Calcaire', type: 'marteau', level: 5, element: 'terre', profile: { force: 60, vita: 40 }, source: 'craft',
+    { id: 'masse_de_calcaire', name: 'Masse de Calcaire', type: 'marteau', level: 9, element: 'terre', profile: { force: 60, vita: 40 }, source: 'craft',
       lore: 'Un bloc de calcaire sur un manche de bois noueux. Simple, lourd, efficace.' },
-    { id: 'marteau_de_corne', name: 'Marteau de Corne', type: 'marteau', level: 16, element: 'terre', profile: { force: 70, vita: 30 }, source: 'craft',
+    { id: 'marteau_de_corne', name: 'Marteau de Corne', type: 'marteau', level: 31, element: 'terre', profile: { force: 70, vita: 30 }, source: 'craft',
       lore: 'Une tête de corne de Grouk. Il cogne en croix, comme la bête.' },
-    { id: 'marteau_de_forge', name: 'Marteau de Forge', type: 'marteau', level: 28, element: 'feu', profile: { intel: 40, force: 40, vita: 20 }, source: 'craft',
+    { id: 'marteau_de_forge', name: 'Marteau de Forge', type: 'marteau', level: 55, element: 'feu', profile: { intel: 40, force: 40, vita: 20 }, source: 'craft',
       lore: 'Reforgé avec le marteau de Dorm lui-même. Il résonne à chaque coup, et le sol aussi.' },
 
-    { id: 'pelle_noueuse', name: 'Pelle Noueuse', type: 'pelle', level: 4, element: 'terre', profile: { force: 50, vita: 50 }, source: 'craft',
+    { id: 'pelle_noueuse', name: 'Pelle Noueuse', type: 'pelle', level: 7, element: 'terre', profile: { force: 50, vita: 50 }, source: 'craft',
       lore: 'Du bois noueux et une lame de calcaire. Elle creuse les trous et les PV.' },
-    { id: 'pelle_de_brimbe', name: 'Pelle de Brimbe', type: 'pelle', level: 14, element: 'eau', profile: { chance: 60, vita: 40 }, source: 'drop', from: 'brimbe',
+    { id: 'pelle_de_brimbe', name: 'Pelle de Brimbe', type: 'pelle', level: 27, element: 'eau', profile: { chance: 60, vita: 40 }, source: 'drop', from: 'brimbe',
       lore: 'Une écaille de Brimbe sur un manche. Elle racle le sol et vole ce qui traîne.' },
-    { id: 'pelle_de_basalte', name: 'Pelle de Basalte', type: 'pelle', level: 26, element: 'terre', profile: { force: 50, chance: 30, vita: 20 }, source: 'craft',
+    { id: 'pelle_de_basalte', name: 'Pelle de Basalte', type: 'pelle', level: 51, element: 'terre', profile: { force: 50, chance: 30, vita: 20 }, source: 'craft',
       lore: 'Une lame de basalte noir. Elle prend aux autres ce qu\'elle vous rend.' },
 
-    { id: 'hache_de_cime', name: 'Hache de Cime', type: 'hache', level: 5, element: 'terre', profile: { force: 70, vita: 30 }, source: 'craft',
+    { id: 'hache_de_cime', name: 'Hache de Cime', type: 'hache', level: 9, element: 'terre', profile: { force: 70, vita: 30 }, source: 'craft',
       lore: 'Du calcaire sur du bois de cime. Un coup, un gros, et on en reparle.' },
-    { id: 'hache_de_croc', name: 'Hache de Croc', type: 'hache', level: 15, element: 'air', profile: { agi: 50, force: 50 }, source: 'craft',
+    { id: 'hache_de_croc', name: 'Hache de Croc', type: 'hache', level: 29, element: 'air', profile: { agi: 50, force: 50 }, source: 'craft',
       lore: 'Un croc de Grouk en guise de tranchant. Elle mord plus qu\'elle ne coupe.' },
-    { id: 'lames_de_brume', name: 'Lames de Brume', type: 'dague', level: 28, element: 'air', profile: { agi: 70, vita: 30 }, source: 'drop', from: 'fumerolle_noire',
+    { id: 'lames_de_brume', name: 'Lames de Brume', type: 'dague', level: 55, element: 'air', profile: { agi: 70, vita: 30 }, source: 'drop', from: 'fumerolle_noire',
       lore: 'Deux lames grises qu\'une Fumerolle Noire laisse en se dissipant. Elles ne pèsent rien et ne font pas de bruit.' },
-    { id: 'hache_de_kaldrik', name: 'Hache de Rakthul', type: 'hache', level: 25, element: 'feu', profile: { intel: 50, force: 50 }, source: 'drop', from: 'kaldrik',
+    { id: 'hache_de_kaldrik', name: 'Hache de Rakthul', type: 'hache', level: 49, element: 'feu', profile: { intel: 50, force: 50 }, source: 'drop', from: 'kaldrik',
       lore: 'Un poing de Rakthul aplati en lame. Elle fond un peu à chaque coup, et la cible aussi.' },
   );
 
@@ -480,27 +480,27 @@
   C.consumables.push(
     { id: 'pain_de_cime', name: 'Pain de Cime', kind: 'pain', level: 1, heal: 30, price: 6,
       lore: 'Pain blanc d\'Orsane, à l\'herbe de veille. Il tient dans la poche et dans le ventre.' },
-    { id: 'pain_de_grouk', name: 'Pain de Grouk', kind: 'pain', level: 8, heal: 70, price: 14,
+    { id: 'pain_de_grouk', name: 'Pain de Grouk', kind: 'pain', level: 15, heal: 70, price: 14,
       lore: 'Pain dense, à la corne râpée. Les Grouks en mangent, dit-on. Les Veilleurs aussi.' },
-    { id: 'pain_de_scorie', name: 'Pain de Scorie', kind: 'pain', level: 18, heal: 140, price: 28,
+    { id: 'pain_de_scorie', name: 'Pain de Scorie', kind: 'pain', level: 35, heal: 140, price: 28,
       lore: 'Pain noir au lichen de scorie. Amer, chaud, et il remet debout.' },
-    { id: 'pain_de_forge', name: 'Pain de Forge', kind: 'pain', level: 26, heal: 220, price: 44,
+    { id: 'pain_de_forge', name: 'Pain de Forge', kind: 'pain', level: 51, heal: 220, price: 44,
       lore: 'Cuit sur une enclume de Kaldum. Croûte de charbon, cœur tendre, et l\'effet d\'une sieste.' },
-    { id: 'parchemin_terra', name: 'Parchemin de Terra', kind: 'parchemin', stat: 'force', value: 5, level: 10, price: 120,
+    { id: 'parchemin_terra', name: 'Parchemin de Terra', kind: 'parchemin', stat: 'force', value: 5, level: 19, price: 120,
       lore: 'Un vélin poussiéreux couvert de traits de mine. On le lit à voix basse, et les épaules s\'élargissent.' },
-    { id: 'parchemin_ignis', name: 'Parchemin d\'Ignis', kind: 'parchemin', stat: 'intel', value: 5, level: 10, price: 120,
+    { id: 'parchemin_ignis', name: 'Parchemin d\'Ignis', kind: 'parchemin', stat: 'intel', value: 5, level: 19, price: 120,
       lore: 'L\'encre est encore tiède. Les lettres se consument au fil de la lecture.' },
-    { id: 'parchemin_aqua', name: 'Parchemin d\'Aqua', kind: 'parchemin', stat: 'chance', value: 5, level: 10, price: 120,
+    { id: 'parchemin_aqua', name: 'Parchemin d\'Aqua', kind: 'parchemin', stat: 'chance', value: 5, level: 19, price: 120,
       lore: 'Écrit à l\'eau de mare sur une feuille qui ne sèche jamais.' },
-    { id: 'parchemin_aer', name: 'Parchemin d\'Aer', kind: 'parchemin', stat: 'agi', value: 5, level: 10, price: 120,
+    { id: 'parchemin_aer', name: 'Parchemin d\'Aer', kind: 'parchemin', stat: 'agi', value: 5, level: 19, price: 120,
       lore: 'Si léger qu\'il faut le tenir à deux mains pour qu\'il ne s\'envole pas.' },
-    { id: 'parchemin_vitalite', name: 'Parchemin de Vitalité', kind: 'parchemin', stat: 'vita', value: 5, level: 10, price: 120,
+    { id: 'parchemin_vitalite', name: 'Parchemin de Vitalité', kind: 'parchemin', stat: 'vita', value: 5, level: 19, price: 120,
       lore: 'Une recette de pain, en vérité. Mais elle marche.' },
-    { id: 'parchemin_sagesse', name: 'Parchemin de Sagesse', kind: 'parchemin', stat: 'sagesse', value: 5, level: 10, price: 120,
+    { id: 'parchemin_sagesse', name: 'Parchemin de Sagesse', kind: 'parchemin', stat: 'sagesse', value: 5, level: 19, price: 120,
       lore: 'Les marges sont pleines de remarques. Ce sont elles qui comptent.' },
     { id: 'potion_de_relais', name: 'Potion de Relais', kind: 'potion', level: 1, heal: 0, effect: 'relais', price: 15,
       lore: 'Un fil blanc dans une fiole. On la boit, on tire, on se retrouve au Relais.' },
-    { id: 'potion_de_veille', name: 'Potion de Veille', kind: 'potion', level: 15, heal: 999, price: 60,
+    { id: 'potion_de_veille', name: 'Potion de Veille', kind: 'potion', level: 29, heal: 999, price: 60,
       lore: 'Lueur de Veilloche et herbe de veille. Elle rend tous les PV et un peu de courage.' },
   );
 
@@ -748,7 +748,7 @@
   );
 
   C.sets.push({
-    id: 'sivr', name: 'Panoplie du Sivr', family: ['sivr'], level: 32,
+    id: 'sivr', name: 'Panoplie du Sivr', family: ['sivr'], level: 63,
     profile: { agi: 50, chance: 20, vita: 30 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_sivr', name: 'Coiffe du Sivr', lore: 'Une visière de toile tendue sur du cuivre. On voit plus loin, et on a envie d\'y aller.' },
@@ -762,7 +762,7 @@
   });
 
   C.sets.push({
-    id: 'marnel', name: 'Panoplie du Marnel', family: ['marnel'], level: 34,
+    id: 'marnel', name: 'Panoplie du Marnel', family: ['marnel'], level: 67,
     profile: { vita: 45, chance: 35, sagesse: 20 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_marnel', name: 'Coiffe du Marnel', lore: 'Un dôme de carapace. On rentre la tête dessous au premier bruit, par réflexe.' },
@@ -776,7 +776,7 @@
   });
 
   C.sets.push({
-    id: 'saunier', name: 'Panoplie du Saunier', family: [], level: 36,
+    id: 'saunier', name: 'Panoplie du Saunier', family: [], level: 71,
     profile: { intel: 55, vita: 30, chance: 15 },
     pieces: [
       { slot: 'coiffe', id: 'chapeau_du_saunier', name: 'Chapeau du Saunier', lore: 'Un large chapeau d\'algue tressée, blanchi par le sel. Il garde l\'ombre sur les yeux et la chaleur dans les idées.' },
@@ -790,7 +790,7 @@
   });
 
   C.sets.push({
-    id: 'brisant', name: 'Panoplie du Brisant', family: ['brisant'], level: 38,
+    id: 'brisant', name: 'Panoplie du Brisant', family: ['brisant'], level: 75,
     profile: { chance: 50, force: 25, vita: 25 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_brisant', name: 'Coiffe du Brisant', lore: 'Une crête d\'écume figée. Elle mouille un peu le front, ce qui garde l\'esprit clair.' },
@@ -805,7 +805,7 @@
   });
 
   C.sets.push({
-    id: 'harpide', name: 'Panoplie de la Harpide', family: ['harpide'], level: 40,
+    id: 'harpide', name: 'Panoplie de la Harpide', family: ['harpide'], level: 79,
     profile: { agi: 45, sagesse: 30, vita: 25 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_harpide', name: 'Coiffe de la Harpide', lore: 'Un casque de plumes blanches dressées. On a l\'air de guetter, et on guette.' },
@@ -819,7 +819,7 @@
   });
 
   C.sets.push({
-    id: 'vulk', name: 'Panoplie du Vulk', family: ['vulk'], level: 42,
+    id: 'vulk', name: 'Panoplie du Vulk', family: ['vulk'], level: 83,
     profile: { force: 50, vita: 35, intel: 15 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_vulk', name: 'Coiffe du Vulk', lore: 'Une couronne de cornes cassées. Elle tient sur la tête par son seul poids.' },
@@ -833,7 +833,7 @@
   });
 
   C.sets.push({
-    id: 'noye', name: 'Panoplie du Noyé', family: ['noye'], level: 43,
+    id: 'noye', name: 'Panoplie du Noyé', family: ['noye'], level: 85,
     profile: { intel: 40, sagesse: 35, vita: 25 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_noye', name: 'Coiffe du Noyé', lore: 'Un capuchon de toile mouillée. Il ne sèche jamais, et les idées restent fraîches.' },
@@ -847,7 +847,7 @@
   });
 
   C.sets.push({
-    id: 'ferrel', name: 'Panoplie du Ferrel', family: ['ferrel'], level: 45,
+    id: 'ferrel', name: 'Panoplie du Ferrel', family: ['ferrel'], level: 89,
     profile: { chance: 40, sagesse: 30, vita: 30 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_ferrel', name: 'Coiffe du Ferrel', lore: 'Un bonnet de piques jaunes repliées. Il éclaire un peu, et il pique beaucoup.' },
@@ -861,7 +861,7 @@
   });
 
   C.sets.push({
-    id: 'zhaal', name: 'Panoplie du Zhaal', family: ['zhaal'], level: 46,
+    id: 'zhaal', name: 'Panoplie du Zhaal', family: ['zhaal'], level: 91,
     profile: { intel: 55, agi: 20, vita: 25 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_zhaal', name: 'Coiffe du Zhaal', lore: 'Une capuche où brûle une flammèche violette. Elle éclaire juste ce qu\'il faut viser.' },
@@ -876,7 +876,7 @@
   });
 
   C.sets.push({
-    id: 'mere_des_brisants', name: 'Panoplie de la Mère des Brisants', family: ['mere_des_brisants'], level: 48,
+    id: 'mere_des_brisants', name: 'Panoplie de la Mère des Brisants', family: ['mere_des_brisants'], level: 95,
     profile: { chance: 40, vita: 35, intel: 15, sagesse: 10 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_mere_des_brisants', name: 'Coiffe de la Mère des Brisants', lore: 'Une couronne de marée figée. Elle monte d\'un cheveu chaque nuit, et personne ne sait jusqu\'où.' },
@@ -891,7 +891,7 @@
   });
 
   C.sets.push({
-    id: 'fendu', name: 'Panoplie du Fendu', family: ['fendu'], level: 50,
+    id: 'fendu', name: 'Panoplie du Fendu', family: ['fendu'], level: 99,
     profile: { force: 30, agi: 30, vita: 25, sagesse: 15 },
     pieces: [
       { slot: 'coiffe', id: 'coiffe_fendu', name: 'Coiffe du Fendu', lore: 'Un masque coupé en deux, cousu de travers. Chaque moitié regarde ailleurs.' },
@@ -906,71 +906,73 @@
   });
 
   C.items.push(
-    { id: 'ceinture_de_varech', name: 'Ceinture de Varech', slot: 'ceinture', level: 31, profile: { intel: 50, vita: 30, sagesse: 20 }, source: 'craft',
+    { id: 'ceinture_de_varech', name: 'Ceinture de Varech', slot: 'ceinture', level: 61, profile: { intel: 50, vita: 30, sagesse: 20 }, source: 'craft',
       lore: 'De l\'algue de ressac tressée et séchée. Elle sent la marée basse et les idées neuves.' },
-    { id: 'tricorne_de_bois_flotte', name: 'Tricorne de Bois Flotté', slot: 'coiffe', level: 33, profile: { force: 50, vita: 30, sagesse: 20 }, source: 'craft',
+    { id: 'tricorne_de_bois_flotte', name: 'Tricorne de Bois Flotté', slot: 'coiffe', level: 65, profile: { force: 50, vita: 30, sagesse: 20 }, source: 'craft',
       lore: 'Trois planches de bois flotté et une couche de carapace. On a l\'air d\'un capitaine, et la tête d\'une coque.' },
-    { id: 'voile_de_sel', name: 'Manteau de Sel', slot: 'cape', level: 35, profile: { intel: 50, chance: 30, vita: 20 }, source: 'craft',
+    { id: 'voile_de_sel', name: 'Manteau de Sel', slot: 'cape', level: 69, profile: { intel: 50, chance: 30, vita: 20 }, source: 'craft',
       lore: 'Une toile raidie au sel de Marsalée. Elle crépite au soleil comme un feu de grève.' },
-    { id: 'anneau_de_galet_marin', name: 'Anneau de Galet Marin', slot: 'anneau', level: 36, profile: { force: 60, vita: 40 }, source: 'craft',
+    { id: 'anneau_de_galet_marin', name: 'Anneau de Galet Marin', slot: 'anneau', level: 71, profile: { force: 60, vita: 40 }, source: 'craft',
       lore: 'Un galet de Marnel percé et poli. Il alourdit le poing juste ce qu\'il faut.' },
-    { id: 'amulette_de_carapace', name: 'Amulette de Carapace', slot: 'amulette', level: 37, profile: { force: 50, vita: 30, sagesse: 20 }, source: 'craft',
+    { id: 'amulette_de_carapace', name: 'Amulette de Carapace', slot: 'amulette', level: 73, profile: { force: 50, vita: 30, sagesse: 20 }, source: 'craft',
       lore: 'Un éclat de carapace entière sur une corde de sel. Il encaisse un peu à votre place.' },
-    { id: 'bottes_de_sel', name: 'Bottes de Sel', slot: 'bottes', level: 39, profile: { intel: 50, force: 30, vita: 20 }, source: 'craft',
+    { id: 'bottes_de_sel', name: 'Bottes de Sel', slot: 'bottes', level: 77, profile: { intel: 50, force: 30, vita: 20 }, source: 'craft',
       lore: 'Des semelles de sel tassé. Elles brûlent un peu les pieds et beaucoup les ennemis.' },
-    { id: 'anneau_d_ecume', name: 'Anneau d\'Écume', slot: 'anneau', level: 40, profile: { chance: 50, vita: 50 }, extra: { pm: 1 }, source: 'craft',
+    { id: 'anneau_d_ecume', name: 'Anneau d\'Écume', slot: 'anneau', level: 79, profile: { chance: 50, vita: 50 }, extra: { pm: 1 }, source: 'craft',
       lore: 'Deux cœurs de Brisant et un œil de Harpide pris dans l\'écume. Il donne peu, sauf un pas de plus, et ce pas-là change tout.' },
-    { id: 'anneau_de_tison', name: 'Anneau de Tison', slot: 'anneau', level: 44, profile: { intel: 60, force: 40 }, source: 'craft',
+    { id: 'anneau_de_tison', name: 'Anneau de Tison', slot: 'anneau', level: 87, profile: { intel: 60, force: 40 }, source: 'craft',
       lore: 'Un tison de Zhaal serré dans l\'ardoise. Il chauffe le poing et les sorts à parts égales.' },
-    { id: 'bottes_de_lisiere', name: 'Bottes de Lisière', slot: 'bottes', level: 44, profile: { agi: 50, chance: 30, vita: 20 }, source: 'craft',
+    { id: 'bottes_de_lisiere', name: 'Bottes de Lisière', slot: 'bottes', level: 87, profile: { agi: 50, chance: 30, vita: 20 }, source: 'craft',
       lore: 'Des piques de Ferrel et des plumes de Harpide. On court au bord de la Brûlure sans y tomber, en général.' },
-    { id: 'capuche_de_tison', name: 'Capuche de Tison', slot: 'coiffe', level: 47, profile: { intel: 60, sagesse: 20, vita: 20 }, source: 'craft',
+    { id: 'capuche_de_tison', name: 'Capuche de Tison', slot: 'coiffe', level: 93, profile: { intel: 60, sagesse: 20, vita: 20 }, source: 'craft',
       lore: 'Une capuche où couve un tison. Les idées s\'y allument toutes seules, les cheveux aussi.' },
-    { id: 'ceinture_d_ardoise', name: 'Ceinture d\'Ardoise', slot: 'ceinture', level: 47, profile: { force: 60, vita: 40 }, source: 'craft',
+    { id: 'ceinture_d_ardoise', name: 'Ceinture d\'Ardoise', slot: 'ceinture', level: 93, profile: { force: 60, vita: 40 }, source: 'craft',
       lore: 'Des plaques d\'ardoise veinées de lilas. Elle tient debout ceux qui ne veulent pas plier.' },
-    { id: 'cape_de_lambeaux', name: 'Cape de Lambeaux', slot: 'cape', level: 49, profile: { agi: 50, force: 30, vita: 20 }, source: 'drop', from: 'fendu',
+    { id: 'cape_de_lambeaux', name: 'Cape de Lambeaux', slot: 'cape', level: 97, profile: { agi: 50, force: 30, vita: 20 }, source: 'drop', from: 'fendu',
       lore: 'Des lambeaux que les Fendus perdent en se déchirant. Elle flotte un instant avant vous.' },
-    { id: 'amulette_de_la_fente', name: 'Amulette de la Fente', slot: 'amulette', level: 50, profile: { force: 25, intel: 25, chance: 25, agi: 25 }, extra: { pa: 1 }, source: 'drop', from: 'fendu',
+    { id: 'amulette_de_la_fente', name: 'Amulette de la Fente', slot: 'amulette', level: 99, profile: { force: 25, intel: 25, chance: 25, agi: 25 }, extra: { pa: 1 }, source: 'drop', from: 'fendu',
       lore: 'Un morceau de ciel brûlé, refermé sur un vide. Elle ne donne presque rien, sauf le temps d\'un geste de plus.' },
+    { id: 'anneau_du_seuil', name: 'Anneau du Seuil', slot: 'anneau', level: 50, profile: { force: 25, intel: 25, chance: 25, agi: 25 }, extra: { pa: 1 }, source: 'quest',
+      lore: 'Un anneau de basalte que Rilka taille pour ceux qui ont passé le seuil. Il ne brille pas : il laisse le temps d\'un geste de plus.' },
   );
 
   C.weapons.push(
-    { id: 'aiguilles_de_sivr', name: 'Aiguilles de Sivr', type: 'dague', level: 33, element: 'air', profile: { agi: 70, vita: 30 }, source: 'drop', from: 'sivr',
+    { id: 'aiguilles_de_sivr', name: 'Aiguilles de Sivr', type: 'dague', level: 65, element: 'air', profile: { agi: 70, vita: 30 }, source: 'drop', from: 'sivr',
       lore: 'Deux dards de Sivr montés sur cuivre. Elles cousent l\'adversaire en deux points.' },
-    { id: 'baguette_de_varech', name: 'Baguette de Varech', type: 'baguette', level: 35, element: 'eau', profile: { chance: 60, sagesse: 40 }, source: 'craft',
+    { id: 'baguette_de_varech', name: 'Baguette de Varech', type: 'baguette', level: 69, element: 'eau', profile: { chance: 60, sagesse: 40 }, source: 'craft',
       lore: 'Du bois flotté gainé d\'algue, un chas de Sivr au bout. Les sorts en sortent mouillés.' },
-    { id: 'pelle_de_carapace', name: 'Pelle de Carapace', type: 'pelle', level: 37, element: 'terre', profile: { force: 50, vita: 50 }, source: 'craft',
+    { id: 'pelle_de_carapace', name: 'Pelle de Carapace', type: 'pelle', level: 73, element: 'terre', profile: { force: 50, vita: 50 }, source: 'craft',
       lore: 'Une carapace de Marnel au bout d\'un manche. Elle creuse la grève et les défenses.' },
-    { id: 'tisonnier_du_saunier', name: 'Tisonnier du Saunier', type: 'baguette', level: 38, element: 'feu', profile: { intel: 60, vita: 40 }, source: 'craft',
+    { id: 'tisonnier_du_saunier', name: 'Tisonnier du Saunier', type: 'baguette', level: 75, element: 'feu', profile: { intel: 60, vita: 40 }, source: 'craft',
       lore: 'La tige de fer qui ranime les feux des chaudrons. Au bout, une braise qui ne s\'éteint pas, même sous la pluie.' },
-    { id: 'arc_de_bois_flotte', name: 'Arc de Bois Flotté', type: 'arc', level: 39, element: 'air', profile: { agi: 60, vita: 40 }, source: 'craft',
+    { id: 'arc_de_bois_flotte', name: 'Arc de Bois Flotté', type: 'arc', level: 77, element: 'air', profile: { agi: 60, vita: 40 }, source: 'craft',
       lore: 'Le bois a trop voyagé pour avoir peur. La corde est une plume de Harpide tordue.' },
-    { id: 'sabre_de_ressac', name: 'Sabre de Ressac', type: 'epee', level: 40, element: 'eau', profile: { chance: 60, vita: 40 }, source: 'craft',
+    { id: 'sabre_de_ressac', name: 'Sabre de Ressac', type: 'epee', level: 79, element: 'eau', profile: { chance: 60, vita: 40 }, source: 'craft',
       lore: 'Une lame d\'écume figée autour d\'un cœur de Brisant. Elle frappe et revient, comme la vague.' },
-    { id: 'hache_d_ardoise', name: 'Hache d\'Ardoise', type: 'hache', level: 41, element: 'terre', profile: { force: 70, vita: 30 }, source: 'craft',
+    { id: 'hache_d_ardoise', name: 'Hache d\'Ardoise', type: 'hache', level: 81, element: 'terre', profile: { force: 70, vita: 30 }, source: 'craft',
       lore: 'Une plaque d\'ardoise des Effilures sur une corne de Vulk. Elle fend dans le sens de la Brûlure.' },
-    { id: 'masse_de_vulk', name: 'Masse de Vulk', type: 'marteau', level: 42, element: 'terre', profile: { force: 60, vita: 40 }, source: 'drop', from: 'vulk',
+    { id: 'masse_de_vulk', name: 'Masse de Vulk', type: 'marteau', level: 83, element: 'terre', profile: { force: 60, vita: 40 }, source: 'drop', from: 'vulk',
       lore: 'Une corne de Vulk entière, encore tiède. Elle frappe en croix, comme une meute.' },
-    { id: 'baton_de_lanterne', name: 'Bâton de Lanterne', type: 'baton', level: 43, element: 'feu', profile: { intel: 50, sagesse: 30, vita: 20 }, source: 'craft',
+    { id: 'baton_de_lanterne', name: 'Bâton de Lanterne', type: 'baton', level: 85, element: 'feu', profile: { intel: 50, sagesse: 30, vita: 20 }, source: 'craft',
       lore: 'Une perle de Noyé brille au bout d\'un mât de bois flotté. Elle brûle comme un feu de naufrage.' },
-    { id: 'baguette_de_tison', name: 'Baguette de Tison', type: 'baguette', level: 46, element: 'feu', profile: { intel: 70, vita: 30 }, source: 'drop', from: 'zhaal',
+    { id: 'baguette_de_tison', name: 'Baguette de Tison', type: 'baguette', level: 91, element: 'feu', profile: { intel: 70, vita: 30 }, source: 'drop', from: 'zhaal',
       lore: 'Le tison d\'un Zhaal, encore rouge. Il écrit des flammes dans l\'air.' },
-    { id: 'baton_de_la_mere', name: 'Bâton de la Mère', type: 'baton', level: 48, element: 'eau', profile: { chance: 60, sagesse: 20, vita: 20 }, source: 'drop', from: 'mere_des_brisants',
+    { id: 'baton_de_la_mere', name: 'Bâton de la Mère', type: 'baton', level: 95, element: 'eau', profile: { chance: 60, sagesse: 20, vita: 20 }, source: 'drop', from: 'mere_des_brisants',
       lore: 'Le sceptre de corail de la Mère des Brisants. La marée monte d\'une rangée quand on le lève.' },
-    { id: 'hache_des_effilures', name: 'Hache des Effilures', type: 'hache', level: 49, element: 'feu', profile: { intel: 50, force: 50 }, source: 'craft',
+    { id: 'hache_des_effilures', name: 'Hache des Effilures', type: 'hache', level: 97, element: 'feu', profile: { intel: 50, force: 50 }, source: 'craft',
       lore: 'Une lame d\'ardoise où brûle une flammèche violette. Elle coupe et elle brûle, dans cet ordre.' },
-    { id: 'lame_dechiree', name: 'Lame Brûlée', type: 'epee', level: 50, element: 'air', profile: { agi: 50, force: 30, vita: 20 }, source: 'drop', from: 'fendu',
+    { id: 'lame_dechiree', name: 'Lame Brûlée', type: 'epee', level: 99, element: 'air', profile: { agi: 50, force: 30, vita: 20 }, source: 'drop', from: 'fendu',
       lore: 'La lame d\'un Fendu, fendue comme lui. Elle frappe ici et un peu plus loin.' },
   );
 
   C.consumables.push(
-    { id: 'teinture_de_lin_bleu', name: 'Teinture de lin bleu', kind: 'teinture', level: 4, price: 30, cosmetique: 'teinture_lin_bleu',
+    { id: 'teinture_de_lin_bleu', name: 'Teinture de lin bleu', kind: 'teinture', level: 7, price: 30, cosmetique: 'teinture_lin_bleu',
       lore: 'Un pot de bleu profond, broyé dans les champs d\'Ervane. Utilisée, elle entre dans ta Garde-robe pour toujours.' },
-    { id: 'teinture_de_safran', name: 'Teinture de safran', kind: 'teinture', level: 6, price: 40, cosmetique: 'teinture_safran',
+    { id: 'teinture_de_safran', name: 'Teinture de safran', kind: 'teinture', level: 11, price: 40, cosmetique: 'teinture_safran',
       lore: 'Un jaune chaud, tiré des fleurs des Clairières et fixé à la cire. Utilisée, elle entre dans ta Garde-robe pour toujours.' },
-    { id: 'pain_d_algue', name: 'Pain d\'Algue', kind: 'pain', level: 36, heal: 320, price: 64,
+    { id: 'pain_d_algue', name: 'Pain d\'Algue', kind: 'pain', level: 71, heal: 320, price: 64,
       lore: 'Pain vert de Marsalée, salé à l\'eau de mer. Il se garde un mois et remet d\'aplomb en une bouchée.' },
-    { id: 'pain_des_effilures', name: 'Pain des Effilures', kind: 'pain', level: 46, heal: 420, price: 84,
+    { id: 'pain_des_effilures', name: 'Pain des Effilures', kind: 'pain', level: 91, heal: 420, price: 84,
       lore: 'Galette de chardon cuite sur l\'ardoise chaude. Elle pique la langue et ferme les plaies.' },
   );
 

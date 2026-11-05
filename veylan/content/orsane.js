@@ -1,11 +1,11 @@
 
 DATA.content.zones.push({
-  id: 'orsane_cimes', name: 'Les Cimes d\'Orsane', region: 'orsane', level: [1, 3],
+  id: 'orsane_cimes', name: 'Les Cimes d\'Orsane', region: 'orsane', level: [1, 6],
   palette: 'orsane',
   description: 'La capitale de l\'Aube, posée tout en haut du monde, blanche et dorée sous les lanternes. On y arrive Veilleur, on en repart avec une tâche.',
   maps: [
     {
-      id: 'orsane_cimes_place', name: 'Place du Relais', level: [1, 1],
+      id: 'orsane_cimes_place', name: 'Place du Relais', level: [1, 2],
       layout: [
         'TTTTTT.n.TTTTTT',
         'T,,,,,...,,,,,T',
@@ -31,7 +31,7 @@ DATA.content.zones.push({
       relay: true,
     },
     {
-      id: 'orsane_cimes_terrasses', name: 'Les Terrasses', level: [1, 1],
+      id: 'orsane_cimes_terrasses', name: 'Les Terrasses', level: [1, 2],
       layout: [
         'ooooooooooooooo',
         'o,,,,,,,,,,,,,o',
@@ -52,12 +52,12 @@ DATA.content.zones.push({
       exits: { n: null, e: null, s: 'orsane_cimes_place', w: null },
       npcs: ['kelthar', 'brakk', 'saya', 'vali', 'fenna'],
       nodes: [],
-      groups: [{ monsters: ['mannequin', 'mannequin', 'mannequin'], level: [1, 1], respawn: 1, dojo: true }],
+      groups: [{ monsters: ['mannequin', 'mannequin', 'mannequin'], level: [1, 2], respawn: 1, dojo: true }],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_cimes_ateliers', name: 'Rue des Ateliers', level: [1, 1],
+      id: 'orsane_cimes_ateliers', name: 'Rue des Ateliers', level: [1, 2],
       layout: [
         '###############',
         '#,,,,,,,,,,,,,#',
@@ -83,7 +83,7 @@ DATA.content.zones.push({
       relay: false,
     },
     {
-      id: 'orsane_cimes_porte', name: 'Porte des Clairières', level: [1, 2],
+      id: 'orsane_cimes_porte', name: 'Porte des Clairières', level: [1, 4],
       layout: [
         'TTTTTTTnTTTTTTT',
         'T,,,,,,.,,,,,,T',
@@ -105,9 +105,9 @@ DATA.content.zones.push({
       npcs: ['petra', 'orvak', 'ilsa'],
       nodes: [],
       groups: [
-        { monsters: ['piouk', 'piouk'], level: [1, 2], respawn: 30 },
-        { monsters: ['pilou'], level: [1, 2], respawn: 30 },
-        { monsters: ['pilou'], level: [1, 2], respawn: 30 },
+        { monsters: ['piouk', 'piouk'], level: [1, 4], respawn: 30 },
+        { monsters: ['pilou'], level: [1, 4], respawn: 30 },
+        { monsters: ['pilou'], level: [1, 4], respawn: 30 },
       ],
       dungeon: null,
       relay: false,
@@ -116,12 +116,12 @@ DATA.content.zones.push({
 });
 
 DATA.content.zones.push({
-  id: 'orsane_clairieres', name: 'Les Clairières d\'Orsane', region: 'orsane', level: [1, 6],
+  id: 'orsane_clairieres', name: 'Les Clairières d\'Orsane', region: 'orsane', level: [1, 12],
   palette: 'orsane',
   description: 'Des prés en pente douce sous les murs de la ville, coupés de bosquets et d\'un ruisseau. Les Glyms y nichent, et depuis peu les Grouks y grognent.',
   maps: [
     {
-      id: 'orsane_clairieres_lisiere', name: 'Le Seuil des Prés', level: [1, 2],
+      id: 'orsane_clairieres_lisiere', name: 'Le Seuil des Prés', level: [1, 4],
       layout: [
         'TTTTTTTnTTTTTTT',
         'TT,,,,,.,,,,,TT',
@@ -143,15 +143,15 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['bois_de_cime', 'herbe_de_veille'],
       groups: [
-        { monsters: ['piouk', 'groukin'], level: [1, 2], respawn: 40 },
-        { monsters: ['pilou'], level: [1, 2], respawn: 40 },
-        { monsters: ['pilou', 'groukin'], level: [1, 2], respawn: 40 },
+        { monsters: ['piouk', 'groukin'], level: [1, 4], respawn: 40 },
+        { monsters: ['pilou'], level: [1, 4], respawn: 40 },
+        { monsters: ['pilou', 'groukin'], level: [1, 4], respawn: 40 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_clairieres_pres', name: 'Les Prés aux Glyms', level: [1, 3],
+      id: 'orsane_clairieres_pres', name: 'Les Prés aux Glyms', level: [1, 6],
       layout: [
         'TTTTTTTnTTTTTTT',
         'T,,,,,,.,,,,,,T',
@@ -173,16 +173,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['bois_de_cime'],
       groups: [
-        { monsters: ['pilou'], level: [1, 3], respawn: 40 },
-        { monsters: ['pilou', 'groukin'], level: [1, 3], respawn: 40 },
-        { monsters: ['piouk', 'piouk'], level: [1, 3], respawn: 40 },
-        { monsters: ['pilou', 'groukin'], level: [2, 3], respawn: 40 },
+        { monsters: ['pilou'], level: [1, 6], respawn: 40 },
+        { monsters: ['pilou', 'groukin'], level: [1, 6], respawn: 40 },
+        { monsters: ['piouk', 'piouk'], level: [1, 6], respawn: 40 },
+        { monsters: ['pilou', 'groukin'], level: [3, 6], respawn: 40 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_clairieres_ruisseau', name: 'Le Ruisseau', level: [2, 4],
+      id: 'orsane_clairieres_ruisseau', name: 'Le Ruisseau', level: [3, 8],
       layout: [
         'TTTTTTTTTTTTTTT',
         'T,,,,,,~~,,,,,T',
@@ -204,16 +204,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['herbe_de_veille', 'bois_de_cime'],
       groups: [
-        { monsters: ['pilou', 'groukin'], level: [2, 4], respawn: 40 },
-        { monsters: ['grouk'], level: [3, 4], respawn: 45 },
-        { monsters: ['pilou', 'grouk'], level: [3, 4], respawn: 45 },
-        { monsters: ['groukin', 'groukin'], level: [2, 4], respawn: 40 },
+        { monsters: ['pilou', 'groukin'], level: [3, 8], respawn: 40 },
+        { monsters: ['grouk'], level: [5, 8], respawn: 45 },
+        { monsters: ['pilou', 'grouk'], level: [5, 8], respawn: 45 },
+        { monsters: ['groukin', 'groukin'], level: [3, 8], respawn: 40 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_clairieres_bosquet', name: 'Le Bosquet', level: [3, 5],
+      id: 'orsane_clairieres_bosquet', name: 'Le Bosquet', level: [5, 10],
       layout: [
         'TTTTTTTnTTTTTTT',
         'TT,,,,,.,,,,,TT',
@@ -235,16 +235,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['bois_de_cime', 'pierre_de_calcaire'],
       groups: [
-        { monsters: ['grouk', 'pilou'], level: [3, 5], respawn: 45 },
-        { monsters: ['filin', 'groukin'], level: [3, 5], respawn: 45 },
-        { monsters: ['grouk', 'grouk'], level: [3, 5], respawn: 45 },
-        { monsters: ['grouk', 'pilou', 'pilou'], level: [4, 5], respawn: 50 },
+        { monsters: ['grouk', 'pilou'], level: [5, 10], respawn: 45 },
+        { monsters: ['filin', 'groukin'], level: [5, 10], respawn: 45 },
+        { monsters: ['grouk', 'grouk'], level: [5, 10], respawn: 45 },
+        { monsters: ['grouk', 'pilou', 'pilou'], level: [7, 10], respawn: 50 },
       ],
       dungeon: 'grenier_des_pilous',
       relay: false,
     },
     {
-      id: 'orsane_clairieres_mare', name: 'La Mare aux Grouks', level: [4, 6],
+      id: 'orsane_clairieres_mare', name: 'La Mare aux Grouks', level: [7, 12],
       layout: [
         'TTTTTTTTTTTnTTT',
         'T,,,,,,,,,,.,,T',
@@ -266,16 +266,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['herbe_de_veille'],
       groups: [
-        { monsters: ['grouk', 'grouk'], level: [4, 6], respawn: 50 },
-        { monsters: ['grouk', 'pilou', 'pilou'], level: [4, 6], respawn: 50 },
-        { monsters: ['grouk', 'grouk', 'pilou'], level: [5, 6], respawn: 50 },
-        { monsters: ['kavou_bleu', 'kavou_roux'], level: [4, 6], respawn: 50 },
+        { monsters: ['grouk', 'grouk'], level: [7, 12], respawn: 50 },
+        { monsters: ['grouk', 'pilou', 'pilou'], level: [7, 12], respawn: 50 },
+        { monsters: ['grouk', 'grouk', 'pilou'], level: [9, 12], respawn: 50 },
+        { monsters: ['kavou_bleu', 'kavou_roux'], level: [7, 12], respawn: 50 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_clairieres_oree', name: 'L\'Orée des Sentiers', level: [4, 6],
+      id: 'orsane_clairieres_oree', name: 'L\'Orée des Sentiers', level: [7, 12],
       layout: [
         'TTTTTTTTnTTTTTT',
         'T,,,,,,,.,,,,,T',
@@ -297,10 +297,10 @@ DATA.content.zones.push({
       npcs: ['dalric'],
       nodes: ['bois_de_cime'],
       groups: [
-        { monsters: ['grouk', 'grouk'], level: [4, 6], respawn: 50 },
-        { monsters: ['pilou', 'pilou', 'grouk'], level: [4, 6], respawn: 50 },
-        { monsters: ['grouk', 'grouk', 'grouk'], level: [5, 6], respawn: 55 },
-        { monsters: ['kavou_ocre', 'kavou_blanc'], level: [4, 6], respawn: 50 },
+        { monsters: ['grouk', 'grouk'], level: [7, 12], respawn: 50 },
+        { monsters: ['pilou', 'pilou', 'grouk'], level: [7, 12], respawn: 50 },
+        { monsters: ['grouk', 'grouk', 'grouk'], level: [9, 12], respawn: 55 },
+        { monsters: ['kavou_ocre', 'kavou_blanc'], level: [7, 12], respawn: 50 },
       ],
       dungeon: null,
       relay: false,
@@ -309,12 +309,12 @@ DATA.content.zones.push({
 });
 
 DATA.content.zones.push({
-  id: 'orsane_sentiers', name: 'Les Sentiers des Cimes', region: 'orsane', level: [5, 12],
+  id: 'orsane_sentiers', name: 'Les Sentiers des Cimes', region: 'orsane', level: [9, 24],
   palette: 'orsane',
   description: 'Les chemins de pierre qui grimpent au-dessus des Clairières, entre rochers, corniches et un pont au-dessus du vide. Les Grouks y ont leurs tanières et les Tissefils commencent à y tendre leurs toiles.',
   maps: [
     {
-      id: 'orsane_sentiers_montee', name: 'La Montée', level: [5, 7],
+      id: 'orsane_sentiers_montee', name: 'La Montée', level: [9, 14],
       layout: [
         '###############',
         '#,,##,,,,,##,,#',
@@ -336,16 +336,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['pierre_de_calcaire', 'bois_noueux'],
       groups: [
-        { monsters: ['grouk', 'grouk'], level: [5, 7], respawn: 50 },
-        { monsters: ['filin', 'filin', 'grouk'], level: [5, 7], respawn: 50 },
-        { monsters: ['grouk', 'grouk', 'pilou'], level: [5, 7], respawn: 50 },
-        { monsters: ['grouk', 'tissefil'], level: [6, 7], respawn: 55 },
+        { monsters: ['grouk', 'grouk'], level: [9, 14], respawn: 50 },
+        { monsters: ['filin', 'filin', 'grouk'], level: [9, 14], respawn: 50 },
+        { monsters: ['grouk', 'grouk', 'pilou'], level: [9, 14], respawn: 50 },
+        { monsters: ['grouk', 'tissefil'], level: [11, 14], respawn: 55 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_sentiers_relais', name: 'Relais des Sentiers', level: [5, 8],
+      id: 'orsane_sentiers_relais', name: 'Relais des Sentiers', level: [9, 16],
       layout: [
         '######.n.######',
         '#,,,,,...,,,,,#',
@@ -367,15 +367,15 @@ DATA.content.zones.push({
       npcs: ['ravik'],
       nodes: ['pierre_de_calcaire'],
       groups: [
-        { monsters: ['kavou_bleu', 'kavou_roux', 'kavou_ocre'], level: [5, 6], respawn: 60 },
-        { monsters: ['grouk', 'grouk'], level: [5, 8], respawn: 55 },
-        { monsters: ['grouk', 'tissefil'], level: [6, 8], respawn: 55 },
+        { monsters: ['kavou_bleu', 'kavou_roux', 'kavou_ocre'], level: [9, 12], respawn: 60 },
+        { monsters: ['grouk', 'grouk'], level: [9, 16], respawn: 55 },
+        { monsters: ['grouk', 'tissefil'], level: [11, 16], respawn: 55 },
       ],
       dungeon: null,
       relay: true,
     },
     {
-      id: 'orsane_sentiers_corniche', name: 'La Corniche', level: [7, 10],
+      id: 'orsane_sentiers_corniche', name: 'La Corniche', level: [13, 20],
       layout: [
         'ooooooooooooooo',
         'oo,,,,,,,,,,,,o',
@@ -397,16 +397,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['pierre_de_calcaire', 'bois_noueux'],
       groups: [
-        { monsters: ['grouk', 'grouk', 'tissefil'], level: [7, 10], respawn: 55 },
-        { monsters: ['tissefil', 'tissefil'], level: [7, 10], respawn: 55 },
-        { monsters: ['grouk', 'grouk', 'grouk'], level: [8, 10], respawn: 60 },
-        { monsters: ['loche', 'loche', 'tissefil'], level: [7, 10], respawn: 55 },
+        { monsters: ['grouk', 'grouk', 'tissefil'], level: [13, 20], respawn: 55 },
+        { monsters: ['tissefil', 'tissefil'], level: [13, 20], respawn: 55 },
+        { monsters: ['grouk', 'grouk', 'grouk'], level: [15, 20], respawn: 60 },
+        { monsters: ['loche', 'loche', 'tissefil'], level: [13, 20], respawn: 55 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_sentiers_pont', name: 'Le Pont du Vide', level: [8, 11],
+      id: 'orsane_sentiers_pont', name: 'Le Pont du Vide', level: [15, 22],
       layout: [
         '###############',
         '#,,,,,ooo,,,,,#',
@@ -428,16 +428,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['bois_noueux'],
       groups: [
-        { monsters: ['tissefil', 'tissefil', 'grouk'], level: [8, 11], respawn: 60 },
-        { monsters: ['grouk', 'grouk', 'tissefil'], level: [8, 11], respawn: 60 },
-        { monsters: ['brim', 'brim', 'tissefil'], level: [8, 11], respawn: 60 },
-        { monsters: ['tissefil', 'tissefil', 'tissefil'], level: [9, 11], respawn: 60 },
+        { monsters: ['tissefil', 'tissefil', 'grouk'], level: [15, 22], respawn: 60 },
+        { monsters: ['grouk', 'grouk', 'tissefil'], level: [15, 22], respawn: 60 },
+        { monsters: ['brim', 'brim', 'tissefil'], level: [15, 22], respawn: 60 },
+        { monsters: ['tissefil', 'tissefil', 'tissefil'], level: [17, 22], respawn: 60 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_sentiers_halte', name: 'La Halte de Thoril', level: [6, 9],
+      id: 'orsane_sentiers_halte', name: 'La Halte de Thoril', level: [11, 18],
       layout: [
         '######.n.######',
         '#,,,,,...,,,,,#',
@@ -459,17 +459,17 @@ DATA.content.zones.push({
       npcs: ['thoril', 'osk'],
       nodes: ['bois_noueux', 'pierre_de_calcaire'],
       groups: [
-        { monsters: ['tissefil', 'grouk'], level: [6, 9], respawn: 55 },
-        { monsters: ['loche', 'loche', 'filin'], level: [6, 9], respawn: 55 },
-        { monsters: ['tissefil', 'tissefil'], level: [6, 9], respawn: 55 },
-        { monsters: ['grouk', 'grouk', 'tissefil'], level: [7, 9], respawn: 60 },
-        { monsters: ['glouton'], level: [7, 9], respawn: 90 },
+        { monsters: ['tissefil', 'grouk'], level: [11, 18], respawn: 55 },
+        { monsters: ['loche', 'loche', 'filin'], level: [11, 18], respawn: 55 },
+        { monsters: ['tissefil', 'tissefil'], level: [11, 18], respawn: 55 },
+        { monsters: ['grouk', 'grouk', 'tissefil'], level: [13, 18], respawn: 60 },
+        { monsters: ['glouton'], level: [13, 18], respawn: 90 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_sentiers_crete', name: 'La Crête', level: [9, 12],
+      id: 'orsane_sentiers_crete', name: 'La Crête', level: [17, 24],
       layout: [
         '###########n###',
         '#,,D,,,,,,,.,,#',
@@ -491,11 +491,11 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['pierre_de_calcaire'],
       groups: [
-        { monsters: ['grouk', 'grouk', 'tissefil'], level: [9, 12], respawn: 60 },
-        { monsters: ['tissefil', 'tissefil', 'grouk'], level: [9, 12], respawn: 60 },
-        { monsters: ['grouk', 'grouk', 'grouk'], level: [10, 12], respawn: 60 },
-        { monsters: ['oreth'], level: [10, 12], respawn: 300 },
-        { monsters: ['tissefil', 'tissefil', 'tissefil', 'brim'], level: [10, 12], respawn: 65 },
+        { monsters: ['grouk', 'grouk', 'tissefil'], level: [17, 24], respawn: 60 },
+        { monsters: ['tissefil', 'tissefil', 'grouk'], level: [17, 24], respawn: 60 },
+        { monsters: ['grouk', 'grouk', 'grouk'], level: [19, 24], respawn: 60 },
+        { monsters: ['oreth'], level: [19, 24], respawn: 300 },
+        { monsters: ['tissefil', 'tissefil', 'tissefil', 'brim'], level: [19, 24], respawn: 65 },
       ],
       dungeon: 'voliere_des_kavous',
       relay: false,
@@ -504,12 +504,12 @@ DATA.content.zones.push({
 });
 
 DATA.content.zones.push({
-  id: 'orsane_toiles', name: 'Les Toiles', region: 'orsane', level: [10, 16],
+  id: 'orsane_toiles', name: 'Les Toiles', region: 'orsane', level: [19, 32],
   palette: 'orsane',
   description: 'Une forêt de pins morts tendue de fils gris, où les lanternes de l\'Aube brillent encore à travers les toiles. Les Tissefils y nichent et les Veilloches y veillent, plus nombreux chaque nuit.',
   maps: [
     {
-      id: 'orsane_toiles_entree', name: 'Le Seuil des Toiles', level: [10, 12],
+      id: 'orsane_toiles_entree', name: 'Le Seuil des Toiles', level: [19, 24],
       layout: [
         'TTTTTTTTTTTTTTT',
         'T,,,,,,,,,,,,,T',
@@ -531,16 +531,16 @@ DATA.content.zones.push({
       npcs: ['thevra'],
       nodes: ['bois_noueux'],
       groups: [
-        { monsters: ['tissefil', 'tissefil', 'tissefil'], level: [10, 12], respawn: 60 },
-        { monsters: ['grouk_cornu', 'tissefil', 'tissefil'], level: [10, 12], respawn: 60 },
-        { monsters: ['tissefil', 'tissefil', 'veilloche'], level: [10, 12], respawn: 60 },
-        { monsters: ['tissefil', 'veilloche', 'grouk'], level: [10, 12], respawn: 60 },
+        { monsters: ['tissefil', 'tissefil', 'tissefil'], level: [19, 24], respawn: 60 },
+        { monsters: ['grouk_cornu', 'tissefil', 'tissefil'], level: [19, 24], respawn: 60 },
+        { monsters: ['tissefil', 'tissefil', 'veilloche'], level: [19, 24], respawn: 60 },
+        { monsters: ['tissefil', 'veilloche', 'grouk'], level: [19, 24], respawn: 60 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_toiles_fils', name: 'Les Fils Tendus', level: [11, 13],
+      id: 'orsane_toiles_fils', name: 'Les Fils Tendus', level: [21, 26],
       layout: [
         'TTTTTTTTTTTTTTT',
         'TT,,,,,,,,,,,TT',
@@ -562,16 +562,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['herbe_de_veille', 'bois_noueux'],
       groups: [
-        { monsters: ['tissefil', 'tissefil', 'tissefil'], level: [11, 13], respawn: 60 },
-        { monsters: ['tissefil', 'tissefil', 'veilloche'], level: [11, 13], respawn: 60 },
-        { monsters: ['veilloche', 'veilloche', 'tissefil'], level: [12, 13], respawn: 65 },
-        { monsters: ['grouk_cornu', 'brim', 'brim'], level: [11, 13], respawn: 60 },
+        { monsters: ['tissefil', 'tissefil', 'tissefil'], level: [21, 26], respawn: 60 },
+        { monsters: ['tissefil', 'tissefil', 'veilloche'], level: [21, 26], respawn: 60 },
+        { monsters: ['veilloche', 'veilloche', 'tissefil'], level: [23, 26], respawn: 65 },
+        { monsters: ['grouk_cornu', 'brim', 'brim'], level: [21, 26], respawn: 60 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_toiles_lanternes', name: 'L\'Allée des Lanternes', level: [12, 15],
+      id: 'orsane_toiles_lanternes', name: 'L\'Allée des Lanternes', level: [23, 30],
       layout: [
         'TTTTTTTTTTTTTTT',
         'T,,,,,,,,,,,,,T',
@@ -593,17 +593,17 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['herbe_de_veille'],
       groups: [
-        { monsters: ['veilloche', 'veilloche', 'tissefil'], level: [12, 15], respawn: 65 },
-        { monsters: ['veilloche_tissee', 'veilloche', 'tissefil'], level: [14, 15], respawn: 65 },
-        { monsters: ['veilloche', 'tissefil', 'tissefil', 'tissefil'], level: [12, 15], respawn: 65 },
-        { monsters: ['kavou_pourpre', 'kavou_pourpre'], level: [12, 15], respawn: 65 },
-        { monsters: ['veilloche', 'veilloche', 'veilloche_tissee'], level: [13, 15], respawn: 65 },
+        { monsters: ['veilloche', 'veilloche', 'tissefil'], level: [23, 30], respawn: 65 },
+        { monsters: ['veilloche_tissee', 'veilloche', 'tissefil'], level: [27, 30], respawn: 65 },
+        { monsters: ['veilloche', 'tissefil', 'tissefil', 'tissefil'], level: [23, 30], respawn: 65 },
+        { monsters: ['kavou_pourpre', 'kavou_pourpre'], level: [23, 30], respawn: 65 },
+        { monsters: ['veilloche', 'veilloche', 'veilloche_tissee'], level: [25, 30], respawn: 65 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_toiles_nid', name: 'Le Nid des Toiles', level: [13, 16],
+      id: 'orsane_toiles_nid', name: 'Le Nid des Toiles', level: [25, 32],
       layout: [
         'TTTTTTTnTTTTTTT',
         'TT,,,,,.,,,,,TT',
@@ -625,15 +625,15 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['bois_noueux'],
       groups: [
-        { monsters: ['tissefil_ancien', 'tissefil', 'tissefil', 'tissefil'], level: [13, 16], respawn: 90 },
-        { monsters: ['tissefil', 'tissefil', 'tissefil', 'tissefil'], level: [12, 16], respawn: 90 },
-        { monsters: ['tissefil', 'tissefil', 'tissefil', 'tissefil'], level: [12, 16], respawn: 90 },
+        { monsters: ['tissefil_ancien', 'tissefil', 'tissefil', 'tissefil'], level: [25, 32], respawn: 90 },
+        { monsters: ['tissefil', 'tissefil', 'tissefil', 'tissefil'], level: [23, 32], respawn: 90 },
+        { monsters: ['tissefil', 'tissefil', 'tissefil', 'tissefil'], level: [23, 32], respawn: 90 },
       ],
       dungeon: 'nid_des_toiles',
       relay: false,
     },
     {
-      id: 'orsane_toiles_sortie', name: 'Le Bord des Éboulis', level: [13, 16],
+      id: 'orsane_toiles_sortie', name: 'Le Bord des Éboulis', level: [25, 32],
       layout: [
         'TTTTTTTTTTTnTTT',
         'T,,,,,,,,,,.,,T',
@@ -655,10 +655,10 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['herbe_de_veille'],
       groups: [
-        { monsters: ['tissefil', 'tissefil', 'veilloche'], level: [12, 16], respawn: 65 },
-        { monsters: ['veilloche', 'veilloche', 'tissefil', 'tissefil'], level: [12, 16], respawn: 70 },
-        { monsters: ['tissefil', 'tissefil', 'tissefil', 'brimbe'], level: [12, 16], respawn: 70 },
-        { monsters: ['tissefil_ancien', 'tissefil_ancien', 'veilloche'], level: [13, 16], respawn: 70 },
+        { monsters: ['tissefil', 'tissefil', 'veilloche'], level: [23, 32], respawn: 65 },
+        { monsters: ['veilloche', 'veilloche', 'tissefil', 'tissefil'], level: [23, 32], respawn: 70 },
+        { monsters: ['tissefil', 'tissefil', 'tissefil', 'brimbe'], level: [23, 32], respawn: 70 },
+        { monsters: ['tissefil_ancien', 'tissefil_ancien', 'veilloche'], level: [25, 32], respawn: 70 },
       ],
       dungeon: null,
       relay: false,
@@ -667,12 +667,12 @@ DATA.content.zones.push({
 });
 
 DATA.content.zones.push({
-  id: 'orsane_eboulis', name: 'Les Éboulis', region: 'orsane', level: [14, 20],
+  id: 'orsane_eboulis', name: 'Les Éboulis', region: 'orsane', level: [27, 40],
   palette: 'orsane',
   description: 'Le versant est des Cimes, un chaos de rochers tombés d\'on ne sait où. Les Brimbes y lancent leurs galets, les Grouks y creusent, et tout en haut s\'ouvre le Terrier.',
   maps: [
     {
-      id: 'orsane_eboulis_pente', name: 'La Pente aux Galets', level: [14, 16],
+      id: 'orsane_eboulis_pente', name: 'La Pente aux Galets', level: [27, 32],
       layout: [
         '###############',
         '#,,#,,,,,,,#,,#',
@@ -694,16 +694,16 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['pierre_de_calcaire', 'pierre_de_calcaire'],
       groups: [
-        { monsters: ['brimbe', 'brimbe', 'grouk'], level: [14, 16], respawn: 70 },
-        { monsters: ['brimbe', 'grouk', 'grouk'], level: [14, 16], respawn: 70 },
-        { monsters: ['brimbe', 'brimbe', 'brimbe', 'veilloche'], level: [15, 16], respawn: 75 },
-        { monsters: ['glek', 'glek', 'brimbe'], level: [14, 16], respawn: 70 },
+        { monsters: ['brimbe', 'brimbe', 'grouk'], level: [27, 32], respawn: 70 },
+        { monsters: ['brimbe', 'grouk', 'grouk'], level: [27, 32], respawn: 70 },
+        { monsters: ['brimbe', 'brimbe', 'brimbe', 'veilloche'], level: [29, 32], respawn: 75 },
+        { monsters: ['glek', 'glek', 'brimbe'], level: [27, 32], respawn: 70 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_eboulis_relais', name: 'Relais des Éboulis', level: [14, 17],
+      id: 'orsane_eboulis_relais', name: 'Relais des Éboulis', level: [27, 34],
       layout: [
         '#######n#######',
         '#,,,,,,.,,,,,,#',
@@ -725,15 +725,15 @@ DATA.content.zones.push({
       npcs: ['elkor', 'avreth', 'karvel', 'lekra'],
       nodes: ['pierre_de_calcaire'],
       groups: [
-        { monsters: ['veilloche_tissee', 'brimbe', 'brimbe'], level: [14, 17], respawn: 70 },
-        { monsters: ['brimbe', 'brimbe', 'veilloche'], level: [14, 17], respawn: 70 },
-        { monsters: ['grouk', 'grouk', 'brimbe'], level: [15, 17], respawn: 70 },
+        { monsters: ['veilloche_tissee', 'brimbe', 'brimbe'], level: [27, 34], respawn: 70 },
+        { monsters: ['brimbe', 'brimbe', 'veilloche'], level: [27, 34], respawn: 70 },
+        { monsters: ['grouk', 'grouk', 'brimbe'], level: [29, 34], respawn: 70 },
       ],
       dungeon: null,
       relay: true,
     },
     {
-      id: 'orsane_eboulis_terrier', name: 'La Gueule du Terrier', level: [17, 20],
+      id: 'orsane_eboulis_terrier', name: 'La Gueule du Terrier', level: [33, 40],
       layout: [
         '###############',
         '#,,,,,#D#,,,,,#',
@@ -755,16 +755,16 @@ DATA.content.zones.push({
       npcs: ['kethril'],
       nodes: ['pierre_de_calcaire'],
       groups: [
-        { monsters: ['grouk', 'grouk', 'grouk', 'brimbe'], level: [17, 20], respawn: 75 },
-        { monsters: ['grouk', 'grouk', 'veilloche', 'brimbe'], level: [17, 20], respawn: 75 },
-        { monsters: ['grouk', 'grouk', 'grouk', 'grouk'], level: [18, 20], respawn: 80 },
-        { monsters: ['brimbe_fendue', 'brimbe', 'grouk', 'grouk'], level: [18, 20], respawn: 80 },
+        { monsters: ['grouk', 'grouk', 'grouk', 'brimbe'], level: [33, 40], respawn: 75 },
+        { monsters: ['grouk', 'grouk', 'veilloche', 'brimbe'], level: [33, 40], respawn: 75 },
+        { monsters: ['grouk', 'grouk', 'grouk', 'grouk'], level: [35, 40], respawn: 80 },
+        { monsters: ['brimbe_fendue', 'brimbe', 'grouk', 'grouk'], level: [35, 40], respawn: 80 },
       ],
       dungeon: 'terrier_du_grand_grouk',
       relay: false,
     },
     {
-      id: 'orsane_eboulis_chaos', name: 'Le Chaos', level: [16, 19],
+      id: 'orsane_eboulis_chaos', name: 'Le Chaos', level: [31, 38],
       layout: [
         '###############',
         '#,,,,,,,,,,,,,#',
@@ -786,18 +786,18 @@ DATA.content.zones.push({
       npcs: [],
       nodes: ['pierre_de_calcaire', 'bois_noueux'],
       groups: [
-        { monsters: ['brimbe', 'brimbe', 'grouk'], level: [16, 19], respawn: 70 },
-        { monsters: ['brimbe', 'veilloche', 'grouk', 'grouk'], level: [15, 19], respawn: 75 },
-        { monsters: ['thelk', 'glek', 'glek'], level: [16, 19], respawn: 75 },
-        { monsters: ['brimbe', 'brimbe', 'brimbe', 'veilloche'], level: [15, 19], respawn: 75 },
-        { monsters: ['grouk', 'grouk', 'grouk', 'veilloche'], level: [15, 19], respawn: 75 },
-        { monsters: ['pilou_defait', 'pilou_defait', 'brimbe'], level: [16, 18], respawn: 75 },
+        { monsters: ['brimbe', 'brimbe', 'grouk'], level: [31, 38], respawn: 70 },
+        { monsters: ['brimbe', 'veilloche', 'grouk', 'grouk'], level: [29, 38], respawn: 75 },
+        { monsters: ['thelk', 'glek', 'glek'], level: [31, 38], respawn: 75 },
+        { monsters: ['brimbe', 'brimbe', 'brimbe', 'veilloche'], level: [29, 38], respawn: 75 },
+        { monsters: ['grouk', 'grouk', 'grouk', 'veilloche'], level: [29, 38], respawn: 75 },
+        { monsters: ['pilou_defait', 'pilou_defait', 'brimbe'], level: [31, 36], respawn: 75 },
       ],
       dungeon: null,
       relay: false,
     },
     {
-      id: 'orsane_eboulis_passe', name: 'La Passe de Kaldum', level: [18, 20],
+      id: 'orsane_eboulis_passe', name: 'La Passe de Kaldum', level: [35, 40],
       layout: [
         '###############',
         '##,,,,,,,,,,,##',
@@ -819,11 +819,11 @@ DATA.content.zones.push({
       npcs: ['ulkara'],
       nodes: ['pierre_de_calcaire'],
       groups: [
-        { monsters: ['brimbe', 'brimbe', 'veilloche'], level: [18, 20], respawn: 75 },
-        { monsters: ['thelk', 'thelk', 'brimbe'], level: [18, 20], respawn: 80 },
-        { monsters: ['korvath'], level: [22, 24], respawn: 600 },
-        { monsters: ['brimbe', 'brimbe', 'grouk', 'veilloche'], level: [18, 20], respawn: 80 },
-        { monsters: ['brimbe', 'brimbe', 'brimbe', 'brimbe'], level: [18, 20], respawn: 80 },
+        { monsters: ['brimbe', 'brimbe', 'veilloche'], level: [35, 40], respawn: 75 },
+        { monsters: ['thelk', 'thelk', 'brimbe'], level: [35, 40], respawn: 80 },
+        { monsters: ['korvath'], level: [43, 48], respawn: 600 },
+        { monsters: ['brimbe', 'brimbe', 'grouk', 'veilloche'], level: [35, 40], respawn: 80 },
+        { monsters: ['brimbe', 'brimbe', 'brimbe', 'brimbe'], level: [35, 40], respawn: 80 },
       ],
       dungeon: null,
       relay: false,
@@ -883,26 +883,26 @@ DATA.content.npcs.push({
 });
 DATA.content.npcs.push({
   id: 'saya', name: 'Saya', title: 'Maîtresse du Dojo', look: 'marcheur', dojo: true,
-  dialogue: ['Le Dojo des Cimes est ouvert à tous. Les mannequins de la cour ne rendent pas les coups : essaie tes sorts sur eux avant de les essayer sur un Grouk.', 'Un Veilleur qui ne s\'entraîne pas apprend sur le terrain. Le terrain, lui, n\'est pas patient.', 'L\'épreuve du jour, c\'est mes élèves au bâton, par vagues, et le maître d\'armes pour finir. Tiens en huit tours et la Garde te doit un Sceau. Une fois par jour, pas deux.'],
+  dialogue: ['Le Dojo des Cimes est ouvert à tous. Les mannequins de la cour ne rendent pas les coups : essaie tes sorts sur eux avant de les essayer sur un Grouk.', 'Un Veilleur qui ne s\'entraîne pas apprend sur le terrain. Le terrain, lui, n\'est pas patient.', 'L\'épreuve du jour, c\'est mes élèves au bâton, par vagues, et le maître d\'armes pour finir. Tiens en huit tours et la Garde te doit un Insigne. Une fois par jour, pas deux.'],
 });
 DATA.content.npcs.push({
   id: 'hessa', name: 'Hessa', title: 'Capitaine de la Garde', look: 'garde', avis: true,
-  dialogue: ['La Garde des Cimes tient la Place, la Porte et les murs. Dehors, c\'est à toi de tenir.', 'Les avis de recherche sont cloués à la tour : un par zone, une prime chacun. Ramène-moi la bête, je paie en Dragmes et en Sceaux.'],
+  dialogue: ['La Garde des Cimes tient la Place, la Porte et les murs. Dehors, c\'est à toi de tenir.', 'Les avis de recherche sont cloués à la tour : un par zone, une prime chacun. Ramène-moi la bête, je paie en Dragmes et en Insignes.'],
 });
 DATA.content.npcs.push({
   id: 'ismere', name: 'Ismère', title: 'Gardienne du Temple des Voies', look: 'ancien', temple: true,
-  dialogue: ['Dix statues, dix Voies. Chacune a commencé par un geste, et chacune a fini par un serment.', 'La Garde paie ses primes en Sceaux. Ici, un Sceau vaut une page de ce que les Voies ont appris.', 'Les maîtres des Voies se tiennent près de leur statue. Ils ne parlent pas aux Veilleurs : ils les regardent, et c\'est moi qui transmets.'],
+  dialogue: ['Neuf statues, neuf Voies. Chacune a commencé par un geste, et chacune a fini par un serment.', 'La Garde paie ses primes en Insignes. Ici, un Insigne vaut une page de ce que les Voies ont appris.', 'Les maîtres des Voies se tiennent près de leur statue. Ils ne parlent pas aux Veilleurs : ils les regardent, et c\'est moi qui transmets.'],
 });
-DATA.content.resources.push({ id: 'sceau_de_la_garde', name: 'Sceau de la Garde', monnaie: true, drops: [], node: null, price: 8,
+DATA.content.resources.push({ id: 'sceau_de_la_garde', name: 'Insigne de la Garde', monnaie: true, drops: [], node: null, price: 8,
   lore: 'Un jeton de cire bleue frappé de la tour des Cimes. La Garde le donne pour chaque bête ramenée ; le Temple le reprend contre ses pages.' });
 (DATA.content.avis = DATA.content.avis || []).push(
-  { id: 'avis_brask', monstre: 'brask', niveau: 6, carte: 'orsane_clairieres_oree', groupe: 2, lieu: 'à l\'Orée des Sentiers, au bout des Clairières',
+  { id: 'avis_brask', monstre: 'brask', niveau: 11, carte: 'orsane_clairieres_oree', groupe: 2, lieu: 'à l\'Orée des Sentiers, au bout des Clairières',
     texte: 'Un vieux Grouk qui charge les charrettes des fermes. Deux ou trois Grouks le suivent partout.', prime: { xp: 300, fils: 40, sceaux: 1 } },
-  { id: 'avis_meche_folle', monstre: 'meche_folle', niveau: 10, carte: 'orsane_sentiers_corniche', groupe: 3, lieu: 'sur la Corniche des Sentiers',
+  { id: 'avis_meche_folle', monstre: 'meche_folle', niveau: 19, carte: 'orsane_sentiers_corniche', groupe: 3, lieu: 'sur la Corniche des Sentiers',
     texte: 'Une Loche qui brûle les ponts de corde. Elle vole avec deux Loches et un Tissefil.', prime: { xp: 700, fils: 70, sceaux: 2 } },
-  { id: 'avis_nouette', monstre: 'nouette', niveau: 15, carte: 'orsane_toiles_sortie', groupe: 3, lieu: 'au Bord des Éboulis, à la sortie des Toiles',
+  { id: 'avis_nouette', monstre: 'nouette', niveau: 29, carte: 'orsane_toiles_sortie', groupe: 3, lieu: 'au Bord des Éboulis, à la sortie des Toiles',
     texte: 'La plus vieille fileuse des Toiles. Deux Tissefils Anciens et une Veilloche la gardent.', prime: { xp: 1300, fils: 110, sceaux: 3 } },
-  { id: 'avis_gravas', monstre: 'gravas', niveau: 19, carte: 'orsane_eboulis_chaos', groupe: 0, lieu: 'dans le Chaos des Éboulis',
+  { id: 'avis_gravas', monstre: 'gravas', niveau: 37, carte: 'orsane_eboulis_chaos', groupe: 0, lieu: 'dans le Chaos des Éboulis',
     texte: 'Une Brimbe grosse comme un rocher, qui ferme la route de Kaldum. Deux Brimbes et un Grouk tiennent la pente avec elle.', prime: { xp: 2000, fils: 160, sceaux: 4 } },
 );
 DATA.content.npcs.push({
@@ -1009,7 +1009,7 @@ DATA.content.quests.push({
   rewards: { xp: 40, fils: 20, items: [{ id: 'pain_de_cime', count: 2 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_lanternes_volees', name: 'Les lanternes volées', level: 2, main: true,
+  id: 'orsane_lanternes_volees', name: 'Les lanternes volées', level: 3, main: true,
   giver: 'orvak', requires: { level: 1, quests: ['orsane_arrivee'] },
   steps: [
     { type: 'kill', monster: 'pilou', count: 5, text: 'Chasser cinq Glyms Ancestraux dans les Clairières' },
@@ -1024,8 +1024,8 @@ DATA.content.quests.push({
   rewards: { xp: 146, fils: 25, items: [{ id: 'sandales_de_duvet', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_grenier_des_pilous', name: 'Le Grenier des Glyms', level: 4, main: true,
-  giver: 'varek', turnIn: 'orvak', requires: { level: 3, quests: ['orsane_lanternes_volees'] },
+  id: 'orsane_grenier_des_pilous', name: 'Le Grenier des Glyms', level: 7, main: true,
+  giver: 'varek', turnIn: 'orvak', requires: { level: 5, quests: ['orsane_lanternes_volees'] },
   steps: [
     { type: 'visit', map: 'orsane_clairieres_bosquet', text: 'Trouver la vieille grange du Bosquet' },
     { type: 'dungeon', dungeon: 'grenier_des_pilous', text: 'Reprendre les lanternes dans le Grenier des Glyms' },
@@ -1039,8 +1039,8 @@ DATA.content.quests.push({
   rewards: { xp: 441, fils: 30, items: [{ id: 'amulette_pilou', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_reveil_des_grouks', name: 'Le réveil des Grouks', level: 5, main: true,
-  giver: 'varek', turnIn: 'ravik', requires: { level: 4, quests: ['orsane_grenier_des_pilous'] },
+  id: 'orsane_reveil_des_grouks', name: 'Le réveil des Grouks', level: 9, main: true,
+  giver: 'varek', turnIn: 'ravik', requires: { level: 7, quests: ['orsane_grenier_des_pilous'] },
   steps: [
     { type: 'visit', map: 'orsane_clairieres_mare', text: 'Aller voir la Mare aux Grouks' },
     { type: 'kill', monster: 'grouk', count: 6, text: 'Repousser six Grouks' },
@@ -1055,8 +1055,8 @@ DATA.content.quests.push({
   rewards: { xp: 630, fils: 40, items: [{ id: 'cape_de_plumes', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_fil_tendu', name: 'Le Col des Toiles', level: 8, main: true,
-  giver: 'ravik', turnIn: 'thevra', requires: { level: 7, quests: ['orsane_reveil_des_grouks'] },
+  id: 'orsane_fil_tendu', name: 'Le Col des Toiles', level: 15, main: true,
+  giver: 'ravik', turnIn: 'thevra', requires: { level: 13, quests: ['orsane_reveil_des_grouks'] },
   steps: [
     { type: 'equip', slot: 'cape', text: 'Porter une cape avant de monter' },
     { type: 'kill', monster: 'tissefil', count: 6, text: 'Couper six Tissefils sur les Sentiers' },
@@ -1071,8 +1071,8 @@ DATA.content.quests.push({
   rewards: { xp: 1337, fils: 55, items: [{ id: 'pain_de_grouk', count: 3 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_toiles_etendues', name: 'Les Toiles s\'étendent', level: 12, main: true,
-  giver: 'thevra', turnIn: 'karvel', requires: { level: 11, quests: ['orsane_fil_tendu'] },
+  id: 'orsane_toiles_etendues', name: 'Les Toiles s\'étendent', level: 23, main: true,
+  giver: 'thevra', turnIn: 'karvel', requires: { level: 21, quests: ['orsane_fil_tendu'] },
   steps: [
     { type: 'collect', item: 'soie_de_tissefil', count: 6, text: 'Récupérer six soies de Tissefil' },
     { type: 'kill', monster: 'veilloche', count: 4, text: 'Éteindre quatre Veilloches' },
@@ -1088,8 +1088,8 @@ DATA.content.quests.push({
   rewards: { xp: 2558, fils: 75, items: [{ id: 'amulette_tissefil', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_le_terrier', name: 'Le Terrier', level: 17, main: true,
-  giver: 'karvel', requires: { level: 15, quests: ['orsane_toiles_etendues'] },
+  id: 'orsane_le_terrier', name: 'Le Terrier', level: 33, main: true,
+  giver: 'karvel', requires: { level: 29, quests: ['orsane_toiles_etendues'] },
   startItems: [{ id: 'cle_du_terrier', count: 1 }],
   steps: [
     { type: 'kill', monster: 'brimbe', count: 6, text: 'Écarter six Brimbes des Éboulis' },
@@ -1107,7 +1107,7 @@ DATA.content.quests.push({
 });
 
 DATA.content.quests.push({
-  id: 'orsane_toupie_de_vali', name: 'La toupie de Vali', level: 2, main: false,
+  id: 'orsane_toupie_de_vali', name: 'La toupie de Vali', level: 3, main: false,
   giver: 'vali', requires: { level: 1, quests: [] },
   steps: [
     { type: 'visit', map: 'orsane_clairieres_pres', text: 'Chercher dans les Prés aux Glyms' },
@@ -1122,8 +1122,8 @@ DATA.content.quests.push({
   rewards: { xp: 73, fils: 10, items: [{ id: 'pain_de_cime', count: 2 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_plumes_de_thila', name: 'Les plumes de Thila', level: 3, main: false,
-  giver: 'thila', requires: { level: 2, quests: [] },
+  id: 'orsane_plumes_de_thila', name: 'Les plumes de Thila', level: 5, main: false,
+  giver: 'thila', requires: { level: 3, quests: [] },
   steps: [
     { type: 'collect', item: 'plume_de_pilou', count: 6, text: 'Rassembler six plumes de Glym' },
     { type: 'talk', npc: 'thila', text: 'Rapporter les plumes à Thila' },
@@ -1136,8 +1136,8 @@ DATA.content.quests.push({
   rewards: { xp: 139, fils: 15, items: [{ id: 'anneau_pilou', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_ronde_d_orvak', name: 'La ronde d\'Orvak', level: 3, main: false,
-  giver: 'orvak', requires: { level: 2, quests: ['orsane_arrivee'] },
+  id: 'orsane_ronde_d_orvak', name: 'La ronde d\'Orvak', level: 5, main: false,
+  giver: 'orvak', requires: { level: 3, quests: ['orsane_arrivee'] },
   steps: [
     { type: 'equip', slot: 'coiffe', text: 'Mettre une coiffe, on ne patrouille pas tête nue' },
     { type: 'kill', monster: 'pilou', count: 8, text: 'Faire tomber huit Glyms Ancestraux au Seuil des Prés' },
@@ -1151,8 +1151,8 @@ DATA.content.quests.push({
   rewards: { xp: 139, fils: 15, items: [{ id: 'cape_pilou', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_semelles_de_korvel', name: 'Les semelles de Korvel', level: 4, main: false,
-  giver: 'korvel', requires: { level: 3, quests: [] },
+  id: 'orsane_semelles_de_korvel', name: 'Les semelles de Korvel', level: 7, main: false,
+  giver: 'korvel', requires: { level: 5, quests: [] },
   steps: [
     { type: 'gather', resource: 'bois_de_cime', count: 5, text: 'Couper cinq bois de Cime' },
     { type: 'collect', item: 'cuir_de_grouk', count: 3, text: 'Obtenir trois cuirs de Grouk' },
@@ -1166,8 +1166,8 @@ DATA.content.quests.push({
   rewards: { xp: 221, fils: 20, items: [{ id: 'bottes_pilou', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_memoire_de_kelthar', name: 'La mémoire de Kelthar', level: 6, main: false,
-  giver: 'kelthar', requires: { level: 5, quests: [] },
+  id: 'orsane_memoire_de_kelthar', name: 'La mémoire de Kelthar', level: 11, main: false,
+  giver: 'kelthar', requires: { level: 9, quests: [] },
   steps: [
     { type: 'visit', map: 'orsane_clairieres_mare', text: 'Regarder près de la Mare' },
     { type: 'visit', map: 'orsane_sentiers_corniche', text: 'Regarder sur la Corniche' },
@@ -1182,8 +1182,8 @@ DATA.content.quests.push({
   rewards: { xp: 422, fils: 25, items: [{ id: 'pain_de_grouk', count: 2 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_manche_de_thorak', name: 'Le manche de Thorak', level: 7, main: false,
-  giver: 'thorak', requires: { level: 6, quests: [] },
+  id: 'orsane_manche_de_thorak', name: 'Le manche de Thorak', level: 13, main: false,
+  giver: 'thorak', requires: { level: 11, quests: [] },
   steps: [
     { type: 'gather', resource: 'bois_noueux', count: 5, text: 'Couper cinq bois noueux sur les Sentiers' },
     { type: 'collect', item: 'cuir_de_grouk', count: 5, text: 'Obtenir cinq cuirs de Grouk' },
@@ -1197,8 +1197,8 @@ DATA.content.quests.push({
   rewards: { xp: 540, fils: 35, items: [{ id: 'pain_de_grouk', count: 3 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_pierres_de_rilka', name: 'Les pierres de Rilka', level: 9, main: false,
-  giver: 'rilka', requires: { level: 8, quests: [] },
+  id: 'orsane_pierres_de_rilka', name: 'Les pierres de Rilka', level: 17, main: false,
+  giver: 'rilka', requires: { level: 15, quests: [] },
   steps: [
     { type: 'gather', resource: 'pierre_de_calcaire', count: 6, text: 'Extraire six pierres de calcaire' },
     { type: 'kill', monster: 'grouk', count: 5, text: 'Chasser cinq Grouks qui rôdent autour des carrières' },
@@ -1212,8 +1212,8 @@ DATA.content.quests.push({
   rewards: { xp: 807, fils: 40, items: [{ id: 'amulette_grouk', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_volu_le_veilloche', name: 'Volu le Veilloche', level: 10, main: false,
-  giver: 'thoril', requires: { level: 9, quests: [] },
+  id: 'orsane_volu_le_veilloche', name: 'Volu le Veilloche', level: 19, main: false,
+  giver: 'thoril', requires: { level: 17, quests: [] },
   steps: [
     { type: 'collect', item: 'cire_de_veilloche', count: 4, text: 'Trouver quatre cires de Veilloche pour recoller Volu' },
     { type: 'kill', monster: 'tissefil', count: 5, text: 'Chasser cinq Tissefils qui rôdent autour de la Halte' },
@@ -1227,8 +1227,8 @@ DATA.content.quests.push({
   rewards: { xp: 955, fils: 45, items: [{ id: 'bottes_tissefil', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_tisane_de_velka', name: 'La tisane de Velka', level: 11, main: false,
-  giver: 'velka', requires: { level: 10, quests: [] },
+  id: 'orsane_tisane_de_velka', name: 'La tisane de Velka', level: 21, main: false,
+  giver: 'velka', requires: { level: 19, quests: [] },
   steps: [
     { type: 'gather', resource: 'herbe_de_veille', count: 6, text: 'Cueillir six herbes de veille' },
     { type: 'collect', item: 'cire_de_veilloche', count: 3, text: 'Trouver trois cires de Veilloche' },
@@ -1242,8 +1242,8 @@ DATA.content.quests.push({
   rewards: { xp: 1113, fils: 50, items: [{ id: 'potion_de_relais', count: 2 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_galets_de_karvel', name: 'Les galets de Larkoth', level: 16, main: false,
-  giver: 'karvel', requires: { level: 15, quests: ['orsane_toiles_etendues'] },
+  id: 'orsane_galets_de_karvel', name: 'Les galets de Larkoth', level: 31, main: false,
+  giver: 'karvel', requires: { level: 29, quests: ['orsane_toiles_etendues'] },
   steps: [
     { type: 'kill', monster: 'brimbe', count: 10, text: 'Faire reculer dix Brimbes dans le Chaos' },
     { type: 'collect', item: 'galet_de_brimbe', count: 8, text: 'Ramasser huit galets de Brimbe' },
@@ -1257,8 +1257,8 @@ DATA.content.quests.push({
   rewards: { xp: 2027, fils: 90, items: [{ id: 'bottes_brimbe', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_kavous_de_thoril', name: 'Les Kavous de Thoril', level: 13, main: false,
-  giver: 'thoril', requires: { level: 12, quests: [] },
+  id: 'orsane_kavous_de_thoril', name: 'Les Kavous de Thoril', level: 25, main: false,
+  giver: 'thoril', requires: { level: 23, quests: [] },
   steps: [
     { type: 'visit', map: 'orsane_sentiers_crete', text: 'Trouver la vieille volière sur la Crête' },
     { type: 'dungeon', dungeon: 'voliere_des_kavous', text: 'Traverser la Volière des Kavous' },
@@ -1272,8 +1272,8 @@ DATA.content.quests.push({
   rewards: { xp: 1454, fils: 60, items: [{ id: 'pain_de_grouk', count: 2 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_cocon_de_thevra', name: 'Le cocon', level: 13, main: false,
-  giver: 'thevra', requires: { level: 12, quests: [] },
+  id: 'orsane_cocon_de_thevra', name: 'Le cocon', level: 25, main: false,
+  giver: 'thevra', requires: { level: 23, quests: [] },
   steps: [
     { type: 'visit', map: 'orsane_toiles_nid', text: 'Descendre au Nid des Toiles' },
     { type: 'dungeon', dungeon: 'nid_des_toiles', text: 'Déchirer le cocon de la Fileuse au fond du Nid' },
@@ -1288,8 +1288,8 @@ DATA.content.quests.push({
 });
 
 DATA.content.quests.push({
-  id: 'orsane_le_brin_qui_luit', name: 'Le brin qui luit', level: 17, main: false,
-  giver: 'karvel', turnIn: 'kelthar', requires: { level: 17, quests: ['orsane_toiles_etendues'] },
+  id: 'orsane_le_brin_qui_luit', name: 'Le brin qui luit', level: 33, main: false,
+  giver: 'karvel', turnIn: 'kelthar', requires: { level: 33, quests: ['orsane_toiles_etendues'] },
   steps: [
     { type: 'visit', map: 'orsane_sentiers_crete', text: 'Guetter le fil qui luit, sur la Crête des Sentiers' },
     { type: 'kill', monster: 'oreth', count: 1, text: 'Attraper Oreth, le fil qui fuit' },
@@ -1305,8 +1305,8 @@ DATA.content.quests.push({
 });
 
 DATA.content.quests.push({
-  id: 'orsane_la_fissure_du_chaos', name: 'La fissure du Chaos', level: 18, main: false, category: 'faction',
-  giver: 'avreth', requires: { level: 17, notFaction: 'dechirure' },
+  id: 'orsane_la_fissure_du_chaos', name: 'La fissure du Chaos', level: 35, main: false, category: 'faction',
+  giver: 'avreth', requires: { level: 33, notFaction: 'dechirure' },
   steps: [
     { type: 'visit', map: 'orsane_eboulis_chaos', text: 'Trouver la fissure, au fond du Chaos' },
     { type: 'kill', monster: 'pilou_defait', count: 4, text: 'Renvoyer quatre Glyms Défaits sous la cendre' },
@@ -1322,8 +1322,8 @@ DATA.content.quests.push({
   rewards: { xp: 2447, fils: 85, items: [{ id: 'pain_de_scorie', count: 2 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_ce_qui_remonte', name: 'Ce qui remonte', level: 18, main: false, category: 'faction',
-  giver: 'lekra', turnIn: 'kethril', requires: { level: 17, notFaction: 'fil' },
+  id: 'orsane_ce_qui_remonte', name: 'Ce qui remonte', level: 35, main: false, category: 'faction',
+  giver: 'lekra', turnIn: 'kethril', requires: { level: 33, notFaction: 'fil' },
   steps: [
     { type: 'visit', map: 'orsane_eboulis_chaos', text: 'Regarder la fissure du Chaos, sans la toucher' },
     { type: 'kill', monster: 'pilou_defait', count: 3, text: 'Étudier trois Glyms Défaits : ce qu\'ils gardent du dessous' },
@@ -1338,8 +1338,8 @@ DATA.content.quests.push({
   rewards: { xp: 2447, fils: 85, items: [{ id: 'pain_de_scorie', count: 2 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_le_convoi_de_la_passe', name: 'Le convoi de la Passe', level: 19, main: false, category: 'faction',
-  giver: 'elkor', turnIn: 'ravok', requires: { level: 18 },
+  id: 'orsane_le_convoi_de_la_passe', name: 'Le convoi de la Passe', level: 37, main: false, category: 'faction',
+  giver: 'elkor', turnIn: 'ravok', requires: { level: 35 },
   steps: [
     { type: 'visit', map: 'orsane_eboulis_passe', text: 'Partir devant le convoi, jusqu\'à la Passe de Kaldum' },
     { type: 'kill', monster: 'brimbe', count: 5, text: 'Dégager la route de cinq Brimbes' },
@@ -1355,8 +1355,8 @@ DATA.content.quests.push({
   rewards: { xp: 2668, fils: 95, items: [{ id: 'potion_de_relais', count: 2 }], marcheurs: 10 },
 });
 DATA.content.quests.push({
-  id: 'orsane_la_passe_au_crepuscule', name: 'La Passe au crépuscule', level: 19, main: true,
-  giver: 'karvel', turnIn: 'ulkara', requires: { level: 18, quests: ['orsane_le_terrier'] },
+  id: 'orsane_la_passe_au_crepuscule', name: 'La Passe au crépuscule', level: 37, main: true,
+  giver: 'karvel', turnIn: 'ulkara', requires: { level: 35, quests: ['orsane_le_terrier'] },
   steps: [
     { type: 'visit', map: 'orsane_eboulis_chaos', text: 'Traverser le Chaos avant la nuit' },
     { type: 'visit', map: 'orsane_eboulis_passe', text: 'Monter à la Passe de Kaldum au crépuscule' },
@@ -1372,8 +1372,8 @@ DATA.content.quests.push({
   rewards: { xp: 5336, fils: 140, items: [{ id: 'pain_de_scorie', count: 3 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_le_serment', name: 'Le serment', level: 20, main: true, category: 'faction', repeat: true,
-  giver: 'ulkara', requires: { level: 20, quests: ['orsane_la_passe_au_crepuscule'], notFaction: ['fil', 'dechirure'] },
+  id: 'orsane_le_serment', name: 'Le serment', level: 39, main: true, category: 'faction', repeat: true,
+  giver: 'ulkara', requires: { level: 39, quests: ['orsane_la_passe_au_crepuscule'], notFaction: ['fil', 'dechirure'] },
   steps: [
     {
       type: 'answer', npc: 'ulkara', text: 'Prêter serment devant Ulkara, ou refuser',
@@ -1393,8 +1393,8 @@ DATA.content.quests.push({
   rewards: { xp: 5793, fils: 100 },
 });
 DATA.content.quests.push({
-  id: 'orsane_le_reniement', name: 'Le reniement', level: 20, main: false, category: 'faction', repeat: true, hidden: true,
-  giver: 'ulkara', requires: { level: 20, faction: ['fil', 'dechirure'] },
+  id: 'orsane_le_reniement', name: 'Le reniement', level: 39, main: false, category: 'faction', repeat: true, hidden: true,
+  giver: 'ulkara', requires: { level: 39, faction: ['fil', 'dechirure'] },
   steps: [
     {
       type: 'answer', npc: 'ulkara', text: 'Renier ton serment devant Ulkara, à la Passe de Kaldum',
@@ -1413,7 +1413,7 @@ DATA.content.quests.push({
 });
 
 DATA.content.dungeons.push({
-  id: 'terrier_du_grand_grouk', name: 'Le Terrier du Grand Grouk', zone: 'orsane_eboulis', level: [15, 20],
+  id: 'terrier_du_grand_grouk', name: 'Le Terrier du Grand Grouk', zone: 'orsane_eboulis', level: [29, 40],
   entryMap: 'orsane_eboulis_terrier',
   salles3d: { texture: 'terrier', sol: 'terre_battue', paroi: 'terre', lumiere: '#f2a64e', brume: '#2a2018' },
   keyItem: 'cle_du_terrier',
@@ -1438,7 +1438,7 @@ DATA.content.dungeons.push({
         '#,,,,,,,,,,,,,#',
         '###############',
       ],
-      monsters: [{ id: 'grouk', level: 15 }, { id: 'grouk', level: 15 }, { id: 'grouk', level: 16 }],
+      monsters: [{ id: 'grouk', level: 29 }, { id: 'grouk', level: 29 }, { id: 'grouk', level: 31 }],
     },
     {
       name: 'Les galeries',
@@ -1459,7 +1459,7 @@ DATA.content.dungeons.push({
         '#,,,,,,#,,,,,,#',
         '###############',
       ],
-      monsters: [{ id: 'grouk', level: 16 }, { id: 'brimbe', level: 16 }, { id: 'brimbe', level: 17 }, { id: 'grouk', level: 17 }],
+      monsters: [{ id: 'grouk', level: 31 }, { id: 'brimbe', level: 31 }, { id: 'brimbe', level: 33 }, { id: 'grouk', level: 33 }],
     },
     {
       name: 'La chambre des lueurs',
@@ -1480,7 +1480,7 @@ DATA.content.dungeons.push({
         '#,,,,,,,,,,,,,#',
         '###############',
       ],
-      monsters: [{ id: 'veilloche', level: 17 }, { id: 'veilloche', level: 18 }, { id: 'grouk', level: 18 }, { id: 'grouk', level: 18 }],
+      monsters: [{ id: 'veilloche', level: 33 }, { id: 'veilloche', level: 35 }, { id: 'grouk', level: 35 }, { id: 'grouk', level: 35 }],
     },
     {
       name: 'Le garde-manger',
@@ -1501,7 +1501,7 @@ DATA.content.dungeons.push({
         '#,,,,,,,,,,,,,#',
         '###############',
       ],
-      monsters: [{ id: 'grouk_cornu', level: 18 }, { id: 'grouk_cornu', level: 18 }, { id: 'groukin', level: 17 }, { id: 'groukin', level: 17 }, { id: 'brimbe', level: 18 }],
+      monsters: [{ id: 'grouk_cornu', level: 35 }, { id: 'grouk_cornu', level: 35 }, { id: 'groukin', level: 33 }, { id: 'groukin', level: 33 }, { id: 'brimbe', level: 35 }],
     },
     {
       name: 'La tanière',
@@ -1522,7 +1522,7 @@ DATA.content.dungeons.push({
         '#,,,,,,,,,,,,,#',
         '###############',
       ],
-      monsters: [{ id: 'grand_grouk', level: 20 }, { id: 'grouk', level: 18 }, { id: 'grouk', level: 19 }],
+      monsters: [{ id: 'grand_grouk', level: 39 }, { id: 'grouk', level: 35 }, { id: 'grouk', level: 37 }],
       boss: true,
     },
   ],
@@ -1530,7 +1530,7 @@ DATA.content.dungeons.push({
 });
 
 DATA.content.dungeons.push({
-  id: 'grenier_des_pilous', name: 'Le Grenier des Glyms', zone: 'orsane_clairieres', level: [4, 6],
+  id: 'grenier_des_pilous', name: 'Le Grenier des Glyms', zone: 'orsane_clairieres', level: [7, 12],
   entryMap: 'orsane_clairieres_bosquet',
   salles3d: { tuiles: 'planches', sol: 'planches', paroi: 'bois', lumiere: '#f2c14e', brume: '#2b2418' },
   keyItem: null,
@@ -1555,7 +1555,7 @@ DATA.content.dungeons.push({
         '#,,,,,,,,,,,,,#',
         '###############',
       ],
-      monsters: [{ id: 'pilou', level: 4 }, { id: 'piouk', level: 3 }, { id: 'piouk', level: 3 }],
+      monsters: [{ id: 'pilou', level: 7 }, { id: 'piouk', level: 5 }, { id: 'piouk', level: 5 }],
     },
     {
       name: 'Le tas de foin',
@@ -1576,7 +1576,7 @@ DATA.content.dungeons.push({
         '#,,,,,,#,,,,,,#',
         '###############',
       ],
-      monsters: [{ id: 'pilou', level: 5 }, { id: 'pilou', level: 5 }, { id: 'groukin', level: 4 }],
+      monsters: [{ id: 'pilou', level: 9 }, { id: 'pilou', level: 9 }, { id: 'groukin', level: 7 }],
     },
     {
       name: 'Le trésor du Chapardeur',
@@ -1597,7 +1597,7 @@ DATA.content.dungeons.push({
         '#L,,,,,,,,,,,L#',
         '###############',
       ],
-      monsters: [{ id: 'pilou_chapardeur', level: 6 }, { id: 'pilou', level: 5 }, { id: 'pilou', level: 6 }],
+      monsters: [{ id: 'pilou_chapardeur', level: 11 }, { id: 'pilou', level: 9 }, { id: 'pilou', level: 11 }],
       boss: true,
     },
   ],
@@ -1605,7 +1605,7 @@ DATA.content.dungeons.push({
 });
 
 DATA.content.dungeons.push({
-  id: 'voliere_des_kavous', name: 'La Volière des Kavous', zone: 'orsane_sentiers', level: [12, 14],
+  id: 'voliere_des_kavous', name: 'La Volière des Kavous', zone: 'orsane_sentiers', level: [23, 28],
   entryMap: 'orsane_sentiers_crete',
   salles3d: { tuiles: 'claire', sol: 'dalles_claires', paroi: 'roche_grise', lumiere: '#e8d890', brume: '#262a38' },
   keyItem: null,
@@ -1630,7 +1630,7 @@ DATA.content.dungeons.push({
         '#,,,,,,,,,,,,,#',
         '###############',
       ],
-      monsters: [{ id: 'kavou_bleu', level: 12 }, { id: 'kavou_bleu', level: 12 }, { id: 'pilou', level: 8 }, { id: 'pilou', level: 8 }],
+      monsters: [{ id: 'kavou_bleu', level: 23 }, { id: 'kavou_bleu', level: 23 }, { id: 'pilou', level: 15 }, { id: 'pilou', level: 15 }],
     },
     {
       name: 'Le perchoir roux',
@@ -1651,7 +1651,7 @@ DATA.content.dungeons.push({
         '#,,,,,,,,,,,,,#',
         '###############',
       ],
-      monsters: [{ id: 'kavou_roux', level: 12 }, { id: 'kavou_roux', level: 12 }, { id: 'grouk', level: 13 }],
+      monsters: [{ id: 'kavou_roux', level: 23 }, { id: 'kavou_roux', level: 23 }, { id: 'grouk', level: 25 }],
     },
     {
       name: 'Le perchoir ocre',
@@ -1672,7 +1672,7 @@ DATA.content.dungeons.push({
         '#,,,,,#,#,,,,,#',
         '###############',
       ],
-      monsters: [{ id: 'kavou_ocre', level: 12 }, { id: 'kavou_ocre', level: 12 }, { id: 'grouk', level: 13 }, { id: 'pilou', level: 8 }],
+      monsters: [{ id: 'kavou_ocre', level: 23 }, { id: 'kavou_ocre', level: 23 }, { id: 'grouk', level: 25 }, { id: 'pilou', level: 15 }],
     },
     {
       name: 'Le perchoir blanc',
@@ -1693,7 +1693,7 @@ DATA.content.dungeons.push({
         '#,,,,,,,,,,,,,#',
         '###############',
       ],
-      monsters: [{ id: 'kavou_blanc', level: 12 }, { id: 'kavou_blanc', level: 12 }, { id: 'grouk', level: 14 }],
+      monsters: [{ id: 'kavou_blanc', level: 23 }, { id: 'kavou_blanc', level: 23 }, { id: 'grouk', level: 27 }],
     },
     {
       name: 'La grande volière',
@@ -1714,7 +1714,7 @@ DATA.content.dungeons.push({
         '#,,,,,,,,,,,,,#',
         '###############',
       ],
-      monsters: [{ id: 'kavou_prisme', level: 14 }, { id: 'kavou_bleu', level: 12 }, { id: 'kavou_roux', level: 12 }],
+      monsters: [{ id: 'kavou_prisme', level: 27 }, { id: 'kavou_bleu', level: 23 }, { id: 'kavou_roux', level: 23 }],
       boss: true,
     },
   ],
@@ -1722,7 +1722,7 @@ DATA.content.dungeons.push({
 });
 
 DATA.content.dungeons.push({
-  id: 'nid_des_toiles', name: 'Le Nid des Toiles', zone: 'orsane_toiles', level: [12, 14],
+  id: 'nid_des_toiles', name: 'Le Nid des Toiles', zone: 'orsane_toiles', level: [23, 28],
   entryMap: 'orsane_toiles_nid',
   salles3d: { texture: 'toiles', sol: 'sous_bois', paroi: 'bois_mort', lumiere: '#c8e0a0', brume: '#1e2428' },
   keyItem: null,
@@ -1747,7 +1747,7 @@ DATA.content.dungeons.push({
         '#,,,,,,,,,,,,,#',
         '###############',
       ],
-      monsters: [{ id: 'tissefil', level: 12 }, { id: 'filin', level: 7 }, { id: 'filin', level: 7 }, { id: 'tissefil', level: 12 }],
+      monsters: [{ id: 'tissefil', level: 23 }, { id: 'filin', level: 13 }, { id: 'filin', level: 13 }, { id: 'tissefil', level: 23 }],
     },
     {
       name: 'Les lueurs',
@@ -1768,7 +1768,7 @@ DATA.content.dungeons.push({
         '#,,,,,,,,,,,,,#',
         '###############',
       ],
-      monsters: [{ id: 'tissefil', level: 13 }, { id: 'tissefil', level: 13 }, { id: 'veilloche', level: 12 }, { id: 'veilloche', level: 13 }],
+      monsters: [{ id: 'tissefil', level: 25 }, { id: 'tissefil', level: 25 }, { id: 'veilloche', level: 23 }, { id: 'veilloche', level: 25 }],
     },
     {
       name: 'Le cocon',
@@ -1789,7 +1789,7 @@ DATA.content.dungeons.push({
         '#T,,,,,,,,,,,T#',
         '###############',
       ],
-      monsters: [{ id: 'fileuse', level: 14 }, { id: 'tissefil', level: 13 }],
+      monsters: [{ id: 'fileuse', level: 27 }, { id: 'tissefil', level: 25 }],
       boss: true,
     },
   ],
@@ -1843,7 +1843,7 @@ DATA.content.quests.push({
   rewards: { xp: 24, fils: 10, items: [{ id: 'pain_de_cime', count: 2 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_visages_des_cimes', name: 'Les visages des Cimes', level: 3, main: false, category: 'region',
+  id: 'orsane_visages_des_cimes', name: 'Les visages des Cimes', level: 5, main: false, category: 'region',
   giver: 'maelis', turnIn: 'fenna', requires: { level: 1, quests: ['orsane_questions_de_kelthar'] },
   steps: [
     { type: 'talk', npc: 'thila', text: 'Saluer Thila, qui tient la rue des Ateliers' },
@@ -1860,8 +1860,8 @@ DATA.content.quests.push({
   rewards: { xp: 139, fils: 15, items: [{ id: 'ceinture_de_plume', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_legende_d_ithren', name: 'La légende d\'Ithren', level: 5, main: false, category: 'region',
-  giver: 'fenna', requires: { level: 4, quests: ['orsane_visages_des_cimes'] },
+  id: 'orsane_legende_d_ithren', name: 'La légende d\'Ithren', level: 9, main: false, category: 'region',
+  giver: 'fenna', requires: { level: 7, quests: ['orsane_visages_des_cimes'] },
   steps: [
     { type: 'visit', map: 'orsane_clairieres_ruisseau', text: 'Lire la vieille stèle du Ruisseau' },
     { type: 'answer', npc: 'vali', text: 'Jouer aux osselets avec Vali, qui sait la suite de l\'histoire',
@@ -1881,8 +1881,8 @@ DATA.content.quests.push({
   rewards: { xp: 315, fils: 25, items: [{ id: 'amulette_de_bec', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_gueule_du_glouton', name: 'Le Glouton du vieux puits', level: 8, main: false, category: 'region',
-  giver: 'fenna', requires: { level: 7, quests: ['orsane_legende_d_ithren'] },
+  id: 'orsane_gueule_du_glouton', name: 'Le Glouton du vieux puits', level: 15, main: false, category: 'region',
+  giver: 'fenna', requires: { level: 13, quests: ['orsane_legende_d_ithren'] },
   steps: [
     { type: 'talk', npc: 'osk', text: 'Interroger Osk, le gardien du vieux puits de la Halte' },
     { type: 'kill', monster: 'glouton', count: 1, text: 'Affronter le Glouton du Puits' },
@@ -1896,8 +1896,8 @@ DATA.content.quests.push({
   rewards: { xp: 668, fils: 40, items: [{ id: 'bottes_de_cuir', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'orsane_destination_toiles', name: 'Vers les Toiles', level: 10, main: false, category: 'region',
-  giver: 'fenna', turnIn: 'thevra', requires: { level: 9, quests: ['orsane_gueule_du_glouton'] },
+  id: 'orsane_destination_toiles', name: 'Vers les Toiles', level: 19, main: false, category: 'region',
+  giver: 'fenna', turnIn: 'thevra', requires: { level: 17, quests: ['orsane_gueule_du_glouton'] },
   steps: [
     { type: 'visit', map: 'orsane_sentiers_crete', text: 'Monter jusqu\'à la Crête des Sentiers' },
     { type: 'visit', map: 'orsane_toiles_entree', text: 'Passer le Seuil des Toiles' },
@@ -1912,8 +1912,8 @@ DATA.content.quests.push({
 });
 
 DATA.content.quests.push({
-  id: 'porte_mise_a_l_epreuve', name: 'Le regard d\'Ilsa', level: 3, main: false, category: 'region',
-  giver: 'orvak', requires: { level: 3, quests: ['ateliers_produits_des_cimes'] },
+  id: 'porte_mise_a_l_epreuve', name: 'Le regard d\'Ilsa', level: 5, main: false, category: 'region',
+  giver: 'orvak', requires: { level: 5, quests: ['ateliers_produits_des_cimes'] },
   steps: [
     { type: 'talk', npc: 'ilsa', text: 'Se présenter à Ilsa, la caporale' },
     { type: 'kill', monster: 'piouk', count: 3, text: 'Vaincre trois Glymets sous les yeux d\'Ilsa' },
@@ -1927,8 +1927,8 @@ DATA.content.quests.push({
   rewards: { xp: 139, fils: 15, items: [{ id: 'coiffe_marcheur', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'porte_champs_de_bataille', name: 'Toutes les bêtes des Clairières', level: 4, main: false, category: 'region',
-  giver: 'orvak', requires: { level: 3, quests: ['porte_mise_a_l_epreuve'] },
+  id: 'porte_champs_de_bataille', name: 'Toutes les bêtes des Clairières', level: 7, main: false, category: 'region',
+  giver: 'orvak', requires: { level: 5, quests: ['porte_mise_a_l_epreuve'] },
   steps: [
     { type: 'kill', monster: 'piouk', count: 1, text: 'Vaincre un Glymet' },
     { type: 'kill', monster: 'pilou', count: 1, text: 'Vaincre un Glym Ancestral' },
@@ -1945,8 +1945,8 @@ DATA.content.quests.push({
   rewards: { xp: 221, fils: 20, items: [{ id: 'cape_marcheur', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'porte_coups_d_epee_dans_l_eau', name: 'Les Groukins du Ruisseau', level: 4, main: false, category: 'region',
-  giver: 'orvak', requires: { level: 3, quests: ['porte_champs_de_bataille'] },
+  id: 'porte_coups_d_epee_dans_l_eau', name: 'Les Groukins du Ruisseau', level: 7, main: false, category: 'region',
+  giver: 'orvak', requires: { level: 5, quests: ['porte_champs_de_bataille'] },
   steps: [
     { type: 'equip', slot: 'arme', text: 'Prendre une arme en main' },
     { type: 'visit', map: 'orsane_clairieres_ruisseau', text: 'Descendre au Ruisseau' },
@@ -1961,8 +1961,8 @@ DATA.content.quests.push({
   rewards: { xp: 221, fils: 20, items: [{ id: 'amulette_marcheur', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'porte_decime_des_grouks', name: 'Dix Grouks pour la Porte', level: 5, main: false, category: 'region',
-  giver: 'orvak', requires: { level: 4, quests: ['porte_coups_d_epee_dans_l_eau'] },
+  id: 'porte_decime_des_grouks', name: 'Dix Grouks pour la Porte', level: 9, main: false, category: 'region',
+  giver: 'orvak', requires: { level: 7, quests: ['porte_coups_d_epee_dans_l_eau'] },
   steps: [
     { type: 'kill', monster: 'grouk', count: 10, text: 'Repousser dix Grouks' },
     { type: 'talk', npc: 'orvak', text: 'Revenir voir Orvak' },
@@ -1975,8 +1975,8 @@ DATA.content.quests.push({
   rewards: { xp: 315, fils: 25, items: [{ id: 'ceinture_marcheur', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'porte_chasse_aux_chapardeurs', name: 'Les voleurs de rubans', level: 6, main: false, category: 'region',
-  giver: 'orvak', requires: { level: 5, quests: ['porte_decime_des_grouks'] },
+  id: 'porte_chasse_aux_chapardeurs', name: 'Les voleurs de rubans', level: 11, main: false, category: 'region',
+  giver: 'orvak', requires: { level: 9, quests: ['porte_decime_des_grouks'] },
   steps: [
     { type: 'kill', monster: 'kavou_bleu', count: 1, text: 'Vaincre un Kavou de Brume' },
     { type: 'kill', monster: 'kavou_roux', count: 1, text: 'Vaincre un Kavou de Braise' },
@@ -1992,8 +1992,8 @@ DATA.content.quests.push({
   rewards: { xp: 422, fils: 30, items: [{ id: 'bottes_marcheur', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'porte_lecon_d_humilite', name: 'Le reproche d\'Ilsa', level: 7, main: false, category: 'region',
-  giver: 'orvak', requires: { level: 6, quests: ['porte_chasse_aux_chapardeurs'] },
+  id: 'porte_lecon_d_humilite', name: 'Le reproche d\'Ilsa', level: 13, main: false, category: 'region',
+  giver: 'orvak', requires: { level: 11, quests: ['porte_chasse_aux_chapardeurs'] },
   steps: [
     { type: 'answer', npc: 'ilsa', text: 'Écouter le reproche d\'Ilsa',
       prompt: ['On m\'a dit que tu te vantais à l\'auberge. Dix Grouks, quatre Kavous, et bientôt le Grand Grouk à mains nues ?'],
@@ -2012,8 +2012,8 @@ DATA.content.quests.push({
   rewards: { xp: 540, fils: 35, items: [{ id: 'anneau_de_corne', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'porte_tissefils_en_marche', name: 'La Corniche qui grouille', level: 8, main: false, category: 'region',
-  giver: 'orvak', requires: { level: 7, quests: ['porte_lecon_d_humilite'] },
+  id: 'porte_tissefils_en_marche', name: 'La Corniche qui grouille', level: 15, main: false, category: 'region',
+  giver: 'orvak', requires: { level: 13, quests: ['porte_lecon_d_humilite'] },
   steps: [
     { type: 'visit', map: 'orsane_sentiers_corniche', text: 'Monter à la Corniche' },
     { type: 'kill', monster: 'tissefil', count: 6, text: 'Arrêter six Tissefils qui descendent vers la ville' },
@@ -2028,8 +2028,8 @@ DATA.content.quests.push({
 });
 
 DATA.content.quests.push({
-  id: 'ateliers_produits_des_cimes', name: 'Deux pains et une potion', level: 4, main: false, category: 'region',
-  giver: 'thila', requires: { level: 3, quests: ['orsane_visages_des_cimes'] },
+  id: 'ateliers_produits_des_cimes', name: 'Deux pains et une potion', level: 7, main: false, category: 'region',
+  giver: 'thila', requires: { level: 5, quests: ['orsane_visages_des_cimes'] },
   steps: [
     { type: 'collect', item: 'pain_de_cime', count: 2, text: 'Cuire deux pains de Cime chez l\'alchimiste' },
     { type: 'collect', item: 'potion_de_relais', count: 1, text: 'Préparer une potion de Relais' },
@@ -2044,8 +2044,8 @@ DATA.content.quests.push({
   rewards: { xp: 221, fils: 20, items: [{ id: 'sandales_de_duvet', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'ateliers_metier_des_veilleurs', name: 'Cuir et plumes', level: 4, main: false, category: 'region',
-  giver: 'thila', requires: { level: 3, quests: ['ateliers_produits_des_cimes'] },
+  id: 'ateliers_metier_des_veilleurs', name: 'Cuir et plumes', level: 7, main: false, category: 'region',
+  giver: 'thila', requires: { level: 5, quests: ['ateliers_produits_des_cimes'] },
   steps: [
     { type: 'kill', monster: 'groukin', count: 3, text: 'Chasser trois Groukins' },
     { type: 'collect', item: 'cuir_de_grouk', count: 3, text: 'Rapporter trois cuirs de Grouk' },
@@ -2060,8 +2060,8 @@ DATA.content.quests.push({
   rewards: { xp: 221, fils: 20, items: [{ id: 'pain_de_cime', count: 3 }] },
 });
 DATA.content.quests.push({
-  id: 'ateliers_la_hache_et_le_burin', name: 'Bois, calcaire et herbe de veille', level: 5, main: false, category: 'region',
-  giver: 'thila', requires: { level: 4, quests: ['ateliers_metier_des_veilleurs'] },
+  id: 'ateliers_la_hache_et_le_burin', name: 'Bois, calcaire et herbe de veille', level: 9, main: false, category: 'region',
+  giver: 'thila', requires: { level: 7, quests: ['ateliers_metier_des_veilleurs'] },
   steps: [
     { type: 'gather', resource: 'bois_de_cime', count: 4, text: 'Couper quatre bois de Cime' },
     { type: 'gather', resource: 'pierre_de_calcaire', count: 4, text: 'Tailler quatre pierres de calcaire au Bosquet' },
@@ -2076,8 +2076,8 @@ DATA.content.quests.push({
   rewards: { xp: 315, fils: 25, items: [{ id: 'lame_de_cime', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'ateliers_marcheur_un_jour', name: 'La panoplie du Marcheur', level: 5, main: false, category: 'region',
-  giver: 'thila', requires: { level: 4, quests: ['ateliers_la_hache_et_le_burin'] },
+  id: 'ateliers_marcheur_un_jour', name: 'La panoplie du Marcheur', level: 9, main: false, category: 'region',
+  giver: 'thila', requires: { level: 7, quests: ['ateliers_la_hache_et_le_burin'] },
   steps: [
     { type: 'equip', item: 'coiffe_marcheur', text: 'Porter la Coiffe du Marcheur' },
     { type: 'equip', item: 'cape_marcheur', text: 'Porter la Cape du Marcheur' },
@@ -2094,8 +2094,8 @@ DATA.content.quests.push({
   rewards: { xp: 315, fils: 25, items: [{ id: 'baguette_de_duvet', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'ateliers_preparation_au_combat', name: 'Une masse avant le Grenier', level: 6, main: false, category: 'region',
-  giver: 'thila', turnIn: 'thorak', requires: { level: 5, quests: ['ateliers_marcheur_un_jour'] },
+  id: 'ateliers_preparation_au_combat', name: 'Une masse avant le Grenier', level: 11, main: false, category: 'region',
+  giver: 'thila', turnIn: 'thorak', requires: { level: 9, quests: ['ateliers_marcheur_un_jour'] },
   steps: [
     { type: 'collect', item: 'masse_de_calcaire', count: 1, text: 'Forger une Masse de Calcaire' },
     { type: 'collect', item: 'potion_de_relais', count: 2, text: 'Préparer deux potions de Relais, de quoi revenir du Grenier' },
@@ -2110,8 +2110,8 @@ DATA.content.quests.push({
 });
 
 DATA.content.quests.push({
-  id: 'remue_galette_de_brann', name: 'Le miel de Vali', level: 7, main: false, category: 'region',
-  giver: 'brann', requires: { level: 6, quests: ['orsane_visages_des_cimes'] },
+  id: 'remue_galette_de_brann', name: 'Le miel de Vali', level: 13, main: false, category: 'region',
+  giver: 'brann', requires: { level: 11, quests: ['orsane_visages_des_cimes'] },
   steps: [
     { type: 'collect', item: 'pain_de_cime', count: 3, text: 'Cuire trois pains de Cime selon la recette secrète de Brann' },
     { type: 'gather', resource: 'herbe_de_veille', count: 5, text: 'Cueillir cinq herbes de veille pour le miel de Vali' },
@@ -2126,8 +2126,8 @@ DATA.content.quests.push({
   rewards: { xp: 540, fils: 35, items: [{ id: 'pain_de_grouk', count: 2 }] },
 });
 DATA.content.quests.push({
-  id: 'remue_mort_aux_glymets', name: 'Les Glymets du cellier', level: 7, main: false, category: 'region',
-  giver: 'brann', requires: { level: 6, quests: ['orsane_visages_des_cimes'] },
+  id: 'remue_mort_aux_glymets', name: 'Les Glymets du cellier', level: 13, main: false, category: 'region',
+  giver: 'brann', requires: { level: 11, quests: ['orsane_visages_des_cimes'] },
   steps: [
     { type: 'answer', npc: 'brann', text: 'Commander à Brann de quoi attirer les Glymets du cellier',
       prompt: ['L\'affiche, c\'est moi. Des Glymets ont fait leur nid dans mon cellier. Pour les faire sortir, il faut les appâter. Tu prends quoi ?'],
@@ -2146,8 +2146,8 @@ DATA.content.quests.push({
   rewards: { xp: 540, fils: 35, items: [{ id: 'potion_de_relais', count: 2 }] },
 });
 DATA.content.quests.push({
-  id: 'remue_secret_du_grenier', name: 'Le secret du Grenier', level: 6, main: false, category: 'donjon',
-  giver: 'kelthar', turnIn: 'fenna', requires: { level: 5, quests: ['orsane_grenier_des_pilous'] },
+  id: 'remue_secret_du_grenier', name: 'Le secret du Grenier', level: 11, main: false, category: 'donjon',
+  giver: 'kelthar', turnIn: 'fenna', requires: { level: 9, quests: ['orsane_grenier_des_pilous'] },
   steps: [
     { type: 'dungeon', dungeon: 'grenier_des_pilous', text: 'Retraverser le Grenier des Glyms jusqu\'au Chapardeur' },
     { type: 'talk', npc: 'fenna', text: 'Raconter à Fenna ce que cachait le Grenier' },
@@ -2160,8 +2160,8 @@ DATA.content.quests.push({
   rewards: { xp: 422, fils: 30, items: [{ id: 'arc_de_cime', count: 1 }] },
 });
 DATA.content.quests.push({
-  id: 'remue_un_peu_de_pigment', name: 'Les couleurs de Dalric', level: 8, main: false, category: 'region',
-  giver: 'dalric', requires: { level: 7, quests: ['orsane_visages_des_cimes'] },
+  id: 'remue_un_peu_de_pigment', name: 'Les couleurs de Dalric', level: 15, main: false, category: 'region',
+  giver: 'dalric', requires: { level: 13, quests: ['orsane_visages_des_cimes'] },
   steps: [
     { type: 'collect', item: 'plume_de_kavou', count: 3, text: 'Rapporter trois plumes de Kavou à broyer' },
     { type: 'talk', npc: 'dalric', text: 'Donner les plumes à Dalric' },
@@ -2175,8 +2175,8 @@ DATA.content.quests.push({
 });
 
 DATA.content.quests.push({
-  id: 'orsane_instincts_primaires', name: 'Le tableau de chasse de Velka', level: 5, main: false, category: 'region',
-  giver: 'velka', requires: { level: 4, quests: [] },
+  id: 'orsane_instincts_primaires', name: 'Le tableau de chasse de Velka', level: 9, main: false, category: 'region',
+  giver: 'velka', requires: { level: 7, quests: [] },
   steps: [
     { type: 'kill', monster: 'filin', count: 2, text: 'Vaincre deux Filins' },
     { type: 'kill', monster: 'groukin', count: 2, text: 'Vaincre deux Groukins' },
@@ -2203,14 +2203,16 @@ const MAITRES = {
   mirel: ['Elisse', 'Voix éprouvée', 'chanter avant de se taire'],
   thalor: ['Gorm', 'Bras éprouvé', 'porter avant de pousser'],
   fennal: ['Hesk', 'Meute éprouvée', 'appeler avant de courir'],
+  velmar: ['Thessaly', 'Marée éprouvée', 'tenir avant de rendre'],
+  orvald: ['Aubrac', 'Fouille éprouvée', 'creuser avant de prendre'],
 };
 for (const [cid, c] of Object.entries(DATA.classes)) {
   const m = MAITRES[cid];
   if (!m || c.season) continue;
   const [maitre, titre, geste] = m;
   DATA.content.quests.push({
-    id: 'voie_' + cid + '_1', name: 'Le geste : ' + c.title, level: 10, main: false, category: 'classe',
-    giver: 'ismere', turnIn: 'ismere', requires: { level: 9, classe: cid },
+    id: 'voie_' + cid + '_1', name: 'Le geste : ' + c.title, level: 19, main: false, category: 'classe',
+    giver: 'ismere', turnIn: 'ismere', requires: { level: 17, classe: cid },
     steps: [
       { type: 'talk', npc: 'saya', text: 'Demander à Saya la cour du Dojo' },
       { type: 'kill', monster: 'reflet_' + cid, count: 1, text: 'Vaincre son Reflet sur la cour du Dojo' },
@@ -2219,9 +2221,26 @@ for (const [cid, c] of Object.entries(DATA.classes)) {
     dialogue: {
       offer: [`${maitre}, qui tient la statue de ${c.name}, t\'a vu passer. Le geste de ta Voie, dit-il, c\'est ${geste}. Il veut savoir si tu le tiens.`, 'Monte au Dojo. Saya te prêtera la cour, et le miroir du Temple te renverra ton propre geste. Bats-le, et reviens me voir.'],
       progress: ['Le Reflet t\'attend sur la cour du Dojo, sur les Terrasses. Demande-la à Saya.', `Ton Reflet frappe comme toi. ${maitre} dit que c\'est là toute la difficulté.`],
-      done: [`${maitre} a regardé le combat depuis la statue. Il dit que le geste est là, et que le reste viendra.`, `Le Temple te reconnaît : ${titre}. Et une page de ce que les Voies ont appris est à toi.`],
+      done: [`${maitre} a regardé le combat depuis la statue. Il dit que le geste est là, et que le reste viendra.`, `Le Temple te reconnaît : ${titre}.`],
     },
-    rewards: { xp: 955, fils: 80, spellPoints: 1, title: titre, cosmetique: 'blason_voie' },
+    rewards: { xp: 955, fils: 80, title: titre, cosmetique: 'blason_voie' },
+  });
+  const palier = DATA.spells[(c.paires && c.paires[11] && c.paires[11][0]) || ''];
+  DATA.content.quests.push({
+    id: 'voie_' + cid + '_seuil', name: 'Le seuil : ' + c.title, level: 50, main: false, category: 'classe',
+    giver: 'ismere', turnIn: 'ismere', requires: { level: 50, classe: cid, quests: ['voie_' + cid + '_1'] },
+    steps: [
+      { type: 'gather', resource: 'basalte_de_kaldum', count: 10, text: 'Tailler dix blocs de basalte de Kaldum pour l\'anneau' },
+      { type: 'talk', npc: 'rilka', text: 'Porter le basalte à Rilka, la bijoutière' },
+      { type: 'kill', monster: 'reflet_' + cid, count: 1, text: 'Vaincre son Reflet une seconde fois, sur la cour du Dojo' },
+      { type: 'talk', npc: 'ismere', text: 'Revenir au Temple des Voies' },
+    ],
+    dialogue: {
+      offer: [`${maitre} dit que tu es au seuil. Ce qui vient après est plus long, et plus dur.`, `Rapporte du basalte de Kaldum : Rilka en taillera un anneau qui te laissera le temps d\'un geste de plus. Puis bats ton Reflet encore une fois, pour que ${maitre} voie ce que tu es devenu.`],
+      progress: ['Le basalte se taille dans les galeries de Kaldum. Rilka attend dans son atelier, sur les Terrasses.', 'Ton Reflet t\'attend sur la cour du Dojo.'],
+      done: [`${maitre} a regardé le combat. Il dit que tu as passé le seuil.`, `Voici l\'Anneau du Seuil. Et ta Voie s\'ouvre${palier ? ` : ${palier.name}` : ''}.`],
+    },
+    rewards: { xp: 2400, fils: 400, items: [{ id: 'anneau_du_seuil', count: 1 }] },
   });
 }
 }

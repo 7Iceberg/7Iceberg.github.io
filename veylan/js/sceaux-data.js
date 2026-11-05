@@ -4,10 +4,10 @@ const SCEAUX_DATA = (() => {
     pointsParSceau: 10,
     pvParSceau: 5,
     resMax: 50,
-    pvBase: 60, pvParNiveau: 5,
+    pvBase: 50, pvParNiveau: 5,
     paliers: [[100, 1], [200, 2], [300, 3], [1e9, 4]],
-    reinitGratuiteJusqua: 10,
-    reinitPrixParNiveau2: 5,
+    reinitGratuiteJusqua: 19,
+    reinitPrixParNiveau2: 1.25,
     niveauMax: 300,
   };
 

@@ -92,11 +92,6 @@
 .vy-points { color: var(--fen-texte-2); } .vy-points b { color: var(--fen-texte); font-size: 15px; }
 .vy-points.on b { color: var(--vy-succes); }
 
-.vy-voies { display: flex; flex-wrap: wrap; gap: 6px; }
-.vy-voie { flex: 1 1 70px; min-height: 32px; padding: 5px 8px; border: 1px solid var(--fen-filet); border-left: 3px solid var(--c); border-radius: 5px; background: rgba(0, 0, 0, 0.2); color: var(--fen-texte); font: 600 12px var(--vy-font-ui); cursor: pointer; }
-.vy-voie small, .voie-row small { font-weight: 400; opacity: 0.75; }
-.vy-voie.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 18%, transparent); }
-
 .vy-case--emplacement { opacity: 0.5; background: rgba(0, 0, 0, 0.25); }
 .vy-case--emplacement .vy-case__icone { color: var(--fen-texte-2); }
 .vy-ensembles { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }

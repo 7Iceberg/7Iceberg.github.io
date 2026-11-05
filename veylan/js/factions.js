@@ -1,5 +1,5 @@
 const Factions = (() => {
-  const SWEAR_LEVEL = 20;
+  const SWEAR_LEVEL = 39;
   const ORDER_RANK = 3;
   const MAX_RANK = 10;
   const PER_RANK = 30;

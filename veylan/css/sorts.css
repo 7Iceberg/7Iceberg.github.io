@@ -68,6 +68,16 @@
 .vy-sort__points.on { color: var(--fen-actif); background: color-mix(in srgb, var(--fen-actif) 15%, rgba(0, 0, 0, 0.4)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fen-actif) 45%, transparent); }
 .vy-sorts__niveaux { flex: none; font-size: 12px; color: var(--fen-texte-2); }
 
+.vy-sort.variante { margin-left: 22px; }
+.vy-sort.variante::before { content: ""; position: absolute; left: -14px; top: -8px; width: 10px; height: 36px; border-left: 1px solid var(--fen-filet); border-bottom: 1px solid var(--fen-filet); border-bottom-left-radius: 6px; pointer-events: none; }
+.vy-sort__equipe { justify-self: center; width: 30px; height: 30px; display: grid; place-items: center; color: var(--fen-texte-2); }
+.vy-sort__equipe.on { border-radius: 9px; color: var(--vy-encre); background: linear-gradient(135deg, var(--vy-or-clair), var(--fen-accent)); box-shadow: 0 0 10px color-mix(in srgb, var(--fen-accent) 45%, transparent); }
+.vy-sort__equipe svg { width: 16px; height: 16px; }
+.vy-sort__equiper { justify-self: center; width: 30px; height: 30px; padding: 0; border-radius: 9px; border: 1px solid var(--fen-actif); background: color-mix(in srgb, var(--fen-actif) 10%, transparent); color: var(--fen-actif); font: 700 15px/1 var(--vy-font-ui); cursor: pointer; }
+.vy-sort__equiper:hover:not(:disabled) { background: color-mix(in srgb, var(--fen-actif) 22%, transparent); }
+.vy-sort__equiper:disabled { opacity: 0.45; cursor: default; }
+.vy-sorts__info { min-width: 0; font-size: 12px; color: var(--fen-texte-2); }
+
 .vy-sorts__fiche { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 10px 12px 14px; border-radius: 12px; border: 1px solid var(--fen-filet); background: rgba(0, 0, 0, 0.3); }
 .vy-fiche-sort { display: grid; grid-template-columns: 60px minmax(0, 1fr); align-items: center; gap: 12px; margin-bottom: 9px; }
 .vy-fiche-sort__icone { width: 60px; height: 60px; border-radius: 12px; filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.5)); }
@@ -145,7 +155,8 @@
   .vy-sorts__outils select { height: 30px; flex-basis: 96px; }
   .vy-sorts__recherche { flex-basis: 110px; }
   .vy-sorts__classe small { display: none; }
-  .vy-sort { grid-template-columns: minmax(0, 1fr) 112px 34px; }
+  .vy-sort { grid-template-columns: minmax(0, 1fr) 112px 38px; }
+  .vy-sort__equipe, .vy-sort__equiper { width: 34px; height: 34px; }
   .vy-sorts__liste { gap: 4px; }
   .vy-sorts__liste.niveaux { gap: 12px; padding-top: 8px; }
   .vy-sort { min-height: 44px; }

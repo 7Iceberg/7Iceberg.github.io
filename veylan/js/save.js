@@ -29,7 +29,7 @@ const Save = (() => {
 
   const isInt = (v, min, max) => Number.isInteger(v) && v >= (min == null ? -Infinity : min) && v <= (max == null ? Infinity : max);
   const ALLOWED = new Set(['classId', 'name', 'gender', 'level', 'xp', 'statPoints', 'stats', 'equipment', 'inventory', 'fils', 'hp', 'titles', 'title', 'quests', 'counters', 'achievements', 'achClaimed', 'veille', 'pos', 'relay', 'relays', 'dungeon', 'coffre', 'marche', 'avis', 'dojo', 'autoStats', 'playTime', 'knots', 'ensembles', 'fight', 'mapTimers', 'flags', 'v', 'uid', 'voie', 'scrolls', 'faction', 'tuto']);
-  for (const k of ['spellRanks', 'spellPoints', 'autoSpells']) ALLOWED.add(k);
+  for (const k of ['variantes', 'spellRanks', 'spellPoints', 'autoSpells']) ALLOWED.add(k);
   ALLOWED.add('look');
   ALLOWED.add('origine');
   for (const k of ['porte', 'ensemblesLook']) ALLOWED.add(k);
@@ -81,25 +81,17 @@ const Save = (() => {
     return ch;
   }
 
-  function validateSpellRanks(o, bad, oldFormat) {
-    if (o.autoSpells !== undefined) o.autoSpells = !!o.autoSpells;
-    if (oldFormat) { delete o.spellRanks; delete o.spellPoints; }
-    if (o.spellRanks === undefined && o.spellPoints === undefined) return;
-    const R = DATA.spellRanks;
-    const ranks = {};
-    let ok = !!o.spellRanks && typeof o.spellRanks === 'object' && !Array.isArray(o.spellRanks);
-    if (ok) for (const id of Object.keys(o.spellRanks)) {
-      const r = o.spellRanks[id], unlock = Character.unlockLevel(o.classId, id);
-      if (!isInt(r, 1, R.max) || !Number.isFinite(unlock) || (r > 1 && unlock > o.level) || R.levels[r - 1] > o.level) { ok = false; break; }
-      if (r > 1) ranks[id] = r;
+  function validateSpellRanks(o, bad) {
+    delete o.spellRanks; delete o.spellPoints; delete o.autoSpells;
+    if (o.variantes == null) { o.variantes = {}; return; }
+    const c = DATA.classes[o.classId], out = {};
+    if (typeof o.variantes !== 'object' || Array.isArray(o.variantes) || !c) { bad('variantes'); o.variantes = {}; return; }
+    for (const k of Object.keys(o.variantes)) {
+      const i = Number(k), p = c.paires[i];
+      if (o.variantes[k] === true && Number.isInteger(i) && p && p[1] && Character.unlockLevel(o.classId, p[1]) <= o.level) out[i] = true;
+      else bad('variantes');
     }
-    if (!ok || !isInt(o.spellPoints, 0, Character.MAX_LEVEL) || Character.spellPointsFor(ranks) + o.spellPoints !== o.level - 1) {
-      bad('rangs des sorts');
-      o.spellRanks = {};
-      o.spellPoints = o.level - 1;
-      return;
-    }
-    o.spellRanks = ranks;
+    o.variantes = out;
   }
 
   const TITRES_RENOMMES = new Map([['Fléau des Pilous', 'Fléau des Glyms'], ['Enfant des Cimes', 'Veilleur des Cimes'],
@@ -118,8 +110,17 @@ const Save = (() => {
     const o = {};
     for (const k of Object.keys(raw)) { if (ALLOWED.has(k)) o[k] = raw[k]; else bad(`champ inconnu ${k}`); }
     migrerTitres(o);
+    const vieille = DATA.classes[o.classId];
+    if (vieille && vieille.season && vieille.remplacee) { o.classId = vieille.remplacee; o.variantes = {}; }
     if (!DATA.classes[o.classId]) return { errors: errors.concat('classe inconnue'), data: null };
     o.name = typeof o.name === 'string' ? o.name.slice(0, 16) : 'Veilleur';
+    if (!(raw.v >= 5) && isInt(o.level, 1, 30)) {
+      const L = o.level, L2 = Math.min(Character.MAX_LEVEL, 2 * L);
+      const ancien = Math.round(20 * Math.pow(L, 2.4)), part = isInt(o.xp, 0) ? Math.min(0.999, o.xp / ancien) : 0;
+      o.level = L2;
+      o.xp = L2 >= Character.MAX_LEVEL ? 0 : Math.floor(part * Character.xpToNext(L2));
+      if (isInt(o.statPoints, 0)) o.statPoints += 5 * (L2 - L);
+    }
     if (!isInt(o.level, 1, Character.MAX_LEVEL)) { bad('niveau'); o.level = Math.max(1, Math.min(Character.MAX_LEVEL, Math.floor(Number(o.level)) || 1)); }
     if (!isInt(o.xp, 0) || (o.level < Character.MAX_LEVEL && o.xp >= Character.xpToNext(o.level))) { bad('expérience'); o.xp = 0; }
     const stats = { vita: 0, sagesse: 0, force: 0, intel: 0, chance: 0, agi: 0 };
@@ -286,7 +287,7 @@ const Save = (() => {
     if (o.hp != null && !isInt(o.hp, 0, 99999)) { bad('PV'); o.hp = null; }
     if (typeof o.playTime !== 'number' || !Number.isFinite(o.playTime) || o.playTime < 0) o.playTime = 0;
     o.autoStats = !!o.autoStats;
-    if (o.voie != null && !Character.VOIES.includes(o.voie)) { bad('voie'); o.voie = null; }
+    o.voie = null;
     if (o.sceaux != null) {
       if (typeof Sceaux === 'undefined' || typeof o.sceaux !== 'object') o.sceaux = null;
       else {
@@ -330,7 +331,7 @@ const Save = (() => {
       o.tuto = { mode: mode || 'off', step: step === null ? 0 : step, done: done === null ? mode === null : done };
       if (['orsane', 'ile', 'descente'].includes(t.jeu)) o.tuto.jeu = t.jeu;
     }
-    validateSpellRanks(o, bad, oldFormat);
+    validateSpellRanks(o, bad);
     return { errors, data: o };
   }
 

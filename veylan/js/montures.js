@@ -11,13 +11,18 @@ const Montures = (() => {
   const de = ch => (ch && ch.monture && get(ch.monture.id) ? ch.monture : null);
   const def = ch => { const m = de(ch); return m ? get(m.id) : null; };
   const niveau = ch => { const m = de(ch); return m ? F().niveau(m.xp) : 0; };
-  const montee = ch => !!(de(ch) && ch.monture.montee);
+  const montee = ch => !!(de(ch) && ch.monture.montee && !tropJeune(ch));
   const bonusActif = ch => (montee(ch) ? F().bonusA(def(ch), niveau(ch)) : {});
   const vitesse = (ch, plateau) => { if (!montee(ch)) return 1; const v = def(ch).vitesse || 1; return plateau ? 1 + (v - 1) * PLATEAU : v; };
+
+  const NIVEAU = () => (typeof DATA !== 'undefined' && DATA.rules && DATA.rules.montureNiveau) || 1;
+  const tropJeune = ch => (ch.level || 1) < NIVEAU();
+  const RAISON_NIVEAU = () => `Les montures se montent à partir du niveau ${NIVEAU()}.`;
 
   function donner(ch, id) {
     const d = get(id);
     if (!d) return { ok: false, raison: 'Monture inconnue.' };
+    if (tropJeune(ch)) return { ok: false, raison: RAISON_NIVEAU() };
     if (de(ch)) return { ok: false, raison: 'Tu as déjà une monture.' };
     ch.monture = { id, xp: 0, part: PART_DEFAUT, montee: true };
     return { ok: true, monture: d };
@@ -25,7 +30,9 @@ const Montures = (() => {
 
   function monter(ch, oui) {
     if (!de(ch)) return { ok: false, raison: 'Tu n\'as pas de monture.' };
-    ch.monture.montee = oui == null ? !ch.monture.montee : !!oui;
+    const veut = oui == null ? !ch.monture.montee : !!oui;
+    if (veut && tropJeune(ch)) return { ok: false, raison: RAISON_NIVEAU() };
+    ch.monture.montee = veut;
     if (ch.hp != null && typeof ch.derived === 'function') ch.hp = Math.min(ch.hp, ch.derived().hpMax);
     return { ok: true, montee: ch.monture.montee, monture: def(ch) };
   }

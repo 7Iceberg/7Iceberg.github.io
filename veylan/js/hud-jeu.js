@@ -43,6 +43,7 @@ class HudJeu {
     w.on('questProgress', () => this.rafraichirCarte());
     w.on('fight', () => {
       this.page = 0;
+      this.pageBarre = 0;
       this.onglet = null;
       this.basculerPanneau(false);
       this.ui.armerPlacement(UI.PLACEMENT_SECONDES);
@@ -320,12 +321,21 @@ class HudJeu {
     b.setAttribute('aria-label', 'Sorts du combat');
     b.innerHTML = '<div class="vy-barre-sorts__boite"><span class="vy-barre-sorts__etats" hidden></span>' +
       `<div class="vy-barre-sorts__vie">${Gemmes.bloc(this.hud.styleVital(), false)}</div>` +
-      '<div class="vy-barre-sorts__sorts"><span class="vy-barre-sorts__titre">Sorts</span><div class="vy-barre-sorts__liste"></div></div>' +
+      '<div class="vy-barre-sorts__sorts"><span class="vy-barre-sorts__titre">Sorts</span><div class="vy-barre-sorts__rangee">' +
+      `<div class="vy-barre-sorts__pages"><button type="button" class="vy-barre-sorts__page" data-pb="-1" aria-label="Page de sorts précédente">${HudJeu.ICON.haut}</button>` +
+      '<button type="button" class="vy-barre-sorts__num" data-pb="tour" aria-label="Page de sorts 1 sur 1, toucher pour la suivante">1</button>' +
+      `<button type="button" class="vy-barre-sorts__page" data-pb="1" aria-label="Page de sorts suivante">${HudJeu.ICON.bas}</button></div>` +
+      '<div class="vy-barre-sorts__liste"></div>' +
+      `<button type="button" class="vy-barre-sorts__poignee" aria-label="Taille de la barre de sorts : glisser pour l'agrandir ou la réduire" title="Glisser : agrandir ou réduire la barre (double clic : taille d'origine)">${HudJeu.ICON.poignee}</button></div></div>` +
       '<div class="vy-barre-sorts__fin"><span class="vy-barre-sorts__chrono" role="timer" aria-label="Temps du tour"><svg viewBox="0 0 40 40" aria-hidden="true"><circle class="vy-chrono__piste" cx="20" cy="20" r="17"/><circle class="vy-chrono__reste" cx="20" cy="20" r="17" pathLength="100"/></svg><b></b></span>' +
       '<button type="button" class="vy-bouton vy-bouton--primaire vy-barre-sorts__action" data-ui="pret">Prêt</button></div>' +
       '</div>';
     this.stage.appendChild(b);
+    this.pageBarre = 0;
     b.addEventListener('click', evt => {
+      if (this.glisseBarreFini && Date.now() < this.glisseBarreFini) return;
+      const pb = evt.target.closest('[data-pb]');
+      if (pb) { this.tournerPageBarre(pb.dataset.pb === 'tour' ? 'tour' : Number(pb.dataset.pb)); return; }
       const s = evt.target.closest('[data-slot]');
       if (s) { this.toucherSlot(s); return; }
       if (evt.target.closest('.vy-barre-sorts__action')) { if (this.combat.phase === 'placement') this.ui.ready(); else this.ui.endTurn(); }
@@ -342,7 +352,160 @@ class HudJeu {
       this.sortSurvole = null;
       this.ui.el.tooltip.classList.add('hidden');
     });
+    b.addEventListener('wheel', evt => {
+      if (!evt.target.closest('.vy-barre-sorts__sorts') || this.pagesBarre <= 1) return;
+      evt.preventDefault();
+      const t = Date.now();
+      if (this.moletteBarre && t - this.moletteBarre < 180) return;
+      this.moletteBarre = t;
+      this.tournerPageBarre((evt.deltaY || evt.deltaX) > 0 ? 1 : -1);
+    }, { passive: false });
+    const liste = b.querySelector('.vy-barre-sorts__liste');
+    const finirAnim = () => { if (liste.getAnimations) for (const a of liste.getAnimations()) a.finish(); };
+    liste.addEventListener('pointerdown', evt => {
+      if (evt.button > 0) return;
+      finirAnim();
+      const boite = b.querySelector('.vy-barre-sorts__boite');
+      this.glisseBarre = { x: evt.clientX, y: evt.clientY, id: evt.pointerId, actif: false, z: boite.offsetWidth ? boite.getBoundingClientRect().width / boite.offsetWidth : 1 };
+    });
+    liste.addEventListener('pointermove', evt => {
+      const g = this.glisseBarre;
+      if (!g || g.id !== evt.pointerId) return;
+      const dx = evt.clientX - g.x, dy = evt.clientY - g.y;
+      if (!g.actif) {
+        if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy) * 1.2 || this.pagesBarre <= 1) return;
+        g.actif = true;
+        try { liste.setPointerCapture(evt.pointerId); } catch (e) {   }
+        liste.classList.add('glisse');
+        this.ui.el.tooltip.classList.add('hidden');
+      }
+      const bord = (dx > 0 && this.pageBarre <= 0) || (dx < 0 && this.pageBarre >= this.pagesBarre - 1);
+      liste.style.transform = `translateX(${(bord ? dx * 0.3 : dx) / g.z}px)`;
+    });
+    const finGlisse = evt => {
+      const g = this.glisseBarre;
+      if (!g || g.id !== evt.pointerId) return;
+      this.glisseBarre = null;
+      if (!g.actif) return;
+      this.glisseBarreFini = Date.now() + 350;
+      liste.classList.remove('glisse');
+      const dx = evt.clientX - g.x, sens = dx < 0 ? 1 : -1;
+      const seuil = Math.min(60, liste.getBoundingClientRect().width * 0.18);
+      const peut = sens > 0 ? this.pageBarre < this.pagesBarre - 1 : this.pageBarre > 0;
+      if (evt.type === 'pointerup' && Math.abs(dx) > seuil && peut) { liste.style.transform = ''; this.tournerPageBarre(sens); return; }
+      const dep = liste.style.transform;
+      liste.style.transform = '';
+      if (liste.animate && dep) liste.animate([{ transform: dep }, { transform: 'none' }], { duration: 160, easing: 'ease-out' });
+    };
+    liste.addEventListener('pointerup', finGlisse);
+    liste.addEventListener('pointercancel', finGlisse);
+    liste.addEventListener('lostpointercapture', evt => { if (this.glisseBarre && this.glisseBarre.actif) finGlisse(Object.assign({}, { pointerId: evt.pointerId, clientX: this.glisseBarre.x, type: 'pointercancel' })); });
+    const poignee = b.querySelector('.vy-barre-sorts__poignee');
+    poignee.addEventListener('pointerdown', evt => {
+      if (evt.button > 0) return;
+      evt.preventDefault();
+      finirAnim();
+      const c = liste.querySelector('.vy-sort');
+      const r = c ? c.getBoundingClientRect() : { width: 44, height: 44 };
+      const t = this.tailleBarre();
+      this.tirePoignee = { x: evt.clientX, y: evt.clientY, id: evt.pointerId, cols: Math.min(t.cols, this.capaciteBarre || 10), rows: t.rows, pas: r.width * 1.14, pasV: r.height * 1.14 };
+      try { poignee.setPointerCapture(evt.pointerId); } catch (e) {   }
+      poignee.classList.add('tiree');
+    });
+    poignee.addEventListener('pointermove', evt => {
+      const g = this.tirePoignee;
+      if (!g || g.id !== evt.pointerId) return;
+      g.vers = [g.cols + Math.round(2 * (evt.clientX - g.x) / g.pas), g.rows + Math.round(2 * (g.y - evt.clientY) / g.pasV)];
+      this.reglerTailleBarre(g.vers[0], g.vers[1], false);
+    });
+    const finPoignee = evt => {
+      const g = this.tirePoignee;
+      if (!g || g.id !== evt.pointerId) return;
+      this.tirePoignee = null;
+      poignee.classList.remove('tiree');
+      this.glisseBarreFini = Date.now() + 250;
+      if (g.vers) this.reglerTailleBarre(g.vers[0], g.vers[1], true);
+    };
+    poignee.addEventListener('pointerup', finPoignee);
+    poignee.addEventListener('pointercancel', finPoignee);
+    poignee.addEventListener('dblclick', () => this.reglerTailleBarre(null, null, true));
+    poignee.addEventListener('keydown', evt => {
+      const d = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[evt.key];
+      if (!d) return;
+      evt.preventDefault(); evt.stopPropagation();
+      const t = this.tailleBarre();
+      this.reglerTailleBarre(Math.min(t.cols, this.capaciteBarre || 10) + d[0], t.rows + d[1], true);
+    });
+    this.ui.sortDeTouche = (rang, seconde) => this.sortDeTouche(rang, seconde);
+    this.ui.tournerPageSorts = sens => this.barreVisible() ? (this.tournerPageBarre(sens), true) : false;
+    addEventListener('resize', () => { if (this.barreOn) { this.capaciteBarre = null; this.rafraichirBarreSorts(true); } });
     this.ui.apresChrono = (reste, total) => this.majChrono(reste, total);
+  }
+
+  barreVisible() {
+    const boite = this.barreSorts && this.barreSorts.querySelector('.vy-barre-sorts__boite');
+    return !!(this.barreOn && boite && boite.offsetWidth);
+  }
+
+  modeBarre() {
+    try { return matchMedia('(orientation: landscape) and (max-height: 500px)').matches ? 'tel' : 'pc'; } catch (e) { return 'pc'; }
+  }
+
+  tailleBarre() {
+    const mode = this.modeBarre();
+    const def = HudJeu.TAILLE_BARRE[mode];
+    const m = /^(\d+)x(\d+)$/.exec(HudJeu.lire(`veylan.barre.${mode}`) || '');
+    const cols = m ? Number(m[1]) : def.cols, rows = m ? Number(m[2]) : def.rows;
+    return { cols: Math.max(2, Math.min(10, cols)), rows: Math.max(1, Math.min(def.rowsMax, rows)), def };
+  }
+
+  rangeesBarre() { return this.tailleBarre().rows; }
+
+  reglerTailleBarre(cols, rows, garder) {
+    const mode = this.modeBarre(), t = this.tailleBarre();
+    const avant = { cols: this.colonnesBarre || t.cols, rows: t.rows };
+    const premier = (this.pageBarre || 0) * avant.cols * avant.rows;
+    let v = null;
+    if (cols != null) {
+      const c = Math.max(2, Math.min(10, this.capaciteBarre || 10, cols));
+      const r = Math.max(1, Math.min(t.def.rowsMax, rows));
+      v = `${c}x${r}`;
+    }
+    this.tailleProvisoire = garder ? null : v;
+    if (garder) HudJeu.ecrire(`veylan.barre.${mode}`, v);
+    const n = this.tailleBarreEffective();
+    this.pageBarre = Math.floor(premier / Math.max(1, n.cols * n.rows));
+    this.rafraichirBarreSorts(true);
+  }
+
+  tailleBarreEffective() {
+    const t = this.tailleBarre();
+    const m = /^(\d+)x(\d+)$/.exec(this.tailleProvisoire || '');
+    const cols = m ? Number(m[1]) : t.cols, rows = m ? Number(m[2]) : t.rows;
+    return { cols: Math.max(1, Math.min(10, this.capaciteBarre || 10, cols)), rows };
+  }
+
+  sortDeTouche(rang, seconde) {
+    if (!this.barreVisible()) return seconde ? null : this.contenu('sorts')[rang];
+    const cols = this.colonnesBarre || 10, rows = this.rangeesBarreVue || 1;
+    if (seconde && rows < 2) return null;
+    if (rang >= cols) return null;
+    const vue = this.vueBarre || [];
+    return vue[(seconde ? cols : 0) + rang] || null;
+  }
+
+  tournerPageBarre(sens) {
+    const n = this.pagesBarre || 1;
+    if (n <= 1) return;
+    const avant = this.pageBarre || 0;
+    this.pageBarre = sens === 'tour' ? (avant + 1) % n : Math.max(0, Math.min(n - 1, avant + sens));
+    if (this.pageBarre === avant) return;
+    this.rafraichirBarreSorts(true);
+    const liste = this.barreSorts.querySelector('.vy-barre-sorts__liste');
+    let calme = false;
+    try { calme = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {   }
+    const dir = this.pageBarre > avant ? 1 : -1;
+    if (liste.animate && !calme) liste.animate([{ transform: `translateX(${dir * 36}px)`, opacity: 0.25 }, { transform: 'none', opacity: 1 }], { duration: 170, easing: 'ease-out' });
   }
 
   rafraichirBarreSorts(force) {
@@ -357,16 +520,45 @@ class HudJeu {
     if (!on) return;
     const p = cb.player, tour = this.ui.isPlayerTurn() && !cb.busy;
     const ids = this.contenu('sorts');
-    const cases = ids.map((id, i) => this.caseBarre(id, p, tour, i)).join('');
+    const taille = this.tailleBarreEffective();
+    const rows = this.rangeesBarreVue = taille.rows;
+    const pages = Math.max(1, Math.ceil(ids.length / (rows * taille.cols)));
+    const cols = this.colonnesBarre = pages > 1 ? taille.cols : Math.max(1, Math.min(taille.cols, Math.ceil(ids.length / rows)));
+    const parPage = rows * cols;
+    this.pageBarre = Math.max(0, Math.min(pages - 1, this.pageBarre || 0));
+    this.pagesBarre = pages;
+    const vue = this.vueBarre = ids.slice(this.pageBarre * parPage, (this.pageBarre + 1) * parPage);
+    const vides = pages > 1 ? parPage - vue.length : 0;
+    const cases = vue.map((id, i) => this.caseBarre(id, p, tour, i % cols, Math.floor(i / cols))).join('') +
+      '<span class="vy-sort vy-sort--vide" aria-hidden="true"></span>'.repeat(vides);
     const act = this.ui.el.turnBar && this.ui.el.turnBar.querySelector('.vy-barre-tour__action');
     const etat = act ? [act.textContent, act.disabled ? 1 : 0, act.dataset.ui, act.classList.contains('hidden') ? 1 : 0].join('|') : '';
     const fx = this.ui.effetsTexte || '';
-    const sig = [cases, p.pa, p.pm, p.hp, p.hpMax, etat, fx, this.hud.styleVital()].join('§');
+    const sig = [cases, this.pageBarre, pages, cols, rows, p.pa, p.pm, p.hp, p.hpMax, etat, fx, this.hud.styleVital()].join('§');
     if (!force && sig === this.barreSig2) return;
     this.barreSig2 = sig;
     const liste = b.querySelector('.vy-barre-sorts__liste');
     liste.innerHTML = cases;
-    liste.style.setProperty('--colonnes', Math.max(1, Math.ceil(ids.length / 2)));
+    liste.style.setProperty('--colonnes', cols);
+    const nav = b.querySelector('.vy-barre-sorts__pages');
+    nav.classList.toggle('seule', pages <= 1);
+    const num = nav.querySelector('.vy-barre-sorts__num');
+    num.textContent = String(this.pageBarre + 1);
+    num.disabled = pages <= 1;
+    num.dataset.sur = String(pages);
+    num.setAttribute('aria-label', `Page de sorts ${this.pageBarre + 1} sur ${pages}${pages > 1 ? ', toucher pour la suivante' : ''}`);
+    num.title = pages > 1 ? `Page ${this.pageBarre + 1} sur ${pages} (molette, Page préc. / Page suiv.)` : 'Une seule page';
+    nav.querySelector('[data-pb="-1"]').disabled = this.pageBarre <= 0;
+    nav.querySelector('[data-pb="1"]').disabled = this.pageBarre >= pages - 1;
+    b.dataset.pages = String(pages);
+    b.dataset.taille = `${cols}x${rows}`;
+    const po = b.querySelector('.vy-barre-sorts__poignee');
+    po.setAttribute('aria-label', `Taille de la barre de sorts : ${cols} × ${rows}. Glisser, ou les flèches, pour l'agrandir ou la réduire`);
+    const vu = this.mesurerColonnesBarre(liste, cols);
+    if (vu && vu !== this.capaciteBarre) {
+      this.capaciteBarre = vu;
+      if (this.tailleBarreEffective().cols !== taille.cols && !this.remesureBarre) { this.remesureBarre = true; this.rafraichirBarreSorts(true); this.remesureBarre = false; return; }
+    }
     const plein = k => Math.max(p[k], (k === 'pa' ? p.paMax : p.pmMax) + (p.modifier ? p.modifier(k) : 0));
     Gemmes.maj(b.querySelector('.vy-gemmes'), { hp: p.hp, hpMax: p.hpMax, pa: p.pa, paMax: plein('pa'), pm: p.pm, pmMax: plein('pm') });
     const etats = b.querySelector('.vy-barre-sorts__etats');
@@ -375,6 +567,22 @@ class HudJeu {
     this.app.classList.toggle('vy-etats-on', !!fx);
     const a = b.querySelector('.vy-barre-sorts__action');
     if (act) { a.textContent = act.textContent; a.disabled = act.disabled; a.dataset.ui = act.dataset.ui || 'pret'; a.hidden = act.classList.contains('hidden'); }
+  }
+
+  mesurerColonnesBarre(liste, cols) {
+    const b = this.barreSorts, boite = b.querySelector('.vy-barre-sorts__boite');
+    if (!boite.offsetWidth) return 0;
+    const c = liste.querySelectorAll('.vy-sort');
+    if (c.length < 2) return cols;
+    const r0 = c[0].getBoundingClientRect(), r1 = c[1].getBoundingClientRect();
+    const pas = Math.abs(r1.top - r0.top) < 2 ? r1.left - r0.left : r0.width * 1.15;
+    if (!(pas > 0)) return cols;
+    const dispo = b.getBoundingClientRect().width, prise = boite.getBoundingClientRect().width, rangee = liste.getBoundingClientRect().width;
+    const z = c[0].offsetWidth ? r0.width / c[0].offsetWidth : 1;
+    const cs = getComputedStyle(liste), marges = ((parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0)) * z;
+    const ecart = Math.max(0, pas - r0.width);
+    const libre = dispo - (prise - rangee) - marges + ecart;
+    return Math.max(1, Math.min(10, Math.floor((libre + 0.5) / pas)));
   }
 
   majStyleVital() {
@@ -398,7 +606,8 @@ class HudJeu {
     c.classList.toggle('urgent', reste <= 5);
   }
 
-  caseBarre(id, p, tour, rang) {
+  caseBarre(id, p, tour, rang, ligne) {
+    const seconde = ligne === 1;
     const ch = this.ch, cb = this.combat;
     const s = cb.spellOf(id, p);
     if (!s) return '';
@@ -410,7 +619,7 @@ class HudJeu {
     const tuile = typeof SortTuiles === 'object' && SortTuiles.a(id);
     const fond = icone ? `<img class="vy-sort__icone" src="${icone}" alt="">` : `<span class="vy-sort__icone vy-sort__icone--arme">${id === 'arme' ? Hud.picto({ kind: 'weapon' }) : Util.esc(nom.charAt(0))}</span>`;
     return `<button type="button" class="vy-sort${tuile ? ' vy-sort--tuile' : ''}${off ? ' indispo' : ''}${choisi ? ' choisi' : ''}" data-slot data-spell="${id}" style="--el:${el.color}" aria-label="${Util.esc(nom)}, ${s.pa} PA${st.ok ? '' : ' : ' + Util.esc(st.reason || 'indisponible')}" title="${Util.esc(nom)} · ${s.pa} PA">` +
-      `${fond}<em class="vy-sort__pa">${s.pa}</em>${rang < 9 ? `<i class="vy-sort__touche">${rang + 1}</i>` : ''}${cd ? `<span class="vy-sort__cd">${cd}</span>` : ''}</button>`;
+      `${fond}<em class="vy-sort__pa">${s.pa}</em>${rang < 10 && ligne < 2 ? `<i class="vy-sort__touche">${seconde ? '⇧' : ''}${(rang + 1) % 10}</i>` : ''}${cd ? `<span class="vy-sort__cd">${cd}</span>` : ''}</button>`;
   }
 
   insetHaut() {
@@ -612,7 +821,7 @@ class HudJeu {
     const ch = this.ch;
     const marks = {
       carac: ch.statPoints > 0 ? '+' : '',
-      sorts: typeof ch.spellPoints === 'number' && ch.spellPoints > 0 ? '+' : '',
+      sorts: '',
       quetes: Quests.tracker(ch).some(t => t.done) ? '!' : '',
       veille: typeof Veille !== 'undefined' && Veille.badge(ch) ? '•' : '',
     };
@@ -744,11 +953,14 @@ HudJeu.avancement = (ch, t) => {
   return Math.max(0, Math.min(1, (st.step + part) / n));
 };
 
+HudJeu.TAILLE_BARRE = { pc: { cols: 6, rows: 2, rowsMax: 3 }, tel: { cols: 6, rows: 1, rowsMax: 2 } };
+
 HudJeu.ICON = (() => {
   const s = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
   return {
     haut: s('<path d="M6 15l6-6 6 6"/>'),
     bas: s('<path d="M6 9l6 6 6-6"/>'),
+    poignee: s('<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3.2"/>'),
     sorts: s('<path d="M12 3l3 6 6 1-4.5 4.5L18 21l-6-3-6 3 1.5-6.5L3 10l6-1z"/>'),
     verrou: s('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
     ouvert: s('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>'),

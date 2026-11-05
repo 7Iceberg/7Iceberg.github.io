@@ -327,6 +327,9 @@ class UI {
     if (s.furySpend) lines.push(`+${s.furySpend} % par point de Fureur, toute la Fureur dépensée`);
     if (s.braiseCost) lines.push(`Coûte ${s.braiseCost} de Braise`);
     if (s.braise) lines.push(`+${s.braise} de Braise si un ennemi est touché`);
+    { const k = Object.values(DATA.classes).map(c => c.reserve).find((r, i) => r && Object.values(DATA.classes)[i].spells.includes(s.id)); const nom = k ? k.nom : 'réserve';
+      if (s.reserve) lines.push(`+${s.reserve} ${nom} si un ennemi est touché`);
+      if (s.reserveSpend) lines.push(`+${s.reserveSpend} % par point de ${nom}, toute la ${nom} dépensée`); }
     if (s.braiseSpend) lines.push(`+${s.braiseSpend} % par point de Braise, toute la Braise soufflée`);
     if (s.oathPierce) lines.push('Contre le juré : ni esquive ni armure');
     if (s.affutBonus) lines.push(`+${s.affutBonus} % à l'Affût`);
@@ -587,9 +590,15 @@ class UI {
       else this.endTurn();
       return;
     }
-    if (/^[0-9]$/.test(evt.key)) {
-      const idx = evt.key === '0' ? 9 : Number(evt.key) - 1;
-      const id = UI.ordreSorts(c.player)[idx];
+    if ((evt.key === 'PageUp' || evt.key === 'PageDown') && this.tournerPageSorts) {
+      if (this.tournerPageSorts(evt.key === 'PageDown' ? 1 : -1)) evt.preventDefault();
+      return;
+    }
+    const chiffre = /^Digit([0-9])$/.exec(evt.code || '') || /^Numpad([0-9])$/.exec(evt.code || '') || (/^[0-9]$/.test(evt.key) ? [0, evt.key] : null);
+    if (chiffre && !evt.ctrlKey && !evt.altKey && !evt.metaKey) {
+      const idx = chiffre[1] === '0' ? 9 : Number(chiffre[1]) - 1;
+      const seconde = !!evt.shiftKey && !!/^Digit/.test(evt.code || '');
+      const id = this.sortDeTouche ? this.sortDeTouche(idx, seconde) : UI.ordreSorts(c.player)[idx];
       if (id) this.selectSpell(id);
     }
   }
@@ -672,6 +681,7 @@ class UI {
 
     const kit = [];
     if (p.kit && p.kit.fury) kit.push(`Fureur ${p.fury} / ${p.kit.fury.max}`);
+    if (p.kit && p.kit.reserve) kit.push(`${p.kit.reserve.nom} ${p.reserve || 0} / ${p.kit.reserve.max}`);
     if (c.isAffut(p)) kit.push('à l\'affût');
     if (p.kit && p.kit.braise) kit.push(`Braise ${c.braiseOf(p)} / ${p.kit.braise.max}${c.braiseOf(p) >= p.kit.braise.surchauffe ? ' (surchauffe)' : ''}`);
     if (c.isArmed(p)) kit.push(`armé (−${p.kit.armed.reduction} % subis)`);
@@ -777,7 +787,7 @@ class UI {
 
   renderTimeline() {
     const c = this.combat, p = c.player;
-    const order = (c.phase === 'placement' ? c.entities.slice().sort((a, b) => b.initiative - a.initiative) : c.order).filter(e => e.alive);
+    const order = (c.phase === 'placement' ? c.ordreDesTours() : c.order).filter(e => e.alive);
     const painter = this.renderer && (this.renderer.painter || this.renderer);
     const html = order.map((e, k) => {
       const hidden = !c.canSee(p, e);

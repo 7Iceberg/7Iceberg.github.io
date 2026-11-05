@@ -177,7 +177,7 @@ class Accueil {
 
   nouveauBrouillon(invite) {
     const id = DATA.defaultClass;
-    this.b = { classId: id, gender: 'f', voie: null, look: apparenceDeClasse(id, 'f'), lookTouche: false, name: '', tuto: 'court', recommandee: null, invite: !!invite, facing: 'se' };
+    this.b = { classId: id, gender: 'f', look: apparenceDeClasse(id, 'f'), lookTouche: false, name: '', tuto: 'court', recommandee: null, invite: !!invite, facing: 'se' };
     this.slot = 0;
   }
 
@@ -452,12 +452,10 @@ class Accueil {
   ecran_classe() {
     this.ecranVise = 'classe';
     const b = this.b;
-    const cells = Object.values(DATA.classes).map(c => `<button class="e-nu classe-case${c.id === b.classId ? ' on' : ''}${c.id === b.recommandee ? ' reco' : ''}" data-act="classe" data-id="${c.id}" style="--c:${c.color}" role="radio" aria-checked="${c.id === b.classId}" aria-label="${esc(c.name)}, ${esc(epithete(c.title))}${c.id === b.recommandee ? ', recommandée pour toi' : ''}" title="${esc(c.name)}">
+    const cells = DATA.classesJouables().map(c => `<button class="e-nu classe-case${c.id === b.classId ? ' on' : ''}${c.id === b.recommandee ? ' reco' : ''}" data-act="classe" data-id="${c.id}" style="--c:${c.color}" role="radio" aria-checked="${c.id === b.classId}" aria-label="${esc(c.name)}, ${esc(epithete(c.title))}${c.id === b.recommandee ? ', recommandée pour toi' : ''}" title="${esc(c.name)}">
         <canvas class="classe-case__toile" data-id="${c.id}" aria-hidden="true"></canvas><span class="classe-case__nom">${esc(c.name)}</span>${c.id === b.recommandee ? `<span class="classe-case__reco" aria-hidden="true">${ICONES.etoile}</span>` : ''}</button>`)
-      .concat(Object.values(DATA.futureClasses || {}).map(c => `<button class="e-nu classe-case classe-case--verrou" data-act="classe-verrou" data-id="${c.id}" aria-disabled="true" aria-label="${esc(c.name)}, ${esc(epithete(c.title))} : saison ${c.season}" title="${esc(c.name)} : saison ${c.season}">
+      .concat(Object.values(DATA.futureClasses || {}).concat(Object.values(DATA.classes).filter(c => c.season)).map(c => `<button class="e-nu classe-case classe-case--verrou" data-act="classe-verrou" data-id="${c.id}" aria-disabled="true" aria-label="${esc(c.name)}, ${esc(epithete(c.title))} : saison ${c.season}" title="${esc(c.name)} : saison ${c.season}">
         <canvas class="classe-case__toile" data-id="${c.id}" aria-hidden="true"></canvas><span class="classe-case__nom">${esc(c.name)}</span><span class="classe-case__cadenas" aria-hidden="true">${ICONES.cadenas}</span></button>`)).join('');
-    const voies = [[null, 'Origine', '#e2c690']].concat(Character.VOIES.map(v => [v, DATA.elements[v].stat, DATA.elements[v].color]))
-      .map(([v, l, col]) => `<button class="e-nu classe-voie__btn${(b.voie || null) === v ? ' on' : ''}" data-act="voie" data-voie="${v || ''}" style="--e:${col}" role="radio" aria-checked="${(b.voie || null) === v}" title="${v ? `Voie ${esc(l)} : tous tes sorts de dégâts frappent en ${esc(DATA.elements[v].label.toLowerCase())}` : 'Origine : les éléments de la classe'}">${esc(l)}</button>`).join('');
     return `<section class="ecran ecran--classe" aria-label="Choix de la classe">
       ${this.tete('Crée ton personnage', b.invite ? 'partie d\'invité, sans sauvegarde' : this.libres(), 'Annuler')}
       <div class="classe-corps">
@@ -477,7 +475,6 @@ class Accueil {
             <button class="e-nu classe-genre__btn${b.gender === 'f' ? ' on' : ''}" data-act="genre" data-g="f" role="radio" aria-checked="${b.gender === 'f'}">${ICONES.femme}<span>Femme</span></button>
             <button class="e-nu classe-genre__btn${b.gender === 'm' ? ' on' : ''}" data-act="genre" data-g="m" role="radio" aria-checked="${b.gender === 'm'}">${ICONES.homme}<span>Homme</span></button>
           </div>
-          <!-- La voie élémentaire n'existe plus (docs/SCEAUX.md) : chaque sort garde son élément. -->
         </div>
         <div class="classe-actions">
           <button class="vy-bouton" data-act="quiz">${ICONES.boussole}<span>Recommandation</span></button>
@@ -491,12 +488,11 @@ class Accueil {
     const b = this.b, c = DATA.classes[b.classId], P = PROFILS[c.id] || { difficulte: 2, roles: [] };
     const roles = P.roles.map(r => { const R = ROLES[r]; return `<span class="classe-role" style="--r:${R[2]}" title="${R[0]}"><span class="classe-role__losange">${R[1]}</span><span class="classe-role__nom">${R[0]}</span></span>`; }).join('');
     const pips = [1, 2, 3].map(n => `<i class="${n <= P.difficulte ? 'on' : ''}"></i>`).join('');
-    const voie = '';
     return `<div class="classe-roles" aria-label="Rôles">${roles}</div>
       <h2 class="classe-nom"><span class="classe-nom__nom">${esc(c.name)}</span><span class="classe-nom__epithete">${esc(epithete(c.title))}</span></h2>
       ${c.id === b.recommandee ? `<p class="classe-reco">${ICONES.etoile} Recommandée pour toi</p>` : ''}
       <p class="classe-desc">${esc(c.desc)}</p>
-      <p class="classe-diff"><span>Difficulté</span><span class="classe-diff__pips" role="img" aria-label="Difficulté ${P.difficulte} sur 3">${pips}</span><span class="classe-diff__mot">${['', 'accessible', 'tactique', 'exigeante'][P.difficulte]}${voie}</span></p>`;
+      <p class="classe-diff"><span>Difficulté</span><span class="classe-diff__pips" role="img" aria-label="Difficulté ${P.difficulte} sur 3">${pips}</span><span class="classe-diff__mot">${['', 'accessible', 'tactique', 'exigeante'][P.difficulte]}</span></p>`;
   }
 
   monterClasse() {
@@ -525,7 +521,6 @@ class Accueil {
     const el = this.ecranEl, b = this.b;
     el.querySelectorAll('.classe-case[data-act="classe"]').forEach(x => { const on = x.dataset.id === b.classId; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
     el.querySelectorAll('.classe-genre__btn').forEach(x => { const on = x.dataset.g === b.gender; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
-    el.querySelectorAll('.classe-voie__btn').forEach(x => { const on = (x.dataset.voie || null) === (b.voie || null); x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
     el.querySelector('.classe-infos').innerHTML = fines(this.infosClasse());
     this.calerTournant();
     this.teinter(this.couleurClasse());
@@ -782,7 +777,7 @@ class Accueil {
     const champ = this.ecranEl.querySelector('#entree-nom');
     const nom = (champ ? champ.value : b.name).replace(/\s+/g, ' ').trim().slice(0, 16);
     if (!nom) { this.erreur('Donne un nom à ton personnage.'); if (champ) champ.focus(); return; }
-    const ch = Character.create(b.classId, nom, b.gender, b.voie, { look: b.look, tuto: b.tuto });
+    const ch = Character.create(b.classId, nom, b.gender, null, { look: b.look, tuto: b.tuto });
     if (typeof Ile === 'object' && Ile.allumee && typeof Ile3D === 'function' && Ile3D.disponible() && Ile.fairenaitre(ch)) Ile.appliquerOrsane();
     if (typeof Ile === 'object' && Ile.appliquerOrsane3DPour) Ile.appliquerOrsane3DPour(ch);
     if (b.invite) {
@@ -1021,13 +1016,12 @@ Accueil.prototype.actions = {
   },
   'deja-connait'() { this.b.tuto = 'court'; this.suite('deja'); },
   classe(b) { this.choisirClasse(b.dataset.id); },
-  'classe-verrou'(b) { const c = DATA.futureClasses[b.dataset.id]; this.toast(`${c.name}, ${epithete(c.title).toLowerCase()} : arrive avec la saison ${c.season}.`); },
+  'classe-verrou'(b) { const c = DATA.futureClasses[b.dataset.id] || DATA.classes[b.dataset.id]; this.toast(`${c.name}, ${epithete(c.title).toLowerCase()} : arrive avec la saison ${c.season}.`); },
   genre(b) {
     this.b.gender = b.dataset.g === 'm' ? 'm' : 'f';
     if (!this.b.lookTouche) this.b.look = apparenceDeClasse(this.b.classId, this.b.gender);
     this.majClasse(); this.dessinerGrille();
   },
-  voie(b) { this.b.voie = b.dataset.voie || null; this.majClasse(); },
   tourner(b) { this.tourner(Number(b.dataset.sens) || 1); },
   quiz() { this.ouvrirQuiz(); },
   'quiz-rep'(b) { this.quiz.rep.push(b.dataset.id); this.quiz.i++; this.majQuiz(); },
@@ -1083,6 +1077,8 @@ const PROFILS = {
   mirel: { difficulte: 2, roles: ['soutien', 'entrave', 'zones'], quiz: ['distance', 'proteger', 'exigeant'], look: [4, 0, '#a86f4c', '#1c1410'] },
   thalor: { difficulte: 3, roles: ['placement', 'controle', 'endurance'], quiz: ['contact', 'controler', 'exigeant'], look: [5, 7, '#8a5536', '#1c1410'] },
   fennal: { difficulte: 3, roles: ['invocation', 'controle', 'soutien'], quiz: ['distance', 'controler', 'exigeant'], look: [1, 0, '#f6dcc4', '#7a4a2a'] },
+  velmar: { difficulte: 2, roles: ['protection', 'endurance', 'melee'], quiz: ['contact', 'proteger', 'simple'], look: [5, 1, '#c68e6a', '#1f3a44'] },
+  orvald: { difficulte: 2, roles: ['entrave', 'invocation', 'distance'], quiz: ['distance', 'controler', 'exigeant'], look: [2, 7, '#e8c4a0', '#6b4a2a'] },
 };
 function apparenceDeClasse(id, g) {
   const base = Character.defaultLook(id), P = PROFILS[id];
@@ -1128,7 +1124,7 @@ const QUIZ = [
     { id: 'exigeant', label: 'Exigeant', aide: 'J\'aime les plans en trois tours et les combinaisons.', icone: 'engrenage' },
   ] },
 ];
-const ORDRE_RECO = ['sarkan', 'lyssar', 'nerith', 'oriel', 'karsh', 'vaelith', 'mirel', 'thalor', 'kaldrin', 'fennal'];
+const ORDRE_RECO = ['sarkan', 'lyssar', 'nerith', 'oriel', 'karsh', 'velmar', 'orvald', 'thalor', 'fennal'];
 function recommander(rep) {
   const poids = [1.5, 2, 1];
   let best = null, score = -1;

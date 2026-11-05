@@ -135,7 +135,7 @@ const SortIcones = (() => {
     lame_orage: ['eclair'], manteau: ['bouclier', 'etoile'], retour_de_voile: ['sablier', 'recul'], siphon: ['noeud', 'pa'], nova: ['nova'], attraction: ['attire'],
     taille_franche: ['lame'], saut_delan: ['bond'], serment_jure: ['serment'], garde_de_scorie: ['garde'], lame_tournoyante: ['tourbillon'],
     defi: ['cri', 'cible'], poigne_juree: ['poing', 'chaine'], lame_de_braise: ['lame', 'zone'], ferveur: ['bonus', 'feu'], verdict: ['jugement'],
-    trait_tisse: ['fleche'], fil_tendu: ['arc', 'pousse'], collet: ['piege', 'chaine'], repli_traqueur: ['recul'], fleche_lourde: ['fleche_lourde'], balise_de_fil: ['piege', 'recul'], piege_de_reflux: ['piege', 'pousse'], glyphe_de_garde: ['bouclier', 'plus'], glyphe_pesant: ['ancre', 'moins'], lanterne_de_veille: ['lune', 'plus'], renaissance: ['soin', 'plus'], appel_du_molh: ['pierre', 'cor'], gorgee_de_cime: ['goutte', 'bouclier'],
+    trait_tisse: ['fleche'], fil_tendu: ['arc', 'pousse'], collet: ['piege', 'chaine'], repli_traqueur: ['recul'], fleche_lourde: ['fleche_lourde'], balise_de_fil: ['piege', 'fleche'], piege_de_reflux: ['piege', 'pousse'], glyphe_de_garde: ['bouclier', 'plus'], glyphe_pesant: ['ancre', 'moins'], lanterne_de_veille: ['lune', 'plus'], renaissance: ['soin', 'plus'], appel_du_molh: ['pierre', 'patte'], gorgee_de_cime: ['goutte', 'bouclier'],
     corde_longue: ['arc', 'plus'], marque_traqueur: ['cible'], pluie_de_fil: ['pluie'], fleche_ancre: ['ancre', 'fleche'], trait_du_veilleur: ['percant'],
     lueur: ['soin'], eclair_solaire: ['flamme'], manteau_partage: ['bouclier', 'zone'], rappel: ['etincelles'], flamme_vive: ['flamme', 'coeur'],
     benediction: ['bonus', 'pa'], aube: ['soleil'], lumiere_aveuglante: ['lanterne'], veille: ['bouclier', 'oeil'], ardeur: ['flamme', 'pousse'],
@@ -235,7 +235,7 @@ const SortIcones = (() => {
 
   function spec(id, spell) {
     const s = spell || DATA.spells[id];
-    return SPEC[id] || (s ? deduce(s) : ['etincelles']);
+    return SPEC[id] || (s && s.icone) || (s ? deduce(s) : ['etincelles']);
   }
 
   function url(id, spell, px) {

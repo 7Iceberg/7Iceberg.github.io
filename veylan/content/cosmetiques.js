@@ -39,8 +39,8 @@
   );
 
   L.push(
-    { id: 'blason_voie', nom: 'Blason de la Voie', type: 'blason', rarete: 'rare', source: { genre: 'quete', id: ['voie_vaelith_1', 'voie_sarkan_1', 'voie_lyssar_1', 'voie_oriel_1', 'voie_nerith_1', 'voie_kaldrin_1', 'voie_karsh_1', 'voie_mirel_1', 'voie_thalor_1', 'voie_fennal_1'] }, collection: null,
-      description: 'Le geste de ta Voie, reconnu par le Temple. Un seul blason pour les dix Voies.', data: { glyphe: '✦', couleur: '#c9a35c' } },
+    { id: 'blason_voie', nom: 'Blason de la Voie', type: 'blason', rarete: 'rare', source: { genre: 'quete', id: ['voie_sarkan_1', 'voie_lyssar_1', 'voie_oriel_1', 'voie_nerith_1', 'voie_karsh_1', 'voie_thalor_1', 'voie_velmar_1', 'voie_fennal_1', 'voie_orvald_1'] }, collection: null,
+      description: 'Le geste de ta Voie, reconnu par le Temple. Un seul blason pour les neuf Voies.', data: { glyphe: '✦', couleur: '#c9a35c' } },
     { id: 'blason_grouk', nom: 'Corne du Grand Grouk', type: 'blason', rarete: 'rare', source: { genre: 'boss', id: 'grand_grouk' }, collection: 'cimes',
       description: 'Une corne stylisée, pour qui a fait tomber le Grand Grouk.', data: { glyphe: '⌂', couleur: '#8fb07a' } },
     { id: 'blason_premiers_pas', nom: 'Blason des premiers pas', type: 'blason', rarete: 'rare', source: { genre: 'collection', id: 'premiers_pas' }, collection: null,

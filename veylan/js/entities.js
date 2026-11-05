@@ -12,10 +12,15 @@ class Entity {
     const R = DATA.rules;
     const steps = def.ai ? Math.max(0, this.level - range[0]) : 0;
     const mob = def.ai && !def.summon;
-    this.scale = def.scale || (1 + R.monsterDamagePerLevel * steps) * (def.dmgMult || 1) * (mob ? R.monsterDamageMult : 1);
+    const k = mob ? (R.echelleVeilleurs || 0) : 0;
+    const e = k ? Entity.ecartEchelle(this.level) : { degats: 1, pv: 1 };
+    const absolu = 1 + k * (e.pv - 1);
+    this.echelleHp = 1 + k * (e.degats - 1);
+    this.scale = def.scale || (1 + R.monsterDamagePerLevel * steps) * (def.dmgMult || 1) * (mob ? R.monsterDamageMult : 1) * absolu / (mob ? DATA.reductionCoups(this.level) : 1);
     const high = mob ? 1 + (R.monsterHpHighPerLevel || 0) * Math.max(0, this.level - (R.monsterHpHighFrom || 99)) : 1;
     const compense = mob ? 1 + (R.monsterHpCompense || 0) * Math.max(0, this.level - 1) : 1;
-    this.hpMax = Math.max(1, Math.round(def.hp * (1 + R.monsterHpPerLevel * steps) * (mob ? R.monsterHpMult : 1) * high / compense));
+    const echelle = mob ? DATA.echellePv(this.level) : 1;
+    this.hpMax = Math.max(1, Math.round(def.hp * (1 + R.monsterHpPerLevel * steps) * (mob ? R.monsterHpMult : 1) * high * this.echelleHp / compense * echelle));
     this.hp = this.hpMax;
     this.paMax = def.pa;
     this.pmMax = def.pm;
@@ -30,6 +35,7 @@ class Entity {
     this.tacle = def.tacle != null ? def.tacle : (wild && contact ? Math.floor(this.level / DATA.rules.monsterTacleDiv) : 0);
     this.fuite = def.fuite != null ? def.fuite : (wild ? Math.floor(this.level / DATA.rules.monsterFuiteDiv) : 0);
     this.crit = def.crit || 0;
+    this.resCrit = def.resCrit || 0;
     this.dmgPct = def.dmgPct || {};
     this.dmgFixe = def.dmgFixe || {};
     this.dmgCrit = def.dmgCrit || 0;
@@ -65,6 +71,7 @@ class Entity {
     this.turnStartPos = null;
     this.kit = def.shape === 'player' ? DATA.classes[def.classId || def.id] || null : null;
     this.fury = 0;
+    this.reserve = 0;
     this.braise = this.kit && this.kit.braise ? this.kit.braise.debut || 0 : 0;
     this.moved = false;
     this.lootBonus = 0;
@@ -74,8 +81,20 @@ class Entity {
     this.flashUntil = 0;
   }
 
+  static echellePv(level) { return DATA.echellePv(level); }
+
   static xpFor(def, level) {
-    return def && def.ai && !def.summon ? Math.round(8 * Math.pow(level, 1.6)) * (def.boss ? 5 : 1) : 0;
+    return def && def.ai && !def.summon ? Math.round(8 * Math.pow(level / 2, 1.6)) * (def.boss ? 5 : 1) : 0;
+  }
+
+  static ecartEchelle(n) {
+    const tiers = DATA.rules.statTiers || [[1e9, 1]];
+    const carac = points => { let v = 0; for (const [jusqua, cout] of tiers) { while (v < jusqua && points >= cout) { v++; points -= cout; } if (points < cout) break; } return v; };
+    const L = Math.max(1, n), A = (L + 1) / 2;
+    const cN = carac(5 * (L - 1)), cA = carac(Math.round(5 * (A - 1)));
+    const SR = (DATA.sceaux && DATA.sceaux.regles) || { pvBase: 50, pvParNiveau: 5, pvParSceau: 5 };
+    const pv = (niv, c) => SR.pvBase + SR.pvParNiveau * niv + (SR.pvParSceau || 5) * Math.floor(c / 10);
+    return { degats: (100 + cN) / (100 + cA), pv: pv(L, cN) / pv(A, cA) };
   }
 
   static levelRange(def) {
@@ -97,18 +116,16 @@ class Entity {
 
   esquive(kind) {
     if (this.owner) return this.owner.esquive(kind);
-    if (this.def.ai) return this.wisdom;
-    return (this.esquivePts[kind] || 0) + Math.floor((this.stats.sagesse || 0) / 10);
+    return (this.esquivePts[kind] || 0) + Math.floor(this.wisdom / 10);
   }
   retrait(kind) {
     if (this.owner) return this.owner.retrait(kind);
-    if (this.def.ai) return this.wisdom;
-    return (this.retraitPts[kind] || 0) + Math.floor((this.stats.sagesse || 0) / 10);
+    return (this.retraitPts[kind] || 0) + Math.floor(this.wisdom / 10);
   }
 
   get wisdom() {
     if (this.owner) return this.owner.wisdom;
-    if (this.def.ai && !(this.def.stats && this.def.stats.sagesse != null)) return this.level || 0;
+    if (this.def.ai && !(this.def.stats && this.def.stats.sagesse != null)) return Math.floor((this.level || 0) / 2);
     return this.stats.sagesse || 0;
   }
 

@@ -349,7 +349,6 @@ class Guide {
     const bloc = this.etapes.map((e, i) => (e.bloc === 'niveau' && e.enabled !== false ? i : -1)).filter(i => i >= 0);
     if (!bloc.length) return false;
     if (this.ch.autoStats) { this.ch.resetStats(); this.ch.autoStats = false; this.world.emit('update'); }
-    if (this.ch.autoSpells) { this.ch.resetSpells(); this.ch.autoSpells = false; this.world.emit('update'); }
     if (this.index <= bloc[bloc.length - 1] || this.reprise != null) return false;
     this.reprise = this.index;
     this.index = bloc[0];
@@ -437,7 +436,6 @@ class Guide {
       case 'armeEquipable': return equipables(true) === !!v;
       case 'arme': return !!ch.equipment.arme === !!v;
       case 'points': return (ch.statPoints > 0) === !!v;
-      case 'pointsSort': return (ch.spellPoints > 0) === !!v;
       case 'auto': return !!ch.autoStats === !!v;
       case 'sortChoisi': return !!(this.ui && this.ui.selectedSpell) === !!v;
       case 'pointsPlaces': return (this.instantane.points != null && ch.statPoints < this.instantane.points) === !!v;
@@ -457,7 +455,8 @@ class Guide {
       const s = DATA.spells[id];
       if (s && s.element && s.element !== 'neutre' && (s.effects || []).some(e => e.type === 'damage') && !out.includes(s.element)) out.push(s.element);
     }
-    return out;
+    const principal = { force: 'terre', intel: 'feu', chance: 'eau', agi: 'air' }[ch && ch.mainStat];
+    return principal && out.includes(principal) ? [principal].concat(out.filter(e => e !== principal)) : out;
   }
 
   ficheGroupe() {

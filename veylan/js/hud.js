@@ -100,7 +100,7 @@ class Hud {
       Util.setJauge(bar.querySelector('.vy-jauge--xp'), xp, 100);
     }
     bar.querySelector('.vy-jauge--xp').title = 'Expérience : ' + xpText;
-    for (const [id, n] of [['carac', ch.statPoints], ['sorts', ch.spellPoints]]) {
+    for (const [id, n] of [['carac', ch.statPoints]]) {
       const b = document.querySelector(`#menus [data-win="${id}"]`);
       if (b) b.classList.toggle('vy-menu--point', n > 0);
     }
@@ -192,7 +192,7 @@ class Hud {
         <div class="row"><span>Niveau ${ch.level}</span><span>${ch.level >= Character.MAX_LEVEL ? 'maximum' : `${ch.xp} / ${Character.xpToNext(ch.level)} XP`}</span></div>
         <div class="row"><span>PV</span><b>${ch.hp} / ${d.hpMax}</b></div>
         <div class="row"><span>PA · PM</span><b>${d.pa} · ${d.pm}</b></div>
-        <div class="row"><span>Initiative · Critique</span><b>${d.initiative} · ${d.crit} %</b></div>
+        <div class="row"><span>Initiative · Critique</span><b>${d.initiative} · ${d.crit > 0 ? '+' : ''}${d.crit} %</b></div>
         ${titles}
         <h4>Caractéristiques <small class="muted">${ch.statPoints} point(s) à répartir</small></h4>
         ${statRows}
@@ -205,7 +205,7 @@ class Hud {
         <h4>Sorts</h4><div class="muted">${ch.unlockedSpells().map(id => esc(DATA.spells[id].name)).join(', ')}${ch.level < Character.MAX_LEVEL ? `<br>Prochain sort au niveau ${nextUnlock(ch)}` : ''}</div>
       </div></div>`;
     };
-    const nextUnlock = ch => { const u = ch.classDef.spells.map((id, i) => DATA.spells[id].unlock || Character.UNLOCK[i]).filter(l => l > ch.level); return u.length ? Math.min(...u) : '-'; };
+    const nextUnlock = ch => { const u = ch.classDef.spells.map(id => Character.unlockLevel(ch.classId, id)).filter(l => l > ch.level); return u.length ? Math.min(...u) : '-'; };
     this.actions.alloc = d => { this.world.ch.allocate(d.stat, Number(d.n)); this.world.emit('update'); };
     this.actions.unequip = d => { this.world.ch.unequip(d.slot); this.world.emit('update'); };
     this.actions.auto = (d, b) => { this.world.ch.autoStats = b.checked; };
@@ -575,7 +575,7 @@ class Hud {
       const ch = this.world.ch;
       const lignes = Avis.liste().map(a => {
         const m = DATA.monsters[a.monstre] || { name: a.monstre, color: '#aaa' }, s = Avis.statut(ch, a.id), p = a.prime;
-        const prime = `${p.xp} XP, ${p.fils} Dragmes, ${p.sceaux} Sceau${p.sceaux > 1 ? 'x' : ''} de la Garde`;
+        const prime = `${p.xp} XP, ${p.fils} Dragmes, ${p.sceaux} Insigne${p.sceaux > 1 ? 's' : ''} de la Garde`;
         const bouton = s === 'libre' ? `<button data-act="aprendre" data-id="${a.id}">Prendre l'avis</button>`
           : s === 'pris' ? `<button data-act="alacher" data-id="${a.id}">Renoncer</button>`
           : s === 'capture' ? `<button data-act="arendre" data-id="${a.id}" class="primary">Toucher la prime</button>`
@@ -583,7 +583,7 @@ class Hud {
         const etat = s === 'pris' ? '<br><small class="ok">En chasse</small>' : s === 'capture' ? '<br><small class="ok">Capturé, la prime t\'attend</small>' : '';
         return `<div class="row item${s === 'rendu' ? ' dim' : ''}" data-avis="${a.id}"><span><b style="color:${m.color}">${esc(m.name)}</b> <small class="muted">niv. ${a.niveau}</small><br><small>${esc(a.texte)}</small><br><small>Vu ${esc(a.lieu)}. Prime : ${prime}.</small>${etat}</span><span class="btns">${bouton}</span></div>`;
       }).join('');
-      return `<p class="muted">Prends un avis : sa cible se joint à un groupe de sa carte, son nom sur l'étiquette. Bats-la, puis reviens toucher la prime. Chaque avis se rend une fois par jour ; les Sceaux s'échangent au Temple des Voies.</p>${lignes}`;
+      return `<p class="muted">Prends un avis : sa cible se joint à un groupe de sa carte, son nom sur l'étiquette. Bats-la, puis reviens toucher la prime. Chaque avis se rend une fois par jour ; les Insignes s'échangent au Temple des Voies.</p>${lignes}`;
     };
     this.actions.aprendre = d => { this.world.prendreAvis(d.id); };
     this.actions.alacher = d => { this.world.abandonnerAvis(d.id); };
@@ -598,9 +598,9 @@ class Hud {
         const d = Items.get(e.id);
         if (!d) return '';
         const info = d.sub === 'parchemin' ? `+${d.value} ${esc((Items.STAT_LABEL && Items.STAT_LABEL[d.stat]) || d.stat)} pour toujours` : d.heal ? `rend ${d.heal >= 999 ? 'tous les' : d.heal} PV` : esc(d.lore || '');
-        return `<div class="row item"><span><b>${esc(d.name)}</b><br><small>${info}</small></span><span class="btns"><button data-act="techanger" data-id="${e.id}" ${n >= e.sceaux ? '' : 'disabled'}>${e.sceaux} Sceau${e.sceaux > 1 ? 'x' : ''}</button></span></div>`;
+        return `<div class="row item"><span><b>${esc(d.name)}</b><br><small>${info}</small></span><span class="btns"><button data-act="techanger" data-id="${e.id}" ${n >= e.sceaux ? '' : 'disabled'}>${e.sceaux} Insigne${e.sceaux > 1 ? 's' : ''}</button></span></div>`;
       }).join('');
-      return `<p class="muted">Tu as ${n} Sceau${n > 1 ? 'x' : ''} de la Garde. On les gagne aux avis de recherche, à la tour de la Garde sur la Place.</p>${lignes}`;
+      return `<p class="muted">Tu as ${n} Insigne${n > 1 ? 's' : ''} de la Garde. On les gagne aux avis de recherche, à la tour de la Garde sur la Place.</p>${lignes}`;
     };
     this.actions.techanger = d => { this.world.echangerTemple(d.id); };
     this.openPanel('dialogue', `Le Temple des Voies, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
@@ -682,7 +682,7 @@ class Hud {
       + (r.cosmetiques || []).map(e => `<li>${esc(World.texteCosmetique(e))}</li>`).join('');
     const quests = r.quests.filter((t, i, arr) => arr.findIndex(x => x.quest === t.quest) === i).map(t => `<li>${esc(t.quest.name)} : ${t.finished ? 'terminée, à rendre à ' + esc(Quests.npcName(Quests.turnInOf(t.quest))) : esc(Quests.stepText(ch, t.quest.id))}</li>`).join('');
     const chal = r.challenge ? `<div class="row"><span>Défi : ${esc(r.challenge.name)}</span><b class="${r.challenge.success ? 'ok' : 'missing'}">${r.challenge.success ? `réussi, +${r.challenge.bonus} %` : 'raté'}</b></div>` : '';
-    const epr = r.epreuveDojo ? `<div class="row"><span>Épreuve du jour</span><b>${r.epreuveDojo.tours} tour${r.epreuveDojo.tours > 1 ? 's' : ''}${r.epreuveDojo.sceaux ? ' · un Sceau de la Garde' : ` · plus de ${r.epreuveDojo.limite} tours, sans Sceau`}</b></div>` : '';
+    const epr = r.epreuveDojo ? `<div class="row"><span>Épreuve du jour</span><b>${r.epreuveDojo.tours} tour${r.epreuveDojo.tours > 1 ? 's' : ''}${r.epreuveDojo.sceaux ? ' · un Insigne de la Garde' : ` · plus de ${r.epreuveDojo.limite} tours, sans Insigne`}</b></div>` : '';
     const fam = r.familier ? `<div class="row"><span>${esc(r.familier.nom)}</span><b>+${r.familier.xp} XP${r.familier.niveaux ? ` · niveau ${r.familier.niveau} !` : ''}</b></div>` : '';
     if (r.familier && r.familier.niveaux) this.chat('gain', `${r.familier.nom} passe au niveau ${r.familier.niveau}.`);
     const mont = r.monture ? `<div class="row"><span>${esc(r.monture.nom)} (${nfr(r.monture.cede)} XP cédés)</span><b>+${r.monture.xp} XP${r.monture.niveaux ? ` · niveau ${r.monture.niveau} !` : ''}</b></div>` : '';

@@ -336,7 +336,7 @@ Object.assign(Hud.prototype, {
       L.push(li('Zone', sp.aoe && sp.aoe.shape === 'cross' ? 'en croix, alliés compris' : 'une cible'));
       if (sp.effects.length > 1) L.push(li('Coups', sp.effects.length));
       if (sp.lifesteal) L.push(li('Vol de vie', `${sp.lifesteal} %`));
-      L.push(li(`${Hud.pic('crit', 15)}Coups critiques`, `${dd.crit} % de chance, dégâts × 1,5`));
+      L.push(li(`${Hud.pic('crit', 15)}Coups critiques`, `${DATA.chanceCrit(dd, sp)} % de chance (${DATA.critDe(sp)} % de l'arme${dd.crit ? `, ${dd.crit > 0 ? '+' : '−'}${Math.abs(dd.crit)} % de Critique` : ''}), jet × ${String(DATA.critJetDe(sp)).replace('.', ',')}`));
     }
     L.push(li('Type', typeObjet(d)));
     L.push(li('Rareté', Items.RARITY_LABEL[Items.rarity(d)]));
