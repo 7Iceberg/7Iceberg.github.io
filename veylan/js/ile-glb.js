@@ -502,11 +502,14 @@ float bruitR(vec3 x) {
       const coll = (fbm2(x / cfg.colline, z / cfg.colline) - 0.5) * 2 * cfg.collines * lisse01(6, 60, d);
       const a = Math.atan2(z - cz, x - cx);
       const crete = 1 - Math.abs(2 * fbm2(Math.cos(a) * 3.2 + 50, Math.sin(a) * 3.2 + 50) - 1);
-      const mont = cfg.montagnes * (0.2 + 0.8 * Math.pow(crete, 1.7)) * (0.55 + 0.45 * fbm2(x / 90, z / 90)) * lisse01(cfg.pied[0], cfg.pied[1], d);
+      let mont = cfg.montagnes * (0.2 + 0.8 * Math.pow(crete, 1.7)) * (0.55 + 0.45 * fbm2(x / 90, z / 90)) * lisse01(cfg.pied[0], cfg.pied[1], d);
+      for (const V of voisins) if (V.montagnes != null) mont *= 1 + (V.montagnes - 1) * poidsVoisin(V, a, d);
       return hL[i] + (base - hL[i]) * lisse01(0, cfg.descente, d) - cfg.levre * (1 - lisse01(0, 8, d)) + coll + mont;
     };
     const pal = {};
     for (const k of Object.keys(cfg.couleurs)) pal[k] = [].concat(cfg.couleurs[k]).map(linHex);
+    const voisins = (cfg.pays || []).map(V => Object.assign({ ouverture: 50, depuis: 110, force: 0.85 }, V, { pal: Object.fromEntries(Object.entries(V.couleurs || {}).map(([k, v]) => [k, [].concat(v).map(linHex)])) }));
+    const poidsVoisin = (V, a, d) => { const da = Math.abs(((a * 180 / Math.PI - V.az) % 360 + 540) % 360 - 180); return (1 - lisse01(V.ouverture * 0.45, V.ouverture, da)) * lisse01(V.depuis, V.depuis + 160, d) * V.force; };
     const E = cfg.etalonnage, cT = new THREE.Color(), hsl = {};
     const etalonne = hex => {
       cT.set(hex).getHSL(hsl);
@@ -540,7 +543,20 @@ float bruitR(vec3 x) {
       c = melange(c, pal.foret[0], lisse01(cfg.bois - 0.05, cfg.bois + 0.05, boisA(x, z)) * lisse01(16, 40, d));
       const rel = h - hm;
       c = melange(c, pal.roche[0], lisse01(cfg.roche[0], cfg.roche[1], rel));
-      return melange(c, pal.neige[0], lisse01(cfg.neige[0], cfg.neige[1], rel));
+      c = melange(c, pal.neige[0], lisse01(cfg.neige[0], cfg.neige[1], rel));
+      if (voisins.length) {
+        const a = Math.atan2(z - cz, x - cx);
+        for (const V of voisins) {
+          const w = poidsVoisin(V, a, d);
+          if (!(w > 0.001)) continue;
+          const P2 = V.pal;
+          let cv = P2.pres ? melange(P2.pres[0], P2.pres[P2.pres.length - 1], fbm2(x / 34 + 3, z / 34 + 9)) : c;
+          if (P2.roche) cv = melange(cv, P2.roche[0], lisse01(cfg.roche[0] * 0.6, cfg.roche[1] * 0.8, rel));
+          if (P2.neige) cv = melange(cv, P2.neige[0], lisse01(cfg.neige[0] * 0.5, cfg.neige[1] * 0.7, rel));
+          c = melange(c, cv, w);
+        }
+      }
+      return c;
     };
     const D = cfg.anneaux, K = D.length, nks = D.map(d => lisseN(Math.min(Math.floor(N / 3), Math.round(Math.max(0, d) * cfg.lissage / pas))));
     const posA = (k, i, d) => {

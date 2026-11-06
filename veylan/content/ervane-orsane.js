@@ -5,15 +5,15 @@
   DATA.ile.orsaneApplique = true;
 
   const CARTES = {
-    orsane_cimes_place: [15, 16], orsane_cimes_terrasses: [15, 16], orsane_cimes_ateliers: [15, 16], orsane_cimes_porte: [15, 16],
-    orsane_clairieres_lisiere: [15, 18], orsane_clairieres_pres: [15, 18],
-    orsane_clairieres_ruisseau: [17, 20], orsane_clairieres_bosquet: [17, 20],
-    orsane_clairieres_mare: [19, 22], orsane_clairieres_oree: [19, 22],
-    orsane_sentiers_montee: [17, 20], orsane_sentiers_relais: [17, 20],
-    orsane_sentiers_halte: [19, 22], orsane_sentiers_corniche: [19, 22],
-    orsane_sentiers_pont: [21, 24], orsane_sentiers_crete: [21, 24],
+    orsane_cimes_place: [19, 20], orsane_cimes_terrasses: [19, 20], orsane_cimes_ateliers: [19, 20], orsane_cimes_porte: [19, 20],
+    orsane_clairieres_lisiere: [19, 22], orsane_clairieres_pres: [19, 22],
+    orsane_clairieres_ruisseau: [21, 24], orsane_clairieres_bosquet: [21, 24],
+    orsane_clairieres_mare: [23, 26], orsane_clairieres_oree: [23, 26],
+    orsane_sentiers_montee: [21, 24], orsane_sentiers_relais: [21, 24],
+    orsane_sentiers_halte: [23, 26], orsane_sentiers_corniche: [23, 26],
+    orsane_sentiers_pont: [25, 28], orsane_sentiers_crete: [25, 28],
   };
-  const ZONES = { orsane_cimes: [15, 16], orsane_clairieres: [15, 22], orsane_sentiers: [17, 24] };
+  const ZONES = { orsane_cimes: [19, 20], orsane_clairieres: [19, 26], orsane_sentiers: [21, 28] };
   const ADULTES = { piouk: 'pilou', groukin: 'grouk', filin: 'tissefil', loche: 'veilloche' };
   const adulte = (id, bas) => (id === 'brim' ? (bas >= 19 ? 'brimbe' : 'grouk') : (ADULTES[id] || id));
   const KAVOUS = {
@@ -55,32 +55,32 @@
     }
   }
 
-  if (DATA.monsters.pilou) DATA.monsters.pilou.level = '1 à 24';
-  if (DATA.monsters.pilou_chapardeur) DATA.monsters.pilou_chapardeur.level = '7 à 24';
-  if (DATA.monsters.glouton) DATA.monsters.glouton.level = '13 à 22';
+  if (DATA.monsters.pilou) DATA.monsters.pilou.level = '1 à 28';
+  if (DATA.monsters.pilou_chapardeur) DATA.monsters.pilou_chapardeur.level = '7 à 28';
+  if (DATA.monsters.glouton) DATA.monsters.glouton.level = '13 à 26';
 
   const grenier = C.dungeons.find(d => d.id === 'grenier_des_pilous');
   if (grenier) {
-    grenier.level = [17, 22];
-    for (const r of grenier.rooms || []) for (const mo of r.monsters || []) { mo.level += 10; mo.id = adulte(mo.id, mo.level); }
+    grenier.level = [21, 26];
+    for (const r of grenier.rooms || []) for (const mo of r.monsters || []) { mo.level += 14; mo.id = adulte(mo.id, mo.level); }
   }
 
-  const NIVEAU = { 1: 15, 3: 15, 5: 15, 7: 17, 9: 19, 11: 19, 13: 19 };
-  const REQUIS = { 15: 15, 17: 15, 19: 17, 21: 19 };
+  const NIVEAU = { 1: 19, 3: 19, 5: 19, 7: 21, 9: 23, 11: 23, 13: 23 };
+  const REQUIS = { 19: 19, 21: 19, 23: 21, 25: 23 };
   const xpDe = (niveau, principale) => Math.round(24 * Math.pow((niveau + 1) / 2, 1.6)) * (principale ? 2 : 1);
   const PREFIXES = ['orsane_', 'porte_', 'ateliers_', 'remue_'];
   const QUETES = {
-    orsane_arrivee: { level: 15, xp: 1337, requis: 15, quetes: ['ervane_descente'] },
-    orsane_lanternes_volees: { level: 15, xp: 1337, requis: 15 },
-    orsane_grenier_des_pilous: { level: 17, xp: 1614, requis: 15 },
-    orsane_reveil_des_grouks: { level: 19, xp: 1911, requis: 17 },
-    orsane_fil_tendu: { level: 21, xp: 2226, requis: 19 },
-    orsane_toupie_de_vali: { level: 15, xp: 669, requis: 15 },
-    orsane_plumes_de_thila: { level: 15, xp: 669, requis: 15 },
-    orsane_ronde_d_orvak: { level: 15, xp: 669, requis: 15 },
-    orsane_semelles_de_korvel: { level: 17, xp: 807, requis: 15 },
-    orsane_memoire_de_kelthar: { level: 19, xp: 955, requis: 17 },
-    orsane_manche_de_thorak: { level: 19, xp: 955, requis: 17 },
+    orsane_arrivee: { level: 19, xp: 1910, requis: 19, quetes: ['ervane_descente'] },
+    orsane_lanternes_volees: { level: 19, xp: 1910, requis: 19 },
+    orsane_grenier_des_pilous: { level: 21, xp: 2226, requis: 19 },
+    orsane_reveil_des_grouks: { level: 23, xp: 2558, requis: 21 },
+    orsane_fil_tendu: { level: 25, xp: 2908, requis: 23 },
+    orsane_toupie_de_vali: { level: 19, xp: 955, requis: 19 },
+    orsane_plumes_de_thila: { level: 19, xp: 955, requis: 19 },
+    orsane_ronde_d_orvak: { level: 19, xp: 955, requis: 19 },
+    orsane_semelles_de_korvel: { level: 21, xp: 1113, requis: 19 },
+    orsane_memoire_de_kelthar: { level: 23, xp: 1279, requis: 21 },
+    orsane_manche_de_thorak: { level: 23, xp: 1279, requis: 21 },
   };
   const NOMS_ADULTES = [[/\bGlymets\b/g, 'Glyms Ancestraux'], [/\bGlymet\b/g, 'Glym Ancestral'], [/\bGroukins\b/g, 'Grouks'], [/\bGroukin\b/g, 'Grouk'],
     [/\bFilins\b/g, 'Tissefils'], [/\bFilin\b/g, 'Tissefil'], [/\bLoches\b/g, 'Veilloches'], [/\bLoche\b/g, 'Veilloche']];

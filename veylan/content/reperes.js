@@ -27,9 +27,9 @@
     { modele: 'griffe', zone: 'orsane_eboulis', u: 389, v: 301, rot: 3.14 },
   ],
   kaldum: [
-    { modele: 'cheminee', zone: 'kaldum_ville', u: 73, v: 33, rot: -0.6 },
-    { modele: 'chevalement', zone: 'kaldum_galeries', u: 149, v: 194, rot: -2.92 },
-    { modele: 'chaudron', zone: 'kaldum_vapeurs', u: 305, v: 163, rot: 1.27 },
-    { modele: 'enclume', zone: 'kaldum_fonderie', u: 298, v: 301, rot: -2.78 },
+    { modele: 'cheminee', zone: 'kaldum_ville', u: 173, v: 57, rot: -0.6 },
+    { modele: 'chevalement', zone: 'kaldum_galeries', u: 84, v: 132, rot: -2.92 },
+    { modele: 'chaudron', zone: 'kaldum_vapeurs', u: 252, v: 236, rot: 1.27 },
+    { modele: 'enclume', zone: 'kaldum_fonderie', u: 346, v: 78, rot: 0.6 },
   ],
 };

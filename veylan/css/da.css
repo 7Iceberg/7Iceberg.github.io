@@ -416,3 +416,56 @@
 .vy-majeure p { margin: 0 0 14px; font-size: 13px; color: var(--da-texte-2, #a3a9bd); }
 .vy-majeure__ok { min-width: 160px; }
 @media (prefers-reduced-motion: reduce) { .vy-majeure, .vy-majeure__rayons, .vy-majeure__objet { animation: none; } }
+
+#app.vy-da { --gem-serti-1: #4a5370; --gem-serti-2: #252a3b; --gem-serti-3: #0e111b; --gem-bord: #0a0d16; --gem-lisere: rgba(242, 193, 78, 0.6); }
+#app.vy-da[data-ui-theme]:not([data-ui-theme="nuit"]) {
+  --gem-serti-1: color-mix(in srgb, var(--theme-fond, #252a3b) 55%, #fff 22%);
+  --gem-serti-2: var(--theme-fond, #252a3b);
+  --gem-serti-3: color-mix(in srgb, var(--theme-fond, #252a3b) 55%, #000);
+  --gem-bord: color-mix(in srgb, var(--theme-fond, #252a3b) 35%, #000);
+  --gem-lisere: color-mix(in srgb, var(--theme-accent, #f2c14e) 75%, transparent);
+}
+#app.vy-da[data-ui-theme="ardoise"] { --gem-serti-1: #e6dfd0; --gem-serti-2: #b3a68c; --gem-serti-3: #6f644f; --gem-bord: #4a4134; --gem-lisere: rgba(166, 115, 73, 0.85); }
+
+.vy-profil { display: flex; flex-direction: column; gap: 12px; }
+.vy-profil__banniere { position: relative; display: flex; align-items: flex-end; gap: 16px; min-height: 140px; padding: 12px 18px 14px 160px; border-radius: 8px; overflow: hidden;
+  background: radial-gradient(ellipse 40% 120% at 80px 100%, color-mix(in srgb, var(--c) 45%, transparent), transparent 70%), linear-gradient(115deg, color-mix(in srgb, var(--c) 30%, #1c2030), #1c2030 65%);
+  border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); }
+.vy-profil__portrait { position: absolute; left: 12px; bottom: -4px; width: 140px; height: 159px; object-fit: contain; object-position: bottom; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5)); }
+.vy-profil__id small { font: 800 10.5px var(--vy-font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: color-mix(in srgb, var(--c) 60%, #fff); }
+.vy-fenetre__corps .vy-profil__id h3 { margin: 2px 0; font: 700 26px/1.1 var(--vy-font-titre); letter-spacing: 0.05em; color: #fff; }
+.vy-profil__id em { display: block; font-style: normal; font-size: 12.5px; color: var(--da-or, #f2c14e); }
+.vy-profil__niv { display: inline-block; margin-top: 6px; padding: 2px 9px; border-radius: 5px; font: 800 11px var(--vy-font-ui); color: #2a1d05; background: var(--da-or, #f2c14e); }
+.vy-profil__corps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.vy-profil__corps section { min-width: 0; }
+.vy-profil__corps h4 { display: flex; align-items: center; justify-content: space-between; margin: 0 0 7px; font: 800 10.5px var(--vy-font-ui); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fen-texte-2); }
+.vy-profil__lien { border: 0; background: none; color: var(--da-cristal, #52d2f4); font: 700 11px var(--vy-font-ui); letter-spacing: 0; text-transform: none; cursor: pointer; }
+.vy-profil__tuiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.vy-profil__tuile { display: grid; gap: 1px; padding: 8px 10px; border-radius: 7px; background: var(--da-case, #141826); border: 1px solid var(--da-ligne, rgba(255, 255, 255, 0.07)); }
+.vy-profil__tuile small { font: 800 9px var(--vy-font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--fen-texte-2); }
+.vy-profil__tuile b { font: 800 16px var(--vy-font-ui); }
+.vy-profil__tuile em { font-style: normal; font-size: 10.5px; color: var(--fen-texte-2); }
+.vy-profil__pieces { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.vy-profil__piece { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 3px; border-radius: 6px; background: rgba(0, 0, 0, 0.18); }
+.vy-profil__piece .vy-case { --vy-case: 34px; width: 34px; height: 34px; flex: none; }
+.vy-profil__piece span:last-child { min-width: 0; display: grid; }
+.vy-profil__piece small { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fen-texte-2); }
+.vy-profil__piece b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.vy-profil__choix { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fen-texte-2); }
+.vy-profil__choix select { flex: 1; min-width: 0; }
+.vy-profil__compare { margin-top: 8px; display: grid; gap: 2px; }
+.vy-profil__cmp { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; padding: 4px 8px; border-radius: 5px; background: rgba(0, 0, 0, 0.18); font-size: 12.5px; font-weight: 700; }
+.vy-profil__cmp span:first-child { text-align: right; }
+.vy-profil__cmp small { min-width: 120px; text-align: center; font-size: 10.5px; font-weight: 600; color: var(--fen-texte-2); }
+.vy-profil__cmp .plus { color: #6fdc8c; }
+.vy-profil__cmp.tete { background: none; }
+.vy-profil__cmp.tete b:first-child { text-align: right; color: var(--da-or, #f2c14e); }
+.vy-profil__cmp.tete b:last-child { color: var(--da-cristal, #52d2f4); }
+.vy-profil__note { margin: 0 0 6px; font-size: 12px; color: var(--fen-texte-2); }
+.vy-profil__prive { display: flex; margin: 4px 0; font-size: 12.5px; }
+@media (max-width: 720px), (max-height: 480px) {
+  .vy-profil__corps { grid-template-columns: minmax(0, 1fr); }
+  .vy-profil__banniere { min-height: 100px; padding-left: 112px; }
+  .vy-profil__portrait { width: 100px; height: 114px; }
+}
+#app #fenetres .vy-profil__id h3 { margin: 2px 0 !important; font: 700 26px/1.1 var(--vy-font-titre) !important; letter-spacing: 0.05em !important; color: #fff !important; text-transform: none !important; }

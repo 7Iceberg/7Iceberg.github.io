@@ -9,7 +9,9 @@
     { id: 'suivi', nom: 'Quêtes suivies', sel: '#tracker' },
   ];
   const ONGLETS = [['vie', 'Vie'], ['raccourcis', 'Objets'], ['carte', 'Carte'], ['lieu', 'Lieu']];
-  const defaut = () => ({ blocs: {}, xp: true, alerte: true, boussole: true });
+  const defaut = () => ({ blocs: {}, xp: true, alerte: true, boussole: true, grille: true, profils: [null, null, null] });
+  const PAS = 16, CENTRE = 8;
+  const copieProfil = (r, vital) => ({ blocs: JSON.parse(JSON.stringify(r.blocs || {})), xp: r.xp !== false, alerte: r.alerte !== false, boussole: r.boussole !== false, vital: vital || null, t: Date.now() });
   const borne = (v, a, b, d) => (Number.isFinite(+v) ? Math.max(a, Math.min(b, Math.round(+v))) : d);
   const SVG = p => `<svg viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
   const ICO = {
@@ -49,7 +51,8 @@
       let s = null;
       try { s = JSON.parse(localStorage.getItem(CLE) || 'null'); } catch (e) { s = null; }
       if (s && typeof s === 'object') {
-        for (const k of ['xp', 'alerte', 'boussole']) if (typeof s[k] === 'boolean') r[k] = s[k];
+        for (const k of ['xp', 'alerte', 'boussole', 'grille']) if (typeof s[k] === 'boolean') r[k] = s[k];
+        if (Array.isArray(s.profils)) r.profils = [0, 1, 2].map(i => { const p = s.profils[i]; return p && typeof p === 'object' && p.blocs && typeof p.blocs === 'object' ? p : null; });
         for (const b of BLOCS) {
           const v = s.blocs && s.blocs[b.id];
           if (!v || typeof v !== 'object') continue;
@@ -147,7 +150,8 @@
       this.fen.closeAll(); this.syncMenus();
       const ov = document.createElement('div');
       ov.className = 'vy-editeur';
-      ov.innerHTML = '<div class="vy-editeur__zones"></div><section class="vy-editeur__panneau" role="dialog" aria-label="Interface du HUD"></section>';
+      ov.innerHTML = '<div class="vy-editeur__grille" aria-hidden="true"></div><i class="vy-editeur__guide v" aria-hidden="true"></i><i class="vy-editeur__guide h" aria-hidden="true"></i><div class="vy-editeur__zones"></div><section class="vy-editeur__panneau" role="dialog" aria-label="Interface du HUD"></section>';
+      ov.classList.toggle('grille', !this.ihud || this.ihud.grille !== false);
       document.getElementById('stage').appendChild(ov);
       this.editeur = { el: ov, onglet: 'vie' };
       document.getElementById('app').classList.add('vy-edition');
@@ -218,6 +222,8 @@
       ed.el.querySelector('.vy-editeur__panneau').innerHTML =
         `<header class="vy-editeur__tete"><span class="vy-editeur__logo">${ICO.ecran}</span><div class="vy-editeur__titre"><b>Interface <span>HUD</span></b><small>Rangée dans ce navigateur</small></div><button class="vy-editeur__x" data-act="terminer" aria-label="Fermer">${ICO.fermer}</button></header>` +
         `<div class="vy-editeur__corps"><div class="vy-editeur__deplacer">${ICO.deplacer}<div><b>Déplacer les blocs</b><small>Glisse chaque bloc où tu veux ; double-clic pour le remettre</small></div></div>` +
+        ligne(ICO.style, 'Aimanter à la grille', 'Les blocs s\'alignent sur la grille et au centre', inter('grille', r.grille !== false, 'Aimanter à la grille')) +
+        `<div class="vy-editeur__profils" role="group" aria-label="Profils de disposition">${(r.profils || [null, null, null]).map((p, i) => `<div class="vy-editeur__profil${p ? ' plein' : ''}"><b>Profil ${i + 1}</b><small>${p ? 'rangé' : 'vide'}</small><span><button data-act="profilCharger" data-i="${i}" ${p ? '' : 'disabled'}>Charger</button><button data-act="profilRanger" data-i="${i}">Ranger</button></span></div>`).join('')}</div>` +
         `<div class="vy-editeur__onglets" role="tablist">${ONGLETS.map(([k, l]) => `<button class="vy-editeur__onglet${k === on ? ' on' : ''}" role="tab" data-act="onglet" data-onglet="${k}" aria-selected="${k === on}">${l}</button>`).join('')}</div>${corps}</div>` +
         `<footer class="vy-editeur__pied"><button data-act="reinit" class="vy-editeur__fantome">Réinitialiser</button><button data-act="terminer" class="vy-editeur__plein">Terminé</button></footer>`;
     },
@@ -234,6 +240,14 @@
         else if (a === 'xp') { r.xp = r.xp === false; this.refreshVital(); }
         else if (a === 'alerte') r.alerte = r.alerte === false;
         else if (a === 'boussole') r.boussole = r.boussole === false;
+        else if (a === 'grille') { r.grille = r.grille === false; ed.el.classList.toggle('grille', r.grille !== false); }
+        else if (a === 'profilRanger') { r.profils = r.profils || [null, null, null]; r.profils[+t.dataset.i] = copieProfil(r, this.styleVital()); this.toast(`Disposition rangée dans le profil ${+t.dataset.i + 1}.`); }
+        else if (a === 'profilCharger') {
+          const pr = (r.profils || [])[+t.dataset.i]; if (!pr) return;
+          r.blocs = JSON.parse(JSON.stringify(pr.blocs)); r.xp = pr.xp; r.alerte = pr.alerte; r.boussole = pr.boussole;
+          if (pr.vital) this.choisirVital(pr.vital);
+          this.refreshVital(); this.toast(`Profil ${+t.dataset.i + 1} chargé.`);
+        }
         else if (a === 'style') { const S = Gemmes.STYLES, i = S.findIndex(s => s[0] === this.styleVital()); this.choisirVital(S[(i + Number(t.dataset.pas) + S.length) % S.length][0]); }
         else if (a === 'reinit') { if (!t.dataset.sure) { t.dataset.sure = '1'; t.textContent = 'Confirmer'; return; } this.reinitInterface(); return; }
         else if (a === 'terminer') { this.fermerEditeur(); return; }
@@ -268,6 +282,14 @@
           let mx = e.clientX - x0, my = e.clientY - y0;
           if (!bouge && Math.hypot(mx, my) < 3) return;
           bouge = true;
+          let gv = false, gh = false;
+          if (this.ihud.grille !== false) {
+            const cx = r0.left + mx + r0.width / 2, cy = r0.top + my + r0.height / 2, sx = st.left + st.width / 2, sy = st.top + st.height / 2;
+            if (Math.abs(cx - sx) <= CENTRE) { mx += sx - cx; gv = true; } else mx = Math.round((r0.left - st.left + mx) / PAS) * PAS - (r0.left - st.left);
+            if (Math.abs(cy - sy) <= CENTRE) { my += sy - cy; gh = true; } else my = Math.round((r0.top - st.top + my) / PAS) * PAS - (r0.top - st.top);
+          }
+          const ov = this.editeur && this.editeur.el;
+          if (ov) { ov.querySelector('.vy-editeur__guide.v').classList.toggle('on', gv); ov.querySelector('.vy-editeur__guide.h').classList.toggle('on', gh); }
           mx = Math.max(st.left - r0.left, Math.min(st.right - r0.right, mx));
           my = Math.max(st.top - r0.top, Math.min(st.bottom - r0.bottom, my));
           b.dx = Math.round(d0[0] + mx / k); b.dy = Math.round(d0[1] + my / k);
@@ -276,6 +298,7 @@
         };
         const lacher = e => {
           if (e.pointerId !== evt.pointerId) return;
+          if (this.editeur) for (const g of this.editeur.el.querySelectorAll('.vy-editeur__guide')) g.classList.remove('on');
           window.removeEventListener('pointermove', suivre);
           window.removeEventListener('pointerup', lacher);
           window.removeEventListener('pointercancel', lacher);

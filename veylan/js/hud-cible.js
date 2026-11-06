@@ -108,6 +108,7 @@ class MenuCible {
     lignes.push({ dossier: 'Personnage', label: 'Sac', picto: 'sac', action: () => hud.toggleWin('sac') });
     lignes.push({ dossier: 'Personnage', label: 'Garde-robe', picto: 'garderobe', action: () => hud.toggleWin('garderobe') });
     lignes.push({ dossier: 'Personnage', label: 'Caractéristiques', picto: 'fiche', action: () => hud.toggleWin('carac') });
+    lignes.push({ dossier: 'Personnage', label: 'Mon profil', picto: 'fiche', action: () => hud.toggleWin('profil') });
     if (typeof Familiers === 'object' && !Familiers.actif(ch) && Object.keys(ch.familiers || {}).length) {
       for (const id of Object.keys(ch.familiers)) { const f = Familiers.get(id); if (f) lignes.push({ dossier: 'Appeler un familier', label: `${f.nom} · niv. ${Familiers.niveauDe(ch, id)}`, picto: 'patte', action: () => { Familiers.emmener(ch, id); this.toast(`${f.nom} te suit.`); this.apres(); } }); }
     }

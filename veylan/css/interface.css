@@ -120,3 +120,22 @@
 .vy-editeur__plein { border: 0; color: #fff; background: var(--v-degrade, linear-gradient(90deg, #ff8a3d, #ff3d7f)); box-shadow: 0 8px 22px rgba(var(--v-b-rgb, 255, 61, 127), 0.3); }
 .vy-editeur button:focus-visible { outline: 2px solid var(--v-act, #38bdf8); outline-offset: 1px; }
 @media (prefers-reduced-motion: reduce) { .vy-editeur__inter::after { transition: none; } }
+
+.vy-editeur__grille { position: absolute; inset: 0; display: none; pointer-events: none;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px); background-size: 16px 16px; }
+.vy-editeur.grille .vy-editeur__grille { display: block; }
+.vy-editeur__guide { position: absolute; display: none; pointer-events: none; background: var(--da-cristal, #52d2f4); box-shadow: 0 0 6px var(--da-cristal, #52d2f4); }
+.vy-editeur__guide.v { left: 50%; top: 0; bottom: 0; width: 1px; }
+.vy-editeur__guide.h { top: 50%; left: 0; right: 0; height: 1px; }
+.vy-editeur__guide.on { display: block; }
+.vy-editeur__profils { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin: 6px 0 8px; }
+.vy-editeur__profil { display: grid; gap: 2px; padding: 6px; border-radius: 7px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); text-align: center; }
+.vy-editeur__profil.plein { border-color: rgba(242, 193, 78, 0.45); }
+.vy-editeur__profil b { font-size: 11px; }
+.vy-editeur__profil small { font-size: 9px; color: rgba(243, 240, 248, 0.55); }
+.vy-editeur__profil span { display: flex; gap: 3px; justify-content: center; margin-top: 3px; }
+.vy-editeur__profil button { flex: 1; min-width: 0; height: 20px; padding: 0 3px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(0, 0, 0, 0.25); color: inherit; font: 700 9.5px var(--vy-font-ui); cursor: pointer; }
+.vy-editeur__profil button:disabled { opacity: 0.4; cursor: default; }
+.vy-editeur__profil button:hover:not(:disabled) { border-color: rgba(82, 210, 244, 0.5); }
+.vy-editeur__profil span { flex-direction: column; }
+.vy-editeur__profil button { flex: none; width: 100%; }

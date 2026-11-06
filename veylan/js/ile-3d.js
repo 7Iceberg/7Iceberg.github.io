@@ -2258,10 +2258,27 @@ Ile3D.SOIR = {
       bosquets: 120, bosquetsTel: 60, detail: 1, detailCoeur: 1, detailLoin: 0, presBord: 0.92, grain: 0.22,
       percee: [8, 13],
     },
-    orsane: { couleurs: { pres: ['#4c7c33', '#66913f'], champs: ['#9a9844', '#b6a351', '#7d983d', '#a2884a'], foret: ['#1d3c20'], roche: ['#7b8090'], neige: ['#e6ebf2'] } },
+    orsane: {
+      couleurs: { pres: ['#4c7c33', '#66913f'], champs: ['#9a9844', '#b6a351', '#7d983d', '#a2884a'], foret: ['#1d3c20'], roche: ['#7b8090'], neige: ['#e6ebf2'] },
+      pays: [
+        { nom: 'Kaldum', az: 2, couleurs: { pres: ['#4f4540', '#5e5149'], roche: ['#3a3230'] } },
+        { nom: 'la Lisière', az: -55, ouverture: 40, couleurs: { pres: ['#6e6878', '#837a8c'], roche: ['#4a4456'] } },
+        { nom: 'la Brûlure', az: -95, ouverture: 45, depuis: 160, couleurs: { pres: ['#8c8496', '#a59cb0'], roche: ['#5a5068'] } },
+        { nom: 'Vetrane', az: -132, ouverture: 42, montagnes: 1.6, couleurs: { pres: ['#c9d2de', '#e4e9f1'], roche: ['#6e7a98'], neige: ['#f4f7fb'] } },
+        { nom: 'Drevala', az: 178, ouverture: 45, couleurs: { pres: ['#24452a', '#33603a'], roche: ['#2c4434'] } },
+        { nom: 'Lhorva', az: 118, ouverture: 38, montagnes: 0.4, couleurs: { pres: ['#9d9a5c', '#7f9a7a'] } },
+        { nom: 'Thessa', az: 45, ouverture: 35, montagnes: 0.5, couleurs: { pres: ['#7f9886', '#97ab9c'] } },
+      ],
+    },
     kaldum: {
       couleurs: { pres: ['#4a433f', '#5b514a'], champs: ['#3d3431', '#68483a', '#544538'], foret: ['#29231f'], roche: ['#35323b'], neige: ['#7a3424'] },
       arbres: { vert: ['#1c1816', '#3d3530', '#6c5f54'], automne: ['#1c1816', '#3d3530', '#6c5f54'] }, forme: 'rocher', montagnes: 150,
+      pays: [
+        { nom: 'les Cimes', az: 180, ouverture: 45, couleurs: { pres: ['#4c7c33', '#66913f'], roche: ['#7b8090'] } },
+        { nom: 'Ostrum', az: -8, ouverture: 50, montagnes: 0.55, couleurs: { pres: ['#b98a52', '#cfa066'], roche: ['#9a5236'] } },
+        { nom: 'Thessa', az: 100, ouverture: 40, montagnes: 0.45, couleurs: { pres: ['#7f9886', '#97ab9c'] } },
+        { nom: 'la Brûlure', az: -95, ouverture: 50, depuis: 150, couleurs: { pres: ['#7c7486', '#938aa0'], roche: ['#4e4558'] } },
+      ],
     },
   },
   mer: { abime: '#7a78ab', haut: '#f1c7a6', force: 1, bancs: ['#7b74a0', '#b08fa6', '#e2b393'], sombre: '#3d3e68' },

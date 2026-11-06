@@ -10,8 +10,10 @@ const Gemmes = (() => {
   const voile = s => s > 0 ? `fill="#fff" fill-opacity="${f(0.04 + 0.36 * s)}"` : `fill="#000" fill-opacity="${f(0.05 + 0.4 * -s)}"`;
   const eventail = (c, o) => o.map((p, i) => { const q = o[(i + 1) % o.length]; return `<polygon points="${pts([c, p, q])}" ${voile(lumiere(c, p, q))}/>`; }).join('');
   const aretes = (c, o, op) => `<path d="${o.map(p => `M${f(c[0])} ${f(c[1])}L${f(p[0])} ${f(p[1])}`).join('')}" stroke="#fff" stroke-opacity="${op}" stroke-width=".8"/>`;
-  const serti = (o, id) => `<polygon points="${pts(o)}" fill="url(#${id}s)" stroke="#080e1a" stroke-width="2.4" stroke-linejoin="round"/>`;
-  const defsSerti = id => `<linearGradient id="${id}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a4566"/><stop offset=".45" stop-color="#19233c"/><stop offset="1" stop-color="#080e1a"/></linearGradient>`;
+  const serti = (o, id) => `<polygon points="${pts(o)}" fill="url(#${id}s)" stroke="#080e1a" style="stroke:var(--gem-bord,#080e1a)" stroke-width="2.4" stroke-linejoin="round"/>` +
+    `<polygon class="vy-gem__lisere" points="${pts(serre(o, centre(o), 0.955))}" fill="none" style="stroke:var(--gem-lisere,transparent)" stroke-width="1.1" stroke-linejoin="round"/>`;
+  const defsSerti = id => `<linearGradient id="${id}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a4566" style="stop-color:var(--gem-serti-1,#3a4566)"/><stop offset=".45" stop-color="#19233c" style="stop-color:var(--gem-serti-2,#19233c)"/><stop offset="1" stop-color="#080e1a" style="stop-color:var(--gem-serti-3,#080e1a)"/></linearGradient>`;
+  const centre = o => [o.reduce((t, q) => t + q[0], 0) / o.length, o.reduce((t, q) => t + q[1], 0) / o.length];
   const aire = o => Math.abs(o.reduce((s, p, i) => { const q = o[(i + 1) % o.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
   const sous = (o, L) => {
     const r = [];

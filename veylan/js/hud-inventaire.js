@@ -24,6 +24,16 @@ const KIND = slot => ({ kind: slot === 'arme' ? 'weapon' : 'equip', slot: slot.s
 const GAUCHE = ['amulette', 'anneau1', 'anneau2', 'ceinture'];
 const DROITE = ['coiffe', 'cape', 'arme', 'bottes'];
 const MAX_ENSEMBLES = 6;
+const ICO_COS = (() => {
+  const s = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+  return {
+    teinture: s('<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M9 15a3 3 0 0 0 3 3"/>'),
+    lueur: s('<path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3"/>'),
+    aura: s('<ellipse cx="12" cy="17" rx="8" ry="3"/><path d="M8 16V9a4 4 0 0 1 8 0v7"/>'),
+    blason: s('<path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M12 7v9M8.5 11h7"/>'),
+    theme: s('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 20V9"/>'),
+  };
+})();
 const ECAILLES = ['Marque d\'Aïven', 'Marque de Durren', 'Marque de Morrha', 'Marque d\'Iskar', 'Marque de Nohra', 'Marque d\'Aube'];
 
 const portable = d => d.kind === 'equip' || d.kind === 'weapon';
@@ -106,6 +116,8 @@ Object.assign(Hud.prototype, {
       familierSlot: () => { if (this.invIgnore()) return; if (!this.fen.isOpen('familiers')) this.toggleWin('familiers'); },
       montureSlot: () => { if (this.invIgnore()) return; if (!this.fen.isOpen('montures')) this.toggleWin('montures'); },
       trousseauSlot: () => { if (this.invIgnore()) return; this.ouvrirTrousseau(); },
+      poupee: d => { s.poupee = d.vue === 'cosmetiques' ? 'cosmetiques' : 'equip'; r(); },
+      cosSlot: d => { if (this.invIgnore()) return; if (!this.gr) this.gr = { onglet: d.type, filtre: 'tous', source: '', choix: null, essai: {}, facing: 'se', tourne: true, feuille: null }; else { this.gr.onglet = d.type; this.gr.choix = null; } if (this.fen.isOpen('garderobe')) this.fen.render('garderobe'); else this.toggleWin('garderobe'); },
       fiche: d => { s.fiche = d.fiche; r(); },
       favori: d => { this.invFavori(d.id); r(); },
       ficheFermer: () => { s.sel = null; r(); },
@@ -187,21 +199,29 @@ Object.assign(Hud.prototype, {
     const tr = Object.keys(ch.trousseau || {});
     const trCase = `<button class="vy-case${tr.length ? '' : ' vy-case--emplacement'} vy-inv__slot vy-inv__trousseau" data-rarete="${tr.length ? 'rare' : ''}" data-act="trousseauSlot" title="Trousseau : ${tr.length ? tr.length + (tr.length > 1 ? ' clés' : ' clé') : 'vide'}. Toucher : ses clés." aria-label="Trousseau, ${tr.length} clé${tr.length > 1 ? 's' : ''}"><span class="vy-case__icone"><img class="vy-case__img" src="assets/ui/objets/trousseau.png" alt="" draggable="false"></span>${tr.length ? `<span class="vy-case__nombre">${tr.length}</span>` : ''}</button>`;
     const ecailles = ECAILLES.map(n => `<span class="vy-case vy-inv__ecaille" title="${n} : bientôt" aria-label="${n}, bientôt" aria-disabled="true"><span class="vy-case__icone">${ICO.ecaille}</span><span class="vy-inv__cadenas">${ICO.cadenas}</span></span>`).join('');
-    return `<section class="vy-inv__poupee" aria-label="Équipement porté">
-      <div class="vy-inv__col">${col(GAUCHE)}</div>
+    const cos = s.poupee === 'cosmetiques' && typeof Garderobe !== 'undefined';
+    const onglets = `<nav class="vy-inv__vues" role="tablist" aria-label="Le personnage"><button type="button" class="vy-inv__vue${cos ? '' : ' on'}" role="tab" aria-selected="${!cos}" data-act="poupee" data-vue="equip">Équipement</button><button type="button" class="vy-inv__vue${cos ? ' on' : ''}" role="tab" aria-selected="${cos}" data-act="poupee" data-vue="cosmetiques">Cosmétiques</button></nav>`;
+    const caseCos = type => {
+      const id = Garderobe.porteId(ch, type), c = id && Garderobe.get(id), nom = (Garderobe.TYPE_LABEL[type] || type).replace(/s$/, '');
+      return `<button class="vy-case${c ? '' : ' vy-case--emplacement'} vy-inv__slot vy-inv__cos" ${c ? `data-rarete="${esc(c.rarete || 'rare')}"` : ''} data-act="cosSlot" data-type="${type}" title="${esc(nom)} : ${c ? esc(c.nom) : 'rien'}. Toucher : la Garde-robe." aria-label="${esc(nom)} : ${c ? esc(c.nom) : 'rien'}"><span class="vy-case__icone">${ICO_COS[type] || ''}</span></button>`;
+    };
+    const colCos = types => types.map(caseCos).join('');
+    return `<section class="vy-inv__poupee${cos ? ' vy-inv__poupee--cos' : ''}" aria-label="${cos ? 'Cosmétiques portés' : 'Équipement porté'}">
+      ${onglets}
+      <div class="vy-inv__col">${cos ? colCos(['teinture', 'lueur', 'aura']) : col(GAUCHE)}</div>
       <div class="vy-inv__perso" data-depot="poupee">
         <canvas class="vy-inv__cv" role="img" aria-label="${esc(ch.name)}, ${esc(cls.name)}"></canvas>
         <button class="vy-inv__tourne vy-inv__tourne--g" data-act="tourner" data-sens="-1" aria-label="Tourner le personnage vers la gauche" title="Tourner">${I.tourneG}</button>
         <button class="vy-inv__tourne vy-inv__tourne--d" data-act="tourner" data-sens="1" aria-label="Tourner le personnage vers la droite" title="Tourner">${I.tourneD}</button>
         <div class="vy-inv__nom">${esc(ch.name)}<small>${esc(cls.name)} · niv. ${ch.level}${ch.title ? ` · ${esc(ch.title)}` : ''}</small></div>
       </div>
-      <div class="vy-inv__col">${col(DROITE)}</div>
-      <div class="vy-inv__rangee">
+      <div class="vy-inv__col">${cos ? colCos(['blason', 'theme']) : col(DROITE)}</div>
+      ${cos ? `<div class="vy-inv__rangee vy-inv__rangee--cos">${['teinture', 'lueur', 'aura', 'blason', 'theme'].map(t => { const id = Garderobe.porteId(ch, t), c = id && Garderobe.get(id); return `<div class="vy-inv__cos-ligne"><small>${esc((Garderobe.TYPE_LABEL[t] || t).replace(/s$/, ''))}</small><b>${c ? esc(c.nom) : '-'}</b></div>`; }).join('')}<button type="button" class="vy-bouton vy-bouton--petit vy-bouton--primaire" data-act="garderobe">Ouvrir la Garde-robe</button></div>` : `<div class="vy-inv__rangee">
         <div class="vy-inv__groupe"><div class="vy-inv__noeuds" title="Nœuds noués : chacun durcit les combats et ajoute ${DATA.rules.knotBonus} % d'XP et de butin">${noeuds.join('')}</div><small>Nœuds ${actifs.length} / ${DATA.rules.maxKnots}</small></div>
         <div class="vy-inv__groupe"><div class="vy-inv__familier">${famCase}${montCase}</div><small>Familier · monture</small></div>
         <div class="vy-inv__groupe"><div class="vy-inv__familier">${trCase}</div><small>Trousseau</small></div>
         <div class="vy-inv__groupe"><div class="vy-inv__ecailles">${ecailles}</div><small>Marques · <span class="vy-bientot">bientôt</span></small></div>
-      </div>
+      </div>`}
     </section>`;
   },
 

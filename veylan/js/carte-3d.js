@@ -28,6 +28,7 @@ class Carte3D {
     this.dernier = 0; this.actif = 0;
     this.temps = [];
     this.iles = new Map();
+    this.ileDe = new Map();
     Carte3D.vivantes = (Carte3D.vivantes || 0) + 1;
   }
 
@@ -60,7 +61,8 @@ class Carte3D {
     this.ciel();
     const D = this.hud.donneesCarte();
     this.vus = new Set(D.seen);
-    for (const reg of Atlas.regions().filter(x => x.open)) { if (this.mort) return; this.ile(reg.id, D); await image(); }
+    const masse = new Set(Continent.pays().filter(p => p.open && p.id !== 'ervane').map(p => p.id));
+    if (masse.size) { this.ile('continent', masse, D); await image(); }
     if (this.mort) return;
     etape('Arbres, rochers et maisons'); await image();
     this.decor();
@@ -90,10 +92,10 @@ class Carte3D {
   }
 
 
-  ile(regId, D) {
+  ile(regId, regs, D) {
     const THREE = window.THREE, K = 15, M = 1;
     const A = D.A, ix = D.ix;
-    const cells = [...A.coords].map(([id, [x, y]]) => ({ id, x, y, e: ix.map.get(id) })).filter(c => c.e.zone.region === regId && c.e.def.layout);
+    const cells = [...A.coords].map(([id, [x, y]]) => ({ id, x, y, e: ix.map.get(id) })).filter(c => regs.has(c.e.zone.region) && c.e.def.layout);
     if (!cells.length) return;
     const xs = cells.map(c => c.x), ys = cells.map(c => c.y);
     const cx0 = Math.min(...xs) - M, cy0 = Math.min(...ys) - M, CW = Math.max(...xs) - cx0 + 1 + M, CH = Math.max(...ys) - cy0 + 1 + M;
@@ -105,7 +107,7 @@ class Carte3D {
       c.e.def.layout.forEach((row, ty) => { for (let tx = 0; tx < K; tx++) { const t = (oy + ty) * TW + ox + tx, k = row[tx]; hz[t] = h; if (k !== 'o') occ[t] = 1; if (k === '~') { eau[t] = 1; if (P.lave) lave[t] = 1; } } });
     }
     for (const [id, [x, y]] of A.coords) {
-      if (ix.map.get(id).zone.region === regId || x < cx0 || y < cy0 || x >= cx0 + CW || y >= cy0 + CH) continue;
+      if (regs.has(ix.map.get(id).zone.region) || x < cx0 || y < cy0 || x >= cx0 + CW || y >= cy0 + CH) continue;
       for (let ty = 0; ty < K; ty++) for (let tx = 0; tx < K; tx++) autre[((y - cy0) * K + ty) * TW + (x - cx0) * K + tx] = 1;
     }
     const T = (a, i, j) => a[Math.max(0, Math.min(TH - 1, j)) * TW + Math.max(0, Math.min(TW - 1, i))];
@@ -137,6 +139,7 @@ class Carte3D {
     const X = i => cx0 - 0.5 + i / K, Z = j => cy0 - 0.5 + j / K;
     const data = { regId, cx0, cy0, CW, CH, K, TW, TH, VW, VH, hv, f, X, Z };
     this.iles.set(regId, data);
+    for (const r of regs) this.ileDe.set(r, data);
 
     const maxTex = this.renderer.capabilities.maxTextureSize || 2048;
     const px = Math.max(64, Math.min(this.telephone ? 128 : 192, Math.floor(Math.min(maxTex, 4096) / Math.max(CW, CH))));
@@ -208,9 +211,11 @@ class Carte3D {
       sous[k * 3 + 2] = z + (Carte3D.bruit(x * 5, z * 5, graine + 17) - 0.5) * j;
     }
     const rp = [], rc = [];
-    const strate = Carte3D.strates(regId);
+    const strates = new Map([...regs].map(r => [r, Carte3D.strates(r)]));
+    const regionA = (x, z) => { for (const [dx, dz] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) { const id = Atlas.at(Math.round(x) + dx, Math.round(z) + dz), e = id && ix.map.get(id); if (e && regs.has(e.zone.region)) return e.zone.region; } return [...regs][0]; };
+    const strate = (v, x, z) => strates.get(regionA(x, z))(v);
     const col = (x, y, z, haut) => {
-      const s = strate(haut - y + (Carte3D.bruit(x * 1.7, z * 1.7, graine + 21) - 0.5) * 0.3);
+      const s = strate(haut - y + (Carte3D.bruit(x * 1.7, z * 1.7, graine + 21) - 0.5) * 0.3, x, z);
       rc.push(s[0], s[1], s[2]);
     };
     const tri = (a, b, c) => { for (const p of [a, b, c]) { rp.push(p[0], p[1], p[2]); col(p[0], p[1], p[2], p[3]); } };
@@ -248,7 +253,7 @@ class Carte3D {
 
   hauteur(x, z) {
     const id = Atlas.at(Math.round(x), Math.round(z));
-    const e = id && Atlas.index().map.get(id), d = e && this.iles.get(e.zone.region);
+    const e = id && Atlas.index().map.get(id), d = e && this.ileDe.get(e.zone.region);
     if (!d) return 0;
     const i = (x - (d.cx0 - 0.5)) * d.K, j = (z - (d.cy0 - 0.5)) * d.K;
     const i0 = Math.max(0, Math.min(d.VW - 2, Math.floor(i))), j0 = Math.max(0, Math.min(d.VH - 2, Math.floor(j))), fi = Math.min(1, Math.max(0, i - i0)), fj = Math.min(1, Math.max(0, j - j0));
@@ -263,7 +268,7 @@ class Carte3D {
     const listes = { couronne: [], tronc: [], rocher: [], basalte: [], mur: [], toit: [], lanterne: [], cristal: [] };
     const c3 = h => new THREE.Color(h);
     for (const [id, [mx, my]] of A.coords) {
-      const e = ix.map.get(id), P = CartePeinture.palette(e.zone), d = this.iles.get(e.zone.region);
+      const e = ix.map.get(id), P = CartePeinture.palette(e.zone), d = this.ileDe.get(e.zone.region);
       if (!d) continue;
       const lay = e.def.layout, N = lay.length, R = Carte3D.hasard(id);
       const terre = (tx, ty) => { const i = (mx - d.cx0) * K + tx, j = (my - d.cy0) * K + ty; return (d.f[j * d.VW + i] + d.f[j * d.VW + i + 1] + d.f[(j + 1) * d.VW + i] + d.f[(j + 1) * d.VW + i + 1]) / 4 > 0.55; };
@@ -323,7 +328,7 @@ class Carte3D {
     const mat = new THREE.MeshLambertMaterial({ color: 0x8a6444 }), corde = new THREE.MeshLambertMaterial({ color: 0xd8c39a });
     for (const [id, e] of ix.map) for (const dir of ['e', 's']) {
       const t = e.def.exits && e.def.exits[dir], et = t && ix.map.get(t);
-      if (!et || et.zone.region === e.zone.region) continue;
+      if (!et || et.zone.region === e.zone.region || (this.ileDe.get(et.zone.region) && this.ileDe.get(et.zone.region) === this.ileDe.get(e.zone.region))) continue;
       const sp = []; e.def.layout.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (row[x] === dir) sp.push([x, y]); });
       if (!sp.length) continue;
       const [tx, ty] = sp[Math.floor(sp.length / 2)];
@@ -347,45 +352,47 @@ class Carte3D {
 
 
   lointain() {
-    const THREE = window.THREE;
-    const regs = Atlas.regions(), A = Atlas.get(), ix = Atlas.index();
-    const centre = id => { const l = [...A.coords].filter(([m]) => ix.map.get(m).zone.region === id).map(([, p]) => p); return l.length ? [l.reduce((s, p) => s + p[0], 0) / l.length, l.reduce((s, p) => s + p[1], 0) / l.length] : null; };
-    const ouvertes = regs.filter(r => r.open && centre(r.id));
-    if (!ouvertes.length) return;
-    const a0 = ouvertes[0], c0 = centre(a0.id);
-    let s = 0.42, ang = 0;
-    if (ouvertes[1]) {
-      const a1 = ouvertes[1], c1 = centre(a1.id), va = [a1.at[0] - a0.at[0], a1.at[1] - a0.at[1]], vb = [c1[0] - c0[0], c1[1] - c0[1]];
+    const THREE = window.THREE, A = Atlas.get(), ix = Atlas.index(), C = Continent.centresPays();
+    const centre = id => { const l = [...A.coords].filter(([m]) => ix.map.get(m).zone.region === id && ix.map.get(m).def.layout).map(([, p]) => p); return l.length ? [l.reduce((s, p) => s + p[0], 0) / l.length, l.reduce((s, p) => s + p[1], 0) / l.length] : null; };
+    const pays = Continent.pays().filter(p => p.id !== 'ervane'), ouverts = pays.filter(p => p.open && centre(p.id));
+    if (!ouverts.length) return;
+    const a0 = ouverts[0], c0 = centre(a0.id), p0 = C[a0.id];
+    let s = 0.5, ang = 0;
+    if (ouverts[1]) {
+      const a1 = ouverts[1], c1 = centre(a1.id), p1 = C[a1.id], va = [p1[0] - p0[0], p1[1] - p0[1]], vb = [c1[0] - c0[0], c1[1] - c0[1]];
       s = Math.hypot(vb[0], vb[1]) / Math.hypot(va[0], va[1]); ang = Math.atan2(vb[1], vb[0]) - Math.atan2(va[1], va[0]);
     }
-    const versMonde = p => { const dx = p[0] - a0.at[0], dy = p[1] - a0.at[1]; return [c0[0] + s * (dx * Math.cos(ang) - dy * Math.sin(ang)), c0[1] + s * (dx * Math.sin(ang) + dy * Math.cos(ang))]; };
-    const cs = ouvertes.map(r => centre(r.id)), cm = [cs.reduce((a, c) => a + c[0], 0) / cs.length, cs.reduce((a, c) => a + c[1], 0) / cs.length];
-    const brume = new THREE.Color(0xb7b5cb);
-    for (const r of regs) {
-      if (r.open) {
-        const c = centre(r.id); if (!c) continue;
-        let hmax = 0; for (const [m] of A.coords) if (ix.map.get(m).zone.region === r.id) hmax = Math.max(hmax, CartePeinture.hauteur(ix.map.get(m).zone) * 0.09);
-        this.etiquette(DATA.regions[r.id] || r.name, `niv. ${r.level[0]} à ${r.level[1]}`, [c[0], hmax + 1.25, c[1]], 2.6, '#ffe7a3');
+    const versMonde = p => { const dx = p[0] - p0[0], dy = p[1] - p0[1]; return [c0[0] + s * (dx * Math.cos(ang) - dy * Math.sin(ang)), c0[1] + s * (dx * Math.sin(ang) + dy * Math.cos(ang))]; };
+    const peint = Continent.peindre(this.telephone ? 3 : 4, ouverts.map(p => p.id));
+    const tex = new THREE.CanvasTexture(peint.canvas);
+    tex.encoding = THREE.sRGBEncoding; tex.anisotropy = Math.min(4, this.renderer.capabilities.getMaxAnisotropy());
+    this.textures.push(tex);
+    const X0 = Continent.X0, Y0 = Continent.Y0, LX = Continent.LX, LY = Continent.LY, yS = -0.42;
+    const coins = [[X0, Y0], [X0 + LX, Y0], [X0 + LX, Y0 + LY], [X0, Y0 + LY]].map(versMonde);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(coins.flatMap(([x, z]) => [x, yS, z]), 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute([0, 1, 1, 1, 1, 0, 0, 0], 2));
+    geo.setIndex([0, 3, 1, 1, 3, 2]);
+    geo.computeVertexNormals();
+    if (geo.attributes.normal.getY(0) < 0) { geo.setIndex([0, 1, 3, 1, 2, 3]); geo.computeVertexNormals(); }
+    const sol = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex }));
+    sol.receiveShadow = this.renderer.shadowMap.enabled;
+    sol.userData.continent = true;
+    this.scene.add(sol);
+    for (const p of pays) {
+      if (p.open) {
+        const c = centre(p.id); if (!c) continue;
+        let hmax = 0; for (const [m] of A.coords) if (ix.map.get(m).zone.region === p.id) hmax = Math.max(hmax, CartePeinture.hauteur(ix.map.get(m).zone) * 0.09);
+        this.etiquette(p.nom, `niv. ${p.niveaux[0]} à ${p.niveaux[1]}`, [c[0], hmax + 1.25, c[1]], 2.6, '#ffe7a3');
         continue;
       }
-      const p = versMonde(r.at), x = cm[0] + (p[0] - cm[0]) * 2.1, z = cm[1] + (p[1] - cm[1]) * 2.1, R = r.r * s * 0.5, y = -2.6;
+      const [x, z] = versMonde(C[p.id]);
       (this.loin = this.loin || []).push([x, z]);
-      const col = new THREE.Color(Carte3D.ROCHE[r.id] || '#9fa7b8').lerp(brume, 0.45);
-      const haut = new THREE.CylinderGeometry(R, R * 0.94, 0.3, 14, 1);
-      const bas = new THREE.ConeGeometry(R * 0.94, R * 1.9, 14, 3);
-      for (const geo of [haut, bas]) {
-        const p = geo.attributes.position;
-        for (let i = 0; i < p.count; i++) { const k = 0.86 + 0.28 * Carte3D.bruit(p.getX(i) * 0.8 + x, p.getZ(i) * 0.8 + z, 3); p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); if (geo === bas) p.setY(i, p.getY(i) + (Carte3D.bruit(p.getX(i), p.getZ(i), 4) - 0.5) * 0.4); }
-        geo.computeVertexNormals();
-      }
-      const mh = new THREE.Mesh(haut, new THREE.MeshLambertMaterial({ color: col.clone().lerp(new THREE.Color(0xe2dccf), 0.3), flatShading: true }));
-      const mb = new THREE.Mesh(bas, new THREE.MeshLambertMaterial({ color: col.clone().multiplyScalar(0.72), flatShading: true }));
-      mh.position.set(x, y, z); mb.position.set(x, y - 0.15 - R * 0.95, z); mb.rotation.x = Math.PI;
-      this.scene.add(mh, mb);
-      this.sprite(CartePeinture.pastille('verrou', 96).canvas, [x, y + 1.1, z], 1.25, { center: [0.5, 0.5], fog: false });
-      this.etiquette(DATA.regions[r.id] || r.name, `niv. ${r.level[0]} à ${r.level[1]}, à venir`, [x, y + 2.5, z], 6.5, Carte3D.LANTERNE[r.id] || '#d6c8ff', false);
+      this.sprite(CartePeinture.pastille('verrou', 96).canvas, [x, yS + 0.7, z], 0.9, { center: [0.5, 0.5], fog: false });
+      this.etiquette(p.nom, `niv. ${p.niveaux[0]} à ${p.niveaux[1]}, à venir`, [x, yS + 1.6, z], 4.5, p.lanterne, false);
     }
   }
+
 
   etiquette(nom, sous, at, larg, couleur, brume) {
     const cv = document.createElement('canvas'); cv.width = 640; cv.height = 160;
@@ -448,7 +455,7 @@ class Carte3D {
     for (const id of D.seen) {
       if (this.vus.has(id)) continue;
       this.vus.add(id);
-      const e = D.ix.map.get(id), data = e && this.iles.get(e.zone.region);
+      const e = D.ix.map.get(id), data = e && this.ileDe.get(e.zone.region);
       if (data) { this.peindreCase(data, id, true); data.tex.needsUpdate = true; }
       const s = this.brume && this.brume.get(id);
       if (s) { this.scene.remove(s); s.material.dispose(); this.brume.delete(id); }
@@ -770,7 +777,7 @@ class Carte3D {
       this.scene.clear();
     }
     for (const t of this.textures.concat(this.texReperes || [])) t.dispose();
-    this.textures = []; this.texReperes = []; this.reperes = []; this.derive = []; this.iles.clear();
+    this.textures = []; this.texReperes = []; this.reperes = []; this.derive = []; this.iles.clear(); this.ileDe.clear();
     if (this.renderer) {
       this.renderer.renderLists.dispose();
       this.renderer.dispose();
@@ -840,5 +847,3 @@ Carte3D.STRATES = {
   orsane: ['#ece6d8', '#d3cfc6', '#b4b4bd', '#9198ab', '#6c7390', '#4a5170', '#3b4260'],
   kaldum: ['#ab998c', '#8f7d70', '#76655a', '#5d4d45', '#4a3c36', '#3e3230', '#241a18'],
 };
-Carte3D.ROCHE = { thessa: '#b9c7b4', lisiere: '#b5aeb4', basvoiles: '#4a3b5c', voile: '#3a3550' };
-Carte3D.LANTERNE = { ervane: '#ffe9a8', thessa: '#9ff0e6', lisiere: '#f0d6ff', basvoiles: '#ff7db0', voile: '#d6c8ff' };

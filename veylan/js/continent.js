@@ -20,7 +20,7 @@ const Continent = (() => {
     { id: 'drevala', nom: 'Drevala', centre: [15, 47], poids: 1.0, alt: 0.45, niveaux: [95, 116], anneau: 4, livraison: 'ext2', dragon: 'Durren',
       sol: ['#5f8e55', '#41693f', '#8bb46c'], lanterne: '#6ff2a6', biome: 'la jungle de mousse, les fougères géantes, les sources chaudes vertes',
       ville: 'le Seuil Vert', entree: 'par l\'amont du delta, depuis Lhorva ; l\'ascenseur de lianes des Toiles, après l\'arc', desc: 'Le flanc de Durren boit l\'humidité de l\'ouest : une jungle de mousse sous la falaise des Toiles.' },
-    { id: 'orsane', nom: 'Les Cimes', centre: [42, 46], poids: 1.15, alt: 0.82, niveaux: [15, 40], anneau: 1, livraison: 'base', dragon: 'Durren',
+    { id: 'orsane', nom: 'Les Cimes', centre: [42, 46], poids: 1.15, alt: 0.82, niveaux: [19, 40], anneau: 1, livraison: 'base', dragon: 'Durren',
       sol: ['#a8c97c', '#86b062', '#e4ddcb'], lanterne: '#f2b134', biome: 'des prés frais et des pins sur le calcaire blanc',
       ville: 'la Cité des Cimes, capitale d\'Orsane', entree: 'la Nacelle depuis Ervane ; les deux portes à escaliers de la Cité', desc: 'Le dos de Durren. La Cité des Cimes, capitale d\'Orsane et siège de l\'Aube, et son pays : les Clairières, les Sentiers, les Toiles, les Éboulis.' },
     { id: 'kaldum', nom: 'Kaldum', centre: [66, 47], poids: 0.95, alt: 0.6, niveaux: [39, 60], anneau: 2, livraison: 'base', dragon: 'Iskar',
@@ -42,7 +42,7 @@ const Continent = (() => {
       sol: ['#e4d7bc', '#cbbb9b', '#87a8a9'], lanterne: '#ff8270', biome: 'un fond marin à l\'air libre, le varech, le corail, les murs d\'eau',
       ville: 'la Grève Haute', entree: 'la côte du sud, quand la mer recule', desc: 'Le sillage de Morrha : la mer s\'est retirée et le fond est à l\'air.' },
   ];
-  const ERVANE = { id: 'ervane', nom: 'Ervane', centre: [37.5, 36.5], rayon: 3.6, nuages: 6.8, niveaux: [1, 16], anneau: 0, livraison: 'base', dragon: 'Durren',
+  const ERVANE = { id: 'ervane', nom: 'Ervane', centre: [37.5, 36.5], rayon: 3.6, nuages: 6.8, niveaux: [1, 20], anneau: 0, livraison: 'base', dragon: 'Durren',
     sol: ['#b4d488', '#e8e3cf', '#f2c14e'], lanterne: '#f2c14e', biome: 'la prairie du sommet, les quatre sources, le bois cousu ; le fil d\'or du Métier',
     ville: 'les Mailles, le Relais de l\'Amarre', entree: 'la mer de nuages ; la Nacelle, dans les deux sens', desc: 'L\'île de l\'Éveil : le plus haut sommet des Cimes, au-dessus de la mer de nuages. Son fil d\'or se voit de tout le continent.' };
 

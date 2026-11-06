@@ -35,6 +35,7 @@ const Save = (() => {
   for (const k of ['porte', 'ensemblesLook']) ALLOWED.add(k);
   for (const k of ['familiers', 'familier']) ALLOWED.add(k);
   ALLOWED.add('monture');
+  ALLOWED.add('profil');
   ALLOWED.add('sceaux');
   ALLOWED.add('placements');
   ALLOWED.add('bonusDefi');
@@ -326,6 +327,10 @@ const Save = (() => {
     if (typeof Garderobe !== 'undefined') {
       const p = Garderobe.nettoyerPorte(o.porte); o.porte = p.porte; for (const e of p.errors) bad(e);
       const l = Garderobe.nettoyerLooks(o.ensemblesLook); o.ensemblesLook = l.looks; for (const e of l.errors) bad(e);
+    }
+    if (o.profil !== undefined) {
+      const q = o.profil && typeof o.profil === 'object' ? o.profil : {};
+      o.profil = { equipement: q.equipement !== false, succes: q.succes !== false, chiffres: q.chiffres !== false };
     }
     if (typeof Familiers !== 'undefined') {
       const f = Familiers.nettoyer(o.familiers, o.familier); o.familiers = f.familiers; o.familier = f.familier; for (const e of f.errors) bad(e);

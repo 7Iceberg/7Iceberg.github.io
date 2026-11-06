@@ -1,5 +1,6 @@
 (() => {
 const I = Fenetres.ICON;
+const PROFIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.3"/><path d="M5.8 16c.6-1.7 1.8-2.6 3.2-2.6s2.6.9 3.2 2.6M14 10h4M14 13.5h3"/></svg>';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const STAT = {
@@ -43,6 +44,7 @@ const MENUS = [
   ['montures', 'Montures', 'L', I.montures],
   ['carte', 'Carte du monde', 'M', I.carte],
   ['journal', 'Journal', 'J', I.journal],
+  ['profil', 'Profil', 'A', PROFIL],
   ['options', 'Options', 'O', I.options],
 ];
 const ALIAS = { perso: 'sac' };
@@ -166,7 +168,7 @@ Object.assign(Hud.prototype, {
 
   toggleWin(id) {
     if (this.fen.isOpen(ALIAS[id] || id)) this.fen.close(ALIAS[id] || id);
-    else ({ carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), guilde: () => this.openGuilde(), succes: () => this.openAchievements(), boutique: () => this.openBoutique(), carnet: () => this.openCarnet(), garderobe: () => this.openGarderobe(), familiers: () => this.openFamiliers(), montures: () => this.openMontures(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu() }[id] || (() => {}))();
+    else ({ carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), guilde: () => this.openGuilde(), succes: () => this.openAchievements(), boutique: () => this.openBoutique(), carnet: () => this.openCarnet(), garderobe: () => this.openGarderobe(), familiers: () => this.openFamiliers(), montures: () => this.openMontures(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu(), profil: () => this.openProfil() }[id] || (() => {}))();
     this.syncMenus();
   },
 
@@ -368,7 +370,10 @@ Object.assign(Hud.prototype, {
     return true;
   },
   applyTheme(t) {
-    document.getElementById('app').dataset.uiTheme = t;
+    const app = document.getElementById('app');
+    app.dataset.uiTheme = t;
+    const def = (Hud.themesDisponibles ? Hud.themesDisponibles() : Hud.THEMES || []).find(x => x[0] === t);
+    if (def) { app.style.setProperty('--theme-fond', def[2]); app.style.setProperty('--theme-accent', def[3]); }
     if (t === 'duality' && document.fonts && document.fonts.load) {
       for (const f of ['400 12px Poppins', '500 12px Poppins', '600 12px Poppins', '700 12px Poppins', '600 12px Rajdhani', '700 12px Rajdhani', '500 12px "JetBrains Mono"', '700 12px "JetBrains Mono"']) document.fonts.load(f).catch(() => {});
     }

@@ -550,7 +550,7 @@ const IleModeles = (() => {
     pont: { hauteur: 1.4, tablier: 0.2 },
   };
   const BORDS_ORSANE = { loin: [[220, 141], [289, 92], [372, 56], [404, 56], [388, 40]], ilots: [[-24, 150, 3, 9], [462, 130, -2, 8], [230, 352, -4, 9], [110, -26, 4, 7], [400, -24, 2, 8], [470, 280, 0, 7], [-20, 270, -3, 8]] };
-  const BORDS_KALDUM = { loin: [[26, 72], [124, 113]], ilots: [[-22, 150, 2, 8], [400, 120, -3, 9], [190, 334, 4, 8], [300, -22, -2, 7], [60, 320, 3, 7]] };
+  const BORDS_KALDUM = { loin: [[54, 102], [224, 274], [236, 272], [397, 104], [397, 112]], ilots: [[0, 172, 2, 8], [424, 150, -3, 9], [150, 270, 4, 8], [300, 8, -2, 7], [30, 268, 3, 7]] };
   function posesBords(S, T, hauteur, out) {
     const ICIB = T && T.id && T.id !== 'ervane' ? Object.assign({}, BORDS, T.id === 'orsane' ? BORDS_ORSANE : T.id === 'kaldum' ? BORDS_KALDUM : { loin: [], ilots: [] }) : BORDS;
     const R = S.modeles['br-racines'], C = S.modeles['br-cristaux'], I = S.modeles['br-ilot'], P = S.modeles['br-pont'];
@@ -944,7 +944,7 @@ const IleModeles = (() => {
     return l > 0.001 ? c.map(x => Math.round(x / l * 1e4) / 1e4) : [1, 1, 1];
   };
   const VILLAGES = [[210, 104, 36, 1], [175, 28, 14, 0.7]];
-  const VILLAGES_PLATEAU = { ervane: { zone: 'ervane_mailles', centres: VILLAGES }, orsane: { zone: 'orsane_cimes', centres: [[222, 92, 62, 1]] }, kaldum: { zone: 'kaldum_ville', centres: [[90, 72, 52, 1]] } };
+  const VILLAGES_PLATEAU = { ervane: { zone: 'ervane_mailles', centres: VILLAGES }, orsane: { zone: 'orsane_cimes', centres: [[222, 92, 62, 1]] }, kaldum: { zone: 'kaldum_ville', centres: [[190, 96, 52, 1]] } };
   async function texSol(THREE, nom, etc) {
     const m = SOLS[nom].moyenne, moyenne = new THREE.Vector3(m[0], m[1], m[2]);
     if (etc) {
