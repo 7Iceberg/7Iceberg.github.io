@@ -450,6 +450,8 @@ class Plateau {
     for (const r of this.portes) voir('porte', r, 2.0);
     for (const r of this.panneaux) voir('panneau', r, 1.0);
     for (const r of this.machines) voir('machine', r, 1.2);
+    if (w.compagnon) voir('compagnon', { x: w.compagnon.rx, y: w.compagnon.ry }, 0.9);
+    voir('soi', { x: w.player.rx != null ? w.player.rx : w.player.x, y: w.player.ry != null ? w.player.ry : w.player.y }, 0.7);
     for (const r of this.sorties) if (Plateau.dist(w.player, r) > r.rayon) voir('sortie', r, 2.0);
     cands.sort((a, b) => a.n - b.n);
     return cands[0] ? { type: cands[0].type, ref: cands[0].ref } : null;
@@ -464,6 +466,8 @@ class Plateau {
     switch (c && ref && c.type) {
       case 'pnj': return this.approcher(ref, 2, () => w.talk(ref), 3);
       case 'groupe': w.inspectGroup(ref); return 'immediat';
+      case 'compagnon': w.emit('cibleCompagnon', w.compagnon); return 'immediat';
+      case 'soi': w.emit('cibleSoi', w.player); return 'immediat';
       case 'noeud': return this.approcher(ref, 1.2, () => w.gather(ref), 2.5);
       case 'relais': return this.approcher(ref, 1.5, () => w.useRelay(), 3);
       case 'porte': return this.approcher(ref, 1.5, () => {
@@ -489,6 +493,8 @@ class Plateau {
       case 'panneau': return parId(this.panneaux, x => x.texte === r);
       case 'machine': return parId(this.machines, x => x.cle === r);
       case 'sortie': return parId(this.sorties, x => x.vers === r);
+      case 'compagnon': return w.compagnon || null;
+      case 'soi': return w.player;
       default: return null;
     }
   }

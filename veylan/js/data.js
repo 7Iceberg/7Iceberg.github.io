@@ -104,7 +104,7 @@ spells.nova = S('nova', { name: 'Nova', element: 'feu', pa: 5, range: [0, 0], lo
 spells.attraction = S('attraction', { name: 'Attraction', element: 'air', pa: 2, range: [2, 5], effects: [dmg(4, 6), pull(2)], desc: 'Attire la cible de 2 cases vers soi.' });
 
 spells.taille_franche = S('taille_franche', { name: 'Taille Franche', element: 'terre', pa: 3, range: [1, 1], effects: [dmg(15, 19)], fury: 1, maxPerTurn: 2, desc: 'Le coup droit du Sarkan. +1 Fureur si la cible est touchée.' });
-spells.saut_delan = S('saut_delan', { name: "Saut d'Élan", element: 'terre', pa: 3, range: [2, 4], los: false, target: 'free', effects: [{ type: 'leap', aoe: cross1, effects: [dmg(6, 9)] }], cooldown: 1, desc: 'Bondit sur une case libre et frappe en croix autour de lui à l\'arrivée.' });
+spells.saut_delan = S('saut_delan', { name: "Saut d'Élan", element: 'terre', pa: 3, range: [2, 4], los: false, target: 'free', effects: [{ type: 'leap', aoe: cross1, effects: [dmg(6, 9), { type: 'vuln', value: 12, turns: 1 }] }], cooldown: 1, desc: 'Bondit sur une case libre et frappe en croix autour de lui à l\'arrivée ; les ennemis touchés subissent +12 % de dégâts un tour.' });
 spells.serment_jure = S('serment_jure', { name: 'Serment', element: 'neutre', pa: 2, range: [1, 6], target: 'enemy', effects: [oath(3)], cooldown: 1, desc: 'Désigne le juré pour 3 tours : +20 % de dégâts contre lui ; s\'il frappe un autre allié, la lame le brûle ; l\'achever rend 2 PA, 10 % des PV et 2 de Fureur.' });
 spells.garde_de_scorie = S('garde_de_scorie', { name: 'Garde de Scorie', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [shield(30, 1), { type: 'guard', value: 20, turns: 1 }], cooldown: 2, desc: 'Bouclier de 30 et −20 % de dégâts subis au corps à corps jusqu\'au prochain tour.' });
 spells.lame_tournoyante = S('lame_tournoyante', { name: 'Lame Tournoyante', element: 'terre', pa: 4, range: [0, 0], los: false, target: 'self', aoe: circle1, affects: 'enemies', effects: [dmg(10, 13)], perExtraTarget: 20, maxPerTurn: 1, desc: 'Frappe chaque ennemi adjacent, +20 % par ennemi touché en plus du premier.' });
@@ -121,7 +121,7 @@ spells.repli_traqueur = S('repli_traqueur', { name: 'Repli', element: 'neutre', 
 spells.fleche_lourde = S('fleche_lourde', { name: 'Flèche Lourde', element: 'terre', pa: 4, range: [2, 6], effects: [dmg(15, 19)], maxPerTurn: 1, desc: 'Le tir lourd, la voie de la Force.' });
 spells.corde_longue = S('corde_longue', { name: 'Corde Longue', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [{ type: 'range', value: 3, turns: 1 }], cooldown: 3, desc: '+3 portée ce tour et le suivant.' });
 spells.balise_de_fil = S('balise_de_fil', { name: 'Balise de Plume', element: 'neutre', pa: 2, range: [1, 5], target: 'free', effects: [{ type: 'summon', monster: 'balise_de_fil', count: 1, hpPctOfOwner: 20 }], cooldown: 3, desc: 'Plante un piquet à plume. La première fois que le Lyssar est blessé, il échange sa place avec le piquet.' });
-spells.marque_traqueur = S('marque_traqueur', { name: 'Marque du Traqueur', element: 'neutre', pa: 2, range: [1, 7], los: false, target: 'enemy', effects: [{ type: 'vuln', value: 25, turns: 2 }, { type: 'track', turns: 2 }], cooldown: 1, desc: 'La cible subit +25 % de dégâts 2 tours, et ne peut plus être invisible.' });
+spells.marque_traqueur = S('marque_traqueur', { name: 'Marque du Traqueur', element: 'neutre', pa: 2, range: [1, 7], los: false, target: 'enemy', effects: [{ type: 'vuln', value: 10, turns: 2 }, { type: 'track', turns: 2 }], traque: true, cooldown: 1, desc: 'La cible subit +10 % de dégâts 2 tours et ne peut plus être invisible ; elle est prise en traque : chaque tir qui la touche ajoute un cran (+8 % chacun, 3 au plus).' });
 spells.pluie_de_fil = S('pluie_de_fil', { name: 'Pluie de Flèches', element: 'air', pa: 4, range: [3, 7], los: false, target: 'any', aoe: circle1, affects: 'enemies', effects: [dmg(8, 11)], cooldown: 2, desc: 'Une volée sans ligne de vue sur une case et ses voisines : chaque ennemi est touché.' });
 spells.fleche_ancre = S('fleche_ancre', { name: 'Flèche Ancre', element: 'terre', pa: 3, range: [2, 6], effects: [dmg(6, 9), pm(-2, 2)], cooldown: 2, desc: 'La cible perd 2 PM pendant 2 tours.' });
 spells.trait_du_veilleur = S('trait_du_veilleur', { name: 'Trait du Veilleur', element: 'air', pa: 5, range: [4, 10], line: true, target: 'any', aoe: { shape: 'pierce', size: 0 }, markSight: true, effects: [dmg(18, 24)], affutBonus: 30, cooldown: 3, desc: 'La flèche traverse : chaque entité de la ligne jusqu\'au bord ou au premier rocher. +30 % à l\'Affût.' });
@@ -147,7 +147,7 @@ spells.larcin = S('larcin', { name: 'Larcin', element: 'eau', pa: 3, range: [1, 
 spells.pas_ombre = S('pas_ombre', { name: "Pas de l'Ombre", element: 'neutre', pa: 3, range: [1, 5], target: 'free', effects: [{ type: 'teleport' }], cooldown: 2, desc: 'Se téléporte sans se révéler.' });
 spells.coup_penombre = S('coup_penombre', { name: 'Coup de Pénombre', element: 'air', pa: 3, range: [1, 1], effects: [dmg(10, 13)], bonusIfInvisible: 1.8, maxPerTurn: 2, desc: 'Dégâts × 1,8 si la Nerith est invisible.' });
 spells.main_leste = S('main_leste', { name: 'Main Leste', element: 'eau', pa: 2, range: [1, 3], effects: [dmg(5, 7), Object.assign(steal('shield'), { orBonus: true })], purse: 25, cooldown: 2, desc: 'Vole le bouclier de la cible, ou son meilleur bonus si elle n\'en a pas.' });
-spells.piege_de_reflux = S('piege_de_reflux', { name: 'Piège de Reflux', element: 'eau', pa: 2, range: [1, 3], target: 'free', effects: [{ type: 'trap', name: 'Piège de Reflux', effects: [push(2), { type: 'dot', element: 'eau', value: 3, turns: 2 }] }], maxPerTurn: 2, desc: 'Un piège invisible qui repousse de 2 cases loin de la Nerith, sur un autre piège s\'il y en a un, et empoisonne 2 tours.' });
+spells.piege_de_reflux = S('piege_de_reflux', { name: 'Piège de Reflux', element: 'eau', pa: 2, range: [1, 3], los: false, target: 'free', effects: [{ type: 'trap', name: 'Piège de Reflux', effects: [push(2), { type: 'dot', element: 'eau', value: 3, turns: 2 }] }], maxPerTurn: 2, desc: 'Un piège invisible qui repousse de 2 cases loin de la Nerith, sur un autre piège s\'il y en a un, et empoisonne 2 tours.' });
 spells.leurre_penombre = S('leurre_penombre', { name: 'Leurre de Pénombre', element: 'neutre', pa: 3, range: [1, 2], target: 'free', effects: [{ type: 'summon', monster: 'silhouette_ombre', count: 1, hpPctOfOwner: 30 }], cooldown: 4, desc: 'Une silhouette d\'ombre (30 % des PV de la Nerith) qui provoque les ennemis adjacents. À la fin de son deuxième tour, elle échange sa place avec la Nerith, puis éclate.' });
 spells.dernier_souffle_ombre = S('dernier_souffle_ombre', { name: 'Dernier Souffle', element: 'air', pa: 5, range: [1, 1], effects: [dmg(15, 19)], executeBelow: 30, onKill: [Object.assign(state('invisible', 1), { lingering: true }), { type: 'paNow', value: 2 }], cooldown: 2, desc: 'Doublé sur une cible sous 30 % de PV. Si elle meurt, la Nerith redevient invisible et récupère 2 PA.' });
 
@@ -200,7 +200,7 @@ spells.etreinte = S('etreinte', { name: 'Étreinte', element: 'terre', pa: 4, ra
 spells.elan = S('elan', { name: 'Élan', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', selfEffects: [{ type: 'pmNow', value: 1 }], cooldown: 1, desc: '+1 PM tout de suite.' });
 
 spells.appel_du_grouk = S('appel_du_grouk', { name: 'Appel du Grouk', element: 'neutre', pa: 4, range: [1, 3], target: 'free', effects: [{ type: 'summon', monster: 'grouk_apprivoise', count: 1 }], cooldown: 2, desc: 'Invoque un Grouk apprivoisé, un cogneur.' });
-spells.appel_du_pilou = S('appel_du_pilou', { name: 'Appel du Glym', element: 'neutre', pa: 3, range: [1, 3], target: 'free', effects: [{ type: 'summon', monster: 'pilou_apprivoise', count: 1 }], cooldown: 2, desc: 'Invoque un Glym apprivoisé, un harceleur.' });
+spells.appel_du_pilou = S('appel_du_pilou', { name: 'Appel du Glym', element: 'neutre', pa: 3, range: [1, 3], target: 'free', effects: [{ type: 'summon', monster: 'pilou_apprivoise', count: 1 }], cooldown: 1, desc: 'Invoque un Glym apprivoisé, un harceleur.' });
 spells.rappel_sacrificiel = S('rappel_sacrificiel', { name: 'Rappel Sacrificiel', element: 'neutre', pa: 3, range: [0, 6], target: 'summon', effects: [{ type: 'sacrifice', min: 12, max: 16, radius: 1 }], selfEffects: [power(25, 1)], cooldown: 2, desc: 'Fait exploser une invocation : dégâts aux ennemis autour d\'elle, et le Fennal prend sa force (+25 % de dégâts ce tour et le suivant).' });
 spells.appel_du_molh = S('appel_du_molh', { name: 'Appel du Molh', element: 'neutre', pa: 4, range: [1, 2], target: 'free', effects: [{ type: 'summon', monster: 'molh_apprivoise', count: 1 }], cooldown: 3, desc: 'Invoque un Molh apprivoisé : lent, solide, il provoque les ennemis à son contact. Coûte 3 de jauge.' });
 spells.morsure = S('morsure', { name: 'Morsure', element: 'terre', pa: 3, range: [1, 2], effects: [dmg(10, 13)], desc: 'Un coup de dents.' });
@@ -378,17 +378,18 @@ DATA.classes = {
     spells: ['eclat', 'givre', 'bourrasque', 'secousse', 'pas_de_voile', 'lame_orage', 'retour_de_voile', 'siphon', 'nova', 'attraction'],
     desc: 'Pousse, attire, gèle, se téléporte et prend la place des autres ; gagne par le placement, jamais par la force.' },
   sarkan: { id: 'sarkan', name: 'Sarkan', title: 'Lame-Serment', role: 'Épéiste', glyph: 'S', color: '#c9a35c', hp: 145, pa: 6, pm: 3, initiative: 70,
-    fury: { max: 5, onMeleeHit: 1 },
+    fury: { max: 5, onMeleeHit: 1, power: 3 },
     spells: ['taille_franche', 'saut_delan', 'serment_jure', 'garde_de_scorie', 'lame_tournoyante', 'defi', 'poigne_juree', 'lame_de_braise', 'ferveur', 'verdict'],
     desc: 'Saute dans la mêlée, jure contre une cible et ne la lâche plus ; sa Fureur monte à chaque coup, et le Verdict la dépense.' },
   lyssar: { id: 'lyssar', name: 'Lyssar', title: 'Traqueur', role: 'Archer', glyph: 'L', color: '#2fbf71', hp: 85, pa: 6, pm: 3, initiative: 115,
-    affut: { range: 1, power: 15 },
+    affut: { range: 1, power: 12, parPm: 4, parSaut: 4 }, traque: { max: 3, par: 8, turns: 2 },
     spells: ['trait_tisse', 'fil_tendu', 'collet', 'repli_traqueur', 'balise_de_fil', 'corde_longue', 'marque_traqueur', 'pluie_de_fil', 'fleche_ancre', 'trait_du_veilleur'],
     desc: 'Choisit sa case et ne bouge plus : à l\'affût, il tire plus loin et plus fort, repousse ce qui approche et pose ses collets.' },
   oriel: { id: 'oriel', name: 'Oriel', title: 'Veilleur de Lumière', role: 'Soigneur', glyph: 'O', color: '#ffd166', hp: 110, pa: 6, pm: 3, initiative: 90,
     spells: ['lueur', 'eclair_solaire', 'manteau_partage', 'rappel', 'flamme_vive', 'renaissance', 'aube', 'lumiere_aveuglante', 'lanterne_de_veille', 'ardeur'],
     desc: 'Soigne, pose des boucliers, retire les malus ; ses flammes rendent des PV.' },
   nerith: { id: 'nerith', name: 'Nerith', title: "Lame d'Ombre", role: 'Voleuse', glyph: 'N', color: '#9b59d0', hp: 110, pa: 6, pm: 3, initiative: 135,
+    pli: { max: 5 }, ombre: { sort: 'voile_penombre' },
     spells: ['double_entaille', 'voile_penombre', 'piege_penombre', 'larcin', 'pas_ombre', 'coup_penombre', 'main_leste', 'piege_de_reflux', 'leurre_penombre', 'dernier_souffle_ombre'],
     desc: 'Disparaît, choisit son moment et frappe ; vole les PA, les PM et les boucliers, et vide les poches de ce qu\'elle achève.' },
   kaldrin: { id: 'kaldrin', name: 'Kaldrin', title: 'Mécaniste', role: 'Mécanismes', glyph: 'K', color: '#ff7a45', hp: 130, pa: 6, pm: 3, initiative: 70,
@@ -397,6 +398,7 @@ DATA.classes = {
     desc: 'Pose des tourelles, des murs, des mines ; fait éclater sa tourelle, et tient mieux tant qu\'elle n\'est pas posée.' },
   karsh: { id: 'karsh', name: 'Karsh', title: 'Lame de Braise', role: 'Mêlée', glyph: 'Kr', color: '#d9452b', hp: 150, pa: 6, pm: 3, initiative: 80,
     braise: { max: 5, debut: 2, perTurn: 2, power: 4, surchauffe: 5, brulure: 4 },
+    sangChaud: { paliers: [[75, 6, 'Échauffé'], [50, 14, 'Ardent'], [25, 24, 'Incandescent']] },
     spells: ['serment_de_sang', 'charge', 'taillade', 'dernier_souffle', 'hurlement', 'sang_pour_sang', 'lien_de_sang', 'colosse', 'frappe_lourde', 'rage'],
     desc: 'Chauffe à chaque tour : sa Braise nourrit ses coups, se dépense en PA et en fournaise, et le brûle s\'il la laisse monter ; ramène ses proies au contact.' },
   mirel: { id: 'mirel', name: 'Mirel', title: 'Chantre', role: 'Soutien', glyph: 'M', color: '#a8e6d8', hp: 105, pa: 6, pm: 3, initiative: 100,
@@ -405,17 +407,17 @@ DATA.classes = {
   thalor: { id: 'thalor', name: 'Thalor', title: 'Ébouleur', role: 'Positionneur', glyph: 'T', color: '#8a93a6', hp: 175, pa: 6, pm: 3, initiative: 75,
     spells: ['transposition', 'lancer', 'projection', 'poigne', 'ancre', 'gorgee_de_cime', 'elan', 'vague', 'etreinte', 'mur_de_chair'],
     desc: 'Jette, attire, échange les places, et prend l\'assise de la montagne ; le roi des combos.' },
-  fennal: { id: 'fennal', name: 'Fennal', title: 'Meneur de Meute', role: 'Invocateur', glyph: 'F', color: '#6fdc8c', hp: 110, pa: 6, pm: 3, initiative: 85, summonGauge: 4,
+  fennal: { id: 'fennal', name: 'Fennal', title: 'Meneur de Meute', role: 'Invocateur', glyph: 'F', color: '#6fdc8c', hp: 110, pa: 6, pm: 3, initiative: 85, summonGauge: 4, jaugeNiveaux: [25, 50],
     spells: ['appel_du_grouk', 'appel_du_pilou', 'rappel_sacrificiel', 'morsure', 'soin_de_meute', 'cri_de_ralliement', 'fleche_de_fil', 'filet', 'appel_du_molh', 'traque'],
     desc: 'Mène une meute (jauge de 4 : Glym 1, Grouk 2, Molh 3), la sacrifie pour prendre sa force.' },
   velmar: { id: 'velmar', name: 'Velmar', title: 'Garde-Marée', role: 'Protecteur', glyph: 'Vm', color: '#2aa6b8', hp: 165, pa: 6, pm: 3, initiative: 70,
-    reserve: { nom: 'Marée', max: 5, gain: 'allie', rayon: 2, par: 1 }, tacle: 5,
+    reserve: { nom: 'Marée', max: 5, gain: 'allie', rayon: 2, par: 1 }, tacle: 5, mare: { armure: 15 },
     spells: [],
     desc: 'Se tient devant les siens comme la marée qui monte : chaque coup qu\'ils reçoivent la fait monter, et ses Reflux la rendent en boucliers d\'écume et en vagues.' },
   orvald: { id: 'orvald', name: 'Orvald', title: 'Pilleur de Reliques', role: 'Prospecteur', glyph: 'Ov', color: '#c9a24a', hp: 115, pa: 6, pm: 3, initiative: 95,
-    reserve: { nom: 'Trouvailles', max: 5, gain: 'retrait', seul: 'pm', par: 1 }, prospection: 20,
+    reserve: { nom: 'Trouvailles', max: 5, gain: 'filon', par: 1 }, prospection: 20,
     spells: [],
-    desc: 'Le vieux prospecteur des galeries : il cloue ses ennemis sur place à coups de poussière et de pioche, réveille les vieux objets qu\'il déterre et partage le filon avec les siens. Rien de ce qu\'il trouve ne lui échappe.' },
+    desc: 'Le vieux prospecteur des galeries : il marque un Filon sur sa cible, et chaque PA, PM ou case de portée qu\'il lui retire le fait sauter. Il réveille les vieux objets qu\'il déterre, partage le filon avec les siens, et rien de ce qu\'il trouve ne lui échappe.' },
 };
 const MAIN_STAT = { vaelith: 'intel', sarkan: 'force', lyssar: 'agi', oriel: 'intel', nerith: 'agi', kaldrin: 'intel', karsh: 'intel', mirel: 'agi', thalor: 'force', fennal: 'force', velmar: 'chance', orvald: 'chance' };
 for (const id in DATA.classes) {
@@ -562,6 +564,8 @@ DATA.monsters = {
     desc: 'Objet de l\'Orvald. Un wagonnet de mine qui roule seul et rejette ce qu\'il percute.' }),
   relique_lanterne: M('relique_lanterne', { name: 'Lanterne de Mine', region: 'invocation', level: '', shape: 'circle', color: '#c9a24a', hp: 25, pa: 3, pm: 0, initiative: 0, spells: ['m_lueur_de_mine'], ai: 'ranged', summon: true,
     desc: 'Objet de l\'Orvald. Sa lueur alourdit les jambes (−1 PM) et montre ce qui se cache.' }),
+  bloc_de_durren: M('bloc_de_durren', { name: 'Bloc de Durren', region: 'invocation', level: '', shape: 'square', color: '#8a93a6', hp: 40, pa: 0, pm: 0, initiative: 0, resist: { terre: 20 }, spells: [], ai: 'melee', summon: true,
+    desc: 'Un bloc de la montagne, arraché au sol par le Thalor. Il ne bouge pas ; on le jette.' }),
   relique_idole: M('relique_idole', { name: 'Idole Enfouie', region: 'invocation', level: '', shape: 'square', color: '#c9a24a', hp: 60, pa: 3, pm: 0, initiative: 0, resist: { terre: 20 }, spells: ['m_coup_d_idole'], ai: 'melee', summon: true, taunt: 1,
     desc: 'Objet de l\'Orvald. Une idole de pierre que les ennemis à son contact ne peuvent pas ignorer.' }),
   molh_apprivoise: M('molh_apprivoise', { name: 'Molh apprivoisé', region: 'invocation', level: '', shape: 'square', color: '#6fdc8c', hp: 70, pa: 4, pm: 2, initiative: 0, resist: { terre: 20 }, spells: ['m_ecrasement'], ai: 'melee', summon: true, summonCost: 3, taunt: 1,
@@ -571,7 +575,7 @@ DATA.monsters = {
     desc: 'Lanterne de l\'Oriel. Soigne les alliés blessés ; en tombant, laisse un halo qui soigne 2 tours.' }),
   balise_de_fil: M('balise_de_fil', { name: 'Balise de Plume', region: 'invocation', level: '', shape: 'diamond', color: '#35d6c8', hp: 20, pa: 0, pm: 0, initiative: 0, spells: [], ai: 'inert', summon: true, swapOnOwnerHit: true,
     desc: 'Piquet du Lyssar. La première fois que le Lyssar est blessé, il prend la place du piquet.' }),
-  silhouette_ombre: M('silhouette_ombre', { name: "Silhouette d'ombre", region: 'invocation', level: '', shape: 'diamond', color: '#6b3f99', hp: 27, pa: 0, pm: 0, initiative: 0, spells: [], ai: 'inert', summon: true, fixed: true, taunt: 1,
+  silhouette_ombre: M('silhouette_ombre', { name: "Silhouette d'ombre", region: 'invocation', level: '', shape: 'diamond', color: '#6b3f99', hp: 27, pa: 0, pm: 0, initiative: 0, spells: [], ai: 'inert', summon: true, fixed: true, taunt: 1, leurre: true, echangeAMort: true, pmAMort: 2,
     triggers: [
       { when: 'turnEnd', if: { every: 2 }, once: true, do: [{ act: 'swapOwner' }, { act: 'vanish', text: 'La silhouette se dissipe.' }] },
       { when: 'death', do: [{ act: 'explode', min: 10, max: 14, element: 'air', radius: 1, enemiesOnly: true }] },

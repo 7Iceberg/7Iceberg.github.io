@@ -265,15 +265,45 @@ class BullePnj {
   repondre(choix, info) {
     this.choix = choix || [];
     this.rep.classList.remove('hidden');
+    this.rep.classList.add('vy-inter-pnj');
+    let tete = this.rep.querySelector('.vy-inter-pnj__tete');
+    if (!tete) { tete = document.createElement('header'); tete.className = 'vy-inter-pnj__tete'; this.rep.prepend(tete); }
+    const d = this.npc && this.npc.def;
+    tete.innerHTML = d ? `<span class="vy-inter__ic">${BullePnj.PICTOS.parler}</span><div><b>${Util.esc(d.name)}</b>${d.title || d.metier ? `<small>${Util.esc(d.title || d.metier)}</small>` : ''}</div>` : '';
     const inf = this.rep.querySelector('.vy-repliques__info');
     inf.innerHTML = info || '';
     inf.hidden = !info;
+    let groupe = null;
     this.rep.querySelector('.vy-repliques__liste').innerHTML = this.choix.map((c, i) => {
-      const m = c.marque || '?';
+      const m = c.marque;
       const data = Object.entries(c.data || {}).map(([k, v]) => ` data-${k}="${Util.esc(v)}"`).join('');
-      return `<button type="button" class="vy-replique" role="listitem" data-i="${i}"${data}><span class="vy-replique__texte">${Util.esc(c.label)}</span>` +
-        `<span class="vy-replique__marque vy-replique__marque--${m === '!' ? 'offre' : c.rendre ? 'rendre' : c.passage ? 'passage' : 'question'}" aria-hidden="true">${m}</span></button>`;
+      const titre = c.groupe && c.groupe !== groupe ? `<div class="vy-inter-pnj__groupe" role="presentation">${Util.esc(c.groupe)}</div>` : '';
+      groupe = c.groupe || groupe;
+      const picto = BullePnj.PICTOS[c.picto] || '';
+      return titre + `<button type="button" class="vy-replique${c.primaire ? ' vy-replique--primaire' : ''}${c.quitter ? ' vy-replique--quitter' : ''}" role="listitem" data-i="${i}"${data}>${picto ? `<span class="vy-replique__picto" aria-hidden="true">${picto}</span>` : ''}<span class="vy-replique__texte">${Util.esc(c.label)}</span>` +
+        (m ? `<span class="vy-replique__marque vy-replique__marque--${m === '!' ? 'offre' : c.rendre ? 'rendre' : c.passage ? 'passage' : 'question'}" aria-hidden="true">${m}</span>` : '') + '</button>';
     }).join('');
+    this.placer();
+  }
+
+  static get PICTOS() {
+    const s = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+    return {
+      parler: s('<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>'),
+      quete: s('<path d="M6 3h10l2 3v15H6z"/><path d="M12 8v5M12 16h.01"/>'),
+      rendre: s('<path d="M6 3h10l2 3v15H6z"/><path d="M9 13l2 2 4-4"/>'),
+      choix: s('<path d="M12 3v6M12 9l-6 6M12 9l6 6"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>'),
+      passage: s('<path d="M4 17h16M6 17V9a6 6 0 0 1 12 0v8"/><path d="M12 3v3"/>'),
+      commerce: s('<path d="M6 9h12l-1.5 11h-9z"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/>'),
+      atelier: s('<path d="M14 6l4 4M9 11l7-7 4 4-7 7z"/><path d="M11 13l-7 7"/>'),
+      marche: s('<path d="M4 10h16l-1-5H5z"/><path d="M5 10v9h14v-9M10 19v-5h4v5"/>'),
+      metiers: s('<path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/>'),
+      combat: s('<path d="M4 4l9 9M4 4v4M4 4h4M20 4l-9 9M20 4v4M20 4h-4"/><path d="M8.5 15.5l-3 3M15.5 15.5l3 3"/>'),
+      avis: s('<path d="M5 3h14v18H5z"/><circle cx="12" cy="10" r="3"/><path d="M8 17c1-2 2.5-3 4-3s3 1 4 3"/>'),
+      insigne: s('<path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/>'),
+      banque: s('<path d="M3 9l9-5 9 5M5 9v9M19 9v9M9 9v9M15 9v9M3 20h18"/>'),
+      quitter: s('<path d="M6 6l12 12M18 6L6 18"/>'),
+    };
   }
 
   placer() {
@@ -293,6 +323,15 @@ class BullePnj {
     this.bulle.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
     const tail = Math.max(20, Math.min(bw - 20, feet.x - hr.left - x));
     this.bulle.style.setProperty('--queue', Math.round(tail) + 'px');
+    if (!this.rep.classList.contains('hidden') && this.rep.classList.contains('vy-inter-pnj')) {
+      const rw = this.rep.offsetWidth, rh = this.rep.offsetHeight, fx = feet.x - hr.left, fy = feet.y - hr.top;
+      let rx = fx + 26 * k, ry = fy - 34 * k - rh / 2;
+      if (rx + rw > hr.width - 8) rx = fx - 26 * k - rw;
+      rx = Math.max(8, Math.min(hr.width - rw - 8, rx));
+      ry = Math.max(flip ? 8 : y + bh + 8, Math.min(hr.height - rh - 8, ry));
+      ry = Math.max(8, Math.min(hr.height - rh - 8, ry));
+      this.rep.style.transform = `translate(${Math.round(rx)}px, ${Math.round(ry)}px)`;
+    }
   }
 
   cacherBulle() {
@@ -364,21 +403,23 @@ class Conversation {
   choix() {
     const ctx = this.ctx, hud = this.hud;
     const out = [];
-    for (const a of ctx.answers || []) out.push({ label: `${a.quest.name} : ${a.step.text}`, marque: '?', data: { repondre: a.quest.id }, action: () => this.ailleurs(() => hud.openAnswerPanel(ctx.npc, a.quest.id)) });
-    for (const q of ctx.offers) out.push({ label: q.name, marque: '!', data: { quete: q.id }, action: () => this.offre(q) });
-    for (const a of ctx.active) if (a.done && !this.enChoix(a)) out.push({ label: `Rendre : ${a.quest.name}`, marque: '?', rendre: true, data: { rendre: a.quest.id }, action: () => this.rendre(a.quest) });
-    if (ctx.passage) out.push({ label: ctx.passage.texte, marque: '>', passage: true, data: { passage: ctx.passage.vers }, action: () => this.ailleurs(() => { if (!hud.world.passage()) hud.world.endDialogue(); }) });
-    if (ctx.shop) out.push({ label: 'Voir tes marchandises.', action: () => this.ailleurs(() => hud.openShop(ctx)) });
-    if (ctx.workshop) out.push({ label: 'Utiliser ton atelier.', action: () => this.ailleurs(() => hud.openWorkshop(ctx)) });
-    if (ctx.marche) out.push({ label: 'Voir l\'étal du jour.', action: () => this.ailleurs(() => hud.openMarche(ctx)) });
-    if (ctx.metiers) out.push({ label: 'Voir le tableau des métiers.', action: () => this.ailleurs(() => hud.openMetiers(ctx)) });
-    if (ctx.dojo) out.push({ label: 'M\'entraîner contre les mannequins.', action: () => this.ailleurs(() => { hud.world.endDialogue && hud.world.endDialogue(); hud.world.entrainement(); }) });
-    if (ctx.epreuve) out.push({ label: 'Affronter mon Reflet sur la cour.', marque: '!', action: () => this.ailleurs(() => { hud.world.endDialogue && hud.world.endDialogue(); hud.world.epreuveVoie(); }) });
-    if (ctx.epreuveDojo) out.push({ label: 'Tenter l\'épreuve du jour.', action: () => this.ailleurs(() => { hud.world.endDialogue && hud.world.endDialogue(); hud.world.epreuveDojo(); }) });
-    if (ctx.avis) out.push({ label: 'Voir les avis de recherche.', action: () => this.ailleurs(() => hud.openAvis(ctx)) });
-    if (ctx.temple) out.push({ label: 'Échanger des Insignes de la Garde.', action: () => this.ailleurs(() => hud.openTemple(ctx)) });
-    if (ctx.banque) out.push({ label: 'Ouvrir ton coffre.', action: () => this.ailleurs(() => hud.openBanque(ctx)) });
-    if (!out.length) out.push({ label: 'Au revoir.', action: () => this.fermer() });
+    for (const a of ctx.answers || []) out.push({ label: `${a.quest.name} : ${a.step.text}`, marque: '?', picto: 'choix', groupe: 'Quêtes', data: { repondre: a.quest.id }, action: () => this.ailleurs(() => hud.openAnswerPanel(ctx.npc, a.quest.id)) });
+    for (const q of ctx.offers) out.push({ label: q.name, marque: '!', picto: 'quete', groupe: 'Quêtes', data: { quete: q.id }, action: () => this.offre(q) });
+    for (const a of ctx.active) if (a.done && !this.enChoix(a)) out.push({ label: `Rendre : ${a.quest.name}`, marque: '?', picto: 'rendre', groupe: 'Quêtes', rendre: true, data: { rendre: a.quest.id }, action: () => this.rendre(a.quest) });
+    if (ctx.passage) out.push({ label: ctx.passage.texte, marque: '>', picto: 'passage', primaire: true, passage: true, data: { passage: ctx.passage.vers }, action: () => this.ailleurs(() => { if (!hud.world.passage()) hud.world.endDialogue(); }) });
+    if (ctx.shop) out.push({ label: 'Voir tes marchandises.', picto: 'commerce', groupe: 'Services', action: () => this.ailleurs(() => hud.openShop(ctx)) });
+    if (ctx.workshop) out.push({ label: 'Utiliser ton atelier.', picto: 'atelier', groupe: 'Services', action: () => this.ailleurs(() => hud.openWorkshop(ctx)) });
+    if (ctx.marche) out.push({ label: 'Voir l\'étal du jour.', picto: 'marche', groupe: 'Services', action: () => this.ailleurs(() => hud.openMarche(ctx)) });
+    if (ctx.metiers) out.push({ label: 'Voir le tableau des métiers.', picto: 'metiers', groupe: 'Services', action: () => this.ailleurs(() => hud.openMetiers(ctx)) });
+    if (ctx.dojo) out.push({ label: 'M\'entraîner contre les mannequins.', picto: 'combat', groupe: 'Services', action: () => this.ailleurs(() => { hud.world.endDialogue && hud.world.endDialogue(); hud.world.entrainement(); }) });
+    if (ctx.epreuve) out.push({ label: 'Affronter mon Reflet sur la cour.', marque: '!', picto: 'combat', groupe: 'Quêtes', action: () => this.ailleurs(() => { hud.world.endDialogue && hud.world.endDialogue(); hud.world.epreuveVoie(); }) });
+    if (ctx.epreuveDojo) out.push({ label: 'Tenter l\'épreuve du jour.', picto: 'combat', groupe: 'Services', action: () => this.ailleurs(() => { hud.world.endDialogue && hud.world.endDialogue(); hud.world.epreuveDojo(); }) });
+    if (ctx.avis) out.push({ label: 'Voir les avis de recherche.', picto: 'avis', groupe: 'Services', action: () => this.ailleurs(() => hud.openAvis(ctx)) });
+    if (ctx.temple) out.push({ label: 'Échanger des Insignes de la Garde.', picto: 'insigne', groupe: 'Services', action: () => this.ailleurs(() => hud.openTemple(ctx)) });
+    if (ctx.banque) out.push({ label: 'Ouvrir ton coffre.', picto: 'banque', groupe: 'Services', action: () => this.ailleurs(() => hud.openBanque(ctx)) });
+    const rang = c => c.primaire ? 0 : c.groupe === 'Quêtes' ? 1 : c.groupe === 'Services' ? 2 : 3;
+    out.sort((x, y) => rang(x) - rang(y));
+    out.push({ label: 'Au revoir.', picto: 'quitter', quitter: true, action: () => this.fermer() });
     return out;
   }
 

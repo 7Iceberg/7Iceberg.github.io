@@ -143,3 +143,11 @@
   .vy-succes__tete { padding-bottom: 6px; }
   .vy-succes__score b { font-size: 22px; }
 }
+
+.vy-succes__ent.proche { color: var(--sc-cristal); }
+.vy-succes__ent.proche small { color: var(--sc-cristal); border-color: color-mix(in srgb, var(--sc-cristal) 50%, transparent); background: color-mix(in srgb, var(--sc-cristal) 14%, transparent); }
+.vy-succes__raison { display: flex !important; align-items: flex-start; gap: 4px; margin-top: 2px; color: var(--sc-cristal) !important; font-weight: 600; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; line-height: 1.35; }
+.vy-succes__raison svg { margin-top: 1px; }
+.vy-succes__fraison { display: flex; align-items: flex-start; gap: 6px; margin: 2px 0 6px; padding: 7px 9px; border-radius: 8px; font: 600 12px/1.4 var(--vy-font-ui); color: var(--sc-cristal); background: color-mix(in srgb, var(--sc-cristal) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sc-cristal) 35%, transparent); }
+.vy-succes__fraison svg { width: 15px; height: 15px; flex: none; margin-top: 1px; }
+.vy-succes__raison svg { width: 12px; height: 12px; flex: none; }

@@ -191,3 +191,22 @@
   .vy-sorts { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 46%) minmax(0, 1fr); }
   .vy-sorts__fiche { border-top: 1px solid var(--fen-filet); padding-top: 6px; }
 }
+
+.vy-sorts__paire { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.vy-sorts__paire.double { grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr); align-items: stretch; }
+.vy-sorts__ou { align-self: center; justify-self: center; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; font: 800 8.5px/1 var(--vy-font-ui); letter-spacing: 0.04em; text-transform: uppercase; color: var(--fen-texte-2); background: var(--fen-fond-2); border: 1px solid var(--fen-filet); }
+.vy-sorts__paire .vy-sort { grid-template-columns: minmax(0, 1fr) auto 34px; min-height: 56px; }
+.vy-sorts__paire .vy-sort.variante { margin-left: 0; }
+.vy-sorts__paire .vy-sort.variante::before { display: none; }
+.vy-sorts__paire .vy-sort__choix { gap: 8px; padding: 6px 4px 6px 6px; }
+.vy-sorts__paire .vy-sort__icone { width: 40px; height: 40px; }
+.vy-sorts__paire .vy-sort__nom > span { font-size: 13px; }
+.vy-sorts__paire .vy-sort__nom small { font-size: 10.5px; }
+.vy-sorts__paire .vy-sort__niveau { grid-column: auto; padding: 0 2px; font-size: 10.5px; white-space: nowrap; }
+.vy-sorts__paire .vy-sort__valeur { width: 34px; }
+.vy-sorts__paire .vy-sort__obt { left: 52px; }
+.vy-sorts__paire .vy-sort__equipe, .vy-sorts__paire .vy-sort__equiper { width: 30px; height: 30px; }
+@media (max-width: 560px) {
+  .vy-sorts__paire.double { grid-template-columns: minmax(0, 1fr); }
+  .vy-sorts__ou { display: none; }
+}

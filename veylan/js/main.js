@@ -66,10 +66,12 @@
     if (character.origine === 'ervane' && typeof Ile === 'object' && Ile.actif()) Ile.appliquerOrsane();
     if (typeof Ile === 'object' && Ile.appliquerOrsane3DPour && !Ile.orsane3D() && Ile.appliquerOrsane3DPour(character)) Save.accorder(character);
     world = new World({ character, combat, rng, plateaux: !!scene });
+    ui.world = world;
     R.world = world;
     R.static = null;
     if (scene) scene.brancher(world);
     hud = new Hud(world, combat, R, ui);
+    ui.hud = hud;
     let last = performance.now();
     R.onTick = now => { const dt = Math.min(0.1, (now - last) / 1000); last = now; world.update(dt); };
     const start = character.dungeon ? `${character.dungeon.id}#${character.dungeon.room}` : (character.pos && World.mapDef(character.pos.map) ? character.pos.map : World.firstMap(character));

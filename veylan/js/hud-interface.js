@@ -210,7 +210,7 @@
         corps += ligne(ICO.style, `Style : ${S[i][1]}`, `Style ${i + 1} sur ${S.length}`, '<span class="vy-editeur__fleches"><button class="vy-editeur__fleche" data-act="style" data-pas="-1" aria-label="Style précédent">‹</button><button class="vy-editeur__fleche" data-act="style" data-pas="1" aria-label="Style suivant">›</button></span>') +
           `<div class="vy-editeur__points">${S.map((s, k) => `<i${k === i ? ' class="on"' : ''}></i>`).join('')}</div>` +
           `<div class="vy-editeur__apercu" aria-hidden="true">${Gemmes.apercu(this.styleVital())}</div>` +
-          ligne(ICO.xp, 'Afficher l\'XP', 'La pierre orange du bloc', inter('xp', r.xp !== false, 'Afficher l\'XP')) +
+          ligne(ICO.xp, 'Afficher l\'XP', 'La barre d\'expérience du bloc du bas', inter('xp', r.xp !== false, 'Afficher l\'XP')) +
           ligne(ICO.coeur, 'Prévenir quand la vie est basse', 'La pierre des PV luit sous 30 %', inter('alerte', r.alerte !== false, 'Prévenir quand la vie est basse'));
       }
       if (on === 'carte') corps += ligne(ICO.boussole, 'La boussole', 'N, E, S, O autour de la carte', inter('boussole', r.boussole !== false, 'La boussole'));

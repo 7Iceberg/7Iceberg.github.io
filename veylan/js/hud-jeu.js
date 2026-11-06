@@ -29,6 +29,7 @@ class HudJeu {
       if (b.dataset.act === 'succes') this.hud.toggleWin('succes');
     });
     this.fiche = new FicheGroupe(this);
+    this.cible = typeof MenuCible === 'function' ? new MenuCible(this) : null;
     this.glisse = new Glisse(this);
     this.tourne = new Tourne();
     this.indice = document.createElement('div');
@@ -1011,11 +1012,13 @@ class FicheGroupe {
       const g = this.d.group, w = jeu.world;
       if (b.dataset.act === 'attaquer') { this.cacher(false); w.attackGroup(g); }
       if (b.dataset.act === 'apercu') { FicheGroupe.apercuOuvert = !FicheGroupe.apercuOuvert; this.dessinerApercu(); this.placer(); }
+      if (b.dataset.act === 'groupe') { FicheGroupe.apercuOuvert = false; this.dessinerApercu(); this.placer(); }
+      if (b.dataset.act === 'bete') { const id = b.dataset.id; this.cacher(true); jeu.hud.openCarnet(id); }
+      if (b.dataset.act === 'succes') { const id = b.dataset.id; this.cacher(true); if (jeu.hud.ouvrirSucces) jeu.hud.ouvrirSucces(id); else jeu.hud.toggleWin('succes'); }
       if (b.dataset.act === 'fiche') {
         const def = DATA.monsters[g.monsters[0].id];
         this.cacher(true);
-        if (def && def.region) jeu.hud.carnetTab = def.region;
-        jeu.hud.openCarnet();
+        jeu.hud.openCarnet(def && def.id);
       }
       if (b.dataset.act === 'fermer') this.cacher(true);
     });
@@ -1034,6 +1037,16 @@ class FicheGroupe {
     return `<li class="vy-fiche-groupe__resist">${fort.length ? `<small>Résiste</small> ${fort.join(' ')}` : ''}${faible.length ? `<small>Faible</small> ${faible.join(' ')}` : ''}</li>`;
   }
 
+  static get ICO() {
+    const s = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+    return {
+      epees: s('<path d="M4 4l9 9M4 4v4M4 4h4M20 4l-9 9M20 4v4M20 4h-4"/><path d="M8.5 15.5l-3 3M15.5 15.5l3 3M7 14l3 3M17 14l-3 3"/>'),
+      groupe: s('<circle cx="9" cy="9" r="3"/><circle cx="16.5" cy="10" r="2.4"/><path d="M3.5 19c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5M14.5 14.6c2.4-.3 4.6.9 5.5 3.9"/>'),
+      aire: s('<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/><path d="M12 8h.01"/>'),
+      chevron: '<svg class="vy-inter__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>',
+    };
+  }
+
   static get DIFFICULTE() {
     return { facile: 'Facile', mesure: 'À ta mesure', difficile: 'Difficile', danger: 'Dangereux' };
   }
@@ -1050,19 +1063,29 @@ class FicheGroupe {
     const ile = !!this.jeu.world.plateau;
     const liste = lignes.map(l => {
       const def = DATA.monsters[l.id] || { name: l.id, color: '#aaa' };
-      return `<li data-monstre="${Util.esc(l.id)}"><span class="vy-pastille" style="--c:${def.color}"></span><span class="vy-fiche-groupe__nom">${Util.esc(def.name)}</span><small>niv. ${l.level}</small>${def.recherche ? '<small class="vy-fiche-groupe__recherche">recherché</small>' : ''}${l.n > 1 ? `<b>×${l.n}</b>` : ''}</li>` +
+      const portrait = this.jeu.hud && this.jeu.hud.portraitBete ? this.jeu.hud.portraitBete(l.id, 40, 44) : '';
+      return `<li data-monstre="${Util.esc(l.id)}" data-act="bete" data-id="${Util.esc(l.id)}" title="Sa fiche dans le Bestiaire">${portrait ? `<img class="vy-inter__portrait" src="${portrait}" alt="" style="--c:${def.color}">` : ''}<span class="vy-pastille" style="--c:${def.color}"></span><span class="vy-fiche-groupe__nom">${Util.esc(def.name)}</span><small>niv. ${l.level}</small>${def.recherche ? '<small class="vy-fiche-groupe__recherche">recherché</small>' : ''}${l.n > 1 ? `<b>×${l.n}</b>` : ''}</li>` +
         (ile ? FicheGroupe.ligneResistances(def) : '');
     }).join('');
     const wj = this.jeu.world, rep = typeof Repos !== 'undefined' && wj.zone && !wj.ch.dungeon && !wj.estDojo(g) ? Repos.valeur(wj.ch, wj.zone.id, Date.now()) : 0;
+    const D = FicheGroupe.DIFFICULTE[d.difficulty] || '';
+    const aire = !!FicheGroupe.apercuOuvert;
+    this.el.classList.add('vy-inter');
     this.el.innerHTML =
-      `<header class="vy-fiche-groupe__tete"><div><h3>Groupe niveau ${somme}</h3><p class="vy-fiche-groupe__xp" title="XP estimée, avant le bonus d'un Défi réussi">${d.xp} XP</p>${rep ? `<p class="vy-fiche-groupe__repos" title="La zone s'est reposée : une victoire ici rapporte plus d'XP et de butin, puis le bonus baisse">Repos de la zone : +${rep} %</p>` : ''}</div>` +
+      `<div class="vy-inter__col">` +
+      `<header class="vy-fiche-groupe__tete vy-inter__tete"><span class="vy-inter__ic">${Fenetres.ICON.combat || FicheGroupe.ICO.epees}</span><div><h3>Groupe niveau ${somme}</h3><div class="vy-inter__ligne2"><p class="vy-fiche-groupe__xp" title="XP estimée, avant le bonus d'un Défi réussi">${d.xp} XP</p><em class="vy-inter__role vy-fiche-groupe__difficulte" data-niveau="${d.difficulty}">${D}</em></div></div>` +
       `<button type="button" class="vy-fiche-groupe__fermer" data-act="fermer" aria-label="Fermer">${Fenetres.ICON.fermer}</button></header>` +
-      `<ul class="vy-fiche-groupe__liste">${liste}</ul>` +
-      `<p class="vy-fiche-groupe__difficulte" data-niveau="${d.difficulty}">${FicheGroupe.DIFFICULTE[d.difficulty] || ''}</p>` +
-      `<button type="button" class="vy-fiche-groupe__voir" data-act="apercu" aria-expanded="false" title="Voir l'aire du combat et les cases de départ">${Fenetres.ICON.tout}<span>Aire du combat</span></button>` +
-      '<div class="vy-fiche-groupe__apercu hidden"></div>' +
-      `<footer class="vy-fiche-groupe__pied"><button type="button" class="vy-bouton vy-bouton--petit" data-act="fiche" title="Le Carnet du Veilleur">${Fenetres.ICON.carnet}<span>Fiche</span></button>` +
-      '<button type="button" class="vy-bouton vy-bouton--primaire vy-fiche-groupe__attaquer" data-act="attaquer">Attaquer</button></footer>';
+      (rep ? `<p class="vy-fiche-groupe__repos vy-inter__note" title="La zone s'est reposée : une victoire ici rapporte plus d'XP et de butin, puis le bonus baisse">Repos de la zone : +${rep} %</p>` : '') +
+      `<nav class="vy-inter__onglets" role="tablist" aria-label="Interactions">` +
+      `<button type="button" class="vy-inter__ligne${aire ? '' : ' on'}" role="tab" aria-selected="${!aire}" data-act="groupe">${FicheGroupe.ICO.groupe}<span>Fiche du groupe</span>${FicheGroupe.ICO.chevron}</button>` +
+      `<button type="button" class="vy-inter__ligne vy-fiche-groupe__voir${aire ? ' on' : ''}" role="tab" aria-selected="${aire}" data-act="apercu" aria-expanded="${aire}" title="Voir l'aire du combat et les cases de départ">${FicheGroupe.ICO.aire}<span>Aire du combat</span>${FicheGroupe.ICO.chevron}</button>` +
+      `<button type="button" class="vy-inter__ligne vy-inter__ligne--primaire vy-fiche-groupe__attaquer" data-act="attaquer">${FicheGroupe.ICO.epees}<span>Attaquer</span></button>` +
+      `</nav></div>` +
+      `<div class="vy-inter__panneau">` +
+      `<section class="vy-inter__sous-panneau vy-inter__groupe${aire ? ' hidden' : ''}"><h4>Le groupe</h4><ul class="vy-fiche-groupe__liste">${liste}</ul>` +
+      `<button type="button" class="vy-inter__lien" data-act="fiche" title="Le Bestiaire">${Fenetres.ICON.carnet}<span>Voir au Bestiaire</span></button>${this.succesDuGroupe(g)}</section>` +
+      `<section class="vy-inter__sous-panneau vy-inter__aire${aire ? '' : ' hidden'}"><h4>L'aire du combat</h4><div class="vy-fiche-groupe__apercu hidden"></div></section>` +
+      `</div>`;
     this.el.classList.remove('hidden');
     this.dessinerApercu();
     if (this.lacher) this.lacher();
@@ -1070,12 +1093,38 @@ class FicheGroupe {
     this.placer();
   }
 
+  succesDuGroupe(g) {
+    const ch = this.jeu.world.ch;
+    if (!ch || typeof Achievements !== 'object') return '';
+    const ids = new Set(g.monsters.map(m => m.id));
+    const fait = a => (ch.achievements || []).includes(a.id);
+    const rang = a => {
+      const k = a.cond || {};
+      if ((k.type === 'boss' || k.type === 'bossDefi' || k.type === 'noeudsBoss') && ids.has(k.monster)) return 1;
+      if (k.type === 'kills' && ids.has(k.monster)) return 2;
+      if ((k.type === 'famille' || k.type === 'argentes') && (k.monstres || []).some(m => ids.has(m))) return 3;
+      return 0;
+    };
+    const l = Achievements.defs().filter(a => !fait(a) && Achievements.pourPerso(ch, a) && rang(a)).sort((x, y) => rang(x) - rang(y)).slice(0, 3);
+    if (!l.length) return '';
+    const items = l.map(a => {
+      const av = Achievements.avancement(ch, a), pct = av ? Math.round(100 * av[0] / av[1]) : 0;
+      return `<li data-act="succes" data-id="${Util.esc(a.id)}" title="Sa fiche dans les Succès"><span class="vy-fiche-groupe__succes-ic" aria-hidden="true">★</span><span class="vy-fiche-groupe__nom">${Util.esc(a.name)}</span>${av ? `<small>${av[0]} / ${av[1]}</small><i class="vy-fiche-groupe__succes-jauge" style="--p:${pct}%"></i>` : ''}</li>`;
+    }).join('');
+    return `<h4 class="vy-fiche-groupe__succes-titre">Succès liés</h4><ul class="vy-fiche-groupe__succes">${items}</ul>`;
+  }
+
   dessinerApercu() {
     const boite = this.el.querySelector('.vy-fiche-groupe__apercu'), bouton = this.el.querySelector('[data-act="apercu"]');
     if (this.anim) { cancelAnimationFrame(this.anim); this.anim = 0; }
     if (!boite) return;
     const ouvert = !!FicheGroupe.apercuOuvert;
-    if (bouton) { bouton.classList.toggle('on', ouvert); bouton.setAttribute('aria-expanded', String(ouvert)); }
+    if (bouton) { bouton.classList.toggle('on', ouvert); bouton.setAttribute('aria-expanded', String(ouvert)); bouton.setAttribute('aria-selected', String(ouvert)); }
+    const tabGroupe = this.el.querySelector('[data-act="groupe"]');
+    if (tabGroupe) { tabGroupe.classList.toggle('on', !ouvert); tabGroupe.setAttribute('aria-selected', String(!ouvert)); }
+    const pg = this.el.querySelector('.vy-inter__groupe'), pa = this.el.querySelector('.vy-inter__aire');
+    if (pg) pg.classList.toggle('hidden', ouvert);
+    if (pa) pa.classList.toggle('hidden', !ouvert);
     boite.classList.toggle('hidden', !ouvert);
     if (!ouvert) { boite.innerHTML = ''; this.jeu.world.apercuTerrain = null; return; }
     const a = this.d && this.jeu.world.apercuCombat ? this.jeu.world.apercuCombat(this.d.group) : null;

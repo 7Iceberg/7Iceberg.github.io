@@ -36,7 +36,7 @@ const MENUS = [
   ['faction', 'Faction', 'F', I.faction],
   ['guilde', 'Guilde', 'N', I.guilde],
   ['succes', 'Succès', 'U', I.succes],
-  ['carnet', 'Carnet du Veilleur', 'B', I.carnet],
+  ['carnet', 'Bestiaire', 'B', I.carnet],
   ['garderobe', 'Garde-robe', 'G', I.garderobe],
   ['boutique', 'Boutique des Voiles', 'Y', I.boutique],
   ['familiers', 'Familiers', 'K', I.familiers],
@@ -46,13 +46,15 @@ const MENUS = [
   ['options', 'Options', 'O', I.options],
 ];
 const ALIAS = { perso: 'sac' };
+const GRILLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.2"/><rect x="14" y="4" width="6" height="6" rx="1.2"/><rect x="4" y="14" width="6" height="6" rx="1.2"/><rect x="14" y="14" width="6" height="6" rx="1.2"/></svg>';
+const EPINGLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6l-1 5 3 3H7l3-3z"/><path d="M12 12v8"/></svg>';
 
 Object.assign(Hud.prototype, {
   initFenetres() {
     this.fen = new Fenetres(document.getElementById('fenetres'));
     const LIVRE = ['carac', 'sac', 'sorts', 'quetes', 'succes', 'familiers', 'montures', 'faction', 'carnet'];
-    const NOMS = { carac: 'Personnage', sac: 'Sac', carnet: 'Carnet' };
-    this.fen.livre = {
+    const NOMS = { carac: 'Personnage', sac: 'Sac', carnet: 'Bestiaire' };
+    this.livreDuVeilleur = {
       ids: LIVRE,
       separer: ['familiers'],
       onglets: LIVRE.map(id => { const m = MENUS.find(x => x[0] === id); return [id, NOMS[id] || m[1], m[2], m[3]]; }),
@@ -63,13 +65,19 @@ Object.assign(Hud.prototype, {
     this.journal = { combat: [], evenements: [] };
     this.journalTab = 'evenements';
     const bar = document.getElementById('menus');
-    bar.innerHTML = MENUS.map(([id, label, key, icon]) => `<button class="vy-menu" data-win="${id}" aria-label="${label} (${key})">${icon}<kbd>${key}</kbd><span class="vy-menu__bulle" aria-hidden="true">${label}<kbd>${key}</kbd></span></button>`).join('');
-    bar.addEventListener('click', evt => { const b = evt.target.closest('[data-win]'); if (b) this.toggleWin(b.dataset.win); });
+    bar.innerHTML = MENUS.map(([id, label, key, icon]) => `<button class="vy-menu" data-win="${id}" aria-label="${label} (${key})">${icon}<kbd>${key}</kbd><span class="vy-menu__bulle" aria-hidden="true">${label}<kbd>${key}</kbd></span></button>`).join('') +
+      `<button class="vy-menu vy-menu--grille" data-grille aria-label="Tous les menus" aria-expanded="false">${GRILLE}<span class="vy-menu__bulle" aria-hidden="true">Tous les menus</span></button>`;
+    bar.addEventListener('click', evt => {
+      if (evt.target.closest('[data-grille]')) { this.basculerGrilleMenus(); return; }
+      const b = evt.target.closest('[data-win]'); if (b) this.toggleWin(b.dataset.win);
+    });
+    this.appliquerEpingles();
     window.addEventListener('keydown', evt => {
       const t = evt.target;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
       if (evt.ctrlKey || evt.metaKey || evt.altKey) return;
       if (!this.el.panel.classList.contains('hidden')) return;
+      if (this.vue3d || document.querySelector('#app > .vy-b3d')) { if (evt.key === 'Escape') { evt.preventDefault(); evt.stopImmediatePropagation(); this.fermerBete3D(); } return; }
       if (evt.key === 'Escape' && this.fen.closeTop()) { evt.preventDefault(); evt.stopImmediatePropagation(); this.syncMenus(); return; }
       const m = MENUS.find(x => x[2].toLowerCase() === evt.key.toLowerCase());
       if (m && document.getElementById('title').classList.contains('hidden')) { evt.preventDefault(); this.toggleWin(m[0]); }
@@ -97,6 +105,60 @@ Object.assign(Hud.prototype, {
     try { window.dispatchEvent(new CustomEvent('veylan:' + nom, { detail })); } catch (e) {   }
   },
   chat(type, text) { this.signal('chat', { type, text }); },
+
+  epinglesMenus() {
+    if (!this._epingles) {
+      let l = null;
+      try { l = JSON.parse(localStorage.getItem('veylan.menus.caches') || 'null'); } catch (e) {   }
+      this._epingles = new Set(Array.isArray(l) ? l.filter(id => MENUS.some(m => m[0] === id)) : []);
+    }
+    return this._epingles;
+  },
+  appliquerEpingles() {
+    const caches = this.epinglesMenus();
+    for (const b of document.querySelectorAll('#menus [data-win]')) b.classList.toggle('vy-menu--ote', caches.has(b.dataset.win));
+  },
+  basculerGrilleMenus(on) {
+    const bar = document.getElementById('menus'), bouton = bar.querySelector('[data-grille]');
+    let g = document.querySelector('.vy-menus-grille');
+    const ouvrir = on == null ? !g : on;
+    if (!ouvrir) { if (g) g.remove(); if (bouton) { bouton.classList.remove('on'); bouton.setAttribute('aria-expanded', 'false'); } return; }
+    if (!g) {
+      g = document.createElement('div');
+      g.className = 'vy-menus-grille';
+      g.setAttribute('role', 'dialog');
+      g.setAttribute('aria-label', 'Tous les menus');
+      g.addEventListener('click', evt => {
+        const ep = evt.target.closest('[data-epingle]');
+        if (ep) {
+          const id = ep.dataset.epingle, c = this.epinglesMenus();
+          if (c.has(id)) c.delete(id); else c.add(id);
+          try { localStorage.setItem('veylan.menus.caches', JSON.stringify([...c])); } catch (e) {   }
+          this.appliquerEpingles(); this.remplirGrilleMenus(g);
+          return;
+        }
+        const t = evt.target.closest('[data-ouvre]');
+        if (t) { this.basculerGrilleMenus(false); this.toggleWin(t.dataset.ouvre); }
+      });
+      document.getElementById('app').appendChild(g);
+      const dehors = evt => { if (!g.isConnected) { removeEventListener('pointerdown', dehors, true); return; } if (!g.contains(evt.target) && !evt.target.closest('[data-grille]')) this.basculerGrilleMenus(false); };
+      addEventListener('pointerdown', dehors, true);
+      const echap = evt => { if (!g.isConnected) { removeEventListener('keydown', echap, true); return; } if (evt.key === 'Escape') { evt.stopImmediatePropagation(); this.basculerGrilleMenus(false); } };
+      addEventListener('keydown', echap, true);
+    }
+    this.remplirGrilleMenus(g);
+    const r = bar.getBoundingClientRect(), app = document.getElementById('app').getBoundingClientRect();
+    g.style.top = `${Math.round(r.bottom - app.top + 6)}px`;
+    g.style.right = `${Math.max(6, Math.round(app.right - r.right))}px`;
+    if (bouton) { bouton.classList.add('on'); bouton.setAttribute('aria-expanded', 'true'); }
+  },
+  remplirGrilleMenus(g) {
+    const c = this.epinglesMenus();
+    g.innerHTML = `<header class="vy-menus-grille__tete"><b>Tous les menus</b><small>L'épingle garde un menu dans la barre</small></header><div class="vy-menus-grille__tuiles">` +
+      MENUS.map(([id, label, key, icon]) => { const pin = !c.has(id);
+        return `<div class="vy-menus-grille__tuile${this.fen.isOpen(ALIAS[id] || id) ? ' on' : ''}"><button type="button" class="vy-menus-grille__ouvrir" data-ouvre="${id}">${icon}<span>${label}</span><kbd>${key}</kbd></button>` +
+          `<button type="button" class="vy-menus-grille__epingle${pin ? ' on' : ''}" data-epingle="${id}" aria-pressed="${pin}" title="${pin ? 'Ôter de la barre' : 'Garder dans la barre'}" aria-label="${pin ? 'Ôter' : 'Garder'} ${label} ${pin ? 'de' : 'dans'} la barre">${EPINGLE}</button></div>`; }).join('') + '</div>';
+  },
 
   syncMenus() {
     for (const b of document.querySelectorAll('#menus [data-win]')) b.classList.toggle('on', this.fen.isOpen(ALIAS[b.dataset.win] || b.dataset.win));
@@ -128,7 +190,8 @@ Object.assign(Hud.prototype, {
     if (!ch) return;
     const d = ch.derived();
     const v = document.getElementById('vital');
-    const style = this.styleVital(), avecXp = !this.ihud || this.ihud.xp !== false, cle = style + (avecXp ? '+xp' : '');
+    const da = !!document.querySelector('#app.vy-da'), montrerXp = !this.ihud || this.ihud.xp !== false;
+    const style = this.styleVital(), avecXp = montrerXp && !da, cle = style + (avecXp ? '+xp' : '');
     if (v.dataset.style !== cle || !v.firstElementChild) {
       v.dataset.style = cle;
       v.innerHTML = Gemmes.bloc(style, avecXp);
@@ -139,12 +202,38 @@ Object.assign(Hud.prototype, {
       hp: ch.hp, hpMax: d.hpMax, pa: d.pa, paMax: d.pa, pm: d.pm, pmMax: d.pm, xp,
       xpTexte: max ? 'max' : '', xpTitre: max ? `Niveau ${ch.level}, le plus haut` : `Niveau ${ch.level} : ${ch.xp} / ${Character.xpToNext(ch.level)} XP`,
     });
+    this.barreXp(da && montrerXp, xp, max, ch);
     const conso = Object.keys(ch.inventory).map(id => Items.get(id)).filter(x => x && x.kind === 'consumable').sort((a, b) => (a.heal || 0) - (b.heal || 0)).slice(0, 6);
     const cells = conso.map(x => `<button class="vy-case" data-rarete="${Items.rarity(x)}" data-use="${x.id}" title="${esc(x.name)} : utiliser" aria-label="Utiliser ${esc(x.name)}"><span class="vy-case__icone">${Hud.picto(x)}</span><span class="vy-case__nombre">${ch.count(x.id)}</span></button>`);
     while (cells.length < 6) cells.push('<span class="vy-case vy-case--vide" aria-hidden="true"></span>');
     const r = document.getElementById('raccourcis');
     const html = cells.join('');
     if (r.dataset.html !== html) { r.dataset.html = html; r.innerHTML = html; }
+  },
+
+  barreXp(on, xp, max, ch) {
+    const bc = document.getElementById('bas-centre');
+    if (!bc) return;
+    let b = bc.querySelector('.vy-xp-barre');
+    if (!on) { if (b) b.remove(); return; }
+    if (!b) {
+      b = document.createElement('div');
+      b.className = 'vy-xp-barre';
+      b.setAttribute('role', 'progressbar');
+      b.setAttribute('aria-valuemin', '0');
+      b.setAttribute('aria-valuemax', '100');
+      b.innerHTML = '<i></i><span></span>';
+      bc.appendChild(b);
+    }
+    const pc = max ? 100 : Math.floor(Math.max(0, Math.min(1, xp)) * 100);
+    const titre = max ? `Niveau ${ch.level}, le plus haut` : `Niveau ${ch.level} · ${ch.xp.toLocaleString('fr-FR')} / ${Character.xpToNext(ch.level).toLocaleString('fr-FR')} XP (${pc} %)`;
+    if (b.dataset.t === titre) return;
+    b.dataset.t = titre;
+    b.title = titre;
+    b.setAttribute('aria-label', 'Expérience');
+    b.setAttribute('aria-valuenow', String(pc));
+    b.firstElementChild.style.width = (max ? 100 : Math.max(0, Math.min(1, xp)) * 100) + '%';
+    b.lastElementChild.textContent = max ? 'Niveau maximum' : `${pc} %`;
   },
 
 

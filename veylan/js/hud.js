@@ -15,6 +15,8 @@ class Hud {
     this.initFenetres();
     this.initFaction();
     if (this.initVeille) this.initVeille();
+    if (this.initBoussole) this.initBoussole();
+    if (this.initAdmin) this.initAdmin();
     this.el.panelClose.addEventListener('click', () => this.closePanel());
     window.addEventListener('keydown', evt => { if (evt.key === 'Escape' && !this.el.panel.classList.contains('hidden')) this.closePanel(); });
     window.addEventListener('beforeunload', () => Save.write(this.world.ch));
@@ -36,6 +38,7 @@ class Hud {
     this.el.panelBody.addEventListener('change', evt => {
       if (evt.target.id === 'title-select') { const v = evt.target.value; this.world.ch.title = this.world.ch.titles.includes(v) ? v : null; this.refreshBar(); }
       if (evt.target.dataset.act === 'auto') this.world.ch.autoStats = evt.target.checked;
+      if (evt.target.id === 'opt-combat-finDonjon') { UI.regler('finDonjon', evt.target.checked); this.toast(evt.target.checked ? 'La fiche de fin de donjon reviendra.' : 'Plus de fiche de fin de donjon (Options, Combat, pour la remettre).'); }
     });
     window.addEventListener('keydown', evt => {
       if (this.el.panel.dataset.open === 'fightEnd' && (evt.key === 'Enter' || evt.key === ' ')) { evt.preventDefault(); this.closePanel(); }
@@ -194,39 +197,14 @@ class Hud {
   }
 
 
-  openCarnet() {
-    const ici = this.world.zone && this.world.zone.region;
-    this.carnetTab = this.carnetTab || (ici && Object.values(DATA.monsters).some(m => m.region === ici && !m.summon) ? ici : 'orsane');
-    const render = () => {
-      const ch = this.world.ch;
-      const kills = ch.counters.kills || {};
-      const ileVue = ch.origine === 'ervane' || Object.keys(kills).some(id => DATA.monsters[id] && DATA.monsters[id].region === 'ervane');
-      const regions = Object.keys(DATA.regions).filter(r => Object.values(DATA.monsters).some(m => m.region === r && !m.summon) && (r !== 'ervane' || ileVue));
-      const tabs = regions.map(r => {
-        const all = Object.values(DATA.monsters).filter(m => m.region === r && !m.summon);
-        const seen = all.filter(m => kills[m.id]).length;
-        return `<button class="tab${this.carnetTab === r ? ' on' : ''}" data-act="ctab" data-tab="${r}">${esc(DATA.regions[r])} (${seen}/${all.length})</button>`;
-      }).join('');
-      const list = Object.values(DATA.monsters).filter(m => m.region === this.carnetTab && !m.summon)
-        .sort((a, b) => Entity.levelRange(a)[0] - Entity.levelRange(b)[0])
-        .map(m => {
-          const n = kills[m.id] || 0;
-          const tag = m.boss ? ' <small class="badge">boss</small>' : (m.rare ? ' <small class="badge rare">rare</small>' : '');
-          if (!n) return `<div class="row dim"><span><b>???</b>${tag}<br><small class="muted">niv. ${esc(m.level)} · pas encore vaincu</small></span></div>`;
-          return `<div class="row"><span><b style="color:${m.color}">${esc(m.name)}</b>${tag} <small class="muted">niv. ${esc(m.level)}</small><br><small>${esc(m.desc || '')}</small></span><small class="muted">${n} vaincu${n > 1 ? 's' : ''}</small></div>`;
-        }).join('');
-      return `<div class="tabs">${tabs}</div><p class="muted">Une bête vaincue s'inscrit au Carnet. Les régions complètes donnent des succès.</p>${list}`;
-    };
-    this.simpleWin('carnet', 'Carnet du Veilleur', render, { ctab: d => { this.carnetTab = d.tab; this.fen.render('carnet'); } }, { width: 480 });
-  }
-
 
 
 
 
   openMenu() {
     const ch = this.world.ch;
-    const themes = Hud.themesDisponibles().map(([id, label, fond, accent]) => `<button class="vy-theme${document.getElementById('app').dataset.uiTheme === id ? ' on' : ''}" data-act="theme" data-theme="${id}" aria-pressed="${document.getElementById('app').dataset.uiTheme === id}"><span class="vy-theme__apercu" style="--f:${fond};--a:${accent}"></span>${label}</button>`).join('');
+    const themeActuel = document.getElementById('app').dataset.uiTheme || '';
+    const themes = Hud.themesDisponibles().map(([id, label, fond, accent]) => `<button class="vy-theme${themeActuel === id ? ' on' : ''}" data-act="theme" data-theme="${id}" aria-pressed="${themeActuel === id}"><span class="vy-theme__apercu" style="--f:${fond};--a:${accent}"><i class="vy-theme__barre"></i><i class="vy-theme__case"></i><i class="vy-theme__case"></i><i class="vy-theme__bouton"></i></span><span class="vy-theme__nom">${label}</span></button>`).join('');
     const invite = !!ch.invite;
     const tuto = () => {
       const mode = Guide.modeDe(ch), t = ch.tuto;
@@ -248,6 +226,7 @@ class Hud {
       ${coche('cout', 'Coût du déplacement', 'les PM du chemin, au survol')}
       ${coche('barres', 'Barres de vie', 'au-dessus de chaque combattant ; sinon celui qu\'on vise et celui qui joue')}
       ${coche('agression', 'Monstres agressifs', 'les élites et quelques familles hostiles attaquent à vue, hors des villes')}
+      ${coche('finDonjon', 'Fiche de fin de donjon', 'le boss, les succès du donjon et sa stratégie, à la victoire')}
       <div class="row"><span>Bonus des défis</span><select id="opt-bonus-defi" aria-label="Bonus des défis">${[['', 'XP et butin'], ['xp', 'XP seulement (doublé)'], ['butin', 'Butin seulement (doublé)']].map(([v, l]) => `<option value="${v}"${(ch.bonusDefi || '') === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
       <div class="row"><span class="muted">${ch.bonusDefi === 'xp' ? 'Un défi réussi double son bonus, tout en expérience.' : ch.bonusDefi === 'butin' ? 'Un défi réussi double son bonus, tout en chances de butin.' : 'Un défi réussi ajoute son bonus à l\'expérience et aux chances de butin.'}</span></div>`;
     const curseur = (id, cls, label, v, min, max) => `<div class="row vy-reglage ${cls}"><label for="${id}">${label}</label><input type="range" id="${id}" min="${min}" max="${max}" step="5" value="${v}" style="--v:${v};--min:${min};--max:${max}" aria-valuetext="${v} %"><output for="${id}">${v} %</output></div>`;
@@ -259,15 +238,18 @@ class Hud {
       <div class="row"><label class="vy-coche"><input type="checkbox" id="opt-son" ${Son.actif() ? 'checked' : ''}> Son</label><span class="muted">${Son.pret() ? 'la musique du lieu et les bruitages' : 'se lance au premier toucher'}</span></div>
       ${curseur('opt-musique', 'vy-musique', 'Musique', Son.reglages.musique, 0, 100)}
       ${curseur('opt-bruitages', 'vy-bruitages', 'Bruitages', Son.reglages.bruitages, 0, 100)}`;
-    const SECTIONS = [['jeu', 'Jeu'], ['combat', 'Combat'], ['son', 'Son'], ['apparence', 'Apparence'], ['sauvegarde', 'Sauvegarde'], ['personnages', 'Personnages']];
+    const SECTIONS = [['jeu', 'Jeu'], ['combat', 'Combat'], ['interface', 'Interface'], ['themes', 'Thèmes'], ['son', 'Son'], ['notifications', 'Notifications'], ['accessibilite', 'Accessibilité'], ['raccourcis', 'Raccourcis'], ['sauvegarde', 'Sauvegarde'], ['personnages', 'Personnages']];
     const ouvre = id => `<section class="vy-opt__sec" id="opt-sec-${id}" data-sec="${id}">`;
-    const html = () => `<div class="vy-opt"><nav class="vy-opt__nav" aria-label="Sections des options">${SECTIONS.map(([id, l]) => `<button type="button" data-act="optAller" data-sec="${id}">${l}</button>`).join('')}</nav><div class="vy-opt__corps" data-defile="options">${ouvre('jeu')}${tuto()}${jeu()}</section>${ouvre('combat')}${combat()}</section>${ouvre('son')}${son()}</section>${ouvre('apparence')}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div>
-      <h4>Bloc vital</h4><div class="vy-styles-vital" role="group" aria-label="Style du bloc vital">${vitaux()}</div>
-      ${this.optionsNotifs ? this.optionsNotifs() : ''}
-      ${opacite()}
+    const loupe = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>';
+    const touches = `<h4>Raccourcis clavier</h4><div class="vy-opt__touches">${Hud.MENUS.map(m => `<div class="vy-opt__touche"><kbd>${m[2]}</kbd><span>${m[1]}</span></div>`).join('')}<div class="vy-opt__touche"><kbd>Échap</kbd><span>Fermer la fenêtre du dessus</span></div><div class="vy-opt__touche"><kbd>1</kbd>…<kbd>0</kbd><span>Sorts de la première rangée</span></div><div class="vy-opt__touche"><kbd>Maj</kbd>+<kbd>1</kbd>…<span>Sorts de la seconde rangée</span></div></div>`;
+    if (this.optCherche) requestAnimationFrame(() => this.filtrerOptions(this.optCherche));
+    const html = () => `<div class="vy-opt"><nav class="vy-opt__nav" aria-label="Sections des options"><label class="vy-recherche vy-opt__cherche">${loupe}<input id="opt-cherche" type="search" placeholder="Chercher un réglage" value="${esc(this.optCherche || '')}" aria-label="Chercher un réglage"></label>${SECTIONS.map(([id, l]) => `<button type="button" data-act="optAller" data-sec="${id}">${l}</button>`).join('')}</nav><div class="vy-opt__corps" data-defile="options">${ouvre('jeu')}${tuto()}${jeu()}</section>${ouvre('combat')}${combat()}</section>${ouvre('interface')}<h4>Bloc vital</h4><div class="vy-styles-vital" role="group" aria-label="Style du bloc vital">${vitaux()}</div>
       <div class="row"><span class="muted">Déplacer, cacher et régler les blocs du HUD</span><button data-act="editeur">Personnaliser l'interface</button></div>
       <div class="row"><span class="muted">Fenêtres déplacées trop loin ?</span><button data-act="replacer">Replacer les fenêtres</button></div>
-      </section>${ouvre('sauvegarde')}
+      </section>${ouvre('themes')}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div></section>${ouvre('son')}${son()}</section>
+      ${this.optionsNotifs ? `${ouvre('notifications')}${this.optionsNotifs()}</section>` : ''}
+      ${ouvre('accessibilite')}<h4>Accessibilité</h4>${opacite()}</section>
+      ${ouvre('raccourcis')}${touches}</section>${ouvre('sauvegarde')}
       ${invite ? '<div class="row"><span>Partie d\'invité : rien n\'est enregistré sur cet appareil. Pour garder ce personnage, copie son code et importe-le depuis l\'accueil.</span></div>'
     : '<div class="row"><span>Partie sauvegardée automatiquement dans ce navigateur.</span><button data-act="savenow">Sauvegarder</button></div>'}
       <h4>Changer d'appareil</h4><p class="muted">Copie ce code, colle-le dans « Importer » sur l'autre appareil.</p>
@@ -277,7 +259,6 @@ class Hud {
       </section>${ouvre('personnages')}
       <h4>Temps de jeu</h4><p class="muted">${Math.floor(ch.playTime / 60)} min · ${ch.counters.wins} victoires sur ${ch.counters.fights} combats</p>
       <h4>Personnages</h4><div class="row"><span class="muted">${invite ? 'Quitter la partie d\'invité ramène à l\'accueil ; ce personnage sera perdu.' : 'Jusqu\'à cinq personnages par appareil. Celui-ci est sauvegardé avant de partir.'}</span><button data-act="newgame"${invite ? ' class="danger"' : ''}>${invite ? 'Quitter la partie' : 'Changer de personnage'}</button></div>
-      <p class="muted">Raccourcis : ${Hud.MENUS.map(m => `${m[2]} ${m[1].toLowerCase()}`).join(' · ')} · Échap ferme la fenêtre du dessus.</p>
       ${location.protocol === 'file:' || location.hostname === 'localhost' ? '<p class="muted">Laboratoire de combat : <a href="lab.html">lab.html</a></p>' : ''}</section></div></div>`;
     this.actions.savenow = () => { this.toast(Save.write(ch) ? 'Sauvegardé.' : 'Sauvegarde impossible ici.'); };
     this.actions.copy = () => { const ta = document.getElementById('export-area'); ta.select(); const fallback = () => this.toast('Sélectionne et copie le code.'); try { navigator.clipboard.writeText(ta.value).then(() => this.toast('Code copié.'), fallback); } catch (e) { fallback(); } };
@@ -317,7 +298,7 @@ class Hud {
       theme: d => { this.choisirTheme(d.theme); this.fen.close('options'); this.openMenu(); },
       vital: d => { this.choisirVital(d.vital); this.fen.render('options'); },
       replacer: () => this.fen.resetPositions(),
-      optAller: d => { const el = document.getElementById('opt-sec-' + d.sec); if (el && el.parentElement) el.parentElement.scrollTo({ top: el.offsetTop - el.parentElement.offsetTop - 6, behavior: 'smooth' }); },
+      optAller: (d, b) => { if (b && b.parentElement) for (const x of b.parentElement.querySelectorAll('[data-act="optAller"]')) x.classList.toggle('on', x === b); const el = document.getElementById('opt-sec-' + d.sec); if (el && el.parentElement) el.parentElement.scrollTo({ top: el.offsetTop - el.parentElement.offsetTop - 6, behavior: 'smooth' }); },
       editeur: () => { this.fen.close('options'); this.syncMenus(); this.ouvrirEditeur(); },
       notifStyle: d => { this.styleNotifs(d.style); this.fen.render('options'); },
       notifEssai: () => this.essaiNotifs(),
@@ -325,6 +306,7 @@ class Hud {
       tutoRevoir: () => { this.fen.close('options'); this.syncMenus(); this.guide.revoir(); },
     };
     const onField = (el, kind) => {
+      if (el.id === 'opt-cherche') { this.optCherche = el.value; this.filtrerOptions(el.value); return; }
       if (this.champNotifs && this.champNotifs(el, kind)) return;
       if (el.id === 'import-area') this.importDraft = el.value;
       if (el.id === 'opt-musique' || el.id === 'opt-bruitages') {
@@ -458,7 +440,7 @@ class Hud {
         const top = Object.entries(compte).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([id]) => { const d = Items.get(id), r = res(id); return d ? `${esc(d.name)}${r ? ` <small class="muted">(${r.node ? 'récolte' : 'butin'})</small>` : ''}` : ''; }).filter(Boolean).join(', ');
         const artisans = DATA.content.npcs.filter(n => n.workshop === k).map(n => esc(n.name)).join(', ');
         const exemples = recettes.slice().sort((a, b) => (Items.get(a.result).level || 1) - (Items.get(b.result).level || 1)).slice(0, 3).map(r => esc(Items.get(r.result).name)).join(', ');
-        return `<div class="row item"><span><b>L'atelier ${esc(ateliers[k])}</b> <small class="muted">${recettes.length} recettes, niveaux ${Math.min(...niv)} à ${Math.max(...niv)}</small><br><small>Artisans : ${artisans || '—'}</small><br><small>On y fait : ${exemples}…</small><br><small>Ce qu'il demande le plus : ${top}</small></span></div>`;
+        return `<div class="row item"><span><b>L'atelier ${esc(ateliers[k])}</b> <small class="muted">${recettes.length} recettes, niveaux ${Math.min(...niv)} à ${Math.max(...niv)}</small><br><small>Artisans : ${artisans || 'aucun'}</small><br><small>On y fait : ${exemples}…</small><br><small>Ce qu'il demande le plus : ${top}</small></span></div>`;
       }).join('');
       return `<p class="muted">Chaque métier a son atelier dans la Rue des Ateliers, à l'est de la Place : parle à l'artisan, ou touche sa machine.</p>${lignes}`;
     };
@@ -573,7 +555,7 @@ class Hud {
       return;
     }
     const drops = r.drops.map(d => { const def = Items.get(d.id); return `<li>${def ? esc(def.name) : d.id}${d.count > 1 ? ' ×' + d.count : ''}</li>`; }).join('');
-    const achs = r.achievements.map(a => `<li>Succès : ${esc(a.achievement.name)}${a.title ? ' · titre « ' + esc(a.title) + ' »' : ''}</li>`).join('')
+    const achs = r.achievements.map(a => `<li>${esc(a.achievement.name)}${a.title ? ' · titre « ' + esc(a.title) + ' »' : ''}</li>`).join('')
       + (r.cosmetiques || []).map(e => `<li>${esc(World.texteCosmetique(e))}</li>`).join('');
     const quests = r.quests.filter((t, i, arr) => arr.findIndex(x => x.quest === t.quest) === i).map(t => `<li>${esc(t.quest.name)} : ${t.finished ? 'terminée, à rendre à ' + esc(Quests.npcName(Quests.turnInOf(t.quest))) : esc(Quests.stepText(ch, t.quest.id))}</li>`).join('');
     const bd = r.bonusDefi || {}, vers = bd.mode === 'xp' ? ' d\'XP' : bd.mode === 'butin' ? ' de butin' : '';
@@ -584,12 +566,100 @@ class Hud {
     const mont = r.monture ? `<div class="row"><span>${esc(r.monture.nom)} (${nfr(r.monture.cede)} XP cédés)</span><b>+${r.monture.xp} XP${r.monture.niveaux ? ` · niveau ${r.monture.niveau} !` : ''}</b></div>` : '';
     if (r.monture && r.monture.niveaux) this.chat('gain', `${r.monture.nom} passe au niveau ${r.monture.niveau}.`);
     let dungeon = '';
-    if (r.dungeon) dungeon = r.dungeon.cleared ? `<img class="vy-coffre-donjon" src="assets/ui/objets/coffre-donjon.png" alt="Le coffre du donjon, ouvert" draggable="false"><p class="big">Donjon terminé : ${esc(r.dungeon.def.name)} !</p>${r.dungeon.turns ? `<p class="muted">En ${r.dungeon.turns} tours, toutes salles comprises.</p>` : ''}` : `<p class="muted">Salle suivante : ${esc(r.dungeon.def.rooms[r.dungeon.next].name)}</p>`;
-    const html = r.victory
-      ? `<p class="big win">Victoire</p>${dungeon}<div class="row"><span>Expérience</span><b>+${r.gained} XP${r.levels ? ` · niveau ${ch.level} !` : ''}</b></div><div class="row"><span>Dragmes</span><b>+${r.fils}</b></div>${fam}${mont}${chal}${epr}${r.veille ? `<div class="row"><span>Veille du jour</span><b class="ok">${esc(r.veille)}</b></div>` : ''}${r.knots ? `<div class="row"><span>Nœuds noués : ${r.knots}</span><b class="ok">+${r.knots * DATA.rules.knotBonus} %</b></div>` : ''}${r.repos ? `<div class="row"><span>Repos de la zone</span><b class="ok">+${r.repos} %</b></div>` : ''}${drops ? `<h4>Butin</h4><ul>${drops}</ul>` : '<p class="muted">Aucun butin cette fois.</p>'}${quests ? `<h4>Quêtes</h4><ul>${quests}</ul>` : ''}${(r.avis || []).length ? `<h4>Avis de recherche</h4><ul>${r.avis.map(a => `<li>${esc(a.nom)} capturé : la prime t'attend à la tour de la Garde, sur la Place du Relais.</li>`).join('')}</ul>` : ''}${achs ? `<ul>${achs}</ul>` : ''}`
-      : `<p class="big lose">Défaite</p><p>Tu reviens au Relais de l'Aube avec la moitié de tes PV.${this.world.ch.dungeon ? '' : ''}</p>`;
+    if (r.dungeon) dungeon = r.dungeon.cleared ? `<div class="vy-fdc__donjon"><img class="vy-coffre-donjon" src="assets/ui/objets/coffre-donjon.png" alt="Le coffre du donjon, ouvert" draggable="false"><div><b>Donjon terminé : ${esc(r.dungeon.def.name)} !</b>${r.dungeon.turns ? `<span>En ${r.dungeon.turns} tours, toutes salles comprises.</span>` : ''}</div></div>` : `<p class="muted">Salle suivante : ${esc(r.dungeon.def.rooms[r.dungeon.next].name)}</p>`;
+    const xpMax = ch.level >= Character.MAX_LEVEL, xpPct = xpMax ? 100 : Math.floor(ch.xpProgress() * 100);
+    const tuiles = r.victory ? `<div class="vy-fdc__tuiles">
+        <div class="vy-fdc__tuile xp"><small>Expérience</small><b>+${nfr(r.gained)} XP</b><span class="vy-fdc__jauge"><i style="width:${xpPct}%"></i></span><em>${r.levels ? `Niveau ${ch.level} !` : `Niveau ${ch.level} · ${xpPct} %`}</em></div>
+        <div class="vy-fdc__tuile fils"><small>Dragmes</small><b>+${nfr(r.fils)}</b><em>${nfr(ch.fils)} en poche</em></div>
+      </div>` : '';
+    const butin = r.drops.map(d => { const def = Items.get(d.id); return def ? `<span class="vy-case vy-fdc__objet" data-rarete="${Items.rarity(def)}" title="${esc(def.name)}${d.count > 1 ? ' ×' + d.count : ''}"><span class="vy-case__icone">${Hud.picto(def)}</span>${d.count > 1 ? `<span class="vy-case__nombre">${d.count}</span>` : ''}</span>` : ''; }).join('');
+    const resume = r.victory
+      ? `${tuiles}${fam}${mont}${chal}${epr}${r.veille ? `<div class="row"><span>Veille du jour</span><b class="ok">${esc(r.veille)}</b></div>` : ''}${r.knots ? `<div class="row"><span>Nœuds noués : ${r.knots}</span><b class="ok">+${r.knots * DATA.rules.knotBonus} %</b></div>` : ''}${r.repos ? `<div class="row"><span>Repos de la zone</span><b class="ok">+${r.repos} %</b></div>` : ''}${drops ? `<h4>Butin</h4><div class="vy-fdc__butin">${butin}</div><ul class="vy-fdc__butin-noms">${drops}</ul>` : '<p class="muted">Aucun butin cette fois.</p>'}${quests ? `<h4>Quêtes</h4><ul>${quests}</ul>` : ''}${(r.avis || []).length ? `<h4>Avis de recherche</h4><ul>${r.avis.map(a => `<li>${esc(a.nom)} capturé : la prime t'attend à la tour de la Garde, sur la Place du Relais.</li>`).join('')}</ul>` : ''}${achs ? `<h4>Succès</h4><ul>${achs}</ul>` : ''}`
+      : `<p class="vy-fdc__defaite">Tu reviens au Relais de l'Aube avec la moitié de tes PV.</p>`;
+    const dureeTxt = r.duree ? (r.duree >= 60 ? `${Math.floor(r.duree / 60)} min ${String(r.duree % 60).padStart(2, '0')} s` : `${r.duree} s`) : '';
+    const meta = [r.tours ? `${r.tours} tour${r.tours > 1 ? 's' : ''}` : '', dureeTxt].filter(Boolean).join(' · ');
+    const stats = this.statsCombat(r.bilan || []);
+    const donjon = r.victory && r.dungeon && r.dungeon.cleared && UI.reglage('finDonjon') ? this.ficheFinDonjon(r.dungeon) : '';
+    const html = `<div class="vy-fdc ${r.victory ? 'gagne' : 'perdu'}">
+      <header class="vy-fdc__tete"><p class="big ${r.victory ? 'win' : 'lose'} vy-fdc__issue">${r.victory ? 'Victoire' : 'Défaite'}</p>${meta ? `<span class="vy-fdc__meta">${meta}</span>` : ''}</header>
+      ${dungeon}
+      ${stats || donjon ? `<nav class="vy-onglets vy-fdc__onglets" role="tablist">${donjon ? '<button type="button" class="vy-onglet on" role="tab" aria-selected="true" data-act="fdcOnglet" data-page="donjon">Donjon</button>' : ''}<button type="button" class="vy-onglet${donjon ? '' : ' on'}" role="tab" aria-selected="${!donjon}" data-act="fdcOnglet" data-page="resume">Résumé</button>${stats ? '<button type="button" class="vy-onglet" role="tab" aria-selected="false" data-act="fdcOnglet" data-page="stats">Statistiques</button>' : ''}</nav>` : ''}
+      ${donjon ? `<section class="vy-fdc__page" data-page="donjon">${donjon}</section>` : ''}
+      <section class="vy-fdc__page" data-page="resume"${donjon ? ' hidden' : ''}>${resume}</section>
+      ${stats ? `<section class="vy-fdc__page" data-page="stats" hidden>${stats}</section>` : ''}
+    </div>`;
     this.actions.cont = () => this.closePanel();
+    this.actions.fdcOnglet = d => {
+      for (const b of this.el.panelBody.querySelectorAll('.vy-fdc__onglets .vy-onglet')) { const on = b.dataset.page === d.page; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); }
+      for (const sct of this.el.panelBody.querySelectorAll('.vy-fdc__page')) sct.hidden = sct.dataset.page !== d.page;
+    };
     this.openPanel('fightEnd', r.victory ? 'Combat gagné' : 'Combat perdu', `${html}<div class="row center"><button data-act="cont" class="primary">Continuer</button></div>`);
+    if (r.victory && this.majeuresDe) { const l = this.majeuresDe(r); if (l.length) this.recompenseMajeure(l); }
+  }
+
+  ficheFinDonjon(dj) {
+    const ch = this.world.ch, dd = dj.def;
+    const salle = (dd.rooms || []).filter(x => x.boss).pop() || (dd.rooms || [])[dd.rooms.length - 1] || {};
+    const bossId = ((salle.monsters || []).find(m => DATA.monsters[m.id] && DATA.monsters[m.id].boss) || (salle.monsters || [])[0] || {}).id;
+    const boss = bossId && DATA.monsters[bossId];
+    const lv = ((salle.monsters || []).find(m => m.id === bossId) || {}).level;
+    const img = boss && this.portraitBete ? this.portraitBete(bossId, 150, 164) : '';
+    const lies = typeof Achievements === 'object' ? Achievements.defs().filter(a => Achievements.pourPerso(ch, a) && a.cond && (a.cond.dungeon === dd.id || (bossId && a.cond.monster === bossId && /boss|noeudsBoss|bossDefi/.test(a.cond.type)))) : [];
+    const succes = lies.map(a => { const ok = (ch.achievements || []).includes(a.id);
+      return `<li class="${ok ? 'ok' : ''}"><span class="vy-fdd__coche" aria-hidden="true">${ok ? '✓' : ''}</span><span>${esc(a.name)}</span><small>${esc(a.desc || '')}</small></li>`; }).join('');
+    return `<div class="vy-fdd">
+      <div class="vy-fdd__boss">${img ? `<img src="${img}" alt="" draggable="false">` : ''}<div><small>${esc(dd.name)}</small><h3>${boss ? esc(boss.name) : 'Donjon terminé'}</h3>${lv ? `<span class="vy-fdd__niv">niv. ${lv}</span>` : ''}</div></div>
+      ${succes ? `<h4>Succès du donjon</h4><ul class="vy-fdd__succes">${succes}</ul>` : ''}
+      ${boss && boss.desc ? `<h4>Stratégie</h4><p class="vy-fdd__strat">${esc(boss.desc)}</p>` : ''}
+      <label class="vy-coche vy-fdd__couper"><input type="checkbox" id="opt-combat-finDonjon" checked> Montrer cette fiche à la fin d'un donjon</label>
+    </div>`;
+  }
+
+  statsCombat(bilan) {
+    if (!bilan.length) return '';
+    const cols = [['degats', 'Dégâts'], ['soins', 'Soins'], ['boucliers', 'Boucliers'], ['recus', 'Reçus']];
+    const max = {};
+    for (const [k] of cols) max[k] = Math.max(1, ...bilan.map(b => b[k] || 0));
+    const ligne = b => `<div class="vy-fdc__ligne${b.moi ? ' moi' : ''}${b.vivant ? '' : ' mort'}"><span class="vy-fdc__nom">${esc(b.nom)}${b.niveau ? `<small>niv. ${b.niveau}</small>` : ''}</span>` +
+      cols.map(([k]) => `<span class="vy-fdc__val ${k}"><b>${nfr(b[k] || 0)}</b><i style="width:${Math.round(100 * (b[k] || 0) / max[k])}%"></i></span>`).join('') + '</div>';
+    const bloc = (titre, l, cls) => l.length ? `<div class="vy-fdc__equipe ${cls}"><div class="vy-fdc__ligne vy-fdc__entete"><span class="vy-fdc__nom">${titre}</span>${cols.map(([, t]) => `<span class="vy-fdc__val">${t}</span>`).join('')}</div>${l.map(ligne).join('')}</div>` : '';
+    const tri = l => l.slice().sort((a, b) => (b.moi - a.moi) || (b.degats - a.degats));
+    return bloc('Alliés', tri(bilan.filter(b => b.equipe === 'player')), 'allies') + bloc('Adversaires', tri(bilan.filter(b => b.equipe !== 'player')), 'adverses');
+  }
+
+  filtrerOptions(q) {
+    const w = this.fen && this.fen.wins.get('options');
+    if (!w) return;
+    const plie = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const f = plie(q).trim();
+    const motif = f ? new RegExp('(^|[^a-z0-9])' + f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) : null;
+    const repond = t => motif.test(t);
+    for (const sec of w.body.querySelectorAll('.vy-opt__sec')) {
+      const titre = plie((w.body.querySelector(`.vy-opt__nav [data-sec="${sec.dataset.sec}"]`) || {}).textContent);
+      const tout = !f || repond(titre);
+      let reste = 0;
+      for (const el of sec.querySelectorAll(':scope > .row, :scope > .vy-reglage, :scope > p, :scope > textarea, .vy-theme, .vy-style-vital, .vy-opt__touche')) {
+        const ok = tout || repond(plie(el.textContent + ' ' + (el.querySelector('select, input') ? [...el.querySelectorAll('option')].map(o => o.textContent).join(' ') : '')));
+        el.classList.toggle('vy-opt-cache', !ok);
+        if (ok) reste++;
+      }
+      for (const h of sec.querySelectorAll(':scope > h4')) {
+        let n = h.nextElementSibling, vu = false;
+        while (n && n.tagName !== 'H4') {
+          const groupe = n.matches('.vy-themes, .vy-styles-vital, .vy-opt__touches');
+          if (!n.classList.contains('vy-opt-cache') && (!groupe || n.querySelector(':scope > :not(.vy-opt-cache)'))) { vu = true; break; }
+          n = n.nextElementSibling;
+        }
+        h.classList.toggle('vy-opt-cache', !!f && !vu);
+      }
+      sec.hidden = !!f && !reste;
+      const nav = w.body.querySelector(`.vy-opt__nav [data-sec="${sec.dataset.sec}"]`);
+      if (nav) nav.hidden = sec.hidden;
+    }
+    let vide = w.body.querySelector('.vy-opt__vide');
+    const aucun = !!f && ![...w.body.querySelectorAll('.vy-opt__sec')].some(x => !x.hidden);
+    if (aucun && !vide) { vide = document.createElement('p'); vide.className = 'vy-opt__vide muted'; w.body.querySelector('.vy-opt__corps').prepend(vide); }
+    if (vide) { vide.hidden = !aucun; vide.textContent = aucun ? `Aucun réglage pour « ${q.trim()} ».` : ''; }
   }
 
   openReward() {

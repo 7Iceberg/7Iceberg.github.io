@@ -37,6 +37,8 @@ const jet = ef => { const v = DATA.rankShown(ef); return v.min === v.max ? `${v.
 const pct = m => `+${Math.round((m - 1) * 100)} %`;
 
 function lignes(ef, s, crit) {
+  if (ef.siAssis || ef.siDebout) return lignes(Object.assign({}, ef, { siAssis: false, siDebout: false }), s, crit).map(([l, v, sub]) => [`${l} (${ef.siAssis ? 'assis' : 'debout'})`, v, sub]);
+  if (ef.onAlly || ef.onFoe) return lignes(Object.assign({}, ef, { onAlly: false, onFoe: false }), s, crit).map(([l, v, sub]) => [`${l} (${ef.onAlly ? 'allié ou bête' : 'ennemi'})`, v, sub]);
   const k = DATA.critJetDe(s), aCrit = crit && DATA.critDe(s) > 0;
   const jetCrit = () => `${Math.round(ef.min * (ef.mult || 1) * k)} à ${Math.round(ef.max * (ef.mult || 1) * k)}`;
   const critique = () => aCrit ? [['Coup critique', `${jetCrit()} ${el(s.element)}`]] : [];
@@ -47,8 +49,9 @@ function lignes(ef, s, crit) {
     case 'sacrifice': return [['Sacrifice', `${jet(ef)} ${el(s.element)}, à ${plural(ef.radius, 'case')} de la bête`]].concat(critique());
     case 'shield': return [['Bouclier', `${Math.round(ef.value)} (${tours(ef.duration)})`]];
     case 'echo': return [['Écho', `${tours(ef.turns)} : ${Math.round(ef.min * (ef.mult || 1))} à ${Math.round(ef.max * (ef.mult || 1))} ${el(ef.element)} à chaque PM perdu, ${ef.uses} fois au plus`]];
+    case 'filon': return [['Filon', `${tours(ef.turns)}, ${ef.charges || 3} déclenchements : ${jet(ef)} à chaque retrait de PA, de PM ou de portée sur l'ennemi marqué ; sur un allié marqué, à chaque soin, en zone de 2 cases autour de lui ; +1 Trouvaille`]];
     case 'dot': return [['Brûlure', `${Math.round(ef.value)} ${el(ef.element)} par tour (${tours(ef.turns)})`]];
-    case 'power': return [['Puissance', `+${ef.value} % de dégâts (${tours(ef.turns)})`]];
+    case 'power': return [['Puissance', `${ef.value < 0 ? '−' + -ef.value : '+' + ef.value} % de dégâts (${tours(ef.turns)})`]];
     case 'vuln': return [['Marque', `+${ef.value} % de dégâts subis (${tours(ef.turns)})`]];
     case 'guard': return [['Garde', `−${ef.value} % de dégâts au contact (${tours(ef.turns)})`]];
     case 'pa': case 'pm':
@@ -64,24 +67,59 @@ function lignes(ef, s, crit) {
     case 'summon': return [['Invoque', `${DATA.monsters[ef.monster].name}${ef.hpPctOfOwner ? ` (${ef.hpPctOfOwner} % de tes PV)` : ''}`]];
     case 'obstacle': return [['Mur', tours(ef.turns)]];
     case 'state':
+      if (ef.name === 'forme_iskar') return [['Forme d\'Iskar', `${tours(ef.turns)} : ne reçoit plus que 40 % des soins`]];
+      if (ef.name === 'intaclable') return [['Intaclable', tours(ef.turns)]];
+      if (ef.name === 'protege_karsh') return [['Prendre le Feu', `${tours(ef.turns)} : les coups reçus tombent sur le Karsh`]];
+      if (ef.name === 'sous_la_maree') return [['Sous la Marée', `${tours(ef.turns)} : −15 % de dégâts subis`]];
+      if (ef.name === 'digue') return [['Digue', `${tours(ef.turns)} : invulnérable au contact ; frappé à distance, +1 PM`]];
+      if (ef.name === 'brise_lames') return [['Brise-Lames', `${tours(ef.turns)} : invulnérable à distance ; frappé au contact, +15 % de dégâts`]];
       if (ef.name === 'invisible') return [['Invisible', `${tours(ef.turns)}${ef.lingering ? ', jusqu\'à la fin du tour où tu frappes' : ''}`]];
       return [['Provoque', tours(ef.turns)]];
     case 'oath': return [['Serment', `${tours(ef.turns)}, +${ef.power} % contre le juré`], ['Brûlure du serment', `${Math.round(ef.burn)} feu`]];
-    case 'track': return [['Traque', `${tours(ef.turns)}, ne peut plus se cacher`]];
+    case 'track': return [['Repéré', `${tours(ef.turns)}, ne peut plus se cacher`]];
     case 'steal': return [['Vole', ef.what === 'shield' ? `le bouclier${ef.orBonus ? ', ou le meilleur bonus' : ''}` : `${ef.value} ${ef.what.toUpperCase()}`]];
-    case 'range': return [['Portée', `+${ef.value} (${tours(ef.turns)})`]];
+    case 'range': return [['Portée', `${ef.value < 0 ? '−' + -ef.value : '+' + ef.value} (${tours(ef.turns)})`]];
     case 'cleanse': return [['Purge', 'tous les malus']];
     case 'devourShield': return [['Dévore', 'le bouclier']];
     case 'selfDamagePct': return [['Coûte', `${ef.pct} % de tes PV`]];
     case 'paNow': return [['Gagne', `${ef.value} PA tout de suite`]];
     case 'rewind': return [['Fin du tour', 'revient sur sa case de départ']];
     case 'pmNow': return [['Gagne', `${plural(ef.value, 'PM').replace('PMs', 'PM')} tout de suite`]];
+    case 'empoigner': return [['Empoigne', 'la cible est tenue jusqu\'au jet, et fait moitié moins de dégâts']];
+    case 'jeter': return [['Jette', 'ce que le Thalor tient, sur la case visée']];
+    case 'depuisCentre': return [['Repousse', `de ${plural(ef.cells, 'case')} depuis le point de chute`]];
+    case 'versCentre': return [['Attire', `de ${plural(ef.cells, 'case')} vers le point de chute`]];
+    case 'rebond': return [['Rebond', `sur l\'ennemi le plus proche à ${plural(ef.cells || 2, 'case')}, ${ef.pct || 50} % des dégâts`]];
+    case 'glyph': return [[ef.name || 'Glyphe', `${tours(ef.turns)} sur la zone, au début du tour ${ef.affects === 'allies' ? 'd\'un allié' : 'd\'un ennemi'} qui s'y tient`]].concat(sous([].concat(...(ef.effects || []).map(x => lignes(x, s, crit)))));
+    case 'soinDiffere': return [['Soin différé', `${jet(ef)} PV, au début du prochain tour de la cible`]];
+    case 'ecourter': return [['Heure Juste', `sur un allié, ses malus durent ${plural(ef.tours || 1, 'tour')} de moins ; sur un ennemi, ses bonus et ses boucliers`]];
+    case 'ordreMeute': return [['Ordre', `toutes ses bêtes frappent tout de suite, à ${ef.pct || 50} % de leurs dégâts`]];
+    case 'horde': return [['Horde', `+${ef.jauge || 3} de jauge pendant ${plural(ef.turns || 2, 'tour')}, ses appels coûtent ${ef.rabais || 1} PA de moins ; au bout, ses bêtes s'en vont`]];
+    case 'pacte': return [['Pacte', `sacrifie ses bêtes : +${ef.par || 3} % de dégâts par point de jauge (${tours(ef.turns || 3)}), ${ef.soin || 30} % de leurs PV`]];
+    case 'declencherMares': return [['Marée', 'toutes ses Mares agissent tout de suite ; ses alliés qui s\'y tiennent passent Sous la Marée']];
+    case 'hantise': return [['Hantise', 'pousse la créature au contact jusqu\'à la case visée, à travers les pièges']];
+    case 'versLeurre': return [['Attire', `de ${plural(ef.cells, 'case')} vers le Leurre`]];
+    case 'depuisLeurre': return [['Repousse', `de ${plural(ef.cells, 'case')} depuis le Leurre`]];
+    case 'echangeLeurre': return [['Échange', 'la cible avec le Leurre']];
     default: return [];
   }
 }
 
 function propres(s) {
   const out = [];
+  if (s.porteeAssis || s.assisBonus) out.push(['Assis', `${s.porteeAssis ? `portée × ${String(s.porteeAssis).replace('.', ',')}` : ''}${s.porteeAssis && s.assisBonus ? ', ' : ''}${s.assisBonus ? `+${s.assisBonus} % de dégâts` : ''}`]);
+  if (s.exigeDebout) out.push(['Condition', 'debout']);
+  if (s.exigeTenu) out.push(['Condition', 'tenir quelqu\'un (Empoigne)']);
+  if (s.exigeLeurre) out.push(['Condition', 'avoir son Leurre en jeu']);
+  if (s.recharge) out.push(['Se charge', `+${s.recharge} % à chaque retour de relance, une fois lancé`]);
+  if (s.cumul) out.push(['Se cumule', `+${s.cumul.par} % par lancer (${s.cumul.max} au plus), perdu sans le relancer dans les ${plural(s.cumul.tours || 2, 'tour')}`]);
+  if (s.faveur) out.push(['Faveur', 'une seule par allié (la nouvelle remplace l\'ancienne) ; sur une case vide, elle reste au sol en Étincelle pour le premier allié qui y commence son tour']);
+  if (s.ombre) out.push(['Ombre', 'une seule par ennemi : la nouvelle remplace l\'ancienne']);
+  if (s.mare) out.push(['Dans la Mare', 'le Velmar et ses alliés subissent 15 % de dégâts en moins']);
+  if (s.parPmRestant) out.push(['PM restants', `+${s.parPmRestant} % par PM qui te reste`]);
+  if (s.traque) out.push(['Traque', 'chaque autre tir sur la cible ajoute un cran : +8 % chacun, 3 au plus ; marquer une autre cible repart de zéro']);
+  if (s.parPiege) out.push(['Pli', `+${s.parPiege} % par piège déclenché (5 au plus), le Pli dépensé`]);
+  if (s.bascule) out.push(['Assis', `relancée assis, elle relève le Thalor${s.basculeRend ? ` et rend ${s.basculeRend} PA` : ''}`]);
   if (s.lifesteal) out.push(['Vol de vie', `${s.lifesteal} % des dégâts`]);
   if (s.lowHpBonus) out.push(['Sous ' + s.lowHpBonus.below + ' % de tes PV', `dégâts × ${String(s.lowHpBonus.mult).replace('.', ',')}`]);
   if (s.executeBelow) out.push(['Cible sous ' + s.executeBelow + ' % de PV', 'dégâts doublés']);
@@ -96,7 +134,7 @@ function propres(s) {
   if (cr && s.reserveSpend) out.push([`${cr.reserve.nom} dépensée`, `+${s.reserveSpend} % par point (dégâts et boucliers)`]);
   if (s.oathPierce) out.push(['Contre le juré', 'ni esquive ni armure']);
   if (s.affutBonus) out.push(['À l\'affût', `+${s.affutBonus} % de dégâts`]);
-  if (s.keepsAffut) out.push(['Affût', 'gardé']);
+  if (s.keepsAffut) out.push(['Affût', 'gardé, moins un cran (−4 %)']);
   if (s.telefrag) out.push(['Sur une créature', `téléfrag : les places s'échangent, +${s.telefrag} PA une fois par tour`]);
   if (s.markSight) out.push(['Cible traquée', 'visée à travers les obstacles']);
   if (s.trapReplaceOldest) out.push(['Au-delà de 3 pièges', 'le plus ancien disparaît']);
@@ -165,7 +203,7 @@ Object.assign(Hud.prototype, {
         redraw();
       }
     };
-    this.simpleWin('sorts', 'Sorts', () => this.renderSorts(), actions, { width: 880, cls: 'vy-fenetre--sorts', onField, beforeClose: () => { S.vue = null; return true; } });
+    this.simpleWin('sorts', 'Sorts', () => this.renderSorts(), actions, { width: 960, cls: 'vy-fenetre--sorts', onField, beforeClose: () => { S.vue = null; return true; } });
   },
 
   renderSorts() {
@@ -179,7 +217,12 @@ Object.assign(Hud.prototype, {
     const shown = ids.filter(id => (S.filtre === 'tous' || typesOf(DATA.spells[id]).has(S.filtre)) && (!cherche || plie(this.sortVu(id).name).includes(cherche)));
     if (shown.length && !shown.includes(S.sel)) { S.sel = shown[0]; S.vue = null; }
     const equipes = new Set(ch.unlockedSpells());
-    const rows = shown.map(id => this.sortLigne(id, equipes, enCombat)).join('') || `<li class="vy-sorts__vide muted">${cherche ? 'Aucun sort à ce nom.' : 'Aucun sort de ce type.'}</li>`;
+    const rangees = [];
+    for (const paire of ch.classDef.paires) {
+      const l = paire.filter(id => id && shown.includes(id));
+      if (l.length) rangees.push(`<li class="vy-sorts__paire${l.length > 1 ? ' double' : ''}" role="presentation">${l.map(id => this.sortLigne(id, equipes, enCombat)).join(l.length > 1 ? '<span class="vy-sorts__ou" aria-hidden="true">ou</span>' : '')}</li>`);
+    }
+    const rows = rangees.join('') || `<li class="vy-sorts__vide muted">${cherche ? 'Aucun sort à ce nom.' : 'Aucun sort de ce type.'}</li>`;
     const options = TYPES.map(([k, l]) => `<option value="${k}" ${S.filtre === k ? 'selected' : ''}>${l}</option>`).join('');
     const obtenus = ch.sortsObtenus().length;
     const prochains = ids.map(id => Character.unlockLevel(ch.classId, id)).filter(l => l > ch.level);
@@ -217,7 +260,7 @@ Object.assign(Hud.prototype, {
     const cls = ['vy-sort', S.sel === id ? 'on' : '', locked ? 'bloque' : '', p && p.variante ? 'variante' : '', equipes.has(id) ? 'equipe' : ''].filter(Boolean).join(' ');
     const name = `<button class="vy-sort__choix" data-act="choisir" data-id="${id}" aria-label="${esc(s.name)}${p && p.variante ? ', variante' : ''}${locked ? `, s'obtient au niveau ${unlock}` : `, rang ${rank}`}${equipes.has(id) ? ', équipé' : ''}">` +
       `<img class="vy-sort__icone" src="${SortIcones.url(id, s, 88)}" width="44" height="44" alt="">` +
-      `<span class="vy-sort__nom"><span>${esc(s.name)}</span><small>${p && p.variante ? 'Variante · ' : ''}${s.pa} PA · ${el(s.element)}</small></span></button>`;
+      `<span class="vy-sort__nom"><span>${esc(s.name)}</span><small>${s.pa} PA · ${el(s.element)}</small></span></button>`;
     const obtention = `<span class="vy-sort__obt" aria-hidden="true">${obt}</span>`;
     let etat;
     if (locked) etat = `<span class="vy-sort__niveau">${VERROU}niveau ${unlock}</span>`;
@@ -225,7 +268,7 @@ Object.assign(Hud.prototype, {
     let equip = '<span class="vy-sort__equipe" aria-hidden="true">·</span>';
     if (equipes.has(id)) equip = `<span class="vy-sort__equipe on" title="Dans ta barre de sorts">${COCHE}</span>`;
     else if (!locked && autre) equip = `<button class="vy-sort__equiper" data-act="equiper" data-id="${id}" ${enCombat ? 'disabled' : ''} title="Équiper à la place de ${esc(this.sortVu(autre).name)}" aria-label="Équiper ${esc(s.name)} à la place de ${esc(this.sortVu(autre).name)}">⇄</button>`;
-    return `<li class="${cls}" role="option" aria-selected="${S.sel === id}" style="--el:${teinte}">${obtention}${name}${etat}${equip}</li>`;
+    return `<div class="${cls}" role="option" aria-selected="${S.sel === id}" style="--el:${teinte}">${obtention}${name}${etat}${equip}</div>`;
   },
 
   sortFiche(id, equipes) {

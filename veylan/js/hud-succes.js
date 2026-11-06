@@ -5,6 +5,7 @@ const ICO = {
   presque: svg('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 7.6 10.5"/>'),
   reclamer: svg('<path d="M12 3l7 9-7 9-7-9z"/><path d="M12 8v5"/>'),
   suivi: svg('<path d="M7 3h10v18l-5-4-5 4z"/>'),
+  proche: svg('<path d="M12 21s-6-5.6-6-10.5A6 6 0 0 1 18 10.5C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/>'),
   recherche: svg('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>'),
   retour: svg('<path d="M15 6l-6 6 6 6"/>'),
   coche: svg('<path d="M5 12.5l4.2 4.2L19 7"/>'),
@@ -39,6 +40,13 @@ Object.assign(Hud.prototype, {
     if (this.jeu && this.jeu.rafraichirCarte) this.jeu.rafraichirCarte();
     if (this.refresh) this.refresh();
     return !deja;
+  },
+
+  ouvrirSucces(id) {
+    const a = Achievements.get(id);
+    const s = this.succesEtat = this.succesEtat || { vue: 'liste', cat: null, sous: null, choisi: null, filtre: '' };
+    if (a) { s.cat = Achievements.category(a); s.sous = Achievements.sousCategorie(a); s.choisi = id; s.vue = 'fiche'; s.filtre = ''; }
+    if (this.fen.isOpen('succes')) this.fen.render('succes'); else this.toggleWin('succes');
   },
 
   openAchievements() {
@@ -88,10 +96,13 @@ Object.assign(Hud.prototype, {
     </header>`;
 
     const pts = l => l.reduce((t, a) => t + A.points(a), 0);
+    const proches = Achievements.proches ? Achievements.proches(ch, this.world.zone) : [];
+    const raisons = this.succesRaisons = new Map(proches.map(x => [x.a.id, x.raison]));
     const presque = tous.filter(a => !a_(a.id) && a.cond.type !== 'score').map(a => ({ a, v: A.avancement(ch, a) })).filter(x => x.v && x.v[0] > 0 && x.v[0] / x.v[1] >= 0.5 && x.v[0] < x.v[1]).sort((x, y) => y.v[0] / y.v[1] - x.v[0] / x.v[1]).slice(0, 30).map(x => x.a);
     const special = (k, label, ico, n, cl) => `<button type="button" class="vy-succes__ent${s.cat === k ? ' on' : ''}${cl ? ' ' + cl : ''}" data-act="special" data-special="${k}" aria-pressed="${s.cat === k}">${ico}<span>${label}</span><small>${n}</small></button>`;
     const nav = `<nav class="vy-succes__nav" data-defile="succes-nav">
       ${special('presque', 'Presque accomplis', ICO.presque, presque.length)}
+      ${special('proche', 'Près d\'ici', ICO.proche, proches.length, proches.length ? 'proche' : '')}
       ${special('reclamer', 'À réclamer', ICO.reclamer, attente.size, attente.size ? 'cristal' : '')}
       ${special('suivis', 'Suivis', ICO.suivi, suivis.length)}
       <hr>
@@ -109,6 +120,7 @@ Object.assign(Hud.prototype, {
       liste = tous.filter(a => texte(a).includes(f));
       titre = `Recherche <span>· ${liste.length} résultat${liste.length > 1 ? 's' : ''}</span>`;
     } else if (s.cat === 'presque') { liste = presque; titre = 'Presque accomplis'; }
+    else if (s.cat === 'proche') { liste = proches.map(x => x.a); titre = `Près d'ici <span>· ${esc((this.world.zone && this.world.zone.name) || '')}</span>`; }
     else if (s.cat === 'reclamer') { liste = [...attente].map(A.get).filter(Boolean); titre = 'À réclamer'; }
     else if (s.cat === 'suivis') { liste = suivis.map(A.get).filter(Boolean); titre = 'Suivis'; }
     else {
@@ -120,7 +132,7 @@ Object.assign(Hud.prototype, {
     if (!s.choisi || !A.get(s.choisi) || (!liste.some(a => a.id === s.choisi) && liste.length)) s.choisi = (liste[0] || {}).id || s.choisi;
     const etat = a => attente.has(a.id) ? 'att' : a_(a.id) ? 'ok' : (A.avancement(ch, a) || [0])[0] > 0 ? 'mi' : '';
     const dans = new Set(liste.map(a => a.id)), pris = new Set();
-    const blocs = !f && !['presque', 'reclamer', 'suivis'].includes(s.cat) ? liste.filter(a => a.cond.type === 'meta').map(m => {
+    const blocs = !f && !['presque', 'proche', 'reclamer', 'suivis'].includes(s.cat) ? liste.filter(a => a.cond.type === 'meta').map(m => {
       const enf = m.cond.succes.map(A.get).filter(a => a && A.pourPerso(ch, a));
       if (enf.length < 2 || !enf.every(a => dans.has(a.id)) || enf.some(a => pris.has(a.id))) return null;
       enf.forEach(a => pris.add(a.id)); pris.add(m.id);
@@ -139,7 +151,7 @@ Object.assign(Hud.prototype, {
     const ligne = a => {
       const v = A.avancement(ch, a), fait = a_(a.id);
       return `<button type="button" class="vy-succes__ligne ${etat(a)}${a.id === s.choisi ? ' choisi' : ''}" data-act="choisir" data-id="${a.id}"><i class="vy-succes__gemme"></i>` +
-        `<span class="t"><b>${esc(a.name)}</b><small>${esc(a.desc)}</small></span>` +
+        `<span class="t"><b>${esc(a.name)}</b><small>${esc(a.desc)}</small>${raisons.has(a.id) ? `<small class="vy-succes__raison">${ICO.proche}${esc(raisons.get(a.id))}</small>` : ''}</span>` +
         `<span class="av">${attente.has(a.id) ? '<em>à réclamer</em>' : fait ? '' : v ? `<i class="vy-succes__jauge"><i style="width:${Math.round(100 * v[0] / v[1])}%"></i></i><small>${esc(A.progress(ch, a))}</small>` : `<small>${esc(A.progress(ch, a))}</small>`}</span>` +
         `<span class="pts">${A.points(a)}</span>${suivis.includes(a.id) ? `<span class="suivi">${ICO.suivi}</span>` : ''}</button>`;
     };
@@ -147,7 +159,7 @@ Object.assign(Hud.prototype, {
       const t = pts(b.tuiles), fait = pts(b.tuiles.filter(a => a_(a.id)));
       return `<div class="vy-succes__bloc${fait === t ? ' fini' : ''}"><div class="vy-succes__bloctete"><b>${esc(nomBloc(b))}</b><span>${fait} <small>/ ${t} pts</small></span><i class="vy-succes__jauge"><i style="width:${t ? Math.round(100 * fait / t) : 0}%"></i></i></div><div class="vy-succes__tuiles">${b.tuiles.map(tuile).join('')}</div></div>`;
     }).join('') + liste.filter(a => !pris.has(a.id)).map(ligne).join('');
-    const vide = s.cat === 'reclamer' ? 'Rien à réclamer pour l\'instant.' : s.cat === 'suivis' ? 'Aucun succès suivi : choisis-en un, puis « Suivre ».' : s.cat === 'presque' ? 'Rien d\'à moitié fait pour l\'instant.' : 'Aucun succès ici.';
+    const vide = s.cat === 'proche' ? 'Rien à faire près d\'ici pour l\'instant : la zone est faite.' : s.cat === 'reclamer' ? 'Rien à réclamer pour l\'instant.' : s.cat === 'suivis' ? 'Aucun succès suivi : choisis-en un, puis « Suivre ».' : s.cat === 'presque' ? 'Rien d\'à moitié fait pour l\'instant.' : 'Aucun succès ici.';
     const centre = `<section class="vy-succes__liste" data-defile="succes-liste"><div class="vy-succes__fil"><h3>${titre}</h3><span class="pts">${pts(liste.filter(a => a_(a.id)))} / ${pts(liste)} points</span></div>${corps || `<p class="vy-q-vide">${vide}</p>`}</section>`;
 
     const choisi = s.choisi && A.get(s.choisi);
@@ -175,6 +187,7 @@ Object.assign(Hud.prototype, {
     return `<button type="button" class="vy-q-retour" data-act="retour">${ICO.retour}Tous les succès</button>
       <header class="vy-succes__ftete"><span class="vy-succes__grosse ${fait ? 'ok' : pct ? 'mi' : ''}"><b>${A.points(a)}</b></span><div><h3>${esc(a.name)}</h3><small>${esc(A.category(a))} · ${esc(A.sousCategorie(a))}</small></div></header>
       <p class="vy-q-recit">${esc(a.desc)}</p>
+      ${this.succesRaisons && this.succesRaisons.has(a.id) ? `<p class="vy-succes__fraison">${ICO.proche}<span>${esc(this.succesRaisons.get(a.id))}</span></p>` : ''}
       <div class="vy-sous"><span>Objectif</span><span>${fait ? 'fait' : esc(A.progress(ch, a))}</span></div>
       ${v || fait ? `<i class="vy-succes__jauge grande"><i style="width:${pct}%"></i></i>` : ''}
       ${enfants.length ? `<ol class="vy-q-etapes">${enfants.map(x => { const ok = ch.achievements.includes(x.id); return `<li class="vy-q-etape${ok ? ' fait' : ''}"><span class="vy-q-case">${ok ? ICO.coche : ''}</span><span>${esc(x.name)}</span></li>`; }).join('')}</ol>` : ''}

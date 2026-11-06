@@ -37,6 +37,8 @@ class UI {
       if (this.jeu) this.ruban('Prépare-toi !', { sorte: 'placement', ms: 1900, sous: UI.tactile() ? 'Touche une case bleue pour te placer' : 'Clique sur une case bleue pour te placer' });
     });
     combat.on('challenge', ch => this.renderChallenge(ch));
+    combat.on('turn', () => this.renderSuccesCombat());
+    combat.on('update', () => this.renderSuccesCombat());
     if (this.el.challenge) this.el.challenge.addEventListener('click', () => { const t = UI.texteDefis(combat); if (t) this.banner(t, 3200); });
     combat.on('start', () => { this.placementEndsAt = 0; this.refresh(); Bus.emit('battleStart', {}); });
     combat.on('turn', e => {
@@ -276,6 +278,8 @@ class UI {
   }
 
   effectLine(ef) {
+    if (ef.siAssis || ef.siDebout) return this.effectLine(Object.assign({}, ef, { siAssis: false, siDebout: false })) + (ef.siAssis ? ' (assis)' : ' (debout)');
+    if (ef.onAlly || ef.onFoe) return (ef.onAlly ? 'Sur un allié ou une bête : ' : 'Sur un ennemi : ') + this.effectLine(Object.assign({}, ef, { onAlly: false, onFoe: false })).replace(/^./, c => c.toLowerCase());
     const v = DATA.rankShown(ef);
     switch (ef.type) {
       case 'damage': return `Dégâts ${v.min} à ${v.max}`;
@@ -284,15 +288,16 @@ class UI {
         if (ef.type === 'pm' && ef.value <= -10) return `Enracine ${ef.duration} tour(s)`;
         return `${ef.value > 0 ? '+' : ''}${ef.value} ${ef.type.toUpperCase()} pendant ${ef.duration} tour(s)`;
       case 'shield': return `Bouclier ${v.value} pendant ${ef.duration} tour(s)`;
-      case 'power': return `+${ef.value} % de dégâts ${ef.turns === 0 ? 'ce tour' : 'pendant ' + ef.turns + ' tour(s)'}`;
+      case 'power': return `${ef.value < 0 ? '−' + -ef.value : '+' + ef.value} % de dégâts ${ef.turns === 0 ? 'ce tour' : 'pendant ' + ef.turns + ' tour(s)'}`;
       case 'vuln': return `+${ef.value} % de dégâts subis pendant ${ef.turns} tour(s)`;
       case 'dot': return `Brûle ${v.value} par tour pendant ${ef.turns} tour(s)`;
       case 'echo': return `Écho ${ef.turns} tour(s) : ${v.min} à ${v.max} à chaque PM perdu, ${ef.uses} fois au plus`;
-      case 'state': return ef.name === 'invisible' ? `Invisible ${ef.turns} tour(s)${ef.lingering ? ', révélée à la fin du tour où elle frappe' : ''}` : `Provoque ${ef.turns} tour(s)`;
+      case 'filon': return `Filon ${ef.turns} tour(s), ${ef.charges || 3} déclenchements : ${v.min} à ${v.max} à chaque retrait (PA, PM, portée) sur l'ennemi marqué, ou en zone autour de l'allié marqué soigné ; +1 Trouvaille`;
+      case 'state': if (ef.name === 'forme_iskar') return `Forme d'Iskar ${ef.turns} tour(s) : 40 % des soins seulement`; if (ef.name === 'intaclable') return `Intaclable ${ef.turns} tour(s)`; if (ef.name === 'protege_karsh') return `Protégé ${ef.turns} tour(s) : le Karsh prend ses coups`; if (ef.name === 'sous_la_maree') return `Sous la Marée ${ef.turns} tour(s) : −15 % de dégâts subis`; if (ef.name === 'digue') return `Digue ${ef.turns} tour(s) : invulnérable au contact`; if (ef.name === 'brise_lames') return `Brise-Lames ${ef.turns} tour(s) : invulnérable à distance`; return ef.name === 'invisible' ? `Invisible ${ef.turns} tour(s)${ef.lingering ? ', révélée à la fin du tour où elle frappe' : ''}` : `Provoque ${ef.turns} tour(s)`;
       case 'oath': return `Juré ${ef.turns} tour(s) : +${ef.power} % de dégâts contre lui`;
       case 'track': return `Traqué ${ef.turns} tour(s) : ne peut plus être invisible`;
       case 'steal': return ef.what === 'shield' ? `Vole le bouclier${ef.orBonus ? ' (ou le meilleur bonus)' : ''}` : `Vole ${ef.value} ${ef.what.toUpperCase()}`;
-      case 'range': return `+${ef.value} portée pendant ${ef.turns} tour(s)`;
+      case 'range': return `${ef.value < 0 ? '−' + -ef.value : '+' + ef.value} portée pendant ${ef.turns} tour(s)`;
       case 'guard': return `−${ef.value} % de dégâts subis au contact pendant ${ef.turns} tour(s)`;
       case 'leap': return `Bondit, puis ${ef.effects.map(x => this.effectLine(x).toLowerCase()).join(', ')} autour de lui`;
       case 'retreat': return `Recule de ${ef.cells} case(s) loin de l'ennemi le plus proche`;
@@ -301,6 +306,22 @@ class UI {
       case 'push': return `Pousse de ${ef.cells} case(s)${ef.ifSworn ? ' (contre le juré)' : ''}`;
       case 'pull': return `Attire de ${ef.cells} case(s)`;
       case 'swap': return 'Échange les places';
+      case 'empoigner': return 'Empoigne la cible : tenue jusqu\'au jet, elle fait moitié moins de dégâts';
+      case 'jeter': return 'Jette ce que le Thalor tient sur la case visée';
+      case 'depuisCentre': return `Repousse de ${ef.cells} case(s) depuis le point de chute`;
+      case 'versCentre': return `Attire de ${ef.cells} case(s) vers le point de chute`;
+      case 'rebond': return `Rebondit sur l'ennemi le plus proche à ${ef.cells || 2} case(s), ${ef.pct || 50} % des dégâts`;
+      case 'glyph': return `${ef.name || 'Glyphe'} ${ef.turns} tour(s) : ${(ef.effects || []).map(x => this.effectLine(x).toLowerCase()).join(', ')}, au début du tour de qui s'y tient`;
+      case 'soinDiffere': return `Soin de ${v.min} à ${v.max} au début du prochain tour de la cible`;
+      case 'ecourter': return `Sur un allié, ses malus durent ${ef.tours || 1} tour de moins ; sur un ennemi, ses bonus`;
+      case 'ordreMeute': return `Toutes ses bêtes frappent tout de suite, à ${ef.pct || 50} % de leurs dégâts`;
+      case 'horde': return `+${ef.jauge || 3} de jauge ${ef.turns || 2} tours, ses appels coûtent ${ef.rabais || 1} PA de moins ; puis ses bêtes s'en vont`;
+      case 'pacte': return `Sacrifie ses bêtes : +${ef.par || 3} % de dégâts par point de jauge (${ef.turns || 3} tours), ${ef.soin || 30} % de leurs PV`;
+      case 'declencherMares': return 'Toutes ses Mares agissent tout de suite ; ses alliés qui s\'y tiennent passent Sous la Marée';
+      case 'hantise': return 'Pousse la créature au contact jusqu\'à la case visée, à travers les pièges';
+      case 'versLeurre': return `Attire de ${ef.cells} case(s) vers le Leurre`;
+      case 'depuisLeurre': return `Repousse de ${ef.cells} case(s) depuis le Leurre`;
+      case 'echangeLeurre': return 'Échange la cible avec le Leurre';
       case 'sacrifice': return `Sacrifie l'invocation : ${v.min} à ${v.max} aux ennemis à ${ef.radius} case(s)`;
       case 'teleport': return 'Téléporte le lanceur';
       case 'obstacle': return `Obstacle pendant ${ef.turns} tour(s)`;
@@ -339,13 +360,21 @@ class UI {
     if (s.furySpend) lines.push(`+${s.furySpend} % par point de Fureur, toute la Fureur dépensée`);
     if (s.braiseCost) lines.push(`Coûte ${s.braiseCost} de Braise`);
     if (s.braise) lines.push(`+${s.braise} de Braise si un ennemi est touché`);
+    if (s.recharge) lines.push(`Se charge : +${s.recharge} % à chaque retour de relance, une fois lancé`);
+    if (s.cumul) lines.push(`Se cumule : +${s.cumul.par} % par lancer (${s.cumul.max} au plus)`);
+    if (s.faveur) lines.push('Faveur : une seule par allié ; sur une case vide, elle reste au sol (Étincelle)');
+    if (s.ombre) lines.push('Ombre : une seule par ennemi');
+    if (s.mare) lines.push('Dans la Mare : le Velmar et ses alliés subissent 15 % de dégâts en moins');
+    if (s.parPmRestant) lines.push(`+${s.parPmRestant} % par PM qui reste au lanceur`);
+    if (s.traque) lines.push('Prend la cible en traque : chaque autre tir qui la touche ajoute un cran (+8 %, 3 au plus)');
+    if (s.parPiege) lines.push(`+${s.parPiege} % par piège déclenché (Pli), le Pli dépensé`);
     { const k = Object.values(DATA.classes).map(c => c.reserve).find((r, i) => r && Object.values(DATA.classes)[i].spells.includes(s.id)); const nom = k ? k.nom : 'réserve';
       if (s.reserve) lines.push(`+${s.reserve} ${nom} si un ennemi est touché`);
       if (s.reserveSpend) lines.push(`+${s.reserveSpend} % par point de ${nom}, toute la ${nom} dépensée`); }
     if (s.braiseSpend) lines.push(`+${s.braiseSpend} % par point de Braise, toute la Braise soufflée`);
     if (s.oathPierce) lines.push('Contre le juré : ni esquive ni armure');
     if (s.affutBonus) lines.push(`+${s.affutBonus} % à l'Affût`);
-    if (s.keepsAffut) lines.push('Ne casse pas l\'Affût');
+    if (s.keepsAffut) lines.push('Garde l\'Affût, moins un cran (−4 %)');
     if (s.telefrag) lines.push(`Sur une créature : téléfrag, les places s'échangent, +${s.telefrag} PA une fois par tour`);
     if (s.purse) lines.push(`Bourse : +${s.purse} % de Dragmes et de butin si la cible meurt`);
     if (s.onKill) lines.push(`Si la cible meurt : ${s.onKill.map(x => this.effectLine(x).toLowerCase()).join(', ')}`);
@@ -650,14 +679,116 @@ class UI {
     const el = this.el.challenge;
     if (!el) return;
     const defis = ((this.combat && this.combat.challenges) || []).filter(Boolean);
-    if (!defis.length) { el.classList.add('hidden'); return; }
+    this.renderSuccesCombat();
+    if (!defis.length) { el.classList.add('hidden'); el.innerHTML = ''; this.majObjectifs(); return; }
     el.classList.remove('hidden');
+    el.classList.add('vy-defis');
     el.classList.toggle('failed', defis.every(c => c.failed));
     el.classList.toggle('success', defis.every(c => c.success));
     const etat = c => (c.failed ? '(raté)' : c.success ? '(réussi)' : `+${c.bonus} %`);
-    el.textContent = (defis.length > 1 ? 'Défis : ' : 'Défi : ') + defis.map(c => `${c.name} ${etat(c)}`).join(' · ');
-    el.title = defis.map(c => c.name + ' : ' + c.desc + (c.failed ? ` Raté : ${c.failed}.` : '')).join(' ');
+    const phrase = (defis.length > 1 ? 'Défis : ' : 'Défi : ') + defis.map(c => `${c.name} ${etat(c)}`).join(' · ');
+    const I = typeof DefisIcones === 'object' ? DefisIcones : null;
+    const tuiles = defis.map(c => {
+      const e = c.failed ? 'rate' : c.success ? 'reussi' : 'encours';
+      const libelle = c.failed ? `Raté : ${c.failed}.` : c.success ? 'Réussi.' : 'En cours.';
+      return `<span class="vy-defi" data-etat="${e}" data-defi="${Util.esc(c.id || '')}">` +
+        `<span class="vy-defi__ic">${I ? I.de(c.id) : ''}${e !== 'encours' && I ? `<i class="vy-defi__etat">${e === 'reussi' ? I.coche : I.croix}</i>` : ''}</span>` +
+        `<b class="vy-defi__bonus">+${c.bonus} %</b>` +
+        `<span class="vy-defi__bulle" role="tooltip"><b>${Util.esc(c.name)}</b><span>${Util.esc(c.desc)}</span><small>+${c.bonus} % d'XP et de butin · ${Util.esc(libelle)}</small></span></span>`;
+    }).join('');
+    el.innerHTML = `<span class="vy-sr">${Util.esc(phrase)}</span>${tuiles}`;
+    el.title = '';
+    el.setAttribute('aria-label', phrase);
+    this.majObjectifs();
   }
+  objectifs() {
+    if (this.el.objectifs) return this.el.objectifs;
+    const def = this.el.challenge;
+    if (!def || !def.parentNode) return null;
+    const box = document.createElement('div');
+    box.className = 'vy-objectifs hidden';
+    let replie = false;
+    try { replie = localStorage.getItem('veylan.objectifs.replie') === '1'; } catch (e) {   }
+    box.classList.toggle('replie', replie);
+    box.innerHTML = `<button type="button" class="vy-objectifs__tete" aria-expanded="${!replie}" title="Masquer ou montrer les défis et les succès">` +
+      `<span class="vy-objectifs__titre">Objectifs</span><span class="vy-objectifs__compte"></span>` +
+      `<svg class="vy-objectifs__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>` +
+      `<div class="vy-objectifs__corps"><div class="vy-objectifs__dedans">` +
+      `<section class="vy-objectifs__sec vy-objectifs__sec--defis"><h5>Défis</h5></section>` +
+      `<section class="vy-objectifs__sec vy-objectifs__sec--succes"><h5>Succès</h5><div class="vy-succes-combat"></div></section>` +
+      `</div></div>`;
+    def.parentNode.insertBefore(box, def);
+    box.querySelector('.vy-objectifs__sec--defis').appendChild(def);
+    box.querySelector('.vy-objectifs__tete').addEventListener('click', () => {
+      const r = box.classList.toggle('replie');
+      box.querySelector('.vy-objectifs__tete').setAttribute('aria-expanded', String(!r));
+      try { localStorage.setItem('veylan.objectifs.replie', r ? '1' : '0'); } catch (e) {   }
+    });
+    this.el.objectifs = box;
+    return box;
+  }
+
+  majObjectifs() {
+    const box = this.objectifs();
+    if (!box) return;
+    const nd = ((this.combat && this.combat.challenges) || []).filter(Boolean).length, ns = (this._succesCombat || []).length;
+    box.classList.toggle('hidden', !nd && !ns);
+    box.querySelector('.vy-objectifs__sec--defis').hidden = !nd;
+    box.querySelector('.vy-objectifs__sec--succes').hidden = !ns;
+    box.querySelector('.vy-objectifs__compte').innerHTML = [nd ? `<i class="d">${nd} défi${nd > 1 ? 's' : ''}</i>` : '', ns ? `<i class="s">${ns} succès</i>` : ''].join('');
+  }
+
+  succesDuCombat() {
+    const c = this.combat, w = this.world || (c && c.world), ch = w && w.ch;
+    if (!ch || typeof Achievements !== 'object' || !c.entities || !c.entities.length || c.phase === 'ended') return [];
+    const ids = new Set(c.entities.filter(e => e.team === 'monster' && !e.isSummon && e.def).map(e => e.def.id));
+    const boss = [...ids].filter(id => DATA.monsters[id] && DATA.monsters[id].boss);
+    const dj = ch.dungeon && ch.dungeon.id;
+    const fait = a => (ch.achievements || []).includes(a.id);
+    const rang = a => {
+      const k = a.cond;
+      if (k.type === 'dungeon' && k.dungeon === dj && boss.length) return 1;
+      if (k.type === 'dungeonTurns' && k.dungeon === dj && boss.length) return 2;
+      if ((k.type === 'bossDefi' || k.type === 'noeudsBoss' || k.type === 'boss') && ids.has(k.monster)) return 3;
+      if (k.type === 'kills' && ids.has(k.monster)) return 4;
+      if ((k.type === 'famille' || k.type === 'argentes') && (k.monstres || []).some(m => ids.has(m))) return 5;
+      return 0;
+    };
+    const suivis = this.hud && this.hud.succesSuivis ? this.hud.succesSuivis() : [];
+    const l = Achievements.defs().filter(a => !fait(a) && Achievements.pourPerso(ch, a)).map(a => ({ a, r: rang(a) || (suivis.includes(a.id) ? 6 : 0) })).filter(x => x.r).sort((x, y) => x.r - y.r);
+    return l.slice(0, 5).map(x => x.a);
+  }
+
+  renderSuccesCombat() {
+    const box = this.objectifs();
+    if (!box) return;
+    const c = this.combat, w = this.world || (c && c.world), ch = w && w.ch;
+    const l = this.succesDuCombat();
+    const cle = l.map(a => a.id + ':' + (ch ? Achievements.progress(ch, a) : '')).join('|') + '|' + (c && c.round);
+    if (cle === this._cleSucces) { this.majObjectifs(); return; }
+    this._cleSucces = cle; this._succesCombat = l;
+    const zone = box.querySelector('.vy-succes-combat');
+    const ICO = {
+      dungeon: '<path d="M4 9l3 4 5-7 5 7 3-4-2 9H6z"/>', boss: '<path d="M4 9l3 4 5-7 5 7 3-4-2 9H6z"/>',
+      dungeonTurns: '<path d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9"/>',
+      bossDefi: '<path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/>',
+      noeudsBoss: '<path d="M5 12c0-3 3-5 7-5s7 2 7 5-3 5-7 5"/><path d="M12 17l-3 3M12 17l-3-3"/>',
+      kills: '<path d="M14 3l7 7-3 3-7-7z"/><path d="M11 6l-7 11 3 3 11-7"/>',
+      famille: '<circle cx="8" cy="9" r="2"/><circle cx="16" cy="9" r="2"/><path d="M8 19c0-3 2-4 4-4s4 1 4 4z"/>',
+      argentes: '<path d="M12 3l8 6-8 12L4 9z"/><path d="M4 9h16M12 3v18"/>',
+    };
+    const picto = a => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[a.cond.type] || '<path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/>'}</svg>`;
+    zone.innerHTML = l.map(a => {
+      const v = ch ? Achievements.avancement(ch, a) : null, prog = ch ? Achievements.progress(ch, a) : '';
+      const k = a.cond, tours = k.type === 'dungeonTurns' && c ? `Tour ${Math.max(1, c.round || 1)} sur ${k.max} au plus.` : '';
+      return `<span class="vy-defi vy-defi--succes" data-succes="${Util.esc(a.id)}">` +
+        `<span class="vy-defi__ic">${picto(a)}${v && v[1] > 1 ? `<i class="vy-defi__jauge"><i style="width:${Math.round(100 * Math.min(v[0], v[1]) / v[1])}%"></i></i>` : ''}</span>` +
+        (v && v[1] > 1 ? `<b class="vy-defi__bonus">${Math.min(v[0], v[1])}/${v[1]}</b>` : '') +
+        `<span class="vy-defi__bulle" role="tooltip"><b>${Util.esc(a.name)}</b><span>${Util.esc(a.desc)}</span>${tours || (prog && prog !== '0 / 1') ? `<small>${Util.esc([tours, prog && prog !== '0 / 1' ? 'Avancement : ' + prog : ''].filter(Boolean).join(' · '))}</small>` : ''}</span></span>`;
+    }).join('');
+    this.majObjectifs();
+  }
+
   static texteDefis(combat) {
     const defis = ((combat && combat.challenges) || []).filter(Boolean);
     if (!defis.length) return '';
@@ -671,14 +802,18 @@ class UI {
     switch (f.type) {
       case 'armor': return f.turns >= 99 ? `armure ${f.value} %` : `armure ${f.value} % (${t})`;
       case 'shield': return `bouclier ${f.value} (${t})`;
-      case 'power': return `+${f.value} % dégâts (${t})`;
+      case 'power': return `${f.value < 0 ? '−' + -f.value : '+' + f.value} % dégâts (${t})`;
       case 'vuln': return `+${f.value} % subis (${t})`;
       case 'dot': return `brûlure ${f.value} ${DATA.elements[f.element].label.toLowerCase()} (${t})`;
       case 'guard': return `garde −${f.value} % au contact (${t})`;
-      case 'range': return `+${f.value} portée (${t})`;
+      case 'range': return `${f.value < 0 ? '−' + -f.value : '+' + f.value} portée (${t})`;
       case 'echo': return `écho, ${f.uses} résonance(s) (${t})`;
+      case 'cumulSort': return `${(DATA.spells[f.spell] || {}).name || f.spell} : +${f.crans * ((DATA.spells[f.spell] || {}).cumul || { par: 0 }).par} % (${t})`;
+      case 'soinDiffere': return `soin de ${f.owner ? Util.esc(f.owner.name) : '?'} au début de son tour`;
+      case 'traque': return `Traque de ${f.owner ? Util.esc(f.owner.name) : '?'}, ${f.crans} / 3 (+${f.crans * 8} % subis, ${t})`;
+      case 'filon': return `Filon de ${f.owner ? Util.esc(f.owner.name) : '?'}, ${f.charges} déclenchement(s) (${t})`;
       case 'state': {
-        const names = { invisible: 'invisible', stunned: 'sonné', invulnerable: 'invulnérable', lanterne: 'tient sa lanterne (esquive à distance)', assise: 'assis comme la montagne (rien ne le déplace, ses prises portent une case de plus, vole de la vie au contact)', unhealable: 'insoignable' };
+        const names = { tenu: 'tenu (moitié moins de dégâts)', invisible: 'invisible', stunned: 'sonné', invulnerable: 'invulnérable', lanterne: 'tient sa lanterne (esquive à distance)', assise: 'assis comme la montagne (rien ne le déplace, ses prises portent une case de plus, vole de la vie au contact)', unhealable: 'insoignable', sous_la_maree: 'Sous la Marée (−15 % de dégâts subis)', forme_iskar: 'Forme d\'Iskar (40 % des soins seulement)', intaclable: 'intaclable', protege_karsh: 'protégé par le Karsh (il prend ses coups)', digue: 'Digue (invulnérable au contact)', brise_lames: 'Brise-Lames (invulnérable à distance)' };
         if (f.name === 'provoked') return `provoqué par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
         if (f.name === 'sworn') return `juré par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
         if (f.name === 'tracked') return `traqué par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
@@ -701,9 +836,13 @@ class UI {
     this.lastHp = p ? p.hp : null;
 
     const kit = [];
-    if (p.kit && p.kit.fury) kit.push(`Fureur ${p.fury} / ${p.kit.fury.max}`);
+    if (p.kit && p.kit.fury) kit.push(`Fureur ${p.fury} / ${p.kit.fury.max}${p.kit.fury.power ? ` (+${(p.fury || 0) * p.kit.fury.power} %)` : ''}`);
     if (p.kit && p.kit.reserve) kit.push(`${p.kit.reserve.nom} ${p.reserve || 0} / ${p.kit.reserve.max}`);
-    if (c.isAffut(p)) kit.push('à l\'affût');
+    { const sc = c.sangChaud(p); if (sc.palier) kit.push(`Sang Chaud : ${sc.nom} (+${sc.pct} %, −${sc.pct} % subis)`); }
+    if (p.kit && p.kit.summonGauge) { const used = c.summonsOf(p).reduce((n, m) => n + (m.def.summonCost || 1), 0); kit.push(`Jauge ${used} / ${c.jaugeDe(p)}${p.horde ? ' (horde)' : ''}`); }
+    if (p.kit && p.kit.pli) kit.push(`Pli ${p.piegesPli || 0} / ${p.kit.pli.max || 5}`);
+    { const af = c.affutDe(p); if (af.pct > 0) kit.push(`Affût +${af.pct} %${af.range ? `, +${af.range} PO` : ''}`); }
+    if (p.kit && p.kit.traque) { const cible = c.entities.find(x => x.alive && c.traqueDe(p, x)); if (cible) kit.push(`Traque ${c.traqueDe(p, cible).crans} / ${p.kit.traque.max} (${Util.esc(cible.name)})`); }
     if (p.kit && p.kit.braise) kit.push(`Braise ${c.braiseOf(p)} / ${p.kit.braise.max}${c.braiseOf(p) >= p.kit.braise.surchauffe ? ' (surchauffe)' : ''}`);
     if (c.isArmed(p)) kit.push(`armé (−${p.kit.armed.reduction} % subis)`);
     const effects = kit.concat(p.effects.map(f => this.describeEffect(f))).join(', ');
@@ -912,7 +1051,7 @@ class UI {
 
 UI.PLACEMENT_SECONDES = 30;
 
-UI.REGLAGES = { grille: true, deplacement: true, portee: true, cout: true, barres: true, agression: true };
+UI.REGLAGES = { grille: true, deplacement: true, portee: true, cout: true, barres: true, agression: true, finDonjon: true };
 
 UI.ICON = {
   non: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>',

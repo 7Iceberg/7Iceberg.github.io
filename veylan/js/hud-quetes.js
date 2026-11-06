@@ -85,7 +85,7 @@ Object.assign(Hud.prototype, {
         <label class="vy-recherche vy-quetes__recherche">${ICO.recherche}<input id="quetes-recherche" type="search" placeholder="Chercher une quête" value="${esc(s.filtre)}" aria-label="Chercher une quête"></label>
         <div class="vy-quetes__items" data-defile="quetes-liste">${groupes || `<p class="vy-q-vide">${vide}</p>`}</div>
       </aside>
-      <section class="vy-quetes__fiche" data-defile="quetes-fiche">${choisie ? this.ficheQuete(choisie, s.onglet === 'finies', suivie) : `<p class="vy-q-vide">${vide}</p>`}</section>
+      <section class="vy-quetes__fiche">${choisie ? this.ficheQuete(choisie, s.onglet === 'finies', suivie) : `<p class="vy-q-vide">${vide}</p>`}</section>
     </div>`;
   },
 
@@ -114,21 +114,45 @@ Object.assign(Hud.prototype, {
     const abandon = enCours && Quests.canAbandon(ch, q.id).ok ? `<button class="vy-bouton vy-bouton--petit vy-bouton--fantome" data-act="abandon" data-id="${q.id}" title="L'avancement sera perdu ; la quête redeviendra disponible.">Abandonner</button>` : '';
     const chemin = enCours ? `<button class="vy-bouton vy-bouton--petit vy-bouton--primaire" data-act="chemin" data-id="${q.id}"${peut && peut.point ? '' : ' disabled'} title="${esc(peut && peut.point ? `Jusqu'à ${peut.nom}` : (peut && peut.raison) || 'Rien à rejoindre pour cette étape')}">${ICO.chemin}Montrer le chemin</button>` : '';
     const estSuivie = suivie === q.id;
-    return `<button type="button" class="vy-q-retour" data-act="retour">${ICO.retour}Toutes les quêtes</button>
-      <header class="vy-q-tete"><span class="vy-q-tuile">${ICO.parchemin}</span><div class="vy-q-titre"><h3>${esc(q.name)}</h3><small>${esc(cat)} · niveau ${q.level} · ${esc(donneur)}</small></div>
-        ${enCours ? `<button type="button" class="vy-q-suivre${estSuivie ? ' on' : ''}" data-act="suivre" data-id="${q.id}" aria-pressed="${estSuivie}">${ICO.epingle}${estSuivie ? 'Suivie' : 'Suivre'}</button>` : finie ? '<span class="vy-q-suivre fini">Terminée</span>' : ''}</header>
+    const illu = this.portraitPnj(q.giver);
+    const suivre = enCours ? `<button type="button" class="vy-bouton vy-bouton--petit vy-q-suivre${estSuivie ? ' on' : ''}" data-act="suivre" data-id="${q.id}" aria-pressed="${estSuivie}">${ICO.epingle}${estSuivie ? 'Ne plus suivre' : 'Suivre'}</button>` : '';
+    return `<div class="vy-q-corps" data-defile="quetes-fiche">
+      <button type="button" class="vy-q-retour" data-act="retour">${ICO.retour}Toutes les quêtes</button>
+      <header class="vy-q-tete${illu ? ' illustree' : ''}">${illu ? `<img class="vy-q-illu" src="${illu}" alt="" draggable="false">` : `<span class="vy-q-tuile">${ICO.parchemin}</span>`}
+        <div class="vy-q-titre"><span class="vy-q-cat-tag">${esc(cat)}</span><h3>${esc(q.name)}</h3><small>Niveau ${q.level} · ${esc(donneur)}</small></div>
+        ${finie ? '<span class="vy-q-etat fini">Terminée</span>' : estSuivie ? `<span class="vy-q-etat">${ICO.epingle}Suivie</span>` : ''}</header>
       ${recit ? `<p class="vy-q-recit">${esc(recit)}</p>` : ''}
       <div class="vy-sous"><span>Étapes</span><span>${Math.min(cur, n)} / ${n}</span></div>
       <ol class="vy-q-etapes">${etapes}</ol>
       ${conseil ? `<p class="vy-q-conseil">${esc(conseil)}</p>` : ''}
-      ${gains ? `<div class="vy-sous"><span>Récompenses</span></div><div class="vy-q-gains">${gains}</div>` : ''}
-      ${abandon || chemin ? `<footer class="vy-q-pied">${abandon}<span class="vy-q-pied__ressort"></span>${chemin}</footer>` : ''}`;
+    </div>
+    ${gains || abandon || chemin || suivre ? `<footer class="vy-q-bas">
+      ${gains ? `<div class="vy-q-bas__titre">Récompenses</div><div class="vy-q-gains">${gains}</div>` : ''}
+      ${abandon || chemin || suivre ? `<div class="vy-q-pied">${abandon}<span class="vy-q-pied__ressort"></span>${suivre}${chemin}</div>` : ''}
+    </footer>` : ''}`;
   },
 
-  objectifQuete(id) {
+  portraitPnj(id) {
+    const def = (DATA.content.npcs || []).find(x => x.id === id);
+    const painter = this.renderer && (this.renderer.painter || this.renderer);
+    if (!def || !painter || typeof Parole === 'undefined') return '';
+    const cache = Hud._bustes || (Hud._bustes = new Map());
+    const key = def.look || 'marcheur';
+    if (cache.has(key)) return cache.get(key);
+    let url = '';
+    try {
+      const cv = document.createElement('canvas');
+      Parole.portrait(cv, def, painter, 'neutre');
+      url = cv.toDataURL('image/png');
+    } catch (e) { url = ''; }
+    if (url) cache.set(key, url);
+    return url;
+  },
+
+  objectifQuete(id, partout) {
     const w = this.world, ch = w.ch, q = Quests.get(id), st = Quests.state(ch, id);
     if (!q || !st) return null;
-    if (!w.plateau) return { raison: 'Le chemin se montre sur l\'île' };
+    if (!w.plateau && !partout) return { raison: 'Le chemin se montre sur l\'île' };
     if (w.showCombat) return { raison: 'Pas pendant un combat' };
     const steps = q.steps || [], e = steps[st.step], p = w.player;
     const proche = l => l.sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];

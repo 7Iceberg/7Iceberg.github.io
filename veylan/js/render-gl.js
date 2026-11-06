@@ -764,7 +764,7 @@ class RendererGL {
       e.shieldFill = new PIXI.Sprite(this.T.white); e.shieldFill.tint = 0xdff3ff; e.shieldFill.height = 2; e.shieldFill.position.set(-18, -16); e.uiTop.addChild(e.shieldFill);
       e.hpBg.visible = e.hpFill.visible = e.shieldFill.visible = false;
     }
-    e.label = null; e.badge = null; e.quest = null;
+    e.label = null; e.badge = null; e.quest = null; e.questMarque = null;
     return e;
   }
 
@@ -812,8 +812,19 @@ class RendererGL {
         this.setBody(e, `npc|${pid}|${s.look}`, () => this.paintNpc(s));
         e.body.scale.set(e.baseScale); e.body.position.set(0, -(s.bob || 0));
         this.labelOf(e, 'label', s.name, this.textStyle(11, '#f2e2c9', '600', 3), e.uiFoot).position.set(0, 16);
-        const q = this.labelOf(e, 'quest', s.quest, this.textStyle(20, s.quest === '!' ? '#f2b134' : '#8db585', '800', 4), e.uiTop);
-        if (q) q.position.set(0, -16 + Math.sin(now / 300) * 2);
+        if (s.quest && typeof Renderer === 'function' && Renderer.pictoQuete) {
+          if (e.questLbl) e.questLbl.visible = false;
+          if (!e.quest || e.questMarque !== s.quest) {
+            if (e.quest) { e.quest.destroy(); e.quest = null; }
+            e.quest = new PIXI.Sprite(PIXI.Texture.from(Renderer.pictoQuete(s.quest, 2))); e.quest.anchor.set(0.5, 1); e.quest.scale.set(0.5);
+            (e.uiTop || e.ui).addChild(e.quest); e.questMarque = s.quest;
+          }
+          e.quest.visible = true; e.quest.position.set(0, -4 + Math.sin(now / 300) * 2);
+        } else {
+          if (e.quest && e.questMarque) e.quest.visible = false;
+          const q = !e.questMarque && this.labelOf(e, 'quest', s.quest, this.textStyle(20, s.quest === '!' ? '#f2b134' : '#8db585', '800', 4), e.uiTop);
+          if (q) q.position.set(0, -16 + Math.sin(now / 300) * 2);
+        }
         continue;
       }
       const k = s.scale;

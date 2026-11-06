@@ -313,6 +313,9 @@ class World {
     if (this.state !== 'explore' || !cell || !Grid.inBounds(this.map, cell.x, cell.y)) return;
     const npc = this.npcAt(cell), group = this.groupAt(cell), node = this.nodeAt(cell);
     if (npc) return this.approach(cell, () => this.talk(npc));
+    const c = this.compagnon, p = this.player;
+    if (c && !group && Math.round(c.rx) === cell.x && Math.round(c.ry) === cell.y && !(cell.x === p.x && cell.y === p.y)) { this.emit('cibleCompagnon', c); return 'immediat'; }
+    if (cell.x === p.x && cell.y === p.y && !p.moving && !node) { this.emit('cibleSoi', p); return 'immediat'; }
     if (group) return this.inspectGroup(group);
     if (node) return this.approach(cell, () => this.gather(node));
     if (this.isDoor(cell)) return this.walkTo(cell, () => this.emit('dungeonPrompt', World.dungeonDef(this.door.dungeon)));
@@ -1119,6 +1122,9 @@ class World {
     const ch = this.ch;
     delete ch.fight;
     const result = { victory: d.victory, xp: 0, gained: 0, levels: 0, fils: 0, drops: [], achievements: [], quests: [], dungeon: null, cosmetiques: [] };
+    result.bilan = this.combat.bilan ? this.combat.bilan() : [];
+    result.tours = this.combat.round || 1;
+    result.duree = this.combat.debut ? Math.round((Date.now() - this.combat.debut) / 1000) : 0;
     const monsters = this.combat.entities.filter(e => e.team === 'monster' && !e.isSummon);
     if (d.victory && this.dispositionEnCours && !(this.mapDef && this.mapDef.room)) this.avancerPlacement(this.dispositionEnCours.cle);
     const chal = this.combat.challenge, defis = this.combat.challenges.filter(Boolean);

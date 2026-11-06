@@ -146,7 +146,7 @@ Object.assign(Hud.prototype, {
       ligne('pm', 'PM', d.pm, 'Points de mouvement'),
       ligne('init', 'Initiative', d.initiative, 'Terra, Ignis, Aqua et Aer ; en combat, elle baisse avec les PV perdus'),
       ligne('pp', 'Prospection', d.prospection, '100 + Aqua / 10 : les chances de butin en dépendent'),
-      ch.classDef.summonGauge ? ligne('invoc', 'Jauge de meute', ch.classDef.summonGauge, 'Chaque bête coûte sa part de la jauge (Glym 1, Grouk 2, Molh 3), une de chaque espèce') : ligne('invoc', 'Invocations', DATA.rules.maxSummonsPerOwner, 'Invocations en jeu au plus'),
+      ch.classDef.summonGauge ? ligne('invoc', 'Jauge de meute', ch.classDef.summonGauge + (ch.classDef.jaugeNiveaux || []).filter(n => (ch.level || 1) >= n).length, 'Chaque bête coûte sa part de la jauge (Glym 1, Grouk 2, Molh 3) ; une grande bête de chaque espèce, les Glyms à plusieurs ; +1 au niveau 25 et au 50') : ligne('invoc', 'Invocations', DATA.rules.maxSummonsPerOwner, 'Invocations en jeu au plus'),
     ].join('');
     const caracs = Character.ALLOUABLES.map(k => {
       const base = ch.stats[k], total = d.stats[k] || 0, cost = Character.pointCost(k, base), b = this.caracBornes(k);

@@ -58,6 +58,7 @@ const ArbreSceaux = (() => {
     if (typeof ResizeObserver !== 'undefined') {
       let w = 0, h = 0;
       this.ro = new ResizeObserver(() => {
+        this._taille = null;
         const r = hote.getBoundingClientRect();
         if (!r.width || !r.height || (Math.abs(r.width - w) < 1 && Math.abs(r.height - h) < 1)) return;
         w = r.width; h = r.height;
@@ -69,6 +70,12 @@ const ArbreSceaux = (() => {
     else hote.addEventListener('click', () => ouvrirArbreSur());
     this.construire();
   }
+  Arbre.prototype.taille = function () {
+    if (this._taille && this._taille.width) return this._taille;
+    const r = this.hote.getBoundingClientRect();
+    if (r.width) this._taille = { width: r.width, height: r.height };
+    return r;
+  };
   Arbre.prototype.construire = function () {
     const m = this.monde;
     let svg = '<svg class="liens" viewBox="0 0 10 10">';
@@ -171,12 +178,12 @@ const ArbreSceaux = (() => {
     return { x0: x0 - 60, y0: y0 - 60, x1: x1 + 60, y1: y1 + 60 };
   };
   Arbre.prototype.zMin = function () {
-    const r = this.hote.getBoundingClientRect();
+    const r = this.taille();
     if (!r.width) return 0.2;
     return clamp(this.zCadre('tout') * (this.mini ? 1 : 0.85), 0.05, 1);
   };
   Arbre.prototype.zCadre = function (bid) {
-    const r = this.hote.getBoundingClientRect();
+    const r = this.taille();
     if (!r.width) return 0.2;
     const b = this.bornes(bid), haut = this.mini ? 10 : 70;
     return Math.min(r.width / (b.x1 - b.x0), (r.height - haut) / (b.y1 - b.y0), bid && bid !== 'tout' ? 1.15 : 1);
@@ -185,7 +192,7 @@ const ArbreSceaux = (() => {
   Arbre.ZMAX = 1.8;
   Arbre.prototype.borner = function (c) {
     const b = this._bt || (this._bt = this.bornes('tout'));
-    const r = this.hote.getBoundingClientRect();
+    const r = this.taille();
     if (!r.width || !c.z) return c;
     const mx = Math.max(0, r.width / 2 / c.z - 24 / c.z), my = Math.max(0, r.height / 2 / c.z - 24 / c.z);
     const axe = (v, a, z, m) => (z - a <= 2 * m ? (a + z) / 2 : clamp(v, a + 0.4 * m, z - 0.4 * m));
@@ -209,7 +216,7 @@ const ArbreSceaux = (() => {
   Arbre.VOL_MS = [600, 1100];
   Arbre.prototype.voler = function (vers) {
     if (this.anim) { cancelAnimationFrame(this.anim); this.anim = 0; }
-    const de = { ...this.cam }, r = this.hote.getBoundingClientRect();
+    const de = { ...this.cam }, r = this.taille();
     const chemin = Math.hypot((vers.x - de.x) * de.z, (vers.y - de.y) * de.z) / Math.max(1, Math.hypot(r.width, r.height)) + Math.abs(Math.log(vers.z / de.z));
     const duree = clamp(Arbre.VOL_MS[0] + chemin * 420, Arbre.VOL_MS[0], Arbre.VOL_MS[1]);
     const doux = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -226,7 +233,7 @@ const ArbreSceaux = (() => {
     this.anim = requestAnimationFrame(pas);
   };
   Arbre.prototype.poser = function () {
-    const r = this.hote.getBoundingClientRect(), c = this.cam;
+    const r = this.taille(), c = this.cam;
     this.monde.style.transform = `translate(${r.width / 2 - c.x * c.z}px, ${r.height / 2 - c.y * c.z}px) scale(${c.z})`;
   };
   Arbre.prototype.boucle = function () {
@@ -256,7 +263,8 @@ const ArbreSceaux = (() => {
     h.addEventListener('wheel', (e) => {
       e.preventDefault();
       this.touche = true;
-      this.zoomVers(e.clientX, e.clientY, e.deltaY < 0 ? 1.15 : 1 / 1.15);
+      const d = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
+      this.zoomVers(e.clientX, e.clientY, clamp(Math.exp(-d * (e.ctrlKey ? 0.01 : 0.0014)), 0.6, 1.6));
       cacherCarte(); this.boucle();
     }, { passive: false });
     let dx = 0, dy = 0, lx = 0, ly = 0, t = 0;
@@ -834,6 +842,16 @@ const ArbreSceaux = (() => {
     return PRET;
   }
 
+  const ACCENTS = { royal: ['#7fb4ff', '127, 180, 255'], braise: ['#ef7574', '239, 117, 116'], cimes: ['#80d697', '128, 214, 151'] };
+  function theme() {
+    const app = typeof document !== 'undefined' && document.getElementById('app');
+    const t = (S.opts && S.opts.theme) || (app && app.dataset.uiTheme) || 'nuit';
+    HOTE.dataset.theme = t === 'duality' ? 'duality' : 'charte';
+    const a = ACCENTS[t];
+    if (a) { HOTE.style.setProperty('--theme-a', a[0]); HOTE.style.setProperty('--theme-a-rgb', a[1]); }
+    else { HOTE.style.removeProperty('--theme-a'); HOTE.style.removeProperty('--theme-a-rgb'); }
+  }
+
   async function ouvrir(o) {
     if (!X) throw new Error('js/sceaux.js doit être chargé avant js/arbre.js');
     S.opts = o || {};
@@ -842,6 +860,7 @@ const ArbreSceaux = (() => {
     indexer();
     await monter(S.opts.base);
     HOTE.style.display = 'block';
+    theme();
     HOTE.classList.toggle('dans-jeu', !!S.opts.jeu);
     $('#app').classList.toggle('dans-jeu', !!S.opts.jeu);
     $('#btnFermer').hidden = !S.opts.jeu;
@@ -868,7 +887,11 @@ const ArbreSceaux = (() => {
       if (!S.ouvert) return;
       if (S.opts.jeu) e.stopImmediatePropagation();
       if (e.key === 'Escape' && !$('#cine').hidden) { e.preventDefault(); $('#cine').click(); return; }
-      if (e.key === 'Escape' && S.opts.jeu) { e.preventDefault(); fermer(); }
+      if (e.key === 'Escape' && S.opts.jeu) { e.preventDefault(); fermer(); return; }
+      if (S.page === 'arbre' && ARBRE && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) {
+        const z = { '+': 1, '=': 1, '-': -1, '_': -1, '0': 0 }[e.key];
+        if (z !== undefined) { e.preventDefault(); ARBRE.touche = true; ARBRE.zoom(z); }
+      }
     }, true);
   }
 

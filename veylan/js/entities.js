@@ -164,6 +164,8 @@ class Entity {
     this.casts = {};
     this.aiMoves = 0;
     this.moved = false;
+    this.pmDepenses = 0;
+    this.affutCrans = 0;
     this.turnStartPos = { x: this.x, y: this.y };
     for (const k in this.cooldowns) {
       if (this.cooldowns[k] > 0) this.cooldowns[k]--;
@@ -213,6 +215,7 @@ class Entity {
 
   heal(amount) {
     if (this.hasState('unhealable')) return 0;
+    if (this.hasState('forme_iskar')) amount = Math.round(amount * 0.4);
     const before = this.hp;
     this.hp = Math.min(this.hpMax, this.hp + amount);
     return this.hp - before;

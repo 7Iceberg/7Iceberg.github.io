@@ -2813,6 +2813,34 @@ class Renderer {
     for (const s of sprites) this.drawOverlay(c, s, now);
   }
 
+  static pictoQuete(m, k) {
+    k = k || 1;
+    const cache = Renderer._pictos || (Renderer._pictos = new Map()), cle = m + '|' + k;
+    if (cache.has(cle)) return cache.get(cle);
+    const W = 30 * k, H = 36 * k, cv = typeof document === 'object' ? document.createElement('canvas') : null;
+    if (!cv) return null;
+    cv.width = Math.ceil(W); cv.height = Math.ceil(H);
+    const g = cv.getContext('2d'), r = 7 * k, w = 26 * k, x0 = 2 * k, y0 = 2 * k;
+    const or = m === '!';
+    const fond = g.createLinearGradient(0, y0, 0, y0 + w);
+    if (or) { fond.addColorStop(0, '#ffe08a'); fond.addColorStop(0.55, '#f2c14e'); fond.addColorStop(1, '#d99a2b'); }
+    else { fond.addColorStop(0, '#b8f1ff'); fond.addColorStop(0.55, '#52d2f4'); fond.addColorStop(1, '#1f9fd0'); }
+    g.beginPath();
+    g.moveTo(x0 + r, y0); g.lineTo(x0 + w - r, y0); g.quadraticCurveTo(x0 + w, y0, x0 + w, y0 + r);
+    g.lineTo(x0 + w, y0 + w - r); g.quadraticCurveTo(x0 + w, y0 + w, x0 + w - r, y0 + w);
+    g.lineTo(x0 + w / 2 + 5 * k, y0 + w); g.lineTo(x0 + w / 2, y0 + w + 7 * k); g.lineTo(x0 + w / 2 - 5 * k, y0 + w);
+    g.lineTo(x0 + r, y0 + w); g.quadraticCurveTo(x0, y0 + w, x0, y0 + w - r);
+    g.lineTo(x0, y0 + r); g.quadraticCurveTo(x0, y0, x0 + r, y0); g.closePath();
+    g.shadowColor = 'rgba(0,0,0,0.45)'; g.shadowBlur = 4 * k; g.shadowOffsetY = 1.5 * k;
+    g.fillStyle = fond; g.fill();
+    g.shadowColor = 'transparent';
+    g.lineWidth = 1.5 * k; g.strokeStyle = or ? '#8a5a10' : '#0e5f80'; g.stroke();
+    g.font = `900 ${19 * k}px Inter, "Segoe UI", system-ui, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = or ? '#2a1d05' : '#062a38'; g.fillText(m, x0 + w / 2, y0 + w / 2 + 1 * k);
+    cache.set(cle, cv);
+    return cv;
+  }
+
   drawOverlay(c, s, now) {
     if (s.kind === 'node') return;
     const p = this.cellToScreen(s.rx, s.ry);
@@ -2820,11 +2848,8 @@ class Renderer {
       const top = p.y - 42;
       if (s.quest) this.uiAt(c, p.x, top, () => {
         const y = top - 16 + Math.sin(now / 300) * 2;
-        c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.55;
-        c.drawImage(Renderer.dot(s.quest === '!' ? '#ffd166' : '#6fdc8c'), p.x - 15, y - 17, 30, 30); c.restore();
-        c.font = '900 20px Inter, "Segoe UI", system-ui, sans-serif'; c.textAlign = 'center';
-        c.lineWidth = 4; c.strokeStyle = '#0b0f18'; c.strokeText(s.quest, p.x, y);
-        c.fillStyle = s.quest === '!' ? '#ffd166' : '#6fdc8c'; c.fillText(s.quest, p.x, y);
+        const im = Renderer.pictoQuete(s.quest, 2);
+        if (im) c.drawImage(im, p.x - 15, y - 26, 30, 36);
       });
       this.uiAt(c, p.x, p.y, () => this.label(c, s.name, p.x, p.y + 18, false));
       return;

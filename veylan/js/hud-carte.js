@@ -12,10 +12,10 @@ const REGION = {
   voile: { roche: '#3a3550', sombre: '#16121f', encre: '#0b0812', lanterne: '#9764d6' },
 };
 const BASE = 100;
-const ZOOM = { cartes: [0.22, 2.6], monde: [0.7, 3] };
-const ROUTES = [['ervane', 'orsane'], ['orsane', 'kaldum'], ['orsane', 'thessa'], ['orsane', 'lisiere'], ['kaldum', 'lisiere'], ['thessa', 'lisiere'], ['lisiere', 'basvoiles'], ['kaldum', 'basvoiles'], ['lisiere', 'voile'], ['basvoiles', 'voile']];
+const ZOOM = { cartes: [0.22, 2.6], monde: [0.8, 3.4] };
 const ATELIERS = { tailleur: 'tailleur', cordonnier: 'cordonnier', bijoutier: 'bijoutier', forgeron: 'forgeron', alchimiste: 'alchimiste' };
 const DRAPEAU = 'veylan.carte.drapeau';
+const PEINT = { continent: null, enCours: false };
 const PRIO = { rendre: 6, offre: 5, relais: 4, monument: 3, donjon: 3, banque: 3, marche: 2, dojo: 2, metiers: 2, avis: 2, temple: 2, artisan: 2, marchand: 1 };
 
 const hex = c => { const m = /^#?([0-9a-f]{6})$/i.exec(String(c || '').trim()); const n = m ? parseInt(m[1], 16) : 0x808080; return [n >> 16, (n >> 8) & 255, n & 255]; };
@@ -97,7 +97,7 @@ Object.assign(Hud.prototype, {
         const cam = this.cameraIle();
         if (cam) { const p = this.world.player; cam.carteVoler(p.rx, p.ry); return; }
         if (this.carte3d && c.tab === 'cartes') { this.carte3d.centrer(); return; }
-        if (c.tab === 'monde') Object.assign(this.vueCarte(), { z: 1, cx: 46, cy: 40 });
+        if (c.tab === 'monde') Object.assign(this.vueCarte(), { z: 1, cx: 50, cy: 40 });
         else { Object.assign(this.vueCarte(), this.carteIci()); c.sel = null; c.selCase = null; c.bulle = null; }
         this.fen.render('carte');
       },
@@ -242,18 +242,22 @@ Object.assign(Hud.prototype, {
 
   ficheRegion() {
     const c = this.carte, ch = this.world.ch;
-    const regs = Atlas.regions();
-    const hereReg = this.world.zone && this.world.zone.region;
-    const r = regs.find(x => x.id === (c.region || hereReg)) || regs[0];
+    const liste = Continent.pays();
+    const ici = this.world.zone && this.world.zone.region;
+    const r = liste.find(x => x.id === (c.region || ici)) || liste.find(x => x.open) || liste[0];
     const seen = new Set(ch.counters.maps);
-    let html = `<h3>${esc(DATA.regions[r.id] || r.name)}</h3><p class="vy-carte__coord">${levels(r.level)}${r.open ? '' : ' · <b class="vy-carte__avenir">à venir</b>'}</p><p class="vy-note">${esc(r.desc)}</p>`;
+    const LIV = { ext1: 'la première extension', ext2: 'la seconde extension' };
+    let html = `<h3>${esc(r.nom)}</h3><p class="vy-carte__coord">${levels(r.niveaux)}${r.open ? '' : ' · <b class="vy-carte__avenir">à venir</b>'}</p><p class="vy-note">${esc(r.desc)}</p>`;
+    const trait = (t, v) => (v ? `<p class="vy-note"><b>${t}</b> : ${esc(v)}</p>` : '');
+    html += trait('Le pays', Hud.majuscule(r.biome)) + trait(r.id === 'orsane' || r.id === 'kaldum' ? 'La ville' : 'Le village', Hud.majuscule(r.ville)) + trait('Y entrer', Hud.majuscule(r.entree)) + trait('Le dragon', r.dragon);
     if (r.open) {
       const repos = z => (typeof Repos !== 'undefined' ? Repos.valeur(ch, z.id, Date.now()) : 0);
       const rows = r.zones.map(z => { const n = z.maps.length, v = z.maps.filter(m => seen.has(m.id)).length, rp = repos(z); return `<li><span>${esc(z.name)} <small class="muted">${levels(z.level)}</small>${rp ? ` <small class="vy-carte__repos" title="Repos de la zone : une victoire y rapporte plus d'XP et de butin">+${rp} %</small>` : ''}</span><b>${v} / ${n}</b></li>`; }).join('');
       html += `<div class="vy-sous"><span>Zones</span><span>explorées</span></div><ul class="vy-carte__liste">${rows}</ul>
         <div class="vy-carte__actions"><button class="vy-bouton vy-bouton--petit" data-act="voirRegion" data-id="${r.id}">Voir les cartes</button></div>`;
-    } else html += '<p class="muted vy-note">Ces terres ne sont pas encore ouvertes. Le continent s\'ouvre une région après l\'autre.</p>';
-    html += `<div class="vy-sous"><span>Le premier continent</span></div><div class="vy-carte__regions">${regs.map(x => `<button class="vy-carte__region${x.id === r.id ? ' on' : ''}${x.open ? '' : ' ferme'}" data-act="region" data-id="${x.id}" aria-pressed="${x.id === r.id}"><span class="vy-pastille" style="--c:${REGION[x.id].lanterne}"></span>${esc(DATA.regions[x.id] || x.name)}<small>${levels(x.level)}${x.open ? '' : ', à venir'}</small></button>`).join('')}</div>`;
+    } else html += `<p class="muted vy-note">Ce pays s'ouvrira avec ${LIV[r.livraison] || 'une extension'}. On le voit déjà du continent ; on ne le touche pas encore.</p>`;
+    const ordre = liste.slice().sort((a, b) => (b.open - a.open) || (a.anneau - b.anneau) || (a.niveaux[0] - b.niveaux[0]));
+    html += `<div class="vy-sous"><span>Le continent d'Orsane</span></div><div class="vy-carte__regions">${ordre.map(x => `<button class="vy-carte__region${x.id === r.id ? ' on' : ''}${x.open ? '' : ' ferme'}" data-act="region" data-id="${x.id}" aria-pressed="${x.id === r.id}"><span class="vy-pastille" style="--c:${x.lanterne}"></span>${esc(x.nom)}<small>${levels(x.niveaux)}${x.open ? '' : ', à venir'}</small></button>`).join('')}</div>`;
     return html;
   },
 
@@ -295,13 +299,13 @@ Object.assign(Hud.prototype, {
 
   vueCarte() {
     const c = this.carte, k = c.tab === 'monde' ? 'monde' : 'cartes';
-    return c.vues[k] || (c.vues[k] = k === 'monde' ? { z: 1, cx: 46, cy: 40 } : Object.assign({ z: 1 }, this.carteIci()));
+    return c.vues[k] || (c.vues[k] = k === 'monde' ? { z: 1, cx: 50, cy: 40 } : Object.assign({ z: 1 }, this.carteIci()));
   },
 
   projCarte(W, H) {
     const c = this.carte, v = this.vueCarte();
     if (c.tab === 'monde') {
-      const k = Math.min(W / 96, H / 80) * v.z;
+      const k = Math.min(W / 104, H / 84) * v.z;
       return { kind: 'monde', k, W, H, to: (u, t) => [W / 2 + (u - v.cx) * k, H / 2 + (t - v.cy) * k], from: (X, Y) => [v.cx + (X - W / 2) / k, v.cy + (Y - H / 2) / k], delta: (dx, dy) => [dx / k, dy / k] };
     }
     const s = BASE * v.z;
@@ -395,8 +399,8 @@ Object.assign(Hud.prototype, {
   toucherCarte(p, type) {
     const c = this.carte;
     if (c.tab === 'monde') {
-      const hit = (this.carteHits || []).slice().reverse().find(h => inPoly(p, h.poly));
-      if (hit) { c.region = hit.id; this.fen.render('carte'); }
+      const q = this.carteP ? this.carteP.from(p[0], p[1]) : null, id = q && Continent.paysEn(q[0], q[1]);
+      if (id) { c.region = id; this.fen.render('carte'); }
       return;
     }
     const it = this.repereSous(p);
@@ -896,95 +900,116 @@ Object.assign(Hud.prototype, {
 
 
   dessinerMonde(g, P, T, D) {
-    const regs = Atlas.regions();
-    const k = P.k;
-    const by = new Map(regs.map(r => [r.id, r]));
+    const liste = Continent.pays(), ouverts = liste.filter(p => p.open).map(p => p.id), cle = ouverts.join(',');
     const sel = this.carte.region || (this.world.zone && this.world.zone.region);
-    g.strokeStyle = rgba(T.texte, 0.05); g.lineWidth = 1;
-    for (let i = 0; i < 16; i++) {
-      const y = (i + 0.5) * P.H / 16;
-      g.beginPath();
-      for (let x = 0; x <= P.W; x += 12) g.lineTo(x, y + Math.sin(x / 38 + i * 1.7) * 3);
-      g.stroke();
-    }
-    for (const [a, b] of ROUTES) {
-      const A = by.get(a), B = by.get(b);
-      if (!A || !B) continue;
-      const pa = P.to(A.at[0], A.at[1]), pb = P.to(B.at[0], B.at[1]);
-      const open = A.open && B.open;
-      g.setLineDash(open ? [] : [5, 6]);
-      g.strokeStyle = open ? rgba(T.accent, 0.7) : rgba(T.texte2, 0.3); g.lineWidth = open ? 2 : 1.3;
-      const mx = (pa[0] + pb[0]) / 2 + (pb[1] - pa[1]) * 0.12, my = (pa[1] + pb[1]) / 2 - (pb[0] - pa[0]) * 0.12;
-      g.beginPath(); g.moveTo(pa[0], pa[1]); g.quadraticCurveTo(mx, my, pb[0], pb[1]); g.stroke();
-    }
-    g.setLineDash([]);
-    for (const r of regs.slice().sort((a, b) => b.r - a.r)) {
-      const RC = REGION[r.id];
-      const [X, Y] = P.to(r.at[0], r.at[1]);
-      const R = r.r * k;
-      const pts = [];
-      for (let i = 0; i < 20; i++) { const a = i / 20 * Math.PI * 2, f = 0.84 + 0.24 * hash(r.id + i); pts.push([X + Math.cos(a) * R * f * 1.18, Y + Math.sin(a) * R * f * 0.86]); }
-      this.carteHits.push({ id: r.id, poly: pts });
-      const path = () => { g.beginPath(); const m0 = [(pts[0][0] + pts[19][0]) / 2, (pts[0][1] + pts[19][1]) / 2]; g.moveTo(m0[0], m0[1]); for (let i = 0; i < 20; i++) { const a = pts[i], b = pts[(i + 1) % 20]; g.quadraticCurveTo(a[0], a[1], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); } g.closePath(); };
-      path(); g.strokeStyle = rgba(r.open ? RC.roche : RC.sombre, 0.22); g.lineWidth = 9; g.stroke();
-      path();
-      const fill = g.createLinearGradient(X - R, Y - R, X + R, Y + R);
-      if (r.open) { fill.addColorStop(0, mix(RC.roche, '#ffffff', 0.1)); fill.addColorStop(1, mix(RC.roche, RC.sombre, 0.55)); }
-      else { fill.addColorStop(0, mix(RC.sombre, T.fond, 0.25)); fill.addColorStop(1, mix(RC.sombre, T.fond, 0.6)); }
-      g.fillStyle = fill; g.fill();
-      g.strokeStyle = r.id === sel ? T.accent : (r.open ? RC.encre : rgba(RC.lanterne, 0.45)); g.lineWidth = r.id === sel ? 2.5 : 1.5; g.stroke();
-      if (r.open) this.ileOuverte(g, r, X, Y, R, T, D);
-      else {
-        g.save(); path(); g.clip();
-        g.strokeStyle = rgba(RC.lanterne, 0.16); g.lineWidth = 1;
-        for (let x = X - R * 2; x < X + R * 2; x += 7) { g.beginPath(); g.moveTo(x, Y - R); g.lineTo(x + R * 1.2, Y + R); g.stroke(); }
-        g.restore();
-        if (r.id === 'lisiere') this.dechirure(g, X, Y, R);
-        this.cadenas(g, X, Y - R * 0.3, Math.max(6, R * 0.15), RC.lanterne, T);
+    const peint = PEINT.continent;
+    if (!peint || peint.cle !== cle) {
+      if (!PEINT.enCours) {
+        PEINT.enCours = true;
+        setTimeout(() => {
+          const px = this.telephoneCarte() ? 6 : 8;
+          try { PEINT.continent = Object.assign(Continent.peindre(px, ouverts), { cle, contours: {} }); } catch (e) { console.warn('Carte du monde : le continent n\'a pas pu être peint', e); PEINT.continent = { cle, rate: true }; }
+          PEINT.enCours = false;
+          this.drawCarte();
+        }, 30);
       }
-      const name = DATA.regions[r.id] || r.name;
-      let f1 = Math.round(clamp(R * 0.2, 11, 15)), f2 = 11, sub = `${levels(r.level)}${r.open ? '' : ' · à venir'}`, w1, w2;
-      for (;;) {
-        g.font = `700 ${f1}px ${T.titre}`; w1 = g.measureText(name).width;
-        g.font = `600 ${f2}px ${T.ui}`; w2 = g.measureText(sub).width;
-        if (Math.max(w1, w2) + 16 <= R * 2.3 || f1 <= 9) break;
-        f1--; f2 = Math.max(9, f2 - 1);
-      }
-      if (Math.max(w1, w2) + 16 > R * 2.3 && !r.open) { sub = levels(r.level); g.font = `600 ${f2}px ${T.ui}`; w2 = g.measureText(sub).width; }
-      const w = Math.max(w1, w2) + 16, h = f1 + f2 + 11, ly = r.open ? Y + R * 0.8 : Y + R * 0.38;
-      g.fillStyle = rgba(T.fond, 0.86); round(g, X - w / 2, ly - h / 2, w, h, 4); g.fill();
-      g.strokeStyle = rgba(RC.lanterne, r.open ? 0.7 : 0.4); g.lineWidth = 1; g.stroke();
-      g.fillStyle = r.open ? T.accent : T.texte2; g.font = `700 ${f1}px ${T.titre}`; g.fillText(name, X, ly - f2 / 2 - 1);
-      g.fillStyle = r.open ? T.texte : rgba(RC.lanterne, 0.9); g.font = `600 ${f2}px ${T.ui}`; g.fillText(sub, X, ly + f1 / 2 + 1);
+      g.fillStyle = T.texte2; g.font = `600 13px ${T.ui}`; g.fillText('Peinture du continent...', P.W / 2, P.H / 2);
+      return;
+    }
+    if (!peint.rate) {
+      const k = P.k, [X0, Y0] = P.to(Continent.X0, Continent.Y0), Lw = Continent.LX * k, Lh = Continent.LY * k;
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+      g.drawImage(peint.canvas, X0, Y0, Lw, Lh);
+      if (sel) { const cc = peint.contours[sel] || (peint.contours[sel] = Continent.contour(peint, sel, '#ffe2a0')); g.drawImage(cc, X0, Y0, Lw, Lh); }
+    }
+    this.routesMonde(g, P, T);
+    this.lieuxMonde(g, P, T);
+    this.nomsMonde(g, P, T, liste, sel);
+    const ici = Continent.ancre(this.world.zone);
+    if (ici) {
+      const [x, y] = P.to(ici[0], ici[1]), w = 26, art = CartePeinture.epingle('toi', w * (this.carteDpr || 1));
+      const h = w * art.canvas.height / art.canvas.width;
+      g.drawImage(art.canvas, x - w / 2, y - h * art.ay / art.canvas.height, w, h);
     }
   },
+  telephoneCarte() { return (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || window.innerWidth <= 720; },
 
-  ileOuverte(g, r, X, Y, R, T, D) {
-    const list = [...D.A.coords].filter(([id]) => D.ix.map.get(id).zone.region === r.id);
-    if (!list.length) return;
-    const xs = list.map(([, p]) => p[0]), ys = list.map(([, p]) => p[1]);
-    const x0 = Math.min(...xs), y0 = Math.min(...ys), bw = Math.max(...xs) - x0 + 1, bh = Math.max(...ys) - y0 + 1;
-    const cs = Math.min(R * 1.5 / bw, R * 1.05 / bh);
-    const ox = X - bw * cs / 2, oy = Y - R * 0.18 - bh * cs / 2;
-    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
-    for (const [id, [x, y]] of list) {
-      const e = D.ix.map.get(id), img = this.imageCarte(id, D);
-      const px = ox + (x - x0) * cs, py = oy + (y - y0) * cs;
-      if (img) g.drawImage(img, px, py, cs, cs);
-      else { g.fillStyle = CartePeinture.couleurZone(e.zone); g.fillRect(px, py, cs, cs); }
-      if (id === D.here) { g.strokeStyle = T.actif; g.lineWidth = 2; g.strokeRect(px - 0.5, py - 0.5, cs + 1, cs + 1); }
+  routesMonde(g, P, T) {
+    const k = P.k;
+    g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+    for (const r of Continent.ROUTES) {
+      const pts = r.pts.map(q => P.to(q[0], q[1]));
+      const trace = () => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); };
+      const larg = Math.max(1.2, k * 0.32);
+      if (r.sorte === 'cable') {
+        trace(); g.setLineDash([]); g.strokeStyle = r.ouvert ? 'rgba(40,36,30,0.75)' : 'rgba(60,56,70,0.4)'; g.lineWidth = Math.max(1, k * 0.14); g.stroke();
+        g.setLineDash([Math.max(2, k * 0.5), Math.max(3, k * 0.7)]); g.strokeStyle = r.ouvert ? '#ffd27a' : 'rgba(230,220,255,0.55)'; g.lineWidth = larg * 0.8; g.stroke();
+        for (const [x, y] of [pts[0], pts[pts.length - 1]]) { g.setLineDash([]); g.fillStyle = r.ouvert ? '#3b3226' : 'rgba(60,56,70,0.6)'; g.fillRect(x - larg, y - larg * 2.2, larg * 2, larg * 2.2); }
+        continue;
+      }
+      if (r.sorte === 'bac') {
+        g.setLineDash([Math.max(3, k * 0.9), Math.max(3, k * 0.8)]); trace(); g.strokeStyle = 'rgba(232,246,255,0.75)'; g.lineWidth = larg; g.stroke();
+        continue;
+      }
+      const couleur = r.sorte === 'caravane' ? 'rgba(150,96,52,0.75)' : r.sorte === 'lianes' ? 'rgba(110,220,150,0.7)' : r.sorte === 'rideau' ? 'rgba(255,170,90,0.75)' : null;
+      if (r.ouvert) {
+        g.setLineDash([]); trace(); g.strokeStyle = 'rgba(44,32,22,0.7)'; g.lineWidth = larg * 2.1; g.stroke();
+        g.strokeStyle = '#f3dfb0'; g.lineWidth = larg; g.stroke();
+      } else {
+        g.setLineDash([Math.max(2, k * 0.6), Math.max(3, k * 0.75)]); trace(); g.strokeStyle = couleur || 'rgba(248,242,226,0.62)'; g.lineWidth = larg * 0.85; g.stroke();
+      }
     }
-  },
-
-  dechirure(g, X, Y, R) {
-    const pts = [[-0.25, -0.62], [-0.08, -0.36], [-0.2, -0.12], [0.04, 0.1], [-0.06, 0.3], [0.16, 0.52]].map(([a, b]) => [X + a * R, Y + b * R]);
-    g.save();
-    g.lineJoin = 'round'; g.lineCap = 'round';
-    g.shadowColor = '#ab7cf2'; g.shadowBlur = 12;
-    g.strokeStyle = 'rgba(151,100,214,0.9)'; g.lineWidth = 3.5;
-    g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke();
-    g.shadowBlur = 0; g.strokeStyle = '#f0d6ff'; g.lineWidth = 1.2; g.stroke();
     g.restore();
+  },
+
+  lieuxMonde(g, P, T) {
+    const k = P.k, plus = this.vueCarte().z >= 1.35;
+    for (const l of Continent.LIEUX) {
+      const [x, y] = P.to(l.at[0], l.at[1]), ferme = l.avenir, r = Math.max(3, k * (l.sorte === 'capitale' ? 0.95 : l.sorte === 'ville' ? 0.75 : 0.55));
+      g.save();
+      g.globalAlpha = ferme ? 0.7 : 1;
+      if (l.sorte === 'capitale' || l.sorte === 'ville') {
+        g.fillStyle = 'rgba(30,24,20,0.8)'; g.beginPath(); g.arc(x, y, r * 1.35, 0, Math.PI * 2); g.fill();
+        g.fillStyle = l.sorte === 'capitale' ? '#ffd27a' : '#f3e6c8'; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+        if (l.sorte === 'capitale') { g.fillStyle = '#3b2a12'; g.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r * 0.42 : r * 0.85; g.lineTo(x + Math.cos(a) * q, y + Math.sin(a) * q); } g.closePath(); g.fill(); }
+        else { g.fillStyle = '#3b2a12'; g.beginPath(); g.arc(x, y, r * 0.38, 0, Math.PI * 2); g.fill(); }
+      } else if (l.sorte === 'camp') {
+        g.fillStyle = 'rgba(30,24,20,0.8)'; g.beginPath(); g.moveTo(x, y - r * 1.4); g.lineTo(x + r * 1.3, y + r); g.lineTo(x - r * 1.3, y + r); g.closePath(); g.fill();
+        g.fillStyle = '#e9d3a4'; g.beginPath(); g.moveTo(x, y - r * 0.9); g.lineTo(x + r * 0.8, y + r * 0.6); g.lineTo(x - r * 0.8, y + r * 0.6); g.closePath(); g.fill();
+      } else {
+        g.translate(x, y); g.rotate(Math.PI / 4);
+        g.fillStyle = 'rgba(30,24,20,0.8)'; g.fillRect(-r, -r, r * 2, r * 2);
+        g.fillStyle = ferme ? '#cfc6e8' : '#f3dfb0'; g.fillRect(-r * 0.6, -r * 0.6, r * 1.2, r * 1.2);
+      }
+      g.restore();
+      const pays = Continent.parId(l.pays), memeNom = pays && pays.nom.toLowerCase() === l.nom.toLowerCase();
+      if (l.sorte === 'capitale' || (plus && !memeNom)) {
+        const f = l.sorte === 'capitale' ? 12 : 11, txt = Hud.majuscule(l.nom);
+        g.font = `${l.sorte === 'capitale' ? 700 : 600} ${f}px ${T.ui}`;
+        const w = g.measureText(txt).width + 8, yy = y + r * 1.4 + f * 0.8;
+        g.fillStyle = 'rgba(16,14,20,0.6)'; round(g, x - w / 2, yy - f * 0.65, w, f * 1.3, 3); g.fill();
+        g.fillStyle = ferme ? '#d8d0ec' : '#fff3d6'; g.fillText(txt, x, yy);
+      }
+    }
+  },
+
+  nomsMonde(g, P, T, liste, sel) {
+    const C = Continent.centresPays(), z = this.vueCarte().z;
+    for (const p of liste) {
+      const c = p.id === 'ervane' ? [p.centre[0] - 0.5, p.centre[1] - p.nuages - 0.6] : C[p.id];
+      if (!c) continue;
+      const [x, y] = P.to(c[0], c[1]);
+      const f1 = Math.round(clamp(10 + z * 3.2, 11, 19)), f2 = Math.round(clamp(8 + z * 1.6, 9, 13));
+      const sub = `${levels(p.niveaux)}${p.open ? '' : ' · à venir'}`;
+      g.font = `700 ${f1}px ${T.titre}`; const w1 = g.measureText(p.nom).width;
+      g.font = `600 ${f2}px ${T.ui}`; const w2 = g.measureText(sub).width;
+      const w = Math.max(w1, w2) + 16, h = f1 + f2 + 10, on = p.id === sel;
+      g.fillStyle = rgba(T.fond, p.open ? 0.82 : 0.66); round(g, x - w / 2, y - h / 2, w, h, 5); g.fill();
+      g.strokeStyle = on ? '#ffe2a0' : rgba(p.lanterne, p.open ? 0.85 : 0.5); g.lineWidth = on ? 2 : 1.2; g.stroke();
+      g.fillStyle = p.open ? T.accent : '#e6defa'; g.font = `700 ${f1}px ${T.titre}`; g.fillText(p.nom, x, y - f2 / 2);
+      g.fillStyle = p.open ? T.texte : rgba(p.lanterne, 0.95); g.font = `600 ${f2}px ${T.ui}`; g.fillText(sub, x, y + f1 / 2);
+      if (!p.open) this.cadenas(g, x, y - h / 2 - Math.max(6, f1 * 0.55), Math.max(4.5, f1 * 0.32), p.lanterne, T);
+    }
   },
 
   cadenas(g, X, Y, r, color, T) {

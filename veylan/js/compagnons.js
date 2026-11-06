@@ -17,6 +17,7 @@ const Compagnons = (() => {
     if (!c || c.id !== f.id || c.carte !== w.mapId) {
       c = w.compagnon = { id: f.id, carte: w.mapId, rx: p.rx - RECUL[sorte], ry: p.ry, px: p.rx, py: p.ry, dir: { x: 1, y: 0 }, cote: 1, bouge: false, t: 0 };
     }
+    if (c.reste) { c.px = p.rx; c.py = p.ry; c.bouge = false; return; }
     const dx = p.rx - c.px, dy = p.ry - c.py, d = Math.hypot(dx, dy);
     c.px = p.rx; c.py = p.ry;
     if (d > 1e-4) c.dir = { x: dx / d, y: dy / d };

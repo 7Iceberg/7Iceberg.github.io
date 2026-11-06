@@ -152,6 +152,7 @@ class Combat {
     this.order = this.ordreDesTours();
     this.round = 1;
     this.turnIndex = -1;
+    this.debut = Date.now();
     this.log('Le combat commence.', 'system');
     for (const e of this.entities.slice()) if (e.alive) this.fireTriggers(e, 'fightStart', {});
     this.applyKnots();
@@ -250,14 +251,83 @@ class Combat {
   enemies(e) { return this.entities.filter(t => t.alive && t.team !== e.team); }
   summonsOf(e) { return this.entities.filter(t => t.alive && t.isSummon && t.owner === e); }
 
+  bilan() {
+    return this.entities.filter(e => !e.isSummon).map(e => Object.assign({ nom: e.name, equipe: e.team, moi: e === this.player, vivant: e.alive, niveau: e.level || (e.def && e.def.level) || null, id: e.def && e.def.id },
+      { degats: 0, recus: 0, soins: 0, boucliers: 0 }, e.bilan || {}));
+  }
+  noter(e, cle, n) {
+    if (!e || !(n > 0)) return;
+    if (e.isSummon && e.owner) { if (cle === 'recus') return; e = e.owner; }
+    const b = e.bilan || (e.bilan = { degats: 0, recus: 0, soins: 0, boucliers: 0 });
+    b[cle] += n;
+  }
+
   summonBlock(e, monsterId, planned) {
     const mine = this.summonsOf(e);
-    const gauge = e.def && e.def.summonGauge;
+    const gauge = this.jaugeDe(e);
     if (!gauge) return mine.length + (planned || 0) >= DATA.rules.maxSummonsPerOwner ? `${DATA.rules.maxSummonsPerOwner} invocations au plus` : null;
-    if (mine.some(m => m.def.id === monsterId)) return 'Une bête de chaque espèce';
     const cost = m => (DATA.monsters[m] && DATA.monsters[m].summonCost) || 1;
+    if (cost(monsterId) > 1 && mine.some(m => m.def.id === monsterId)) return 'Une grande bête de chaque espèce';
     const used = mine.reduce((n, m) => n + cost(m.def.id), 0) + (planned || 0);
     return used + cost(monsterId) > gauge ? `Jauge de meute : ${used} sur ${gauge}` : null;
+  }
+
+  jaugeDe(e) {
+    const d = e && e.def;
+    if (!d || !d.summonGauge) return 0;
+    return d.summonGauge + (d.jaugeNiveaux || []).filter(n => (e.level || 1) >= n).length + (e.horde ? e.horde.jauge : 0);
+  }
+
+  sangChaud(e) {
+    const k = e && e.kit && e.kit.sangChaud;
+    if (!k || !e.alive) return { palier: 0, pct: 0, nom: null };
+    const p = e.hpPct();
+    let r = { palier: 0, pct: 0, nom: null };
+    k.paliers.forEach(([seuil, pct, nom], i) => { if (p <= seuil) r = { palier: i + 1, pct, nom }; });
+    return r;
+  }
+
+  protecteurDe(t) {
+    const f = t.effects.find(x => x.type === 'state' && x.name === 'protege_karsh');
+    if (!f) return null;
+    const k = f.by && f.by.alive ? f.by : this.entities.find(x => x.alive && x !== t && x.team === t.team && x.kit && x.kit.sangChaud);
+    return k && k !== t ? k : null;
+  }
+
+  coutPa(e, s) {
+    if (e && e.horde && s.effects.some(f => f.type === 'summon')) return Math.max(1, s.pa - e.horde.rabais);
+    return s.pa;
+  }
+
+  ordreMeute(e, ef) {
+    const k = (ef.pct || 50) / 100;
+    let n = 0;
+    for (const m of this.summonsOf(e)) {
+      const s = (m.spells || []).map(id => DATA.spells[id]).find(x => x && x.effects.some(f => f.type === 'damage'));
+      if (!s) continue;
+      const dm = s.effects.find(f => f.type === 'damage');
+      const t = this.enemies(m).filter(u => this.canSee(m, u) && Grid.dist(m.pos, u.pos) >= s.range[0] && Grid.dist(m.pos, u.pos) <= s.range[1])
+        .sort((a, b) => a.hp - b.hp)[0];
+      if (!t) continue;
+      n++;
+      this.log(`${m.name} obéit et frappe ${t.name}.`, e.team);
+      this.dealDamage(m, t, this.rollDamage(m, t, s.element, { min: dm.min * k, max: dm.max * k }, s), s.element, { label: 'ordre' });
+    }
+    if (!n) this.log('Aucune bête n\'a de proie à portée.', e.team);
+  }
+
+  pacte(e, ef) {
+    const betes = this.summonsOf(e).filter(m => m.def.summonCost);
+    if (!betes.length) { this.log(`${e.name} n'a aucune bête à sacrifier.`, e.team); return; }
+    let gain = 0, soin = 0;
+    for (const m of betes) {
+      gain += m.def.summonCost * (ef.par || 3);
+      soin += m.hp * (ef.soin || 30) / 100;
+      this.kill(m, `${m.name} se donne à ${e.name}.`);
+    }
+    e.addEffect({ type: 'power', value: gain, turns: ef.turns || 3 }, e === this.actor);
+    const h = e.heal(Math.round(soin));
+    this.log(`${e.name} prend la force de sa meute : +${gain} % de dégâts${h ? `, ${h} PV` : ''}.`, e.team);
   }
 
   checkEnd() {
@@ -329,6 +399,11 @@ class Combat {
     e.turnStartPos = { x: e.x, y: e.y };
     if (e.alive) this.applyGlyphs(e);
     this.ageGlyphs(e);
+    if (e.horde && --e.horde.tours <= 0) {
+      e.horde = null;
+      for (const m of this.summonsOf(e)) this.kill(m, `${m.name} retourne à la lande.`);
+      this.log(`La horde de ${e.name} se disperse.`, e.team);
+    }
     const stunned = e.alive && e.hasState('stunned');
     if (e.alive && !stunned) this.fireTriggers(e, 'turnStart', {});
     if (e.alive) this.hook('onAnyTurnStart', e);
@@ -357,6 +432,23 @@ class Combat {
       if (!e.alive) break;
       this.dealDamage(null, e, this.scaleByResist(e, f.element, f.value), f.element, { label: 'brûlure' });
     }
+    for (const f of e.effects.filter(f => f.type === 'soinDiffere')) {
+      if (!e.alive) break;
+      e.effects = e.effects.filter(x => x !== f);
+      this.applyEffect(f.owner && f.owner.alive ? f.owner : null, e, { type: 'heal', min: f.min, max: f.max, mult: f.mult }, f.spell);
+    }
+  }
+
+  ecourter(source, t, ef) {
+    const n = ef.tours || 1, allie = source && t.team === source.team;
+    const malus = f => ((f.type === 'pa' || f.type === 'pm' || f.type === 'power' || f.type === 'range') && f.value < 0) || f.type === 'vuln' || f.type === 'dot' || f.type === 'echo'
+      || (f.type === 'state' && ['provoked', 'tracked', 'unhealable', 'tenu', 'stunned'].includes(f.name));
+    const bonus = f => ((f.type === 'pa' || f.type === 'pm' || f.type === 'power' || f.type === 'range') && f.value > 0) || f.type === 'shield' || f.type === 'armor' || f.type === 'guard'
+      || (f.type === 'state' && ['invisible', 'digue', 'brise_lames', 'sous_la_maree', 'intaclable'].includes(f.name));
+    let k = 0;
+    for (const f of t.effects) if (!f.persistent && isFinite(f.turns) && (allie ? malus(f) : bonus(f))) { f.turns -= n; k++; }
+    t.effects = t.effects.filter(f => !(isFinite(f.turns) && f.turns <= 0));
+    this.log(k ? `${t.name} : ${allie ? 'ses malus' : 'ses bonus'} durent ${n} tour de moins.` : `${t.name} n'a rien à écourter.`);
   }
 
   startTimer() {
@@ -382,6 +474,7 @@ class Combat {
     const e = this.actor;
     if (e.alive) this.fireTriggers(e, 'turnEnd', {});
     if (e.alive && e.rewind) this.rewindTurn(e);
+    if (e.tient) this.lacher(e);
     e.resteFixe = !e.moved;
     if (e === this.player) this.hook('onTurnEnd', e);
     if (e.effects.some(f => f.type === 'state' && f.name === 'invisible' && f.revealAtEnd)) {
@@ -412,6 +505,7 @@ class Combat {
       prev = step;
     }
     this.busy = true;
+    if (e.tient) this.lacher(e);
     try {
       for (const step of path) {
         if (!this.isWalkable(step.x, step.y, e) || this.entityAt(step.x, step.y)) break;
@@ -421,6 +515,7 @@ class Combat {
         this.place(e, step.x, step.y);
         e.pm--;
         e.moved = true;
+        e.pmDepenses = (e.pmDepenses || 0) + 1;
         if (e === this.player) this.hook('onStep', e);
         this.emit('update');
         if (await this.checkTraps(e)) { if (!e.alive || e.pm <= 0) break; }
@@ -435,7 +530,7 @@ class Combat {
   async teleport(e, cell, s, verb) {
     await this.emitAsync('animMove', { entity: e, to: cell, teleport: true });
     this.place(e, cell.x, cell.y);
-    if (!(s && s.keepsAffut)) e.moved = true;
+    this.affutSaut(e, s);
     this.log(`${e.name} ${verb || 'se téléporte'}.`);
     await this.checkTraps(e);
   }
@@ -501,7 +596,7 @@ class Combat {
       this.place(e, step.x, step.y);
       if (await this.checkTraps(e)) { if (!e.alive) return; }
     }
-    if (!(s && s.keepsAffut)) e.moved = true;
+    this.affutSaut(e, s);
     this.log(`${e.name} recule de ${steps.length} case(s).`);
   }
 
@@ -521,14 +616,16 @@ class Combat {
     if (b.alive) await this.checkTraps(b);
   }
 
-  async displace(caster, target, ef) {
+  async displace(caster, target, ef, origin) {
+    const from = origin || caster.pos;
     const dir = ef.type === 'push'
-      ? Grid.pushDirection(caster.pos, target.pos)
-      : Grid.pushDirection(target.pos, caster.pos);
+      ? Grid.pushDirection(from, target.pos)
+      : Grid.pushDirection(target.pos, from);
     if (!dir) return;
     if (target.def.fixed || target.unpushable) { this.log(`${target.name} ne bouge pas.`); return; }
     if (target !== caster && target.hasState('assise')) { this.log(`${target.name} tient bon : assis comme la montagne.`); return; }
-    const cells = ef.cells + (caster && caster !== target && caster.hasState('assise') ? 1 : 0);
+    const cells = ef.cells + (caster && caster !== target && caster.hasState('assise') ? 1 : 0)
+      + (ef.type === 'pull' && caster && caster !== target && this.sangChaud(caster).palier >= 2 ? 1 : 0);
     let moved = 0;
     for (let i = 0; i < cells; i++) {
       const nx = target.x + dir.x;
@@ -570,7 +667,7 @@ class Combat {
   placeGlyph(e, cells, ef, s, fromTrigger) {
     this.glyphs.push({
       owner: e, name: ef.name || s.name, element: s.element, turnsLeft: ef.turns || 2,
-      affects: ef.affects || 'allies', effects: ef.effects || [], cells: cells.map(c => ({ x: c.x, y: c.y })),
+      affects: ef.affects || 'allies', effects: ef.effects || [], cells: cells.map(c => ({ x: c.x, y: c.y })), unique: !!ef.unique,
     });
     if (!fromTrigger) e.glyphThisTurn = true;
     this.log(`${e.name} trace ${ef.name || s.name}.`, e.team);
@@ -585,8 +682,31 @@ class Combat {
     if (this.glyphs.length < before) this.emit('update');
   }
 
-  applyGlyphs(e) {
-    for (const g of this.glyphsAt(e.x, e.y)) {
+  sousMaree(t) {
+    for (const v of this.entities) {
+      const k = v.alive && v.team === t.team && v.kit && v.kit.mare;
+      if (!k) continue;
+      if (t.hasState('sous_la_maree') || this.glyphsAt(t.x, t.y).some(g => g.owner === v)) return k.armure || 15;
+    }
+    return 0;
+  }
+
+  declencherMares(e) {
+    const mares = this.glyphs.filter(g => g.owner === e);
+    if (!mares.length) { this.log(`${e.name} n'a aucune Mare en jeu.`, e.team); return; }
+    this.log(`${e.name} fait monter la Marée : ses Mares se déclenchent.`, e.team);
+    const vus = new Set();
+    for (const g of mares) for (const c of g.cells) {
+      const t = this.entityAt(c.x, c.y);
+      if (!t || !t.alive || vus.has(t)) continue;
+      vus.add(t);
+      if (t.team === e.team) { if (!t.hasState('sous_la_maree')) t.addEffect({ type: 'state', name: 'sous_la_maree', turns: 1 }, t === this.actor); }
+      else this.applyGlyphs(t, g);
+    }
+  }
+
+  applyGlyphs(e, seul) {
+    for (const g of (seul ? [seul] : this.glyphsAt(e.x, e.y))) {
       const ally = e.team === g.owner.team;
       if ((g.affects === 'allies') !== ally) continue;
       for (const ef of g.effects) {
@@ -594,18 +714,21 @@ class Combat {
         if (ef.type === 'damage') this.dealDamage(g.owner, e, this.rollDamage(g.owner, e, g.element, ef, null), g.element, { label: g.name });
         else if (ef.type === 'heal') {
           const h = e.heal(Math.round(this.rand(ef.min, ef.max) * (g.owner.scale || 1)));
+          this.noter(g.owner, 'soins', h);
           if (h) { this.emit('float', { x: e.x, y: e.y, text: '+' + h, color: '#6fdc8c' }); this.log(`${g.name} : ${e.name} récupère ${h} PV.`); }
           if (h > 0 && e === this.player) this.hook('onHeal', e, h);
         } else if (ef.type === 'shield') {
           const v = ef.pctOwnerHp ? Math.round(g.owner.hpMax * ef.pctOwnerHp / 100) : ef.value;
           e.effects = e.effects.filter(f => !(f.type === 'shield' && f.glyph === g));
           e.addEffect({ type: 'shield', value: v, turns: ef.duration || 1, glyph: g }, true);
+          this.noter(g.owner, 'boucliers', v);
           this.log(`${g.name} : ${e.name} reçoit un bouclier de ${v}.`);
-        } else if ((ef.type === 'pa' || ef.type === 'pm') && ef.value < 0) {
+        } else if ((ef.type === 'pa' || ef.type === 'pm') && ef.value < 0 && e === this.actor) {
           const lost = this.removalLanded(g.owner, e, ef.type, -ef.value);
           if (lost) { e[ef.type] = Math.max(0, e[ef.type] - lost); this.log(`${g.name} : ${e.name} perd ${lost} ${ef.type.toUpperCase()}.`); }
         } else this.applyStatus(g.owner, e, ef);
       }
+      if (g.unique) { this.glyphs = this.glyphs.filter(x => x !== g); this.log(`${e.name} reçoit ${g.name}.`); this.emit('update'); }
     }
   }
 
@@ -615,6 +738,8 @@ class Combat {
     const trap = this.traps.splice(idx, 1)[0];
     this.emit('fx', { cells: [{ x: trap.x, y: trap.y }], color: DATA.elements[trap.element].color });
     this.log(`${e.name} déclenche ${trap.name} !`, trap.owner.team);
+    const kp = trap.owner && trap.owner.kit && trap.owner.kit.pli;
+    if (kp) { trap.owner.piegesPli = Math.min(kp.max || 5, (trap.owner.piegesPli || 0) + 1); this.log(`${trap.owner.name} : Pli ${trap.owner.piegesPli} / ${kp.max || 5}.`, trap.owner.team); }
     await this.emitAsync('animTrap', { trap, entity: e });
     for (const ef of trap.effects) {
       if (!e.alive) break;
@@ -701,6 +826,23 @@ class Combat {
     const oath = t.effects.find(f => f.type === 'state' && f.name === 'sworn');
     if (oath && source && oath.by === source && source.alive) this.keepOath(source, t, oath);
     if (source && source.alive && source === this.actor && t.team !== source.team && source.aPassif('air_dk')) { source.pm += 2; this.log(`${source.name} profite de la tempête : +2 PM.`); }
+    const ko = source && source.kit && source.kit.ombre;
+    if (ko && source.alive && source === this.actor && t.team !== source.team && !t.isSummon && source.ombreTour !== this.round && (source.cooldowns[ko.sort] || 0) > 0) {
+      source.cooldowns[ko.sort] = 0; source.ombreTour = this.round;
+      this.log(`${source.name} rentre dans l'ombre : le Manteau d'Ombre est de nouveau prêt.`, source.team);
+    }
+    if (!silent && t.isSummon && t.def.echangeAMort && t.owner && t.owner.alive) {
+      const o = t.owner, at = { x: t.x, y: t.y };
+      if (!this.entities.some(x => x.alive && x !== t && x.x === at.x && x.y === at.y)) {
+        this.place(o, at.x, at.y);
+        this.log(`${o.name} prend la place de ${t.name}.`, o.team);
+      }
+      if (t.def.pmAMort) {
+        if (o === this.actor) o.pm += t.def.pmAMort;
+        else o.addEffect({ type: 'pm', value: t.def.pmAMort, turns: 1 }, false);
+        this.log(`${o.name} gagne ${t.def.pmAMort} PM.`, o.team);
+      }
+    }
     this.hook('onKill', t, this.coupFatal || null);
     this.fireTriggers(t, 'death', { source });
     for (const s of this.summonsOf(t)) this.kill(s, `${s.name} disparaît avec ${t.name}.`);
@@ -718,24 +860,106 @@ class Combat {
   spellState(e, spellId) {
     const s = this.spellOf(spellId, e);
     if (!s) return { ok: false, reason: 'Sort inconnu' };
-    if (e.pa < s.pa) return { ok: false, reason: 'Pas assez de PA' };
+    if (e.pa < this.coutPa(e, s)) return { ok: false, reason: 'Pas assez de PA' };
     if ((e.cooldowns[spellId] || 0) > 0) return { ok: false, reason: `Relance dans ${e.cooldowns[spellId]} tour(s)` };
     if (s.maxPerTurn && (e.casts[spellId] || 0) >= s.maxPerTurn) return { ok: false, reason: 'Déjà lancé le maximum de fois ce tour' };
     if (s.braiseCost && this.braiseOf(e) < s.braiseCost) return { ok: false, reason: `Il faut ${s.braiseCost} de Braise` };
     if (e.glyphThisTurn && s.effects.some(ef => ef.type === 'glyph')) return { ok: false, reason: 'Un seul glyphe par tour' };
+    if (s.exigeDebout && e.hasState('assise')) return { ok: false, reason: 'Il faut être debout' };
+    if (s.exigeTenu && !this.tenuPar(e)) return { ok: false, reason: 'Il faut tenir quelqu\'un (Empoigne)' };
+    if (s.exigeLeurre && !this.leurreDe(e)) return { ok: false, reason: 'Il faut ton Leurre' };
     return { ok: true };
   }
 
+  leurreDe(e) {
+    return this.summonsOf(e).find(m => m.alive && m.def.leurre) || null;
+  }
+
+  async echangeLeurre(l, t) {
+    if (t.def.fixed || t.unpushable || t.hasState('assise')) { this.log(`${t.name} ne bouge pas.`); return; }
+    const pl = l.pos, pt = t.pos;
+    this.place(l, pt.x, pt.y);
+    this.place(t, pl.x, pl.y);
+    this.log(`${t.name} prend la place du Leurre.`);
+    await this.checkTraps(t);
+  }
+
+  async hantise(e, cell) {
+    const dx = Math.sign(cell.x - e.x), dy = Math.sign(cell.y - e.y);
+    if (dx && dy) return;
+    const t = this.entityAt(e.x + dx, e.y + dy);
+    if (!t || !t.alive) { this.log('Personne à hanter au contact.'); return; }
+    const n = Grid.dist(t.pos, cell);
+    if (n > 0) await this.displace(e, t, { type: 'push', cells: n });
+  }
+
+  traqueDe(e, t) {
+    return (t && t.effects && t.effects.find(f => f.type === 'traque' && f.owner === e && f.turns > 0)) || null;
+  }
+
+  poserTraque(e, t) {
+    for (const x of this.entities) x.effects = x.effects.filter(f => !(f.type === 'traque' && f.owner === e));
+    t.addEffect({ type: 'traque', owner: e, crans: 0, turns: e.kit.traque.turns || 2 }, t === this.actor);
+    this.log(`${e.name} prend ${t.name} en traque.`, e.team);
+  }
+
+  rebond(e, t, ef, s) {
+    const dmg = s.effects.find(f => f.type === 'damage');
+    if (!dmg) return;
+    const u = this.entities.filter(x => x.alive && x !== t && x.team !== e.team && Grid.dist(x.pos, t.pos) <= (ef.cells || 2))
+      .sort((a, b) => Grid.dist(a.pos, t.pos) - Grid.dist(b.pos, t.pos))[0];
+    if (!u) return;
+    const k = (ef.pct || 50) / 100;
+    this.log(`La flèche rebondit sur ${u.name}.`, e.team);
+    this.dealDamage(e, u, this.rollDamage(e, u, s.element, { min: dmg.min * k, max: dmg.max * k }, s), s.element, { label: 'rebond' });
+  }
+
+  tenuPar(e) {
+    const t = e && e.tient;
+    return t && t.alive && t.effects.some(f => f.type === 'state' && f.name === 'tenu' && f.by === e) ? t : null;
+  }
+
+  lacher(e) {
+    const t = e && e.tient;
+    if (t) t.effects = t.effects.filter(f => !(f.type === 'state' && f.name === 'tenu' && f.by === e));
+    if (e) e.tient = null;
+  }
+
+  empoigner(e, t) {
+    if (!t || t === e) return;
+    this.lacher(e);
+    t.addEffect({ type: 'state', name: 'tenu', by: e, turns: 1 }, t === this.actor);
+    e.tient = t;
+    this.log(`${e.name} empoigne ${t.name}.`, e.team);
+    if (t.isSummon && t.owner === e && e === this.actor) { e.pa += 1; this.log(`${e.name} reprend 1 PA.`, e.team); }
+  }
+
+
+  affutDe(e, from) {
+    const a = e && e.kit && e.kit.affut;
+    if (!a || e !== this.actor) return { pct: 0, range: 0 };
+    const pas = (e.pmDepenses || 0) + (from ? Grid.dist(e.pos, from) : 0);
+    const pct = Math.max(0, a.power - (a.parPm == null ? a.power : a.parPm) * pas - (a.parSaut || 0) * (e.affutCrans || 0));
+    return { pct, range: pas === 0 && pct > 0 ? (a.range || 0) : 0 };
+  }
 
   isAffut(e, from) {
-    if (!e || !e.kit || !e.kit.affut || e !== this.actor || e.moved) return false;
-    return !from || (from.x === e.x && from.y === e.y);
+    return this.affutDe(e, from).pct > 0;
+  }
+
+  affutSaut(e, s) {
+    if (s && s.keepsAffut) e.affutCrans = (e.affutCrans || 0) + 1;
+    else { e.moved = true; e.affutCrans = 99; }
   }
 
   rangeOf(e, s, from) {
     if (s.target === 'self' || s.range[1] < 2) return s.range;
+    if (s.porteeAssis && e.hasState('assise')) {
+      const m = Math.max(s.range[0], Math.floor(s.range[1] * s.porteeAssis) + e.modifier('range'));
+      return [s.range[0], Math.max(s.range[0], m)];
+    }
     let bonus = e.modifier('range');
-    if (this.isAffut(e, from)) bonus += e.kit.affut.range || 0;
+    bonus += this.affutDe(e, from).range;
     return bonus ? [s.range[0], Math.max(s.range[0], s.range[1] + bonus)] : s.range;
   }
 
@@ -801,6 +1025,7 @@ class Combat {
     if (k.pa && e === this.actor) { e.pa += k.pa; this.log(`${e.name} gagne ${k.pa} PA.`); }
     if (k.healPct) {
       const h = e.heal(Math.round(e.hpMax * k.healPct / 100));
+      this.noter(e, 'soins', h);
       if (h > 0) { this.emit('float', { x: e.x, y: e.y, text: '+' + h, color: '#6fdc8c' }); this.log(`${e.name} récupère ${h} PV.`); }
     }
     if (k.fury) this.gainFury(e, k.fury);
@@ -850,6 +1075,8 @@ class Combat {
 
   effectApplies(e, t, ef) {
     if (ef.ifSworn && !this.oathOn(t, e)) return false;
+    if (ef.siAssis && !(e && e.hasState('assise'))) return false;
+    if (ef.siDebout && e && e.hasState('assise')) return false;
     if (ef.onAlly && t.team !== e.team) return false;
     if (ef.onFoe && t.team === e.team) return false;
     return true;
@@ -961,7 +1188,7 @@ class Combat {
     this.busy = true;
     const ctx = this.castCtx = { caster: e, spell: s, fury: e.fury, braise: e.braise || 0, reserve: e.reserve || 0, hitFoe: false, kills: [] };
     try {
-      e.pa -= s.pa;
+      e.pa -= this.coutPa(e, s);
       e.casts[spellId] = (e.casts[spellId] || 0) + 1;
       if (s.cooldown) e.cooldowns[spellId] = s.cooldown;
       if (s.furySpend && e.fury > 0) { this.log(`${e.name} dépense ${e.fury} de Fureur.`, e.team); e.fury = 0; }
@@ -974,6 +1201,23 @@ class Combat {
       if (e === this.player) this.hook('onCast', e, s, spellId);
       this.emit('update');
       await this.emitAsync('animCast', { entity: e, spell: s, cells });
+      if (s.bascule && e.hasState(s.bascule)) {
+        e.removeState(s.bascule);
+        if (s.basculeRend) e.pa += s.basculeRend;
+        this.log(`${e.name} se relève${s.basculeRend ? ` et reprend ${s.basculeRend} PA` : ''}.`, e.team);
+        this.emit('update');
+        return { ok: true };
+      }
+      if (s.effects.some(ef => ef.type === 'jeter')) {
+        const t = this.tenuPar(e);
+        this.lacher(e);
+        if (t && !this.entityAt(cell.x, cell.y)) {
+          await this.emitAsync('animMove', { entity: t, to: { x: cell.x, y: cell.y }, fast: true });
+          this.place(t, cell.x, cell.y);
+          this.log(`${e.name} jette ${t.name}.`, e.team);
+          await this.checkTraps(t);
+        }
+      }
 
       let targets = cells.map(c => this.entityAt(c.x, c.y)).filter(t => t && t.alive && (t !== e || s.affectsCaster));
       if (s.affects === 'allies') targets = targets.filter(t => t.team === e.team);
@@ -981,15 +1225,27 @@ class Combat {
       ctx.foes = targets.filter(t => t.team !== e.team).length;
       const moves = [];
       for (const t of targets) {
+        const tag = s.faveur && t.team === e.team ? 'faveur' : s.ombre && t.team !== e.team ? 'ombre' : null;
+        if (tag) t.effects = t.effects.filter(f => f.tag !== tag);
+        const n0 = t.effects.length;
         for (const ef of s.effects) {
           if (!t.alive) break;
           if (!this.effectApplies(e, t, ef)) continue;
-          if (ef.type === 'glyph') continue;
+          if (ef.type === 'glyph' || ef.type === 'jeter') continue;
           if (ef.type === 'push' || ef.type === 'pull') moves.push({ t, ef });
+          else if (ef.type === 'depuisCentre' || ef.type === 'versCentre') { if (t.x !== center.x || t.y !== center.y) moves.push({ t, ef: { type: ef.type === 'depuisCentre' ? 'push' : 'pull', cells: ef.cells }, origin: center }); }
+          else if (ef.type === 'empoigner') this.empoigner(e, t);
+          else if (ef.type === 'rebond') this.rebond(e, t, ef, s);
+          else if (ef.type === 'versLeurre' || ef.type === 'depuisLeurre') { const l = this.leurreDe(e); if (l) moves.push({ t, ef: { type: ef.type === 'depuisLeurre' ? 'push' : 'pull', cells: ef.cells }, origin: l.pos }); }
+          else if (ef.type === 'echangeLeurre') { const l = this.leurreDe(e); if (l && l !== t) await this.echangeLeurre(l, t); }
           else await this.applyEffect(e, t, ef, s);
         }
+        if (tag) for (const f of t.effects.slice(n0)) f.tag = tag;
       }
-      for (const { t, ef } of moves) if (t.alive) await this.displace(e, t, ef);
+      if (s.faveur && !targets.some(t => t.team === e.team) && !this.entityAt(cell.x, cell.y) && this.isWalkable(cell.x, cell.y, null)) {
+        this.placeGlyph(e, [cell], { name: 'Étincelle', turns: 2, affects: 'allies', unique: true, effects: s.effects.filter(f => f.type !== 'glyph') }, s, true);
+      }
+      for (const { t, ef, origin } of moves) if (t.alive) await this.displace(e, t, ef, origin);
       for (const ef of s.effects) {
         if (ef.type === 'teleport') {
           const occ = s.telefrag ? this.entityAt(cell.x, cell.y) : null;
@@ -997,6 +1253,11 @@ class Combat {
           else await this.teleport(e, cell, s);
         }
         else if (ef.type === 'leap') await this.leap(e, cell, ef, s);
+        else if (ef.type === 'hantise') await this.hantise(e, cell);
+        else if (ef.type === 'declencherMares') this.declencherMares(e);
+        else if (ef.type === 'ordreMeute') this.ordreMeute(e, ef);
+        else if (ef.type === 'pacte') this.pacte(e, ef);
+        else if (ef.type === 'horde') { e.horde = { tours: ef.turns || 2, jauge: ef.jauge || 3, rabais: ef.rabais || 1 }; this.log(`${e.name} appelle la horde : +${e.horde.jauge} de jauge, ses appels coûtent ${e.horde.rabais} PA de moins.`, e.team); }
         else if (ef.type === 'retreat') await this.retreat(e, ef, s);
         else if (ef.type === 'charge') { await this.charge(e, cell, ef, s); e.moved = true; }
         else if (ef.type === 'obstacle') this.placeObstacles(e, cells, ef);
@@ -1009,7 +1270,23 @@ class Combat {
           }
         }
       }
-      for (const ef of s.selfEffects || []) this.applySelfEffect(e, ef, s);
+      for (const ef of s.selfEffects || []) if (this.effectApplies(e, e, ef)) this.applySelfEffect(e, ef, s);
+      if (s.recharge) (e.dejaLance = e.dejaLance || {})[s.id] = true;
+      if (s.cumul) {
+        let f = e.effects.find(x => x.type === 'cumulSort' && x.spell === s.id);
+        if (!f) { f = { type: 'cumulSort', spell: s.id, crans: 0, turns: s.cumul.tours || 2 }; e.addEffect(f, true); f = e.effects[e.effects.length - 1]; }
+        f.crans = Math.min(s.cumul.max || 2, f.crans + 1); f.turns = s.cumul.tours || 2;
+        this.log(`${s.name} : +${f.crans * s.cumul.par} % au prochain lancer.`, e.team);
+      }
+      if (e.kit && e.kit.traque) {
+        const marquee = s.traque ? targets.find(t => t.alive && t.team !== e.team) : null;
+        if (marquee) this.poserTraque(e, marquee);
+        else if (ctx.touches) for (const t of ctx.touches) {
+          const tq = this.traqueDe(e, t);
+          if (tq && tq.crans < (e.kit.traque.max || 3)) { tq.crans++; this.log(`${t.name} : Traque ${tq.crans} / ${e.kit.traque.max || 3}.`, e.team); }
+        }
+      }
+      if (s.parPiege && e.piegesPli) { this.log(`${e.name} dépense son Pli (${e.piegesPli}).`, e.team); e.piegesPli = 0; }
       if (s.fury && ctx.hitFoe) this.gainFury(e, s.fury);
       if (s.braise && ctx.hitFoe) this.gainBraise(e, s.braise);
       if (s.reserve && ctx.hitFoe) this.gainReserve(e, s.reserve);
@@ -1026,7 +1303,8 @@ class Combat {
   async applyEffect(source, t, ef, s) {
     switch (ef.type) {
       case 'damage':
-        const ls = s.lifesteal || (s.lifestealIfState && source.hasState(s.lifestealIfState.state) ? s.lifestealIfState.pct : 0);
+        let ls = s.lifesteal || (s.lifestealIfState && source.hasState(s.lifestealIfState.state) ? s.lifestealIfState.pct : 0);
+        if (ls && this.sangChaud(source).palier >= 3) ls += 10;
         this.dealDamage(source, t, this.rollDamage(source, t, s.element, ef, s), s.element, { lifesteal: ls, pierce: !!(s.oathPierce && this.oathOn(t, source)) });
         break;
       case 'steal':
@@ -1039,10 +1317,23 @@ class Combat {
         this.track(source, t, ef);
         break;
       case 'leap':
+      case 'declencherMares':
+      case 'ordreMeute':
+      case 'pacte':
+      case 'horde':
       case 'retreat':
+        break;
+      case 'soinDiffere': {
+        t.addEffect({ type: 'soinDiffere', min: ef.min, max: ef.max, mult: ef.mult, owner: source, spell: s, turns: 1 }, t === this.actor);
+        this.log(`${t.name} recevra un soin au début de son tour.`);
+        break;
+      }
+      case 'ecourter':
+        this.ecourter(source, t, ef);
         break;
       case 'healPct': {
         const h = t.heal(Math.round(t.hpMax * ef.pct / 100));
+        this.noter(source || t, 'soins', h);
         this.emit('float', { x: t.x, y: t.y, text: '+' + h, color: '#6fdc8c' });
         this.log(`${t.name} récupère ${h} PV.`);
         if (h > 0 && t === this.player) this.hook('onHeal', t, h);
@@ -1054,11 +1345,14 @@ class Combat {
         const critSoin = chance > 0 && this.rng() * 100 < chance;
         const brut = this.rand(ef.min, ef.max) * (ef.mult || 1) * (critSoin ? DATA.critJetDe(s) : 1) * fac + (source ? source.soinsFixes || 0 : 0);
         const h = t.heal(Math.round(brut * (1 + (t.soinsRecus || 0) / 100)));
+        this.noter(source || t, 'soins', h);
         this.emit('float', { x: t.x, y: t.y, text: '+' + h, color: '#6fdc8c' });
         this.log(`${t.name} récupère ${h} PV${critSoin ? ' (soin critique)' : ''}.`);
         if (h > 0 && t === this.player) this.hook('onHeal', t, h);
+        if (source && source.team === t.team) this.declencherFilon(source, t, 'soin');
         if (h > 0 && source && source !== t && source.alive && source.team === t.team && source.aPassif('feu_gk')) {
           const r = source.heal(Math.round(h * 0.1));
+          this.noter(source, 'soins', r);
           if (r) this.log(`${source.name} récupère ${r} PV (Foyer Vivant).`);
         }
         break;
@@ -1075,6 +1369,7 @@ class Combat {
         const v = t.stripShields();
         if (v > 0) {
           const h = source.heal(v);
+          this.noter(source, 'soins', h);
           this.emit('float', { x: source.x, y: source.y, text: '+' + h, color: '#6fdc8c' });
           this.log(`${source.name} dévore le bouclier de ${t.name} et récupère ${h} PV.`);
         } else {
@@ -1117,6 +1412,12 @@ class Combat {
         if (ef.type === 'pm' && value < 0) this.echoPmLoss(t);
         break;
       }
+      case 'filon': {
+        for (const o of this.entities) o.effects = o.effects.filter(f => !(f.type === 'filon' && f.owner === source));
+        t.addEffect({ type: 'filon', owner: source, charges: ef.charges || 3, turns, min: ef.min, max: ef.max }, own);
+        this.log(`${t.name} porte le Filon de ${source.name} : ${ef.charges || 3} déclenchement(s), ${turns} tour(s).`, source.team);
+        break;
+      }
       case 'echo':
         t.effects = t.effects.filter(f => !(f.type === 'echo' && f.owner === source));
         t.addEffect({ type: 'echo', turns, min: ef.min, max: ef.max, mult: ef.mult, element: ef.element, uses: ef.uses, owner: source }, own);
@@ -1125,12 +1426,13 @@ class Combat {
       case 'shield': {
         const v = Math.round(ef.value * (source ? source.scale || 1 : 1) * (1 + (source ? source.boucliers || 0 : 0) / 100) * (1 + this.bonusReserve(source, this.castCtx && this.castCtx.caster === source ? this.castCtx.spell : null)));
         t.addEffect({ type: 'shield', value: v, turns }, own);
+        this.noter(source || t, 'boucliers', v);
         this.log(`${t.name} gagne un bouclier de ${v} points.`);
         break;
       }
       case 'power':
         t.addEffect({ type: 'power', value: ef.value, turns }, own);
-        this.log(`${t.name} : +${ef.value} % de dégâts.`);
+        this.log(`${t.name} : ${ef.value < 0 ? '−' + -ef.value : '+' + ef.value} % de dégâts.`);
         break;
       case 'vuln':
         if (source && source !== t) t.effects = t.effects.filter(f => !(f.type === 'vuln' && f.by === source));
@@ -1147,11 +1449,13 @@ class Combat {
         if (ef.name === 'invisible' && t.hasState('tracked')) { this.log(`${t.name} est traqué et ne peut pas se cacher.`); break; }
         t.addEffect({ type: 'state', name: ef.name, turns, by: source, lingering: !!ef.lingering }, own);
         if (ef.name === 'invisible') t.hiddenAt = { x: t.x, y: t.y };
-        this.log(ef.name === 'invisible' ? `${t.name} devient invisible.` : ef.name === 'unhealable' ? `${t.name} ne peut plus être soigné pendant ${turns} tour(s).` : ef.name === 'ivre' ? `${t.name} est ivre pendant ${turns} tour(s).` : `${t.name} est provoqué par ${source.name}.`);
+        { const etats = { sous_la_maree: 'passe Sous la Marée', digue: 'est derrière une Digue', brise_lames: 'est derrière un Brise-Lames', forme_iskar: 'prend la Forme d\'Iskar', protege_karsh: `est protégé par ${source.name}`, intaclable: 'devient intaclable', assise: 's\'assoit comme la montagne', tenu: 'est tenu' };
+          this.log(ef.name === 'invisible' ? `${t.name} devient invisible.` : ef.name === 'unhealable' ? `${t.name} ne peut plus être soigné pendant ${turns} tour(s).` : ef.name === 'ivre' ? `${t.name} est ivre pendant ${turns} tour(s).` : etats[ef.name] ? `${t.name} ${etats[ef.name]} (${turns} tour(s)).` : `${t.name} est provoqué par ${source.name}.`); }
         break;
       case 'range':
         t.addEffect({ type: 'range', value: ef.value, turns }, own);
         this.log(`${t.name} : ${ef.value > 0 ? '+' : '−'}${Math.abs(ef.value)} de portée pendant ${turns} tour(s).`);
+        if (ef.value < 0 && source && source.team !== t.team) this.declencherFilon(source, t, 'portee');
         break;
       case 'guard':
         t.addEffect({ type: 'guard', value: ef.value, turns }, own);
@@ -1191,6 +1495,7 @@ class Combat {
   }
 
   tackle(e) {
+    if (e.hasState('intaclable')) return;
     let tacle = 0;
     for (const n of Grid.neighbors(this.map, e.pos)) {
       const o = this.entityAt(n.x, n.y);
@@ -1251,8 +1556,10 @@ class Combat {
     }
     const kr = caster && caster.kit && caster.kit.reserve;
     if (landed > 0 && t.team !== caster.team && kr && kr.gain === 'retrait' && (!kr.seul || kr.seul === kind)) this.gainReserve(caster, landed * (kr.par || 1));
+    if (landed > 0 && caster && t.team !== caster.team) this.declencherFilon(caster, t, kind);
     if (landed > 0 && caster && caster.alive && t.team !== caster.team && caster.aPassif('eau_gk')) {
       const h = caster.heal(Math.round(caster.hpMax * 0.02 * landed));
+      this.noter(caster, 'soins', h);
       if (h) this.log(`${caster.name} reprend ${h} PV (Marée Haute).`);
     }
     return landed;
@@ -1281,6 +1588,30 @@ class Combat {
     return Math.max(0, Math.round(base * (1 - this.resistOf(t, element) / 100)));
   }
 
+  filonDe(source, t) {
+    if (!source || !t || !t.effects) return null;
+    const m = (source.isSummon && source.owner) || source;
+    return t.effects.find(f => f.type === 'filon' && f.owner === m && f.charges > 0) || null;
+  }
+
+  declencherFilon(source, t, raison) {
+    const f = this.filonDe(source, t);
+    if (!f || !t.alive || !f.owner.alive) return false;
+    const ctx = this.castCtx;
+    if (ctx) { ctx.filons = ctx.filons || new Set(); if (ctx.filons.has(t)) return false; ctx.filons.add(t); }
+    const m = f.owner;
+    f.charges--;
+    const sp = ctx && ctx.spell;
+    const el = raison === 'soin' ? 'feu' : (sp && sp.element && sp.element !== 'neutre' ? sp.element : 'terre');
+    const cibles = raison === 'soin' ? this.entities.filter(e => e.alive && e.team !== t.team && Grid.dist(e.pos, t.pos) <= 2) : [t];
+    this.emit('float', { x: t.x, y: t.y, text: 'Filon', color: '#e3b54a' });
+    this.log(`Le Filon se déclenche sur ${t.name} (${f.charges} restant${f.charges > 1 ? 's' : ''}).`, m.team);
+    for (const c of cibles) if (c.alive) this.dealDamage(m, c, this.rollDamage(m, c, el, { min: f.min, max: f.max }, null), el, { label: 'filon' });
+    this.gainReserve(m, 1);
+    if (f.charges <= 0) t.effects = t.effects.filter(x => x !== f);
+    return true;
+  }
+
   bonusFormat(source) {
     if (!source || source.team !== 'player') return 1;
     const m = source.owner || source.caller;
@@ -1291,8 +1622,16 @@ class Combat {
     let mult = 1 + (source ? source.modifier('power') / 100 : 0) + t.modifier('vuln') / 100;
     const oath = source ? this.oathOn(t, source) : null;
     if (oath) mult += (oath.power || 0) / 100;
-    if (source && this.isAffut(source)) mult += ((s && s.affutBonus) || source.kit.affut.power || 0) / 100;
+    const af = source ? this.affutDe(source) : null;
+    if (af && af.pct > 0) mult += (s && s.affutBonus ? s.affutBonus * af.pct / source.kit.affut.power : af.pct) / 100;
+    const tq = source && source.kit && source.kit.traque && this.traqueDe(source, t);
+    if (tq) mult += tq.crans * (source.kit.traque.par || 8) / 100;
     if (source) mult += this.braisePower(source) / 100;
+    if (source && source.kit && source.kit.fury && source.kit.fury.power) mult += (source.fury || 0) * source.kit.fury.power / 100;
+    if (source && s && s.recharge && source.dejaLance && source.dejaLance[s.id]) mult += s.recharge / 100;
+    if (source && s && s.cumul) { const f = source.effects.find(x => x.type === 'cumulSort' && x.spell === s.id); if (f) mult += f.crans * s.cumul.par / 100; }
+    if (source) mult += this.sangChaud(source).pct / 100;
+    if (source && source.hasState('tenu')) mult *= 0.5;
     if (s && source) {
       if (s.lowHpBonus && source.hpPct() < s.lowHpBonus.below) mult *= s.lowHpBonus.mult;
       if (s.executeBelow && t.hpPct() < s.executeBelow) mult *= 2;
@@ -1304,6 +1643,10 @@ class Combat {
         mult *= 1 + s.furySpend * fury / 100;
       }
       mult *= 1 + this.bonusReserve(source, s);
+      if (s.parPiege) mult *= 1 + s.parPiege * Math.min(5, source.piegesPli || 0) / 100;
+      if (s.assisBonus && source.hasState('assise')) mult *= 1 + s.assisBonus / 100;
+      if (s && s.parPmDepense) mult *= 1 + s.parPmDepense * (source.pmDepenses || 0) / 100;
+      if (s && s.parPmRestant) mult *= 1 + s.parPmRestant * Math.max(0, source.pm || 0) / 100;
       if (s.braiseSpend) {
         const braise = this.castCtx && this.castCtx.caster === source ? this.castCtx.braise : (source.braise || 0);
         mult *= 1 + s.braiseSpend * braise / 100;
@@ -1320,7 +1663,10 @@ class Combat {
     }
     const pierce = !!(s && s.oathPierce && oath);
     if (source && !t.hasState('stunned') && !pierce) mult *= 1 - Math.min(90, Math.max(0, t.modifier('armor'))) / 100;
+    if (source && t.hasState('assise') && t.kit && t.kit.id === 'thalor' && !pierce) mult *= 0.85;
     if (source && !pierce && Grid.dist(source.pos, t.pos) <= 1 && t.modifier('guard') > 0) mult *= 1 - Math.min(90, t.modifier('guard')) / 100;
+    { const sc = source && !pierce ? this.sangChaud(t).pct : 0; if (sc) mult *= 1 - sc / 100; }
+    { const pm = source && !pierce ? this.sousMaree(t) : 0; if (pm) mult *= 1 - pm / 100; }
     if (this.isArmed(t)) mult *= 1 - t.kit.armed.reduction / 100;
     if (source && t.resteFixe && t.aPassif('terre_gk')) mult *= 0.9;
     const avantRes = base * Math.max(0, mult) - (source && t.reduc ? t.reduc : 0) - (source && this.lastCrit && t.resCrit ? t.resCrit : 0);
@@ -1334,6 +1680,10 @@ class Combat {
 
   dealDamage(source, t, amount, element, opts) {
     opts = opts || {};
+    if (amount > 0 && source && !opts.trap && !opts.redirige) {
+      const k = this.protecteurDe(t);
+      if (k && k !== source) { this.log(`${k.name} prend le coup à la place de ${t.name}.`, k.team); return this.dealDamage(source, k, amount, element, Object.assign({}, opts, { redirige: true })); }
+    }
     const dist = source ? Grid.dist(source.pos, t.pos) : 99;
     const elName0 = element ? DATA.elements[element].label.toLowerCase() : '';
     if (amount > 0 && (t.def.invulnerable || t.hasState('invulnerable'))) {
@@ -1341,6 +1691,28 @@ class Combat {
       this.log(`${t.name} est invulnérable.`);
       this.fireTriggers(t, 'hit', { source, element, dist, dealt: 0, blocked: true });
       return { dealt: 0, absorbed: 0 };
+    }
+    if (amount > 0 && source && source !== t && !opts.trap) {
+      const digue = t.effects.find(f => f.type === 'state' && (f.name === 'digue' || f.name === 'brise_lames'));
+      if (digue) {
+        const auContact = dist <= 1, protege = digue.name === 'digue' ? auContact : !auContact;
+        if (protege) {
+          this.emit('float', { x: t.x, y: t.y, text: '0', color: '#9fd7ff' });
+          this.log(`${t.name} est invulnérable ${auContact ? 'au contact' : 'à distance'}.`);
+          this.fireTriggers(t, 'hit', { source, element, dist, dealt: 0, blocked: true });
+          return { dealt: 0, absorbed: 0 };
+        }
+        if (!digue.riposte) {
+          digue.riposte = true;
+          if (digue.name === 'digue') {
+            if (t === this.actor) t.pm += 1; else t.addEffect({ type: 'pm', value: 1, turns: 1 }, false);
+            this.log(`${t.name} riposte : +1 PM.`);
+          } else {
+            t.addEffect({ type: 'power', value: 15, turns: 1 }, t === this.actor);
+            this.log(`${t.name} riposte : +15 % de dégâts.`);
+          }
+        }
+      }
     }
     if (amount > 0 && source && dist > 1 && !opts.pierce && t.effects.some(f => f.type === 'state' && f.farDodge)) {
       this.emit('float', { x: t.x, y: t.y, text: 'esquive', color: '#ffffff' });
@@ -1350,13 +1722,17 @@ class Combat {
     }
     if (amount > 0 && element && t.absorbElement === element) {
       const h = t.heal(amount);
+      this.noter(t, 'soins', h);
       this.emit('float', { x: t.x, y: t.y, text: '+' + h, color: '#6fdc8c' });
       this.log(`${t.name} absorbe le coup (${elName0}) et récupère ${h} PV.`);
       this.fireTriggers(t, 'hit', { source, element, dist, dealt: 0, absorbed: true });
       return { dealt: 0, absorbed: 0 };
     }
     const res = this.resistOf(t, element);
-    const r = t.takeDamage(amount);
+    const pvAvant = t.hp, r = t.takeDamage(amount);
+    const porte = (pvAvant - t.hp) + (r.absorbed || 0);
+    this.noter(source, 'degats', porte);
+    this.noter(t, 'recus', porte);
     t.flashUntil = performance.now() + 250;
     if (!(t.team !== 'player' && t.hasState('invisible'))) this.emit('float', { x: t.x, y: t.y, text: '-' + r.dealt, color: element ? DATA.elements[element].color : '#ffffff' });
     const elName = element ? DATA.elements[element].label.toLowerCase() : '';
@@ -1373,6 +1749,7 @@ class Combat {
     if (source && source !== t) {
       if (opts.lifesteal && r.dealt > 0) {
         const h = source.heal(Math.round(r.dealt * opts.lifesteal / 100));
+        this.noter(source, 'soins', h);
         if (h > 0) {
           this.emit('float', { x: source.x, y: source.y, text: '+' + h, color: '#6fdc8c' });
           this.log(`${source.name} récupère ${h} PV.`);
@@ -1383,7 +1760,7 @@ class Combat {
         if (inv.lingering) inv.revealAtEnd = true;
         else { source.removeState('invisible'); this.log(`${source.name} redevient visible.`); }
       }
-      if (this.castCtx && this.castCtx.caster === source && t.team !== source.team && r.dealt + r.absorbed > 0) this.castCtx.hitFoe = true;
+      if (this.castCtx && this.castCtx.caster === source && t.team !== source.team && r.dealt + r.absorbed > 0) { this.castCtx.hitFoe = true; (this.castCtx.touches = this.castCtx.touches || new Set()).add(t); }
       if (t.kit && t.kit.fury && t.alive && source.team !== t.team && dist <= 1 && r.dealt + r.absorbed > 0) this.gainFury(t, t.kit.fury.onMeleeHit || 0);
       if (source.team !== t.team && r.dealt + r.absorbed > 0) for (const v of this.entities) {
         const k = v.kit && v.kit.reserve;
@@ -1396,7 +1773,7 @@ class Combat {
     }
     if (t === this.player) this.hook('onDamage', t);
     if (source && source.team === 'monster' && t === this.player && r.dealt > 0 && this.knots) {
-      if (this.knots.has('noeud_de_sang')) source.heal(Math.round(r.dealt / 10));
+      if (this.knots.has('noeud_de_sang')) this.noter(source, 'soins', source.heal(Math.round(r.dealt / 10)));
       if (this.knots.has('noeud_de_braise') && element !== null && !opts.label) {
         t.effects = t.effects.filter(f => !(f.type === 'dot' && f.knot));
         t.addEffect({ type: 'dot', element: 'feu', value: 4, turns: 2, knot: true }, false);
@@ -1569,6 +1946,7 @@ class Combat {
         break;
       case 'heal': {
         const h = e.heal(Math.round(e.hpMax * a.pct / 100));
+        this.noter(e, 'soins', h);
         this.emit('float', { x: e.x, y: e.y, text: '+' + h, color: '#6fdc8c' });
         this.log(`${e.name} récupère ${h} PV.`);
         break;

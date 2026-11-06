@@ -213,7 +213,62 @@ const Achievements = (() => {
     return n;
   }
 
-  return { defs, get, met, check, pending, claim, hasReward, category, sousCategorie, progress, avancement, points, score, total, ileSeule, pourPerso, integrer };
+  function proches(ch, zone) {
+    const Z = (DATA.content && DATA.content.zones) || [], DJ = (DATA.content && DATA.content.dungeons) || [];
+    if (!ch || !zone) return [];
+    const z0 = Z.find(z => z.id === zone.id) || zone;
+    const idsDe = x => (typeof x === 'string' ? x : x && x.id);
+    const monstresDe = z => {
+      const l = new Set(Object.keys((z.faune && z.faune.monstres) || {}));
+      for (const m of z.maps || []) for (const g of m.groups || []) for (const x of g.monsters || []) l.add(idsDe(x));
+      for (const id of [...l]) for (const r of Object.values(DATA.monsters)) if (r.rare && r.base === id) l.add(r.id);
+      return [...l].filter(id => DATA.monsters[id]);
+    };
+    const npcsDe = z => new Set((z.maps || []).flatMap(m => (m.npcs || []).map(idsDe)));
+    const carteZone = {};
+    for (const z of Z) for (const m of z.maps || []) carteZone[m.id] = z.id;
+    const voisines = [...new Set((z0.maps || []).flatMap(m => Object.values(m.exits || {}).map(e => carteZone[e && e.map ? e.map : e])).filter(id => id && id !== z0.id))].map(id => Z.find(z => z.id === id)).filter(Boolean);
+    const nom = id => (DATA.monsters[id] && DATA.monsters[id].name) || id;
+    const ici = new Set(monstresDe(z0)), pnj = npcsDe(z0);
+    const djIci = DJ.filter(d => d.zone === z0.id), djVoisins = voisines.flatMap(v => DJ.filter(d => d.zone === v.id).map(d => ({ d, v })));
+    const bossDe = d => new Set((d.rooms || []).flatMap(r => (r.monsters || []).map(idsDe)).filter(id => DATA.monsters[id] && DATA.monsters[id].boss));
+    const out = [];
+    for (const a of defs()) {
+      if ((ch.achievements || []).includes(a.id) || !pourPerso(ch, a) || met(ch, a.cond)) continue;
+      const c = a.cond;
+      let raison = null, rang = 9;
+      const djDe = id => djIci.find(d => d.id === id) || null, djVDe = id => djVoisins.find(x => x.d.id === id) || null;
+      const djBoss = m => djIci.find(d => bossDe(d).has(m)) || null, djVBoss = m => djVoisins.find(x => bossDe(x.d).has(m)) || null;
+      if (['dungeon', 'dungeonTurns'].includes(c.type) && c.dungeon) {
+        const d = djDe(c.dungeon), dv = !d && djVDe(c.dungeon);
+        if (d) { raison = `Le donjon ${d.name} s'ouvre dans cette zone.`; rang = 1; }
+        else if (dv) { raison = `Le donjon ${dv.d.name} s'ouvre tout près, ${dv.v.name}.`; rang = 4; }
+      } else if (['boss', 'bossDefi', 'noeudsBoss'].includes(c.type) && c.monster) {
+        const d = djBoss(c.monster), dv = !d && djVBoss(c.monster);
+        if (d) { raison = `${nom(c.monster)} attend au fond du donjon ${d.name}, dans cette zone.`; rang = 1; }
+        else if (dv) { raison = `${nom(c.monster)} attend au fond du donjon ${dv.d.name}, tout près.`; rang = 4; }
+      } else if (c.type === 'kills' && ici.has(c.monster)) {
+        raison = `Tu es dans la zone : ${nom(c.monster)} y vit.`; rang = 2;
+      } else if ((c.type === 'famille' || c.type === 'argentes') && (c.monstres || []).some(m => ici.has(m))) {
+        const l = (c.monstres || []).filter(m => ici.has(m) && !((ch.counters.kills || {})[m]));
+        raison = l.length ? `Tu es dans la zone : ${l.slice(0, 3).map(nom).join(', ')}${l.length > 3 ? '…' : ''} ${l.length > 1 ? 'vivent' : 'vit'} ici.` : 'Tu es dans la zone de cette famille.'; rang = 2;
+      } else if (c.type === 'zone') {
+        if (c.zone === z0.id) { const n = zoneMaps(c.zone).length, vu = zoneSeen(ch, c.zone); raison = `Tu es dans la zone : ${n - vu} carte${n - vu > 1 ? 's' : ''} sur ${n} à explorer.`; rang = 3; }
+        else { const v = voisines.find(x => x.id === c.zone); if (v) { const n = zoneMaps(c.zone).length, vu = zoneSeen(ch, c.zone); raison = `La zone voisine, ${v.name} : ${n - vu} carte${n - vu > 1 ? 's' : ''} à explorer.`; rang = 5; } }
+      } else if (c.type === 'relais') {
+        const r = (z0.maps || []).filter(m => m.relay).map(m => m.id).filter(id => !(ch.relays || []).includes(id));
+        if (r.length) { raison = 'Un Relais de la zone n\'est pas encore éveillé.'; rang = 3; }
+      } else if (c.type === 'quest' || c.type === 'questline') {
+        const qs = c.type === 'quest' ? [c.quest] : (c.quests || []);
+        const q = qs.map(id => typeof Quests === 'object' && Quests.get ? Quests.get(id) : null).find(q => q && pnj.has(q.giver) && !((ch.quests || {}).done || []).includes(q.id));
+        if (q) { const n = (DATA.content.npcs || []).find(x => x.id === q.giver); raison = `${n ? n.name : 'Un PNJ'}, ici, donne « ${q.name} ».`; rang = 3; }
+      }
+      if (raison) out.push({ a, raison, rang });
+    }
+    return out.sort((x, y) => x.rang - y.rang);
+  }
+
+  return { defs, get, met, check, pending, claim, hasReward, category, sousCategorie, progress, avancement, points, score, total, ileSeule, pourPerso, integrer, proches };
 })();
 
 Achievements.integrer();

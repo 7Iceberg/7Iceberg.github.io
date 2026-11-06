@@ -323,9 +323,13 @@ void main() {
           g.lineWidth = 1.2 * k; g.strokeStyle = sorte === 'ennemi' ? 'rgba(240,122,92,0.6)' : 'rgba(201,166,107,0.6)'; g.stroke();
           g.fillStyle = '#f2e2c9'; g.fillText(chaine, cw / 2, ch / 2 + 0.5 * k);
         } else if (sorte === 'marque') {
-          g.font = `800 ${22 * k}px Inter, "Segoe UI", system-ui, sans-serif`;
-          g.lineWidth = 4.5 * k; g.strokeStyle = '#0b0f18'; g.strokeText(chaine, cw / 2, ch / 2);
-          g.fillStyle = chaine === '!' ? '#f2b134' : '#8db585'; g.fillText(chaine, cw / 2, ch / 2);
+          const im = typeof Renderer === 'function' && Renderer.pictoQuete ? Renderer.pictoQuete(chaine, 2) : null;
+          if (im) { const h = Math.min(ch, cw * 1.2), w = h * 30 / 36; g.drawImage(im, (cw - w) / 2, (ch - h) / 2, w, h); }
+          else {
+            g.font = `800 ${22 * k}px Inter, "Segoe UI", system-ui, sans-serif`;
+            g.lineWidth = 4.5 * k; g.strokeStyle = '#0b0f18'; g.strokeText(chaine, cw / 2, ch / 2);
+            g.fillStyle = chaine === '!' ? '#f2b134' : '#8db585'; g.fillText(chaine, cw / 2, ch / 2);
+          }
         } else {
           g.font = `800 ${11 * k}px Inter, "Segoe UI", system-ui, sans-serif`;
           g.lineWidth = 4 * k; g.strokeStyle = '#0b0f18'; g.strokeText(chaine, cw / 2, ch / 2);
