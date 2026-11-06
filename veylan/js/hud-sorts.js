@@ -69,8 +69,7 @@ function lignes(ef, s, crit) {
     case 'state':
       if (ef.name === 'forme_iskar') return [['Forme d\'Iskar', `${tours(ef.turns)} : ne reçoit plus que 40 % des soins`]];
       if (ef.name === 'intaclable') return [['Intaclable', tours(ef.turns)]];
-      if (ef.name === 'protege_karsh') return [['Prendre le Feu', `${tours(ef.turns)} : les coups reçus tombent sur le Karsh`]];
-      if (ef.name === 'sous_la_maree') return [['Sous la Marée', `${tours(ef.turns)} : −15 % de dégâts subis`]];
+      if (ef.name === 'protege') return [['Protégé', `${tours(ef.turns)} : les coups reçus tombent sur le Velmar`]];
       if (ef.name === 'digue') return [['Digue', `${tours(ef.turns)} : invulnérable au contact ; frappé à distance, +1 PM`]];
       if (ef.name === 'brise_lames') return [['Brise-Lames', `${tours(ef.turns)} : invulnérable à distance ; frappé au contact, +15 % de dégâts`]];
       if (ef.name === 'invisible') return [['Invisible', `${tours(ef.turns)}${ef.lingering ? ', jusqu\'à la fin du tour où tu frappes' : ''}`]];
@@ -96,7 +95,7 @@ function lignes(ef, s, crit) {
     case 'ordreMeute': return [['Ordre', `toutes ses bêtes frappent tout de suite, à ${ef.pct || 50} % de leurs dégâts`]];
     case 'horde': return [['Horde', `+${ef.jauge || 3} de jauge pendant ${plural(ef.turns || 2, 'tour')}, ses appels coûtent ${ef.rabais || 1} PA de moins ; au bout, ses bêtes s'en vont`]];
     case 'pacte': return [['Pacte', `sacrifie ses bêtes : +${ef.par || 3} % de dégâts par point de jauge (${tours(ef.turns || 3)}), ${ef.soin || 30} % de leurs PV`]];
-    case 'declencherMares': return [['Marée', 'toutes ses Mares agissent tout de suite ; ses alliés qui s\'y tiennent passent Sous la Marée']];
+    case 'declencherMares': return [['Marée', 'toutes ses Mares agissent tout de suite sur les ennemis qui s\'y tiennent']];
     case 'hantise': return [['Hantise', 'pousse la créature au contact jusqu\'à la case visée, à travers les pièges']];
     case 'versLeurre': return [['Attire', `de ${plural(ef.cells, 'case')} vers le Leurre`]];
     case 'depuisLeurre': return [['Repousse', `de ${plural(ef.cells, 'case')} depuis le Leurre`]];

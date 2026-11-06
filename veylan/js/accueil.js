@@ -534,7 +534,18 @@ class Accueil {
       <h2 class="classe-nom"><span class="classe-nom__nom">${esc(c.name)}</span><span class="classe-nom__epithete">${esc(epithete(c.title))}</span></h2>
       ${c.id === b.recommandee ? `<p class="classe-reco">${ICONES.etoile} Recommandée pour toi</p>` : ''}
       <p class="classe-desc">${esc(c.desc)}</p>
+      ${this.voiesClasse(c)}
       <p class="classe-diff"><span>Difficulté</span><span class="classe-diff__pips" role="img" aria-label="Difficulté ${P.difficulte} sur 3">${pips}</span><span class="classe-diff__mot">${['', 'accessible', 'tactique', 'exigeante'][P.difficulte]}</span></p>`;
+  }
+
+  voiesClasse(c) {
+    const V = c.voies;
+    if (!V) return '';
+    const ordre = ['terre', 'feu', 'eau', 'air'].filter(e => V[e]);
+    return `<p class="classe-voies" aria-label="Les quatre voies">${ordre.map(e => {
+      const el = DATA.elements[e];
+      return `<span class="classe-voie" style="--v:${el.color}" title="${esc(el.stat + ' : ' + V[e].metier)}"><b>${esc(el.stat)}</b> ${esc(V[e].nom)}</span>`;
+    }).join('')}</p>`;
   }
 
   monterClasse() {
@@ -819,8 +830,12 @@ class Accueil {
     const champ = this.ecranEl.querySelector('#entree-nom');
     const nom = (champ ? champ.value : b.name).replace(/\s+/g, ' ').trim().slice(0, 16);
     if (!nom) { this.erreur('Donne un nom à ton personnage.'); if (champ) champ.focus(); return; }
+    if (typeof Ile === 'object' && Ile.allumee && !(typeof Ile3D === 'function' && Ile3D.disponible())) {
+      this.erreur('Ton appareil ne peut pas afficher Veylan : son navigateur n\'a pas la 3D (WebGL). Essaie un navigateur à jour, ou un autre appareil.');
+      return;
+    }
     const ch = Character.create(b.classId, nom, b.gender, null, { look: b.look, tuto: b.tuto });
-    if (typeof Ile === 'object' && Ile.allumee && typeof Ile3D === 'function' && Ile3D.disponible() && Ile.fairenaitre(ch)) Ile.appliquerOrsane();
+    if (typeof Ile === 'object' && Ile.allumee && Ile.fairenaitre(ch)) Ile.appliquerOrsane();
     if (typeof Ile === 'object' && Ile.appliquerOrsane3DPour) Ile.appliquerOrsane3DPour(ch);
     if (b.invite) {
       Object.defineProperty(ch, 'invite', { value: true });
@@ -901,7 +916,7 @@ class Accueil {
 
   static lire(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   static lirePersonnage(uid) {
-    if (typeof Ile === 'object' && Ile.actif() && Ile.origineDe(uid) === 'ervane') Ile.appliquerOrsane();
+    if (typeof Ile === 'object' && Ile.actif()) Ile.appliquerOrsane();
     if (typeof Ile === 'object' && Ile.appliquerOrsane3DPour) Ile.appliquerOrsane3DPour(uid);
     return Save.read(uid);
   }

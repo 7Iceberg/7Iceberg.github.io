@@ -20,7 +20,7 @@ const Quests = (() => {
     const r = q.requires || {};
     if (r.level && ch.level < r.level) return false;
     if (r.classe && ch.classId !== r.classe) return false;
-    for (const id of r.quests || []) if (!ch.quests.done.includes(id)) return false;
+    for (const id of r.quests || []) if (!ch.quests.done.includes(id) && !(id === 'ervane_descente' && ch.origine !== 'ervane')) return false;
     if ((r.faction || r.notFaction || r.factionRank) && !Factions.requirementsMet(ch, r)) return false;
     return true;
   }

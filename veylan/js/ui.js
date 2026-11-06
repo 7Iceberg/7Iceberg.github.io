@@ -294,7 +294,7 @@ class UI {
       case 'dot': return `Brûle ${v.value} par tour pendant ${ef.turns} tour(s)`;
       case 'echo': return `Écho ${ef.turns} tour(s) : ${v.min} à ${v.max} à chaque PM perdu, ${ef.uses} fois au plus`;
       case 'filon': return `Filon ${ef.turns} tour(s), ${ef.charges || 3} déclenchements : ${v.min} à ${v.max} à chaque retrait (PA, PM, portée) sur l'ennemi marqué, ou en zone autour de l'allié marqué soigné ; +1 Trouvaille`;
-      case 'state': if (ef.name === 'forme_iskar') return `Forme d'Iskar ${ef.turns} tour(s) : 40 % des soins seulement`; if (ef.name === 'intaclable') return `Intaclable ${ef.turns} tour(s)`; if (ef.name === 'protege_karsh') return `Protégé ${ef.turns} tour(s) : le Karsh prend ses coups`; if (ef.name === 'sous_la_maree') return `Sous la Marée ${ef.turns} tour(s) : −15 % de dégâts subis`; if (ef.name === 'digue') return `Digue ${ef.turns} tour(s) : invulnérable au contact`; if (ef.name === 'brise_lames') return `Brise-Lames ${ef.turns} tour(s) : invulnérable à distance`; return ef.name === 'invisible' ? `Invisible ${ef.turns} tour(s)${ef.lingering ? ', révélée à la fin du tour où elle frappe' : ''}` : `Provoque ${ef.turns} tour(s)`;
+      case 'state': if (ef.name === 'forme_iskar') return `Forme d'Iskar ${ef.turns} tour(s) : 40 % des soins seulement`; if (ef.name === 'intaclable') return `Intaclable ${ef.turns} tour(s)`; if (ef.name === 'protege') return `Protégé ${ef.turns} tour(s) : le Velmar prend ses coups`; if (ef.name === 'digue') return `Digue ${ef.turns} tour(s) : invulnérable au contact`; if (ef.name === 'brise_lames') return `Brise-Lames ${ef.turns} tour(s) : invulnérable à distance`; return ef.name === 'invisible' ? `Invisible ${ef.turns} tour(s)${ef.lingering ? ', révélée à la fin du tour où elle frappe' : ''}` : `Provoque ${ef.turns} tour(s)`;
       case 'oath': return `Juré ${ef.turns} tour(s) : +${ef.power} % de dégâts contre lui`;
       case 'track': return `Traqué ${ef.turns} tour(s) : ne peut plus être invisible`;
       case 'steal': return ef.what === 'shield' ? `Vole le bouclier${ef.orBonus ? ' (ou le meilleur bonus)' : ''}` : `Vole ${ef.value} ${ef.what.toUpperCase()}`;
@@ -318,7 +318,7 @@ class UI {
       case 'ordreMeute': return `Toutes ses bêtes frappent tout de suite, à ${ef.pct || 50} % de leurs dégâts`;
       case 'horde': return `+${ef.jauge || 3} de jauge ${ef.turns || 2} tours, ses appels coûtent ${ef.rabais || 1} PA de moins ; puis ses bêtes s'en vont`;
       case 'pacte': return `Sacrifie ses bêtes : +${ef.par || 3} % de dégâts par point de jauge (${ef.turns || 3} tours), ${ef.soin || 30} % de leurs PV`;
-      case 'declencherMares': return 'Toutes ses Mares agissent tout de suite ; ses alliés qui s\'y tiennent passent Sous la Marée';
+      case 'declencherMares': return 'Toutes ses Mares agissent tout de suite sur les ennemis qui s\'y tiennent';
       case 'hantise': return 'Pousse la créature au contact jusqu\'à la case visée, à travers les pièges';
       case 'versLeurre': return `Attire de ${ef.cells} case(s) vers le Leurre`;
       case 'depuisLeurre': return `Repousse de ${ef.cells} case(s) depuis le Leurre`;
@@ -814,7 +814,7 @@ class UI {
       case 'traque': return `Traque de ${f.owner ? Util.esc(f.owner.name) : '?'}, ${f.crans} / 3 (+${f.crans * 8} % subis, ${t})`;
       case 'filon': return `Filon de ${f.owner ? Util.esc(f.owner.name) : '?'}, ${f.charges} déclenchement(s) (${t})`;
       case 'state': {
-        const names = { tenu: 'tenu (moitié moins de dégâts)', invisible: 'invisible', stunned: 'sonné', invulnerable: 'invulnérable', lanterne: 'tient sa lanterne (esquive à distance)', assise: 'assis comme la montagne (rien ne le déplace, ses prises portent une case de plus, vole de la vie au contact)', unhealable: 'insoignable', sous_la_maree: 'Sous la Marée (−15 % de dégâts subis)', forme_iskar: 'Forme d\'Iskar (40 % des soins seulement)', intaclable: 'intaclable', protege_karsh: 'protégé par le Karsh (il prend ses coups)', digue: 'Digue (invulnérable au contact)', brise_lames: 'Brise-Lames (invulnérable à distance)' };
+        const names = { tenu: 'tenu (moitié moins de dégâts)', invisible: 'invisible', stunned: 'sonné', invulnerable: 'invulnérable', lanterne: 'tient sa lanterne (esquive à distance)', assise: 'assis comme la montagne (rien ne le déplace, ses prises portent une case de plus, vole de la vie au contact)', unhealable: 'insoignable', forme_iskar: 'Forme d\'Iskar (40 % des soins seulement)', intaclable: 'intaclable', protege: 'protégé (le Velmar prend ses coups)', digue: 'Digue (invulnérable au contact)', brise_lames: 'Brise-Lames (invulnérable à distance)' };
         if (f.name === 'provoked') return `provoqué par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
         if (f.name === 'sworn') return `juré par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
         if (f.name === 'tracked') return `traqué par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;

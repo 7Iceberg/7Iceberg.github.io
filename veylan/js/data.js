@@ -146,7 +146,7 @@ spells.piege_penombre = S('piege_penombre', { name: 'Piège de Pénombre', eleme
 spells.larcin = S('larcin', { name: 'Larcin', element: 'eau', pa: 3, range: [1, 1], effects: [dmg(9, 12), steal('pa', 1)], purse: 25, maxPerTurn: 1, desc: 'Vole 1 PA. Si la cible meurt, la bourse : +25 % de Dragmes et de butin.' });
 spells.pas_ombre = S('pas_ombre', { name: "Pas de l'Ombre", element: 'neutre', pa: 3, range: [1, 5], target: 'free', effects: [{ type: 'teleport' }], cooldown: 2, desc: 'Se téléporte sans se révéler.' });
 spells.coup_penombre = S('coup_penombre', { name: 'Coup de Pénombre', element: 'air', pa: 3, range: [1, 1], effects: [dmg(10, 13)], bonusIfInvisible: 1.8, maxPerTurn: 2, desc: 'Dégâts × 1,8 si la Nerith est invisible.' });
-spells.main_leste = S('main_leste', { name: 'Main Leste', element: 'eau', pa: 2, range: [1, 3], effects: [dmg(5, 7), Object.assign(steal('shield'), { orBonus: true })], purse: 25, cooldown: 2, desc: 'Vole le bouclier de la cible, ou son meilleur bonus si elle n\'en a pas.' });
+spells.main_leste = S('main_leste', { name: 'Main Leste', element: 'eau', pa: 2, range: [1, 3], effects: [dmg(4, 5), Object.assign(steal('shield'), { orBonus: true })], purse: 25, cooldown: 2, desc: 'Vole le bouclier de la cible, ou son meilleur bonus si elle n\'en a pas.' });
 spells.piege_de_reflux = S('piege_de_reflux', { name: 'Piège de Reflux', element: 'eau', pa: 2, range: [1, 3], los: false, target: 'free', effects: [{ type: 'trap', name: 'Piège de Reflux', effects: [push(2), { type: 'dot', element: 'eau', value: 3, turns: 2 }] }], maxPerTurn: 2, desc: 'Un piège invisible qui repousse de 2 cases loin de la Nerith, sur un autre piège s\'il y en a un, et empoisonne 2 tours.' });
 spells.leurre_penombre = S('leurre_penombre', { name: 'Leurre de Pénombre', element: 'neutre', pa: 3, range: [1, 2], target: 'free', effects: [{ type: 'summon', monster: 'silhouette_ombre', count: 1, hpPctOfOwner: 30 }], cooldown: 4, desc: 'Une silhouette d\'ombre (30 % des PV de la Nerith) qui provoque les ennemis adjacents. À la fin de son deuxième tour, elle échange sa place avec la Nerith, puis éclate.' });
 spells.dernier_souffle_ombre = S('dernier_souffle_ombre', { name: 'Dernier Souffle', element: 'air', pa: 5, range: [1, 1], effects: [dmg(15, 19)], executeBelow: 30, onKill: [Object.assign(state('invisible', 1), { lingering: true }), { type: 'paNow', value: 2 }], cooldown: 2, desc: 'Doublé sur une cible sous 30 % de PV. Si elle meurt, la Nerith redevient invisible et récupère 2 PA.' });
@@ -275,7 +275,7 @@ DATA.spellRanks = {
 
 DATA.calendrier = {
   bases: [1, 1, 1, 1, 5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150],
-  variantes: Array.from({ length: 22 }, (_, i) => 153 + 7 * i),
+  variantes: [6, 8, 12, 16].concat([5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150].map(b => b + 8)),
 };
 
 DATA.rankOverrides = {
@@ -397,7 +397,7 @@ DATA.classes = {
     spells: ['tourelle_de_kaldum', 'mur_articule', 'mine_a_fil', 'marteau', 'surchauffe', 'reparation', 'propulseur', 'grappin', 'detonation', 'forge'],
     desc: 'Pose des tourelles, des murs, des mines ; fait éclater sa tourelle, et tient mieux tant qu\'elle n\'est pas posée.' },
   karsh: { id: 'karsh', name: 'Karsh', title: 'Lame de Braise', role: 'Mêlée', glyph: 'Kr', color: '#d9452b', hp: 150, pa: 6, pm: 3, initiative: 80,
-    braise: { max: 5, debut: 2, perTurn: 2, power: 4, surchauffe: 5, brulure: 4 },
+    braise: { max: 5, debut: 2, perTurn: 2, power: 0, surchauffe: 5, brulure: 4 }, tacle: 5,
     sangChaud: { paliers: [[75, 6, 'Échauffé'], [50, 14, 'Ardent'], [25, 24, 'Incandescent']] },
     spells: ['serment_de_sang', 'charge', 'taillade', 'dernier_souffle', 'hurlement', 'sang_pour_sang', 'lien_de_sang', 'colosse', 'frappe_lourde', 'rage'],
     desc: 'Chauffe à chaque tour : sa Braise nourrit ses coups, se dépense en PA et en fournaise, et le brûle s\'il la laisse monter ; ramène ses proies au contact.' },
@@ -411,7 +411,7 @@ DATA.classes = {
     spells: ['appel_du_grouk', 'appel_du_pilou', 'rappel_sacrificiel', 'morsure', 'soin_de_meute', 'cri_de_ralliement', 'fleche_de_fil', 'filet', 'appel_du_molh', 'traque'],
     desc: 'Mène une meute (jauge de 4 : Glym 1, Grouk 2, Molh 3), la sacrifie pour prendre sa force.' },
   velmar: { id: 'velmar', name: 'Velmar', title: 'Garde-Marée', role: 'Protecteur', glyph: 'Vm', color: '#2aa6b8', hp: 165, pa: 6, pm: 3, initiative: 70,
-    reserve: { nom: 'Marée', max: 5, gain: 'allie', rayon: 2, par: 1 }, tacle: 5, mare: { armure: 15 },
+    mare: { armure: 15 },
     spells: [],
     desc: 'Se tient devant les siens comme la marée qui monte : chaque coup qu\'ils reçoivent la fait monter, et ses Reflux la rendent en boucliers d\'écume et en vagues.' },
   orvald: { id: 'orvald', name: 'Orvald', title: 'Pilleur de Reliques', role: 'Prospecteur', glyph: 'Ov', color: '#c9a24a', hp: 115, pa: 6, pm: 3, initiative: 95,
@@ -469,6 +469,55 @@ DATA.paireDe = (classId, id) => {
     if (c.paires[i][1] === id) return { i, variante: true };
   }
   return null;
+};
+
+DATA.voies = (classId, voies) => { DATA.classes[classId].voies = voies; return voies; };
+
+DATA.signesSort = s => {
+  const t = new Set();
+  const lire = (list, cible) => {
+    for (const e of list || []) {
+      if (e.type === 'trap') { t.add('piege'); lire(e.effects, true); continue; }
+      if (e.type === 'leap') { t.add('bond'); lire(e.effects, true); continue; }
+      if (e.type === 'dot') t.add('brulure');
+      if (e.type === 'pm' && e.value < 0) t.add('pm-');
+      if (e.type === 'pa' && e.value < 0) t.add('pa-');
+      if (e.type === 'range' && e.value < 0) t.add('po-');
+      if (e.type === 'power' && e.value < 0) t.add('affaiblit');
+      if (e.type === 'vuln') t.add('vulnerable');
+      if (e.type === 'push' || e.type === 'pull' || e.type === 'swap') t.add('placement');
+      if (e.type === 'heal') t.add('soin');
+      if (e.type === 'soinDiffere') t.add('soin_differe');
+      if ((e.type === 'power' || e.type === 'pa' || e.type === 'pm') && e.value > 0) t.add('renfort');
+    }
+  };
+  lire(s.effects);
+  for (const e of s.selfEffects || []) {
+    if (e.type === 'selfDamagePct') t.add('prix');
+    if ((e.type === 'pmNow' || e.type === 'paNow' || e.type === 'pm' || e.type === 'pa') && e.value > 0) t.add('mobilite');
+    if (e.type === 'shield' || e.type === 'armor' || e.type === 'guard') t.add('garde');
+    if (e.type === 'power' && e.value > 0) t.add('renfort');
+    if (e.type === 'braiseNow') t.add('braise');
+  }
+  if (s.aoe && s.aoe.shape && s.aoe.shape !== 'single') t.add('zone');
+  if (s.lifesteal || s.lifestealIfState) t.add('vol_de_vie');
+  if (s.steal) t.add('vol');
+  if (s.purse) t.add('bourse');
+  if (s.soinDiffere) t.add('soin_differe');
+  if (s.fury || s.furySpend) t.add('fureur');
+  if (s.braise || s.braiseSpend) t.add('braise');
+  if (s.parPiege) t.add('piege');
+  if (s.bonusIfInvisible) t.add('ombre');
+  if (s.executeBelow) t.add('achever');
+  if (s.filon) t.add('filon');
+  if (s.reserveSpend) t.add('reserve');
+  if (s.jeter || s.empoigner || s.lifestealIfState || s.exigeTenu) t.add('empoigne');
+  if (s.porteeAssis || s.assisBonus) t.add('assis');
+  if (s.parPmRestant || s.parPmDepense) t.add('mobilite');
+  if (s.recharge || s.cumul || s.perExtraTarget) t.add('montee');
+  if (s.markSight || s.affutBonus || s.rebond) t.add('affut');
+  if (s.los === false && s.target !== 'self') t.add('sans_ldv');
+  return [...t];
 };
 
 DATA.futureClasses = {

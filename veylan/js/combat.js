@@ -250,6 +250,10 @@ class Combat {
   allies(e) { return this.entities.filter(t => t.alive && t.team === e.team); }
   enemies(e) { return this.entities.filter(t => t.alive && t.team !== e.team); }
   summonsOf(e) { return this.entities.filter(t => t.alive && t.isSummon && t.owner === e); }
+  gibierDe(m) {
+    if (!m || !m.isSummon || !m.owner) return null;
+    return this.enemies(m).find(t => this.canSee(m, t) && t.effects.some(f => f.type === 'state' && f.name === 'gibier' && f.by === m.owner)) || null;
+  }
 
   bilan() {
     return this.entities.filter(e => !e.isSummon).map(e => Object.assign({ nom: e.name, equipe: e.team, moi: e === this.player, vivant: e.alive, niveau: e.level || (e.def && e.def.level) || null, id: e.def && e.def.id },
@@ -288,9 +292,8 @@ class Combat {
   }
 
   protecteurDe(t) {
-    const f = t.effects.find(x => x.type === 'state' && x.name === 'protege_karsh');
-    if (!f) return null;
-    const k = f.by && f.by.alive ? f.by : this.entities.find(x => x.alive && x !== t && x.team === t.team && x.kit && x.kit.sangChaud);
+    const f = t.effects.find(x => x.type === 'state' && x.name === 'protege');
+    const k = f && f.by && f.by.alive ? f.by : null;
     return k && k !== t ? k : null;
   }
 
@@ -306,8 +309,9 @@ class Combat {
       const s = (m.spells || []).map(id => DATA.spells[id]).find(x => x && x.effects.some(f => f.type === 'damage'));
       if (!s) continue;
       const dm = s.effects.find(f => f.type === 'damage');
-      const t = this.enemies(m).filter(u => this.canSee(m, u) && Grid.dist(m.pos, u.pos) >= s.range[0] && Grid.dist(m.pos, u.pos) <= s.range[1])
-        .sort((a, b) => a.hp - b.hp)[0];
+      const aPortee = u => this.canSee(m, u) && Grid.dist(m.pos, u.pos) >= s.range[0] && Grid.dist(m.pos, u.pos) <= s.range[1];
+      const g = this.gibierDe(m);
+      const t = g && aPortee(g) ? g : this.enemies(m).filter(aPortee).sort((a, b) => a.hp - b.hp)[0];
       if (!t) continue;
       n++;
       this.log(`${m.name} obéit et frappe ${t.name}.`, e.team);
@@ -396,6 +400,7 @@ class Combat {
     e.telefragThisTurn = false;
     e.aubaineTour = false;
     if (e.turnsPlayed === 1 && e.aPassif('air_gk')) { e.pm += 1; this.log(`${e.name} est libre comme l'air : +1 PM.`); }
+    if (this.gibierDe(e)) { e.pm += 1; this.log(`${e.name} sent le gibier : +1 PM.`, e.team); }
     e.turnStartPos = { x: e.x, y: e.y };
     if (e.alive) this.applyGlyphs(e);
     this.ageGlyphs(e);
@@ -444,7 +449,7 @@ class Combat {
     const malus = f => ((f.type === 'pa' || f.type === 'pm' || f.type === 'power' || f.type === 'range') && f.value < 0) || f.type === 'vuln' || f.type === 'dot' || f.type === 'echo'
       || (f.type === 'state' && ['provoked', 'tracked', 'unhealable', 'tenu', 'stunned'].includes(f.name));
     const bonus = f => ((f.type === 'pa' || f.type === 'pm' || f.type === 'power' || f.type === 'range') && f.value > 0) || f.type === 'shield' || f.type === 'armor' || f.type === 'guard'
-      || (f.type === 'state' && ['invisible', 'digue', 'brise_lames', 'sous_la_maree', 'intaclable'].includes(f.name));
+      || (f.type === 'state' && ['invisible', 'digue', 'brise_lames', 'protege', 'intaclable'].includes(f.name));
     let k = 0;
     for (const f of t.effects) if (!f.persistent && isFinite(f.turns) && (allie ? malus(f) : bonus(f))) { f.turns -= n; k++; }
     t.effects = t.effects.filter(f => !(isFinite(f.turns) && f.turns <= 0));
@@ -686,7 +691,7 @@ class Combat {
     for (const v of this.entities) {
       const k = v.alive && v.team === t.team && v.kit && v.kit.mare;
       if (!k) continue;
-      if (t.hasState('sous_la_maree') || this.glyphsAt(t.x, t.y).some(g => g.owner === v)) return k.armure || 15;
+      if (this.glyphsAt(t.x, t.y).some(g => g.owner === v)) return k.armure || 15;
     }
     return 0;
   }
@@ -700,8 +705,7 @@ class Combat {
       const t = this.entityAt(c.x, c.y);
       if (!t || !t.alive || vus.has(t)) continue;
       vus.add(t);
-      if (t.team === e.team) { if (!t.hasState('sous_la_maree')) t.addEffect({ type: 'state', name: 'sous_la_maree', turns: 1 }, t === this.actor); }
-      else this.applyGlyphs(t, g);
+      if (t.team !== e.team) this.applyGlyphs(t, g);
     }
   }
 
@@ -1406,7 +1410,14 @@ class Combat {
           if (rooted) rooted = landed >= left;
           value = rooted ? ef.value : -landed;
         }
-        t.addEffect({ type: ef.type, value, turns }, own);
+        let renfort = false;
+        if (ef.type === 'pa' && value > 0 && source && source !== t && source.team === t.team) {
+          const deja = t.effects.find(f => f.type === 'pa' && f.renfort);
+          if (deja && deja.value >= value) { this.log(`${t.name} a déjà un gain de PA venu d'un allié.`); break; }
+          if (deja) t.effects = t.effects.filter(f => f !== deja);
+          renfort = true;
+        }
+        t.addEffect(Object.assign({ type: ef.type, value, turns }, renfort ? { renfort: true } : {}), own);
         if (rooted) this.log(`${t.name} est enraciné pour ${turns} tour(s).`);
         else this.log(`${t.name} : ${value > 0 ? '+' : ''}${value} ${ef.type.toUpperCase()} pendant ${turns} tour(s).`);
         if (ef.type === 'pm' && value < 0) this.echoPmLoss(t);
@@ -1430,10 +1441,17 @@ class Combat {
         this.log(`${t.name} gagne un bouclier de ${v} points.`);
         break;
       }
-      case 'power':
-        t.addEffect({ type: 'power', value: ef.value, turns }, own);
+      case 'power': {
+        const renfort = ef.value > 0 && source && source !== t && source.team === t.team;
+        if (renfort) {
+          const deja = t.effects.find(f => f.type === 'power' && f.renfort);
+          if (deja && deja.value >= ef.value) { this.log(`${t.name} a déjà un renfort de dégâts venu d'un allié.`); break; }
+          if (deja) t.effects = t.effects.filter(f => f !== deja);
+        }
+        t.addEffect(Object.assign({ type: 'power', value: ef.value, turns }, renfort ? { renfort: true } : {}), own);
         this.log(`${t.name} : ${ef.value < 0 ? '−' + -ef.value : '+' + ef.value} % de dégâts.`);
         break;
+      }
       case 'vuln':
         if (source && source !== t) t.effects = t.effects.filter(f => !(f.type === 'vuln' && f.by === source));
         t.addEffect({ type: 'vuln', value: ef.value, turns, by: source || null }, own);
@@ -1449,7 +1467,7 @@ class Combat {
         if (ef.name === 'invisible' && t.hasState('tracked')) { this.log(`${t.name} est traqué et ne peut pas se cacher.`); break; }
         t.addEffect({ type: 'state', name: ef.name, turns, by: source, lingering: !!ef.lingering }, own);
         if (ef.name === 'invisible') t.hiddenAt = { x: t.x, y: t.y };
-        { const etats = { sous_la_maree: 'passe Sous la Marée', digue: 'est derrière une Digue', brise_lames: 'est derrière un Brise-Lames', forme_iskar: 'prend la Forme d\'Iskar', protege_karsh: `est protégé par ${source.name}`, intaclable: 'devient intaclable', assise: 's\'assoit comme la montagne', tenu: 'est tenu' };
+        { const etats = { digue: 'est derrière une Digue', brise_lames: 'est derrière un Brise-Lames', forme_iskar: 'prend la Forme d\'Iskar', protege: `est protégé par ${source.name}`, gibier: `est le gibier de ${source.name}`, victime: `est la victime choisie de ${source.name}`, intaclable: 'devient intaclable', assise: 's\'assoit comme la montagne', tenu: 'est tenu' };
           this.log(ef.name === 'invisible' ? `${t.name} devient invisible.` : ef.name === 'unhealable' ? `${t.name} ne peut plus être soigné pendant ${turns} tour(s).` : ef.name === 'ivre' ? `${t.name} est ivre pendant ${turns} tour(s).` : etats[ef.name] ? `${t.name} ${etats[ef.name]} (${turns} tour(s)).` : `${t.name} est provoqué par ${source.name}.`); }
         break;
       case 'range':
@@ -1496,6 +1514,14 @@ class Combat {
 
   tackle(e) {
     if (e.hasState('intaclable')) return;
+    { const f = e.effects.find(x => x.type === 'state' && x.name === 'victime');
+      const k = f && f.by;
+      if (k && k.alive && !k.hasState('stunned') && Grid.dist(k.pos, e.pos) <= 1 && e.pm > 0) {
+        this.log(`${e.name} ne peut pas fuir ${k.name} : −${e.pm} PM.`, e.team);
+        this.emit('float', { x: e.x, y: e.y, text: 'retenu', color: '#ffd166' });
+        e.pm = 0;
+        return;
+      } }
     let tacle = 0;
     for (const n of Grid.neighbors(this.map, e.pos)) {
       const o = this.entityAt(n.x, n.y);
@@ -2117,7 +2143,8 @@ class Combat {
     if (e.ai === 'inert') return null;
     const all = this.enemies(e);
     if (!all.length) return null;
-    const visible = all.filter(t => this.canSee(e, t));
+    let visible = all.filter(t => this.canSee(e, t));
+    { const g = this.gibierDe(e); if (g) visible = [g]; }
     const allies = this.allies(e);
     if (e.ai === 'charger') {
       const a = this.aiCharge(e, visible);

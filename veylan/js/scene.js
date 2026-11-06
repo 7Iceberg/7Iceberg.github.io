@@ -376,12 +376,13 @@ class Scene {
     el.setAttribute('role', 'alertdialog');
     const boutons = document.createElement('div');
     boutons.className = 'scene-voile__boutons';
+    const basse = !/[?&]quality=basse\b/.test(location.search);
     boutons.innerHTML = '<button type="button" class="vy-bouton vy-bouton--primaire" data-voile="reessayer">Réessayer</button>' +
       (descendre ? '<button type="button" class="vy-bouton" data-voile="descendre">Descendre à Orsane</button>'
-        : '<button type="button" class="vy-bouton" data-voile="recommencer">Recommencer à Orsane</button>');
+        : basse ? '<button type="button" class="vy-bouton" data-voile="qualitebasse">Réessayer en qualité basse</button>' : '');
     el.appendChild(boutons);
     const e = el.querySelector('.scene-voile__etape');
-    if (e) e.textContent = descendre ? 'Tu peux réessayer, ou descendre par la Nacelle jusqu\'à la Place du Relais d\'Orsane.' : 'Tu peux réessayer, ou recommencer à Orsane : tu gardes ton niveau, tes objets et tes Dragmes.';
+    if (e) e.textContent = descendre ? 'Tu peux réessayer, ou descendre par la Nacelle jusqu\'à la Place du Relais d\'Orsane.' : basse ? 'Tu peux réessayer, ou réessayer en qualité basse : tu gardes tout, et la partie reprend au même endroit.' : 'Tu peux réessayer.';
   }
 
   repliOrsane(ch) {
@@ -427,36 +428,12 @@ class Scene {
         else w.enter(World.firstMap(w.ch), { relay: true });
       } finally { this.repliDemande = false; }
       w.emit('save');
-    } else if (act === 'recommencer') {
-      const el = this.voileEl;
-      const ok = el && el.querySelector('[data-voile="recommencer-ok"]');
-      if (!ok) {
-        const b = el.querySelector('.scene-voile__boutons');
-        b.innerHTML = '<p class="scene-voile__question">Ton personnage deviendra un personnage d\'Orsane, au départ d\'Orsane. Ses quêtes d\'Ervane en cours seront abandonnées.</p>' +
-          '<button type="button" class="vy-bouton" data-voile="reessayer">Réessayer plutôt</button><button type="button" class="vy-bouton vy-bouton--danger" data-voile="recommencer-ok">Recommencer à Orsane</button>';
-        return;
-      }
-    } else if (act === 'recommencer-ok') {
-      Scene.versOrsane(w.ch);
-      this.repliDemande = true;
-      try { w.enter(World.firstMap(w.ch), { relay: true }); } finally { this.repliDemande = false; }
-      w.emit('save');
-      if (!w.ch.invite) { const u = new URL(location.href); u.searchParams.delete('reset'); location.replace(u.href); }
+    } else if (act === 'qualitebasse') {
+      if (!w.ch.invite) w.emit('save');
+      const u = new URL(location.href);
+      u.searchParams.delete('reset'); u.searchParams.set('quality', 'basse');
+      location.replace(u.href);
     }
-  }
-
-  static versOrsane(ch) {
-    const e = s => typeof s === 'string' && s.startsWith('ervane_');
-    ch.origine = 'orsane';
-    if (ch.tuto && ch.tuto.jeu) { const mode = ['guide', 'court', 'off'].includes(ch.tuto.mode) ? ch.tuto.mode : 'guide'; ch.tuto = { mode, step: 0, done: mode === 'off' || !!ch.tuto.done || !!ch.invite }; }
-    delete ch.fight;
-    for (const id of Object.keys(ch.quests.active || {})) if (e(id)) delete ch.quests.active[id];
-    if (Array.isArray(ch.relays)) ch.relays = ch.relays.filter(id => !e(id));
-    if (ch.relay && e(ch.relay.map)) ch.relay = null;
-    ch.dungeon = null;
-    ch.pos = null;
-    if (ch.mapTimers) for (const k of Object.keys(ch.mapTimers)) if (e(k)) delete ch.mapTimers[k];
-    return ch;
   }
 
   stats() { return this.ile ? this.ile.stats() : null; }

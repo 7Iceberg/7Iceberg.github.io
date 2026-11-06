@@ -63,7 +63,8 @@
       character.pos = character.relay ? { map: character.relay.map, x: character.relay.x, y: character.relay.y } : null;
       character.counters.abandons = (character.counters.abandons || 0) + 1;
     }
-    if (character.origine === 'ervane' && typeof Ile === 'object' && Ile.actif()) Ile.appliquerOrsane();
+    let offerts = 0;
+    if (typeof Ile === 'object' && Ile.actif()) { Ile.appliquerOrsane(); offerts = Ile.monterVersOrsane ? Ile.monterVersOrsane(character) : 0; }
     if (typeof Ile === 'object' && Ile.appliquerOrsane3DPour && !Ile.orsane3D() && Ile.appliquerOrsane3DPour(character)) Save.accorder(character);
     world = new World({ character, combat, rng, plateaux: !!scene });
     ui.world = world;
@@ -83,6 +84,7 @@
       if (premiere === start || !world.enter(premiere, { relay: true })) world.enter(World.firstMap(), { relay: true });
     }
     if (abandoned) hud.toast('Combat abandonné : il compte comme perdu.');
+    if (offerts) hud.toast(`Orsane a changé : ${character.name} passe au niveau ${character.level}, avec ${5 * offerts} points de caractéristique à répartir. Ses objets et ses Dragmes sont gardés.`);
     if (character.integrity && character.integrity.length) hud.toast('Sauvegarde corrigée : des valeurs impossibles ont été remises en ordre.');
     Save.write(character);
     if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist().catch(() => {}); } catch (e) {   } }
