@@ -373,19 +373,26 @@ class Hud {
         <div class="dialogue-actions"><button data-act="back">Continuer</button></div>`;
   }
 
+  svcBarre(onglets, extra) {
+    return `<div class="vy-svc__barre">${onglets ? `<nav class="vy-svc__onglets">${onglets}</nav>` : '<span></span>'}${extra || ''}${Hud.svcBourse(this.world.ch.fils)}</div>`;
+  }
+
   openShop(ctx) {
     this.shopTab = this.shopTab || 'buy';
     const render = () => {
       const ch = this.world.ch;
-      const tabs = `<div class="tabs"><button class="tab${this.shopTab === 'buy' ? ' on' : ''}" data-act="stab" data-tab="buy">Acheter</button><button class="tab${this.shopTab === 'sell' ? ' on' : ''}" data-act="stab" data-tab="sell">Vendre</button></div><p class="muted">Tu as ${ch.fils} Dragmes.</p>`;
+      const onglet = (k, l) => `<button class="vy-svc__onglet${this.shopTab === k ? ' on' : ''}" data-act="stab" data-tab="${k}">${l}</button>`;
+      const tete = this.svcBarre(onglet('buy', 'Acheter') + onglet('sell', 'Vendre'));
       if (this.shopTab === 'sell') {
-        const entries = Object.entries(ch.inventory).map(([id, n]) => ({ def: Items.get(id), id, n })).filter(e => e.def);
-        return tabs + (entries.map(e => `<div class="row item"><span><b>${esc(e.def.name)}</b> ×${e.n}</span><span class="btns"><button data-act="sell" data-id="${e.id}">Vendre 1 (${Items.sellPrice(e.def)} F)</button>${e.n > 1 ? `<button data-act="sellall" data-id="${e.id}" data-n="${e.n}">Tout (${Items.sellPrice(e.def) * e.n} F)</button>` : ''}</span></div>`).join('') || '<p class="muted">Rien à vendre.</p>');
+        const entries = Object.entries(ch.inventory).map(([id, n]) => ({ def: Items.get(id), id, n })).filter(e => e.def).sort((a, b) => a.def.name.localeCompare(b.def.name));
+        return tete + `<div class="vy-svc__liste">${entries.map(e => Hud.svcLigne(e.def, { n: e.n, sous: `${Items.sellPrice(e.def)} Dragmes l'unité`, gestes: `<button class="vy-bouton vy-bouton--petit" data-act="sell" data-id="${e.id}">Vendre 1 (${Items.sellPrice(e.def)} F)</button>${e.n > 1 ? `<button class="vy-bouton vy-bouton--petit" data-act="sellall" data-id="${e.id}" data-n="${e.n}">Tout (${Items.sellPrice(e.def) * e.n} F)</button>` : ''}` })).join('') || '<p class="vy-svc__vide">Rien à vendre.</p>'}</div>`;
       }
-      return tabs + (ctx.shop || []).map(id => { const d = Items.get(id); if (!d) return ''; const info = d.kind === 'consumable' ? (d.heal ? `rend ${d.heal >= 999 ? 'tous les' : d.heal} PV` : esc(d.lore)) : `niv. ${d.level} · ${Items.statLines(d.stats).join(', ')}`; return `<div class="row item"><span><b>${esc(d.name)}</b><br><small>${info}</small></span><span class="btns"><button data-act="buy" data-id="${id}" ${ch.fils >= d.price ? '' : 'disabled'}>Acheter ${d.price} F</button></span></div>`; }).join('');
+      return tete + `<div class="vy-svc__liste">${(ctx.shop || []).map(id => { const d = Items.get(id); if (!d) return ''; const info = d.kind === 'consumable' ? (d.heal ? `rend ${d.heal >= 999 ? 'tous les' : d.heal} PV` : esc(d.lore)) : `niv. ${d.level} · ${Items.statLines(d.stats).join(', ')}`;
+        const pile = d.kind === 'consumable' || d.kind === 'resource';
+        return Hud.svcLigne(d, { sous: info, n: ch.count(id) || 0, possede: true, gestes: `${Hud.svcPrix(d.price)}<button class="vy-bouton vy-bouton--petit vy-bouton--primaire" data-act="buy" data-id="${id}" ${ch.fils >= d.price ? '' : 'disabled'}>Acheter</button>${pile ? `<button class="vy-bouton vy-bouton--petit" data-act="buy" data-id="${id}" data-n="10" ${ch.fils >= d.price * 10 ? '' : 'disabled'}>×10</button>` : ''}` }); }).join('')}</div>`;
     };
     this.actions.stab = d => { this.shopTab = d.tab; this.el.panelBody.innerHTML = render(); };
-    this.actions.buy = d => { this.world.buy(d.id, 1); };
+    this.actions.buy = d => { this.world.buy(d.id, Number(d.n) || 1); };
     this.actions.sell = d => { this.world.sell(d.id, 1); };
     this.actions.sellall = d => { this.world.sell(d.id, Number(d.n)); };
     this.openPanel('dialogue', `Boutique de ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
@@ -395,12 +402,12 @@ class Hud {
     const render = () => {
       const ch = this.world.ch, c = ch.coffre || { items: {}, fils: 0 };
       const trie = o => Object.entries(o).filter(([id]) => Items.get(id)).sort((a, b) => Items.get(a[0]).name.localeCompare(Items.get(b[0]).name));
-      const ligne = (id, n, act, lab) => `<div class="row item"><span><b>${esc(Items.get(id).name)}</b> ×${n}</span><span class="btns"><button data-act="${act}" data-id="${id}" data-n="1">${lab}</button>${n > 1 ? `<button data-act="${act}" data-id="${id}" data-n="${n}">Tout</button>` : ''}</span></div>`;
-      const fils = (act, n, lab) => `<button data-act="${act}" data-n="${n}"${n >= 1 ? '' : ' disabled'}>${lab}</button>`;
-      const sac = trie(ch.inventory).map(([id, n]) => ligne(id, n, 'bdeposer', 'Déposer')).join('') || '<p class="muted">Ton sac est vide.</p>';
-      const coffre = trie(c.items).map(([id, n]) => ligne(id, n, 'bretirer', 'Retirer')).join('') || '<p class="muted">Le coffre est vide.</p>';
-      return `<div class="banque"><section class="banque__col"><h4>Ton sac</h4><p class="banque__fils">${ch.fils} Dragmes <span class="btns">${fils('bdeposerfils', Math.min(100, ch.fils), 'Déposer 100')}${fils('bdeposerfils', ch.fils, 'Tout')}</span></p>${sac}</section>`
-        + `<section class="banque__col"><h4><img class="banque__coffre" src="assets/ui/objets/coffre-banque.png" alt="" draggable="false">Ton coffre</h4><p class="banque__fils">${c.fils} Dragmes <span class="btns">${fils('bretirerfils', Math.min(100, c.fils), 'Retirer 100')}${fils('bretirerfils', c.fils, 'Tout')}</span></p>${coffre}</section></div>`;
+      const ligne = (id, n, act, lab) => Hud.svcLigne(Items.get(id), { n, gestes: `<button class="vy-bouton vy-bouton--petit" data-act="${act}" data-id="${id}" data-n="1">${lab}</button>${n > 1 ? `<button class="vy-bouton vy-bouton--petit" data-act="${act}" data-id="${id}" data-n="${n}">Tout</button>` : ''}` });
+      const fils = (act, n, lab) => `<button class="vy-bouton vy-bouton--petit" data-act="${act}" data-n="${n}"${n >= 1 ? '' : ' disabled'}>${lab}</button>`;
+      const sac = trie(ch.inventory).map(([id, n]) => ligne(id, n, 'bdeposer', 'Déposer')).join('') || '<p class="vy-svc__vide">Ton sac est vide.</p>';
+      const coffre = trie(c.items).map(([id, n]) => ligne(id, n, 'bretirer', 'Retirer')).join('') || '<p class="vy-svc__vide">Le coffre est vide.</p>';
+      return `<div class="banque"><section class="banque__col"><h4>Ton sac</h4><p class="banque__fils">${Hud.svcBourse(ch.fils)} <span class="btns">${fils('bdeposerfils', Math.min(100, ch.fils), 'Déposer 100')}${fils('bdeposerfils', ch.fils, 'Tout')}</span></p><div class="vy-svc__liste">${sac}</div></section>`
+        + `<section class="banque__col"><h4><img class="banque__coffre" src="assets/ui/objets/coffre-banque.png" alt="" draggable="false">Ton coffre</h4><p class="banque__fils">${Hud.svcBourse(c.fils)} <span class="btns">${fils('bretirerfils', Math.min(100, c.fils), 'Retirer 100')}${fils('bretirerfils', c.fils, 'Tout')}</span></p><div class="vy-svc__liste">${coffre}</div></section></div>`;
     };
     this.actions.bdeposer = d => { this.world.deposer(d.id, Number(d.n)); };
     this.actions.bretirer = d => { this.world.retirer(d.id, Number(d.n)); };
@@ -414,13 +421,15 @@ class Hud {
     this.marcheTab = this.marcheTab || 'acheter';
     const render = () => {
       const ch = this.world.ch;
-      const tabs = `<div class="tabs"><button class="tab${this.marcheTab === 'acheter' ? ' on' : ''}" data-act="mtab" data-tab="acheter">L'étal du jour</button><button class="tab${this.marcheTab === 'vendre' ? ' on' : ''}" data-act="mtab" data-tab="vendre">Vendre</button></div><p class="muted">Tu as ${ch.fils} Dragmes. ${esc(G.nom[0].toUpperCase() + G.nom.slice(1))}.</p>`;
+      const onglet = (k, l) => `<button class="vy-svc__onglet${this.marcheTab === k ? ' on' : ''}" data-act="mtab" data-tab="${k}">${l}</button>`;
+      const tete = this.svcBarre(onglet('acheter', 'L\'étal du jour') + onglet('vendre', 'Vendre'), `<small class="vy-svc__genre">${esc(G.nom[0].toUpperCase() + G.nom.slice(1))}</small>`);
       if (this.marcheTab === 'vendre') {
         const entries = Object.entries(ch.inventory).filter(([id]) => Marche.rachete(g, id)).map(([id, n]) => ({ def: Items.get(id), id, n })).sort((a, b) => a.def.name.localeCompare(b.def.name));
-        const note = `<p class="muted">Le Marché paie mieux qu'un marchand ; le prix d'un objet baisse de ${Math.round(Marche.BAISSE * 100)} % à chaque vente du même objet aujourd'hui (jusqu'à la moitié) et revient demain.</p>`;
-        return tabs + note + (entries.map(e => { const p = Marche.prixVente(ch, e.id), v = Marche.vendus(ch, e.id); return `<div class="row item"><span><b>${esc(e.def.name)}</b> ×${e.n}${v ? `<br><small>${v} vendu${v > 1 ? 's' : ''} aujourd'hui</small>` : ''}</span><span class="btns"><button data-act="mvendre" data-id="${e.id}" data-n="1">Vendre 1 (${p} F)</button>${e.n > 1 ? `<button data-act="mvendre" data-id="${e.id}" data-n="${e.n}">Tout (${Marche.gain(ch, e.id, e.n)} F)</button>` : ''}</span></div>`; }).join('') || '<p class="muted">Rien de ce genre dans ton sac.</p>');
+        const note = `<p class="vy-svc__note">Le Marché paie mieux qu'un marchand ; le prix d'un objet baisse de ${Math.round(Marche.BAISSE * 100)} % à chaque vente du même objet aujourd'hui (jusqu'à la moitié) et revient demain.</p>`;
+        return tete + note + `<div class="vy-svc__liste">${entries.map(e => { const pr = Marche.prixVente(ch, e.id), v = Marche.vendus(ch, e.id); return Hud.svcLigne(e.def, { n: e.n, sous: v ? `${v} vendu${v > 1 ? 's' : ''} aujourd'hui` : `${pr} Dragmes l'unité aujourd'hui`, gestes: `<button class="vy-bouton vy-bouton--petit" data-act="mvendre" data-id="${e.id}" data-n="1">Vendre 1 (${pr} F)</button>${e.n > 1 ? `<button class="vy-bouton vy-bouton--petit" data-act="mvendre" data-id="${e.id}" data-n="${e.n}">Tout (${Marche.gain(ch, e.id, e.n)} F)</button>` : ''}` }); }).join('') || '<p class="vy-svc__vide">Rien de ce genre dans ton sac.</p>'}</div>`;
       }
-      return tabs + Marche.etal(g).map(id => { const d = Items.get(id), prix = Marche.prixAchat(id); const info = d.kind === 'consumable' ? (d.heal ? `rend ${d.heal >= 999 ? 'tous les' : d.heal} PV` : esc(d.lore)) : d.kind === 'resource' ? esc(d.lore || 'Ressource') : `niv. ${d.level} · ${Items.statLines(d.stats).join(', ')}`; return `<div class="row item"><span><b>${esc(d.name)}</b><br><small>${info}</small></span><span class="btns"><button data-act="macheter" data-id="${id}" ${ch.fils >= prix ? '' : 'disabled'}>Acheter ${prix} F</button></span></div>`; }).join('') + '<p class="muted">L\'étal change chaque jour.</p>';
+      return tete + `<div class="vy-svc__liste">${Marche.etal(g).map(id => { const d = Items.get(id), prix = Marche.prixAchat(id); const info = d.kind === 'consumable' ? (d.heal ? `rend ${d.heal >= 999 ? 'tous les' : d.heal} PV` : esc(d.lore)) : d.kind === 'resource' ? esc(d.lore || 'Ressource') : `niv. ${d.level} · ${Items.statLines(d.stats).join(', ')}`;
+        return Hud.svcLigne(d, { sous: info, gestes: `${Hud.svcPrix(prix)}<button class="vy-bouton vy-bouton--petit vy-bouton--primaire" data-act="macheter" data-id="${id}" ${ch.fils >= prix ? '' : 'disabled'}>Acheter</button>` }); }).join('')}</div><p class="vy-svc__note">L'étal change chaque jour.</p>`;
     };
     this.actions.mtab = d => { this.marcheTab = d.tab; this.el.panelBody.innerHTML = render(); };
     this.actions.macheter = d => { this.world.acheterMarche(d.id, 1); };
@@ -437,12 +446,15 @@ class Hud {
         if (!recettes.length) return '';
         const niv = recettes.map(r => Items.get(r.result).level || 1), compte = {};
         for (const r of recettes) for (const i of r.ingredients || []) compte[i.id] = (compte[i.id] || 0) + i.count;
-        const top = Object.entries(compte).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([id]) => { const d = Items.get(id), r = res(id); return d ? `${esc(d.name)}${r ? ` <small class="muted">(${r.node ? 'récolte' : 'butin'})</small>` : ''}` : ''; }).filter(Boolean).join(', ');
+        const top = Object.entries(compte).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([id]) => { const d = Items.get(id), r = res(id); return d ? `<span class="vy-svc__puce">${Hud.picto(d)}${esc(d.name)}${r ? ` <small>${r.node ? 'récolte' : 'butin'}</small>` : ''}</span>` : ''; }).filter(Boolean).join('');
         const artisans = DATA.content.npcs.filter(n => n.workshop === k).map(n => esc(n.name)).join(', ');
-        const exemples = recettes.slice().sort((a, b) => (Items.get(a.result).level || 1) - (Items.get(b.result).level || 1)).slice(0, 3).map(r => esc(Items.get(r.result).name)).join(', ');
-        return `<div class="row item"><span><b>L'atelier ${esc(ateliers[k])}</b> <small class="muted">${recettes.length} recettes, niveaux ${Math.min(...niv)} à ${Math.max(...niv)}</small><br><small>Artisans : ${artisans || 'aucun'}</small><br><small>On y fait : ${exemples}…</small><br><small>Ce qu'il demande le plus : ${top}</small></span></div>`;
+        const ex = recettes.slice().sort((a, b) => (Items.get(a.result).level || 1) - (Items.get(b.result).level || 1)).slice(0, 4).map(r => Items.get(r.result));
+        return `<article class="vy-svc__atelier"><header><b>L'atelier ${esc(ateliers[k])}</b><small>${recettes.length} recettes · niveaux ${Math.min(...niv)} à ${Math.max(...niv)}</small></header>
+          <p><small>Artisans</small>${artisans || 'aucun'}</p>
+          <div class="vy-svc__exemples">${ex.map(d => `<span class="vy-case" data-rarete="${Items.rarity(d)}" title="${esc(d.name)}"><span class="vy-case__icone">${Hud.picto(d)}</span></span>`).join('')}<small>On y fait : ${ex.slice(0, 3).map(d => esc(d.name)).join(', ')}…</small></div>
+          <div class="vy-svc__demande"><small>Ce qu'il demande le plus</small>${top}</div></article>`;
       }).join('');
-      return `<p class="muted">Chaque métier a son atelier dans la Rue des Ateliers, à l'est de la Place : parle à l'artisan, ou touche sa machine.</p>${lignes}`;
+      return `<p class="vy-svc__note">Chaque métier a son atelier dans la Rue des Ateliers, à l'est de la Place : parle à l'artisan, ou touche sa machine.</p><div class="vy-svc__ateliers">${lignes}</div>`;
     };
     this.openPanel('dialogue', `L'Hôtel des Métiers, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
@@ -453,14 +465,15 @@ class Hud {
       const lignes = Avis.liste().map(a => {
         const m = DATA.monsters[a.monstre] || { name: a.monstre, color: '#aaa' }, s = Avis.statut(ch, a.id), p = a.prime;
         const prime = `${p.xp} XP, ${p.fils} Dragmes, ${p.sceaux} Insigne${p.sceaux > 1 ? 's' : ''} de la Garde`;
-        const bouton = s === 'libre' ? `<button data-act="aprendre" data-id="${a.id}">Prendre l'avis</button>`
-          : s === 'pris' ? `<button data-act="alacher" data-id="${a.id}">Renoncer</button>`
-          : s === 'capture' ? `<button data-act="arendre" data-id="${a.id}" class="primary">Toucher la prime</button>`
-          : '<small class="muted">Prime touchée : un nouvel avis demain</small>';
-        const etat = s === 'pris' ? '<br><small class="ok">En chasse</small>' : s === 'capture' ? '<br><small class="ok">Capturé, la prime t\'attend</small>' : '';
-        return `<div class="row item${s === 'rendu' ? ' dim' : ''}" data-avis="${a.id}"><span><b style="color:${m.color}">${esc(m.name)}</b> <small class="muted">niv. ${a.niveau}</small><br><small>${esc(a.texte)}</small><br><small>Vu ${esc(a.lieu)}. Prime : ${prime}.</small>${etat}</span><span class="btns">${bouton}</span></div>`;
+        const bouton = s === 'libre' ? `<button class="vy-bouton vy-bouton--petit vy-bouton--primaire" data-act="aprendre" data-id="${a.id}">Prendre l'avis</button>`
+          : s === 'pris' ? `<button class="vy-bouton vy-bouton--petit" data-act="alacher" data-id="${a.id}">Renoncer</button>`
+          : s === 'capture' ? `<button data-act="arendre" data-id="${a.id}" class="vy-bouton vy-bouton--petit vy-bouton--primaire primary">Toucher la prime</button>`
+          : '<small class="vy-svc__fait">Prime touchée : un nouvel avis demain</small>';
+        const etat = s === 'pris' ? '<span class="vy-svc__etat cours">En chasse</span>' : s === 'capture' ? '<span class="vy-svc__etat fait">Capturé, la prime t\'attend</span>' : '';
+        const img = this.portraitBete ? this.portraitBete(a.monstre, 56, 62) : '';
+        return `<article class="vy-svc__avis${s === 'rendu' ? ' dim' : ''}" data-avis="${a.id}">${img ? `<img src="${img}" alt="" draggable="false">` : ''}<div><b style="color:${m.color}">${esc(m.name)}</b> <small>niv. ${a.niveau}</small>${etat}<p>${esc(a.texte)}</p><small>Vu ${esc(a.lieu)}. Prime : ${prime}.</small></div><span class="vy-svc__gestes">${bouton}</span></article>`;
       }).join('');
-      return `<p class="muted">Prends un avis : sa cible se joint à un groupe de sa carte, son nom sur l'étiquette. Bats-la, puis reviens toucher la prime. Chaque avis se rend une fois par jour ; les Insignes s'échangent au Temple des Voies.</p>${lignes}`;
+      return `<p class="vy-svc__note">Prends un avis : sa cible se joint à un groupe de sa carte, son nom sur l'étiquette. Bats-la, puis reviens toucher la prime. Chaque avis se rend une fois par jour ; les Insignes s'échangent au Temple des Voies.</p><div class="vy-svc__liste">${lignes}</div>`;
     };
     this.actions.aprendre = d => { this.world.prendreAvis(d.id); };
     this.actions.alacher = d => { this.world.abandonnerAvis(d.id); };
@@ -470,14 +483,14 @@ class Hud {
 
   openTemple(ctx) {
     const render = () => {
-      const ch = this.world.ch, n = ch.count(Avis.SCEAU);
+      const ch = this.world.ch, n = ch.count(Avis.SCEAU), ins = Items.get(Avis.SCEAU);
       const lignes = Avis.ECHANGES.map(e => {
         const d = Items.get(e.id);
         if (!d) return '';
         const info = d.sub === 'parchemin' ? `+${d.value} ${esc((Items.STAT_LABEL && Items.STAT_LABEL[d.stat]) || d.stat)} pour toujours` : d.heal ? `rend ${d.heal >= 999 ? 'tous les' : d.heal} PV` : esc(d.lore || '');
-        return `<div class="row item"><span><b>${esc(d.name)}</b><br><small>${info}</small></span><span class="btns"><button data-act="techanger" data-id="${e.id}" ${n >= e.sceaux ? '' : 'disabled'}>${e.sceaux} Insigne${e.sceaux > 1 ? 's' : ''}</button></span></div>`;
+        return Hud.svcLigne(d, { sous: info, gestes: `<button class="vy-bouton vy-bouton--petit vy-bouton--primaire" data-act="techanger" data-id="${e.id}" ${n >= e.sceaux ? '' : 'disabled'}>${e.sceaux} Insigne${e.sceaux > 1 ? 's' : ''}</button>` });
       }).join('');
-      return `<p class="muted">Tu as ${n} Insigne${n > 1 ? 's' : ''} de la Garde. On les gagne aux avis de recherche, à la tour de la Garde sur la Place.</p>${lignes}`;
+      return `<div class="vy-svc__barre"><span class="vy-svc__note">On gagne les Insignes aux avis de recherche, à la tour de la Garde sur la Place.</span><span class="vy-svc__bourse" title="Tes Insignes de la Garde">${ins ? Hud.picto(ins) : ''}<b>${n}</b><small>Insigne${n > 1 ? 's' : ''}</small></span></div><p class="vy-svc__note">Tu as ${n} Insigne${n > 1 ? 's' : ''} de la Garde.</p><div class="vy-svc__liste">${lignes}</div>`;
     };
     this.actions.techanger = d => { this.world.echangerTemple(d.id); };
     this.openPanel('dialogue', `Le Temple des Voies, ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
@@ -488,26 +501,32 @@ class Hud {
       const ch = this.world.ch;
       const recipes = Items.recipes().filter(r => r.workshop === ctx.workshop).map(r => ({ r, def: Items.get(r.result) })).filter(x => x.def).sort((a, b) => a.def.level - b.def.level);
       const remise = typeof Veille === 'object' ? Veille.remise(ch, ctx.workshop) : 0;
+      const faisables = !!this.atelierFaisables;
       const rows = recipes.map(({ r, def }) => {
         const cost = this.world.recipeCost(r);
         const ok = cost.every(i => ch.has(i.id, i.count));
-        const ings = cost.map(i => { const d = Items.get(i.id); const have = ch.count(i.id); return `<span class="${have >= i.count ? 'ok' : 'missing'}">${d ? esc(d.name) : i.id} ${have}/${i.count}</span>`; }).join(', ');
+        if (faisables && !ok) return '';
+        const ings = cost.map(i => { const d = Items.get(i.id); const have = ch.count(i.id); return `<span class="vy-svc__ingr ${have >= i.count ? 'ok' : 'missing'}" title="${d ? esc(d.name) : i.id}">${d ? Hud.picto(d) : ''}${d ? esc(d.name) : i.id} ${have}/${i.count}</span>`; }).join('');
         const info = def.kind === 'consumable' ? (def.heal ? `rend ${def.heal >= 999 ? 'tous les' : def.heal} PV` : esc(def.lore)) : Items.statLines(def.stats).join(', ');
-        return `<div class="row item${ok ? '' : ' dim'}"><span><b>${esc(def.name)}</b>${r.count > 1 ? ` ×${r.count}` : ''} <small class="muted">niv. ${def.level}</small><br><small>${info}</small><br><small>${ings}</small></span><span class="btns"><button data-act="craft" data-id="${r.result}" ${ok ? '' : 'disabled'}>Fabriquer</button></span></div>`;
+        return Hud.svcLigne(def, { cls: ok ? 'faisable' : 'dim', n: r.count > 1 ? r.count : 0, titre: `${esc(def.name)}${r.count > 1 ? ` ×${r.count}` : ''} <small>niv. ${def.level}</small>`, sous: `${info}<span class="vy-svc__ingrs">${ings}</span>`, gestes: `<button class="vy-bouton vy-bouton--petit${ok ? ' vy-bouton--primaire' : ''}" data-act="craft" data-id="${r.result}" ${ok ? '' : 'disabled'}>Fabriquer</button>` });
       }).join('');
-      return `<p class="muted">Atelier : ${ctx.workshop}. Les ingrédients viennent des monstres et de la récolte.${remise ? ` <b class="ok">Veille du jour : ${remise} % de ressources en moins.</b>` : ''}</p>${rows || '<p class="muted">Aucune recette.</p>'}`;
+      const bascule = `<label class="vy-coche vy-svc__faisables"><input type="checkbox" data-act="atelierFaisables" ${faisables ? 'checked' : ''}> Faisables seulement</label>`;
+      return `<div class="vy-svc__barre"><span class="vy-svc__note">Atelier : ${ctx.workshop}. Les ingrédients viennent des monstres et de la récolte.${remise ? ` <b class="ok">Veille du jour : ${remise} % de ressources en moins.</b>` : ''}</span>${bascule}</div><div class="vy-svc__liste">${rows || `<p class="vy-svc__vide">${faisables ? 'Rien de faisable avec ton sac pour l\'instant.' : 'Aucune recette.'}</p>`}</div>`;
     };
     this.actions.craft = d => { const r = Items.recipeFor(d.id); if (r) this.world.craft(r); };
+    this.actions.atelierFaisables = () => { this.atelierFaisables = !this.atelierFaisables; this.el.panelBody.innerHTML = render(); };
     this.openPanel('dialogue', ctx.npc.machine ? ctx.npc.def.name : `Atelier de ${ctx.npc.def.name}`, render(), () => { this.el.panelBody.innerHTML = render(); });
   }
 
 
   openRelay(d) {
-    const rows = d.known.map(k => `<div class="row"><span>${k.def ? esc(k.def.name) : k.id}<br><small class="muted">${k.zone ? esc(k.zone.name) : ''}</small></span>${k.id === d.here ? '<small class="muted">ici</small>' : `<button data-act="tp" data-id="${k.id}">Aller</button>`}</div>`).join('');
+    const zones = [];
+    for (const k of d.known) { const z = k.zone ? k.zone.name : 'Ailleurs'; let g = zones.find(x => x.nom === z); if (!g) zones.push(g = { nom: z, l: [] }); g.l.push(k); }
+    const rows = `<div class="vy-svc__relais">${zones.map(g => `<section><h4>${esc(g.nom)}</h4>${g.l.map(k => `<div class="vy-svc__relai${k.id === d.here ? ' ici' : ''}"><span>${k.def ? esc(k.def.name) : k.id}</span>${k.id === d.here ? '<small class="muted">ici</small>' : `<button class="vy-bouton vy-bouton--petit" data-act="tp" data-id="${k.id}">Aller</button>`}</div>`).join('')}</section>`).join('')}</div>`;
     this.actions.tp = x => { this.closePanel(); this.world.teleport(x.id); };
     this.actions.relayCarte = () => this.openMapFromRelay();
     this.actions.relayVeille = () => this.openVeilleFromRelay();
-    this.openPanel('relay', 'Relais de l\'Aube', `<p class="muted">Point de retour enregistré ici. Tu peux rejoindre un autre relais connu.</p>${rows}<div class="row center"><button data-act="relayCarte">Choisir sur la carte du monde</button>${this.veilleBouton ? this.veilleBouton() : ''}</div>`);
+    this.openPanel('relay', 'Relais de l\'Aube', `<p class="muted">Point de retour enregistré ici. Tu peux rejoindre un autre relais connu.</p>${rows}<div class="row center"><button class="vy-bouton vy-bouton--petit" data-act="relayCarte">Choisir sur la carte du monde</button>${this.veilleBouton ? this.veilleBouton() : ''}</div>`);
   }
 
   openDungeonPrompt(d) {
@@ -518,7 +537,12 @@ class Hud {
     const q = e.quete && Quests.get(e.quete);
     const entree = e.niveau || q ? `<p class="muted">Pour entrer : ${[e.niveau ? 'niveau ' + e.niveau : '', q ? 'la quête « ' + esc(q.name) + ' »' : ''].filter(Boolean).join(' et ')}${d.entreeEnCombat ? ' · le combat s\'engage à l\'entrée de chaque salle' : ''}.</p>` : '';
     this.actions.enterd = () => { if (!peut.ok) { this.toast(peut.reason); return; } this.closePanel(); this.world.enterDungeon(d.id); };
-    this.openPanel('dungeon', d.name, `<p>${esc(d.description || '')}</p><p class="muted">${lvl} · ${d.rooms.length} salles${Hud.texteCle(this.world, d)}</p>${entree}${peut.ok ? '' : `<p class="missing">${esc(peut.reason)}</p>`}<div class="row"><button data-act="enterd" class="primary"${peut.ok ? '' : ' disabled'}>Entrer</button></div>`);
+    const salle = (d.rooms || []).filter(x => x.boss).pop() || (d.rooms || [])[d.rooms.length - 1] || {};
+    const bossId = ((salle.monsters || []).find(m => DATA.monsters[m.id] && DATA.monsters[m.id].boss) || (salle.monsters || [])[0] || {}).id;
+    const boss = bossId && DATA.monsters[bossId], img = boss && this.portraitBete ? this.portraitBete(bossId, 120, 131) : '';
+    const fait = (this.world.ch.counters.dungeons || []).includes(d.id);
+    const tete = `<div class="vy-fdd__boss vy-entree-donjon">${img ? `<img src="${img}" alt="" draggable="false">` : ''}<div><small>${fait ? 'Donjon terminé' : 'Donjon'}</small><h3>${esc(d.name)}</h3>${lvl ? `<span class="vy-fdd__niv">${lvl}</span>` : ''}${boss ? `<p class="vy-fdd__tours">Au bout : ${esc(boss.name)} · ${d.rooms.length} salles</p>` : ''}</div></div>`;
+    this.openPanel('dungeon', d.name, `<div class="vy-fdd">${tete}<p>${esc(d.description || '')}</p><p class="muted">${lvl} · ${d.rooms.length} salles${Hud.texteCle(this.world, d)}</p>${entree}${peut.ok ? '' : `<p class="missing">${esc(peut.reason)}</p>`}<div class="row center"><button data-act="enterd" class="primary vy-bouton vy-bouton--primaire"${peut.ok ? '' : ' disabled'}>Entrer</button></div></div>`);
   }
 
   annoncerZone(d) {
@@ -670,6 +694,14 @@ class Hud {
 function esc(s) {
   return Util.esc(s);
 }
+const DRAGME = '<svg class="vy-svc__dragme" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="#f2c14e" stroke="#9b6a14" stroke-width="1.5"/><path d="M12 7.5l3.2 4.5L12 16.5 8.8 12z" fill="#fff3c4" stroke="#9b6a14" stroke-width="1"/></svg>';
+Hud.svcLigne = (def, o) => {
+  o = o || {};
+  return `<div class="vy-svc__ligne${o.cls ? ' ' + o.cls : ''} row item"><span class="vy-case vy-svc__case" data-rarete="${Items.rarity(def)}"><span class="vy-case__icone">${Hud.picto(def)}</span>${o.n > 1 ? `<span class="vy-case__nombre">${o.n}</span>` : ''}</span>` +
+    `<span class="vy-svc__t"><b data-rarete="${Items.rarity(def)}">${o.titre || esc(def.name)}</b>${o.n > 1 && !o.possede ? ` <em>×${o.n}</em>` : ''}${o.sous ? `<small>${o.sous}</small>` : ''}</span><span class="vy-svc__gestes btns">${o.gestes || ''}</span></div>`;
+};
+Hud.svcBourse = n => `<span class="vy-svc__bourse" title="Tes Dragmes">${DRAGME}<b>${nfr(n)}</b><small>Dragmes</small></span>`;
+Hud.svcPrix = n => `<span class="vy-svc__prix">${DRAGME}${nfr(n)}</span>`;
 const nfr = n => Number(n || 0).toLocaleString('fr-FR');
 
 function rewardText(r) {

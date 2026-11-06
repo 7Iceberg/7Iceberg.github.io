@@ -2,6 +2,7 @@
 DATA.content.zones.push({
   id: 'orsane_cimes', name: 'Les Cimes d\'Orsane', region: 'orsane', level: [1, 6],
   palette: 'orsane',
+  origin: [0, 0],
   description: 'La capitale de l\'Aube, posée tout en haut du monde, blanche et dorée sous les lanternes. On y arrive Veilleur, on en repart avec une tâche.',
   maps: [
     {

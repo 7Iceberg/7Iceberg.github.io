@@ -56,7 +56,7 @@ class HudJeu {
     w.on('fightEnd', () => { this.fermerQuitter(); this.basculerPanneau(false); this.rafraichir(); });
     w.on('groupPopup', d => this.fiche.montrer(d));
     for (const e of ['setup', 'start', 'turn', 'end']) cb.on(e, () => this.rafraichir());
-    Bus.on('levelUp', d => { this.niveauEnAttente = d.level; this.annoncerNiveau(); });
+    Bus.on('levelUp', d => { if (this.niveauEnAttente == null) this.niveauDepart = d.level - (d.levels || 1); this.niveauEnAttente = d.level; this.annoncerNiveau(); });
     window.addEventListener('veylan:discussionNonLues', e => this.compterDiscussion(e.detail && e.detail.n));
     window.addEventListener('resize', () => { this.mesurer(); this.rafraichir(); });
     setInterval(() => this.tic(), 400);
@@ -925,9 +925,14 @@ class HudJeu {
     if (this.niveauEnAttente == null) return;
     const panel = document.getElementById('panel');
     if ((panel && !panel.classList.contains('hidden')) || this.world.state === 'dialogue' || this.world.showCombat) return;
-    const lv = this.niveauEnAttente;
-    this.niveauEnAttente = null;
-    this.ui.ruban('Niveau supérieur !', { sorte: 'niveau', ms: 2600, sous: `Niveau ${lv}` });
+    const lv = this.niveauEnAttente, de = this.niveauDepart != null ? this.niveauDepart : lv - 1;
+    this.niveauEnAttente = null; this.niveauDepart = null;
+    const ch = this.world.ch, gains = [`+${5 * Math.max(1, lv - de)} points de caractéristique`];
+    if (ch && ch.classDef) for (const [base, vari] of ch.classDef.paires || []) for (const id of [base, vari]) {
+      const n = id && Character.unlockLevel(ch.classId, id);
+      if (n > de && n <= lv) { const sp = DATA.spells[id]; if (sp) gains.push(`Nouveau sort : ${sp.name}`); }
+    }
+    this.ui.ruban('Niveau supérieur !', { sorte: 'niveau', ms: 3200, sous: `Niveau ${lv}`, gains });
   }
 
   rafraichirIndice() {

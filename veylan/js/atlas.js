@@ -14,6 +14,7 @@ const Atlas = (() => {
       if (e.zone.maps[0] === e.def && pair(e.zone.origin)) return e.zone.origin;
       return null;
     };
+    const geo = id => { const d = maps.get(id).def; return !!d.plateau && pair(d.coords); };
     const coords = new Map(), cells = new Map(), conflicts = [], parts = [];
     const ids = [...maps.keys()];
     const seeds = ids.filter(id => pinOf(id)).concat(ids.filter(id => !pinOf(id)));
@@ -23,11 +24,12 @@ const Atlas = (() => {
       const queue = [seed];
       while (queue.length) {
         const id = queue.shift();
+        if (geo(id)) continue;
         const [x, y] = local.get(id);
         const ex = maps.get(id).def.exits || {};
         for (const dir of ['n', 'e', 's', 'w']) {
           const t = ex[dir];
-          if (!t || !maps.has(t) || coords.has(t) || local.has(t)) continue;
+          if (!t || !maps.has(t) || coords.has(t) || local.has(t) || geo(t)) continue;
           local.set(t, [x + STEP[dir][0], y + STEP[dir][1]]);
           queue.push(t);
         }
@@ -56,7 +58,7 @@ const Atlas = (() => {
       const ex = e.def.exits || {};
       for (const dir of ['n', 'e', 's', 'w']) {
         const t = ex[dir];
-        if (!t || !maps.has(t)) continue;
+        if (!t || !maps.has(t) || geo(id) || geo(t)) continue;
         const a = coords.get(id), b = coords.get(t);
         const want = [a[0] + STEP[dir][0], a[1] + STEP[dir][1]];
         if (b[0] !== want[0] || b[1] !== want[1]) conflicts.push({ type: 'sortie', map: id, dir, target: t, text: `${id} : sortie ${dir} vers ${t}, attendue en ${txt(want)}, placée en ${txt(b)}` });

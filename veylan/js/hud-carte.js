@@ -546,12 +546,25 @@ Object.assign(Hud.prototype, {
     return items;
   },
 
+  caseDuPlateau(id, u, v) {
+    const e = Atlas.index().map.get(id), n = Atlas.spots(id).size, s = e && e.def.secteur;
+    let fx = 0.5, fy = 0.5;
+    if (s && s.k > 0) { fx = (u - s.u0) / (s.k * n); fy = (v - s.v0) / (s.k * n); }
+    else if (e && (e.def.contour || []).length > 2) {
+      const xs = e.def.contour.map(p => p[0]), ys = e.def.contour.map(p => p[1]);
+      const x0 = Math.min(...xs), y0 = Math.min(...ys), lx = Math.max(...xs) - x0, ly = Math.max(...ys) - y0;
+      if (lx > 0 && ly > 0) { fx = (u - x0) / lx; fy = (v - y0) / ly; }
+    }
+    const garde = f => Math.max(0, Math.min(n - 1, f * n - 0.5));
+    return [garde(fx), garde(fy)];
+  },
+
   epinglesMonde(D) {
     const w = this.world, out = [];
     for (const q of D.marks.pins) out.push({ kind: 'quete', map: q.map, at: Atlas.tileToWorld(q.map, q.x, q.y), quest: q.quest, text: q.text });
     if (this.carte.drapeau) { const [x, y] = this.carte.drapeau; out.push({ kind: 'drapeau', map: Atlas.at(Math.round(x), Math.round(y)), at: [x, y] }); }
     if (D.here) {
-      let tile = w.mapId === D.here ? [w.player.x, w.player.y] : null;
+      let tile = w.mapId === D.here ? (w.plateau ? this.caseDuPlateau(D.here, w.player.x, w.player.y) : [w.player.x, w.player.y]) : null;
       if (!tile) { const door = Atlas.spots(D.here).door; tile = door ? [door.x, door.y] : [7, 7]; }
       out.push({ kind: 'toi', map: D.here, at: Atlas.tileToWorld(D.here, tile[0], tile[1]) });
     }

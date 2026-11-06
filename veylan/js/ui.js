@@ -196,7 +196,8 @@ class UI {
     clearTimeout(this.rubanT); clearTimeout(this.rubanT2);
     r.className = `vy-ruban vy-ruban--${opts.sorte || 'tour'}`;
     r.innerHTML = (opts.sorte === 'niveau' ? '<span class="vy-ruban__rayons" aria-hidden="true"></span><span class="vy-ruban__eclats" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>' : '') +
-      `<span class="vy-ruban__bande"><span class="vy-ruban__texte">${Util.esc(texte)}</span></span>${opts.sous ? `<span class="vy-ruban__sous">${Util.esc(opts.sous)}</span>` : ''}`;
+      `<span class="vy-ruban__bande"><span class="vy-ruban__texte">${Util.esc(texte)}</span></span>${opts.sous ? `<span class="vy-ruban__sous">${Util.esc(opts.sous)}</span>` : ''}` +
+      ((opts.gains || []).length ? `<span class="vy-ruban__gains">${opts.gains.map(g => `<i>${Util.esc(g)}</i>`).join('')}</span>` : '');
     void r.offsetWidth;
     r.classList.add('entre');
     const ms = opts.ms || 1400;

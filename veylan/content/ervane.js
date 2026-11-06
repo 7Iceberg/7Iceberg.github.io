@@ -232,12 +232,12 @@
     id: 'ervane_mailles', name: 'Les Mailles', region: 'ervane', level: [1, 4], palette: 'orsane',
     description: 'Le village des Mailles, sur une avancée de pierre blanche au fond de l\'Échancrure. Des maisons de toile cousues aux murs, le Métier au milieu : c\'est ici qu\'on se réveille.',
     maps: [
-      { id: 'ervane_mailles_place', name: 'la Place du Relais', sousZone: 'la Place du Relais', level: [1, 4], plateau: P, contour: R(187, 60, 255, 110), coords: [-1, -8],
+      { id: 'ervane_mailles_place', name: 'la Place du Relais', sousZone: 'la Place du Relais', level: [1, 4], plateau: P, contour: R(187, 60, 255, 110), coords: [-3, -7],
         npcs: [{ id: 'varek_ervane', u: 201, v: 101.5 }, { id: 'sefra', u: 192, v: 93.5 }, { id: 'haldrec', u: 221, v: 90 }],
         nodes: [], groups: [], relay: { u: 205, v: 101 }, dungeon: null, porte: null },
-      { id: 'ervane_mailles_belvedere', name: 'le Belvédère', sousZone: 'le Belvédère', level: [1, 4], plateau: P, contour: R(140, 55, 187, 110), coords: [-3, -9],
+      { id: 'ervane_mailles_belvedere', name: 'le Belvédère', sousZone: 'le Belvédère', level: [1, 4], plateau: P, contour: R(140, 55, 187, 110), coords: [-5, -7],
         npcs: [], nodes: [], groups: [], relay: null, dungeon: null, porte: null },
-      { id: 'ervane_mailles_archives', name: 'les Archives', sousZone: 'la Place du Relais', level: [1, 4], plateau: P, contour: R(140, 110, 255, 150), coords: [-1, -7],
+      { id: 'ervane_mailles_archives', name: 'les Archives', sousZone: 'la Place du Relais', level: [1, 4], plateau: P, contour: R(140, 110, 255, 150), coords: [-3, -6],
         npcs: [{ id: 'grenne', u: 214, v: 116 }, { id: 'mibbe', u: 196, v: 124.5 }], nodes: [], groups: [], relay: null, dungeon: null, porte: null },
     ],
   });
@@ -247,11 +247,11 @@
     faune: { monstres: { glym_aqua: 25, glym_ignis: 25, glym_terra: 25, glym_aer: 25 }, tailles: { 1: 40, 2: 40, 3: 20 } },
     description: 'Le vallon du bras sud, sous le village : quatre sources, quatre lignées d\'Éléments, et des ruisselets qui se rejoignent au Confluent. Herbe fraîche, matin clair.',
     maps: [
-      { id: 'ervane_porte_des_sources', name: 'la Porte des Sources', sousZone: 'les Sources Claires', penche: { glym_aqua: 4 }, level: [1, 2], plateau: P, contour: R(168, 92, 255, 152), coords: [-3, -7],
+      { id: 'ervane_porte_des_sources', name: 'la Porte des Sources', sousZone: 'les Sources Claires', penche: { glym_aqua: 4 }, level: [1, 2], plateau: P, contour: R(168, 92, 255, 152), coords: [-4, -5],
         npcs: [{ id: 'nolwe', u: 175.5, v: 136.5 }], nodes: [{ resource: 'herbe_de_veille', u: 171, v: 145 }],
         groups: [{ fixe: true, monsters: ['glym_aqua'], level: [1, 2], respawn: 30, aire: aire(sources, 177, 140, 4) }],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_source_claire', name: 'la Source Claire', sousZone: 'les Sources Claires', penche: { glym_aqua: 4 }, level: [1, 2], plateau: P, contour: [[148, 92], [168, 92], [168, 152], [255, 152], [255, 190], [148, 190]], coords: [-3, -6],
+      { id: 'ervane_source_claire', name: 'la Source Claire', sousZone: 'les Sources Claires', penche: { glym_aqua: 4 }, level: [1, 2], plateau: P, contour: [[148, 92], [168, 92], [168, 152], [255, 152], [255, 190], [148, 190]], coords: [-5, -5],
         npcs: [], nodes: [{ resource: 'herbe_de_veille', u: 152, v: 157 }],
         groups: [
           { taille: [1, 2], monsters: ['glym_aqua'], level: [1, 2], respawn: 30, aire: aire(sources, 158, 151, 5) },
@@ -259,7 +259,7 @@
           { taille: [1, 3], monsters: ['glym_aqua', 'glym_aqua'], level: [1, 5], respawn: 30, aire: aire(sources, 199, 144, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_source_braise', name: 'la Source de Braise', sousZone: 'les Sources Vives', penche: { glym_ignis: 4 }, level: [1, 5], plateau: P, contour: R(118, 92, 148, 146), coords: [-5, -7],
+      { id: 'ervane_source_braise', name: 'la Source de Braise', sousZone: 'les Sources Vives', penche: { glym_ignis: 4 }, level: [1, 5], plateau: P, contour: R(118, 92, 148, 146), coords: [-6, -6],
         npcs: [], nodes: [{ resource: 'herbe_de_veille', u: 138, v: 131.5 }],
         groups: [
           { fixe: true, monsters: ['glym_ignis'], level: [1, 2], respawn: 30, aire: aire(sources, 123, 113, 5) },
@@ -267,7 +267,7 @@
           { taille: [1, 3], monsters: ['glym_ignis', 'glym_ignis'], level: [1, 5], respawn: 30, aire: aire(sources, 139, 101, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_source_mousse', name: 'la Source de Mousse', sousZone: 'les Sources Claires', penche: { glym_terra: 4 }, level: [1, 5], plateau: P, contour: R(118, 146, 148, 190), coords: [-4, -5],
+      { id: 'ervane_source_mousse', name: 'la Source de Mousse', sousZone: 'les Sources Claires', penche: { glym_terra: 4 }, level: [1, 5], plateau: P, contour: R(118, 146, 148, 190), coords: [-6, -5],
         npcs: [], nodes: [{ resource: 'herbe_de_veille', u: 146, v: 161 }],
         groups: [
           { fixe: true, monsters: ['glym_terra'], level: [1, 5], respawn: 30, aire: aire(sources, 136, 145, 5) },
@@ -275,7 +275,7 @@
           { taille: [1, 3], monsters: ['glym_terra', 'glym_terra'], level: [4, 5], respawn: 30, aire: aire(sources, 123, 138, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_source_vent', name: 'la Source du Vent', sousZone: 'les Sources Vives', penche: { glym_aer: 4 }, level: [4, 5], plateau: P, contour: R(70, 92, 118, 138), coords: [-6, -7],
+      { id: 'ervane_source_vent', name: 'la Source du Vent', sousZone: 'les Sources Vives', penche: { glym_aer: 4 }, level: [4, 5], plateau: P, contour: R(70, 92, 118, 138), coords: [-7, -6],
         npcs: [], nodes: [{ resource: 'herbe_de_veille', u: 110.5, v: 128.5 }],
         groups: [
           { fixe: true, monsters: ['glym_aer'], level: [1, 5], respawn: 30, aire: aire(sources, 83, 109, 5) },
@@ -283,7 +283,7 @@
           { taille: [1, 3], monsters: ['glym_aer', 'glym_aer'], level: [4, 5], respawn: 30, aire: aire(sources, 84, 120, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_confluent', name: 'le Confluent', sousZone: 'le Confluent', level: [4, 8], plateau: P, contour: [[70, 138], [118, 138], [118, 190], [106, 190], [106, 158], [70, 158]], coords: [-6, -6],
+      { id: 'ervane_confluent', name: 'le Confluent', sousZone: 'le Confluent', level: [4, 8], plateau: P, contour: [[70, 138], [118, 138], [118, 190], [106, 190], [106, 158], [70, 158]], coords: [-7, -5],
         npcs: [], nodes: [{ resource: 'herbe_de_veille', u: 106, v: 147.5 }],
         groups: [
           { taille: [1, 3], monsters: ['glym_ignis', 'glym_aqua'], level: [4, 8], respawn: 40, aire: aire(sources, 109, 130, 5) },
@@ -294,7 +294,7 @@
           { taille: [2, 4], monsters: ['glym_terra', 'glym_aer', 'glym_aqua'], level: [7, 8], respawn: 40, aire: aire(sources, 115, 152, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_rond_des_quatre', name: 'le Rond des Quatre', sousZone: 'le Confluent', level: [7, 8], plateau: P, contour: R(70, 158, 106, 190), coords: [-7, -5],
+      { id: 'ervane_rond_des_quatre', name: 'le Rond des Quatre', sousZone: 'le Confluent', level: [7, 8], plateau: P, contour: R(70, 158, 106, 190), coords: [-7, -4],
         npcs: [], nodes: [],
         groups: [{ fixe: true, monsters: ['glym_ignis', 'glym_aqua', 'glym_aer', 'glym_terra'], level: [7, 8], respawn: 60, aire: aire(sources, 98, 149, 4) }],
         relay: null, dungeon: null, porte: null },
@@ -306,14 +306,14 @@
     faune: { monstres: { lampignon: 30, filin: 20, pistil: 20, lampignard: 15, dorsefleur: 15 }, tailles: { 1: 25, 2: 40, 3: 30, 4: 5 } },
     description: 'Un haut plateau venteux au-dessus du village, découpé en enclos de pierre sèche. Au milieu, un hameau de bergers vidé depuis que les Lampignons ont pris racine sous les murs ; des fleurs qui marchent poussent au pied des pierres.',
     maps: [
-      { id: 'ervane_haut_escalier', name: 'le Haut de l\'Escalier', sousZone: 'les Haies', penche: { lampignon: 2, filin: 1.5 }, level: [7, 8], plateau: P, contour: R(194, 54, 255, 75), coords: [-1, -11],
+      { id: 'ervane_haut_escalier', name: 'le Haut de l\'Escalier', sousZone: 'les Haies', penche: { lampignon: 2, filin: 1.5 }, level: [7, 8], plateau: P, contour: R(194, 54, 255, 75), coords: [-3, -8],
         npcs: [{ id: 'pelk', u: 202.5, v: 58.5 }], nodes: [],
         groups: [
           { fixe: true, monsters: ['lampignon'], level: [7, 8], respawn: 45, aire: aire(murets, 186, 53, 4) },
           { taille: [1, 2], monsters: ['lampignon'], level: [7, 8], respawn: 45, aire: aire(murets, 223, 52, 4) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_haies', name: 'les Haies', sousZone: 'les Haies', penche: { lampignon: 2, filin: 1.5 }, level: [7, 10], plateau: P, contour: R(194, 36, 255, 54), coords: [0, -11],
+      { id: 'ervane_haies', name: 'les Haies', sousZone: 'les Haies', penche: { lampignon: 2, filin: 1.5 }, level: [7, 10], plateau: P, contour: R(194, 36, 255, 54), coords: [-3, -9],
         npcs: [], nodes: [{ resource: 'bois_noueux', u: 210, v: 39 }, { resource: 'bois_noueux', u: 226, v: 35 }, { resource: 'bois_noueux', u: 231.5, v: 50 }, { resource: 'bois_noueux', u: 218, v: 47.5 }, { resource: 'bois_noueux', u: 202, v: 45.5 }],
         groups: [
           { taille: [1, 2], monsters: ['lampignon'], level: [7, 10], respawn: 45, aire: aire(murets, 186, 41, 5) },
@@ -322,7 +322,7 @@
           { taille: [1, 3], monsters: ['lampignon', 'lampignon'], level: [7, 8], respawn: 45, aire: aire(murets, 196, 23, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_les_murets', name: 'les Murets', sousZone: 'le Hameau Vide', penche: { lampignard: 2, pistil: 1.5, dorsefleur: 1.5 }, level: [9, 10], plateau: P, contour: R(110, 36, 194, 75), coords: [-2, -11],
+      { id: 'ervane_les_murets', name: 'les Murets', sousZone: 'le Hameau Vide', penche: { lampignard: 2, pistil: 1.5, dorsefleur: 1.5 }, level: [9, 10], plateau: P, contour: R(110, 36, 194, 75), coords: [-5, -8],
         npcs: [], nodes: [],
         groups: [
           { taille: [1, 2], monsters: ['lampignard'], level: [9, 10], respawn: 45, aire: aire(murets, 162, 44, 5) },
@@ -330,7 +330,7 @@
           { taille: [1, 3], monsters: ['lampignon', 'filin'], level: [9, 10], respawn: 45, aire: aire(murets, 174, 42, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_hameau', name: 'le Hameau Vide', sousZone: 'le Hameau Vide', penche: { lampignard: 2, pistil: 1.5, dorsefleur: 1.5 }, level: [9, 12], plateau: P, contour: R(110, -15, 198, 36), coords: [-3, -12],
+      { id: 'ervane_hameau', name: 'le Hameau Vide', sousZone: 'le Hameau Vide', penche: { lampignard: 2, pistil: 1.5, dorsefleur: 1.5 }, level: [9, 12], plateau: P, contour: R(110, -15, 198, 36), coords: [-5, -9],
         npcs: [], nodes: [],
         groups: [
           { fixe: true, monsters: ['lampignon'], level: [9, 12], respawn: 45, aire: aire(murets, 142, 14, 5) },
@@ -340,7 +340,7 @@
           { taille: [1, 3], monsters: ['lampignard', 'filin'], level: [9, 12], respawn: 45, aire: aire(murets, 193, 4, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_cairn', name: 'le Cairn du Vent', sousZone: 'les Haies', penche: { filin: 2 }, level: [11, 12], plateau: P, contour: R(198, -15, 255, 36), coords: [0, -13],
+      { id: 'ervane_cairn', name: 'le Cairn du Vent', sousZone: 'les Haies', penche: { filin: 2 }, level: [11, 12], plateau: P, contour: R(198, -15, 255, 36), coords: [-4, -9],
         npcs: [], nodes: [],
         groups: [
           { fixe: true, monsters: ['lampignard'], level: [15, 16], respawn: 120, aire: aire(murets, 204, 11, 4) },
@@ -355,14 +355,14 @@
     faune: { monstres: { grillon_ruche: 30, mante_chene: 25, chateigne: 25, scarabee_ruche: 20 }, tailles: { 1: 15, 2: 40, 3: 35, 4: 10 } },
     description: 'Le bras nord de l\'île : de grands arbres sombres que des fils blancs relient d\'un tronc à l\'autre. Les troncs coupent la vue ; des Grillons y portent leurs ruches, des Mantes guettent sur les branches, des Chateignes feulent dans les racines.',
     maps: [
-      { id: 'ervane_gue', name: 'le Gué et la Passerelle', sousZone: 'la Lisière Cousue', penche: { grillon_ruche: 2 }, level: [11, 12], plateau: P, contour: R(108, -15, 170, 46), coords: [-5, -11],
+      { id: 'ervane_gue', name: 'le Gué et la Passerelle', sousZone: 'la Lisière Cousue', penche: { grillon_ruche: 2 }, level: [11, 12], plateau: P, contour: R(108, -15, 170, 46), coords: [-6, -9],
         npcs: [], nodes: [{ resource: 'bois_de_cime', u: 113.5, v: 33 }],
         groups: [
           { fixe: true, monsters: ['grillon_ruche', 'grillon_ruche'], level: [11, 12], respawn: 50, aire: aire(bois, 102, 17, 5) },
           { taille: [1, 3], monsters: ['grillon_ruche', 'grillon_ruche'], level: [11, 12], respawn: 50, aire: aire(bois, 107, 37, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_lisiere', name: 'la Lisière Cousue', sousZone: 'la Lisière Cousue', penche: { grillon_ruche: 2 }, level: [11, 14], plateau: P, contour: [[100, 40], [108, 40], [108, 46], [170, 46], [170, 95], [100, 95]], coords: [-6, -11],
+      { id: 'ervane_lisiere', name: 'la Lisière Cousue', sousZone: 'la Lisière Cousue', penche: { grillon_ruche: 2 }, level: [11, 14], plateau: P, contour: [[100, 40], [108, 40], [108, 46], [170, 46], [170, 95], [100, 95]], coords: [-6, -7],
         npcs: [{ id: 'yssel', u: 114, v: 58.5 }], nodes: [{ resource: 'herbe_de_veille', u: 104.5, v: 50.5 }, { resource: 'bois_de_cime', u: 124, v: 63.5 }],
         groups: [
           { fixe: true, monsters: ['grillon_ruche', 'grillon_ruche', 'mante_chene'], level: [11, 14], respawn: 50, aire: aire(bois, 125, 59, 5) },
@@ -370,14 +370,14 @@
           { fixe: true, monsters: ['grillon_ruche', 'mante_chene'], level: [13, 14], respawn: 50, aire: aire(bois, 143, 63, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_fils_croises', name: 'les Fils Croisés', sousZone: 'le Cœur du Bois', penche: { mante_chene: 2, scarabee_ruche: 1.5 }, level: [13, 14], plateau: P, contour: R(64, -15, 108, 40), coords: [-7, -12],
+      { id: 'ervane_fils_croises', name: 'les Fils Croisés', sousZone: 'le Cœur du Bois', penche: { mante_chene: 2, scarabee_ruche: 1.5 }, level: [13, 14], plateau: P, contour: R(64, -15, 108, 40), coords: [-7, -9],
         npcs: [], nodes: [{ resource: 'herbe_de_veille', u: 76, v: 26.5 }, { resource: 'bois_de_cime', u: 94.5, v: 29 }],
         groups: [
           { taille: [1, 3], monsters: ['mante_chene', 'mante_chene'], level: [13, 14], respawn: 50, aire: aire(bois, 77, 12, 5) },
           { taille: [1, 3], monsters: ['mante_chene', 'mante_chene'], level: [13, 14], respawn: 50, aire: aire(bois, 68, 28, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_arbre_bobine', name: 'l\'Arbre-Bobine', sousZone: 'le Cœur du Bois', penche: { mante_chene: 2, scarabee_ruche: 1.5 }, level: [13, 16], plateau: P, contour: [[30, 46], [64, 46], [64, 40], [100, 40], [100, 95], [42, 95], [42, 62], [30, 62]], coords: [-8, -11],
+      { id: 'ervane_arbre_bobine', name: 'l\'Arbre-Bobine', sousZone: 'le Cœur du Bois', penche: { mante_chene: 2, scarabee_ruche: 1.5 }, level: [13, 16], plateau: P, contour: [[30, 46], [64, 46], [64, 40], [100, 40], [100, 95], [42, 95], [42, 62], [30, 62]], coords: [-8, -8],
         npcs: [], nodes: [{ resource: 'herbe_de_veille', u: 66, v: 58 }, { resource: 'bois_de_cime', u: 83, v: 57.5 }],
         groups: [
           { taille: [1, 3], monsters: ['mante_chene', 'scarabee_ruche'], level: [13, 16], respawn: 50, aire: aire({ style: 'racines' }, 67, 55, 5) },
@@ -386,7 +386,7 @@
           { taille: [1, 3], monsters: ['chateigne', 'chateigne'], level: [13, 14], respawn: 50, aire: aire(bois, 30, 39, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_clairiere', name: 'la Clairière des Lueurs', sousZone: 'la Clairière des Lueurs', penche: { chateigne: 2 }, level: [15, 16], plateau: P, contour: R(30, -15, 64, 46), coords: [-9, -12],
+      { id: 'ervane_clairiere', name: 'la Clairière des Lueurs', sousZone: 'la Clairière des Lueurs', penche: { chateigne: 2 }, level: [15, 16], plateau: P, contour: R(30, -15, 64, 46), coords: [-8, -9],
         npcs: [], nodes: [{ resource: 'herbe_de_veille', u: 52.5, v: 35 }, { resource: 'bois_de_cime', u: 39, v: 37.5 }],
         groups: [
           { fixe: true, monsters: ['chateigne', 'chateigne'], level: [15, 16], respawn: 50, aire: aire({ style: 'libre' }, 41, 19, 5) },
@@ -394,14 +394,14 @@
           { taille: [2, 4], monsters: ['chateigne', 'scarabee_ruche', 'grillon_ruche'], level: [15, 16], respawn: 50, aire: aire(bois, 55, 6, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_hautes_toiles', name: 'les Hautes Toiles', sousZone: 'la Clairière des Lueurs', penche: { mante_chene: 1.5, scarabee_ruche: 1.5 }, level: [15, 16], plateau: P, contour: R(-15, -15, 30, 62), coords: [-11, -11],
+      { id: 'ervane_hautes_toiles', name: 'les Hautes Toiles', sousZone: 'la Clairière des Lueurs', penche: { mante_chene: 1.5, scarabee_ruche: 1.5 }, level: [15, 16], plateau: P, contour: R(-15, -15, 30, 62), coords: [-9, -9],
         npcs: [], nodes: [{ resource: 'bois_de_cime', u: 19.5, v: 45.5 }],
         groups: [
           { taille: [2, 4], monsters: ['mante_chene', 'mante_chene', 'scarabee_ruche'], level: [15, 16], respawn: 50, aire: aire(bois, 10, 29, 5) },
           { taille: [2, 4], monsters: ['mante_chene', 'mante_chene', 'scarabee_ruche'], level: [15, 16], respawn: 50, aire: aire(bois, 21, 10, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_tete_du_pont', name: 'la Tête du Pont', sousZone: 'la Clairière des Lueurs', level: [11, 12], plateau: P, contour: R(-15, 62, 42, 95), coords: [-10, -10],
+      { id: 'ervane_tete_du_pont', name: 'la Tête du Pont', sousZone: 'la Clairière des Lueurs', level: [11, 12], plateau: P, contour: R(-15, 62, 42, 95), coords: [-9, -8],
         npcs: [], nodes: [], groups: [], relay: null, dungeon: null, porte: null },
     ],
   });
@@ -411,11 +411,11 @@
     faune: { monstres: { krobbet: 30, gravelin: 25, ruissel: 20, meuliere: 15, grand_ruissel: 10 }, tailles: { 2: 40, 3: 45, 4: 15 } },
     description: 'La pointe sud-ouest, où le fil d\'or remonte des nuages : les ruines d\'un poste de l\'Aube sur des terrasses de calcaire gris. Partout, des galets qui bougent, et autour de la Margelle, des gouttes du Puits qui roulent toutes seules.',
     maps: [
-      { id: 'ervane_pont', name: 'le Pont de cordes', sousZone: 'le camp d\'Ardek', level: [16, 17], plateau: P, contour: R(5, 75, 35, 104), coords: [-10, -9],
+      { id: 'ervane_pont', name: 'le Pont de cordes', sousZone: 'le camp d\'Ardek', level: [16, 17], plateau: P, contour: R(5, 75, 35, 104), coords: [-9, -7],
         npcs: [], nodes: [], groups: [], relay: null, dungeon: null, porte: null },
-      { id: 'ervane_camp_ardek', name: 'le camp d\'Ardek', sousZone: 'le camp d\'Ardek', level: [16, 17], plateau: P, contour: R(-15, 104, 42, 126), coords: [-10, -8],
+      { id: 'ervane_camp_ardek', name: 'le camp d\'Ardek', sousZone: 'le camp d\'Ardek', level: [16, 17], plateau: P, contour: R(-15, 104, 42, 126), coords: [-9, -6],
         npcs: [{ id: 'ardek', u: 30.5, v: 109.5 }], nodes: [], groups: [], relay: { u: 24.5, v: 112.8 }, dungeon: null, porte: null },
-      { id: 'ervane_arcades', name: 'les Arcades', sousZone: 'le Vieux Poste', penche: { krobbet: 1.5 }, level: [16, 17], plateau: P, contour: R(42, 95, 85, 127), coords: [-9, -8],
+      { id: 'ervane_arcades', name: 'les Arcades', sousZone: 'le Vieux Poste', penche: { krobbet: 1.5 }, level: [16, 17], plateau: P, contour: R(42, 95, 85, 127), coords: [-8, -6],
         npcs: [], nodes: [{ resource: 'pierre_de_calcaire', u: 50, v: 120.5 }],
         groups: [
           { taille: [1, 3], monsters: ['krobbet', 'gravelin'], level: [16, 17], respawn: 60, aire: aire(amarre, 43, 103, 5) },
@@ -423,7 +423,7 @@
           { taille: [1, 3], monsters: ['meuliere', 'krobbet'], level: [16, 17], respawn: 60, aire: aire(amarre, 60, 115, 4) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_vieux_poste', name: 'le Vieux Poste', sousZone: 'le Vieux Poste', penche: { krobbet: 1.5 }, level: [16, 17], plateau: P, contour: R(46, 127, 85, 148), coords: [-8, -7],
+      { id: 'ervane_vieux_poste', name: 'le Vieux Poste', sousZone: 'le Vieux Poste', penche: { krobbet: 1.5 }, level: [16, 17], plateau: P, contour: R(46, 127, 85, 148), coords: [-8, -5],
         npcs: [], nodes: [{ resource: 'pierre_de_calcaire', u: 66.5, v: 131 }],
         groups: [
           { taille: [2, 4], monsters: ['krobbet', 'krobbet', 'gravelin'], level: [16, 17], respawn: 60, aire: aire(amarre, 47, 137, 5) },
@@ -431,7 +431,7 @@
           { taille: [1, 3], monsters: ['krobbet', 'gravelin'], level: [19, 20], respawn: 60, aire: aire(amarre, 62, 153, 5) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_margelle', name: 'la Margelle', sousZone: 'la Margelle', penche: { ruissel: 2, grand_ruissel: 2 }, level: [16, 20], plateau: P, contour: [[-15, 126], [42, 126], [42, 127], [46, 127], [46, 150], [-15, 150]], coords: [-10, -6],
+      { id: 'ervane_margelle', name: 'la Margelle', sousZone: 'la Margelle', penche: { ruissel: 2, grand_ruissel: 2 }, level: [16, 20], plateau: P, contour: [[-15, 126], [42, 126], [42, 127], [46, 127], [46, 150], [-15, 150]], coords: [-9, -5],
         npcs: [], nodes: [{ resource: 'pierre_de_calcaire', u: 46.5, v: 132.5 }],
         groups: [
           { fixe: true, monsters: ['meuliere', 'krobbet', 'gravelin'], level: [16, 17], respawn: 60, aire: aire(amarre, 5, 118, 5) },
@@ -439,7 +439,7 @@
           { taille: [2, 4], monsters: ['meuliere', 'krobbet', 'gravelin'], level: [19, 20], respawn: 60, aire: aire(amarre, -2, 128, 4) },
         ],
         relay: null, dungeon: 'puits_de_l_amarre', porte: { u: 41.6, v: 138.3 } },
-      { id: 'ervane_champ_des_bornes', name: 'le Champ des Bornes', sousZone: 'la Margelle', penche: { ruissel: 1.5, gravelin: 1.5 }, level: [16, 20], plateau: P, contour: [[24, 150], [46, 150], [46, 148], [85, 148], [85, 190], [24, 190]], coords: [-9, -5],
+      { id: 'ervane_champ_des_bornes', name: 'le Champ des Bornes', sousZone: 'la Margelle', penche: { ruissel: 1.5, gravelin: 1.5 }, level: [16, 20], plateau: P, contour: [[24, 150], [46, 150], [46, 148], [85, 148], [85, 190], [24, 190]], coords: [-8, -4],
         npcs: [], nodes: [{ resource: 'pierre_de_calcaire', u: 63, v: 151.5 }, { resource: 'pierre_de_calcaire', u: 35, v: 165.5 }],
         groups: [
           { taille: [1, 3], monsters: ['krobbet', 'gravelin'], level: [19, 20], respawn: 60, aire: aire(amarre, 38, 157, 5) },
@@ -447,7 +447,7 @@
           { taille: [2, 4], monsters: ['meuliere', 'gravelin', 'gravelin'], level: [19, 20], respawn: 60, aire: aire(amarre, 57, 163, 4) },
         ],
         relay: null, dungeon: null, porte: null },
-      { id: 'ervane_nacelle', name: 'la Pointe de la Nacelle', sousZone: 'la Margelle', level: [19, 20], plateau: P, contour: R(-15, 150, 24, 190), coords: [-11, -6],
+      { id: 'ervane_nacelle', name: 'la Pointe de la Nacelle', sousZone: 'la Margelle', level: [19, 20], plateau: P, contour: R(-15, 150, 24, 190), coords: [-9, -4],
         npcs: [{ id: 'kolm', u: 13.5, v: 155 }], nodes: [], groups: [], relay: null, dungeon: null, porte: null },
     ],
   });
