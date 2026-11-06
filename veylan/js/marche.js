@@ -4,7 +4,26 @@ const Marche = (() => {
     ressources: { nom: 'le comptoir des ressources', est: d => d.kind === 'resource', bonus: 1.2, achat: 1.6, niveauMax: 99 },
     vivres: { nom: 'le comptoir des vivres', est: d => d.kind === 'consumable' && d.sub !== 'parchemin' && d.sub !== 'monture', bonus: 1.4, achat: 1.0, niveauMax: 39 },
   };
-  const aLEtal = d => d.source !== 'drop' && d.sub !== 'parchemin' && d.sub !== 'oeuf';
+  let ouvertes = null;
+  function regionsOuvertes() {
+    if (ouvertes) return ouvertes;
+    const C = DATA.content, monstres = new Set(), regions = new Set(), zones = new Set();
+    for (const z of C.zones || []) { regions.add(z.region); zones.add(z.id); for (const m of z.maps || []) for (const g of m.groups || []) for (const id of g.monsters || []) monstres.add(id); }
+    for (const dg of C.dungeons || []) for (const r of dg.rooms || []) for (const m of r.monsters || []) monstres.add(m.id);
+    for (const [id, m] of Object.entries(DATA.monsters || {})) if (m.region && regions.has(m.region) && !m.summon) monstres.add(id);
+    ouvertes = { monstres, regions, zones };
+    return ouvertes;
+  }
+  function ressourceALEtal(d) {
+    if (/^cle_/.test(d.id) || d.id === 'sceau_de_la_garde' || d.kind !== 'resource') return false;
+    const r = (DATA.content.resources || []).find(x => x.id === d.id);
+    if (!r) return false;
+    const O = regionsOuvertes(), boss = id => !!(DATA.monsters[id] && DATA.monsters[id].boss);
+    if (r.node) return O.regions.has(r.node.zone) || O.zones.has(r.node.zone);
+    const drops = r.drops || [];
+    return drops.length > 0 && !drops.some(x => boss(x.monster)) && drops.some(x => x.rate >= 10 && O.monstres.has(x.monster));
+  }
+  const aLEtal = d => d.source !== 'drop' && d.sub !== 'parchemin' && d.sub !== 'oeuf' && (d.kind !== 'resource' || ressourceALEtal(d));
   const ETAL = 6, BAISSE = 0.05, PLANCHER = 0.5;
 
   const jour = () => (typeof Veille === 'object' ? Veille.jour() : Math.floor(Date.now() / 86400000));

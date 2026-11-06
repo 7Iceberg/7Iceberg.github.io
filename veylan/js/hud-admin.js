@@ -225,11 +225,13 @@ Object.assign(Hud.prototype, {
 
   adminPage_metiers() {
     const S = this.admin, f = Admin.plie(S.filtre), ch = this.world.ch;
-    const ateliers = (typeof Veille === 'object' && Veille.ATELIERS) || {};
+    const M = typeof Metiers === 'object' ? Metiers : null;
+    const ateliers = M ? Object.fromEntries(M.liste().filter(m => Items.recipes().some(r => m.ateliers.includes(r.workshop))).map(m => [m.id, { nom: m.nom, ateliers: m.ateliers }])) : ((typeof Veille === 'object' && Veille.ATELIERS) || {});
     const cles = Object.keys(ateliers);
     const cat = S.cat && cles.includes(S.cat) ? S.cat : '';
-    const recettes = Items.recipes().filter(r => Items.get(r.result) && (!cat || r.workshop === cat) && (!f || Admin.plie(Items.get(r.result).name).includes(f)));
-    const nomAtelier = k => { const a = ateliers[k]; return (a && (a.nom || a.name || a.label)) || k; };
+    const dansCat = r => !cat || (ateliers[cat].ateliers ? ateliers[cat].ateliers.includes(r.workshop) : r.workshop === cat);
+    const recettes = Items.recipes().filter(r => Items.get(r.result) && dansCat(r) && (!f || Admin.plie(Items.get(r.result).name).includes(f)));
+    const nomAtelier = k => { const a = ateliers[k]; return (a && (a.nom || a.name || a.label)) || (typeof a === 'string' ? a : k); };
     const lignes = recettes.slice(0, 80).map(r => { const it = Items.get(r.result);
       const ingr = (r.ingredients || []).map(i => { const d = Items.get(i.id); const a = ch.count(i.id); return `<span class="${a >= i.count ? 'ok' : ''}">${d ? esc(d.name) : esc(i.id)} ${a}/${i.count}</span>`; }).join('');
       return `<div class="vy-admin__ligne vy-admin__recette"><span class="vy-admin__ic" data-rarete="${Items.rarity(it)}">${Hud.picto(it)}</span><span class="vy-admin__nom">${esc(it.name)}<small>${esc(nomAtelier(r.workshop))}${it.level ? ` · niveau ${it.level}` : ''}</small><span class="vy-admin__ingr">${ingr}</span></span>${this.adminBouton('Ingrédients', 'fabriquer', [it.id, 'ingredients'])}${this.adminBouton('Fabriquer', 'fabriquer', [it.id], { primaire: true })}</div>`; }).join('');

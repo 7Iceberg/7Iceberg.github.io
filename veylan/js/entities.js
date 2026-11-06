@@ -16,11 +16,13 @@ class Entity {
     const e = k ? Entity.ecartEchelle(this.level) : { degats: 1, pv: 1 };
     const absolu = 1 + k * (e.pv - 1);
     this.echelleHp = 1 + k * (e.degats - 1);
-    this.scale = def.scale || (1 + R.monsterDamagePerLevel * steps) * (def.dmgMult || 1) * (mob ? R.monsterDamageMult : 1) * absolu / (mob ? DATA.reductionCoups(this.level) : 1);
+    const objD = mob && R.monstresObjetsDegats ? DATA.courbe(R.monstresObjetsDegats, this.level) : 1;
+    this.objPv = mob && R.monstresObjetsPv ? DATA.courbe(R.monstresObjetsPv, this.level) : 1;
+    this.scale = def.scale || (1 + R.monsterDamagePerLevel * steps) * (def.dmgMult || 1) * (mob ? R.monsterDamageMult : 1) * absolu * objD / (mob ? DATA.reductionCoups(this.level) : 1);
     const high = mob ? 1 + (R.monsterHpHighPerLevel || 0) * Math.max(0, this.level - (R.monsterHpHighFrom || 99)) : 1;
     const compense = mob ? 1 + (R.monsterHpCompense || 0) * Math.max(0, this.level - 1) : 1;
     const echelle = mob ? DATA.echellePv(this.level) : 1;
-    this.hpMax = Math.max(1, Math.round(def.hp * (1 + R.monsterHpPerLevel * steps) * (mob ? R.monsterHpMult : 1) * high * this.echelleHp / compense * echelle));
+    this.hpMax = Math.max(1, Math.round(def.hp * (1 + R.monsterHpPerLevel * steps) * (mob ? R.monsterHpMult : 1) * high * this.echelleHp / compense * echelle * this.objPv));
     this.hp = this.hpMax;
     this.paMax = def.pa;
     this.pmMax = def.pm;
@@ -36,6 +38,10 @@ class Entity {
     this.fuite = def.fuite != null ? def.fuite : (wild ? Math.floor(this.level / DATA.rules.monsterFuiteDiv) : 0);
     this.crit = def.crit || 0;
     this.resCrit = def.resCrit || 0;
+    this.puissance = def.puissance || 0;
+    this.po = def.po || 0;
+    this.invocations = def.invocations || 0;
+    this.resPou = def.resPou || 0;
     this.dmgPct = def.dmgPct || {};
     this.dmgFixe = def.dmgFixe || {};
     this.dmgCrit = def.dmgCrit || 0;
@@ -109,7 +115,7 @@ class Entity {
   }
 
   statFactor(element) {
-    return 1 + Math.max(0, this.statFor(element) + (this.dmgPct[element] || 0)) / 100;
+    return 1 + Math.max(0, this.statFor(element) + (this.dmgPct[element] || 0) + (this.puissance || 0)) / 100;
   }
 
   aPassif(id) { return !this.isSummon && this.passifs.has(id); }

@@ -835,7 +835,10 @@ class Accueil {
       return;
     }
     const ch = Character.create(b.classId, nom, b.gender, null, { look: b.look, tuto: b.tuto });
-    if (typeof Ile === 'object' && Ile.allumee && Ile.fairenaitre(ch)) Ile.appliquerOrsane();
+    if (typeof Ile === 'object' && Ile.allumee) {
+      if (!Ile.fairenaitre(ch)) { this.erreur('L\'île d\'Ervane n\'a pas pu se charger. Recharge la page pour réessayer.'); return; }
+      Ile.appliquerOrsane();
+    }
     if (typeof Ile === 'object' && Ile.appliquerOrsane3DPour) Ile.appliquerOrsane3DPour(ch);
     if (b.invite) {
       Object.defineProperty(ch, 'invite', { value: true });

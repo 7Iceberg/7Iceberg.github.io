@@ -42,6 +42,7 @@ const MENUS = [
   ['boutique', 'Boutique des Voiles', 'Y', I.boutique],
   ['familiers', 'Familiers', 'K', I.familiers],
   ['montures', 'Montures', 'L', I.montures],
+  ['metiers', 'Métiers', '', I.metiers || I.sac],
   ['carte', 'Carte du monde', 'M', I.carte],
   ['journal', 'Journal', 'J', I.journal],
   ['profil', 'Profil', 'A', PROFIL],
@@ -67,7 +68,7 @@ Object.assign(Hud.prototype, {
     this.journal = { combat: [], evenements: [] };
     this.journalTab = 'evenements';
     const bar = document.getElementById('menus');
-    bar.innerHTML = MENUS.map(([id, label, key, icon]) => `<button class="vy-menu" data-win="${id}" aria-label="${label} (${key})">${icon}<kbd>${key}</kbd><span class="vy-menu__bulle" aria-hidden="true">${label}<kbd>${key}</kbd></span></button>`).join('') +
+    bar.innerHTML = MENUS.map(([id, label, key, icon]) => `<button class="vy-menu" data-win="${id}" aria-label="${label}${key ? ` (${key})` : ''}">${icon}${key ? `<kbd>${key}</kbd>` : ''}<span class="vy-menu__bulle" aria-hidden="true">${label}<kbd>${key}</kbd></span></button>`).join('') +
       `<button class="vy-menu vy-menu--grille" data-grille aria-label="Tous les menus" aria-expanded="false">${GRILLE}<span class="vy-menu__bulle" aria-hidden="true">Tous les menus</span></button>`;
     bar.addEventListener('click', evt => {
       if (evt.target.closest('[data-grille]')) { this.basculerGrilleMenus(); return; }
@@ -81,7 +82,7 @@ Object.assign(Hud.prototype, {
       if (!this.el.panel.classList.contains('hidden')) return;
       if (this.vue3d || document.querySelector('#app > .vy-b3d')) { if (evt.key === 'Escape') { evt.preventDefault(); evt.stopImmediatePropagation(); this.fermerBete3D(); } return; }
       if (evt.key === 'Escape' && this.fen.closeTop()) { evt.preventDefault(); evt.stopImmediatePropagation(); this.syncMenus(); return; }
-      const m = MENUS.find(x => x[2].toLowerCase() === evt.key.toLowerCase());
+      const m = MENUS.find(x => x[2] && x[2].toLowerCase() === evt.key.toLowerCase());
       if (m && document.getElementById('title').classList.contains('hidden')) { evt.preventDefault(); this.toggleWin(m[0]); }
     }, true);
     document.getElementById('raccourcis').addEventListener('click', evt => {
@@ -158,7 +159,7 @@ Object.assign(Hud.prototype, {
     const c = this.epinglesMenus();
     g.innerHTML = `<header class="vy-menus-grille__tete"><b>Tous les menus</b><small>L'épingle garde un menu dans la barre</small></header><div class="vy-menus-grille__tuiles">` +
       MENUS.map(([id, label, key, icon]) => { const pin = !c.has(id);
-        return `<div class="vy-menus-grille__tuile${this.fen.isOpen(ALIAS[id] || id) ? ' on' : ''}"><button type="button" class="vy-menus-grille__ouvrir" data-ouvre="${id}">${icon}<span>${label}</span><kbd>${key}</kbd></button>` +
+        return `<div class="vy-menus-grille__tuile${this.fen.isOpen(ALIAS[id] || id) ? ' on' : ''}"><button type="button" class="vy-menus-grille__ouvrir" data-ouvre="${id}">${icon}<span>${label}</span>${key ? `<kbd>${key}</kbd>` : ''}</button>` +
           `<button type="button" class="vy-menus-grille__epingle${pin ? ' on' : ''}" data-epingle="${id}" aria-pressed="${pin}" title="${pin ? 'Ôter de la barre' : 'Garder dans la barre'}" aria-label="${pin ? 'Ôter' : 'Garder'} ${label} ${pin ? 'de' : 'dans'} la barre">${EPINGLE}</button></div>`; }).join('') + '</div>';
   },
 
@@ -168,7 +169,7 @@ Object.assign(Hud.prototype, {
 
   toggleWin(id) {
     if (this.fen.isOpen(ALIAS[id] || id)) this.fen.close(ALIAS[id] || id);
-    else ({ carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), guilde: () => this.openGuilde(), succes: () => this.openAchievements(), boutique: () => this.openBoutique(), carnet: () => this.openCarnet(), garderobe: () => this.openGarderobe(), familiers: () => this.openFamiliers(), montures: () => this.openMontures(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu(), profil: () => this.openProfil() }[id] || (() => {}))();
+    else ({ carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), guilde: () => this.openGuilde(), succes: () => this.openAchievements(), boutique: () => this.openBoutique(), carnet: () => this.openCarnet(), garderobe: () => this.openGarderobe(), familiers: () => this.openFamiliers(), montures: () => this.openMontures(), metiers: () => this.openMetiersPerso(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu(), profil: () => this.openProfil() }[id] || (() => {}))();
     this.syncMenus();
   },
 

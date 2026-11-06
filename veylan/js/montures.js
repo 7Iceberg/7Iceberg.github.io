@@ -12,7 +12,15 @@ const Montures = (() => {
   const def = ch => { const m = de(ch); return m ? get(m.id) : null; };
   const niveau = ch => { const m = de(ch); return m ? F().niveau(m.xp) : 0; };
   const montee = ch => !!(de(ch) && ch.monture.montee && !tropJeune(ch));
-  const bonusActif = ch => (montee(ch) ? F().bonusA(def(ch), niveau(ch)) : {});
+  function bonusA(d, n) {
+    const out = {};
+    if (!d) return out;
+    const lisse = {}; for (const k in d.bonus || {}) if (k !== 'pa' && k !== 'pm') lisse[k] = d.bonus[k];
+    Object.assign(out, F().bonusA({ bonus: lisse }, n));
+    for (const k of ['pa', 'pm']) if (d.bonus && d.bonus[k] && n >= F().NIVEAU_MAX) out[k] = d.bonus[k];
+    return out;
+  }
+  const bonusActif = ch => (montee(ch) ? bonusA(def(ch), niveau(ch)) : {});
   const vitesse = (ch, plateau) => { if (!montee(ch)) return 1; const v = def(ch).vitesse || 1; return plateau ? 1 + (v - 1) * PLATEAU : v; };
 
   const NIVEAU = () => (typeof DATA !== 'undefined' && DATA.rules && DATA.rules.montureNiveau) || 1;
@@ -83,5 +91,7 @@ const Montures = (() => {
     return { monture: { id: o.id, xp, part, montee: !!o.montee }, errors };
   }
 
-  return { PARTS, PART_DEFAUT, XP_PAR_POINT, PLATEAU, liste, get, de, def, niveau, montee, bonusActif, vitesse, donner, monter, choisirPart, partCombat, nourrir, nettoyer };
+  const types = () => (DATA.content && DATA.content.typesMontures) || [];
+  const robes = () => (DATA.content && DATA.content.robesMontures) || [];
+  return { PARTS, PART_DEFAUT, XP_PAR_POINT, PLATEAU, liste, get, de, def, niveau, montee, bonusA, bonusActif, types, robes, vitesse, donner, monter, choisirPart, partCombat, nourrir, nettoyer };
 })();

@@ -187,6 +187,7 @@ class Hud {
       ceinture: '<rect x="3" y="9" width="18" height="6" rx="1"/><rect x="9" y="8" width="6" height="8" rx="1"/>',
       bottes: '<path d="M8 3h5v10l6 3v4H6V3z"/><path d="M6 17h13"/>',
       arme: '<path d="M18 3h3v3L9 18l-3-3z"/><path d="M5 14l5 5M4 20l3-3"/>',
+      bouclier: '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M12 7v10M8 11h8"/>',
       ressource: '<path d="M12 3l6 6-6 12-6-12z"/><path d="M6 9h12M12 3v18"/>',
       consommable: '<path d="M10 3h4v5l4 8a3 3 0 0 1-3 4H9a3 3 0 0 1-3-4l4-8z"/><path d="M8 14h8"/>',
       knot: '<path d="M8 8a4 4 0 1 1 4 4 4 4 0 1 0 4 4"/><path d="M16 8a4 4 0 1 0-4 4 4 4 0 1 1-4 4"/>',
@@ -241,7 +242,7 @@ class Hud {
     const SECTIONS = [['jeu', 'Jeu'], ['combat', 'Combat'], ['interface', 'Interface'], ['themes', 'Thèmes'], ['son', 'Son'], ['notifications', 'Notifications'], ['accessibilite', 'Accessibilité'], ['raccourcis', 'Raccourcis'], ['sauvegarde', 'Sauvegarde'], ['personnages', 'Personnages']];
     const ouvre = id => `<section class="vy-opt__sec" id="opt-sec-${id}" data-sec="${id}">`;
     const loupe = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>';
-    const touches = `<h4>Raccourcis clavier</h4><div class="vy-opt__touches">${Hud.MENUS.map(m => `<div class="vy-opt__touche"><kbd>${m[2]}</kbd><span>${m[1]}</span></div>`).join('')}<div class="vy-opt__touche"><kbd>Échap</kbd><span>Fermer la fenêtre du dessus</span></div><div class="vy-opt__touche"><kbd>1</kbd>…<kbd>0</kbd><span>Sorts de la première rangée</span></div><div class="vy-opt__touche"><kbd>Maj</kbd>+<kbd>1</kbd>…<span>Sorts de la seconde rangée</span></div></div>`;
+    const touches = `<h4>Raccourcis clavier</h4><div class="vy-opt__touches">${Hud.MENUS.filter(m => m[2]).map(m => `<div class="vy-opt__touche"><kbd>${m[2]}</kbd><span>${m[1]}</span></div>`).join('')}<div class="vy-opt__touche"><kbd>Échap</kbd><span>Fermer la fenêtre du dessus</span></div><div class="vy-opt__touche"><kbd>1</kbd>…<kbd>0</kbd><span>Sorts de la première rangée</span></div><div class="vy-opt__touche"><kbd>Maj</kbd>+<kbd>1</kbd>…<span>Sorts de la seconde rangée</span></div></div>`;
     if (this.optCherche) requestAnimationFrame(() => this.filtrerOptions(this.optCherche));
     const html = () => `<div class="vy-opt"><nav class="vy-opt__nav" aria-label="Sections des options"><label class="vy-recherche vy-opt__cherche">${loupe}<input id="opt-cherche" type="search" placeholder="Chercher un réglage" value="${esc(this.optCherche || '')}" aria-label="Chercher un réglage"></label>${SECTIONS.map(([id, l]) => `<button type="button" data-act="optAller" data-sec="${id}">${l}</button>`).join('')}</nav><div class="vy-opt__corps" data-defile="options">${ouvre('jeu')}${tuto()}${jeu()}</section>${ouvre('combat')}${combat()}</section>${ouvre('interface')}<h4>Bloc vital</h4><div class="vy-styles-vital" role="group" aria-label="Style du bloc vital">${vitaux()}</div>
       <div class="row"><span class="muted">Déplacer, cacher et régler les blocs du HUD</span><button data-act="editeur">Personnaliser l'interface</button></div>
@@ -499,19 +500,24 @@ class Hud {
   openWorkshop(ctx) {
     const render = () => {
       const ch = this.world.ch;
-      const recipes = Items.recipes().filter(r => r.workshop === ctx.workshop).map(r => ({ r, def: Items.get(r.result) })).filter(x => x.def).sort((a, b) => a.def.level - b.def.level);
+      const M = typeof Metiers === 'object' ? Metiers : null;
+      const ateliers = M ? M.ateliersDe(ctx.workshop) : [ctx.workshop];
+      const recipes = Items.recipes().filter(r => ateliers.includes(r.workshop)).map(r => ({ r, def: Items.get(r.result) })).filter(x => x.def).sort((a, b) => a.def.level - b.def.level);
+      const metiers = M ? [...new Set(recipes.map(x => M.deAtelier(x.r.workshop)).filter(Boolean))] : [];
+      const tete = metiers.map(m => `${esc(m.nom)} niv. ${M.niveau(ch, m.id)}`).join(' · ');
       const remise = typeof Veille === 'object' ? Veille.remise(ch, ctx.workshop) : 0;
       const faisables = !!this.atelierFaisables;
       const rows = recipes.map(({ r, def }) => {
         const cost = this.world.recipeCost(r);
-        const ok = cost.every(i => ch.has(i.id, i.count));
+        const permis = M ? M.peutFabriquer(ch, r) : { ok: true };
+        const ok = permis.ok && cost.every(i => ch.has(i.id, i.count));
         if (faisables && !ok) return '';
         const ings = cost.map(i => { const d = Items.get(i.id); const have = ch.count(i.id); return `<span class="vy-svc__ingr ${have >= i.count ? 'ok' : 'missing'}" title="${d ? esc(d.name) : i.id}">${d ? Hud.picto(d) : ''}${d ? esc(d.name) : i.id} ${have}/${i.count}</span>`; }).join('');
         const info = def.kind === 'consumable' ? (def.heal ? `rend ${def.heal >= 999 ? 'tous les' : def.heal} PV` : esc(def.lore)) : Items.statLines(def.stats).join(', ');
-        return Hud.svcLigne(def, { cls: ok ? 'faisable' : 'dim', n: r.count > 1 ? r.count : 0, titre: `${esc(def.name)}${r.count > 1 ? ` ×${r.count}` : ''} <small>niv. ${def.level}</small>`, sous: `${info}<span class="vy-svc__ingrs">${ings}</span>`, gestes: `<button class="vy-bouton vy-bouton--petit${ok ? ' vy-bouton--primaire' : ''}" data-act="craft" data-id="${r.result}" ${ok ? '' : 'disabled'}>Fabriquer</button>` });
+        return Hud.svcLigne(def, { cls: ok ? 'faisable' : 'dim', n: r.count > 1 ? r.count : 0, titre: `${esc(def.name)}${r.count > 1 ? ` ×${r.count}` : ''} <small>niv. ${def.level}</small>${permis.ok ? '' : ` <small class="missing">${esc(permis.raison)}</small>`}`, sous: `${info}<span class="vy-svc__ingrs">${ings}</span>`, gestes: `<button class="vy-bouton vy-bouton--petit${ok ? ' vy-bouton--primaire' : ''}" data-act="craft" data-id="${r.result}" ${ok ? '' : 'disabled'}>Fabriquer</button>` });
       }).join('');
       const bascule = `<label class="vy-coche vy-svc__faisables"><input type="checkbox" data-act="atelierFaisables" ${faisables ? 'checked' : ''}> Faisables seulement</label>`;
-      return `<div class="vy-svc__barre"><span class="vy-svc__note">Atelier : ${ctx.workshop}. Les ingrédients viennent des monstres et de la récolte.${remise ? ` <b class="ok">Veille du jour : ${remise} % de ressources en moins.</b>` : ''}</span>${bascule}</div><div class="vy-svc__liste">${rows || `<p class="vy-svc__vide">${faisables ? 'Rien de faisable avec ton sac pour l\'instant.' : 'Aucune recette.'}</p>`}</div>`;
+      return `<div class="vy-svc__barre"><span class="vy-svc__note">Atelier : ${ctx.workshop}${tete ? ` · ${tete}` : ''}. Les ingrédients viennent des monstres et de la récolte.${remise ? ` <b class="ok">Veille du jour : ${remise} % de ressources en moins.</b>` : ''}</span>${bascule}</div><div class="vy-svc__liste">${rows || `<p class="vy-svc__vide">${faisables ? 'Rien de faisable avec ton sac pour l\'instant.' : 'Aucune recette.'}</p>`}</div>`;
     };
     this.actions.craft = d => { const r = Items.recipeFor(d.id); if (r) this.world.craft(r); };
     this.actions.atelierFaisables = () => { this.atelierFaisables = !this.atelierFaisables; this.el.panelBody.innerHTML = render(); };

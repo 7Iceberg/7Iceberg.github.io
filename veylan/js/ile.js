@@ -91,21 +91,6 @@ const Ile = (() => {
   }
   const actif = () => appliques.has('ervane');
 
-  const NIVEAU_CITE = 19;
-  function monterVersOrsane(ch) {
-    if (!ch || typeof ch !== 'object' || ch.origine === 'ervane' || !actif()) return 0;
-    let n = 0;
-    if (Number.isInteger(ch.level) && ch.level < NIVEAU_CITE) {
-      n = NIVEAU_CITE - ch.level;
-      ch.statPoints = (ch.statPoints || 0) + 5 * n;
-      ch.level = NIVEAU_CITE;
-      ch.xp = 0;
-      if (ch.autoStats && typeof ch.autoAllocate === 'function') ch.autoAllocate();
-      if (typeof ch.derived === 'function') ch.hp = ch.derived().hpMax;
-    }
-    if (ch.tuto && typeof ch.tuto === 'object' && ch.tuto.jeu !== 'ile' && !ch.tuto.done) ch.tuto.done = true;
-    return n;
-  }
 
   function orsane3dAllume() {
     const p = parametres(), dev = enDev(p);
@@ -226,7 +211,7 @@ const Ile = (() => {
   }
 
   return {
-    decider, appliquer, appliquerOrsane, monterVersOrsane, origineDe, actif, plateau, terrain, oublier, garderSeul, registre, estPlateau, donjon3D, fairenaitre, trace, charger, FICHIERS,
+    decider, appliquer, appliquerOrsane, origineDe, actif, plateau, terrain, oublier, garderSeul, registre, estPlateau, donjon3D, fairenaitre, trace, charger, FICHIERS,
     orsane3dAllume, orsane3dPour, appliquerOrsane3D, appliquerOrsane3DPour, orsane3D, continuerEn2D,
     get disponible() { return disponible; }, get allumee() { return allumee; }, get raisons() { return raisons.slice(); },
     get charges() { return charges; },

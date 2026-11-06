@@ -75,7 +75,7 @@ class HudJeu {
   construirePanneau() {
     const p = this.panneau = document.getElementById('panneau');
     const I = Fenetres.ICON, J = HudJeu.ICON;
-    const menus = (Hud.MENUS || []).map(([id, label, key, icon]) => `<button type="button" class="vy-rond" data-win="${id}" aria-label="${label} (${key})" title="${label}">${icon}<span class="vy-badge" hidden></span></button>`).join('');
+    const menus = (Hud.MENUS || []).map(([id, label, key, icon]) => `<button type="button" class="vy-rond" data-win="${id}" aria-label="${label}${key ? ` (${key})` : ''}" title="${label}">${icon}<span class="vy-badge" hidden></span></button>`).join('');
     const veille = typeof Veille !== 'undefined' ? `<button type="button" class="vy-rond" data-win="veille" aria-label="Veille du jour (V)" title="Veille du jour">${Hud.VEILLE_ICONE || J.veille}<span class="vy-badge" hidden></span></button>` : '';
     const bientot = HudJeu.BIENTOT.map(([id, label]) => `<button type="button" class="vy-rond vy-rond--bientot" data-bientot="${id}" aria-disabled="true" aria-label="${label} : bientôt" title="${label} : bientôt">${J[id]}</button>`).join('');
     p.innerHTML =

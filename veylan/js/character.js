@@ -3,7 +3,7 @@ class Character {
     Object.assign(this, {
       classId: DATA.defaultClass, name: 'Veilleur', gender: 'f', level: 1, xp: 0, statPoints: 0,
       stats: { vita: 0, sagesse: 0, force: 0, intel: 0, chance: 0, agi: 0 },
-      equipment: { coiffe: null, cape: null, amulette: null, anneau1: null, anneau2: null, ceinture: null, bottes: null, arme: null },
+      equipment: { coiffe: null, cape: null, amulette: null, anneau1: null, anneau2: null, ceinture: null, bottes: null, arme: null, bouclier: null },
       inventory: {}, fils: 0, hp: null, titles: [], title: null,
       coffre: { items: {}, fils: 0 },
       quests: { active: {}, done: [] },
@@ -11,7 +11,7 @@ class Character {
       achievements: [], pos: null, relay: null, relays: [], dungeon: null, autoStats: true, playTime: 0, knots: [], ensembles: [], voie: null, scrolls: {},
       variantes: {},
       look: null, porte: null, ensemblesLook: [],
-      familiers: {}, familier: null,
+      familiers: {}, familier: null, metiers: {},
       monture: null,
       sceaux: null,
       trousseau: {},
@@ -71,7 +71,7 @@ class Character {
   static defaults() {
     return {
       stats: { vita: 0, sagesse: 0, force: 0, intel: 0, chance: 0, agi: 0 },
-      equipment: { coiffe: null, cape: null, amulette: null, anneau1: null, anneau2: null, ceinture: null, bottes: null, arme: null },
+      equipment: { coiffe: null, cape: null, amulette: null, anneau1: null, anneau2: null, ceinture: null, bottes: null, arme: null, bouclier: null },
       quests: { active: {}, done: [] },
       counters: { fights: 0, wins: 0, kills: {}, maps: [], crafts: 0, gathers: 0, filsEarned: 0, dungeons: [], dungeonTurns: {}, bosses: [], questsDone: 0, feats: {} },
     };
@@ -134,6 +134,7 @@ class Character {
   static xpToNext(level) { return Math.round(10 * Math.pow(level / 2, 2.4)); }
   static get PODS_BASE() { return 1000; }
   static get PODS_TERRA() { return 5; }
+  static get PLAFOND() { return Object.assign({ pa: 12, pm: 6, po: 6 }, (typeof DATA === 'object' && DATA.rules && DATA.rules.plafonds) || {}); }
   static get MAX_LEVEL() { return (typeof DATA === 'object' && DATA.rules && DATA.rules.niveauMax) || 60; }
 
   get classDef() { return DATA.classes[this.classId]; }
@@ -142,10 +143,12 @@ class Character {
     const c = this.classDef;
     const total = Object.assign({}, this.stats);
     for (const k in this.scrolls || {}) total[k] = (total[k] || 0) + (this.scrolls[k] || 0);
-    const extra = { pa: 0, pm: 0, init: 0, crit: 0, dmg: 0, tacle: 0, fuite: 0, pp: 0, soin: 0 };
+    const extra = { pa: 0, pm: 0, po: 0, init: 0, crit: 0, dmg: 0, tacle: 0, fuite: 0, pp: 0, soin: 0, puissance: 0, invocation: 0, pods: 0,
+      esquive_pa: 0, esquive_pm: 0, retrait_pa: 0, retrait_pm: 0, dmg_crit: 0, dmg_pou: 0, res_pct: 0, res_fixe: 0, res_crit: 0, res_pou: 0,
+      dmg_terre: 0, dmg_feu: 0, dmg_eau: 0, dmg_air: 0, res_terre: 0, res_feu: 0, res_eau: 0, res_air: 0, res_neutre: 0 };
     const setCount = {};
     const seen = new Set();
-    const add = stats => { for (const k in stats) { if (k in extra) extra[k] += stats[k]; else total[k] = (total[k] || 0) + stats[k]; } };
+    const add = stats => { for (const k in stats) { if (k in extra) extra[k] += stats[k]; else if (Items.STATS.includes(k)) total[k] = (total[k] || 0) + stats[k]; } };
     for (const slot of Items.EQUIP_SLOTS) {
       const id = this.equipment[slot];
       if (!id) continue;
@@ -174,21 +177,23 @@ class Character {
     const sum4 = (total.force || 0) + (total.intel || 0) + (total.chance || 0) + (total.agi || 0);
     const resMax = DATA.sceaux ? DATA.sceaux.regles.resMax || 50 : 50;
     const resist = Object.assign({}, c.resist);
-    for (const el of ['terre', 'feu', 'eau', 'air', 'neutre']) { const v = a('res_' + el) + a('resTous'); if (v) resist[el] = (resist[el] || 0) + v; resist[el] = Math.min(resMax, resist[el] || 0); }
+    for (const el of ['terre', 'feu', 'eau', 'air', 'neutre']) { const v = a('res_' + el) + a('resTous') + extra.res_pct + (extra['res_' + el] || 0); if (v) resist[el] = (resist[el] || 0) + v; resist[el] = Math.min(resMax, resist[el] || 0); }
     const agi10 = Math.floor(Math.max(0, total.agi || 0) / 10), sag10 = Math.floor(Math.max(0, total.sagesse || 0) / 10);
     return {
-      stats: total, hpMax, pa: 6 + (this.level >= 100 ? 1 : 0) + extra.pa, pm: 3 + extra.pm,
+      stats: total, hpMax, pa: Math.min(Character.PLAFOND.pa, 6 + (this.level >= 100 ? 1 : 0) + extra.pa), pm: Math.min(Character.PLAFOND.pm, 3 + extra.pm), po: Math.min(Character.PLAFOND.po, extra.po),
+      puissance: extra.puissance, invocations: extra.invocation,
       initiative: extra.init + sum4 + a('init'),
       crit: extra.crit + a('crit'), dmgFlat: extra.dmg, setBonuses, setCount, familier, monture,
       tacle: agi10 + extra.tacle + a('tacle') + (c.tacle || 0),
       fuite: agi10 + extra.fuite + (R.playerFuiteBase || 0) + a('fuite'),
-      esquivePA: sag10 + a('esquivePA'), esquivePM: sag10 + a('esquivePM'), retraitPA: sag10 + a('retraitPA'), retraitPM: sag10 + a('retraitPM'),
+      esquivePA: sag10 + a('esquivePA') + extra.esquive_pa, esquivePM: sag10 + a('esquivePM') + extra.esquive_pm, retraitPA: sag10 + a('retraitPA') + extra.retrait_pa, retraitPM: sag10 + a('retraitPM') + extra.retrait_pm,
       prospection: 100 + Math.floor(Math.max(0, total.chance || 0) / 10) + extra.pp + a('pp') + (c.prospection || 0),
       soins: (total.intel || 0) + extra.soin + a('soins'),
-      podsMax: Character.PODS_BASE + Character.PODS_TERRA * Math.max(0, total.force || 0) + a('pods'),
+      podsMax: Character.PODS_BASE + 5 * this.level + Character.PODS_TERRA * Math.max(0, total.force || 0) + a('pods') + extra.pods,
       resist, dmgPct: { terre: a('dmg_terre'), neutre: a('dmg_terre'), feu: a('dmg_feu'), eau: a('dmg_eau'), air: a('dmg_air') },
-      dmgFixe: { terre: a('fixe_terre'), neutre: a('fixe_terre'), feu: a('fixe_feu'), eau: a('fixe_eau'), air: a('fixe_air') },
-      dmgCrit: a('dmgCrit'), reduc: a('reduc'), soinsFixes: a('soinsFixes'), soinsRecus: a('soinsRecus'), boucliers: a('boucliers'), poussee: a('poussee'),
+      dmgFixe: { terre: a('fixe_terre') + extra.dmg_terre, neutre: a('fixe_terre') + extra.dmg_terre, feu: a('fixe_feu') + extra.dmg_feu, eau: a('fixe_eau') + extra.dmg_eau, air: a('fixe_air') + extra.dmg_air },
+      dmgCrit: a('dmgCrit') + extra.dmg_crit, reduc: a('reduc') + extra.res_fixe, resCrit: extra.res_crit, resPou: extra.res_pou,
+      soinsFixes: a('soinsFixes'), soinsRecus: a('soinsRecus'), boucliers: a('boucliers'), poussee: a('poussee') + extra.dmg_pou,
       passifs: sc.passifs, sceauxPoses: sc.poses,
     };
   }
@@ -268,6 +273,7 @@ class Character {
       spells, extraSpells, stats: d.stats, dmgFlat: d.dmgFlat, crit: d.crit, title: this.title, tacle: d.tacle, fuite: d.fuite,
       scale: 1,
       dmgPct: d.dmgPct, dmgFixe: d.dmgFixe, dmgCrit: d.dmgCrit, reduc: d.reduc, soinsPct: d.soins, soinsFixes: d.soinsFixes, soinsRecus: d.soinsRecus,
+      puissance: d.puissance, po: d.po, invocations: d.invocations, resCrit: d.resCrit, resPou: d.resPou,
       boucliers: d.boucliers, poussee: d.poussee, esquivePA: d.esquivePA, esquivePM: d.esquivePM, retraitPA: d.retraitPA, retraitPM: d.retraitPM, passifs: d.passifs,
       spellRanks: Object.fromEntries(spells.filter(id => id !== 'arme').map(id => [id, this.spellRank(id)])),
     };
@@ -498,7 +504,7 @@ class Character {
       this.hp = Math.min(max, this.hp + d.heal);
       return `${d.name} : +${this.hp - before} PV.`;
     }
-    if (d.sub === 'parchemin') {
+    if (d.sub === 'parchemin' && !d.xp) {
       const got = this.readScroll(d.stat, d.value || 1);
       if (!got) return `Tu sais déjà tout ce que ce parchemin peut t'apprendre (${DATA.rules.scrollMax} au plus).`;
       this.removeItem(id, 1);
@@ -526,10 +532,45 @@ class Character {
       return `Tu montes ton ${r.monture.nom}. Il t'attend dans tes Montures (L).`;
     }
     if (d.sub === 'potion') {
+      if (d.effect === 'oubli') { this.removeItem(id, 1); this.resetStats(); if (this.autoStats) this.autoAllocate(); return `${d.name} : tes caractéristiques et tes Sceaux sont rendus.`; }
+      if (d.heal && d.heal < 999) {
+        const max = this.derived().hpMax;
+        if (this.hp >= max) return 'Tu as déjà tous tes PV.';
+        this.removeItem(id, 1);
+        const avant = this.hp; this.hp = Math.min(max, this.hp + d.heal);
+        return `${d.name} : +${this.hp - avant} PV.`;
+      }
       this.removeItem(id, 1);
       if (d.heal) { this.hp = this.derived().hpMax; return `${d.name} : PV au maximum.`; }
       return 'relais';
     }
+    if (d.sub === 'poisson') {
+      const max = this.derived().hpMax;
+      if (this.hp >= max) return 'Tu n\'as pas faim.';
+      this.removeItem(id, 1);
+      const avant = this.hp; this.hp = Math.min(max, this.hp + (d.heal || 0));
+      return `${d.name} : +${this.hp - avant} PV.`;
+    }
+    if (d.sub === 'friandise') {
+      const f = this.familier && this.familiers && this.familiers[this.familier];
+      if (!f || typeof Familiers === 'undefined') return 'Emmène un familier pour lui donner une friandise.';
+      if (f.xp >= Familiers.XP_MAX) return 'Ton familier est à son niveau maximum.';
+      this.removeItem(id, 1);
+      const pris = Math.min(d.familierXp || 0, Familiers.XP_MAX - f.xp); f.xp += pris;
+      return `${d.name} : +${pris} XP pour ton familier.`;
+    }
+    if (d.sub === 'sac') {
+      const region = (d.contenu || '').split(' ').pop();
+      const zones = new Set((DATA.content.zones || []).filter(z => z.region === region).map(z => z.id));
+      const pool = (DATA.content.resources || []).filter(r => (r.node && (r.node.zone === region || zones.has(r.node.zone))) || (r.drops || []).some(x => DATA.monsters[x.monster] && DATA.monsters[x.monster].region === region && x.rate >= 10));
+      if (!pool.length) return null;
+      this.removeItem(id, 1);
+      const q = d.quantite || 20, recu = {};
+      for (let i = 0; i < q; i++) { const r = pool[Math.floor(Math.random() * pool.length)]; this.addItem(r.id, 1); recu[r.name] = (recu[r.name] || 0) + 1; }
+      return `${d.name} : ${Object.entries(recu).map(([n, k]) => `${k} ${n}`).join(', ')}.`;
+    }
+    if (d.sub === 'parchemin' && d.xp) { this.removeItem(id, 1); const g = this.gainXp(d.xp); return `${d.name} : +${g.gained} XP.`; }
+    if (['bonbon', 'artifice', 'pierre_ame'].includes(d.sub)) return `${d.name} : bientôt.`;
     return null;
   }
 

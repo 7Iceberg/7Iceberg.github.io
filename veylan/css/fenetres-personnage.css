@@ -46,13 +46,14 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 
 .vy-inv__poupee {
   grid-area: poupee; min-width: 0;
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 10px; padding: 10px;
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 8px 10px; padding: 10px;
   border: 1px solid var(--fen-filet); border-radius: 7px;
   background: radial-gradient(70% 60% at 50% 42%, rgba(82, 210, 244, 0.07), transparent 70%), linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
 }
 .vy-inv__col { display: grid; gap: 6px; align-content: center; }
 .vy-inv__slot { width: var(--inv-slot); height: var(--inv-slot); min-height: 0; aspect-ratio: auto; }
-.vy-inv__perso { position: relative; min-width: 0; min-height: calc(var(--inv-slot) * 4 + 18px); border-radius: 8px; }
+.vy-inv__perso { position: relative; min-width: 0; min-height: calc(var(--inv-slot) * 6 + 30px); border-radius: 8px; }
+.vy-inv__marques { gap: 4px; padding-right: 6px; border-right: 1px solid var(--fen-filet); }
 .vy-inv__cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .vy-inv__tourne { position: absolute; bottom: 38px; z-index: 1; width: 32px; height: 32px; padding: 6px; display: grid; place-items: center; border: 1px solid var(--fen-filet); border-radius: 50%; background: rgba(10, 16, 25, 0.72); color: var(--fen-accent); cursor: pointer; }
 .vy-inv__tourne svg { width: 100%; height: 100%; display: block; }
@@ -302,6 +303,8 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
   .vy-inv__rangee { justify-content: center; gap: 6px 10px; padding-top: 6px; }
   .vy-inv__noeud { --inv-slot: 30px; }
   .vy-inv__ecaille { width: 26px; height: 26px; }
+  .vy-inv__perso { min-height: calc(var(--inv-slot) * 6 + 25px); }
+  .vy-inv__col { gap: 3px; }
   .vy-inv__tourne { width: 28px; height: 28px; padding: 5px; }
   .vy-inv__sac { gap: 6px; padding: 6px; }
   .vy-inv__fiche-actions { padding: 6px 8px; }
@@ -427,6 +430,7 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 #app.vy-verre .vy-caracs__sceaux:hover { background: rgba(var(--v-a-rgb), 0.2); border-color: rgba(var(--v-a-rgb), 0.8); color: #fff; }
 .vy-recompense__eclats b { color: var(--vy-cristal, #52d2f4); }
 
+.vy-inv__poupee--cos { grid-template-columns: auto minmax(0, 1fr) auto; }
 .vy-inv__vues { grid-column: 1 / -1; display: flex; border-bottom: 1px solid var(--fen-filet); margin: -2px 0 2px; }
 .vy-inv__vue { position: relative; flex: 0 0 auto; padding: 4px 12px 7px; border: 0; background: none; color: var(--fen-texte-2); font: 800 10.5px var(--vy-font-ui); letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
 .vy-inv__vue:hover { color: var(--fen-texte); }

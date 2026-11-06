@@ -40,6 +40,7 @@ const Save = (() => {
   ALLOWED.add('placements');
   ALLOWED.add('bonusDefi');
   ALLOWED.add('repos');
+  ALLOWED.add('metiers');
   ALLOWED.add('rares');
   const ORIGINES = ['orsane', 'ervane'];
 
@@ -188,7 +189,7 @@ const Save = (() => {
       if (m.vendus && typeof m.vendus === 'object') for (const id of Object.keys(m.vendus)) { if (Items.get(id) && isInt(m.vendus[id], 0, 99999)) vendus[id] = m.vendus[id]; else bad(`vente au Marché ${id}`); }
       if (isInt(m.jour, -100000, 1000000)) o.marche = { jour: m.jour, vendus }; else { bad('carnet du Marché'); delete o.marche; }
     }
-    const eq = { coiffe: null, cape: null, amulette: null, anneau1: null, anneau2: null, ceinture: null, bottes: null, arme: null };
+    const eq = Object.fromEntries(Items.EQUIP_SLOTS.map(sl => [sl, null]));
     if (o.equipment && typeof o.equipment === 'object') for (const slot of Object.keys(eq)) {
       const id = o.equipment[slot];
       if (id == null) continue;
@@ -338,6 +339,10 @@ const Save = (() => {
     if (typeof Montures !== 'undefined') { const m = Montures.nettoyer(o.monture); o.monture = m.monture; for (const e of m.errors) bad(e); }
     if (o.fight && typeof o.fight !== 'object') o.fight = null;
     if (o.mapTimers && typeof o.mapTimers !== 'object') o.mapTimers = {};
+    if (typeof Metiers === 'object') {
+      if (o.metiers == null && Number.isInteger(o.level) && o.level > 1) { o.metiers = {}; for (const m of Metiers.liste()) o.metiers[m.id] = { niveau: m.genre === 'artisanat' ? Math.min(Metiers.MAX, o.level) : 1, xp: 0 }; }
+      else o.metiers = Metiers.nettoyer(o.metiers);
+    }
     if (o.repos != null) o.repos = typeof Repos !== 'undefined' ? Repos.nettoyer(o.repos, Date.now()) : null;
     if (o.rares != null) o.rares = typeof Rares !== 'undefined' ? Rares.nettoyer(o.rares, Date.now()) : null;
     if (o.bonusDefi != null && o.bonusDefi !== 'xp' && o.bonusDefi !== 'butin') delete o.bonusDefi;

@@ -61,7 +61,20 @@ Object.assign(Hud.prototype, {
       <div class="vy-fam__actions">${m.montee ? '<button class="vy-bouton vy-bouton--petit" data-act="monter">Descendre</button>' : '<button class="vy-bouton vy-bouton--primaire vy-bouton--petit" data-act="monter">Monter</button>'}</div>
       ${max ? '' : `<div class="vy-mont__part"><h4>Part de ton XP en combat <small>quand tu le montes : 10 XP font 1 XP de monture</small></h4><div class="vy-mont__parts" role="group" aria-label="Part de l'expérience">${parts}</div></div>`}
       ${repas}
+      ${this.montFamilles()}
     </div>`;
+  },
+
+  montFamilles() {
+    const T = Montures.types(), R = Montures.robes();
+    if (!T.length) return '';
+    const txt = b => Familiers.texteBonus(Object.fromEntries(Object.entries(b).filter(([k]) => k !== 'pa' && k !== 'pm'))) + (b.pa ? ', +1 PA' : '') + (b.pm ? ', +1 PM' : '');
+    const fam = T.map(t => {
+      const rs = R.filter(r => r.type === t.id);
+      const items = rs.map(r => `<li${r.existe ? ' class="ok"' : ''}><span>${esc(r.nom)}</span><small>${esc(txt(r.bonus))}${r.existe ? ' · déjà là' : ''}</small></li>`).join('');
+      return `<details class="vy-mont__famille"><summary><b>${esc(t.nom.charAt(0).toUpperCase() + t.nom.slice(1))}</b> <small>${rs.length} robes · garanti au niveau 10 : ${esc(txt(t.garanti))}</small></summary><ul class="vy-fam__echange">${items}</ul></details>`;
+    }).join('');
+    return `<div class="vy-mont__familles"><h4>Les familles de montures <small>les robes à venir</small></h4>${fam}</div>`;
   },
 
   montSans(ch) {
@@ -75,9 +88,10 @@ Object.assign(Hud.prototype, {
     }).join('');
     return `<div class="vy-mont">
       <header class="vy-fam__tete">${Hud.pictoFamilier(d, 56)}<div><b>Pas encore de monture</b><small>une par personnage</small></div></header>
-      <p class="vy-fam__desc">Une monture fait aller plus vite sur la carte et, quand tu la montes, donne son bonus. Elle grandit en combattant avec toi (une part de ton expérience) ou en mangeant des ressources. Pas d'enclos, pas de capture au hasard.</p>
+      <p class="vy-fam__desc">Une monture fait aller plus vite sur la carte et, quand tu la montes, donne son bonus, bien plus fort que celui d'un familier. Elle grandit en combattant avec toi (une part de ton expérience) ou en mangeant des ressources.</p>
       <div class="vy-fam__obtenir"><h4>${esc(d.nom)}</h4><p>${esc(d.description || '')}</p>
         <p>Kavra, la mineuse de la Halle des Mineurs de Kaldum, l'apprivoise avec toi :</p><ul class="vy-fam__echange">${serie}</ul></div>
+      ${this.montFamilles()}
     </div>`;
   },
 });

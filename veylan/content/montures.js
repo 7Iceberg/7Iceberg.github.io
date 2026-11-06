@@ -3,11 +3,28 @@
   const M = C.montures = C.montures || [];
 
   M.push(
-    { id: 'molh_de_selle', nom: 'Molh de selle', famille: ['molh'], region: 'kaldum', bonus: { vita: 20 }, vitesse: 1.5,
+    { id: 'molh_de_selle', nom: 'Molh de selle', type: 'v', robe: ['force'], famille: ['molh'], region: 'kaldum', bonus: { vita: 300, force: 60 }, vitesse: 1.5,
       couleur: '#8a93a6', glyphe: 'M',
       objet: { id: 'molh_selle', nom: 'Molh sellé', lore: 'Un jeune Molh, une selle de basalte et un mors de Lurvik. Il attend qu\'on monte. Il attendra longtemps s\'il le faut.' },
       description: 'Un jeune Molh apprivoisé par Kavra. Lent au départ, il ne s\'arrête plus une fois lancé : on traverse les cartes plus vite, et sa masse protège (de la Vitalité, quand on le monte).' },
   );
+
+  C.typesMontures = [
+    { id: 'v', nom: 'la famille de la Vitalité', garanti: { vita: 300 }, mono: 60, bi: 30, robes: ['force', 'intel', 'chance', 'agi', 'sagesse', 'pp'], bicolores: ['force', 'intel', 'chance', 'agi'] },
+    { id: 'r', nom: 'la famille des résistances', garanti: { vita: 150, pm: 1 }, mono: 8, bi: 4, robes: ['res_terre', 'res_feu', 'res_eau', 'res_air', 'res_neutre'], bicolores: ['res_terre', 'res_feu', 'res_eau', 'res_air', 'res_neutre'] },
+    { id: 'd', nom: 'la famille des dommages', garanti: { vita: 150, pa: 1 }, mono: 12, bi: 6, robes: ['dmg_terre', 'dmg_feu', 'dmg_eau', 'dmg_air'], bicolores: ['dmg_terre', 'dmg_feu', 'dmg_eau', 'dmg_air'] },
+  ];
+  const nomSt = k => ({ force: 'Terra', intel: 'Ignis', chance: 'Aqua', agi: 'Aer', sagesse: 'Sagesse', pp: 'Prospection' }[k] || k.replace('res_', 'résistance ').replace('dmg_', 'dommages '));
+  C.robesMontures = [];
+  for (const t of C.typesMontures) {
+    const robes = t.robes.map(r => [r]);
+    for (let i = 0; i < t.bicolores.length; i++) for (let j = i + 1; j < t.bicolores.length; j++) robes.push([t.bicolores[i], t.bicolores[j]]);
+    for (const r of robes) {
+      const bonus = Object.assign({}, t.garanti);
+      for (const k of r) bonus[k] = Math.round((r.length === 1 ? t.mono : t.bi) / (k === 'sagesse' || k === 'pp' ? 3 : 1));
+      C.robesMontures.push({ id: `robe_${t.id}_${r.join('_')}`, type: t.id, robe: r, nom: `robe ${r.map(nomSt).join(' et ')}`, bonus, existe: M.find(m => m.type === t.id && m.robe && m.robe.join() === r.join()) ? M.find(m => m.type === t.id && m.robe.join() === r.join()).id : null });
+    }
+  }
 
   for (const m of M) C.consumables.push({ id: m.objet.id, name: m.objet.nom, kind: 'monture', level: DATA.rules.montureNiveau || 50, price: 1, rarity: 'epique', monture: m.id, lore: m.objet.lore });
 

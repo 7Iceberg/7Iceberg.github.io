@@ -268,8 +268,9 @@ class Combat {
 
   summonBlock(e, monsterId, planned) {
     const mine = this.summonsOf(e);
-    const gauge = this.jaugeDe(e);
-    if (!gauge) return mine.length + (planned || 0) >= DATA.rules.maxSummonsPerOwner ? `${DATA.rules.maxSummonsPerOwner} invocations au plus` : null;
+    const gauge = this.jaugeDe(e) + (this.jaugeDe(e) ? (e.invocations || 0) : 0);
+    const max = DATA.rules.maxSummonsPerOwner + (e.invocations || 0);
+    if (!gauge) return mine.length + (planned || 0) >= max ? `${max} invocations au plus` : null;
     const cost = m => (DATA.monsters[m] && DATA.monsters[m].summonCost) || 1;
     if (cost(monsterId) > 1 && mine.some(m => m.def.id === monsterId)) return 'Une grande bête de chaque espèce';
     const used = mine.reduce((n, m) => n + cost(m.def.id), 0) + (planned || 0);
@@ -648,7 +649,7 @@ class Combat {
     }
     const remaining = cells - moved;
     if (ef.type === 'push' && remaining > 0) {
-      this.dealDamage(caster, target, remaining * (DATA.rules.pushDamagePerCell + (caster ? caster.poussee || 0 : 0)), null, { label: 'poussée bloquée' });
+      this.dealDamage(caster, target, Math.max(0, remaining * (DATA.rules.pushDamagePerCell + (caster ? caster.poussee || 0 : 0)) - (target.resPou || 0)), null, { label: 'poussée bloquée' });
     } else if (moved) {
       this.log(`${target.name} est ${ef.type === 'push' ? 'poussé' : 'attiré'} de ${moved} case(s).`);
     }
@@ -959,10 +960,10 @@ class Combat {
   rangeOf(e, s, from) {
     if (s.target === 'self' || s.range[1] < 2) return s.range;
     if (s.porteeAssis && e.hasState('assise')) {
-      const m = Math.max(s.range[0], Math.floor(s.range[1] * s.porteeAssis) + e.modifier('range'));
+      const m = Math.max(s.range[0], Math.floor(s.range[1] * s.porteeAssis) + e.modifier('range') + (e.po || 0));
       return [s.range[0], Math.max(s.range[0], m)];
     }
-    let bonus = e.modifier('range');
+    let bonus = e.modifier('range') + (e.po || 0);
     bonus += this.affutDe(e, from).range;
     return bonus ? [s.range[0], Math.max(s.range[0], s.range[1] + bonus)] : s.range;
   }

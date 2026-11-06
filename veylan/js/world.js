@@ -769,13 +769,18 @@ class World {
   }
 
   craft(recipe) {
-    if (!recipe || !this.talkNpc || this.talkNpc.def.workshop !== recipe.workshop) return false;
+    const M = typeof Metiers === 'object' ? Metiers : null;
+    if (!recipe || !this.talkNpc || !(M ? M.atelierAccepte(this.talkNpc.def.workshop, recipe.workshop) : this.talkNpc.def.workshop === recipe.workshop)) return false;
+    const niv = M ? M.peutFabriquer(this.ch, recipe) : { ok: true };
+    if (!niv.ok) { this.toast(niv.raison); return false; }
     const cost = this.recipeCost(recipe);
     for (const ing of cost) if (!this.ch.has(ing.id, ing.count)) { this.toast('Il manque des ingrédients.'); return false; }
     for (const ing of cost) this.ch.removeItem(ing.id, ing.count);
     this.ch.addItem(recipe.result, recipe.count || 1);
     this.ch.counters.crafts++;
-    this.emit('gain', { source: 'artisanat', items: [{ id: recipe.result, count: recipe.count || 1 }] });
+    const xpM = M && M.apresFabrication(this.ch, recipe);
+    if (xpM && xpM.niveaux) this.toast(`${xpM.metier.nom} : niveau ${xpM.niveau} !`);
+    this.emit('gain', { source: 'artisanat', items: [{ id: recipe.result, count: recipe.count || 1 }], metier: xpM });
     this.afterEvents(Quests.onEvent(this.ch, { type: 'inventory' }));
     this.checkAchievements();
     this.emit('update');
@@ -807,6 +812,9 @@ class World {
   gather(node) {
     if (this.plateau && Plateau.dist(this.player, node) > 2.5) { this.toast('Trop loin pour récolter.'); return; }
     if (!node.ready) { this.toast('Rien à récolter pour l\'instant.'); return; }
+    const M = typeof Metiers === 'object' ? Metiers : null;
+    const permis = M ? M.peutRecolter(this.ch, node.resource) : { ok: true };
+    if (!permis.ok) { this.toast(permis.raison); return; }
     node.ready = false;
     node.readyAt = this.time + 60;
     const carte = node.carte || this.mapId;
@@ -815,7 +823,9 @@ class World {
     const n = 1 + (this.rng() < 0.3 ? 1 : 0);
     this.ch.addItem(node.resource, n);
     this.ch.counters.gathers++;
-    this.emit('gain', { source: 'recolte', items: [{ id: node.resource, count: n }] });
+    const xpM = M && M.apresRecolte(this.ch, node.resource, n);
+    if (xpM && xpM.niveaux) this.toast(`${xpM.metier.nom} : niveau ${xpM.niveau} !`);
+    this.emit('gain', { source: 'recolte', items: [{ id: node.resource, count: n }], metier: xpM });
     for (let i = 0; i < n; i++) this.afterEvents(Quests.onEvent(this.ch, { type: 'gather', resource: node.resource }));
     this.afterEvents(Quests.onEvent(this.ch, { type: 'inventory' }));
     this.checkAchievements();
@@ -1161,7 +1171,8 @@ class World {
       ch.counters.wins++;
       const veille = World.veilleBonus(ch, { zone: this.zone && this.zone.id, dungeon: ch.dungeon && ch.dungeon.id, monsters: monsters.map(e => e.def.id) });
       result.veille = veille.texte;
-      const prospection = (ch.derived().prospection / 100) * (1 + (bonus + parDefi.butin) / 100) * veille.butin;
+      const ppTotal = ch.derived().prospection, bonusButin = (1 + (bonus + parDefi.butin) / 100) * veille.butin;
+      const setsTombes = new Set();
       for (const e of monsters) {
         result.xp += e.xp * veille.xp(e.def.id);
         ch.counters.kills[e.def.id] = (ch.counters.kills[e.def.id] || 0) + 1;
@@ -1172,8 +1183,11 @@ class World {
         }
         const purse = 1 + (e.lootBonus || 0) / 100;
         result.fils += Math.round((1 + Math.floor(this.rng() * 3)) * (e.level + 1) / 2 * purse);
+        const prospection = Items.multProspection(ppTotal, e.level - ch.level) * bonusButin;
         for (const drop of Items.dropsOf(e.def.id)) {
-          if (this.rng() * 100 < drop.rate * prospection * purse) {
+          if (drop.fixe && setsTombes.has(drop.set)) continue;
+          if (this.rng() * 100 < (drop.fixe ? drop.rate : drop.rate * prospection * purse)) {
+            if (drop.fixe) setsTombes.add(drop.set);
             const found = result.drops.find(x => x.id === drop.id);
             if (found) found.count++; else result.drops.push({ id: drop.id, count: 1 });
           }

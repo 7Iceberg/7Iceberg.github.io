@@ -19,10 +19,10 @@ const ICO = {
   pods: svg('<path d="M7 9h10l1.5 10.5h-13z"/><path d="M9.5 9V7.5a2.5 2.5 0 0 1 5 0V9"/>'),
 };
 
-const LABEL = { coiffe: 'Coiffe', cape: 'Cape', amulette: 'Amulette', anneau1: 'Anneau', anneau2: 'Anneau', ceinture: 'Ceinture', bottes: 'Bottes', arme: 'Arme' };
+const LABEL = { coiffe: 'Coiffe', cape: 'Cape', amulette: 'Amulette', anneau1: 'Anneau', anneau2: 'Anneau', ceinture: 'Ceinture', bottes: 'Bottes', arme: 'Arme', bouclier: 'Bouclier' };
 const KIND = slot => ({ kind: slot === 'arme' ? 'weapon' : 'equip', slot: slot.startsWith('anneau') ? 'anneau' : slot });
-const GAUCHE = ['amulette', 'anneau1', 'anneau2', 'ceinture'];
-const DROITE = ['coiffe', 'cape', 'arme', 'bottes'];
+const GAUCHE = ['amulette', 'bouclier', 'anneau1', 'ceinture', 'bottes'];
+const DROITE = ['coiffe', 'arme', 'anneau2', 'cape'];
 const MAX_ENSEMBLES = 6;
 const ICO_COS = (() => {
   const s = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
@@ -48,7 +48,7 @@ const ONGLETS = [
 const VUES = [['tenues', 'Tenues : panoplies et ensembles', ICO.tenues], ['apparence', 'Apparence : titre, cosmétiques, thème', ICO.apparence]];
 const FILTRES = {
   tout: [['', 'Toutes catégories'], ['equip', 'Équipement'], ['arme', 'Armes'], ['conso', 'Consommables'], ['res', 'Ressources'], ['noeud', 'Nœuds']],
-  equip: [['', 'Toutes catégories'], ['coiffe', 'Coiffes'], ['cape', 'Capes'], ['amulette', 'Amulettes'], ['anneau', 'Anneaux'], ['ceinture', 'Ceintures'], ['bottes', 'Bottes'], ['niveau', 'À mon niveau']],
+  equip: [['', 'Toutes catégories'], ['coiffe', 'Coiffes'], ['cape', 'Capes'], ['amulette', 'Amulettes'], ['anneau', 'Anneaux'], ['ceinture', 'Ceintures'], ['bottes', 'Bottes'], ['bouclier', 'Boucliers'], ['niveau', 'À mon niveau']],
   arme: [['', 'Toutes les armes']].concat(Object.keys(Items.WEAPON_TYPES).map(t => [t, Items.WEAPON_TYPES[t].label]), [['niveau', 'À mon niveau']]),
   conso: [['', 'Toutes catégories'], ['pain', 'Pains'], ['potion', 'Potions'], ['parchemin', 'Parchemins']],
   res: [['', 'Toutes catégories'], ['recolte', 'Récolte'], ['butin', 'Butin de monstre'], ['autre', 'Autres']],
@@ -208,19 +208,17 @@ Object.assign(Hud.prototype, {
     const colCos = types => types.map(caseCos).join('');
     return `<section class="vy-inv__poupee${cos ? ' vy-inv__poupee--cos' : ''}" aria-label="${cos ? 'Cosmétiques portés' : 'Équipement porté'}">
       ${onglets}
-      <div class="vy-inv__col">${cos ? colCos(['teinture', 'lueur', 'aura']) : col(GAUCHE)}</div>
+      ${cos ? '' : `<div class="vy-inv__col vy-inv__marques" title="Marques des Grands Dragons : bientôt">${ecailles}</div>`}
+      <div class="vy-inv__col">${cos ? colCos(['teinture', 'lueur', 'aura']) : col(GAUCHE) + trCase}</div>
       <div class="vy-inv__perso" data-depot="poupee">
         <canvas class="vy-inv__cv" role="img" aria-label="${esc(ch.name)}, ${esc(cls.name)}"></canvas>
         <button class="vy-inv__tourne vy-inv__tourne--g" data-act="tourner" data-sens="-1" aria-label="Tourner le personnage vers la gauche" title="Tourner">${I.tourneG}</button>
         <button class="vy-inv__tourne vy-inv__tourne--d" data-act="tourner" data-sens="1" aria-label="Tourner le personnage vers la droite" title="Tourner">${I.tourneD}</button>
         <div class="vy-inv__nom">${esc(ch.name)}<small>${esc(cls.name)} · niv. ${ch.level}${ch.title ? ` · ${esc(ch.title)}` : ''}</small></div>
       </div>
-      <div class="vy-inv__col">${cos ? colCos(['blason', 'theme']) : col(DROITE)}</div>
+      <div class="vy-inv__col">${cos ? colCos(['blason', 'theme']) : col(DROITE) + famCase + montCase}</div>
       ${cos ? `<div class="vy-inv__rangee vy-inv__rangee--cos">${['teinture', 'lueur', 'aura', 'blason', 'theme'].map(t => { const id = Garderobe.porteId(ch, t), c = id && Garderobe.get(id); return `<div class="vy-inv__cos-ligne"><small>${esc((Garderobe.TYPE_LABEL[t] || t).replace(/s$/, ''))}</small><b>${c ? esc(c.nom) : '-'}</b></div>`; }).join('')}<button type="button" class="vy-bouton vy-bouton--petit vy-bouton--primaire" data-act="garderobe">Ouvrir la Garde-robe</button></div>` : `<div class="vy-inv__rangee">
         <div class="vy-inv__groupe"><div class="vy-inv__noeuds" title="Nœuds noués : chacun durcit les combats et ajoute ${DATA.rules.knotBonus} % d'XP et de butin">${noeuds.join('')}</div><small>Nœuds ${actifs.length} / ${DATA.rules.maxKnots}</small></div>
-        <div class="vy-inv__groupe"><div class="vy-inv__familier">${famCase}${montCase}</div><small>Familier · monture</small></div>
-        <div class="vy-inv__groupe"><div class="vy-inv__familier">${trCase}</div><small>Trousseau</small></div>
-        <div class="vy-inv__groupe"><div class="vy-inv__ecailles">${ecailles}</div><small>Marques · <span class="vy-bientot">bientôt</span></small></div>
       </div>`}
     </section>`;
   },

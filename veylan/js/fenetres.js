@@ -222,6 +222,7 @@ Fenetres.ICON = (() => {
     carte: s('<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>'),
     journal: s('<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>'),
     montures: s('<path d="M7 20V12a5 5 0 0 1 10 0v8"/><path d="M4.5 20h5M14.5 20h5"/>'),
+    metiers: s('<path d="M14.5 4.5l5 5-3 3-5-5z"/><path d="M12.5 9.5 4 18l2 2 8.5-8.5"/><path d="M4 9a3 3 0 0 0 4-4"/>'),
     guilde: s('<path d="M6 3h12v11l-6 6-6-6z"/><path d="M9 8h6M12 8v6"/>'),
     familiers: s('<circle cx="7" cy="9" r="1.8"/><circle cx="11" cy="6" r="1.8"/><circle cx="15.5" cy="7" r="1.8"/><circle cx="18" cy="11" r="1.8"/><path d="M8 16c0-2.5 2-4.5 4.5-4.5S17 13.5 17 16c0 1.8-1.4 3-3 3h-3c-1.6 0-3-1.2-3-3z"/>'),
     boutique: s('<path d="M6 9h12l-1.5 11h-9z"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/><path d="M12 13l1 2-1 2-1-2z"/>'),
