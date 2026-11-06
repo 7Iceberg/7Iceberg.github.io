@@ -1,1 +1,1 @@
-Veylan, version du jeu en ligne : 39ac4cc (main)
+Veylan, version du jeu en ligne : aa48bd5 (main)

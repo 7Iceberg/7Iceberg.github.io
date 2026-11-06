@@ -133,3 +133,15 @@ button.vy-admin__ligne:hover { border-color: rgba(82, 210, 244, 0.4); }
 }
 .vy-admin .vy-admin__champ input, .vy-admin .vy-admin__champ select { height: 30px !important; min-height: 0 !important; box-shadow: none !important; }
 .vy-admin .vy-admin__champ input[type="color"] { width: 60px; }
+@media (max-width: 760px) {
+  .vy-admin__grille3 { grid-template-columns: minmax(0, 1fr) 80px 70px; gap: 0 8px; }
+  .vy-admin__champ { flex-wrap: wrap; }
+  .vy-admin__champ label { flex-basis: 100%; min-width: 0; }
+  .vy-admin__journal li { grid-template-columns: 1fr; gap: 2px; }
+}
+@media (max-width: 760px) {
+  .vy-admin__grille3 .vy-admin__champ { flex-wrap: nowrap; }
+  .vy-admin__grille3 .vy-admin__champ input { width: 100%; }
+}
+.vy-admin .vy-admin__grille3 .vy-admin__champ input { flex: none !important; }
+.vy-admin .vy-admin__grille3 .vy-admin__champ label { flex-basis: auto; }

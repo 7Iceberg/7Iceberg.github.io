@@ -16,6 +16,7 @@ const ZOOM = { cartes: [0.22, 2.6], monde: [0.8, 3.4] };
 const ATELIERS = { tailleur: 'tailleur', cordonnier: 'cordonnier', bijoutier: 'bijoutier', forgeron: 'forgeron', alchimiste: 'alchimiste' };
 const DRAPEAU = 'veylan.carte.drapeau';
 const PEINT = { continent: null, enCours: false };
+const BRUME_PLATEAU = [34, 46, 72, 175];
 const PRIO = { rendre: 6, offre: 5, relais: 4, monument: 3, donjon: 3, banque: 3, marche: 2, dojo: 2, metiers: 2, avis: 2, temple: 2, artisan: 2, marchand: 1 };
 
 const hex = c => { const m = /^#?([0-9a-f]{6})$/i.exec(String(c || '').trim()); const n = m ? parseInt(m[1], 16) : 0x808080; return [n >> 16, (n >> 8) & 255, n & 255]; };
@@ -292,8 +293,8 @@ Object.assign(Hud.prototype, {
   },
 
   carteIci() {
-    const id = Atlas.hereOf(this.world.mapId);
-    const p = id ? Atlas.coordsOf(id) : [0, 0];
+    const id = Atlas.hereOf(this.world.mapId), w = this.world, Q = this.posee(id);
+    const p = Q && w.plateau && w.mapId === id ? CartePlateaux.versMonde(Q, w.player.x, w.player.y) : id ? Atlas.coordsOf(id) : [0, 0];
     return { cx: p[0], cy: p[1] };
   },
 
@@ -416,7 +417,7 @@ Object.assign(Hud.prototype, {
     const h = this.caseSous(p);
     c.sel = h.id;
     c.selCase = [h.x, h.y];
-    c.bulle = tactile ? { html: this.bulleCase(h), at: [h.x, h.y] } : null;
+    c.bulle = tactile ? { html: this.bulleCase(h), at: h.at || [h.x, h.y] } : null;
     this.fen.render('carte');
   },
 
@@ -438,8 +439,11 @@ Object.assign(Hud.prototype, {
       if (hit) return { id: hit.id, x: hit.x, y: hit.y };
     }
     const g = P.from(p[0], p[1]);
+    const q = typeof CartePlateaux === 'object' ? CartePlateaux.sous(g[0], g[1]) : null;
+    if (q) { const k = Atlas.coordsOf(q.id); return { id: q.id, x: k[0], y: k[1], at: g }; }
     const x = Math.round(g[0]), y = Math.round(g[1]);
-    return { id: Atlas.at(x, y), x, y };
+    const id = Atlas.at(x, y);
+    return { id: id && this.posee(id) ? null : id, x, y };
   },
 
   repereSous(p) {
@@ -527,23 +531,86 @@ Object.assign(Hud.prototype, {
   reperesMonde(D) {
     const items = [];
     for (const [id] of D.A.coords) {
-      const sp = Atlas.spots(id), def = D.ix.map.get(id).def, vu = D.seen.has(id);
+      const def = D.ix.map.get(id).def, vu = D.seen.has(id);
+      if (this.posee(id)) {
+        const at = q => CartePlateaux.point(id, q.u, q.v);
+        if (vu && def.relay && def.relay.u != null) items.push({ kind: 'relais', map: id, at: at(def.relay) });
+        if (vu && def.porte && def.porte.u != null) for (const d of D.ix.dungeonsAt.get(id) || []) items.push({ kind: 'donjon', map: id, at: at(def.porte), donjon: d });
+        for (const n of def.npcs || []) if (n && typeof n === 'object' && n.u != null) this.reperesPnj(items, D, id, n.id, at(n), vu);
+        continue;
+      }
+      const sp = Atlas.spots(id);
       const at = (x, y) => Atlas.tileToWorld(id, x, y);
       if (vu && def.relay && sp.relay) items.push({ kind: 'relais', map: id, at: at(sp.relay.x, sp.relay.y) });
       if (vu && sp.door) for (const d of D.ix.dungeonsAt.get(id) || []) items.push({ kind: 'donjon', map: id, at: at(sp.door.x, sp.door.y), donjon: d });
-      for (const n of sp.npcs) {
-        const nd = n.id && World.npcDef(n.id);
-        if (!nd) continue;
-        const p = at(n.x, n.y);
-        if (D.marks.turnInNpc.has(n.id)) items.push({ kind: 'rendre', map: id, at: p, npc: nd, quetes: D.marks.turnInNpc.get(n.id) });
-        else if (D.marks.giveNpc.has(n.id)) items.push({ kind: 'offre', map: id, at: p, npc: nd, quetes: D.marks.giveNpc.get(n.id) });
-        if (vu && nd.workshop) items.push({ kind: 'artisan', sub: nd.workshop, map: id, at: p, npc: nd });
-        if (vu && nd.marche) items.push({ kind: 'marche', map: id, at: p, npc: nd });
-        else if (vu && nd.shop) items.push({ kind: 'marchand', map: id, at: p, npc: nd });
-        for (const k of ['banque', 'dojo', 'metiers', 'avis', 'temple']) if (vu && nd[k]) items.push({ kind: k, map: id, at: p, npc: nd });
-      }
+      for (const n of sp.npcs) this.reperesPnj(items, D, id, n.id, at(n.x, n.y), vu);
     }
     return items;
+  },
+
+  reperesPnj(items, D, id, npc, p, vu) {
+    const nd = npc && World.npcDef(npc);
+    if (!nd || !p) return;
+    if (D.marks.turnInNpc.has(npc)) items.push({ kind: 'rendre', map: id, at: p, npc: nd, quetes: D.marks.turnInNpc.get(npc) });
+    else if (D.marks.giveNpc.has(npc)) items.push({ kind: 'offre', map: id, at: p, npc: nd, quetes: D.marks.giveNpc.get(npc) });
+    if (vu && nd.workshop) items.push({ kind: 'artisan', sub: nd.workshop, map: id, at: p, npc: nd });
+    if (vu && nd.marche) items.push({ kind: 'marche', map: id, at: p, npc: nd });
+    else if (vu && nd.shop) items.push({ kind: 'marchand', map: id, at: p, npc: nd });
+    for (const k of ['banque', 'dojo', 'metiers', 'avis', 'temple']) if (vu && nd[k]) items.push({ kind: k, map: id, at: p, npc: nd });
+  },
+
+
+  plateauxCarte() { return typeof CartePlateaux === 'object' ? CartePlateaux.liste() : []; },
+  posee(id) { return typeof CartePlateaux === 'object' && id ? CartePlateaux.estPosee(id) : null; },
+  versGrille(id, tx, ty) {
+    const Q = this.posee(id);
+    if (!Q) return Atlas.tileToWorld(id, tx, ty);
+    const s = Atlas.index().map.get(id).def.secteur;
+    return s && s.k > 0 ? CartePlateaux.versMonde(Q, s.u0 + (tx + 0.5) * s.k, s.v0 + (ty + 0.5) * s.k) : CartePlateaux.centre(id);
+  },
+  coucheCarte(Q, nom, cle, faire) {
+    const M = this.couchesCarte || (this.couchesCarte = new Map()), k = Q.pid + '|' + nom, e = M.get(k);
+    if (e && e.cle === cle) return e.cv;
+    const cv = faire();
+    M.set(k, { cle, cv });
+    return cv;
+  },
+  dessinerPlateauxIso(g, P, D) {
+    for (const Q of this.plateauxCarte()) {
+      const img = CartePlateaux.image(Q, () => this.demanderCarte());
+      if (!img) continue;
+      const b = CartePlateaux.bornes(Q), h = 1.5, o = P.to(b.x0, b.y0, h), ax = P.to(b.x1, b.y0, h), ay = P.to(b.x0, b.y1, h);
+      const pose = (src) => { g.save(); g.transform((ax[0] - o[0]) / src.width, (ax[1] - o[1]) / src.width, (ay[0] - o[0]) / src.height, (ay[1] - o[1]) / src.height, o[0], o[1]); g.drawImage(src, 0, 0); g.restore(); };
+      g.save(); g.shadowColor = 'rgba(4,8,18,0.55)'; g.shadowBlur = 10; g.shadowOffsetY = Math.max(4, P.u * 3); pose(img); g.restore();
+      const caches = [...Q.cartes].filter(id => !D.seen.has(id));
+      if (caches.length) pose(this.coucheCarte(Q, 'brume', caches.join(), () => CartePlateaux.couche(Q, id => (D.seen.has(id) ? null : BRUME_PLATEAU))));
+      pose(this.coucheCarte(Q, 'bords', '', () => CartePlateaux.couche(Q, null, (a, o2) => (o2 ? [255, 255, 255, 120] : null))));
+      if (this.carte.sel && Q.cartes.has(this.carte.sel)) { const sel = this.carte.sel; pose(this.coucheCarte(Q, 'choix', sel, () => CartePlateaux.couche(Q, id => (id === sel ? [255, 231, 163, 50] : null), (a) => (a === sel ? [255, 231, 163, 255] : null)))); }
+    }
+  },
+
+  dessinerPlateaux(g, P, D) {
+    const c = this.carte, sel = c.sel, zone = c.survolZone || (sel && D.ix.map.get(sel) ? D.ix.map.get(sel).zone : null);
+    for (const Q of this.plateauxCarte()) {
+      const b = CartePlateaux.bornes(Q), [X0, Y0] = P.to(b.x0, b.y0), [X1, Y1] = P.to(b.x1, b.y1), w = X1 - X0, h = Y1 - Y0;
+      if (X1 < -20 || Y1 < -20 || X0 > P.W + 20 || Y0 > P.H + 20) continue;
+      const img = CartePlateaux.image(Q, () => this.demanderCarte());
+      if (!img) continue;
+      g.save();
+      g.shadowColor = 'rgba(4,8,18,0.6)'; g.shadowBlur = Math.max(4, P.s * 0.22); g.shadowOffsetY = Math.max(3, P.s * 0.16);
+      g.drawImage(img, X0, Y0, w, h);
+      g.restore();
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+      const caches = [...Q.cartes].filter(id => !D.seen.has(id));
+      if (caches.length) g.drawImage(this.coucheCarte(Q, 'brume', caches.join(), () => CartePlateaux.couche(Q, id => (D.seen.has(id) ? null : BRUME_PLATEAU))), X0, Y0, w, h);
+      g.drawImage(this.coucheCarte(Q, 'bords', '', () => CartePlateaux.couche(Q, null, (a, o) => (o ? [255, 255, 255, 120] : null))), X0, Y0, w, h);
+      const dansZone = zone ? zone.maps.filter(m => Q.cartes.has(m.id)).map(m => m.id) : [];
+      if (dansZone.length && P.kind === 'plat') {
+        const Z = new Set(dansZone);
+        g.drawImage(this.coucheCarte(Q, 'zone', dansZone.join(), () => CartePlateaux.couche(Q, id => (Z.has(id) ? [150, 230, 100, 40] : null), (a, o) => (Z.has(a) && !Z.has(o) ? [190, 250, 140, 235] : null))), X0, Y0, w, h);
+      }
+      if (sel && Q.cartes.has(sel)) g.drawImage(this.coucheCarte(Q, 'choix', sel, () => CartePlateaux.couche(Q, id => (id === sel ? [255, 231, 163, 50] : null), (a, o) => (a === sel ? [255, 231, 163, 255] : null))), X0, Y0, w, h);
+    }
   },
 
   caseDuPlateau(id, u, v) {
@@ -561,12 +628,16 @@ Object.assign(Hud.prototype, {
 
   epinglesMonde(D) {
     const w = this.world, out = [];
-    for (const q of D.marks.pins) out.push({ kind: 'quete', map: q.map, at: Atlas.tileToWorld(q.map, q.x, q.y), quest: q.quest, text: q.text });
-    if (this.carte.drapeau) { const [x, y] = this.carte.drapeau; out.push({ kind: 'drapeau', map: Atlas.at(Math.round(x), Math.round(y)), at: [x, y] }); }
+    for (const q of D.marks.pins) out.push({ kind: 'quete', map: q.map, at: this.versGrille(q.map, q.x, q.y), quest: q.quest, text: q.text });
+    if (this.carte.drapeau) { const [x, y] = this.carte.drapeau, q = typeof CartePlateaux === 'object' ? CartePlateaux.sous(x, y) : null; out.push({ kind: 'drapeau', map: q ? q.id : Atlas.at(Math.round(x), Math.round(y)), at: [x, y] }); }
     if (D.here) {
-      let tile = w.mapId === D.here ? (w.plateau ? this.caseDuPlateau(D.here, w.player.x, w.player.y) : [w.player.x, w.player.y]) : null;
-      if (!tile) { const door = Atlas.spots(D.here).door; tile = door ? [door.x, door.y] : [7, 7]; }
-      out.push({ kind: 'toi', map: D.here, at: Atlas.tileToWorld(D.here, tile[0], tile[1]) });
+      const ici = w.mapId === D.here, Q = this.posee(D.here);
+      if (ici && w.plateau && Q) out.push({ kind: 'toi', map: D.here, at: CartePlateaux.versMonde(Q, w.player.x, w.player.y) });
+      else {
+        let tile = ici ? (w.plateau ? this.caseDuPlateau(D.here, w.player.x, w.player.y) : [w.player.x, w.player.y]) : null;
+        if (!tile) { const door = Atlas.spots(D.here).door; tile = door ? [door.x, door.y] : [7, 7]; }
+        out.push({ kind: 'toi', map: D.here, at: this.versGrille(D.here, tile[0], tile[1]) });
+      }
     }
     return out;
   },
@@ -654,7 +725,9 @@ Object.assign(Hud.prototype, {
   dessinerPlat(g, P, T, D) {
     const { A, ix, seen } = D, s = P.s;
     const vis = [];
+    this.dessinerPlateaux(g, P, D);
     for (const [id, [x, y]] of A.coords) {
+      if (this.posee(id)) continue;
       const [X, Y] = P.to(x, y);
       if (X < -s || X > P.W + s || Y < -s * 1.5 || Y > P.H + s) continue;
       vis.push({ id, x, y, X, Y, x0: Math.round(X - s / 2), y0: Math.round(Y - s / 2), x1: Math.round(X + s / 2), y1: Math.round(Y + s / 2) });
@@ -733,7 +806,7 @@ Object.assign(Hud.prototype, {
     const c = this.carte;
     const zone = c.survolZone || (c.sel && D.ix.map.get(c.sel) ? D.ix.map.get(c.sel).zone : null);
     if (!zone || P.kind !== 'plat') return;
-    const cells = zone.maps.map(m => D.A.coords.get(m.id)).filter(Boolean);
+    const cells = zone.maps.filter(m => !this.posee(m.id)).map(m => D.A.coords.get(m.id)).filter(Boolean);
     const inZ = new Set(cells.map(p => Atlas.key(p[0], p[1])));
     g.fillStyle = 'rgba(150,230,100,0.16)';
     for (const [x, y] of cells) { const [X, Y] = P.to(x, y); g.fillRect(Math.round(X - s / 2), Math.round(Y - s / 2), Math.round(X + s / 2) - Math.round(X - s / 2), Math.round(Y + s / 2) - Math.round(Y - s / 2)); }
@@ -752,7 +825,7 @@ Object.assign(Hud.prototype, {
   nomsZones(g, P, T, D, s) {
     if (s < 22) return;
     const byZone = new Map();
-    for (const [id, [x, y]] of D.A.coords) { const z = D.ix.map.get(id).zone; (byZone.get(z) || byZone.set(z, []).get(z)).push([x, y]); }
+    for (const [id, [x, y]] of D.A.coords) { const z = D.ix.map.get(id).zone; (byZone.get(z) || byZone.set(z, []).get(z)).push(P.kind === 'plat' && this.posee(id) ? CartePlateaux.centre(id) : [x, y]); }
     for (const [z, list] of byZone) {
       const h = P.kind === 'relief' ? hauteur(z) : 0;
       const pts = list.map(([x, y]) => P.to(x, y, h));
@@ -819,7 +892,8 @@ Object.assign(Hud.prototype, {
 
   dessinerRelief(g, P, T, D) {
     const { A, ix, seen } = D, s = P.s, v = this.vueCarte();
-    const cells = [...A.coords].map(([id, [x, y]]) => { const [rx, ry] = P.R(x - v.cx, y - v.cy); return { id, x, y, rx, ry, e: ix.map.get(id) }; })
+    this.dessinerPlateauxIso(g, P, D);
+    const cells = [...A.coords].filter(([id]) => !this.posee(id)).map(([id, [x, y]]) => { const [rx, ry] = P.R(x - v.cx, y - v.cy); return { id, x, y, rx, ry, e: ix.map.get(id) }; })
       .sort((a, b) => (a.rx + a.ry) - (b.rx + b.ry) || a.rx - b.rx);
     this.peindreVisibles(cells.map(c => c.id));
     const S = CartePeinture.T * 15;
@@ -849,7 +923,7 @@ Object.assign(Hud.prototype, {
       g.beginPath(); g.moveTo(Wp[0], Wp[1]); g.lineTo(Wd[0], Wd[1]); g.lineTo(Sd[0], Sd[1]); g.lineTo(Ed[0], Ed[1]); g.lineTo(E[0], E[1]); g.moveTo(Sx[0], Sx[1]); g.lineTo(Sd[0], Sd[1]); g.stroke();
       g.strokeStyle = 'rgba(255,255,255,0.32)'; poly(g, [N, E, Sx, Wp]); g.stroke();
     }
-    const hDe = (gx, gy) => { const id = Atlas.at(Math.round(gx), Math.round(gy)); const c = id && cells.find(x => x.id === id); return c ? c.h : 0; };
+    const hDe = (gx, gy) => { if (typeof CartePlateaux === 'object' && CartePlateaux.sous(gx, gy)) return 1.5; const id = Atlas.at(Math.round(gx), Math.round(gy)); const c = id && cells.find(x => x.id === id); return c ? c.h : 0; };
     this.brumeCarte(g, cells.filter(c => !seen.has(c.id) && c.at).map(c => [c.at[0], c.at[1] - P.th * 0.4]), P.tw * 0.8, 1);
     if (this.carte.sel) { const c = cells.find(x => x.id === this.carte.sel); if (c && c.poly) { g.strokeStyle = '#ffe7a3'; g.lineWidth = 2.5; poly(g, [c.poly[0], c.poly[1], P.toR(c.rx + 0.5, c.ry + 0.5, c.h), c.poly[5]]); g.stroke(); } }
     this.nomsZones(g, P, T, D, P.tw * 0.75);
@@ -889,7 +963,8 @@ Object.assign(Hud.prototype, {
       if (vue && vue !== this.carte3d) { vue.dispose(); return; }
       if (vue && (!this.fen.isOpen('carte') || !c.vue3d || c.tab !== 'cartes')) { this.fermer3D(); return; }
       if (this.fen.isOpen('carte')) this.fen.render('carte');
-    }).catch(() => {
+    }).catch(e => {
+      console.warn('Carte du monde : la vue 3D est indisponible, le relief peint la remplace', e && e.message ? e.message : e);
       this.carte3dPromesse = null;
       this.fermer3D();
       c.repli3d = true;
