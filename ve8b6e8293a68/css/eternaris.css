@@ -1,0 +1,159 @@
+#app.vy-eter {
+  --e-titre: #57535a;       
+  --e-onglets: #3c3a48;     
+  --e-panneau: #444556;     
+  --e-fond: #393a4d;        
+  --e-pied: #313041;        
+  --e-case: #29293a;        
+  --e-ligne: rgba(255, 255, 255, 0.07);
+  --e-ligne-2: rgba(255, 255, 255, 0.12);
+  --e-bouton: #5c5b6f;      
+  --e-bulle: #2c2c46;       
+  --e-texte: #f1eff5;
+  --e-texte-2: #b6b3c4;
+  --e-discret: #87849a;
+  --e-or: #f2c14e;
+  --e-or-fonce: #c9962c;
+}
+
+#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire, .vy-fenetre--garderobe) { --fen-texte: var(--e-texte); --fen-texte-2: var(--e-texte-2); --fen-filet: var(--e-ligne-2); background: var(--e-fond) !important; border: 1px solid rgba(0, 0, 0, 0.55) !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 18px 40px rgba(0, 0, 0, 0.55) !important; }
+#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire, .vy-fenetre--garderobe) .vy-fenetre__tete { background: var(--e-titre) !important; border-bottom: 1px solid rgba(0, 0, 0, 0.35) !important; }
+#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire, .vy-fenetre--garderobe) .vy-fenetre__titre { font: 800 15px/1.5 var(--vy-font-ui) !important; letter-spacing: 0.03em !important; text-transform: uppercase; }
+#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire, .vy-fenetre--garderobe) .vy-fenetre__touche { background: transparent !important; border: 1.5px solid var(--e-texte-2) !important; color: var(--e-texte-2) !important; border-radius: 3px !important; }
+#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire, .vy-fenetre--garderobe) .vy-fenetre__bouton { background: none !important; }
+#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire) .vy-onglets:not(.vy-gr__onglets),
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__vues { display: flex; align-self: stretch !important; width: auto !important; margin: -10px -12px 8px !important; padding: 0 !important; background: var(--e-onglets) !important; border: 0 !important; border-bottom: 1px solid rgba(0, 0, 0, 0.3) !important; border-radius: 0 !important; }
+#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire) .vy-onglets:not(.vy-gr__onglets) .vy-onglet,
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__vue { flex: 1 1 0; position: relative; width: auto !important; height: auto !important; min-height: 34px; display: block !important; padding: 0 8px !important; border: 0 !important; background: none !important; font: 800 11px var(--vy-font-ui) !important; letter-spacing: 0.18em !important; text-transform: uppercase; color: var(--e-texte-2) !important; }
+#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire) .vy-onglets:not(.vy-gr__onglets) .vy-onglet.on,
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__vue.on { color: var(--e-or) !important; }
+#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire) .vy-onglets:not(.vy-gr__onglets) .vy-onglet.on::after,
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__vue.on::after { content: ''; display: block !important; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; border-radius: 0; background: var(--e-or) !important; box-shadow: none !important; }
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__vue::after { display: block; }
+#app.vy-eter :is(#fenetres .vy-fenetre--caracs, #fenetres .vy-fenetre--inventaire, #fenetres .vy-fenetre--garderobe, #panel[data-open="fightEnd"]) .vy-bouton:not(.vy-bouton--primaire) { background: var(--e-bouton) !important; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35) !important; }
+#app.vy-eter :is(#fenetres .vy-fenetre--caracs, #fenetres .vy-fenetre--inventaire, #fenetres .vy-fenetre--garderobe, #panel[data-open="fightEnd"]) .vy-bouton--primaire { background: var(--e-or) !important; box-shadow: 0 2px 0 var(--e-or-fonce) !important; color: #241a06 !important; }
+#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire, .vy-fenetre--garderobe) .vy-case { background: var(--e-case) !important; box-shadow: inset 0 0 0 1px var(--e-ligne-2) !important; }
+#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire, .vy-fenetre--garderobe) :is(input[type="search"], input[type="text"], select, .vy-recherche) { background: var(--e-case) !important; border-color: rgba(0, 0, 0, 0.3) !important; }
+
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14 { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__banniere { position: relative; height: 150px; margin: 0 -12px; overflow: hidden; background: color-mix(in srgb, var(--c) 30%, var(--e-fond)); border-bottom: 1px solid rgba(0, 0, 0, 0.35); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__portrait { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__gauche { position: absolute; left: 12px; top: 10px; display: grid; gap: 5px; justify-items: start; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__niv { font: 700 13px var(--vy-font-ui); color: var(--e-texte-2); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__niv b { font-size: 16px; color: var(--e-texte); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__pastille { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 4px; background: rgba(41, 41, 58, 0.85); font: 600 11.5px var(--vy-font-ui); color: var(--e-texte); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__droite { position: absolute; right: 10px; top: 10px; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__droite .vy-caracs__sceaux { margin: 0; border-radius: 4px; border: 0; background: rgba(41, 41, 58, 0.85); color: var(--e-texte); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__qui { position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: center; gap: 1px; padding: 18px 8px 6px; background: linear-gradient(transparent, rgba(41, 41, 58, 0.92)); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__qui b { font: 800 16px var(--vy-font-ui); color: var(--e-texte); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__qui em { font: italic 600 12px var(--vy-font-ui); color: var(--e-or); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__barres { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 8px 2px 10px; border-bottom: 1px solid var(--e-ligne-2); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__barre { display: grid; gap: 3px; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__barre > span { font: 700 12px var(--vy-font-ui); color: var(--e-texte); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__barre > i { height: 5px; border-radius: 3px; overflow: hidden; background: var(--e-case); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__barre > i b { display: block; height: 100%; border-radius: 3px; background: var(--e-or); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__barre.pods > i b { background: #f0a063; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__barre > small { text-align: right; font: 600 10.5px var(--vy-font-ui); color: var(--e-texte-2); font-variant-numeric: tabular-nums; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__vitaux { display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px 0; border-bottom: 1px solid var(--e-ligne-2); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__vitaux > div { display: grid; grid-template-columns: auto auto; justify-content: center; align-items: center; column-gap: 7px; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__vitaux > div + div { border-left: 1px solid var(--e-ligne); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__vitaux .vy-pic { grid-row: span 2; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__vitaux b { font: 800 16px/1 var(--vy-font-ui); color: var(--e-texte); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__vitaux small { font: 600 10px var(--vy-font-ui); color: var(--e-texte-2); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14 .vy-caracs__corps { flex: 1; min-height: 0; overflow-y: auto; margin: 0 -12px; padding: 0; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__section { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; background: var(--e-panneau); font: 700 12.5px var(--vy-font-ui); color: var(--e-texte); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__vues { display: flex; gap: 4px; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__vues button { width: 26px; height: 24px; min-height: 0 !important; min-width: 0; padding: 4px; display: grid; place-items: center; border: 0; border-radius: 4px; background: var(--e-case); color: var(--e-texte-2); cursor: pointer; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__vues button.on { background: var(--e-or); color: #241a06; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__vues svg { width: 15px; height: 15px; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__liste { display: grid; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__ligne { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto 30px; align-items: center; gap: 10px; min-height: 36px; padding: 2px 12px; background: var(--e-fond); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__ligne:nth-child(even) { background: color-mix(in srgb, var(--e-fond) 82%, #000); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__ligne > span { font: 700 11px var(--vy-font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--e-texte-2); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__ligne > b { font: 800 14px var(--vy-font-ui); color: var(--e-texte); font-variant-numeric: tabular-nums; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14 .vy-caracs__plus { position: static; width: 26px; height: 26px; padding: 5px; border: 0; border-radius: 4px; background: var(--e-or); color: #241a06; box-shadow: none; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14 .vy-caracs__plus:disabled { opacity: 0.2; pointer-events: none; background: var(--e-bouton); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__pied { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 -12px -10px; padding: 8px 12px; border: 0; border-radius: 0; background: var(--e-pied); border-top: 1px solid rgba(0, 0, 0, 0.3); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__points { font: 600 12.5px var(--vy-font-ui); color: var(--e-texte); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__points b { margin-right: 6px; font: 800 14px var(--vy-font-ui); color: var(--e-texte-2); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__points b.on { color: var(--e-or); }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__repartir { width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 6px !important; border-radius: 5px !important; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__repartir svg { width: 18px; height: 18px; }
+@media (max-height: 520px) {
+  #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__banniere { height: 64px; }
+  #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__gauche .vy-e14__pastille, #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__barre.pods { display: none; }
+  #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__qui { padding: 4px 8px 4px; }
+  #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__barres { grid-template-columns: 1fr; padding: 4px 2px 5px; }
+  #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__vitaux { padding: 4px 0; }
+  #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__vitaux small { display: none; }
+  #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__liste.primaires { grid-template-columns: 1fr 1fr; }
+  #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__ligne { min-height: 30px; }
+  #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__section { padding: 4px 12px; }
+}
+
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__poupee, #app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__sac, #app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__fiche { background: var(--e-panneau) !important; border: 1px solid rgba(0, 0, 0, 0.3) !important; border-radius: 6px !important; }
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__poupee { background: radial-gradient(55% 50% at 50% 50%, color-mix(in srgb, var(--e-or) 14%, transparent), transparent 75%), var(--e-fond) !important; }
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__vues { margin: -10px -10px 6px !important; }
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__ens-titre { font: 800 10.5px var(--vy-font-ui); letter-spacing: 0.18em; text-transform: uppercase; color: var(--e-texte-2); }
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__mes-ens { background: var(--e-bouton); border: 0; border-radius: 4px; }
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__ens { background: var(--e-case); }
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__onglet { background: var(--e-case); border-color: transparent; border-radius: 5px; }
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__onglet.on { background: var(--e-or) !important; color: #241a06 !important; border-color: var(--e-or) !important; box-shadow: none !important; }
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__onglets { border-color: rgba(0, 0, 0, 0.3) !important; }
+
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__socle { background: radial-gradient(55% 45% at 50% 32%, color-mix(in srgb, var(--e-or) 14%, transparent), transparent 75%), var(--e-fond); border: 1px solid rgba(0, 0, 0, 0.3); border-radius: 6px; }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__cata { padding: 8px; border-radius: 6px; background: var(--e-panneau); border: 1px solid rgba(0, 0, 0, 0.3); }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__onglets .vy-onglet { background: var(--e-case) !important; border: 0 !important; border-radius: 5px !important; }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__onglets .vy-onglet.on { background: var(--e-or) !important; color: #241a06 !important; }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__onglets .vy-onglet small { background: var(--e-pied) !important; }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__carte { background: var(--e-fond) !important; border: 1px solid rgba(0, 0, 0, 0.3) !important; border-radius: 6px !important; box-shadow: none !important; }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__carte:hover { border-color: rgba(242, 193, 78, 0.5) !important; }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__carte.est-choisie, #app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__carte.est-porte { border-color: var(--e-or) !important; }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__carte-texte b { font-weight: 600; color: var(--e-texte); }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__looks-tete small { letter-spacing: 0.18em; }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__petit { background: var(--e-bouton); border: 0; border-radius: 4px; }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__looks-ligne { background: var(--e-case); }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__filtre.on { background: var(--e-or) !important; color: #241a06 !important; border-color: var(--e-or) !important; }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__fiche { background: var(--e-panneau); border: 1px solid rgba(0, 0, 0, 0.3); }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__pied { border-top-color: rgba(0, 0, 0, 0.3); }
+
+#app.vy-eter #panel[data-open="fightEnd"] #panel-box { background: var(--e-fond) !important; border: 1px solid rgba(0, 0, 0, 0.55) !important; border-radius: 8px !important; }
+#app.vy-eter #panel[data-open="fightEnd"] #panel-box::before, #app.vy-eter #panel[data-open="fightEnd"] #panel-box::after { display: none !important; }
+#app.vy-eter #panel[data-open="fightEnd"] .vy-modale__tete { background: var(--e-titre) !important; border-radius: 8px 8px 0 0; padding-top: 8px; padding-bottom: 8px; }
+#app.vy-eter #panel[data-open="fightEnd"] .vy-modale__tete::before, #app.vy-eter #panel[data-open="fightEnd"] .vy-modale__tete::after { display: none !important; }
+#app.vy-eter #panel[data-open="fightEnd"] #panel-title { font: 800 16px var(--vy-font-ui) !important; letter-spacing: 0.02em !important; text-transform: none !important; color: var(--e-texte) !important; }
+#app.vy-eter #panel-body .vy-fdc { --fdc-carte: var(--e-panneau); }
+#app.vy-eter #panel-body .vy-fdc__haut { margin: -18px -22px 0; padding: 0 22px; background: var(--e-onglets); border-bottom: 1px solid rgba(0, 0, 0, 0.3); }
+#app.vy-eter #panel-body .vy-fdc__onglets .vy-onglet { font: 800 11px var(--vy-font-ui) !important; letter-spacing: 0.18em !important; text-transform: uppercase !important; padding: 11px 16px !important; }
+#app.vy-eter #panel-body .vy-fdc__onglets .vy-onglet.on { border-bottom-width: 3px !important; }
+#app.vy-eter #panel-body .vy-fdc__ruban { filter: none; }
+#app.vy-eter #panel-body .vy-fdc__ruban::before, #app.vy-eter #panel-body .vy-fdc__ruban::after { background: var(--e-or-fonce); }
+#app.vy-eter #panel-body .vy-fdc__ruban > span { background: var(--e-or); box-shadow: 0 2px 0 var(--e-or-fonce); color: #241a06; }
+#app.vy-eter #panel-body .vy-fdc.perdu .vy-fdc__ruban::before, #app.vy-eter #panel-body .vy-fdc.perdu .vy-fdc__ruban::after { background: #8f3a36; }
+#app.vy-eter #panel-body .vy-fdc.perdu .vy-fdc__ruban > span { background: #c9524b; box-shadow: 0 2px 0 #8f3a36; color: #fff; }
+#app.vy-eter #panel-body .vy-fdc__chiffre, #app.vy-eter #panel-body .vy-fdc__carte, #app.vy-eter #panel-body .vy-fdc__stat, #app.vy-eter #panel-body .vy-fdc__pastille { background: var(--e-panneau); border-color: rgba(0, 0, 0, 0.25); border-radius: 5px; }
+#app.vy-eter #panel-body .vy-fdc__rang.moi { background: var(--e-panneau); border-color: rgba(242, 193, 78, 0.35); border-radius: 5px; }
+#app.vy-eter #panel-body .vy-fdc__bloc > header { margin: 0 -2px 8px; padding: 6px 10px; border-radius: 4px; background: var(--e-onglets); }
+#app.vy-eter #panel-body .vy-fdc__jauge, #app.vy-eter #panel-body .vy-fdc__barre-fond { background: var(--e-case); box-shadow: none; }
+#app.vy-eter #panel-body .vy-fdc__jauge i { background: var(--e-or); box-shadow: none; }
+#app.vy-eter #panel-body .vy-fdc__xp em { color: var(--e-or); }
+#app.vy-eter #panel-body .vy-fdc__bete, #app.vy-eter #panel-body .vy-fdc__objet { background: var(--e-case); border-color: var(--e-ligne-2); }
+#app.vy-eter #panel-body .vy-fdc__pied { background: var(--e-pied); border-top-color: rgba(0, 0, 0, 0.3); }
+#app.vy-eter .vy-bulle-objet { background: var(--e-bulle); border: 1px solid rgba(0, 0, 0, 0.5); border-radius: 6px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 14px 32px rgba(0, 0, 0, 0.6); }
+#app.vy-eter .vy-bulle-objet__tete, #app.vy-eter .vy-bulle-objet[data-rarete] .vy-bulle-objet__tete { background: var(--e-panneau); border-bottom: 1px solid rgba(0, 0, 0, 0.35); }
+#app.vy-eter .vy-bulle-objet__corps hr { background: var(--e-ligne-2); }
+#app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__perso, #app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__scene { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__onglets { gap: 10px !important; }
+#app.vy-eter #fenetres :is(.vy-fenetre--inventaire .vy-inv__nom, .vy-fenetre--garderobe .vy-gr__nom) { font: 800 13px/1.2 var(--vy-font-ui) !important; letter-spacing: 0.02em !important; }
+#app.vy-eter #panel-body .vy-fdc__issue { font: 900 22px/1 var(--vy-font-ui); letter-spacing: 0.08em; }
+#app.vy-eter #panel-body .vy-fdc__heros figcaption { font: 800 19px/1.1 var(--vy-font-ui); letter-spacing: 0.02em; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-fenetre__corps { padding-left: 12px !important; padding-right: 12px !important; padding-bottom: 10px !important; }
+#app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14 .vy-caracs__plus { transform: none !important; top: auto !important; right: auto !important; }
+@media (max-height: 520px) {
+  #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__banniere { height: auto; display: flex; align-items: center; gap: 10px; padding: 6px 12px; }
+  #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__portrait { display: none; }
+  #app.vy-eter #fenetres .vy-fenetre--caracs :is(.vy-e14__gauche, .vy-e14__droite, .vy-e14__qui) { position: static; padding: 0; background: none; }
+  #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__qui { flex: 1; display: flex; align-items: baseline; justify-content: center; gap: 8px; }
+  #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__liste.primaires .vy-e14__ligne:nth-child(4n+3), #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__liste.primaires .vy-e14__ligne:nth-child(4n+4) { background: color-mix(in srgb, var(--e-fond) 82%, #000); }
+  #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__liste.primaires .vy-e14__ligne:nth-child(4n+1), #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__liste.primaires .vy-e14__ligne:nth-child(4n+2) { background: var(--e-fond); }
+}

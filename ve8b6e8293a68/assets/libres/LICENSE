@@ -1,0 +1,47 @@
+Modèles libres de l'aperçu de nuit de l'île d'Ervane
+====================================================
+
+Les modèles 3D de ce dossier (sources/*.glb, sources/colormap-*.png) et leur conversion
+(modeles-libres.js, faite par tools/convertir-modeles.js) sont de Kenney (www.kenney.nl).
+
+Les modèles et leurs palettes sont sous licence Creative Commons Zero (CC0 1.0) :
+http://creativecommons.org/publicdomain/zero/1.0/
+« You can use this content for personal, educational, and commercial purposes. »
+Crédit (non exigé, rendu volontiers) : Kenney, www.kenney.nl.
+
+Ils viennent des dépôts publics de Kenney sur GitHub, eux-mêmes sous licence MIT (le texte suit) :
+
+- https://github.com/KenneyNL/Starter-Kit-Basic-Scene
+  sample/Mini Arena/Models/GLB format/tree.glb       -> sapin (et sa palette colormap.png)
+  (« Mini Arena (1.0) », Kenney, crédit additionnel : Tony Schär ; CC0)
+- https://github.com/KenneyNL/Starter-Kit-City-Builder
+  models/grass-trees.glb                             -> bosquet (sans son socle)
+  models/grass-trees-tall.glb                        -> bosquet_haut (sans son socle)
+- https://github.com/KenneyNL/Starter-Kit-3D-Platformer
+  models/grass.glb                                   -> touffe
+  models/flag.glb                                    -> fanion
+
+Dans le jeu, ils sont recolorés à la palette de l'île (feuillages, bois, toiles des Mailles).
+
+----------------------------------------------------------------------
+MIT License
+
+Copyright (c) 2023-2026 Kenney
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

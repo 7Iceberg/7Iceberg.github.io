@@ -1,0 +1,136 @@
+
+:root {
+  color-scheme: dark;
+
+  --vy-or: #ddaa72;             
+  --vy-or-clair: #f3bc72;       
+  --vy-or-sombre: #a67349;      
+  --vy-bronze: #835737;         
+  --vy-lisere-chaud: #e1913a;   
+  --vy-ivoire: #f7f0de;         
+  --vy-pierre-doree: #eecda6;   
+  --vy-gres: #b7a697;           
+  --vy-fissure: #523d31;        
+  --vy-pierre: #3a3b40;         
+  --vy-pierre-clair: #5b5c63;
+  --vy-cristal: #209fec;        
+  --vy-cristal-voile: #52d2f4;  
+  --vy-glace: #acdded;          
+  --vy-saphir: #113f8a;         
+  --vy-profond: #1b405d;        
+  --vy-nuit: #0f1728;           
+  --vy-ombre: #080e1a;          
+  --vy-eclat: #9764d6;          
+  --vy-eclat-clair: #ab7cf2;    
+  --vy-cimes: #3e997e;
+  --vy-cimes-clair: #80d697;
+  --vy-braise: #b83a44;
+  --vy-braise-clair: #ef7574;
+
+  --vy-fond: var(--vy-ombre);
+  --vy-surface-1: var(--vy-nuit);               
+  --vy-surface-2: #19233c;                      
+  --vy-surface-3: #22355d;                      
+  --vy-voile-fond: rgba(5, 8, 13, 0.72);        
+
+  --vy-texte: var(--vy-ivoire);
+  --vy-texte-2: #b7a697;
+  --vy-texte-or: var(--vy-or-clair);
+  --vy-encre: #14100a;                          
+
+  --vy-filet: rgba(221, 170, 114, 0.22);        
+  --vy-filet-fort: rgba(221, 170, 114, 0.55);
+  --vy-cadre: linear-gradient(135deg, #f7f0de 0%, var(--vy-or-clair) 18%, var(--vy-or-sombre) 36%, var(--vy-pierre-doree) 52%, var(--vy-bronze) 70%, var(--vy-or-clair) 86%, var(--vy-or) 100%);
+  --vy-cadre-cristal: linear-gradient(135deg, var(--vy-glace) 0%, var(--vy-cristal-voile) 25%, var(--vy-cristal) 55%, var(--vy-saphir) 100%);
+  --vy-deux-lumieres: linear-gradient(90deg, var(--vy-lisere-chaud) 0%, var(--vy-or-clair) 30%, var(--vy-ivoire) 50%, var(--vy-cristal-voile) 70%, var(--vy-cristal) 100%);
+
+  --vy-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .96 0 0 0 0 .9 0 0 0 0 .78 0 0 0 .085 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --vy-ardoise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1100' height='1100'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.006 .016' numOctaves='5' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .66 0 0 0 0 .82 0 0 0 .1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)'/%3E%3C/svg%3E");
+  --vy-or-cisele: linear-gradient(135deg, #f7f0de 0%, #f3bc72 22%, #a67349 45%, #eecda6 62%, #835737 82%, #ddaa72 100%);
+  --vy-or-texte: linear-gradient(180deg, #f7f0de 0%, #f3bc72 45%, #ddaa72 62%, #a67349 100%);
+  --vy-coin-hg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Cg transform=''%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%23523d31' stroke-width='6' stroke-linecap='square'/%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%23ddaa72' stroke-width='3.4' stroke-linecap='square'/%3E%3Cpath d='M3.4 28 V6.4 Q3.4 3.4 6.4 3.4 H28' fill='none' stroke='%23f7f0de' stroke-width='1' stroke-linecap='square'/%3E%3Cpath d='M8 13 L13 8' stroke='%23ddaa72' stroke-width='2'/%3E%3Cpath d='M6 0 L12 6 L6 12 L0 6 Z' transform='translate(1 1)' fill='%23523d31'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 10.5 L1.5 6 Z' transform='translate(1 1)' fill='%23209fec'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 6 Z' transform='translate(1 1)' fill='%23acdded'/%3E%3C/g%3E%3C/svg%3E");
+  --vy-coin-hd: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Cg transform='translate(34 0) scale(-1 1)'%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%23523d31' stroke-width='6' stroke-linecap='square'/%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%23ddaa72' stroke-width='3.4' stroke-linecap='square'/%3E%3Cpath d='M3.4 28 V6.4 Q3.4 3.4 6.4 3.4 H28' fill='none' stroke='%23f7f0de' stroke-width='1' stroke-linecap='square'/%3E%3Cpath d='M8 13 L13 8' stroke='%23ddaa72' stroke-width='2'/%3E%3Cpath d='M6 0 L12 6 L6 12 L0 6 Z' transform='translate(1 1)' fill='%23523d31'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 10.5 L1.5 6 Z' transform='translate(1 1)' fill='%23209fec'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 6 Z' transform='translate(1 1)' fill='%23acdded'/%3E%3C/g%3E%3C/svg%3E");
+  --vy-coin-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Cg transform='translate(0 34) scale(1 -1)'%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%23523d31' stroke-width='6' stroke-linecap='square'/%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%23ddaa72' stroke-width='3.4' stroke-linecap='square'/%3E%3Cpath d='M3.4 28 V6.4 Q3.4 3.4 6.4 3.4 H28' fill='none' stroke='%23f7f0de' stroke-width='1' stroke-linecap='square'/%3E%3Cpath d='M8 13 L13 8' stroke='%23ddaa72' stroke-width='2'/%3E%3Cpath d='M6 0 L12 6 L6 12 L0 6 Z' transform='translate(1 1)' fill='%23523d31'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 10.5 L1.5 6 Z' transform='translate(1 1)' fill='%23209fec'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 6 Z' transform='translate(1 1)' fill='%23acdded'/%3E%3C/g%3E%3C/svg%3E");
+  --vy-coin-bd: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Cg transform='translate(34 34) scale(-1 -1)'%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%23523d31' stroke-width='6' stroke-linecap='square'/%3E%3Cpath d='M2 30 V6 Q2 2 6 2 H30' fill='none' stroke='%23ddaa72' stroke-width='3.4' stroke-linecap='square'/%3E%3Cpath d='M3.4 28 V6.4 Q3.4 3.4 6.4 3.4 H28' fill='none' stroke='%23f7f0de' stroke-width='1' stroke-linecap='square'/%3E%3Cpath d='M8 13 L13 8' stroke='%23ddaa72' stroke-width='2'/%3E%3Cpath d='M6 0 L12 6 L6 12 L0 6 Z' transform='translate(1 1)' fill='%23523d31'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 10.5 L1.5 6 Z' transform='translate(1 1)' fill='%23209fec'/%3E%3Cpath d='M6 1.5 L10.5 6 L6 6 Z' transform='translate(1 1)' fill='%23acdded'/%3E%3C/g%3E%3C/svg%3E");
+  --vy-crete: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 22'%3E%3Cpath d='M0 11 H44' stroke='%23ddaa72' stroke-width='1.2'/%3E%3Cpath d='M76 11 H120' stroke='%23ddaa72' stroke-width='1.2'/%3E%3Cpath d='M44 11 L52 6 L56 11 L52 16 Z M76 11 L68 6 L64 11 L68 16 Z' fill='%23ddaa72'/%3E%3Cpath d='M60 0 L69 11 L60 22 L51 11 Z' fill='%23523d31'/%3E%3Cpath d='M60 2.5 L66.5 11 L60 19.5 L53.5 11 Z' fill='%23209fec'/%3E%3Cpath d='M60 2.5 L66.5 11 L60 11 Z' fill='%23acdded'/%3E%3Cpath d='M60 11 L53.5 11 L60 19.5 Z' fill='%231c63b4'/%3E%3C/svg%3E");
+
+  /* Interaction */
+  --vy-accent: var(--vy-or);
+  --vy-focus: var(--vy-cristal);
+  --vy-succes: var(--vy-cimes-clair);
+  --vy-danger: var(--vy-braise-clair);
+  --vy-attention: var(--vy-or-clair);
+
+  /* Lueurs : sobres, la charte demande d'éviter l'effet néon */
+  --vy-lueur-cristal: 0 0 0 1px rgba(82, 210, 244, 0.65), 0 0 14px rgba(82, 210, 244, 0.35);
+  --vy-lueur-cristal-in: inset 0 0 12px rgba(82, 210, 244, 0.14);
+  --vy-lueur-or: 0 0 0 1px rgba(243, 188, 114, 0.7), 0 0 12px rgba(221, 170, 114, 0.35);
+  --vy-ombre-portee: 0 18px 48px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.5);
+  --vy-relief: inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+
+  /* Raretés : bordure (couleur pleine) et texte (version lisible sur fond sombre) */
+  --vy-rarete-commun: #a08670;            /* taupe */
+  --vy-rarete-commun-texte: var(--vy-gres);
+  --vy-rarete-peu-commun: #6eb19f;        /* gemme jade */
+  --vy-rarete-peu-commun-texte: #6eb19f;
+  --vy-rarete-rare: var(--vy-cristal);
+  --vy-rarete-rare-texte: var(--vy-cristal-voile);
+  --vy-rarete-epique: var(--vy-eclat);
+  --vy-rarete-epique-texte: var(--vy-eclat-clair);
+  --vy-rarete-legendaire: var(--vy-or);
+  --vy-rarete-legendaire-texte: var(--vy-or-clair);
+
+  /* Jauges */
+  --vy-jauge-fond: var(--vy-ombre);
+  --vy-jauge-vie: linear-gradient(180deg, var(--vy-braise-clair) 0%, var(--vy-braise) 55%, #7a3034 100%);
+  --vy-jauge-mana: linear-gradient(180deg, var(--vy-cristal-voile) 0%, var(--vy-cristal) 45%, var(--vy-saphir) 100%);
+  --vy-jauge-xp: linear-gradient(180deg, var(--vy-eclat-clair) 0%, var(--vy-eclat) 60%, #3e207f 100%);
+  --vy-jauge-pa: linear-gradient(180deg, var(--vy-or-clair) 0%, var(--vy-or) 100%);
+  --vy-jauge-pm: linear-gradient(180deg, var(--vy-cimes-clair) 0%, var(--vy-cimes) 100%);
+  --vy-jauge-bouclier: linear-gradient(180deg, #ffffff 0%, var(--vy-ivoire) 50%, var(--vy-gres) 100%);
+
+  /* ----- Typographie ----- */
+  --vy-font-titre: "Cinzel", "Trajan Pro", Georgia, "Times New Roman", serif;
+  --vy-font-lecture: "Lora", Georgia, "Times New Roman", serif;
+  --vy-font-ui: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --vy-taille-xs: 11px;    /* badges, compteurs */
+  --vy-taille-s: 12px;     /* légendes, journal */
+  --vy-taille-m: 14px;     /* texte d'interface */
+  --vy-taille-l: 16px;      
+  --vy-taille-xl: 20px;     
+  --vy-taille-2xl: 28px;    
+  --vy-taille-3xl: 40px;    
+
+  --vy-graisse-ui: 500;
+  --vy-graisse-forte: 700;
+  --vy-chasse-titre: 0.06em;    
+  --vy-chasse-label: 0.08em;    
+
+  --vy-espace-1: 4px;
+  --vy-espace-2: 8px;
+  --vy-espace-3: 12px;
+  --vy-espace-4: 16px;
+  --vy-espace-5: 24px;
+  --vy-espace-6: 32px;
+
+  --vy-rayon-s: 3px;       
+  --vy-rayon-m: 5px;       
+  --vy-rayon-l: 8px;       
+
+  --vy-cible: 44px;        
+  --vy-case: 56px;         
+
+  --vy-duree-courte: 120ms;
+  --vy-duree: 220ms;
+  --vy-duree-jauge: 350ms;
+  --vy-courbe: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (max-width: 600px) {
+  :root { --vy-case: 52px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --vy-duree-courte: 0ms; --vy-duree: 0ms; --vy-duree-jauge: 0ms; }
+}
