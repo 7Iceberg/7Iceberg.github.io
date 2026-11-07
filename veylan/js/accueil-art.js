@@ -192,6 +192,95 @@ const AccueilArt = (() => {
     else veilleur(c, cx, cy, k, s);
   }
 
+  function estrade(cv, s) {
+    const { c, w, h } = prepare(cv);
+    const R = Math.max(40, Math.min(w * 0.34, h * 0.32)), ry = R * 0.3, D = R * 0.82;
+    const cx = w * 0.5, ty = Math.min(h * 0.64, h - ry - D * 1.12 - 6);
+    const plaque = h < 400 ? 60 : Math.max(100, Math.min(124, h * 0.18));
+    const H = Math.min(h * 0.42, R * 1.6, ty - plaque), kF = Math.max(0.5, H / 50);
+    const R0 = rng(7331);
+    c.save(); c.globalCompositeOperation = 'lighter';
+    const col = c.createLinearGradient(0, 0, 0, ty);
+    col.addColorStop(0, rgba(s.color, 0)); col.addColorStop(0.55, rgba(mix(s.color, '#ffffff', 0.3), 0.08)); col.addColorStop(1, rgba(mix(s.color, '#ffffff', 0.3), 0.2));
+    c.fillStyle = col; c.beginPath(); c.moveTo(cx - R * 0.16, 0); c.lineTo(cx + R * 0.16, 0); c.lineTo(cx + R * 0.62, ty); c.lineTo(cx - R * 0.62, ty); c.closePath(); c.fill();
+    c.restore();
+    lueur(c, cx, ty - H * 0.45, R * 1.25, s.color, 0.2);
+    const rocher = (x, y, r, rnd, avecCristal) => {
+      const pts = [], n = 15;
+      for (let i = 0; i <= n; i++) {
+        const u = -1 + 2 * i / n, pointe = i % 2 ? 0.55 + rnd() * 0.25 : 1 + rnd() * 0.45;
+        const prof = Math.pow(1 - u * u, 1.1) * r * (avecCristal ? 0.82 : 1.05) * pointe + r * (0.1 + rnd() * 0.08);
+        pts.push([x + u * r * (0.97 - 0.12 * rnd() * (1 - Math.abs(u))), y + r * 0.3 * Math.sqrt(1 - u * u) + prof]);
+      }
+      c.beginPath(); c.moveTo(x - r, y);
+      for (const [px, py] of pts) c.lineTo(px, py);
+      c.lineTo(x + r, y); c.closePath();
+      const g = c.createLinearGradient(x - r, y, x + r * 0.6, y + r);
+      g.addColorStop(0, '#4a5269'); g.addColorStop(0.45, '#262c3d'); g.addColorStop(1, '#0d111b');
+      c.fillStyle = g; c.fill();
+      c.lineWidth = Math.max(0.8, r * 0.012);
+      for (let i = 1; i < n; i += 2) {
+        const [px, py] = pts[i], u = -1 + 2 * i / n;
+        c.strokeStyle = u < 0 ? 'rgba(160,175,205,0.16)' : 'rgba(0,0,0,0.3)';
+        c.beginPath(); c.moveTo(x + u * r * 0.8, y + r * 0.3 * Math.sqrt(1 - u * u) * 0.8); c.lineTo(px, py); c.stroke();
+      }
+      if (avecCristal) {
+        for (const [u, d, t] of [[-0.42, 0.42, 0.11], [0.18, 0.62, 0.14], [0.55, 0.3, 0.08]]) {
+          const ex = x + u * r, ey = y + r * 0.3 + r * d;
+          lueur(c, ex, ey, r * t * 4, '#52d2f4', 0.3);
+          c.save(); c.translate(ex, ey); c.scale(1, -1); eclat(c, 0, 0, r * t, '#52d2f4', 0.95); c.restore();
+        }
+      }
+      c.beginPath(); c.ellipse(x, y, r, r * 0.3, 0, 0, Math.PI * 2);
+      const t = c.createLinearGradient(x - r, y - r * 0.3, x + r, y + r * 0.3);
+      t.addColorStop(0, '#76809a'); t.addColorStop(0.5, '#4b546c'); t.addColorStop(1, '#2c3346');
+      c.fillStyle = t; c.fill();
+      c.beginPath(); c.ellipse(x, y, r, r * 0.3, 0, 0.05, Math.PI - 0.05);
+      c.lineWidth = Math.max(1, r * 0.02); c.strokeStyle = rgba(OR_CLAIR, 0.55); c.stroke();
+    };
+    const R1 = rng(4127);
+    for (const [dx, dy, r] of [[-1.28, -0.5, 0.13], [1.22, -0.18, 0.1], [-1.02, 0.62, 0.08], [1.0, 0.85, 0.07]]) {
+      c.save(); c.globalAlpha = 0.85; rocher(cx + dx * R, ty + dy * R, R * r, R1, false); c.restore();
+    }
+    rocher(cx, ty, R, R0, true);
+    c.save(); c.beginPath(); c.ellipse(cx, ty, R, ry, 0, 0, Math.PI * 2); c.clip();
+    const r = c.createRadialGradient(cx, ty, 0, cx, ty, R * 0.6);
+    r.addColorStop(0, rgba(s.color, 0.6)); r.addColorStop(1, rgba(s.color, 0));
+    c.fillStyle = r; c.fillRect(cx - R, ty - ry, R * 2, ry * 2);
+    c.strokeStyle = 'rgba(12,16,26,0.22)'; c.lineWidth = Math.max(0.8, R * 0.007);
+    for (let i = -6; i <= 6; i++) {
+      const o = i * R * 0.4;
+      c.beginPath(); c.moveTo(cx + o - R, ty - R * 0.5 * (ry / R) * 1.0 * 2); c.lineTo(cx + o + R, ty + R * (ry / R)); c.stroke();
+      c.beginPath(); c.moveTo(cx + o + R, ty - ry * 2); c.lineTo(cx + o - R, ty + ry); c.stroke();
+    }
+    c.strokeStyle = 'rgba(10,14,22,0.35)'; c.lineWidth = Math.max(0.8, R * 0.008);
+    for (const [a, b, d] of [[-0.8, -0.3, 0.2], [0.55, 0.4, -0.15], [0.7, -0.5, 0.18]]) {
+      c.beginPath(); c.moveTo(cx + a * R, ty + b * ry); c.lineTo(cx + (a + d) * R, ty + (b + 0.25) * ry); c.lineTo(cx + (a + d * 1.6) * R, ty + (b + 0.1) * ry); c.stroke();
+    }
+    c.restore();
+    c.save(); c.translate(cx, ty); c.scale(1, ry / R);
+    c.lineWidth = Math.max(1, R * 0.014); c.strokeStyle = rgba(OR_CLAIR, 0.85);
+    c.beginPath(); c.arc(0, 0, R * 0.46, 0, Math.PI * 2); c.stroke();
+    c.setLineDash([R * 0.02, R * 0.03]); c.lineWidth = Math.max(0.8, R * 0.008); c.strokeStyle = rgba(OR, 0.6);
+    c.beginPath(); c.arc(0, 0, R * 0.56, 0, Math.PI * 2); c.stroke(); c.setLineDash([]);
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4, px = Math.cos(a) * R * 0.46, py = Math.sin(a) * R * 0.46, q = R * 0.022;
+      c.fillStyle = i % 2 ? OR_CLAIR : '#52d2f4';
+      c.beginPath(); c.moveTo(px, py - q * 1.5); c.lineTo(px + q, py); c.lineTo(px, py + q * 1.5); c.lineTo(px - q, py); c.closePath(); c.fill();
+    }
+    c.restore();
+    c.fillStyle = 'rgba(4,6,12,0.45)'; c.beginPath(); c.ellipse(cx + 2 * kF, ty + kF, 17 * kF, 6 * kF, 0, 0, Math.PI * 2); c.fill();
+    const img = vueTour(s, () => estrade(cv, s));
+    if (img) dessinerVue(c, img, 'se', cx, ty + 2 * kF, 78 * kF);
+    else veilleur(c, cx, ty, kF, s);
+    return { cx, tete: ty - H - 8, pied: ty, roche: ty + ry + D * 0.42, R };
+  }
+
+  function emblemeSeul(cv, col, glyph) {
+    const { c, w, h } = prepare(cv);
+    embleme(c, w / 2, h / 2, Math.min(w, h) * 0.44, col, glyph, 1);
+  }
+
   function embleme(c, x, y, r, col, glyph, a) {
     c.save(); c.globalAlpha = a == null ? 1 : a;
     c.lineWidth = r * 0.012; c.strokeStyle = rgba(OR_CLAIR, 0.5);
@@ -822,6 +911,6 @@ const AccueilArt = (() => {
 
   return {
     set painter(p) { painter = p; }, get painter() { return painter; },
-    prepare, veilleur, figure, buste, enPied, socle, tournant, embleme, illustration, particules, dessinerParticules, monde, moitie, actu, imageClasse, imageTour, lueur, eclat, rgba,
+    prepare, veilleur, figure, buste, enPied, estrade, emblemeSeul, socle, tournant, embleme, illustration, particules, dessinerParticules, monde, moitie, actu, imageClasse, imageTour, lueur, eclat, rgba,
   };
 })();

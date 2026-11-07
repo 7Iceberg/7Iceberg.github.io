@@ -343,85 +343,102 @@ class Accueil {
     const persos = Save.list();
     if (!persos.some(p => p.uid === this.choix)) this.choix = Save.lastUid() || (persos[0] && persos[0].uid) || null;
     const libres = Save.MAX - persos.length;
-    const cartes = persos.map(p => {
+    const lignes = persos.map(p => {
       const cl = DATA.classes[p.classId];
       const on = p.uid === this.choix;
-      return `<div class="perso-carte${on ? ' on' : ''}" style="--c:${cl.color}" role="option" aria-selected="${on}">
-        <button class="e-nu perso-carte__choix" data-act="choisir" data-uid="${p.uid}" aria-label="${esc(p.name)}, ${esc(cl.name)} niveau ${p.level}">
-          <canvas class="perso-carte__toile" data-uid="${p.uid}" aria-hidden="true"></canvas>
-          <span class="perso-carte__nom">${esc(p.name)}</span>
-          <span class="perso-carte__classe">${esc(cl.name)} · niv. ${p.level}</span>
-          <span class="perso-carte__date">${p.tampered ? '<span class="perso-carte__alerte" title="Des valeurs impossibles ont été remises en ordre">Sauvegarde corrigée</span>' : 'Joué ' + depuis(p.at)}</span>
+      return `<div class="perso-carte perso-ligne${on ? ' on' : ''}" style="--c:${cl.color}" role="option" aria-selected="${on}">
+        <button class="e-nu perso-carte__choix perso-ligne__choix" data-act="choisir" data-uid="${p.uid}" aria-label="${esc(p.name)}, ${esc(cl.name)} niveau ${p.level}">
+          <canvas class="perso-ligne__buste" data-uid="${p.uid}" aria-hidden="true"></canvas>
+          <span class="perso-ligne__nom"><b class="perso-carte__nom">${esc(p.name)}</b><small>${p.tampered ? '<span class="perso-carte__alerte" title="Des valeurs impossibles ont été remises en ordre">Sauvegarde corrigée</span>' : 'Joué ' + depuis(p.at)}</small></span>
+          <span class="perso-ligne__classe">${esc(cl.name)}</span>
+          <span class="perso-ligne__niveau">${p.level}</span>
         </button>
         <button class="e-nu perso-carte__suppr" data-act="supprimer" data-uid="${p.uid}" aria-label="Supprimer ${esc(p.name)}" title="Supprimer">${ICONES.corbeille}</button>
       </div>`;
     });
-    for (let k = 0; k < libres; k++) cartes.push(`<button class="e-nu perso-carte perso-carte--vide" data-act="creer"><span class="perso-carte__plus">${ICONES.plus}</span><span class="perso-carte__libre">Emplacement libre</span></button>`);
+    for (let k = 0; k < libres; k++) lignes.push(`<button class="e-nu perso-carte perso-ligne perso-carte--vide" data-act="creer"><span class="perso-carte__plus">${ICONES.plus}</span><span class="perso-carte__libre">Emplacement libre</span></button>`);
     const sel = persos.find(p => p.uid === this.choix);
-    const scene = this.vuePersos() === 'scene' && persos.length > 0;
-    const bascule = `<div class="perso-vues" role="group" aria-label="Affichage des personnages"><button class="e-nu perso-vue${scene ? '' : ' on'}" data-act="vue-liste" aria-pressed="${!scene}">Liste</button><button class="e-nu perso-vue${scene ? ' on' : ''}" data-act="vue-scene" aria-pressed="${scene}">Scène</button></div>`;
-    return `<section class="ecran ecran--personnages${scene ? ' ecran--scene' : ''}" aria-label="Personnages">
+    return `<section class="ecran ecran--personnages" aria-label="Personnages">
       ${this.tete('Tes personnages', this.libres(), 'Retour')}
       <div class="perso-corps">
-        ${bascule}
-        ${scene ? this.scenePerso(persos, sel, libres) : `<div class="perso-liste" role="listbox" aria-label="Personnages de cet appareil">${cartes.join('')}</div>`}
-        <footer class="perso-pied">
-          <button class="vy-bouton" data-act="importer">Importer un code</button>
-          <span class="perso-pied__ecart"></span>
-          <button class="vy-bouton" data-act="creer"${libres ? '' : ' disabled'}>Créer un personnage <small>(${this.libres()})</small></button>
-          <button class="vy-bouton vy-bouton--primaire perso-jouer" data-act="jouer"${sel ? ' data-focus' : ' disabled'}>${sel ? `Jouer : ${esc(sel.name)}` : 'Jouer'}</button>
-        </footer>
+        <div class="perso-panneau">
+          <header class="perso-panneau__tete">
+            <span><small>Mes personnages</small><b>${ICONES.globe} Veylan, monde local</b></span>
+            <button class="e-nu perso-panneau__monde" disabled title="Les mondes en ligne arriveront avec le multijoueur">Changer de monde <small>bientôt</small></button>
+          </header>
+          <div class="perso-table" role="listbox" aria-label="Personnages de cet appareil">
+            <div class="perso-table__tete" aria-hidden="true"><span></span><span>Nom</span><span>Classe</span><span>Niveau</span></div>
+            ${lignes.join('')}
+          </div>
+          <footer class="perso-pied">
+            <span class="perso-pied__puce">${this.puceRepos(sel)}</span>
+            <button class="e-nu perso-pied__importer" data-act="importer">Importer un code</button>
+            <button class="vy-bouton" data-act="creer"${libres ? '' : ' disabled'}>Créer un personnage <small>(${this.libres()})</small></button>
+          </footer>
+        </div>
+        ${this.estradePerso(sel)}
       </div>
     </section>`;
   }
 
-  vuePersos() {
-    if (!this._vuePersos) { let v = null; try { v = localStorage.getItem('veylan.persos.vue'); } catch (e) {   } this._vuePersos = v === 'scene' ? 'scene' : 'liste'; }
-    return this._vuePersos;
-  }
-
-  scenePerso(persos, sel, libres) {
-    if (!sel) return '';
-    const cl = DATA.classes[sel.classId];
+  lieuPerso(sel) {
     let ch = null;
-    try { ch = Save.read(sel.uid); } catch (e) { ch = null; }
+    try { ch = sel ? Save.read(sel.uid) : null; } catch (e) { ch = null; }
     const lieuId = ch && ((ch.pos && ch.pos.map) || (ch.relay && ch.relay.map));
     const lieu = lieuId && typeof World === 'function' ? World.mapDef(lieuId) : null, zone = lieuId && typeof World === 'function' ? World.zoneOf(lieuId) : null;
     const repos = ch && zone && typeof Repos === 'object' ? Repos.valeur(ch, zone.id, Date.now()) : 0;
-    const xp = ch ? (ch.level >= Character.MAX_LEVEL ? 1 : ch.xp / Character.xpToNext(ch.level)) : 0;
-    const temps = ch ? Math.floor((ch.playTime || 0) / 60) : 0;
-    const ligne = (k, v, cls) => `<div class="perso-scene__ligne${cls ? ' ' + cls : ''}"><small>${k}</small><b>${v}</b></div>`;
-    const vignettes = persos.map(p => { const c = DATA.classes[p.classId], on = p.uid === sel.uid;
-      return `<button class="e-nu perso-vignette${on ? ' on' : ''}" style="--c:${c.color}" data-act="choisir" data-uid="${p.uid}" aria-pressed="${on}" aria-label="${esc(p.name)}, ${esc(c.name)} niveau ${p.level}"><canvas class="perso-carte__toile perso-vignette__toile" data-uid="${p.uid}" aria-hidden="true"></canvas><span>${esc(p.name)}<small>niv. ${p.level}</small></span></button>`; }).join('') +
-      (libres ? `<button class="e-nu perso-vignette perso-vignette--vide" data-act="creer" aria-label="Créer un personnage"><span class="perso-carte__plus">${ICONES.plus}</span><span>Créer<small>${libres} libre${libres > 1 ? 's' : ''}</small></span></button>` : '');
-    return `<div class="perso-scene" style="--c:${cl.color}">
-      <div class="perso-scene__socle"><canvas class="perso-scene__toile" data-uid="${sel.uid}" aria-hidden="true"></canvas></div>
-      <aside class="perso-scene__fiche">
-        <small class="perso-scene__classe">${esc(cl.name)}</small>
-        <h2 class="perso-scene__nom">${esc(sel.name)}</h2>
-        ${ch && ch.title ? `<em class="perso-scene__titre">« ${esc(ch.title)} »</em>` : ''}
-        <div class="perso-scene__niveau"><b>Niveau ${sel.level}</b><span class="perso-scene__jauge"><i style="width:${Math.round(xp * 100)}%"></i></span><small>${Math.round(xp * 100)} % du niveau suivant</small></div>
-        ${ligne('Dernier lieu', lieu ? `${esc(lieu.name)}${zone ? ` <small>${esc(zone.name)}</small>` : ''}` : '-')}
-        ${repos ? ligne('Bonus de repos', `+${repos} % d'XP et de butin <small>dans cette zone</small>`, 'bonus') : ligne('Bonus de repos', 'aucun pour l\'instant')}
-        ${ligne('Temps de jeu', temps >= 60 ? `${Math.floor(temps / 60)} h ${String(temps % 60).padStart(2, '0')}` : `${temps} min`, 'secondaire')}
-        ${ligne('Dernière partie', depuis(sel.at), 'secondaire')}
-        ${sel.tampered ? '<p class="perso-scene__alerte">Sauvegarde corrigée : des valeurs impossibles ont été remises en ordre.</p>' : ''}
-        <button class="e-nu perso-scene__suppr" data-act="supprimer" data-uid="${sel.uid}">${ICONES.corbeille}<span>Supprimer</span></button>
-      </aside>
-      <div class="perso-scene__ruban" role="listbox" aria-label="Personnages de cet appareil">${vignettes}</div>
+    return { ch, lieu, zone, repos };
+  }
+
+  puceRepos(sel) {
+    const { repos, zone } = this.lieuPerso(sel);
+    return repos ? `<span class="perso-puce" title="Bonus de repos : +${repos} % d'XP et de butin${zone ? ' dans ' + esc(zone.name) : ''}">Repos +${repos} %</span>` : '';
+  }
+
+  estradePerso(sel) {
+    if (!sel) return `<div class="perso-estrade perso-estrade--vide"><p>Crée ton premier Veilleur pour le voir ici.</p></div>`;
+    const cl = DATA.classes[sel.classId], { ch, lieu, zone } = this.lieuPerso(sel);
+    return `<div class="perso-estrade" style="--c:${cl.color}" data-uid="${sel.uid}">
+      <canvas class="perso-estrade__toile" data-uid="${sel.uid}" aria-hidden="true"></canvas>
+      <div class="perso-plaque">
+        <canvas class="perso-plaque__embleme" aria-hidden="true"></canvas>
+        <h2 class="perso-plaque__nom">${esc(sel.name)}</h2>
+        ${ch && ch.title ? `<em class="perso-plaque__titre">« ${esc(ch.title)} »</em>` : ''}
+        <span class="perso-plaque__niv"><small>${esc(cl.name)}</small>Niv. ${sel.level}</span>
+      </div>
+      <div class="perso-estrade__pied">
+        <button class="vy-bouton vy-bouton--primaire vy-bouton--grand perso-jouer" data-act="jouer" data-focus>Jouer</button>
+        ${lieu ? `<small class="perso-estrade__lieu">${esc(lieu.name)}${zone ? ` · ${esc(zone.name)}` : ''}</small>` : ''}
+      </div>
     </div>`;
   }
 
   monterPersonnages() { this.dessinerPortraits(); }
 
   dessinerPortraits() {
-    const persos = Save.list();
-    const grand = this.ecranEl.querySelector('.perso-scene__toile');
-    if (grand) { const p = persos.find(x => x.uid === grand.dataset.uid); if (p) AccueilArt.enPied(grand, AccueilArt.figure(p.classId, { look: p.look, gender: p.gender })); }
-    this.ecranEl.querySelectorAll('.perso-carte__toile').forEach(cv => {
+    const persos = Save.list(), fig = p => AccueilArt.figure(p.classId, { look: p.look, gender: p.gender });
+    this.ecranEl.querySelectorAll('.perso-ligne__buste').forEach(cv => {
       const p = persos.find(x => x.uid === cv.dataset.uid);
-      if (p) AccueilArt.enPied(cv, AccueilArt.figure(p.classId, { look: p.look, gender: p.gender }));
+      if (p) AccueilArt.buste(cv, fig(p));
     });
+    const es = this.ecranEl.querySelector('.perso-estrade[data-uid]');
+    const p = es && persos.find(x => x.uid === es.dataset.uid);
+    if (!p) return;
+    const cl = DATA.classes[p.classId];
+    const g = AccueilArt.estrade(es.querySelector('.perso-estrade__toile'), fig(p));
+    es.style.setProperty('--tete', Math.round(g.tete) + 'px');
+    es.style.setProperty('--roche', Math.round(g.roche) + 'px');
+    const em = es.querySelector('.perso-plaque__embleme');
+    if (em) AccueilArt.emblemeSeul(em, cl.color, cl.glyph || cl.name[0]);
+  }
+
+  majSelection() {
+    const persos = Save.list(), sel = persos.find(p => p.uid === this.choix);
+    this.ecranEl.querySelectorAll('.perso-ligne:not(.perso-carte--vide)').forEach(x => { const btn = x.querySelector('[data-uid]'); const on = !!btn && btn.dataset.uid === this.choix; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); });
+    const es = this.ecranEl.querySelector('.perso-estrade'), puce = this.ecranEl.querySelector('.perso-pied__puce');
+    if (es) { const tmp = document.createElement('div'); tmp.innerHTML = fines(this.estradePerso(sel)); es.replaceWith(tmp.firstElementChild); }
+    if (puce) puce.innerHTML = fines(this.puceRepos(sel));
+    this.dessinerPortraits();
   }
 
   ecran_monde() {
@@ -1030,16 +1047,10 @@ Accueil.prototype.actions = {
   personnages() { this.aller('personnages'); },
   creer() { this.commencerCreation(false); },
   invite() { this.commencerCreation(true); },
-  'vue-liste'() { this._vuePersos = 'liste'; Accueil.ecrire('veylan.persos.vue', 'liste'); this.afficher('personnages', 1); },
-  'vue-scene'() { this._vuePersos = 'scene'; Accueil.ecrire('veylan.persos.vue', 'scene'); this.afficher('personnages', 1); },
   choisir(b) {
     if (this.choix === b.dataset.uid) return this.actions.jouer.call(this);
     this.choix = b.dataset.uid;
-    if (this.ecranEl && this.ecranEl.querySelector('.perso-scene')) { this.afficher('personnages', 1); return; }
-    const persos = Save.list(), sel = persos.find(p => p.uid === this.choix);
-    this.ecranEl.querySelectorAll('.perso-carte').forEach(x => { const btn = x.querySelector('[data-uid]'); const on = !!btn && btn.dataset.uid === this.choix; x.classList.toggle('on', on); if (btn) x.setAttribute('aria-selected', on); });
-    const j = this.ecranEl.querySelector('.perso-jouer');
-    if (j && sel) { j.disabled = false; j.textContent = fines(`Jouer : ${sel.name}`); }
+    this.majSelection();
   },
   jouer() {
     const ch = this.choix ? Accueil.lirePersonnage(this.choix) : null;
