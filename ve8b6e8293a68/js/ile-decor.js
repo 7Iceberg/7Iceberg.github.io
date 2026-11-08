@@ -395,7 +395,9 @@ const IleDecor = (() => {
 
   const SERVICES = { banque: '#d9a93a', taverne: '#c8743a', marche: '#5f9e4f', metiers: '#7a5ea8', forge: '#b5482f', tailleur: '#3f7fb5', cordonnier: '#8a5a3a',
     bijoutier: '#3fa6a0', alchimie: '#6aa84f', dojo: '#b8323a', armes: '#6b7686', garde: '#3d5a9e', boulangerie: '#e0a050', temple: '#c9b07a',
-    recoltes: '#9a8a3a', bucheron: '#7a5a32', mineur: '#7d7f8a', paysan: '#d9b44a', pecheur: '#3f8fb0' };
+    recoltes: '#9a8a3a', bucheron: '#7a5a32', mineur: '#7d7f8a', paysan: '#d9b44a', pecheur: '#3f8fb0',
+    forges: '#8a3f2f', sculpteur: '#7f9a4a', faconneur: '#5a7aa0', bricoleur: '#c9963a', parures: '#a8508a' };
+  const TOILES_HALLES = { recoltes: '#b9925a', forges: '#94604e', parures: '#8a84a6' };
 
   function objets(ctx, L, seau, piece, sol, solPlat, palette, G) {
     const { T, def } = ctx;
@@ -512,7 +514,7 @@ const IleDecor = (() => {
           }
           { const [px, pz] = local(o, 0, P0 / 2 - 0.25); ajouter(o, 'acc', L.boiteC, matrice(px, y + hm + 0.05, pz, 0, r, 0, L0, 0.32, 0.34), { c: C.bois }); }
           if (o.service) { const [px, pz] = local(o, 0, P0 / 2 - 0.05); ajouter(o, 'acc', L.boiteC, matrice(px, y + hm + 0.06, pz, 0, r, 0, 2.4, 0.3, 0.08), { c: coul(SERVICES[o.service] || '#b8b0a0') }); }
-          const toile = coul('#b9925a'), pente = 0.45, larg = P0 / 2 + 0.6, haut = larg * pente;
+          const toile = coul(TOILES_HALLES[o.service] || '#b9925a'), pente = 0.45, larg = P0 / 2 + 0.6, haut = larg * pente;
           if (!o.coupe) for (const k of [-1, 1]) { const [px, pz] = local(o, 0, k * larg / 2); ajouter(o, 'acc', L.boiteC, matrice(px, y + hm + 0.2 + haut / 2, pz, k * Math.atan(pente), r, 0, L0 + 0.9, 0.1, Math.sqrt(larg * larg + haut * haut)), { c: toile, grain: 0.05 }); }
           if (!o.coupe) ajouter(o, 'acc', L.boiteC, matrice(o.u, y + hm + 0.2 + haut + 0.06, o.v, 0, r, 0, L0 + 1.1, 0.22, 0.22), { c: C.boisSombre });
           if (!o.coupe) for (const k of [-1, 1]) { const [px, pz] = local(o, k * L0 / 2, 0); ajouter(o, 'acc', L.cone(3), matrice(px, y + hm + 0.18, pz, 0, r + Math.PI / 2, 0, larg * 0.98, haut, 0.14), { c: C.boisClair }); }
@@ -699,6 +701,15 @@ const IleDecor = (() => {
           { const [px, pz] = local(o, 0.48, 0); ajouter(o, 'acc', L.boiteC, matrice(px, y + 0.82, pz, 0, r, 0, 0.26, 0.12, 0.16), { c: fer }); }
           break;
         }
+        case 'foyer': {
+          ajouter(o, 'roche', L.boite, matrice(o.u, y - 0.05, o.v, 0, r, 0, 1.4, 0.85, 1.0), { c: C.pierreSombre, bas: 0.8, haut: 1.0 });
+          ajouter(o, 'lueur', L.boiteC, matrice(o.u, y + 0.84, o.v, 0, r, 0, 0.9, 0.08, 0.6), { c: C.braise });
+          { const [px, pz] = local(o, 0, -0.2); ajouter(o, 'acc', L.cone(4), matrice(px, y + 1.5, pz, 0, r + Math.PI / 4, 0, 1.1, 0.8, 0.85), { c: coul('#5e626c') }); }
+          { const [px, pz] = local(o, 0, -0.2); ajouter(o, 'acc', L.boite, matrice(px, y + 2.2, pz, 0, r, 0, 0.32, 1.2, 0.32), { c: coul('#4a4e58') }); }
+          { const [px, pz] = local(o, 0.95, 0.15); ajouter(o, 'acc', L.boiteC, matrice(px, y + 0.55, pz, 0, r, 0.2, 0.5, 0.18, 0.4), { c: coul('#6e4630') }); }
+          G.halos.push({ x: o.u, y: y + 1.0, z: o.v, couleur: '#ff8a3a', taille: 2.8, opacite: 0.6 });
+          break;
+        }
         case 'alambic': {
           const cuivre = coul('#c07a45');
           ajouter(o, 'roche', L.cyl(10), matrice(o.u, y - 0.05, o.v, 0, r, 0, 0.5, 0.5, 0.5), { c: C.pierre, bas: 0.8, haut: 1.0 });
@@ -716,6 +727,18 @@ const IleDecor = (() => {
           if (o.outil === 'poisson') {
             for (let q = 0; q < 3; q++) { const [px, pz] = local(o, -0.5 + q * 0.45, -0.05); ajouter(o, 'acc', L.sphere, matrice(px, y + 1.0, pz, 0, r + 0.3 * q, 0, 0.32, 0.08, 0.12), { c: coul(q === 1 ? '#c8d6dc' : '#8fb0c0') }); }
             { const [px, pz] = local(o, 0.65, 0.1); ajouter(o, 'acc', L.cyl(8), matrice(px, y + 0.95, pz, 0, 0, 0, 0.22, 0.2, 0.22), { c: C.boisSombre }); }
+          } else if (o.outil === 'arc') {
+            { const [px, pz] = local(o, -0.25, -0.05); ajouter(o, 'acc', L.tore(10, Math.PI * 0.8), matrice(px, y + 0.98, pz, Math.PI / 2, r, 0, 0.55, 0.55, 0.55), { c: coul('#9a6a3a') }); }
+            { const [px, pz] = local(o, 0.35, 0.18); ajouter(o, 'acc', L.cyl(6), matrice(px, y + 0.99, pz, 0, r, Math.PI / 2, 0.04, 1.3, 0.04), { c: coul(SERVICES.sculpteur) }); }
+            for (let q = 0; q < 4; q++) { const [px, pz] = local(o, 0.5 + q * 0.1, -0.2 + q * 0.06); ajouter(o, 'acc', L.boiteC, matrice(px, y + 0.97, pz, 0, q, 0, 0.08, 0.02, 0.05), { c: C.boisClair }); }
+          } else if (o.outil === 'bouclier') {
+            { const [px, pz] = local(o, -0.3, -0.15); ajouter(o, 'acc', L.cyl(14), matrice(px, y + 1.25, pz, Math.PI / 2 - 0.25, r, 0, 0.42, 0.07, 0.42), { c: coul(SERVICES.faconneur) }); }
+            { const [px, pz] = local(o, -0.3, -0.08); ajouter(o, 'acc', L.sphere, matrice(px, y + 1.26, pz, 0, 0, 0, 0.1, 0.1, 0.06), { c: coul('#a9adb4') }); }
+            { const [px, pz] = local(o, 0.5, 0.1); ajouter(o, 'lueur', L.octa, matrice(px, y + 1.05, pz, 0, 0.4, 0, 0.11, 0.13, 0.11), { c: coul('#b48aff') }); }
+          } else if (o.outil === 'cle') {
+            { const [px, pz] = local(o, -0.55, 0); ajouter(o, 'acc', L.boiteC, matrice(px, y + 1.07, pz, 0, r, 0, 0.3, 0.24, 0.3), { c: coul('#5e626c') }); }
+            { const [px, pz] = local(o, 0.25, -0.38); ajouter(o, 'acc', L.boiteC, matrice(px, y + 1.4, pz, 0, r, 0, 1.0, 0.6, 0.05), { c: C.boisSombre }); }
+            for (let q = 0; q < 4; q++) { const [px, pz] = local(o, -0.1 + q * 0.24, -0.34); ajouter(o, 'acc', L.boiteC, matrice(px, y + 1.38, pz, 0, r, 0, 0.05, 0.26, 0.03), { c: q % 2 ? C.orVif : coul(SERVICES.bricoleur) }); }
           } else if (o.outil === 'bijou') {
             for (let q = 0; q < 3; q++) { const [px, pz] = local(o, -0.05 + q * 0.2, -0.1); ajouter(o, 'lueur', L.octa, matrice(px, y + 1.0, pz, 0, q, 0, 0.07, 0.07, 0.07), { c: q === 1 ? C.orVif : coul('#5fd0e0') }); }
             { const [px, pz] = local(o, 0.6, 0.1); ajouter(o, 'acc', L.boiteC, matrice(px, y + 1.02, pz, 0, r, 0, 0.4, 0.14, 0.3), { c: coul(SERVICES.bijoutier) }); }

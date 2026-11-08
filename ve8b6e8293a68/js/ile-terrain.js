@@ -221,6 +221,7 @@ const IleTerrain = (() => {
     mannequin: o => [{ x: 0, y: 0, r: 0.45 }],
     statue: o => [{ x: 0, y: 0, r: 0.5 }],
     enclume: o => [{ x: 0, y: 0, r: 0.55 }],
+    foyer: o => [{ rect: true, x: 0, y: 0, l: 1.5, p: 1.1 }, { x: 0.95, y: 0.15, r: 0.35 }],
     alambic: o => [{ x: 0, y: 0, r: 0.6 }, { x: 0.75, y: 0, r: 0.3 }],
     etabli: o => [{ rect: true, x: 0, y: 0, l: 1.9, p: 0.9 }],
     scie: o => [{ rect: true, x: 0, y: 0.2, l: 2.0, p: 1.3 }],
@@ -936,7 +937,10 @@ const IleTerrain = (() => {
       case 'enclume': return { workshop: 'forgeron', nom: 'L\'enclume de la forge' };
       case 'metier_tisser': return { workshop: 'tailleur', nom: 'Le métier à tisser' };
       case 'alambic': return { workshop: 'alchimiste', nom: 'L\'alambic' };
-      case 'etabli': return o.outil === 'bijou' ? { workshop: 'bijoutier', nom: 'L\'établi du bijoutier' } : o.outil === 'poisson' ? { workshop: 'pecheur', nom: 'L\'étal du pêcheur' } : { workshop: 'cordonnier', nom: 'L\'établi du cordonnier' };
+      case 'etabli': return o.outil === 'bijou' ? { workshop: 'bijoutier', nom: 'L\'établi du bijoutier' } : o.outil === 'poisson' ? { workshop: 'pecheur', nom: 'L\'étal du pêcheur' }
+        : o.outil === 'arc' ? { workshop: 'sculpteur', nom: 'L\'établi du sculpteur' } : o.outil === 'bouclier' ? { workshop: 'faconneur', nom: 'Le plan du façonneur' }
+        : o.outil === 'cle' ? { workshop: 'bricoleur', nom: 'L\'atelier des clés' } : { workshop: 'cordonnier', nom: 'L\'établi du cordonnier' };
+      case 'foyer': return { workshop: 'forgeron', nom: 'Le foyer de la forge' };
       case 'scie': return { workshop: 'bucheron', nom: 'La scierie' };
       case 'fonderie': return { workshop: 'mineur', nom: 'La fonderie' };
       case 'meule': return { workshop: 'paysan', nom: 'La meule' };
