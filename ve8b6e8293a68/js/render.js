@@ -2179,7 +2179,7 @@ class Renderer {
           if (tmp && tmp.kind === 'water') st = 'eau';
           if (tmp && tmp.kind === 'fente') { st = 'fente'; fentes.push({ x, y }); }
           const gl = inCombat && cb.glyphsAt ? cb.glyphsAt(x, y) : [];
-          if (gl.length) st = gl.some(g => g.affects === 'allies') ? 'glyphe' : 'glypheE';
+          if (gl.length) st = gl.some(g => g.affects === 'allies' || (g.owner && g.owner.kit && g.owner.kit.mare)) ? 'glyphe' : 'glypheE';
           if (placement) {
             if (cb.isStartCell('player', x, y)) st = 'departJ';
             else if (cb.isStartCell('monster', x, y)) st = 'departM';

@@ -252,9 +252,19 @@ class UI {
     });
   }
 
+  annulerSort() {
+    this.selectedSpell = null;
+    this.armed = null;
+    this.hoverCell = null;
+    this.hideCastConfirm();
+    this.hideMoveCost();
+    this.updateHighlights();
+    this.refresh();
+  }
+
   async selectSpell(id) {
     const c = this.combat;
-    if (!id || this.selectedSpell === id) { this.selectedSpell = null; this.updateHighlights(); this.refresh(); return; }
+    if (!id || this.selectedSpell === id) { this.annulerSort(); return; }
     if (!this.isPlayerTurn() || c.busy) return;
     const st = c.spellState(c.actor, id);
     if (!st.ok) { this.banner(st.reason, 900); return; }
@@ -294,7 +304,7 @@ class UI {
       case 'dot': return `Brûle ${v.value} par tour pendant ${ef.turns} tour(s)`;
       case 'echo': return `Écho ${ef.turns} tour(s) : ${v.min} à ${v.max} à chaque PM perdu, ${ef.uses} fois au plus`;
       case 'filon': return `Filon ${ef.turns} tour(s), ${ef.charges || 3} déclenchements : ${v.min} à ${v.max} à chaque retrait (PA, PM, portée) sur l'ennemi marqué, ou en zone autour de l'allié marqué soigné ; +1 Trouvaille`;
-      case 'state': if (ef.name === 'forme_iskar') return `Forme d'Iskar ${ef.turns} tour(s) : 40 % des soins seulement`; if (ef.name === 'intaclable') return `Intaclable ${ef.turns} tour(s)`; if (ef.name === 'protege') return `Protégé ${ef.turns} tour(s) : le Velmar prend ses coups`; if (ef.name === 'digue') return `Digue ${ef.turns} tour(s) : invulnérable au contact`; if (ef.name === 'brise_lames') return `Brise-Lames ${ef.turns} tour(s) : invulnérable à distance`; return ef.name === 'invisible' ? `Invisible ${ef.turns} tour(s)${ef.lingering ? ', révélée à la fin du tour où elle frappe' : ''}` : `Provoque ${ef.turns} tour(s)`;
+      case 'state': if (ef.name === 'forme_iskar') return `Forme Nocturne ${ef.turns} tour(s) : 40 % des soins seulement`; if (ef.name === 'intaclable') return `Intaclable ${ef.turns} tour(s)`; if (ef.name === 'protege') return `Protégé ${ef.turns} tour(s) : le Velmar prend ses coups`; if (ef.name === 'digue') return `Digue ${ef.turns} tour(s) : invulnérable au contact`; if (ef.name === 'brise_lames') return `Brise-Lames ${ef.turns} tour(s) : invulnérable à distance`; return ef.name === 'invisible' ? `Invisible ${ef.turns} tour(s)${ef.lingering ? ', révélée à la fin du tour où elle frappe' : ''}` : `Provoque ${ef.turns} tour(s)`;
       case 'oath': return `Juré ${ef.turns} tour(s) : +${ef.power} % de dégâts contre lui`;
       case 'track': return `Traqué ${ef.turns} tour(s) : ne peut plus être invisible`;
       case 'steal': return ef.what === 'shield' ? `Vole le bouclier${ef.orBonus ? ' (ou le meilleur bonus)' : ''}` : `Vole ${ef.value} ${ef.what.toUpperCase()}`;
@@ -318,7 +328,7 @@ class UI {
       case 'ordreMeute': return `Toutes ses bêtes frappent tout de suite, à ${ef.pct || 50} % de leurs dégâts`;
       case 'horde': return `+${ef.jauge || 3} de jauge ${ef.turns || 2} tours, ses appels coûtent ${ef.rabais || 1} PA de moins ; puis ses bêtes s'en vont`;
       case 'pacte': return `Sacrifie ses bêtes : +${ef.par || 3} % de dégâts par point de jauge (${ef.turns || 3} tours), ${ef.soin || 30} % de leurs PV`;
-      case 'declencherMares': return 'Toutes ses Mares agissent tout de suite sur les ennemis qui s\'y tiennent';
+      case 'declencherMares': return 'Tous ses Glyphes agissent tout de suite sur les ennemis qui s\'y tiennent';
       case 'hantise': return 'Pousse la créature au contact jusqu\'à la case visée, à travers les pièges';
       case 'versLeurre': return `Attire de ${ef.cells} case(s) vers le Leurre`;
       case 'depuisLeurre': return `Repousse de ${ef.cells} case(s) depuis le Leurre`;
@@ -342,7 +352,7 @@ class UI {
     const lines = [];
     lines.push(`<b style="color:${el.color}">${s.name}</b> <span class="muted">· ${el.label} · ${s.pa} PA${s.rank > 1 ? ` · rang ${s.rank}` : ''}</span>`);
     if (s.target === 'self') lines.push('Sur soi');
-    else lines.push(`Portée ${s.range[0]} à ${s.range[1]}${s.los ? ', ligne de vue' : ', sans ligne de vue'}${s.line ? ', en ligne' : ''}`);
+    else lines.push(`Portée ${s.range[0]} à ${s.range[1]}${s.los ? ', ligne de vue' : ', sans ligne de vue'}${s.line ? ', en ligne' : ''}${s.porteeFixe ? ', portée fixe' : ''}`);
     const targets = { free: 'case libre', enemy: 'ennemi', ally: 'allié', summon: 'invocation alliée' };
     if (targets[s.target]) lines.push(`Cible : ${targets[s.target]}`);
     if (s.aoe.shape === 'cross') lines.push(`Zone : croix de ${s.aoe.size}`);
@@ -359,20 +369,20 @@ class UI {
     if (s.aoe.shape === 'pierce') lines.push('Traverse la ligne jusqu\'au bord ou au premier rocher');
     if (s.fury) lines.push(`+${s.fury} Fureur si un ennemi est touché`);
     if (s.furySpend) lines.push(`+${s.furySpend} % par point de Fureur, toute la Fureur dépensée`);
-    if (s.braiseCost) lines.push(`Coûte ${s.braiseCost} de Braise`);
-    if (s.braise) lines.push(`+${s.braise} de Braise si un ennemi est touché`);
+    if (s.braiseCost) lines.push(`Coûte ${s.braiseCost} de Soif`);
+    if (s.braise) lines.push(`+${s.braise} de Soif si un ennemi est touché`);
     if (s.recharge) lines.push(`Se charge : +${s.recharge} % à chaque retour de relance, une fois lancé`);
     if (s.cumul) lines.push(`Se cumule : +${s.cumul.par} % par lancer (${s.cumul.max} au plus)`);
     if (s.faveur) lines.push('Faveur : une seule par allié ; sur une case vide, elle reste au sol (Étincelle)');
     if (s.ombre) lines.push('Ombre : une seule par ennemi');
-    if (s.mare) lines.push('Dans la Mare : le Velmar et ses alliés subissent 15 % de dégâts en moins');
+    if (s.mare) lines.push('Dans le Glyphe : le Velmar et ses alliés subissent 15 % de dégâts en moins');
     if (s.parPmRestant) lines.push(`+${s.parPmRestant} % par PM qui reste au lanceur`);
     if (s.traque) lines.push('Prend la cible en traque : chaque autre tir qui la touche ajoute un cran (+8 %, 3 au plus)');
     if (s.parPiege) lines.push(`+${s.parPiege} % par piège déclenché (Pli), le Pli dépensé`);
     { const k = Object.values(DATA.classes).map(c => c.reserve).find((r, i) => r && Object.values(DATA.classes)[i].spells.includes(s.id)); const nom = k ? k.nom : 'réserve';
       if (s.reserve) lines.push(`+${s.reserve} ${nom} si un ennemi est touché`);
       if (s.reserveSpend) lines.push(`+${s.reserveSpend} % par point de ${nom}, toute la ${nom} dépensée`); }
-    if (s.braiseSpend) lines.push(`+${s.braiseSpend} % par point de Braise, toute la Braise soufflée`);
+    if (s.braiseSpend) lines.push(`+${s.braiseSpend} % par point de Soif, toute la Soif lâchée`);
     if (s.oathPierce) lines.push('Contre le juré : ni esquive ni armure');
     if (s.affutBonus) lines.push(`+${s.affutBonus} % à l'Affût`);
     if (s.keepsAffut) lines.push('Garde l\'Affût, moins un cran (−4 %)');
@@ -441,7 +451,7 @@ class UI {
       const cell = { x: e.x, y: e.y };
       this.hideCastConfirm();
       const ok = c.canCastAt(c.actor, this.selectedSpell, cell);
-      if (!ok.ok) { this.armed = null; this.banner(ok.reason, 900); return; }
+      if (!ok.ok) { this.annulerSort(); return; }
       if (UI.confirmerSorts(touch)) {
         this.armed = { x: cell.x, y: cell.y, spell: this.selectedSpell };
         this.hover(cell);
@@ -479,9 +489,10 @@ class UI {
     this.hideCastConfirm();
     if (c.phase !== 'battle') { this.armed = null; return this.clickCell(cell); }
     if (this.selectedSpell && UI.confirmerSorts(touch)) {
-      if (!cell || !this.isPlayerTurn() || c.busy) return;
+      if (!this.isPlayerTurn() || c.busy) return;
+      if (!cell) { this.annulerSort(); return; }
       const ok = c.canCastAt(c.actor, this.selectedSpell, cell);
-      if (!ok.ok) { this.armed = null; this.hover(null); this.banner(ok.reason, 900); return; }
+      if (!ok.ok) { this.annulerSort(); return; }
       this.armed = { x: cell.x, y: cell.y, spell: this.selectedSpell };
       this.hover(cell);
       this.showCastConfirm(cell);
@@ -580,10 +591,13 @@ class UI {
 
   async clickCell(cell) {
     const c = this.combat;
+    if (c.phase === 'battle' && this.selectedSpell && this.isPlayerTurn() && !c.busy &&
+        (!cell || !Grid.inBounds(c.map, cell.x, cell.y))) { this.annulerSort(); return; }
     if (!cell || !Grid.inBounds(c.map, cell.x, cell.y)) return;
     if (c.phase === 'placement') { if (c.placePlayer(cell.x, cell.y)) Bus.emit('placed', { x: cell.x, y: cell.y }); return; }
     if (!this.isPlayerTurn() || c.busy) return;
     if (this.selectedSpell) {
+      if (!c.canCastAt(c.actor, this.selectedSpell, cell).ok) { this.annulerSort(); return; }
       const id = this.selectedSpell;
       const target = c.entityAt(cell.x, cell.y);
       const r = await c.cast(c.actor, id, cell);
@@ -814,7 +828,7 @@ class UI {
       case 'traque': return `Traque de ${f.owner ? Util.esc(f.owner.name) : '?'}, ${f.crans} / 3 (+${f.crans * 8} % subis, ${t})`;
       case 'filon': return `Filon de ${f.owner ? Util.esc(f.owner.name) : '?'}, ${f.charges} déclenchement(s) (${t})`;
       case 'state': {
-        const names = { tenu: 'tenu (moitié moins de dégâts)', invisible: 'invisible', stunned: 'sonné', invulnerable: 'invulnérable', lanterne: 'tient sa lanterne (esquive à distance)', assise: 'assis comme la montagne (rien ne le déplace, ses prises portent une case de plus, vole de la vie au contact)', unhealable: 'insoignable', forme_iskar: 'Forme d\'Iskar (40 % des soins seulement)', intaclable: 'intaclable', protege: 'protégé (le Velmar prend ses coups)', digue: 'Digue (invulnérable au contact)', brise_lames: 'Brise-Lames (invulnérable à distance)' };
+        const names = { tenu: 'tenu (moitié moins de dégâts)', invisible: 'invisible', stunned: 'sonné', invulnerable: 'invulnérable', lanterne: 'tient sa lanterne (esquive à distance)', assise: 'assis comme la montagne (rien ne le déplace, ses prises portent une case de plus, vole de la vie au contact)', unhealable: 'insoignable', forme_iskar: 'Forme Nocturne (40 % des soins seulement)', intaclable: 'intaclable', protege: 'protégé (le Velmar prend ses coups)', digue: 'Carapace Close (invulnérable au contact)', brise_lames: 'Bouclier à Rouage (invulnérable à distance)' };
         if (f.name === 'provoked') return `provoqué par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
         if (f.name === 'sworn') return `juré par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
         if (f.name === 'tracked') return `traqué par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
@@ -839,12 +853,12 @@ class UI {
     const kit = [];
     if (p.kit && p.kit.fury) kit.push(`Fureur ${p.fury} / ${p.kit.fury.max}${p.kit.fury.power ? ` (+${(p.fury || 0) * p.kit.fury.power} %)` : ''}`);
     if (p.kit && p.kit.reserve) kit.push(`${p.kit.reserve.nom} ${p.reserve || 0} / ${p.kit.reserve.max}`);
-    { const sc = c.sangChaud(p); if (sc.palier) kit.push(`Sang Chaud : ${sc.nom} (+${sc.pct} %, −${sc.pct} % subis)`); }
+    { const sc = c.sangChaud(p); if (sc.palier) kit.push(`Sang Noir : ${sc.nom} (+${sc.pct} %, −${sc.pct} % subis)`); }
     if (p.kit && p.kit.summonGauge) { const used = c.summonsOf(p).reduce((n, m) => n + (m.def.summonCost || 1), 0); kit.push(`Jauge ${used} / ${c.jaugeDe(p)}${p.horde ? ' (horde)' : ''}`); }
     if (p.kit && p.kit.pli) kit.push(`Pli ${p.piegesPli || 0} / ${p.kit.pli.max || 5}`);
     { const af = c.affutDe(p); if (af.pct > 0) kit.push(`Affût +${af.pct} %${af.range ? `, +${af.range} PO` : ''}`); }
     if (p.kit && p.kit.traque) { const cible = c.entities.find(x => x.alive && c.traqueDe(p, x)); if (cible) kit.push(`Traque ${c.traqueDe(p, cible).crans} / ${p.kit.traque.max} (${Util.esc(cible.name)})`); }
-    if (p.kit && p.kit.braise) kit.push(`Braise ${c.braiseOf(p)} / ${p.kit.braise.max}${c.braiseOf(p) >= p.kit.braise.surchauffe ? ' (surchauffe)' : ''}`);
+    if (p.kit && p.kit.braise) kit.push(`Soif ${c.braiseOf(p)} / ${p.kit.braise.max}${c.braiseOf(p) >= p.kit.braise.surchauffe ? ' (dévorante)' : ''}`);
     if (c.isArmed(p)) kit.push(`armé (−${p.kit.armed.reduction} % subis)`);
     const effects = kit.concat(p.effects.map(f => this.describeEffect(f))).join(', ');
     this.effetsTexte = effects;
@@ -1059,3 +1073,4 @@ UI.ICON = {
   oui: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
   pa: '<svg class="vy-sceau-pa" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2l8.5 4.9v9.8L12 21.8l-8.5-4.9V7.1z" fill="#ddaa72" stroke="#a67349" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 5.4l5.7 3.3v6.6L12 18.6l-5.7-3.3V8.7z" fill="#f2dcaa"/><path d="M12 5.4l5.7 3.3L12 12 6.3 8.7z" fill="#fff3d2" opacity="0.7"/></svg>',
 };
+

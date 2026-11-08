@@ -1,4 +1,9 @@
 #panel[data-open="fightEnd"] #panel-box { width: min(1060px, 96vw); height: min(690px, 92vh); }
+#panel[data-open="fightEnd"] #panel-box:has(.vy-fdc.dojo) { width: min(640px, 96vw); height: auto; max-height: 92vh; }
+#panel[data-open="fightEnd"] #panel-box:has(.vy-fdc.dojo) #panel-body { padding-bottom: 0; }
+#panel-body .vy-fdc.dojo .vy-fdc__pied { position: static; margin: 4px -22px 0; }
+#app.vy-eter #panel[data-open="fightEnd"] #panel-body { padding-bottom: 0; }
+#app.vy-eter #panel-body .vy-fdc__pied { margin-left: -22px; margin-right: -22px; margin-bottom: 0; }
 #panel[data-open="fightEnd"] #panel-body { flex: 1; display: flex; flex-direction: column; }
 #panel[data-open="fightEnd"] #panel-title { width: 100%; text-align: center; }
 #panel-body .vy-fdc { --fdc-carte: rgba(48, 54, 75, 0.55); flex: 1 0 auto; display: flex; flex-direction: column; gap: 12px; }
@@ -159,6 +164,7 @@
 }
 @media (max-height: 520px) {
   #app #panel[data-open="fightEnd"] #panel-box { height: 96vh; max-height: 96vh; }
+  #app #panel[data-open="fightEnd"] #panel-box:has(.vy-fdc.dojo) { height: auto; }
   #app #panel[data-open="fightEnd"] .vy-modale__tete { min-height: 0; padding-top: 4px; padding-bottom: 4px; }
   #app #panel[data-open="fightEnd"] #panel-title { font-size: 14px; }
   #app #panel[data-open="fightEnd"] #panel-close { width: 32px; height: 32px; min-height: 32px; }

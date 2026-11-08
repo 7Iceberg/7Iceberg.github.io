@@ -1,4 +1,5 @@
 const Util = {
+  PORTES_DEV: false,
   mulberry32(seed) {
     let a = seed >>> 0;
     return function () {
@@ -14,7 +15,7 @@ const Util = {
     const l = loc !== undefined ? loc : (typeof location !== 'undefined' ? location : null);
     if (!l || typeof l !== 'object') return false;
     const q = typeof l.search === 'string' ? l.search : '';
-    return l.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(l.hostname || '') || /(^|[?&])dev=1(&|$)/.test(q.replace(/^\?/, ''));
+    return l.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(l.hostname || '') || (Util.PORTES_DEV === true && /(^|[?&])dev=1(&|$)/.test(q.replace(/^\?/, '')));
   },
 
   esc(s) {
@@ -69,7 +70,24 @@ const Util = {
     ctx.quadraticCurveTo(x, y, x + r, y);
     ctx.closePath();
   },
+
+  ABSENT_MS: 180000,
+  dernierGeste: typeof performance === 'object' && performance.now ? performance.now() : 0,
+  geste(now) { Util.dernierGeste = now !== undefined ? now : (typeof performance === 'object' ? performance.now() : Date.now()); },
+  absent(now) {
+    if (now === undefined) now = typeof performance === 'object' ? performance.now() : Date.now();
+    return now - Util.dernierGeste > Util.ABSENT_MS;
+  },
 };
+
+if (typeof window === 'object' && window && typeof window.addEventListener === 'function') {
+  const geste = () => Util.geste();
+  for (const t of ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart']) window.addEventListener(t, geste, { capture: true, passive: true });
+  try {
+    const s = Util.dev() && new URLSearchParams(location.search).get('absent');
+    if (s && Number(s) > 0) Util.ABSENT_MS = Number(s) * 1000;
+  } catch (e) {   }
+}
 
 const Bus = (() => {
   const listeners = new Map();

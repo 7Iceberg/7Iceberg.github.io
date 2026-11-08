@@ -108,6 +108,7 @@
   const controls = R.controls = new CameraControls(R.camera, canvas, {
     enabled: () => !!world && titleEl.classList.contains('hidden'),
     keys: () => panelEl.classList.contains('hidden'),
+    leftPan: () => !!(world && world.showCombat),
     zeroTaken: () => !!(world && world.showCombat && combat.player && combat.player.spells.length >= 10),
     onRightClick: () => { if (world && world.showCombat) ui.selectSpell(null); },
   });
@@ -212,3 +213,4 @@
     }
   }
 })();
+

@@ -52,7 +52,7 @@ const Admin = (() => {
 
   const dev = () => {
     try {
-      if (/[?&]admin=1\b/.test(location.search)) return true;
+      if (typeof Util === 'object' && Util.PORTES_DEV === true && /[?&]admin=1\b/.test(location.search)) return true;
       return location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
     } catch (e) { return false; }
   };
@@ -65,8 +65,9 @@ const Admin = (() => {
     try { if (dev() && /[?&]admin=fondateur\b/.test(location.search)) return 'fondateur'; } catch (e) {   }
     const e = lire(), k = cleMembre(c || ch());
     const id = k && e.membres[k];
+    if (!dev()) return 'veilleur';
     if (id && e.rangs[id]) return id;
-    return dev() ? 'fondateur' : 'veilleur';
+    return 'fondateur';
   }
   const rang = id => lire().rangs[id] || null;
 

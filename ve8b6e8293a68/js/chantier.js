@@ -1,7 +1,7 @@
 const Chantier = (() => {
   let actif = false;
   function demande() {
-    try { return typeof location === 'object' && /[?&]chantier=1\b/.test(location.search); } catch (e) { return false; }
+    try { return typeof location === 'object' && /[?&]chantier=1\b/.test(location.search) && typeof Util === 'object' && Util.dev(); } catch (e) { return false; }
   }
 
   function appliquer(O) {

@@ -1,5 +1,5 @@
 DATA.kit('fennal', [
-  [{ reprend: 'morsure', target: 'any', effects: [Object.assign(dmg(12, 15), { onFoe: true }), Object.assign(power(20, 2), { onAlly: true })],
+  [{ reprend: 'morsure', target: 'any', effects: [Object.assign(dmg(12, 15), { onFoe: true }), Object.assign(power(20, 2), { onAlly: true })], maxPerTurn: 2,
       desc: 'Un coup de dents sur l\'ennemi ; sur une bête ou un allié, le Meneur le mord pour l\'exciter : +20 % de dégâts pendant deux tours.' },
     { id: 'griffe_d_ecume', icone: ['griffe', 'pm'], name: 'Griffe d\'Écume', element: 'eau', pa: 3, range: [1, 2], effects: [dmg(11, 14), pm(-1, 1)], maxPerTurn: 2,
       desc: 'Le Meneur griffe comme ses bêtes, la main trempée dans l\'écume de Morrha : à deux cases, la cible perd 1 PM à son prochain tour.' }],
@@ -9,7 +9,7 @@ DATA.kit('fennal', [
       desc: 'Le Meneur fait tourner sa fronde dans le vent d\'Aïven et lâche : la pierre siffle et frappe jusqu\'à six cases.' }],
   [{ id: 'gueule_d_ecume', icone: ['crocs', 'patte'], name: 'Gueule d\'Écume', element: 'eau', pa: 3, range: [1, 3], target: 'any', effects: [Object.assign(dmg(9, 12), { onFoe: true }), Object.assign(pm(-1, 1), { onFoe: true }), Object.assign(pm(2, 1), { onAlly: true })], maxPerTurn: 2,
       desc: 'Une gueule d\'écume happe l\'ennemi à trois cases : il perd 1 PM à son prochain tour. Sur une bête ou un allié, l\'écume le porte : +2 PM à son prochain tour.' },
-    { id: 'crocs_de_braise', icone: ['crocs', 'feu'], name: 'Crocs de Braise', element: 'feu', pa: 3, range: [1, 3], effects: [dmg(10, 13), dot('feu', 1, 2)], maxPerTurn: 2,
+    { id: 'crocs_de_braise', icone: ['crocs', 'feu'], name: 'Crocs de Braise', element: 'feu', pa: 2, range: [1, 3], effects: [dmg(6, 8), dot('feu', 1, 2)], maxPerTurn: 2,
       desc: 'Une gueule de braise, comme celles qui rôdent au fond des Scories, mord la cible à trois cases : la morsure brûle encore deux tours.' }],
   [{ id: 'plume_de_glym', icone: ['plume', 'eclair'], name: 'Plume de Glym', element: 'air', pa: 3, range: [1, 5], target: 'any', effects: [Object.assign(dmg(11, 14), { onFoe: true }), Object.assign(pa(1, 1), { onAlly: true })], maxPerTurn: 2,
       desc: 'Une plume de Glym, dure comme une lame, file vers l\'ennemi jusqu\'à cinq cases ; plantée dans le pelage d\'une bête ou d\'un allié, elle le presse : +1 PA à son prochain tour.' },

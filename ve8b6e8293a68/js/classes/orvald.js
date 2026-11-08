@@ -9,7 +9,7 @@ DATA.kit('orvald', [
       desc: 'La pioche chauffée au feu de forge frappe au contact, et l\'Orvald gagne 1 PM tout de suite.' }],
   [{ id: 'pioche_rougie', icone: ['marteau', 'feu'], name: 'Pioche Rougie', element: 'feu', pa: 3, range: [1, 2], effects: [dmg(12, 15), pm(-1, 1)], maxPerTurn: 2,
       desc: 'La pioche chauffée à la lampe de mine, lancée à deux cases, s\'accroche aux jambes : la cible perd 1 PM à son prochain tour.' },
-    { id: 'pioche_de_vent', icone: ['marteau', 'eclair'], name: 'Pioche de Vent', element: 'air', pa: 3, range: [1, 2], effects: [dmg(12, 15)], maxPerTurn: 2,
+    { id: 'pioche_de_vent', icone: ['marteau', 'eclair'], name: 'Pioche de Vent', element: 'air', pa: 4, range: [1, 2], effects: [dmg(17, 21)], maxPerTurn: 2,
       desc: 'La pioche tournoie dans le courant d\'air des galeries et frappe à deux cases.' }],
   [{ id: 'coup_d_aubaine', icone: ['etincelles', 'eclair'], name: 'Coup d\'Aubaine', element: 'air', pa: 3, range: [1, 4], effects: [dmg(9, 12), pa(-1, 1)], maxPerTurn: 1,
       desc: 'Un courant d\'air des galeries coupe le souffle à la cible : elle perd 1 PA à son prochain tour. Sur l\'ennemi marqué, le Filon saute.' },

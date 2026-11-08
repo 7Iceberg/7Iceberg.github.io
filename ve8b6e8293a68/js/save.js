@@ -203,9 +203,10 @@ const Save = (() => {
     if (!isInt(o.fils, 0, 1e9)) { bad('Dragmes'); o.fils = 0; }
     const c = o.counters && typeof o.counters === 'object' ? o.counters : {};
     const counters = Character.defaults().counters;
-    for (const k of ['fights', 'wins', 'crafts', 'gathers', 'filsEarned', 'questsDone']) { if (c[k] == null) continue; if (isInt(c[k], 0, 1e9)) counters[k] = c[k]; else bad(`compteur ${k}`); }
+    for (const k of ['fights', 'wins', 'crafts', 'gathers', 'filsEarned', 'filsRecus', 'questsDone']) { if (c[k] == null) continue; if (isInt(c[k], 0, 1e9)) counters[k] = c[k]; else bad(`compteur ${k}`); }
     if (counters.wins > counters.fights) { bad('victoires'); counters.wins = counters.fights; }
-    if (o.fils + o.coffre.fils > counters.filsEarned) { bad('Dragmes au-delà des gains'); o.fils = Math.min(o.fils, counters.filsEarned); o.coffre.fils = Math.max(0, Math.min(o.coffre.fils, counters.filsEarned - o.fils)); }
+    const plafond = counters.filsEarned + (counters.filsRecus || 0);
+    if (o.fils + o.coffre.fils > plafond) { bad('Dragmes au-delà des gains'); o.fils = Math.min(o.fils, plafond); o.coffre.fils = Math.max(0, Math.min(o.coffre.fils, plafond - o.fils)); }
     for (const k of ['kills', 'feats']) if (c[k] && typeof c[k] === 'object') for (const id of Object.keys(c[k])) { if (isInt(c[k][id], 0, 1e9)) counters[k][id] = c[k][id]; else bad(`compteur ${k}.${id}`); }
     for (const k of ['maps', 'dungeons', 'bosses']) if (Array.isArray(c[k])) counters[k] = [...new Set(c[k].filter(x => typeof x === 'string'))];
     counters.maps = counters.maps.filter(id => World.mapDef(id));

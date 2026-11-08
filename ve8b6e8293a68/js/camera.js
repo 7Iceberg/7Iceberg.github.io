@@ -317,7 +317,7 @@ class CameraControls {
       }
       return;
     }
-    if (e.button === 1 || e.button === 2) {
+    if (e.button === 1 || e.button === 2 || (e.button === 0 && this.opts.leftPan && this.opts.leftPan())) {
       this.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, button: e.button, moved: false, tourne: e.button === 2 && typeof this.camera.tourner === 'function' };
       try { this.el.setPointerCapture(e.pointerId); } catch (err) {   }
     }
@@ -345,6 +345,7 @@ class CameraControls {
 
   up(e, cancel) {
     if (CameraControls.tactile(e)) {
+      const apresPincement = !!this.pinch;
       const t = this.touches.get(e.pointerId);
       if (t && Math.hypot(e.clientX - t.x0, e.clientY - t.y0) > 12) this.tapMoved = true;
       this.touches.delete(e.pointerId);
@@ -354,6 +355,11 @@ class CameraControls {
         if (p.moved) { this.el.classList.remove('glisse'); this.quietUntil = Math.max(this.quietUntil, performance.now() + 250); }
       }
       if (this.touches.size >= 2) this.startPinch(); else this.pinch = null;
+      if (!cancel && apresPincement && this.touches.size === 1 && this.oneFingerPan()) {
+        const [id, t] = this.touches.entries().next().value;
+        this.pan1 = { id, x: t.x, y: t.y, moved: false };
+        this.tapMoved = true;
+      }
       if (!this.touches.size && this.quietUntil === Infinity) this.quietUntil = performance.now() + 350;
       return;
     }
@@ -404,3 +410,4 @@ class CameraControls {
     else if (e.code === 'KeyR' && !e.defaultPrevented && typeof cam.changerRegard === 'function') { e.preventDefault(); cam.changerRegard(); }
   }
 }
+

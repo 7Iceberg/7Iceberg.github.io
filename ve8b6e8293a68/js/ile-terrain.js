@@ -223,6 +223,15 @@ const IleTerrain = (() => {
     enclume: o => [{ x: 0, y: 0, r: 0.55 }],
     alambic: o => [{ x: 0, y: 0, r: 0.6 }, { x: 0.75, y: 0, r: 0.3 }],
     etabli: o => [{ rect: true, x: 0, y: 0, l: 1.9, p: 0.9 }],
+    scie: o => [{ rect: true, x: 0, y: 0.2, l: 2.0, p: 1.3 }],
+    fonderie: o => [{ x: 0, y: 0, r: 0.75 }, { x: 0.95, y: 0.2, r: 0.4 }],
+    meule: o => [{ rect: true, x: 0.2, y: 0, l: 1.9, p: 1.4 }],
+    halle: o => {
+      const t = o.taille || [24, 9], l = t[0], p = t[1], n = Math.max(2, Math.round(l / 4.4) + 1), out = [{ rect: true, x: 0, y: -p / 2 + 0.3, l, p: 0.6 }];
+      for (const k of [-1, 1]) out.push({ rect: true, x: k * (l / 2 - 0.3), y: -p / 4, l: 0.6, p: p / 2 });
+      for (let q = 0; q < n; q++) out.push({ x: (q / (n - 1) - 0.5) * (l - 0.4), y: p / 2 - 0.25, r: 0.32 });
+      return out;
+    },
     metier_tisser: o => [{ rect: true, x: 0, y: 0.3, l: 1.8, p: 1.4 }],
     lanterne: o => [{ x: 0, y: 0, r: 0.25 }],
     longue_vue: o => [{ x: 0, y: 0, r: 0.3 }],
@@ -927,7 +936,10 @@ const IleTerrain = (() => {
       case 'enclume': return { workshop: 'forgeron', nom: 'L\'enclume de la forge' };
       case 'metier_tisser': return { workshop: 'tailleur', nom: 'Le métier à tisser' };
       case 'alambic': return { workshop: 'alchimiste', nom: 'L\'alambic' };
-      case 'etabli': return o.outil === 'bijou' ? { workshop: 'bijoutier', nom: 'L\'établi du bijoutier' } : { workshop: 'cordonnier', nom: 'L\'établi du cordonnier' };
+      case 'etabli': return o.outil === 'bijou' ? { workshop: 'bijoutier', nom: 'L\'établi du bijoutier' } : o.outil === 'poisson' ? { workshop: 'pecheur', nom: 'L\'étal du pêcheur' } : { workshop: 'cordonnier', nom: 'L\'établi du cordonnier' };
+      case 'scie': return { workshop: 'bucheron', nom: 'La scierie' };
+      case 'fonderie': return { workshop: 'mineur', nom: 'La fonderie' };
+      case 'meule': return { workshop: 'paysan', nom: 'La meule' };
       default: return null;
     }
   }

@@ -3,6 +3,7 @@ const DATA = {};
 DATA.rules = {
   turnSeconds: 20,
   pushDamagePerCell: 6,
+  bouclierPvRef: 300,
   maxSummonsPerOwner: 2,
   trapRounds: 5,
   maxTrapsPerOwner: 3,
@@ -107,7 +108,7 @@ spells.siphon = S('siphon', { name: 'Siphon', element: 'eau', pa: 3, range: [1, 
 spells.nova = S('nova', { name: 'Nova', element: 'feu', pa: 5, range: [0, 0], los: false, target: 'self', aoe: circle2, effects: [dmg(20, 26)], cooldown: 3, desc: 'Explosion autour de soi, 2 cases de rayon. Épargne le lanceur, pas les alliés.' });
 spells.attraction = S('attraction', { name: 'Attraction', element: 'air', pa: 2, range: [2, 5], effects: [dmg(4, 6), pull(2)], desc: 'Attire la cible de 2 cases vers soi.' });
 
-spells.taille_franche = S('taille_franche', { name: 'Taille Franche', element: 'terre', pa: 3, range: [1, 1], effects: [dmg(15, 19)], fury: 1, maxPerTurn: 2, desc: 'Le coup droit du Sarkan. +1 Fureur si la cible est touchée.' });
+spells.taille_franche = S('taille_franche', { name: 'Taille Franche', element: 'terre', pa: 3, range: [1, 1], effects: [dmg(16, 20)], fury: 1, maxPerTurn: 2, desc: 'Le coup droit du Sarkan. +1 Fureur si la cible est touchée.' });
 spells.saut_delan = S('saut_delan', { name: "Saut d'Élan", element: 'terre', pa: 3, range: [2, 4], los: false, target: 'free', effects: [{ type: 'leap', aoe: cross1, effects: [dmg(6, 9), { type: 'vuln', value: 12, turns: 1 }] }], cooldown: 1, desc: 'Bondit sur une case libre et frappe en croix autour de lui à l\'arrivée ; les ennemis touchés subissent +12 % de dégâts un tour.' });
 spells.serment_jure = S('serment_jure', { name: 'Serment', element: 'neutre', pa: 2, range: [1, 6], target: 'enemy', effects: [oath(3)], cooldown: 1, desc: 'Désigne le juré pour 3 tours : +20 % de dégâts contre lui ; s\'il frappe un autre allié, la lame le brûle ; l\'achever rend 2 PA, 10 % des PV et 2 de Fureur.' });
 spells.garde_de_scorie = S('garde_de_scorie', { name: 'Garde de Scorie', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [shield(30, 1), { type: 'guard', value: 20, turns: 1 }], cooldown: 2, desc: 'Bouclier de 30 et −20 % de dégâts subis au corps à corps jusqu\'au prochain tour.' });
@@ -120,7 +121,7 @@ spells.verdict = S('verdict', { name: 'Verdict', element: 'terre', pa: 5, range:
 
 spells.trait_tisse = S('trait_tisse', { name: 'Flèche Ailée', element: 'air', pa: 3, range: [3, 7], effects: [dmg(10, 14)], maxPerTurn: 2, desc: 'Le tir de base, précis et long.' });
 spells.fil_tendu = S('fil_tendu', { name: 'Corde Tendue', element: 'air', pa: 3, range: [2, 6], effects: [dmg(8, 11), push(2)], maxPerTurn: 2, desc: 'Repousse de 2 cases, deux fois par tour ; contre un obstacle, +6 dégâts par case non parcourue.' });
-spells.collet = S('collet', { name: 'Collet', element: 'neutre', pa: 2, range: [1, 5], target: 'free', effects: [{ type: 'trap', name: 'Collet', effects: [dmg(6, 9), root] }], trapReplaceOldest: true, maxPerTurn: 2, desc: 'Un collet invisible : la cible est blessée et enracinée 1 tour. Un quatrième collet fait disparaître le plus ancien.' });
+spells.collet = S('collet', { name: 'Collet', element: 'neutre', pa: 2, range: [1, 5], target: 'free', effects: [{ type: 'trap', name: 'Collet', effects: [dmg(6, 9), root] }], trapReplaceOldest: true, maxPerTurn: 1, desc: 'Un collet invisible : la cible est blessée et enracinée 1 tour. Un quatrième collet fait disparaître le plus ancien.' });
 spells.repli_traqueur = S('repli_traqueur', { name: 'Repli', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', effects: [{ type: 'retreat', cells: 2 }], keepsAffut: true, cooldown: 2, desc: 'Recule de 2 cases à l\'opposé de l\'ennemi le plus proche, sans casser l\'Affût.' });
 spells.fleche_lourde = S('fleche_lourde', { name: 'Flèche Lourde', element: 'terre', pa: 4, range: [2, 6], effects: [dmg(15, 19)], maxPerTurn: 1, desc: 'Le tir lourd, la voie de la Force.' });
 spells.corde_longue = S('corde_longue', { name: 'Corde Longue', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [{ type: 'range', value: 3, turns: 1 }], cooldown: 3, desc: '+3 portée ce tour et le suivant.' });
@@ -134,7 +135,7 @@ spells.lueur = S('lueur', { name: 'Lueur', element: 'feu', pa: 3, range: [0, 5],
 spells.eclair_solaire = S('eclair_solaire', { name: 'Éclair solaire', element: 'feu', pa: 3, range: [1, 5], effects: [dmg(9, 13)], desc: 'Un trait de lumière.' });
 spells.manteau_partage = S('manteau_partage', { name: 'Manteau Partagé', element: 'neutre', pa: 3, range: [0, 4], los: false, target: 'any', aoe: cross1, affects: 'allies', affectsCaster: true, effects: [shield(12, 2)], cooldown: 2, desc: 'Bouclier de 12 sur les alliés d\'une croix.' });
 spells.rappel = S('rappel', { name: 'Rappel', element: 'neutre', pa: 2, range: [0, 4], target: 'ally', affectsCaster: true, effects: [{ type: 'cleanse' }], maxPerTurn: 1, desc: 'Retire tous les malus d\'un allié.' });
-spells.flamme_vive = S('flamme_vive', { name: 'Flamme vive', element: 'feu', pa: 4, range: [1, 4], effects: [dmg(15, 19)], lifesteal: 50, desc: 'La moitié des dégâts revient en soin au lanceur.' });
+spells.flamme_vive = S('flamme_vive', { name: 'Flamme vive', element: 'feu', pa: 4, range: [1, 4], effects: [dmg(15, 19)], lifesteal: 50, maxPerTurn: 2, desc: 'La moitié des dégâts revient en soin au lanceur.' });
 spells.benediction = S('benediction', { name: 'Bénédiction', element: 'neutre', pa: 2, range: [0, 3], target: 'ally', affectsCaster: true, effects: [pa(1, 1)], cooldown: 2, desc: '+1 PA à un allié pour son prochain tour.' });
 spells.aube = S('aube', { name: 'Aube', element: 'neutre', pa: 5, range: [0, 0], los: false, target: 'self', aoe: circle2, affects: 'allies', affectsCaster: true, effects: [heal(10, 14)], cooldown: 3, desc: 'Soigne tous les alliés à 2 cases.' });
 spells.lumiere_aveuglante = S('lumiere_aveuglante', { name: 'Lumière aveuglante', element: 'feu', pa: 3, range: [1, 4], target: 'enemy', effects: [dmg(6, 9), pa(-1, 1)], cooldown: 1, desc: 'La cible perd 1 PA.' });
@@ -166,17 +167,17 @@ spells.grappin = S('grappin', { name: 'Grappin', element: 'neutre', pa: 2, range
 spells.detonation = S('detonation', { name: 'Détonation', element: 'feu', pa: 4, range: [0, 8], los: false, target: 'summon', aoe: circle1, affects: 'enemies', effects: [dmg(12, 16)], cooldown: 2, desc: 'Une explosion autour de sa tourelle, sans ligne de vue.' });
 spells.forge = S('forge', { name: 'Forge', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [power(25, 1)], cooldown: 2, desc: '+25 % de dégâts.' });
 
-spells.serment_de_sang = S('serment_de_sang', { name: 'Tirage', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', braiseCost: 2, selfEffects: [{ type: 'paNow', value: 2 }], maxPerTurn: 1, desc: 'Dépense 2 de Braise, gagne 2 PA tout de suite.' });
-spells.charge = S('charge', { name: 'Charge', element: 'neutre', pa: 3, range: [2, 4], line: true, target: 'free', effects: [{ type: 'teleport' }], selfEffects: [{ type: 'braiseNow', value: 1 }], cooldown: 2, desc: 'Fonce en ligne sur une case libre ; +1 de Braise.' });
-spells.taillade = S('taillade', { name: 'Taillade', element: 'feu', pa: 3, range: [1, 1], effects: [dmg(14, 18)], braise: 1, desc: 'Un coup de lame ; +1 de Braise s\'il porte.' });
-spells.dernier_souffle = S('dernier_souffle', { name: 'Dernier Souffle', element: 'feu', pa: 4, range: [1, 2], effects: [dmg(17, 21)], braiseSpend: 20, cooldown: 1, desc: 'Toute la Braise dépensée : +20 % de dégâts par point.' });
-spells.hurlement = S('hurlement', { name: 'Hurlement', element: 'feu', pa: 2, range: [0, 0], los: false, target: 'self', aoe: circle1, affects: 'enemies', effects: [dmg(4, 6), pa(-1, 1)], cooldown: 2, desc: 'Les ennemis adjacents perdent 1 PA.' });
-spells.sang_pour_sang = S('sang_pour_sang', { name: 'Sang pour sang', element: 'feu', pa: 3, range: [1, 3], effects: [dmg(9, 12)], lifesteal: 50, desc: 'La moitié des dégâts revient en soin.' });
+spells.serment_de_sang = S('serment_de_sang', { name: 'Gorgée', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', braiseCost: 2, selfEffects: [{ type: 'paNow', value: 2 }], maxPerTurn: 1, desc: 'Étanche 2 de Soif, gagne 2 PA tout de suite.' });
+spells.charge = S('charge', { name: 'Envol de Nuit', element: 'neutre', pa: 3, range: [2, 4], line: true, target: 'free', effects: [{ type: 'teleport' }], selfEffects: [{ type: 'braiseNow', value: 1 }], cooldown: 2, desc: 'File en ligne sur une case libre ; +1 de Soif.' });
+spells.taillade = S('taillade', { name: 'Lame Avide', element: 'feu', pa: 3, range: [1, 1], effects: [dmg(14, 18)], braise: 1, desc: 'Un coup de lame ; +1 de Soif s\'il porte.' });
+spells.dernier_souffle = S('dernier_souffle', { name: 'Festin de Minuit', element: 'feu', pa: 4, range: [1, 2], effects: [dmg(17, 21)], braiseSpend: 20, cooldown: 1, desc: 'Toute la Soif dépensée : +20 % de dégâts par point.' });
+spells.hurlement = S('hurlement', { name: 'Cri de la Nuit', element: 'feu', pa: 2, range: [0, 0], los: false, target: 'self', aoe: circle1, affects: 'enemies', effects: [dmg(4, 6), pa(-1, 1)], cooldown: 2, desc: 'Les ennemis adjacents perdent 1 PA.' });
+spells.sang_pour_sang = S('sang_pour_sang', { name: 'Morsure Rouge', element: 'feu', pa: 3, range: [1, 3], effects: [dmg(9, 12)], lifesteal: 50, desc: 'La moitié des dégâts revient en soin.' });
 spells.brulure = S('brulure', { name: 'Brûlure', element: 'feu', pa: 3, range: [1, 3], effects: [dmg(6, 8), dot('feu', 4, 2)], desc: 'Brûle pendant 2 tours.' });
-spells.lien_de_sang = S('lien_de_sang', { name: 'Lien de Sang', element: 'feu', pa: 3, range: [2, 5], line: true, effects: [dmg(5, 7), pull(3)], cooldown: 2, desc: 'Attire la cible de 3 cases, en ligne.' });
-spells.colosse = S('colosse', { name: 'Colosse', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [shield(25, 1)], cooldown: 3, desc: 'Un bouclier de 25 pour un tour.' });
-spells.frappe_lourde = S('frappe_lourde', { name: 'Frappe lourde', element: 'feu', pa: 4, range: [1, 1], effects: [dmg(20, 25), push(1)], braise: 1, maxPerTurn: 1, desc: 'Le gros coup, qui repousse ; +1 de Braise s\'il porte.' });
-spells.rage = S('rage', { name: 'Rage', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [power(35, 1)], braiseCost: 3, cooldown: 3, desc: '+35 % de dégâts ce tour, contre 3 de Braise.' });
+spells.lien_de_sang = S('lien_de_sang', { name: 'Crochet de Nuit', element: 'feu', pa: 3, range: [2, 5], line: true, effects: [dmg(5, 7), pull(3)], cooldown: 2, desc: 'Attire la cible de 3 cases, en ligne.' });
+spells.colosse = S('colosse', { name: 'Peau de Nuit', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [shield(25, 1)], cooldown: 3, desc: 'Un bouclier de 25 pour un tour.' });
+spells.frappe_lourde = S('frappe_lourde', { name: 'Lame Abattue', element: 'feu', pa: 4, range: [1, 1], effects: [dmg(20, 25), push(1)], braise: 1, maxPerTurn: 1, desc: 'Le gros coup, qui repousse ; +1 de Soif s\'il porte.' });
+spells.rage = S('rage', { name: 'Frénésie', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [power(35, 1)], braiseCost: 3, cooldown: 3, desc: '+35 % de dégâts ce tour, contre 3 de Soif.' });
 
 spells.cadence = S('cadence', { name: 'Cadence', element: 'neutre', pa: 1, range: [0, 5], target: 'ally', affectsCaster: true, effects: [Object.assign(pa(1, 1), { selfNow: 2 })], maxPerTurn: 1, desc: '+1 PA à un allié pour son prochain tour ; sur soi, +2 PA tout de suite.' });
 spells.refrain = S('refrain', { name: 'Refrain', element: 'neutre', pa: 3, range: [0, 4], los: false, target: 'any', aoe: circle1, affects: 'allies', affectsCaster: true, effects: [pm(1, 1)], cooldown: 2, desc: '+1 PM aux alliés d\'une zone.' });
@@ -192,7 +193,7 @@ spells.silence = S('silence', { name: 'Silence', element: 'air', pa: 3, range: [
 spells.transposition = S('transposition', { name: 'Transposition', element: 'neutre', pa: 2, range: [1, 4], effects: [{ type: 'swap' }], maxPerTurn: 2, desc: 'Échange sa place avec la cible, alliée ou ennemie.' });
 spells.lancer = S('lancer', { name: 'Lancer', element: 'terre', pa: 3, range: [1, 1], effects: [dmg(10, 13), push(3)], desc: 'Jette la cible à 3 cases.' });
 spells.projection = S('projection', { name: 'Projection', element: 'terre', pa: 3, range: [2, 5], effects: [dmg(5, 7), pull(3)], desc: 'Attire la cible de 3 cases.' });
-spells.poigne = S('poigne', { name: 'Poigne', element: 'terre', pa: 3, range: [1, 1], effects: [dmg(16, 20)], lifestealIfState: { state: 'assise', pct: 40 }, desc: 'Un coup de poing.' });
+spells.poigne = S('poigne', { name: 'Poigne', element: 'terre', pa: 3, range: [1, 1], effects: [dmg(14, 18)], maxPerTurn: 2, lifestealIfState: { state: 'assise', pct: 40 }, desc: 'Un coup de poing.' });
 spells.ancre = S('ancre', { name: 'Ancre', element: 'eau', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(6, 8), root], cooldown: 2, desc: 'La cible ne bouge plus un tour.' });
 spells.gorgee_de_cime = S('gorgee_de_cime', { name: 'Assise de Durren', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [state('assise', 2)], selfEffects: [{ type: 'pmNow', value: -1 }], cooldown: 3, desc: 'Assis comme la montagne 2 tours : −1 PM tout de suite, rien ne le déplace, ses prises portent une case de plus, et les coups au contact rendent 30 % des dégâts en PV.' });
 spells.bascule = S('bascule', { name: 'Bascule', element: 'neutre', pa: 2, range: [1, 2], effects: [dmg(3, 5), push(1), pm(-1, 1)], desc: 'Pousse d\'une case et retire 1 PM.' });
@@ -400,11 +401,11 @@ DATA.classes = {
     armed: { reduction: 10, summon: 'tourelle' },
     spells: ['tourelle_de_kaldum', 'mur_articule', 'mine_a_fil', 'marteau', 'surchauffe', 'reparation', 'propulseur', 'grappin', 'detonation', 'forge'],
     desc: 'Pose des tourelles, des murs, des mines ; fait éclater sa tourelle, et tient mieux tant qu\'elle n\'est pas posée.' },
-  karsh: { id: 'karsh', name: 'Karsh', title: 'Lame de Braise', role: 'Mêlée', glyph: 'Kr', color: '#d9452b', hp: 150, pa: 6, pm: 3, initiative: 80,
+  karsh: { id: 'karsh', name: 'Karsh', title: 'Lame de Sang', role: 'Mêlée', glyph: 'Kr', color: '#d9452b', hp: 150, pa: 6, pm: 3, initiative: 80,
     braise: { max: 5, debut: 2, perTurn: 2, power: 0, surchauffe: 5, brulure: 4 }, tacle: 5,
-    sangChaud: { paliers: [[75, 6, 'Échauffé'], [50, 14, 'Ardent'], [25, 24, 'Incandescent']] },
+    sangChaud: { paliers: [[75, 6, 'Pâle'], [50, 14, 'Affamé'], [25, 24, 'Nocturne']] },
     spells: ['serment_de_sang', 'charge', 'taillade', 'dernier_souffle', 'hurlement', 'sang_pour_sang', 'lien_de_sang', 'colosse', 'frappe_lourde', 'rage'],
-    desc: 'Chauffe à chaque tour : sa Braise nourrit ses coups, se dépense en PA et en fournaise, et le brûle s\'il la laisse monter ; ramène ses proies au contact.' },
+    desc: 'A soif à chaque tour : sa Soif nourrit ses coups, s\'étanche en PA et en frénésie, et le dévore s\'il la laisse monter ; boit le sang de ses proies et les ramène au contact.' },
   mirel: { id: 'mirel', name: 'Mirel', title: 'Chantre', role: 'Soutien', glyph: 'M', color: '#a8e6d8', hp: 105, pa: 6, pm: 3, initiative: 100,
     spells: ['cadence', 'refrain', 'dissonance', 'note_vive', 'berceuse', 'envolee', 'choeur', 'cri', 'tempo', 'silence'],
     desc: 'Donne des PA et des PM, chante des zones, affaiblit l\'ennemi.' },
@@ -414,10 +415,10 @@ DATA.classes = {
   fennal: { id: 'fennal', name: 'Fennal', title: 'Meneur de Meute', role: 'Invocateur', glyph: 'F', color: '#6fdc8c', hp: 110, pa: 6, pm: 3, initiative: 85, summonGauge: 4, jaugeNiveaux: [25, 50],
     spells: ['appel_du_grouk', 'appel_du_pilou', 'rappel_sacrificiel', 'morsure', 'soin_de_meute', 'cri_de_ralliement', 'fleche_de_fil', 'filet', 'appel_du_molh', 'traque'],
     desc: 'Mène une meute (jauge de 4 : Glym 1, Grouk 2, Molh 3), la sacrifie pour prendre sa force.' },
-  velmar: { id: 'velmar', name: 'Velmar', title: 'Garde-Marée', role: 'Protecteur', glyph: 'Vm', color: '#2aa6b8', hp: 165, pa: 6, pm: 3, initiative: 70,
+  velmar: { id: 'velmar', name: 'Velmar', title: 'Garde-Carapace', role: 'Protecteur', glyph: 'Vm', color: '#2aa6b8', hp: 165, pa: 6, pm: 3, initiative: 70,
     mare: { armure: 15 },
     spells: [],
-    desc: 'Se tient devant les siens comme la marée qui monte : chaque coup qu\'ils reçoivent la fait monter, et ses Reflux la rendent en boucliers d\'écume et en vagues.' },
+    desc: 'Un vieux sage mi-homme, mi-tortue, des grèves de Morrha : il trace au sol ses glyphes protecteurs, lève son bouclier à rouage et prend les siens sous sa carapace.' },
   orvald: { id: 'orvald', name: 'Orvald', title: 'Pilleur de Reliques', role: 'Prospecteur', glyph: 'Ov', color: '#c9a24a', hp: 115, pa: 6, pm: 3, initiative: 95,
     reserve: { nom: 'Trouvailles', max: 5, gain: 'filon', par: 1 }, prospection: 20,
     spells: [],

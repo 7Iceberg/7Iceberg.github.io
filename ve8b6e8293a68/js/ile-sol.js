@@ -235,6 +235,47 @@ const IleSol = (() => {
           gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.03, 0.04, 0.07), 0.35 * lisere * aireOn);
         }
       }
+      // Dalles : pierre opaque, joints et petits chanfreins éclairés selon le terrain.
+      // La couleur du terrain ne traverse plus le pavement. Les repères tactiques restent au-dessus.
+      if (sorteA < 0.5 && (grilleSol > 0.5 || tactiqueSol > 0.5)) {
+        vec2 idD = floor(vMonde.xz);
+        float rD = fract(sin(dot(idD, vec2(127.1, 311.7))) * 43758.5453);
+        float r2D = fract(sin(dot(idD, vec2(269.5, 183.3))) * 15731.743);
+        float aaD = clamp(wA * 0.38, 0.002, 0.018);
+        vec2 pD = fA - 0.5;
+        // Coins très légèrement abattus ; une petite ébréchure sur certaines pierres seulement.
+        float bordD = 0.477 + (r2D - 0.5) * 0.009;
+        float dD = max(mA - bordD, (cA.x + cA.y - (0.925 + 0.022 * rD)) * 0.7071);
+        if (rD > 0.86 && pD.x > 0.0 && pD.y < 0.0) dD = max(dD, (pD.x - pD.y - 0.89) * 0.7071);
+        float faceD = 1.0 - smoothstep(-aaD, aaD, dD);
+        float platD = 1.0 - smoothstep(-.045 - aaD, -.045 + aaD, dD);
+        float chanfreinD = faceD - platD;
+        vec3 baseD = vec3(0.66, 0.64, 0.52), clairD = vec3(0.79, 0.76, 0.62), jointCouleurD = vec3(0.26, 0.29, 0.22), mousseCouleurD = vec3(0.34, 0.40, 0.22);
+        if (natureDalles > 2.5) { baseD = vec3(0.40, 0.46, 0.48); clairD = vec3(0.49, 0.55, 0.57); jointCouleurD = vec3(0.16, 0.20, 0.22); mousseCouleurD = vec3(0.30, 0.37, 0.26); }
+        else if (natureDalles > 1.5 && natureDalles < 2.5) { baseD = vec3(0.66, 0.53, 0.39); clairD = vec3(0.78, 0.65, 0.47); jointCouleurD = vec3(0.29, 0.25, 0.19); mousseCouleurD = vec3(0.39, 0.39, 0.23); }
+        vec3 pierreD = mix(baseD, clairD, step(0.5, rD) * 0.38);
+        pierreD *= 0.94 + .045 * r2D;
+        // Un grain de pierre très fin et quelques strates calmes, jamais la texture de l'herbe.
+        float strateD = sin((fA.x * 0.7 + fA.y + rD * 9.0) * 18.0);
+        pierreD *= 0.986 + 0.014 * strateD;
+        float directionD = clamp((pD.y - pD.x) * 2.5, -1.0, 1.0);
+        vec3 trancheD = pierreD * (0.82 + 0.22 * directionD);
+        vec3 fondD = mix(jointCouleurD, trancheD, faceD);
+        fondD = mix(fondD, pierreD, platD);
+        // Une courte fissure ramifiée sur environ une pierre sur quatre.
+        vec2 detailD = r2D > 0.5 ? fA : 1.0 - fA;
+        float ligneD = abs(detailD.y - (0.18 + detailD.x * 0.37 + 0.012 * sin(detailD.x * 55.0)));
+        float fissureD = (1.0 - smoothstep(0.004, 0.009 + aaD * 0.22, ligneD)) * smoothstep(0.04, 0.07, detailD.x) * (1.0 - smoothstep(0.23, 0.27, detailD.x));
+        float brancheD = (1.0 - smoothstep(0.004, 0.008 + aaD * 0.2, abs(detailD.y - (0.43 - detailD.x)))) * step(0.13, detailD.x) * step(detailD.x, 0.18);
+        float detailNetD = 1.0 - smoothstep(0.04, 0.075, wA);
+        if (rD > 0.75) fondD *= 1.0 - 0.30 * max(fissureD, brancheD) * detailNetD * platD;
+        // La mousse est localisée contre un joint, sur quelques pierres, sans couvrir le centre.
+        float mousseD = (1.0 - smoothstep(0.035, 0.085, length(detailD - vec2(0.075, 0.18))));
+        mousseD += 0.7 * (1.0 - smoothstep(0.02, 0.045, length(detailD - vec2(0.13, 0.09))));
+        if (rD < 0.26) fondD = mix(fondD, mousseCouleurD, 0.72 * min(1.0, mousseD) * detailNetD * faceD);
+        if (tactiqueSol > 0.5) fondD = mix(fondD, gl_FragColor.rgb, 0.7);
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, fondD, aireOn);
+      }
       float poulsA = fRespire > 0.5 ? 0.72 + 0.28 * sin(tempsSol / 0.34) : 1.0;
       if (remA.a > 0.0) {
         // Le remplissage : plus dense vers le bord (un verre éclairé par la tranche), doux au centre ;
@@ -298,7 +339,7 @@ const IleSol = (() => {
       matieres: { value: tex.matieres }, moyennes: { value: moy.map(c => new THREE.Vector3(c[0], c[1], c[2])) },
       forceLueur: { value: 1 }, reperage: { value: 4 },
       aireOn: { value: 0 }, aireO: { value: new THREE.Vector2(0, 0) }, etatCases: { value: null },
-      tempsSol: { value: 0 }, traitU: { value: 0.05 }, tactiqueSol: { value: 0 }, grilleSol: { value: 1 },
+      tempsSol: { value: 0 }, traitU: { value: 0.05 }, tactiqueSol: { value: 0 }, grilleSol: { value: 1 }, natureDalles: { value: 0 },
     };
     const tableau = !!tex.matieres;
     const fabriquer = bord => {
@@ -313,7 +354,7 @@ const IleSol = (() => {
 varying vec3 vMonde;
 uniform sampler2D poids1; uniform sampler2D poids2; uniform sampler2D teinteIle; uniform sampler2D lueurIle; uniform sampler2D grainSol;
 uniform vec2 tailleIle; uniform float forceLueur; uniform float reperage; uniform vec3 moyennes[6];
-uniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol;
+uniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol; uniform float natureDalles;
 ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
           .replace('#include <map_fragment>', `
   vec2 bruitSol = texture2D(grainSol, vMonde.xz / 5.3).rg - 0.5;
@@ -347,7 +388,7 @@ ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
   }
 
   function materiauSalle(THREE, texSol, rampe) {
-    const uniforms = { aireOn: { value: 0 }, aireO: { value: new THREE.Vector2(0, 0) }, etatCases: { value: null }, tempsSol: { value: 0 }, traitU: { value: 0.05 }, tactiqueSol: { value: 0 }, grilleSol: { value: 1 } };
+    const uniforms = { aireOn: { value: 0 }, aireO: { value: new THREE.Vector2(0, 0) }, etatCases: { value: null }, tempsSol: { value: 0 }, traitU: { value: 0.05 }, tactiqueSol: { value: 0 }, grilleSol: { value: 1 }, natureDalles: { value: 0 } };
     const m = new THREE.MeshToonMaterial({ color: 0xffffff, map: texSol, gradientMap: rampe, side: THREE.DoubleSide });
     m.onBeforeCompile = sh => {
       Object.assign(sh.uniforms, uniforms);
@@ -355,7 +396,7 @@ ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
         .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;')
         .replace('#include <project_vertex>', '#include <project_vertex>\nvMonde = (modelMatrix * vec4(transformed, 1.0)).xyz;');
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;\nuniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol;')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;\nuniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol; uniform float natureDalles;')
         .replace('#include <fog_fragment>', '#include <fog_fragment>\n' + GRILLE);
     };
     m.customProgramCacheKey = () => 'ile-sol-salle';
@@ -371,7 +412,7 @@ ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
         .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;')
         .replace('#include <project_vertex>', '#include <project_vertex>\nvMonde = (modelMatrix * vec4(transformed, 1.0)).xyz;');
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;\nuniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol;')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;\nuniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol; uniform float natureDalles;')
         .replace('#include <fog_fragment>', '#include <fog_fragment>\n' + GRILLE);
     };
     materiau.customProgramCacheKey = () => 'ile-sol-grille-' + (materiau.vertexColors ? 'c' : 'u') + (materiau.map ? 't' : '') + (cle ? '/' + cle.call(materiau) : '');
@@ -381,3 +422,4 @@ ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
 
   return { TUILE, falaises, hauteurs, preparer, tuiles, materiaux, materiauSalle, grille };
 })();
+

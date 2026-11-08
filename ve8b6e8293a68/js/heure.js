@@ -10,7 +10,7 @@ const Heure = (() => {
   ];
   let figee = null;
   try {
-    const q = typeof location === 'object' && location.search ? new URLSearchParams(location.search).get('horloge') : null;
+    const q = typeof location === 'object' && location.search && typeof Util === 'object' && Util.dev() ? new URLSearchParams(location.search).get('horloge') : null;
     if (q != null && q !== '' && Number.isFinite(+q)) figee = ((+q % 24) + 24) % 24;
   } catch (e) {   }
 

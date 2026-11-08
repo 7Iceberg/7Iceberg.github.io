@@ -231,7 +231,8 @@ void main() {
       this.rocs.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       this.rocs.count = 0; this.rocs.frustumCulled = false;
       this.groupe = new THREE.Group();
-      this.groupe.add(this.carres, this.panneaux, this.rocs);
+      this.glyphes = new THREE.Group(); this.cleGlyphes = ''; this.texGlyphes = {};
+      this.groupe.add(this.carres, this.panneaux, this.rocs, this.glyphes);
       this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._v = new THREE.Vector3(); this._s = new THREE.Vector3(); this._c = new THREE.Color(); this._e = new THREE.Euler();
     }
 
@@ -320,6 +321,8 @@ void main() {
       this.etat = 'fermeture';
       this.eclats = []; this.projectiles = []; this.etincelles = []; this.chiffres = [];
       this.rochers.clear(); this.rocs.count = 0;
+      for (const o of [...this.glyphes.children]) { this.glyphes.remove(o); o.geometry.dispose(); o.material.dispose(); }
+      this.cleGlyphes = '';
       this.donnees.fill(0);
       this.texCases.needsUpdate = true;
       this.sig = null;
@@ -354,6 +357,7 @@ void main() {
       const cible = H.cible != null ? cb.entities.find(e => e.id === H.cible && e.alive) : null;
       const sig = [placement ? 1 : 0, [...H.move].join(','), [...H.range].join(','), [...H.blocked].join(','), [...H.aoe].join(','), [...cb.temp.keys()].map(k => k + cb.temp.get(k).kind).join(','), traps.map(t => t.x + ',' + t.y + t.element).join(';'), hv ? hv.x + ',' + hv.y : '', chemin.map(p => p.x + ',' + p.y).join(';'), cible ? cible.x + ',' + cible.y : ''].join('|');
       this.majRochers(cb);
+      this.majGlyphes(cb);
       if (sig === this.sig) return;
       this.sig = sig;
       const D = this.donnees;
@@ -414,6 +418,31 @@ void main() {
       }
       this.rocs.count = n;
       this.rocs.instanceMatrix.needsUpdate = true;
+    }
+
+    majGlyphes(cb) {
+      const THREE = window.THREE, liste = (cb.glyphs || []).filter(g => g.owner && g.cells && g.cells.length);
+      const cle = liste.map(g => g.cells.map(c => c.x + ',' + c.y).join(';') + '|' + g.element + '|' + g.affects + '|' + (g.owner.kit && g.owner.kit.mare ? 1 : 0)).join('/');
+      if (cle === this.cleGlyphes) return;
+      this.cleGlyphes = cle;
+      for (const o of [...this.glyphes.children]) { this.glyphes.remove(o); o.geometry.dispose(); o.material.dispose(); }
+      for (const g of liste) {
+        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, h = -Infinity;
+        for (const c of g.cells) {
+          x0 = Math.min(x0, c.x); x1 = Math.max(x1, c.x); y0 = Math.min(y0, c.y); y1 = Math.max(y1, c.y);
+          const p = this.versMonde(c.x, c.y); h = Math.max(h, this.ile.hauteur(p.u, p.v));
+        }
+        const tortue = !!(g.owner.kit && g.owner.kit.mare), sorte = tortue ? 'tortue:' + (g.element || 'neutre') : g.affects === 'allies' ? 'or' : 'amethyste';
+        const tex = this.texGlyphes[sorte] || (this.texGlyphes[sorte] = Arene.texGlyphe(sorte));
+        const taille = Math.max(x1 - x0, y1 - y0) + 1.15;
+        const geo = new THREE.PlaneGeometry(taille, taille);
+        geo.rotateX(-Math.PI / 2);
+        const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, toneMapped: false });
+        const me = new THREE.Mesh(geo, mat);
+        me.position.set(this.x0 + (x0 + x1) / 2 + 0.5, h + 0.035, this.y0 + (y0 + y1) / 2 + 0.5);
+        me.renderOrder = 2; me.frustumCulled = false;
+        this.glyphes.add(me);
+      }
     }
 
 
@@ -662,10 +691,48 @@ void main() {
       this.texCases.dispose();
       for (const t of Object.values(this.tex)) t.dispose();
       this.rocs.dispose();
+      for (const o of [...this.glyphes.children]) { o.geometry.dispose(); o.material.dispose(); }
+      for (const t of Object.values(this.texGlyphes)) t.dispose();
       this.carres.geometry.dispose(); this.panneaux.geometry.dispose();
       for (const m of [this.matCarres, this.matPanneaux, this.matRocher]) m.dispose();
     }
   }
+
+  Arene.texGlyphe = function (sorte) {
+    const THREE = window.THREE, S = 512, cv = document.createElement('canvas');
+    cv.width = S; cv.height = S;
+    const c = cv.getContext('2d'), C = S / 2;
+    const ELEM = { terre: '#b98b4e', feu: '#ef7a3a', eau: '#3fb8e8', air: '#9fe0a8', neutre: '#e8d8b0' };
+    const hex = (x, y, r, rot = 0) => { c.beginPath(); for (let i = 0; i < 6; i++) { const a = rot + i * Math.PI / 3; c[i ? 'lineTo' : 'moveTo'](x + r * Math.cos(a), y + r * Math.sin(a)); } c.closePath(); };
+    if (sorte.startsWith('tortue')) {
+      const el = ELEM[sorte.split(':')[1]] || ELEM.neutre, OR = '#f2c14e', CY = '#7fe6ff';
+      c.beginPath(); c.arc(C, C, S * 0.47, 0, Math.PI * 2); c.fillStyle = 'rgba(28,40,58,0.42)'; c.fill();
+      const gr = c.createRadialGradient(C, C, S * 0.05, C, C, S * 0.48);
+      gr.addColorStop(0, 'rgba(127,230,255,0.38)'); gr.addColorStop(0.75, 'rgba(127,230,255,0.18)'); gr.addColorStop(1, 'rgba(127,230,255,0)');
+      c.fillStyle = gr; c.fillRect(0, 0, S, S);
+      c.lineJoin = 'round'; c.lineCap = 'round';
+      const trait = (w, col, flou) => { c.shadowColor = CY; c.shadowBlur = flou; c.lineWidth = w; c.strokeStyle = col; c.stroke(); c.shadowBlur = 0; };
+      c.beginPath(); c.arc(C, C, S * 0.47, 0, Math.PI * 2); trait(S * 0.026, OR, 18);
+      c.beginPath(); c.arc(C, C, S * 0.395, 0, Math.PI * 2); trait(S * 0.016, OR, 10);
+      for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; c.beginPath(); c.moveTo(C + Math.cos(a) * S * 0.395, C + Math.sin(a) * S * 0.395); c.lineTo(C + Math.cos(a) * S * 0.47, C + Math.sin(a) * S * 0.47); trait(S * 0.013, OR, 6); }
+      const r = S * 0.105, d = r * Math.sqrt(3);
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI / 6 + i * Math.PI / 3, x = C + Math.cos(a) * d, y = C + Math.sin(a) * d;
+        hex(x, y, r * 0.92); c.fillStyle = 'rgba(127,230,255,0.24)'; c.fill(); trait(S * 0.018, OR, 10);
+      }
+      hex(C, C, r * 0.92); c.fillStyle = el; c.globalAlpha = 0.85; c.fill(); c.globalAlpha = 1; trait(S * 0.022, OR, 14);
+      c.beginPath(); c.moveTo(C, C - r * 0.5); c.quadraticCurveTo(C + r * 0.42, C + r * 0.05, C, C + r * 0.42); c.quadraticCurveTo(C - r * 0.42, C + r * 0.05, C, C - r * 0.5);
+      c.fillStyle = CY; c.shadowColor = CY; c.shadowBlur = 16; c.fill(); c.shadowBlur = 0;
+    } else {
+      const col = sorte === 'or' ? '#f3bc72' : '#b48cf0';
+      c.beginPath(); c.arc(C, C, S * 0.44, 0, Math.PI * 2); c.fillStyle = sorte === 'or' ? 'rgba(243,188,114,0.22)' : 'rgba(151,100,214,0.26)'; c.fill();
+      c.lineWidth = S * 0.016; c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = 14; c.stroke(); c.shadowBlur = 0;
+      c.beginPath(); c.arc(C, C, S * 0.34, 0, Math.PI * 2); c.lineWidth = S * 0.008; c.stroke();
+    }
+    const t = new THREE.CanvasTexture(cv);
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    return t;
+  };
 
   return { Arene, N };
 })();

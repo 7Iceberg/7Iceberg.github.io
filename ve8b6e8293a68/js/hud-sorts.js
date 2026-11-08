@@ -47,7 +47,7 @@ function lignes(ef, s, crit) {
     case 'damage': return [['Dégâts', `${jet(ef)} ${el(s.element)}`]].concat(critique());
     case 'heal': return [['Soin', `${jet(ef)} PV`]].concat(aCrit ? [['Coup critique', `${jetCrit()} PV`]] : []);
     case 'sacrifice': return [['Sacrifice', `${jet(ef)} ${el(s.element)}, à ${plural(ef.radius, 'case')} de la bête`]].concat(critique());
-    case 'shield': return [['Bouclier', `${Math.round(ef.value)} (${tours(ef.duration)})`]];
+    case 'shield': return [['Bouclier', `${Math.round(ef.value)} (${tours(ef.duration)})`], ['', `grandit avec vos PV au-delà de ${DATA.rules.bouclierPvRef || 300}`, true]];
     case 'echo': return [['Écho', `${tours(ef.turns)} : ${Math.round(ef.min * (ef.mult || 1))} à ${Math.round(ef.max * (ef.mult || 1))} ${el(ef.element)} à chaque PM perdu, ${ef.uses} fois au plus`]];
     case 'filon': return [['Filon', `${tours(ef.turns)}, ${ef.charges || 3} déclenchements : ${jet(ef)} à chaque retrait de PA, de PM ou de portée sur l'ennemi marqué ; sur un allié marqué, à chaque soin, en zone de 2 cases autour de lui ; +1 Trouvaille`]];
     case 'dot': return [['Brûlure', `${Math.round(ef.value)} ${el(ef.element)} par tour (${tours(ef.turns)})`]];
@@ -67,11 +67,11 @@ function lignes(ef, s, crit) {
     case 'summon': return [['Invoque', `${DATA.monsters[ef.monster].name}${ef.hpPctOfOwner ? ` (${ef.hpPctOfOwner} % de tes PV)` : ''}`]];
     case 'obstacle': return [['Mur', tours(ef.turns)]];
     case 'state':
-      if (ef.name === 'forme_iskar') return [['Forme d\'Iskar', `${tours(ef.turns)} : ne reçoit plus que 40 % des soins`]];
+      if (ef.name === 'forme_iskar') return [['Forme Nocturne', `${tours(ef.turns)} : ne reçoit plus que 40 % des soins`]];
       if (ef.name === 'intaclable') return [['Intaclable', tours(ef.turns)]];
       if (ef.name === 'protege') return [['Protégé', `${tours(ef.turns)} : les coups reçus tombent sur le Velmar`]];
-      if (ef.name === 'digue') return [['Digue', `${tours(ef.turns)} : invulnérable au contact ; frappé à distance, +1 PM`]];
-      if (ef.name === 'brise_lames') return [['Brise-Lames', `${tours(ef.turns)} : invulnérable à distance ; frappé au contact, +15 % de dégâts`]];
+      if (ef.name === 'digue') return [['Carapace Close', `${tours(ef.turns)} : invulnérable au contact ; frappé à distance, +1 PM`]];
+      if (ef.name === 'brise_lames') return [['Bouclier à Rouage', `${tours(ef.turns)} : invulnérable à distance ; frappé au contact, +15 % de dégâts`]];
       if (ef.name === 'invisible') return [['Invisible', `${tours(ef.turns)}${ef.lingering ? ', jusqu\'à la fin du tour où tu frappes' : ''}`]];
       return [['Provoque', tours(ef.turns)]];
     case 'oath': return [['Serment', `${tours(ef.turns)}, +${ef.power} % contre le juré`], ['Brûlure du serment', `${Math.round(ef.burn)} feu`]];
@@ -95,7 +95,7 @@ function lignes(ef, s, crit) {
     case 'ordreMeute': return [['Ordre', `toutes ses bêtes frappent tout de suite, à ${ef.pct || 50} % de leurs dégâts`]];
     case 'horde': return [['Horde', `+${ef.jauge || 3} de jauge pendant ${plural(ef.turns || 2, 'tour')}, ses appels coûtent ${ef.rabais || 1} PA de moins ; au bout, ses bêtes s'en vont`]];
     case 'pacte': return [['Pacte', `sacrifie ses bêtes : +${ef.par || 3} % de dégâts par point de jauge (${tours(ef.turns || 3)}), ${ef.soin || 30} % de leurs PV`]];
-    case 'declencherMares': return [['Marée', 'toutes ses Mares agissent tout de suite sur les ennemis qui s\'y tiennent']];
+    case 'declencherMares': return [['Glyphes', 'tous ses Glyphes agissent tout de suite sur les ennemis qui s\'y tiennent']];
     case 'hantise': return [['Hantise', 'pousse la créature au contact jusqu\'à la case visée, à travers les pièges']];
     case 'versLeurre': return [['Attire', `de ${plural(ef.cells, 'case')} vers le Leurre`]];
     case 'depuisLeurre': return [['Repousse', `de ${plural(ef.cells, 'case')} depuis le Leurre`]];
@@ -114,7 +114,7 @@ function propres(s) {
   if (s.cumul) out.push(['Se cumule', `+${s.cumul.par} % par lancer (${s.cumul.max} au plus), perdu sans le relancer dans les ${plural(s.cumul.tours || 2, 'tour')}`]);
   if (s.faveur) out.push(['Faveur', 'une seule par allié (la nouvelle remplace l\'ancienne) ; sur une case vide, elle reste au sol en Étincelle pour le premier allié qui y commence son tour']);
   if (s.ombre) out.push(['Ombre', 'une seule par ennemi : la nouvelle remplace l\'ancienne']);
-  if (s.mare) out.push(['Dans la Mare', 'le Velmar et ses alliés subissent 15 % de dégâts en moins']);
+  if (s.mare) out.push(['Dans le Glyphe', 'le Velmar et ses alliés subissent 15 % de dégâts en moins']);
   if (s.parPmRestant) out.push(['PM restants', `+${s.parPmRestant} % par PM qui te reste`]);
   if (s.traque) out.push(['Traque', 'chaque autre tir sur la cible ajoute un cran : +8 % chacun, 3 au plus ; marquer une autre cible repart de zéro']);
   if (s.parPiege) out.push(['Pli', `+${s.parPiege} % par piège déclenché (5 au plus), le Pli dépensé`]);
@@ -125,9 +125,9 @@ function propres(s) {
   if (s.bonusIfInvisible) out.push(['Invisible', `dégâts × ${String(s.bonusIfInvisible).replace('.', ',')}`]);
   if (s.fury) out.push(['Fureur', `+${s.fury} si la cible est touchée`]);
   if (s.furySpend) out.push(['Fureur dépensée', `+${s.furySpend} % par point`]);
-  if (s.braiseCost) out.push(['Braise', `coûte ${s.braiseCost}`]);
-  if (s.braise) out.push(['Braise', `+${s.braise} si la cible est touchée`]);
-  if (s.braiseSpend) out.push(['Braise soufflée', `+${s.braiseSpend} % par point`]);
+  if (s.braiseCost) out.push(['Soif', `coûte ${s.braiseCost}`]);
+  if (s.braise) out.push(['Soif', `+${s.braise} si la cible est touchée`]);
+  if (s.braiseSpend) out.push(['Soif lâchée', `+${s.braiseSpend} % par point`]);
   const cr = Object.values(DATA.classes).find(c => c.reserve && c.spells.includes(s.id));
   if (cr && s.reserve) out.push([cr.reserve.nom, `+${s.reserve} si la cible est touchée`]);
   if (cr && s.reserveSpend) out.push([`${cr.reserve.nom} dépensée`, `+${s.reserveSpend} % par point (dégâts et boucliers)`]);
@@ -291,7 +291,7 @@ Object.assign(Hud.prototype, {
     const carac = [['Coût', `<b>${s.pa}</b> PA`]];
     if (s.target === 'self') carac.push(['Portée', 'sur soi']);
     else {
-      carac.push(['Portée', `<b>${s.range[0] === s.range[1] ? s.range[0] : `${s.range[0]} à ${s.range[1]}`}</b> PO${s.range[1] >= 2 ? ' <i>modifiable</i>' : ''}`]);
+      carac.push(['Portée', `<b>${s.range[0] === s.range[1] ? s.range[0] : `${s.range[0]} à ${s.range[1]}`}</b> PO${s.range[1] >= 2 ? (s.porteeFixe ? ' <i>fixe</i>' : ' <i>modifiable</i>') : ''}`]);
       carac.push(['Ligne de vue', s.los ? 'oui' : 'non, sans ligne de vue']);
       if (s.line) carac.push(['Lancer', 'en ligne']);
       if (CIBLE[s.target] && s.target !== 'entity' && s.target !== 'any') carac.push(['Cible', CIBLE[s.target]]);

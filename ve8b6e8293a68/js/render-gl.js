@@ -265,7 +265,11 @@ class RendererGL {
     if (this.degraded) return;
     if (this.suspendu) { requestAnimationFrame(() => this.frame()); return; }
     const now = performance.now();
-    this.watchRate(now);
+    if (!this.inCombat && typeof Util === 'object' && Util.absent && Util.absent(now)) {
+      if (now - (this.imageAbsence || 0) < 100) { if (this.onTick) this.onTick(now); requestAnimationFrame(() => this.frame()); return; }
+      this.imageAbsence = now;
+      this.prevFrame = 0;
+    } else this.watchRate(now);
     if (this.onTick) this.onTick(now);
     this.animations = this.animations.filter(a => !a.tick(now));
     this.follow();
@@ -619,7 +623,7 @@ class RendererGL {
       if (tmp && tmp.kind === 'water') { fill = [0x113f8a, 0.6]; stroke = [0x78b4e6, 0.6]; }
       if (tmp && tmp.kind === 'fente') { fill = [0x120818, 0.92]; stroke = [0xbf95ff, 0.9]; }
       const gl = glyphs.length ? cb.glyphsAt(x, y) : [];
-      if (gl.length) { const ally = gl.some(gg => gg.affects === 'allies'); fill = ally ? [0xf3bc72, 0.3] : [0x9764d6, 0.34]; stroke = ally ? [0xf7e2b4, 0.9] : [0xd6beff, 0.9]; }
+      if (gl.length) { const ally = gl.some(gg => gg.affects === 'allies' || (gg.owner && gg.owner.kit && gg.owner.kit.mare)); fill = ally ? [0xf3bc72, 0.3] : [0x9764d6, 0.34]; stroke = ally ? [0xf7e2b4, 0.9] : [0xd6beff, 0.9]; }
       if (placement) {
         if (cb.isStartCell('player', x, y)) { fill = [0x209fec, 0.55]; stroke = [0xacdded, 0.95]; g = gd; }
         else if (cb.isStartCell('monster', x, y)) { fill = [0xd9424f, 0.45]; stroke = [0xffb2ac, 0.85]; }

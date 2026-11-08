@@ -38,6 +38,7 @@ class Ile3D {
     const q = Ile3D.qualiteParDefaut();
     this.qualite = q.q;
     this.qualiteForcee = q.force;
+    this.qualiteDepart = q.q;
     this.telephone = CameraIle.telephone();
     this.ambianceVoulue = Ile3D.ambiance();
     this.soir = this.ambianceVoulue.soir;
@@ -1107,6 +1108,7 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
     const palettes = (def.regions || []).map(r => r.palette || {});
     const nav = this.world && this.world.plateau && this.world.plateau.nav;
     const IM = IleTerrain.M, R = IM.hasard(IM.cle('herbe-proche'));
+    const sousHalle = IleDecor.sousLesHalles(T);
     const mats = [], cols = [];
     for (const t of D.tuiles) for (const h of t.herbes) { for (let q = 0; q < 16; q++) mats.push(h.m.elements[q]); cols.push(h.c[0], h.c[1], h.c[2]); }
     const m4 = new THREE.Matrix4(), qu = new THREE.Quaternion(), eu = new THREE.Euler(0, 0, 0, 'YXZ'), po = new THREE.Vector3(), sc = new THREE.Vector3();
@@ -1122,6 +1124,7 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
       const y = T.marcheA(x, z);
       if (!Number.isFinite(y) || T.profondeurA(x, z) > 0.01) continue;
       if (nav) { const c = nav.caseDe(x, z); if (c < 0 || !nav.ouvertStatique(c)) continue; }
+      if (sousHalle && sousHalle(x, z)) continue;
       const pal = palettes[T.regionA(x, z)] || {}, ph = pal.herbe || ['#6a9664'];
       C.set(ph[R() < 0.5 || !ph[1] ? 0 : 1]);
       C2.set(pal.herbeClaire || '#b7d08a');
@@ -1153,6 +1156,7 @@ bool dansAire(vec2 c) { return c.x >= 0.0 && c.x < 15.0 && c.y >= 0.0 && c.y < 1
       if (herbe < 0.7 || tirage > pre * rare * 0.9) continue;
       if (!Number.isFinite(T.marcheA(x, z)) || T.profondeurA(x, z) > 0.01) continue;
       if (nav) { const c = nav.caseDe(x, z); if (c < 0 || !nav.ouvertStatique(c)) continue; }
+      if (sousHalle && sousHalle(x, z)) continue;
       const cs = COULEURS[zone] || COULEURS.ervane_mailles, col = cs[Math.floor(R() * cs.length)];
       for (let b = 0; b < 3; b++) {
         const fx = x + (R() - 0.5) * 0.7, fz = z + (R() - 0.5) * 0.7, fy = T.marcheA(fx, fz);
@@ -1350,6 +1354,7 @@ void main() {
     geo.setAttribute('forme', new THREE.InstancedBufferAttribute(forme, 3));
     geo.setAttribute('teinte', new THREE.InstancedBufferAttribute(teinte, 4));
     geo.instanceCount = n;
+    this.bouffeesMax = n;
     const m = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { carte: { value: texB }, temps: { value: 0 }, centreIle: { value: new THREE.Vector2(cx, cz) }, pages: { value: pages.length } }]),
       vertexShader: `attribute vec4 orbite; attribute vec3 forme; attribute vec4 teinte; uniform float temps; uniform vec2 centreIle; uniform float pages;
@@ -1749,7 +1754,14 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const dtReel = this.dernier ? now - this.dernier : 16;
     this.dernier = now;
     if (this.dessinEndormi) { if (this.onTick) this.onTick(now); return; }
-    this.surveillerCadence(dtReel);
+    if (!this.enArene && !this.salle && typeof Util === 'object' && Util.absent && Util.absent(now)) {
+      this.enAbsence = true;
+      if (this.onTick) this.onTick(now);
+      if (now - (this.imageAbsence || 0) >= Ile3D.ABSENCE_MS) { this.imageAbsence = now; this.image(now); }
+      return;
+    }
+    if (this.enAbsence) { this.enAbsence = false; this.cadence = 0; this.msLentes = this.msFluides = 0; }
+    this.surveillerCadence(dtReel, now);
     if (this.onTick) this.onTick(now);
     this.image(now);
   }
@@ -1762,24 +1774,36 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (!oui && this.actif && this.pret) this.image(performance.now());
   }
 
-  surveillerCadence(dt) {
-    if (this.qualiteForcee || dt > 250 || this.qualite === 'basse') return;
+  surveillerCadence(dt, now) {
+    if (this.qualiteForcee || dt > 250) return;
+    if (now === undefined) now = typeof performance === 'object' ? performance.now() : Date.now();
+    const R = Ile3D.QUALITES, rang = R.indexOf(this.qualite), plafond = R.indexOf(this.qualiteDepart || this.qualite);
     this.cadence = this.cadence ? this.cadence * 0.95 + dt * 0.05 : dt;
-    this.msLentes = this.cadence > 34 ? (this.msLentes || 0) + dt : 0;
+    this.msLentes = this.cadence > 34 && rang > 0 ? (this.msLentes || 0) + dt : 0;
+    this.msFluides = this.cadence < 20 && rang < plafond && !this.remonteeBloquee ? (this.msFluides || 0) + dt : 0;
     if (this.msLentes >= 3000) {
-      this.msLentes = 0;
-      this.descendreQualite(this.qualite === 'haute' ? 'moyenne' : 'basse');
+      this.msLentes = this.msFluides = 0;
+      if (this.derniereRemontee && now - this.derniereRemontee < 60000) this.remonteeBloquee = true;
+      this.changerQualite(R[rang - 1]);
+      this.dernierChangement = now;
       console.info('Ervane : rendu passé en qualité ' + this.qualite + ' (' + Math.round(1000 / this.cadence) + ' images par seconde).');
+    } else if (this.msFluides >= 10000 && now - (this.dernierChangement || -Infinity) >= 30000) {
+      this.msLentes = this.msFluides = 0;
+      this.changerQualite(R[rang + 1]);
+      this.dernierChangement = this.derniereRemontee = now;
+      console.info('Ervane : rendu remonté en qualité ' + this.qualite + ' (' + Math.round(1000 / this.cadence) + ' images par seconde).');
     }
   }
 
-  descendreQualite(q) {
+  changerQualite(q) {
     this.qualite = q;
     this.appliquerDensite();
     if (this.matEauRef) this.matEauRef.uniforms.anime.value = q === 'basse' ? 0 : 1;
-    if (this.bouffees) this.bouffees.instanceCount = Math.min(this.bouffees.instanceCount, q === 'basse' ? 18 : this.telephone ? 34 : 56);
+    if (this.bouffees) this.bouffees.instanceCount = Math.min(this.bouffeesMax || this.bouffees.instanceCount, q === 'basse' ? 18 : this.telephone ? 34 : 56);
     for (const H of [this.herbe, this.fleurs, this.touffesNuit, this.bordures]) if (H) H.centre = null;
   }
+
+  descendreQualite(q) { this.changerQualite(q); }
 
   image(now) {
     if (!this.pret || !this.renderer) return;
@@ -1946,6 +1970,10 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const u = this.mats.uSol;
     u.aireOn.value = A.etat === 'apercu' ? this.apercuK : A.etat ? Math.max(0, Math.min(1, cam.fondu)) : 0;
     u.tempsSol.value = now / 1000;
+    if (u.natureDalles && A.etat) {
+      const sol = this.T && this.T.solA ? this.T.solA(A.x0 + 7.5, A.y0 + 7.5) : 'calcaire';
+      u.natureDalles.value = sol === 'herbe' || sol === 'sous_bois' ? 1 : sol === 'terre' || sol === 'lande' ? 2 : sol === 'roche' ? 3 : 0;
+    }
     u.tactiqueSol.value = ici && this.tactique ? 1 : 0;
     if (u.grilleSol) u.grilleSol.value = typeof UI === 'function' && UI.reglage && !UI.reglage('grille') ? 0 : 1;
     if (A.etat) {
@@ -2243,6 +2271,8 @@ Ile3D.vecteurZone = (THREE, z) => {
 };
 Ile3D.ZONE_FONDU = 1.1;
 Ile3D.TOUR_CLAVIER = 1.5;
+Ile3D.QUALITES = ['basse', 'moyenne', 'haute'];
+Ile3D.ABSENCE_MS = 100;
 
 Ile3D.SOIR = {
   lum: { hemi: ['#a9bde6', '#5c4630', 0.56], cle: ['#ffd9a6', 1.8], chaud: ['#ffb070', 0.16], contre: ['#90a8ff', 0.2] },
@@ -2311,3 +2341,4 @@ Ile3D.SOIR = {
   },
   etalonnage: { vert: [0.15, 0.47], vertTeinte: 0.3, vertVers: 0.45, vertSat: 1.3, vertLum: 0.76, pierreTeinte: 0.09, pierreSat: 0.07, pierreLum: 1.04, terreSat: 1.08, terreLum: 1.05 },
 };
+

@@ -665,7 +665,7 @@ class Combat {
     }
     this.traps.push({
       x: cell.x, y: cell.y, owner: e, name: ef.name || s.name, element: s.element,
-      effects: ef.effects, expiresRound: this.round + DATA.rules.trapRounds,
+      effects: ef.effects, expiresRound: this.round + DATA.rules.trapRounds, zone: ef.zone || null,
     });
     this.log(`${e.name} pose ${ef.name || s.name}.`);
   }
@@ -699,8 +699,8 @@ class Combat {
 
   declencherMares(e) {
     const mares = this.glyphs.filter(g => g.owner === e);
-    if (!mares.length) { this.log(`${e.name} n'a aucune Mare en jeu.`, e.team); return; }
-    this.log(`${e.name} fait monter la Marée : ses Mares se déclenchent.`, e.team);
+    if (!mares.length) { this.log(`${e.name} n'a aucun Glyphe en jeu.`, e.team); return; }
+    this.log(`${e.name} frappe le sol de son bâton : ses Glyphes s'éveillent.`, e.team);
     const vus = new Set();
     for (const g of mares) for (const c of g.cells) {
       const t = this.entityAt(c.x, c.y);
@@ -747,6 +747,19 @@ class Combat {
     const kp = trap.owner && trap.owner.kit && trap.owner.kit.pli;
     if (kp) { trap.owner.piegesPli = Math.min(kp.max || 5, (trap.owner.piegesPli || 0) + 1); this.log(`${trap.owner.name} : Pli ${trap.owner.piegesPli} / ${kp.max || 5}.`, trap.owner.team); }
     await this.emitAsync('animTrap', { trap, entity: e });
+    if (trap.zone) {
+      const cells = Grid.aoeCells(this.map, trap.zone.shape, trap.zone.size, { x: trap.x, y: trap.y }, { x: trap.x, y: trap.y });
+      this.emit('fx', { cells, color: DATA.elements[trap.element].color });
+      for (const c of cells) {
+        const o = this.entityAt(c.x, c.y);
+        if (!o || o === e || !o.alive || o.team === trap.owner.team) continue;
+        for (const ef of trap.effects) {
+          if (!o.alive) break;
+          if (ef.type === 'damage') this.dealDamage(trap.owner, o, this.rollDamage(trap.owner, o, trap.element, ef, null), trap.element, { label: trap.name, trap: true });
+          else if (ef.type === 'dot') this.applyStatus(trap.owner, o, ef);
+        }
+      }
+    }
     for (const ef of trap.effects) {
       if (!e.alive) break;
       if (ef.type === 'damage') {
@@ -869,7 +882,7 @@ class Combat {
     if (e.pa < this.coutPa(e, s)) return { ok: false, reason: 'Pas assez de PA' };
     if ((e.cooldowns[spellId] || 0) > 0) return { ok: false, reason: `Relance dans ${e.cooldowns[spellId]} tour(s)` };
     if (s.maxPerTurn && (e.casts[spellId] || 0) >= s.maxPerTurn) return { ok: false, reason: 'Déjà lancé le maximum de fois ce tour' };
-    if (s.braiseCost && this.braiseOf(e) < s.braiseCost) return { ok: false, reason: `Il faut ${s.braiseCost} de Braise` };
+    if (s.braiseCost && this.braiseOf(e) < s.braiseCost) return { ok: false, reason: `Il faut ${s.braiseCost} de Soif` };
     if (e.glyphThisTurn && s.effects.some(ef => ef.type === 'glyph')) return { ok: false, reason: 'Un seul glyphe par tour' };
     if (s.exigeDebout && e.hasState('assise')) return { ok: false, reason: 'Il faut être debout' };
     if (s.exigeTenu && !this.tenuPar(e)) return { ok: false, reason: 'Il faut tenir quelqu\'un (Empoigne)' };
@@ -966,6 +979,7 @@ class Combat {
     }
     let bonus = e.modifier('range') + (e.po || 0);
     bonus += this.affutDe(e, from).range;
+    if (s.porteeFixe) bonus = Math.min(0, bonus);
     return bonus ? [s.range[0], Math.max(s.range[0], s.range[1] + bonus)] : s.range;
   }
 
@@ -984,12 +998,12 @@ class Combat {
     if (!k || !(n > 0) || !e.alive) return;
     const before = e.braise || 0;
     e.braise = Math.min(k.max, before + n);
-    if (e.braise > before) this.log(`${e.name} : Braise ${e.braise} / ${k.max}.`, e.team);
+    if (e.braise > before) this.log(`${e.name} : Soif ${e.braise} / ${k.max}.`, e.team);
   }
   tickBraise(e) {
     const k = e.kit && e.kit.braise;
     if (!k) return;
-    if ((e.braise || 0) >= k.surchauffe) { this.loseHp(e, Math.round(e.hpMax * k.brulure / 100), 'surchauffe'); if (!e.alive) return; }
+    if ((e.braise || 0) >= k.surchauffe) { this.loseHp(e, Math.round(e.hpMax * k.brulure / 100), 'la Soif le dévore'); if (!e.alive) return; }
     this.gainBraise(e, k.perTurn);
   }
 
@@ -1198,8 +1212,8 @@ class Combat {
       e.casts[spellId] = (e.casts[spellId] || 0) + 1;
       if (s.cooldown) e.cooldowns[spellId] = s.cooldown;
       if (s.furySpend && e.fury > 0) { this.log(`${e.name} dépense ${e.fury} de Fureur.`, e.team); e.fury = 0; }
-      if (s.braiseCost) { e.braise = Math.max(0, (e.braise || 0) - s.braiseCost); this.log(`${e.name} dépense ${s.braiseCost} de Braise.`, e.team); }
-      if (s.braiseSpend && (e.braise || 0) > 0) { this.log(`${e.name} souffle ${e.braise} de Braise.`, e.team); e.braise = 0; }
+      if (s.braiseCost) { e.braise = Math.max(0, (e.braise || 0) - s.braiseCost); this.log(`${e.name} étanche ${s.braiseCost} de Soif.`, e.team); }
+      if (s.braiseSpend && (e.braise || 0) > 0) { this.log(`${e.name} lâche ${e.braise} de Soif.`, e.team); e.braise = 0; }
       if (s.reserveSpend && (e.reserve || 0) > 0 && e.kit && e.kit.reserve) { this.log(`${e.name} dépense ${e.reserve} de ${e.kit.reserve.nom}.`, e.team); e.reserve = 0; }
       const center = s.target === 'self' ? e.pos : { x: cell.x, y: cell.y };
       const cells = this.zoneCells(e, s, center, e.pos);
@@ -1437,7 +1451,8 @@ class Combat {
         this.log(`${t.name} porte un écho pendant ${turns} tour(s) : chaque PM perdu le fera résonner.`);
         break;
       case 'shield': {
-        const v = Math.round(ef.value * (source ? source.scale || 1 : 1) * (1 + (source ? source.boucliers || 0 : 0) / 100) * (1 + this.bonusReserve(source, this.castCtx && this.castCtx.caster === source ? this.castCtx.spell : null)));
+        const pvK = source && source.kit && !source.isSummon && DATA.rules.bouclierPvRef ? Math.max(1, (source.hpMax || 0) / DATA.rules.bouclierPvRef) : 1;
+        const v = Math.round(ef.value * pvK * (source ? source.scale || 1 : 1) * (1 + (source ? source.boucliers || 0 : 0) / 100) * (1 + this.bonusReserve(source, this.castCtx && this.castCtx.caster === source ? this.castCtx.spell : null)));
         t.addEffect({ type: 'shield', value: v, turns }, own);
         this.noter(source || t, 'boucliers', v);
         this.noter(t, 'bouclRecus', v);
@@ -1470,7 +1485,7 @@ class Combat {
         if (ef.name === 'invisible' && t.hasState('tracked')) { this.log(`${t.name} est traqué et ne peut pas se cacher.`); break; }
         t.addEffect({ type: 'state', name: ef.name, turns, by: source, lingering: !!ef.lingering }, own);
         if (ef.name === 'invisible') t.hiddenAt = { x: t.x, y: t.y };
-        { const etats = { digue: 'est derrière une Digue', brise_lames: 'est derrière un Brise-Lames', forme_iskar: 'prend la Forme d\'Iskar', protege: `est protégé par ${source.name}`, gibier: `est le gibier de ${source.name}`, victime: `est la victime choisie de ${source.name}`, intaclable: 'devient intaclable', assise: 's\'assoit comme la montagne', tenu: 'est tenu' };
+        { const etats = { digue: 'est sous la Carapace Close', brise_lames: 'est derrière le Bouclier à Rouage', forme_iskar: 'prend la Forme Nocturne', protege: `est protégé par ${source.name}`, gibier: `est le gibier de ${source.name}`, victime: `est la victime choisie de ${source.name}`, intaclable: 'devient intaclable', assise: 's\'assoit comme la montagne', tenu: 'est tenu' };
           this.log(ef.name === 'invisible' ? `${t.name} devient invisible.` : ef.name === 'unhealable' ? `${t.name} ne peut plus être soigné pendant ${turns} tour(s).` : ef.name === 'ivre' ? `${t.name} est ivre pendant ${turns} tour(s).` : etats[ef.name] ? `${t.name} ${etats[ef.name]} (${turns} tour(s)).` : `${t.name} est provoqué par ${source.name}.`); }
         break;
       case 'range':
