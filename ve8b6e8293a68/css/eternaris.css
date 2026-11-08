@@ -16,11 +16,22 @@
   --e-or-fonce: #c9962c;
 }
 
-#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire, .vy-fenetre--garderobe) { --fen-texte: var(--e-texte); --fen-texte-2: var(--e-texte-2); --fen-filet: var(--e-ligne-2); background: var(--e-fond) !important; border: 1px solid rgba(0, 0, 0, 0.55) !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 18px 40px rgba(0, 0, 0, 0.55) !important; }
-#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire, .vy-fenetre--garderobe) .vy-fenetre__tete { background: var(--e-titre) !important; border-bottom: 1px solid rgba(0, 0, 0, 0.35) !important; }
-#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire, .vy-fenetre--garderobe) .vy-fenetre__titre { font: 800 15px/1.5 var(--vy-font-ui) !important; letter-spacing: 0.03em !important; text-transform: uppercase; }
-#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire, .vy-fenetre--garderobe) .vy-fenetre__touche { background: transparent !important; border: 1.5px solid var(--e-texte-2) !important; color: var(--e-texte-2) !important; border-radius: 3px !important; }
-#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire, .vy-fenetre--garderobe) .vy-fenetre__bouton { background: none !important; }
+#app.vy-da.vy-eter:is(:not([data-ui-theme]), [data-ui-theme="nuit"]) {
+  --da-fond: #393a4d; --da-panneau: #444556; --da-tete: #57535a; --da-case: #29293a; --da-case-2: #313041;
+  --da-ligne: rgba(255, 255, 255, 0.07); --da-ligne-2: rgba(255, 255, 255, 0.12);
+  --da-texte: #f1eff5; --da-texte-2: #b6b3c4; --da-discret: #87849a;
+  --da-ombre: 0 18px 40px rgba(0, 0, 0, 0.55);
+  --v-fen-rgb: 57, 58, 77; --v-pan-rgb: 60, 58, 72; --v-carte-rgb: 68, 69, 86; --v-champ-rgb: 41, 41, 58;
+  --v-degrade: var(--e-or);
+  --fen-fond: #393a4d; --fen-fond-2: #29293a; --fen-tete: #57535a;
+}
+
+#app.vy-eter :is(#fenetres, #panel) { --vy-font-titre: var(--vy-font-ui); }
+#app.vy-eter #fenetres .vy-fenetre { --fen-texte: var(--e-texte); --fen-texte-2: var(--e-texte-2); --fen-filet: var(--e-ligne-2); background: var(--e-fond) !important; border: 1px solid rgba(0, 0, 0, 0.55) !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 18px 40px rgba(0, 0, 0, 0.55) !important; }
+#app.vy-eter #fenetres .vy-fenetre .vy-fenetre__tete { background: var(--e-titre) !important; border-bottom: 1px solid rgba(0, 0, 0, 0.35) !important; }
+#app.vy-eter #fenetres .vy-fenetre .vy-fenetre__titre { font: 800 15px/1.5 var(--vy-font-ui) !important; letter-spacing: 0.03em !important; text-transform: uppercase; }
+#app.vy-eter #fenetres .vy-fenetre .vy-fenetre__touche { background: transparent !important; border: 1.5px solid var(--e-texte-2) !important; color: var(--e-texte-2) !important; border-radius: 3px !important; }
+#app.vy-eter #fenetres .vy-fenetre .vy-fenetre__bouton { background: none !important; }
 #app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire) .vy-onglets:not(.vy-gr__onglets),
 #app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__vues { display: flex; align-self: stretch !important; width: auto !important; margin: -10px -12px 8px !important; padding: 0 !important; background: var(--e-onglets) !important; border: 0 !important; border-bottom: 1px solid rgba(0, 0, 0, 0.3) !important; border-radius: 0 !important; }
 #app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire) .vy-onglets:not(.vy-gr__onglets) .vy-onglet,
@@ -30,10 +41,30 @@
 #app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire) .vy-onglets:not(.vy-gr__onglets) .vy-onglet.on::after,
 #app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__vue.on::after { content: ''; display: block !important; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; border-radius: 0; background: var(--e-or) !important; box-shadow: none !important; }
 #app.vy-eter #fenetres .vy-fenetre--inventaire .vy-inv__vue::after { display: block; }
-#app.vy-eter :is(#fenetres .vy-fenetre--caracs, #fenetres .vy-fenetre--inventaire, #fenetres .vy-fenetre--garderobe, #panel[data-open="fightEnd"]) .vy-bouton:not(.vy-bouton--primaire) { background: var(--e-bouton) !important; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35) !important; }
-#app.vy-eter :is(#fenetres .vy-fenetre--caracs, #fenetres .vy-fenetre--inventaire, #fenetres .vy-fenetre--garderobe, #panel[data-open="fightEnd"]) .vy-bouton--primaire { background: var(--e-or) !important; box-shadow: 0 2px 0 var(--e-or-fonce) !important; color: #241a06 !important; }
-#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire, .vy-fenetre--garderobe) .vy-case { background: var(--e-case) !important; box-shadow: inset 0 0 0 1px var(--e-ligne-2) !important; }
-#app.vy-eter #fenetres :is(.vy-fenetre--caracs, .vy-fenetre--inventaire, .vy-fenetre--garderobe) :is(input[type="search"], input[type="text"], select, .vy-recherche) { background: var(--e-case) !important; border-color: rgba(0, 0, 0, 0.3) !important; }
+#app.vy-eter :is(#fenetres, #panel) .vy-bouton:not(.vy-bouton--primaire) { background: var(--e-bouton) !important; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35) !important; }
+#app.vy-eter :is(#fenetres, #panel) .vy-bouton--primaire { background: var(--e-or) !important; box-shadow: 0 2px 0 var(--e-or-fonce) !important; color: #241a06 !important; }
+#app.vy-eter :is(#fenetres, #panel) .vy-case { background: var(--e-case) !important; box-shadow: inset 0 0 0 1px var(--e-ligne-2) !important; }
+#app.vy-eter :is(#fenetres, #panel) :is(input[type="search"], input[type="text"], select, .vy-recherche) { background: var(--e-case) !important; border-color: rgba(0, 0, 0, 0.3) !important; }
+
+#app.vy-eter :is(#fenetres, #panel) :is(.vy-onglet, .tabs .tab) { font: 800 11px var(--vy-font-ui) !important; letter-spacing: 0.16em !important; text-transform: uppercase; }
+#app.vy-eter :is(#fenetres, #panel) :is(.vy-onglet.on, .vy-onglet[aria-selected="true"], .tabs .tab.on)::after { left: 0 !important; right: 0 !important; height: 3px !important; border-radius: 0 !important; box-shadow: none !important; background: var(--e-or) !important; }
+#app.vy-eter #fenetres :is(.vy-onglets, .tabs) { border-bottom-color: rgba(0, 0, 0, 0.3) !important; }
+#app.vy-eter :is(#fenetres, #panel) :is(h2, h3) { font-family: var(--vy-font-ui) !important; font-weight: 800 !important; letter-spacing: 0.02em !important; }
+#app.vy-eter :is(#fenetres, #panel) h4 { font-family: var(--vy-font-ui) !important; font-weight: 800 !important; }
+#app.vy-eter #fenetres .row { background: var(--e-panneau) !important; border-color: rgba(0, 0, 0, 0.25) !important; }
+
+#app.vy-eter :is(#fenetres, #panel) { --vy-font-lecture: var(--vy-font-ui); }
+#app.vy-eter .vy-profil__banniere { background: radial-gradient(ellipse 40% 120% at 80px 100%, color-mix(in srgb, var(--c) 40%, transparent), transparent 70%), linear-gradient(115deg, color-mix(in srgb, var(--c) 26%, var(--e-fond)), var(--e-panneau) 65%); border-color: rgba(0, 0, 0, 0.3); border-radius: 6px; }
+#app.vy-eter #fenetres .vy-best__fiche { background: var(--e-panneau) !important; border-color: rgba(0, 0, 0, 0.3) !important; border-radius: 6px; }
+
+#app.vy-eter #panel #panel-box { background: var(--e-fond) !important; border: 1px solid rgba(0, 0, 0, 0.55) !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 18px 40px rgba(0, 0, 0, 0.55) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+#app.vy-eter #panel #panel-box::before, #app.vy-eter #panel #panel-box::after { display: none !important; }
+#app.vy-eter #panel .vy-modale__tete { background: var(--e-titre) !important; border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: 1px solid rgba(0, 0, 0, 0.35) !important; }
+#app.vy-eter #panel .vy-modale__tete::before, #app.vy-eter #panel .vy-modale__tete::after { display: none !important; }
+#app.vy-eter #panel #panel-title { font: 800 16px var(--vy-font-ui) !important; letter-spacing: 0.02em !important; text-transform: none !important; color: var(--e-texte) !important; text-shadow: none !important; }
+#app.vy-eter #panel-body .vy-svc__onglet { font: 800 11px var(--vy-font-ui) !important; letter-spacing: 0.16em !important; text-transform: uppercase; }
+#app.vy-eter #panel-body .vy-svc__onglet.on::after { left: 0; right: 0; height: 3px; border-radius: 0; }
+#app.vy-eter #panel-body .vy-fdd__boss h3 { font: 800 22px/1.15 var(--vy-font-ui) !important; letter-spacing: 0.01em; }
 
 #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14 { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__banniere { position: relative; height: 150px; margin: 0 -12px; overflow: hidden; background: color-mix(in srgb, var(--c) 30%, var(--e-fond)); border-bottom: 1px solid rgba(0, 0, 0, 0.35); }
@@ -156,4 +187,83 @@
   #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__qui { flex: 1; display: flex; align-items: baseline; justify-content: center; gap: 8px; }
   #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__liste.primaires .vy-e14__ligne:nth-child(4n+3), #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__liste.primaires .vy-e14__ligne:nth-child(4n+4) { background: color-mix(in srgb, var(--e-fond) 82%, #000); }
   #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__liste.primaires .vy-e14__ligne:nth-child(4n+1), #app.vy-eter #fenetres .vy-fenetre--caracs .vy-e14__liste.primaires .vy-e14__ligne:nth-child(4n+2) { background: var(--e-fond); }
+}
+
+#app.vy-eter > :not(#title) { --vy-font-titre: var(--vy-font-ui); --v-degrade-oblique: var(--e-or); }
+#app.vy-eter:is(:not([data-ui-theme]), [data-ui-theme="nuit"]) {
+  --e-hud: rgba(57, 58, 77, 0.96);     
+  --e-hud-2: rgba(49, 48, 65, 0.94);   
+}
+#app.vy-eter:is(:not([data-ui-theme]), [data-ui-theme="nuit"]) :is(.vy-menus, .vy-carte-info, .vy-barre-sorts__boite, .vy-discussion, .vy-discussion__bouton, .vy-camera > *, .vy-barre-tour, .vy-barre-tour__corps, #inspect, #log, .vy-inter__col, .vy-inter__panneau > section, .vy-repliques.vy-inter-pnj, .vy-cible__col, .vy-objectifs, .vy-boussole-quete, .toast) { background: var(--e-hud) !important; border-color: rgba(0, 0, 0, 0.5) !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 8px 20px rgba(0, 0, 0, 0.45) !important; }
+#app.vy-eter:is(:not([data-ui-theme]), [data-ui-theme="nuit"]) :is(.vy-discussion__flottant .vy-chat, #tracker .tq) { background: var(--e-hud-2) !important; }
+@media (min-width: 761px) and (min-height: 481px) {
+  #app.vy-eter:is(:not([data-ui-theme]), [data-ui-theme="nuit"]) #bas-centre { background: var(--e-hud) !important; border-color: rgba(0, 0, 0, 0.5) !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 10px 24px rgba(0, 0, 0, 0.45) !important; }
+  #app.vy-eter #vital[data-niveau]::before { background: var(--e-or) !important; border-color: var(--e-or-fonce) !important; }
+}
+#app.vy-eter .vy-menu { background: var(--e-case) !important; border-color: transparent !important; }
+#app.vy-eter .vy-menu:hover { background: var(--e-bouton) !important; }
+#app.vy-eter .vy-menu.on { background: var(--e-or) !important; color: #241a06 !important; }
+#app.vy-eter .vy-minicarte::before, #app.vy-eter .vy-discussion__tete { background: var(--e-titre) !important; }
+#app.vy-eter .vy-minicarte { background: var(--e-fond) !important; border-color: rgba(0, 0, 0, 0.5) !important; }
+#app.vy-eter .vy-carte-info :is(b, strong, h1, h2, .vy-carte-info__nom) { font-family: var(--vy-font-ui) !important; font-weight: 800 !important; letter-spacing: 0.04em !important; }
+#app.vy-eter :is(.vy-bulle-pnj__nom, .vy-guide__nom) { background: var(--e-or) !important; }
+#app.vy-eter :is(.vy-inter__ligne--primaire, .vy-cible__ligne.primaire, .vy-inter-pnj .vy-replique--primaire) { background: var(--e-or) !important; box-shadow: 0 2px 0 var(--e-or-fonce) !important; }
+#app.vy-eter :is(.vy-inter__ligne:hover, .vy-cible__ligne:hover:not(:disabled), .vy-inter-pnj .vy-replique:hover, .vy-inter__ligne.on, .vy-cible__ligne.ouvert):not(.vy-inter__ligne--primaire, .primaire, .vy-replique--primaire) { background: var(--e-bouton) !important; border-color: transparent !important; }
+#app.vy-eter :is(.vy-inter__ligne, .vy-cible__ligne, .vy-inter-pnj .vy-replique):not(.vy-inter__ligne--primaire, .primaire, .vy-replique--primaire, :hover, .on, .ouvert) { background: var(--e-panneau) !important; }
+#app.vy-eter .toast--succes { border-color: rgba(242, 193, 78, 0.5) !important; }
+#app.vy-eter .toast__texte b { font-weight: 800; letter-spacing: 0.04em; }
+#app.vy-eter .vy-combattant.actuel { box-shadow: 0 0 0 2px var(--e-or) !important; }
+#app.vy-eter:is(:not([data-ui-theme]), [data-ui-theme="nuit"]) .vy-lieu { background-color: var(--e-hud) !important; border-color: rgba(0, 0, 0, 0.5) !important; border-radius: 8px !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 8px 20px rgba(0, 0, 0, 0.45) !important; }
+#app.vy-eter .vy-lieu__nom { font: 800 14px/1.1 var(--vy-font-ui) !important; letter-spacing: 0.06em !important; background: none !important; -webkit-text-fill-color: var(--e-texte) !important; color: var(--e-texte) !important; }
+#app.vy-eter .vy-lieu__coord { background: var(--e-or) !important; color: #241a06 !important; }
+#app.vy-eter .vy-menu__bulle { background: var(--e-bulle) !important; border-color: rgba(0, 0, 0, 0.5) !important; }
+#app.vy-eter > :not(#title) .vy-bouton--primaire { background: var(--e-or) !important; box-shadow: 0 2px 0 var(--e-or-fonce) !important; color: #241a06 !important; }
+#app.vy-eter .vy-lieu__coord svg { stroke: #241a06 !important; }
+
+#app.vy-eter #title { --vy-font-titre: var(--vy-font-ui); --vy-font-lecture: var(--vy-font-ui); }
+#app.vy-eter #title :is(.monde-panneau, .classe-choix, .app-panneau, .vy-modale, .acc-actions) { background: var(--e-fond) !important; border: 1px solid rgba(0, 0, 0, 0.55) !important; border-radius: 8px !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 20px 50px rgba(0, 0, 0, 0.55) !important; }
+#app.vy-eter #title :is(.monde-panneau, .classe-choix, .app-panneau, .vy-modale, .acc-actions)::before, #app.vy-eter #title .vy-modale::after, #app.vy-eter #title .vy-modale__tete::before { display: none !important; }
+#app.vy-eter #title .vy-modale__tete { background: var(--e-titre) !important; border-radius: 8px 8px 0 0; }
+#app.vy-eter #title .vy-modale__tete::after { display: none !important; }
+#app.vy-eter #title .acc-texte { font-style: normal; color: var(--e-texte-2); }
+#app.vy-eter #title .entree-h2 { font: 800 21px/1.2 var(--vy-font-ui); letter-spacing: 0.01em; color: var(--e-texte); }
+#app.vy-eter #title .entree-tete { background: rgba(49, 48, 65, 0.97) !important; border-bottom: 1px solid rgba(0, 0, 0, 0.5) !important; }
+#app.vy-eter #title .entree-tete::after { display: none; }
+#app.vy-eter #title .entree-titre > span { font: 800 19px/1.15 var(--vy-font-ui); letter-spacing: 0.06em; text-transform: uppercase; background: none; -webkit-text-fill-color: var(--e-texte); color: var(--e-texte); filter: none; }
+#app.vy-eter #title .entree-retour { background: var(--e-bouton) !important; border: 0 !important; border-radius: 6px !important; color: var(--e-texte) !important; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35) !important; }
+#app.vy-eter #title .entree-etapes li.ici .entree-etapes__marque { background: var(--e-or); border-color: var(--e-or); box-shadow: none; }
+#app.vy-eter #title .vy-bouton--primaire { background: var(--e-or) !important; box-shadow: 0 2px 0 var(--e-or-fonce) !important; color: #241a06 !important; border: 0 !important; }
+#app.vy-eter #title .vy-bouton:not(.vy-bouton--primaire) { background: var(--e-bouton) !important; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35) !important; border: 0 !important; color: var(--e-texte) !important; }
+#app.vy-eter #title .vy-bouton::after { display: none !important; }
+#app.vy-eter #title :is(.acc-rond, .acc-communaute__pastille) { background: rgba(57, 58, 77, 0.92) !important; border: 1px solid rgba(0, 0, 0, 0.5) !important; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45) !important; }
+#app.vy-eter #title .actus { background: var(--e-case) !important; border: 1px solid rgba(0, 0, 0, 0.55) !important; border-radius: 8px !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 20px 50px rgba(0, 0, 0, 0.55) !important; }
+#app.vy-eter #title .actus__actu { background: var(--e-panneau) !important; }
+#app.vy-eter #title .actus__journal { background: var(--e-pied) !important; }
+#app.vy-eter #title .actus__journal-icone { background: var(--e-case) !important; }
+#app.vy-eter #title .monde-table__ligne { background: var(--e-panneau) !important; border: 1px solid rgba(0, 0, 0, 0.3) !important; }
+#app.vy-eter #title .classe-genre__btn { background: var(--e-bouton) !important; border: 1px solid transparent !important; box-shadow: none !important; color: var(--e-texte) !important; }
+#app.vy-eter #title .classe-genre__btn.on { background: var(--e-or) !important; color: #241a06 !important; }
+#app.vy-eter #title .classe-case__nom { background: rgba(41, 41, 58, 0.9) !important; }
+#app.vy-eter #title :is(.app-nom__champ, .app-hex, .entree-zone) { background: var(--e-case) !important; border: 1px solid rgba(0, 0, 0, 0.35) !important; }
+#app.vy-eter #title .reglages__seg-btn.on { background: var(--e-or) !important; color: #241a06 !important; }
+#app.vy-eter #title .reglages__interrupteur[aria-pressed="true"] { background: var(--e-or) !important; border-color: var(--e-or) !important; }
+#app.vy-eter #title .reglages__interrupteur[aria-pressed="true"] i { background: #fff !important; }
+#app.vy-eter #title .perso-panneau { background: var(--e-fond) !important; border: 1px solid rgba(0, 0, 0, 0.55) !important; border-radius: 8px !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 20px 50px rgba(0, 0, 0, 0.55) !important; }
+#app.vy-eter #title .perso-panneau__tete { background: var(--e-titre) !important; border-bottom-color: rgba(0, 0, 0, 0.35) !important; }
+#app.vy-eter #title .perso-panneau__monde { background: var(--e-case) !important; border-color: transparent !important; }
+#app.vy-eter #title .perso-ligne { background: var(--e-case) !important; border-color: transparent !important; border-radius: 6px !important; }
+#app.vy-eter #title .perso-ligne.on { background: var(--e-panneau) !important; border-color: var(--e-or) !important; box-shadow: none !important; }
+#app.vy-eter #title .perso-carte--vide { background: rgba(41, 41, 58, 0.55) !important; border-color: rgba(255, 255, 255, 0.12) !important; }
+#app.vy-eter #title .perso-pied { background: var(--e-pied) !important; border-top-color: rgba(0, 0, 0, 0.35) !important; }
+#app.vy-eter #title .perso-plaque { background: var(--e-panneau) !important; border: 1px solid rgba(0, 0, 0, 0.5) !important; border-radius: 6px !important; }
+#app.vy-eter #title .perso-plaque::after { background: var(--e-panneau) !important; border-color: rgba(0, 0, 0, 0.5) !important; }
+#app.vy-eter #title :is(.perso-ligne__nom b, .perso-plaque__nom, .perso-panneau__tete b) { font-weight: 800 !important; letter-spacing: 0.02em !important; }
+#app.vy-eter #title .classe-nom__nom { font-family: var(--vy-font-ui); font-weight: 900; letter-spacing: 0.04em; background: none; -webkit-text-fill-color: var(--e-texte); color: var(--e-texte); filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.75)) drop-shadow(0 0 14px rgba(0, 0, 0, 0.6)); }
+#app.vy-eter #title .deja-moitie { border: 2px solid rgba(0, 0, 0, 0.55); border-radius: 8px; background: var(--e-case); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 20px 50px rgba(0, 0, 0, 0.55); }
+#app.vy-eter #title .deja-moitie:is(:hover, :focus-visible) { border-color: var(--e-or); background: var(--e-case); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 20px 50px rgba(0, 0, 0, 0.55); outline: none; }
+#app.vy-eter #title .deja-moitie:hover .deja-bouton { border-color: transparent; }
+#app.vy-eter #title .deja-fente { position: relative; background: linear-gradient(90deg, transparent calc(50% - 1px), rgba(255, 255, 255, 0.16) calc(50% - 1px), rgba(255, 255, 255, 0.16) calc(50% + 1px), transparent calc(50% + 1px)) !important; filter: none !important; animation: none !important; }
+#app.vy-eter #title .deja-fente::before { content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; background: var(--e-or); border: 2px solid var(--e-case); transform: translate(-50%, -50%) rotate(45deg); }
+@media (max-width: 700px) and (orientation: portrait) {
+  #app.vy-eter #title .deja-fente { background: linear-gradient(180deg, transparent calc(50% - 1px), rgba(255, 255, 255, 0.16) calc(50% - 1px), rgba(255, 255, 255, 0.16) calc(50% + 1px), transparent calc(50% + 1px)) !important; }
 }

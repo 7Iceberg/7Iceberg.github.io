@@ -1,0 +1,123 @@
+
+#fenetres .vy-fenetre--carte { left: 10px !important; top: 10px !important; right: 10px; bottom: 10px; width: auto !important; height: auto; max-height: none !important; }
+#fenetres .vy-fenetre--carte.reduite { bottom: auto; }
+#app #fenetres .vy-fenetre--carte .vy-fenetre__corps { position: relative; flex: 1; display: block; min-height: 0; overflow: hidden; overflow: clip; padding: 0 !important; }
+.vy-carte--plein { position: absolute; inset: 0; display: block; overflow: hidden; overflow: clip; }
+.vy-carte--plein .vy-carte__vue { position: absolute; inset: 0; border: 0; border-radius: 0 0 8px 8px; background: #2c2d3d; }
+
+#app #fenetres .vy-carte--plein :is(.vy-carte__haut > *, .vy-carte__cats, .vy-carte__outils, .vy-carte__fiche) {
+  background: rgba(57, 58, 77, 0.95) !important; border: 1px solid rgba(0, 0, 0, 0.55) !important; border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+.vy-carte--plein .vy-carte__haut { position: absolute; z-index: 4; left: 12px; top: 12px; display: flex; gap: 8px; align-items: stretch; max-width: calc(100% - 24px - 340px); }
+.vy-carte--sans-fiche .vy-carte__haut { max-width: calc(100% - 24px - 60px); }
+.vy-carte--plein .vy-carte__onglets { display: flex; margin: 0; padding: 0 6px; border-bottom: 0 !important; }
+.vy-carte--plein .vy-carte__onglets .vy-onglet { min-height: 40px; padding: 0 12px; }
+.vy-carte__recherche { position: relative; flex: 1 1 320px; min-width: 0; max-width: 420px; display: flex; align-items: center; gap: 8px; padding: 0 12px; }
+.vy-carte__recherche > svg { width: 17px; height: 17px; flex: none; fill: none; stroke: #b6b3c4; stroke-width: 2.2; stroke-linecap: round; }
+#app #fenetres .vy-carte .vy-carte__recherche input { flex: 1; min-width: 0; height: 40px; border: 0 !important; outline: 0; background: transparent !important; box-shadow: none !important; color: #f1eff5; font: 600 14px var(--vy-font-ui); }
+.vy-carte__recherche input::placeholder { color: #87849a; font-weight: 500; }
+.vy-carte__recherche input::-webkit-search-cancel-button { filter: invert(0.8); }
+.vy-carte__resultats { position: absolute; left: -1px; right: -1px; top: calc(100% + 6px); margin: 0; padding: 4px; list-style: none; background: #313041; border: 1px solid rgba(0, 0, 0, 0.6); border-radius: 8px; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.55); }
+.vy-carte__resultats[hidden] { display: none; }
+.vy-carte__resultats li { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
+.vy-carte__resultats li[aria-selected="true"], .vy-carte__resultats li:hover { background: #5c5b6f; }
+.vy-carte__resultats li.vide { cursor: default; color: #87849a; font-size: 13px; }
+.vy-carte__resultats li.vide:hover { background: none; }
+.vy-carte__resultats img { flex: none; width: 24px; height: 24px; }
+.vy-carte__resultats span { display: flex; flex-direction: column; min-width: 0; }
+.vy-carte__resultats b { color: #f1eff5; font: 700 13px/1.25 var(--vy-font-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vy-carte__resultats small { color: #b6b3c4; font-size: 11px; }
+.vy-carte__point { flex: none; width: 24px; height: 24px; border-radius: 50%; background: #29293a; box-shadow: inset 0 0 0 6px #444556, inset 0 0 0 8px #87849a; }
+
+.vy-carte--plein .vy-carte__cats { position: absolute; z-index: 3; left: 12px; top: 64px; width: 248px; max-height: calc(100% - 76px); display: flex; flex-direction: column; overflow: hidden; }
+.vy-carte__cats-tete { display: flex; align-items: center; justify-content: space-between; min-height: 38px; padding: 0 12px; border: 0; background: #57535a; color: #f1eff5; font: 800 11px var(--vy-font-ui); letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer; }
+.vy-carte__cats-tete svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; transition: transform var(--vy-duree, 160ms); }
+.vy-carte--cats .vy-carte__cats-tete svg { transform: rotate(180deg); }
+.vy-carte__cats-liste { margin: 0; padding: 4px; list-style: none; overflow-y: auto; overscroll-behavior: contain; }
+.vy-carte:not(.vy-carte--cats) .vy-carte__cats-liste { display: none; }
+.vy-carte__cat { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 38px; padding: 3px 8px; border: 0; border-radius: 6px; background: transparent; color: #f1eff5; font: 600 13px var(--vy-font-ui); text-align: left; cursor: pointer; }
+.vy-carte__cat:hover { background: #444556; }
+.vy-carte__cat img { flex: none; width: 24px; height: 24px; }
+.vy-carte__cat span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vy-carte__cat b { flex: none; min-width: 22px; padding: 1px 6px; border-radius: 9px; background: #29293a; color: #b6b3c4; font: 700 11px/1.4 var(--vy-font-ui); text-align: center; font-variant-numeric: tabular-nums; }
+.vy-carte__oeil { flex: none; display: grid; place-items: center; width: 20px; height: 20px; color: #b6b3c4; }
+.vy-carte__oeil svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.vy-carte__cat.off { color: #87849a; }
+.vy-carte__cat.off img { filter: grayscale(1); opacity: 0.45; }
+.vy-carte__cat.off .vy-carte__oeil { color: #87849a; }
+
+.vy-carte__favori { display: flex; align-items: center; gap: 8px; min-height: 40px; width: 100%; margin: 12px 0; padding: 8px 12px; background: #5c5b6f; border: 1px solid #29293a; border-radius: 6px; color: #f1eff5; font: 700 12px var(--vy-font-ui); cursor: pointer; }
+.vy-carte__favori.on { color: #ddaa72; background: #29293a; }
+.vy-carte__favori svg, .vy-carte__favoris svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: round; }
+.vy-carte__favori.on svg, .vy-carte__retirer-favori svg { fill: #ddaa72; stroke: #ddaa72; }
+.vy-carte__favoris { min-height: 0; flex: 0 1 auto; border-top: 1px solid #29293a; background: #393a4d; }
+.vy-carte__favoris h3 { display: flex; align-items: center; gap: 8px; padding: 10px 12px; margin: 0; color: #f1eff5; background: #57535a; font: 800 11px var(--vy-font-ui); text-transform: uppercase; letter-spacing: .1em; }
+.vy-carte__favoris h3 svg { color: #ddaa72; }
+.vy-carte__favoris h3 small { margin-left: auto; }
+.vy-carte__favoris p { padding: 10px 12px; margin: 0; font: 500 12px/1.5 var(--vy-font-ui); color: #b6b3c4; }
+.vy-carte__favoris ul { margin: 0; padding: 4px; list-style: none; max-height: 168px; overflow: auto; overscroll-behavior: contain; }
+.vy-carte__favoris li { display: flex; align-items: stretch; border-radius: 4px; }
+.vy-carte__favoris li:hover { background: #444556; }
+.vy-carte__favoris button { border: 0; background: transparent; color: #f1eff5; cursor: pointer; min-height: 40px; }
+.vy-carte__favoris button:first-child { display: flex; flex: 1; flex-direction: column; justify-content: center; min-width: 0; text-align: left; padding: 5px 8px; }
+.vy-carte__favoris b, .vy-carte__favoris small { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 12px/1.5 var(--vy-font-ui); }
+.vy-carte__favoris small { color: #b6b3c4; font-size: 10px; }
+.vy-carte__retirer-favori { flex: none; display: grid; place-items: center; width: 40px; }
+.vy-carte__navigation { display: flex; flex-wrap: wrap; gap: 6px 10px; padding: 12px; margin-top: 12px; background: #29293a; border-left: 3px solid #ddaa72; font: 600 12px/1.5 var(--vy-font-ui); }
+.vy-carte__navigation b { width: 100%; color: #f1eff5; }
+.vy-carte__navigation span { color: #b6b3c4; flex: 1; }
+.vy-carte :is([data-carte-favori], [data-carte-aller-favori], [data-carte-retirer-favori]):focus-visible { outline: 2px solid #ddaa72; outline-offset: -2px; }
+@media (max-height: 480px) { .vy-carte__favoris ul { max-height: 88px; } .vy-carte__cats-liste { max-height: 128px; flex-shrink: 1; } }
+
+.vy-carte--plein .vy-carte__outils { position: absolute; z-index: 3; right: 352px; bottom: 12px; display: flex; flex-direction: column; gap: 4px; padding: 4px; }
+.vy-carte--sans-fiche .vy-carte__outils { right: 64px; }
+.vy-carte--plein .vy-carte__outils .vy-bouton { width: 40px; height: 40px; min-height: 40px; padding: 0; justify-content: center; }
+.vy-carte--plein .vy-carte__outils .vy-bouton svg { width: 18px; height: 18px; }
+.vy-carte--plein .vy-carte__boussole { left: auto; right: 360px; bottom: auto; top: 12px; width: 40px; height: 40px; background: rgba(57, 58, 77, 0.95); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55), 0 0 0 2px rgba(255, 255, 255, 0.06) inset, 0 8px 20px rgba(0, 0, 0, 0.4); }
+.vy-carte--sans-fiche .vy-carte__boussole { right: 72px; }
+.vy-carte--plein .vy-carte__boussole::before { top: 15px; }
+.vy-carte--plein .vy-carte__boussole::after { top: 24px; }
+
+.vy-carte--plein .vy-carte__fiche { position: absolute; z-index: 3; right: 12px; top: 12px; bottom: 12px; width: 328px; padding: 0; overflow: visible; }
+.vy-carte__fiche-corps { height: 100%; overflow-y: auto; overscroll-behavior: contain; padding: 14px 16px 16px; }
+#app #fenetres .vy-carte--sans-fiche .vy-carte__fiche { width: 40px; background: transparent !important; border-color: transparent !important; box-shadow: none; }
+.vy-carte--sans-fiche .vy-carte__fiche-corps { display: none; }
+.vy-carte__volet { position: absolute; left: -1px; top: 50%; z-index: 1; width: 22px; height: 56px; margin-top: -28px; transform: translateX(-100%); padding: 0; border: 1px solid rgba(0, 0, 0, 0.55); border-right: 0; border-radius: 8px 0 0 8px; background: #57535a; color: #f1eff5; font: 800 18px/1 var(--vy-font-ui); cursor: pointer; }
+.vy-carte--sans-fiche .vy-carte__volet { left: auto; right: 0; transform: none; width: 40px; border-right: 1px solid rgba(0, 0, 0, 0.55); border-radius: 8px; background: rgba(57, 58, 77, 0.95); }
+.vy-carte__volet:hover { background: #5c5b6f; }
+.vy-carte--plein .vy-carte__bulle { z-index: 5; }
+
+@media (max-width: 720px), (max-height: 480px) {
+  #fenetres .vy-fenetre--carte { left: 4px !important; top: 4px !important; right: 4px; bottom: 4px; }
+  .vy-carte--plein .vy-carte__haut { left: 8px; right: 8px; top: 8px; max-width: none; }
+  .vy-carte--sans-fiche .vy-carte__haut { max-width: none; }
+  .vy-carte--plein .vy-carte__onglets .vy-onglet { min-height: 36px; padding: 0 8px; }
+  #app #fenetres .vy-carte .vy-carte__recherche input { height: 36px; font-size: 13px; }
+  .vy-carte--plein .vy-carte__cats { left: 8px; top: 54px; width: 210px; max-height: calc(100% - 64px); }
+  .vy-carte--plein .vy-carte__outils { right: 8px; bottom: 8px; flex-direction: row; }
+  .vy-carte--plein .vy-carte__outils .vy-bouton { width: 36px; height: 36px; min-height: 36px; }
+  .vy-carte--plein .vy-carte__boussole, .vy-carte--sans-fiche .vy-carte__boussole { right: 8px; top: 54px; }
+  .vy-carte--plein .vy-carte__fiche { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; max-height: 48%; }
+  .vy-carte--plein:not(.vy-carte--sans-fiche) .vy-carte__outils { bottom: calc(48% + 16px); }
+  .vy-carte__volet { left: 50%; top: -1px; width: 56px; height: 22px; margin: 0 0 0 -28px; transform: translateY(-100%); border: 1px solid rgba(0, 0, 0, 0.55); border-bottom: 0; border-radius: 8px 8px 0 0; }
+  .vy-carte__volet span { display: inline-block; transform: rotate(90deg); }
+  .vy-carte--sans-fiche .vy-carte__fiche { left: 8px; right: auto; width: 40px; height: 40px; }
+  .vy-carte--sans-fiche .vy-carte__volet { left: 0; top: 0; width: 40px; height: 40px; margin: 0; transform: none; }
+  .vy-carte--sans-fiche .vy-carte__volet span { transform: rotate(-90deg); }
+}
+@media (max-height: 480px) and (min-width: 600px) {
+  .vy-carte--plein .vy-carte__fiche { left: auto; right: 8px; top: 54px; bottom: 8px; width: 290px; max-height: none; }
+  .vy-carte--plein:not(.vy-carte--sans-fiche) .vy-carte__outils { right: 306px; bottom: 8px; }
+  .vy-carte--plein .vy-carte__boussole { right: 306px; }
+  .vy-carte--sans-fiche .vy-carte__boussole { right: 8px; }
+  .vy-carte__volet { left: -1px; top: 50%; width: 22px; height: 56px; margin: -28px 0 0; transform: translateX(-100%); border: 1px solid rgba(0, 0, 0, 0.55); border-right: 0; border-radius: 8px 0 0 8px; }
+  .vy-carte__volet span { transform: none; }
+  .vy-carte--sans-fiche .vy-carte__fiche { left: auto; right: 8px; top: auto; bottom: 8px; }
+  .vy-carte--plein .vy-carte__haut { right: auto; max-width: calc(100% - 16px - 300px); }
+  .vy-carte--sans-fiche .vy-carte__volet span { transform: none; }
+  .vy-carte--sans-fiche .vy-carte__outils { right: 56px; }
+  .vy-carte--sans-fiche .vy-carte__haut { max-width: calc(100% - 16px - 60px); }
+}
+

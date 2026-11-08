@@ -635,9 +635,9 @@ const CartePeinture = (() => {
     for (let k = 0; k < 6; k++) boules.push([40 + k * 35 + (R() - 0.5) * 16, 98 + (R() - 0.5) * 12, 26 + R() * 12]);
     for (let k = 0; k < 4; k++) boules.push([70 + k * 38 + (R() - 0.5) * 20, 66 + (R() - 0.5) * 16, 30 + R() * 16]);
     const boule = (x, y, r, col, a) => { const g = c.createRadialGradient(x - r * 0.25, y - r * 0.3, r * 0.1, x, y, r); g.addColorStop(0, rgba(col, a)); g.addColorStop(0.6, rgba(col, a * 0.85)); g.addColorStop(1, rgba(col, 0)); c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); };
-    for (const [x, y, r] of boules) boule(x + 4, y + 10, r, '#0b1220', 0.6);
-    for (const [x, y, r] of boules) boule(x, y, r, '#33476e', 0.95);
-    for (const [x, y, r] of boules.slice(6)) boule(x - r * 0.2, y - r * 0.25, r * 0.55, '#7f97bd', 0.55);
+    for (const [x, y, r] of boules) boule(x + 4, y + 10, r, '#6e6a86', 0.45);
+    for (const [x, y, r] of boules) boule(x, y, r, '#e6e4ef', 0.95);
+    for (const [x, y, r] of boules.slice(6)) boule(x - r * 0.2, y - r * 0.25, r * 0.55, '#ffffff', 0.7);
     arts.set(key, cv);
     return cv;
   }
@@ -742,24 +742,23 @@ const CartePeinture = (() => {
     const key = 'p:' + kind + ':' + (sub || '') + ':' + px;
     if (arts.has(key)) return arts.get(key);
     const m = Math.ceil(px * 0.2), W = px + 2 * m, cv = canvas(W, W + Math.ceil(px * 0.08)), c = cv.getContext('2d');
-    const x = W / 2, y = m + px / 2, R = px / 2, col = PASTILLES[kind] || PASTILLES.verrou;
-    const o = c.createRadialGradient(x, y + R * 0.3, R * 0.6, x, y + R * 0.3, R * 1.22);
-    o.addColorStop(0, 'rgba(10,8,6,0.45)'); o.addColorStop(1, 'rgba(10,8,6,0)');
-    c.fillStyle = o; c.beginPath(); c.arc(x, y + R * 0.3, R * 1.22, 0, Math.PI * 2); c.fill();
-    const ring = c.createLinearGradient(x, y - R, x, y + R);
-    ring.addColorStop(0, '#ffffff'); ring.addColorStop(1, '#c9c1b2');
-    c.fillStyle = ring; c.beginPath(); c.arc(x, y, R, 0, Math.PI * 2); c.fill();
-    const d = c.createRadialGradient(x - R * 0.3, y - R * 0.38, R * 0.08, x, y, R * 0.86);
-    d.addColorStop(0, col[0]); d.addColorStop(0.55, col[1]); d.addColorStop(1, col[2]);
-    c.fillStyle = d; c.beginPath(); c.arc(x, y, R * 0.84, 0, Math.PI * 2); c.fill();
-    c.fillStyle = 'rgba(255,255,255,0.26)'; c.beginPath(); c.ellipse(x, y - R * 0.42, R * 0.56, R * 0.3, 0, 0, Math.PI * 2); c.fill();
-    picto(c, kind, sub, x, y + R * 0.04, R * 0.48);
+    const x = W / 2, y = m + px / 2, R = px / 2;
+    const ombre = c.createRadialGradient(x, y + R * 0.22, R * 0.7, x, y + R * 0.22, R * 1.2);
+    ombre.addColorStop(0, 'rgba(8,8,14,0.42)'); ombre.addColorStop(1, 'rgba(8,8,14,0)');
+    c.fillStyle = ombre; c.beginPath(); c.arc(x, y + R * 0.22, R * 1.2, 0, Math.PI * 2); c.fill();
+    const I = typeof CarteIcones === 'object' ? CarteIcones : null;
+    const fond = I ? (kind === 'verrou' ? '#5d5874' : I.couleur(kind)) : (PASTILLES[kind] || PASTILLES.verrou)[1];
+    c.fillStyle = 'rgba(14,13,22,0.82)'; c.beginPath(); c.arc(x, y, R, 0, Math.PI * 2); c.fill();
+    c.fillStyle = fond; c.beginPath(); c.arc(x, y, R * 0.86, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,0.28)'; c.lineWidth = Math.max(1, R * 0.07); c.beginPath(); c.arc(x, y, R * 0.8, 0, Math.PI * 2); c.stroke();
+    const nom = I && I.glyphe(kind, sub);
+    if (!(nom && I.dessiner(c, nom, x, y, R * 1.2))) picto(c, kind, sub, x, y + R * 0.04, R * 0.48);
     const art = { canvas: cv, ax: x, ay: y, r: R };
     arts.set(key, art);
     return art;
   }
 
-  const EPINGLES = { toi: ['#86c9ff', '#2a86e0', '#124c94'], quete: ['#aef08a', '#4cb43e', '#256a1f'], drapeau: ['#ffa587', '#e0533a', '#8a2715'] };
+  const EPINGLES = { toi: ['#86c9ff', '#2a86e0', '#124c94'], quete: ['#ffe596', '#e3ad35', '#8a6416'], drapeau: ['#ffa587', '#e0533a', '#8a2715'] };
   function epingle(kind, px) {
     px = Math.max(12, Math.round(px / 2) * 2);
     const key = 'e:' + kind + ':' + px;
@@ -767,11 +766,8 @@ const CartePeinture = (() => {
     const W = px + 4, H = Math.round(px * 1.42) + 4, cv = canvas(W, H), c = cv.getContext('2d'), col = EPINGLES[kind] || EPINGLES.quete;
     const x = W / 2, R = px * 0.42, y = 2 + px * 0.46, tip = H - 2;
     const forme = () => { c.beginPath(); c.moveTo(x, tip); c.bezierCurveTo(x - R * 0.28, tip - R * 0.8, x - R, y + R * 0.75, x - R, y); c.arc(x, y, R, Math.PI, 0); c.bezierCurveTo(x + R, y + R * 0.75, x + R * 0.28, tip - R * 0.8, x, tip); c.closePath(); };
-    const g = c.createRadialGradient(x - R * 0.35, y - R * 0.4, R * 0.1, x, y + R * 0.4, R * 1.7);
-    g.addColorStop(0, col[0]); g.addColorStop(0.5, col[1]); g.addColorStop(1, col[2]);
-    forme(); c.fillStyle = g; c.fill();
-    c.strokeStyle = 'rgba(255,255,255,0.92)'; c.lineWidth = Math.max(1.5, px * 0.055); c.stroke();
-    c.fillStyle = 'rgba(255,255,255,0.3)'; c.beginPath(); c.ellipse(x - R * 0.28, y - R * 0.45, R * 0.42, R * 0.24, -0.5, 0, Math.PI * 2); c.fill();
+    forme(); c.fillStyle = col[1]; c.fill();
+    c.strokeStyle = 'rgba(255,255,255,0.95)'; c.lineWidth = Math.max(1.5, px * 0.06); c.stroke();
     if (kind === 'toi') {
       const s = R * 0.62;
       c.fillStyle = 'rgba(10,30,70,0.35)'; c.beginPath();

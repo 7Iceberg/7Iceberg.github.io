@@ -19,6 +19,45 @@ const Son = (() => {
   const manquantes = {};
   let attenuation = 1;
   let finAttenuation = 0;
+  let minuterieAttenuation = 0;
+  let pageQuittee = false, gelee = false, reprise = null;
+  const sources = new Set(), jinglesDirects = new Set();
+  const visible = () => !pageQuittee && !gelee && (typeof document === 'undefined' || !document.hidden);
+  const audible = () => visible() && reglages.actif;
+
+  function suivreSource(src, noeuds) {
+    sources.add(src);
+    src.onended = () => { sources.delete(src); for (const n of [src, ...noeuds]) try { n.disconnect(); } catch (e) {   } };
+  }
+  function couperBruits() {
+    for (const src of sources) { try { src.stop(); } catch (e) {   } if (src.onended) src.onended(); }
+    sources.clear();
+    for (const a of jinglesDirects) { try { a.pause(); a.removeAttribute('src'); a.load(); } catch (e) {   } }
+    jinglesDirects.clear();
+    clearTimeout(minuterieAttenuation); minuterieAttenuation = 0;
+    attenuation = 1; finAttenuation = 0;
+    if (ctx && gainAttenue) { gainAttenue.gain.cancelScheduledValues(ctx.currentTime); gainAttenue.gain.setValueAtTime(1, ctx.currentTime); }
+    for (const l of lecteurs) if (l.e && l.direct) volumeDirect(l.e);
+  }
+  function couperMusique() {
+    enCours = null;
+    for (const l of lecteurs) {
+      if (l.e) { l.e.arretee = true; liberer(l.e); }
+      else try { l.audio.pause(); l.audio.removeAttribute('src'); l.audio.load(); } catch (e) {   }
+      l.fondu = 0;
+      if (l.gain && ctx) { l.gain.gain.cancelScheduledValues(ctx.currentTime); l.gain.gain.setValueAtTime(0, ctx.currentTime); }
+    }
+  }
+  function suspendre() {
+    if (enCours) reprise = { cle: enCours.cle, temps: enCours.l.audio.ended ? 0 : enCours.l.audio.currentTime };
+    couperMusique(); couperBruits(); appliquerVolumes();
+    if (ctx && ctx.state !== 'closed') ctx.suspend().catch(() => {});
+  }
+  function reprendre() {
+    appliquerVolumes();
+    if (!audible() || !pret || !ctx) return;
+    ctx.resume().then(() => { if (!audible()) { suspendre(); return; } if (pisteVoulue) jouerPiste(pisteVoulue); }).catch(() => {});
+  }
 
   const reglages = (() => {
     try {
@@ -47,16 +86,18 @@ const Son = (() => {
 
   function appliquerVolumes() {
     if (!ctx) return;
-    maitre.gain.value = reglages.actif ? 1 : 0;
+    maitre.gain.value = audible() ? 1 : 0;
     gainMusique.gain.value = reglages.musique / 100;
     gainBruits.gain.value = reglages.bruitages / 100;
-    if (enCours && enCours.l.direct) volumeDirect(enCours);
+    for (const l of lecteurs) if (l.e && l.direct) volumeDirect(l.e);
+    for (const a of jinglesDirects) a.volume = audible() ? reglages.bruitages / 100 * a.niveauVeylan : 0;
   }
 
   function deverrouiller() {
+    if (!audible()) return false;
     const c = contexte();
     if (!c) return false;
-    if (c.state === 'suspended') c.resume().catch(() => {});
+    if (c.state === 'suspended') c.resume().then(() => { if (!audible()) suspendre(); }).catch(() => {});
     pret = true;
     deverrouillerLecteurs();
     chargerJingles();
@@ -64,9 +105,14 @@ const Son = (() => {
     return true;
   }
   if (typeof document !== 'undefined') {
-    const premier = () => deverrouiller();
-    document.addEventListener('pointerdown', premier, { once: true, passive: true });
-    document.addEventListener('keydown', premier, { once: true });
+    const premier = () => { if (deverrouiller()) { document.removeEventListener('pointerdown', premier); document.removeEventListener('keydown', premier); } };
+    document.addEventListener('pointerdown', premier, { passive: true });
+    document.addEventListener('keydown', premier);
+    document.addEventListener('visibilitychange', () => { if (visible()) reprendre(); else suspendre(); });
+    document.addEventListener('freeze', () => { gelee = true; suspendre(); });
+    document.addEventListener('resume', () => { gelee = false; reprendre(); });
+    window.addEventListener('pagehide', () => { pageQuittee = true; suspendre(); });
+    window.addEventListener('pageshow', () => { pageQuittee = false; reprendre(); });
   }
 
   function regler(nom, valeur) {
@@ -75,7 +121,9 @@ const Son = (() => {
     else return;
     enregistrer();
     appliquerVolumes();
-    if (nom === 'actif' && reglages.actif && pisteVoulue && pret) jouerPiste(pisteVoulue);
+    if (nom === 'actif') { if (!reglages.actif) suspendre(); else { if (!pret) deverrouiller(); reprendre(); } }
+    if (nom === 'musique') { if (!reglages.musique) { reprise = null; couperMusique(); } else if (pisteVoulue && pret) jouerPiste(pisteVoulue); }
+    if (nom === 'bruitages' && !reglages.bruitages) couperBruits();
   }
 
   function note(c, sortie, { type = 'sine', f0 = 440, f1 = null, t = 0.15, v = 0.4, delai = 0, attaque = 0.005 } = {}) {
@@ -86,7 +134,7 @@ const Son = (() => {
     g.gain.exponentialRampToValueAtTime(v, t0 + attaque);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + t);
     o.connect(g); g.connect(sortie);
-    o.start(t0); o.stop(t0 + t + 0.02);
+    suivreSource(o, [g]); o.start(t0); o.stop(t0 + t + 0.02);
   }
   function souffle(c, sortie, { t = 0.12, v = 0.5, freq = 1200, q = 0.7, delai = 0, type = 'bandpass' } = {}) {
     const n = Math.floor(c.sampleRate * t), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
@@ -96,7 +144,7 @@ const Son = (() => {
     const g = c.createGain(); const t0 = c.currentTime + delai;
     g.gain.setValueAtTime(v, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + t);
     s.connect(f); f.connect(g); g.connect(sortie);
-    s.start(t0); s.stop(t0 + t + 0.02);
+    suivreSource(s, [f, g]); s.start(t0); s.stop(t0 + t + 0.02);
   }
   const BRUITS = {
     toucher: (c, o) => note(c, o, { type: 'triangle', f0: 880, f1: 660, t: 0.06, v: 0.12 }),
@@ -126,7 +174,7 @@ const Son = (() => {
     succes: (c, o) => { [523, 784, 1046, 1568].forEach((f, i) => note(c, o, { type: 'triangle', f0: f, t: i === 3 ? 0.8 : 0.2, v: 0.2, delai: i * 0.08 })); note(c, o, { type: 'sine', f0: 2093, t: 0.9, v: 0.07, delai: 0.3 }); },
   };
   function jouer(nom) {
-    if (!reglages.actif || !pret || !ctx || !BRUITS[nom]) return false;
+    if (!audible() || !reglages.bruitages || !pret || !ctx || !BRUITS[nom]) return false;
     let duree = 0;
     try {
       duree = jouerJingle(nom);
@@ -157,15 +205,19 @@ const Son = (() => {
     if (b && typeof b === 'object') {
       const src = ctx.createBufferSource(), g = ctx.createGain();
       src.buffer = b; g.gain.value = NIVEAUX_JINGLES[nom] != null ? NIVEAUX_JINGLES[nom] : 1;
-      src.connect(g); g.connect(gainBruits); src.start();
+      src.connect(g); g.connect(gainBruits); suivreSource(src, [g]); src.start();
       return b.duration;
     }
     const ext = format();
     if (typeof location !== 'undefined' && location.protocol === 'file:' && ext && typeof Audio !== 'undefined') {
       const a = new Audio(DOSSIER + JINGLES[nom] + '.' + ext);
-      a.volume = Math.max(0, Math.min(1, reglages.bruitages / 100 * (NIVEAUX_JINGLES[nom] != null ? NIVEAUX_JINGLES[nom] : 1)));
-      a.addEventListener('loadedmetadata', () => { if (ATTENUES[nom] && isFinite(a.duration)) attenuer(a.duration); }, { once: true });
-      a.play().catch(() => {});
+      a.niveauVeylan = NIVEAUX_JINGLES[nom] != null ? NIVEAUX_JINGLES[nom] : 1;
+      a.volume = Math.max(0, Math.min(1, reglages.bruitages / 100 * a.niveauVeylan));
+      jinglesDirects.add(a);
+      const fini = () => { jinglesDirects.delete(a); a.pause(); a.removeAttribute('src'); a.load(); };
+      a.addEventListener('ended', fini, { once: true }); a.addEventListener('error', fini, { once: true });
+      a.addEventListener('loadedmetadata', () => { if (jinglesDirects.has(a) && audible() && ATTENUES[nom] && isFinite(a.duration)) attenuer(a.duration); }, { once: true });
+      a.play().then(() => { if (!audible() || !jinglesDirects.has(a)) fini(); }).catch(fini);
       return -1;
     }
     return 0;
@@ -230,12 +282,12 @@ const Son = (() => {
     for (const l of lecteurs) {
       if (l.e) continue;
       l.audio.src = SILENCE;
-      l.audio.play().then(() => { if (!l.e) { l.audio.pause(); l.audio.removeAttribute('src'); l.audio.load(); } }).catch(() => {});
+      l.audio.play().then(() => { if (!audible() || !l.e) { l.audio.pause(); if (!l.e) { l.audio.removeAttribute('src'); l.audio.load(); } } }).catch(() => {});
     }
   }
 
   function volumeDirect(e) {
-    const v = (reglages.actif ? reglages.musique / 100 : 0) * e.l.fondu * attenuation;
+    const v = (audible() ? reglages.musique / 100 : 0) * e.l.fondu * attenuation;
     try { e.l.audio.volume = Math.max(0, Math.min(1, v)); } catch (err) {   }
   }
   function fondre(e, vers, duree, fini) {
@@ -270,7 +322,7 @@ const Son = (() => {
     fondre(e, e.l.direct ? 0 : 0.0001, fondu ? FONDU : 0.05, () => liberer(e));
   }
   function jouerPiste(cle) {
-    if (!ctx || !pret || !reglages.actif) return;
+    if (!ctx || !pret || !audible() || !reglages.musique) return;
     if (enCours && enCours.cle === cle) return;
     const ext = format();
     if (!disponible(cle) || !ext) { manquantes[cle] = true; arreter(true); return; }
@@ -283,15 +335,21 @@ const Son = (() => {
     l.e = e; l.audio.loop = reboucle;
     if (!reboucle) e.apresFin = () => {
       e.relance = setTimeout(() => {
-        if (e.arretee) return;
+        if (e.arretee || l.e !== e || !audible() || !reglages.musique) return;
         try { l.audio.currentTime = b.reprise || 0; } catch (err) {   }
         l.audio.play().catch(() => {});
       }, (b.pause || 0) * 1000);
     };
     if (l.direct) { l.fondu = 0; volumeDirect(e); } else { l.gain.gain.cancelScheduledValues(ctx.currentTime); l.gain.gain.setValueAtTime(0.0001, ctx.currentTime); }
     l.audio.src = DOSSIER + fichier(cle) + '.' + ext;
+    const position = reprise && reprise.cle === cle ? reprise.temps : 0;
+    reprise = null;
+    if (position > 0) {
+      const restaurer = () => { if (l.e === e && !e.arretee) try { l.audio.currentTime = position; } catch (err) {   } };
+      if (l.audio.readyState >= 1) restaurer(); else l.audio.addEventListener('loadedmetadata', restaurer, { once: true });
+    }
     enCours = e;
-    l.audio.play().then(() => { if (!e.arretee) fondre(e, niveau(cle), FONDU); }).catch(() => {
+    l.audio.play().then(() => { if (l.e !== e || e.arretee) return; if (!audible()) { suspendre(); return; } fondre(e, niveau(cle), FONDU); }).catch(() => {
       if (enCours === e) enCours = null;
       liberer(e);
     });
@@ -302,19 +360,21 @@ const Son = (() => {
     if (ctx && gainAttenue) {
       const t = ctx.currentTime, g = gainAttenue.gain;
       g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0.35, t + 0.08);
-      g.setValueAtTime(0.35, t + duree); g.linearRampToValueAtTime(1, t + duree + 0.8);
+      const restant = Math.max(0, finAttenuation - Date.now()) / 1000;
+      g.setValueAtTime(0.35, t + restant); g.linearRampToValueAtTime(1, t + restant + 0.8);
     }
     if (enCours && enCours.l.direct) volumeDirect(enCours);
-    setTimeout(() => {
+    clearTimeout(minuterieAttenuation);
+    minuterieAttenuation = setTimeout(() => {
       if (Date.now() < finAttenuation) return;
       attenuation = 1;
       if (enCours && enCours.l.direct) volumeDirect(enCours);
-    }, duree * 1000 + 800);
+    }, Math.max(0, finAttenuation - Date.now()) + 800);
   }
   function musique(cles) {
     const cle = choisir(cles);
     pisteVoulue = cle;
-    if (!cle) { if (ctx) arreter(true); return; }
+    if (!cle) { reprise = null; couperMusique(); return; }
     if (!disponible(cle)) manquantes[cle] = true;
     if (pret) jouerPiste(cle);
   }
@@ -326,6 +386,8 @@ const Son = (() => {
     actif: () => reglages.actif, pret: () => pret,
     piste: () => (enCours ? enCours.cle : null), voulue: () => pisteVoulue, manquante: cle => !!manquantes[cle],
     attenuee: () => attenuation < 1, choisir,
+    arreter: () => { pisteVoulue = null; reprise = null; suspendre(); reprise = null; },
     lecture: () => (enCours ? { cle: enCours.cle, temps: enCours.l.audio.currentTime, enPause: enCours.l.audio.paused, direct: enCours.l.direct, boucle: enCours.l.audio.loop, lecteurs: lecteurs.length } : null),
   };
 })();
+

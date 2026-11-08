@@ -45,11 +45,14 @@ Object.assign(Hud.prototype, {
 
   openMap() {
     const opening = !this.fen.isOpen('carte');
-    const c = this.carte = this.carte || { tab: 'cartes', vue3d: false, rot: 0, sel: null, selCase: null, region: null, vues: {}, survol: null, bulle: null };
+    const c = this.carte = this.carte || { tab: 'cartes', vue3d: true, rot: 0, sel: null, selCase: null, region: null, vues: {}, survol: null, bulle: null };
     if (c.drapeau === undefined) c.drapeau = this.lireDrapeau();
     if (opening) {
       c.sel = null; c.selCase = null; c.region = null; c.bulle = null;
       c.vueIle = this.carteIleDispo(); c.selIle = null; c.bulleIle = null;
+      c.vue3d = true; c.masques = new Set(); c.recherche = '';
+      if (c.catsOuvertes === undefined) c.catsOuvertes = !(window.matchMedia && window.matchMedia('(max-width: 720px), (max-height: 480px)').matches);
+      if (c.ficheFermee === undefined) c.ficheFermee = !!(window.matchMedia && window.matchMedia('(max-width: 720px), (max-height: 480px)').matches);
       if (c.vues.cartes) Object.assign(c.vues.cartes, this.carteIci());
       if (!this.carteVisibilite) {
         this.carteVisibilite = () => {
@@ -58,14 +61,31 @@ Object.assign(Hud.prototype, {
         };
         document.addEventListener('visibilitychange', this.carteVisibilite);
       }
-      if (c.vue3d && c.tab === 'cartes' && !c.repli3d && !c.vueIle) this.ouvrir3D();
+      if (c.vue3d && !c.repli3d && (c.tab === 'monde' || !c.vueIle)) this.ouvrir3D();
     }
     const actions = {
       ctab: d => {
-        c.tab = d.tab; c.survol = null; c.bulle = null; this.cacherBulle();
-        if (c.tab !== 'cartes') { this.fermer3D(); this.fermerIle(); } else if (c.vue3d && !c.repli3d && !this.carteIleActive()) this.ouvrir3D();
+        c.tab = d.tab; c.survol = null; c.bulle = null; c.sel = null; this.cacherBulle();
+        c.vue3d = true;
+        if (c.tab === 'monde') { this.fermerIle(); if (this.carte3d) this.carte3d.voirMonde(); else if (!c.repli3d) this.ouvrir3D(); }
+        else {
+          c.vueIle = this.carteIleDispo();
+          if (c.vueIle) this.fermer3D();
+          else if (this.carte3d) { this.carte3d.but = null; this.carte3d.centrer(); }
+          else if (!c.repli3d) this.ouvrir3D();
+        }
+        this.fen.render('carte');
+        if (this.carteJuger) this.carteJuger();
+      },
+      categorie: d => {
+        if (!c.masques) c.masques = new Set();
+        if (c.masques.has(d.id)) c.masques.delete(d.id); else c.masques.add(d.id);
+        if (this.carte3d) this.carte3d.majReperes(true);
+        if (!this.carteIleActive() && !this.carte3d) this.drawCarte();
         this.fen.render('carte');
       },
+      cats: () => { c.catsOuvertes = !c.catsOuvertes; this.fen.render('carte'); },
+      volet: () => { c.ficheFermee = !c.ficheFermee; this.fen.render('carte'); },
       vue3d: () => {
         if (this.carteIleActive()) { c.vueIle = false; this.fermerIle(); c.vue3d = true; }
         else c.vue3d = !c.vue3d;
@@ -92,12 +112,12 @@ Object.assign(Hud.prototype, {
       zoom: d => {
         const cam = this.cameraIle();
         if (cam) { const r = cam.rect(); cam.carteZoomAt(r.left + r.width / 2, r.top + r.height / 2, Number(d.f), { smooth: true }); return; }
-        if (this.carte3d && c.tab === 'cartes') this.carte3d.zoom(Number(d.f)); else this.zoomCarte(Number(d.f));
+        if (this.carte3d) this.carte3d.zoom(Number(d.f)); else this.zoomCarte(Number(d.f));
       },
       centrer: () => {
         const cam = this.cameraIle();
         if (cam) { const p = this.world.player; cam.carteVoler(p.rx, p.ry); return; }
-        if (this.carte3d && c.tab === 'cartes') { this.carte3d.centrer(); return; }
+        if (this.carte3d) { if (!this.carte3d.but) this.carte3d.centrer(true); this.carte3d.centrer(); return; }
         if (c.tab === 'monde') Object.assign(this.vueCarte(), { z: 1, cx: 50, cy: 40 });
         else { Object.assign(this.vueCarte(), this.carteIci()); c.sel = null; c.selCase = null; c.bulle = null; }
         this.fen.render('carte');
@@ -106,6 +126,10 @@ Object.assign(Hud.prototype, {
       voirRegion: d => {
         const pts = [...Atlas.get().coords].filter(([id]) => (Atlas.index().map.get(id).zone.region === d.id)).map(([, p]) => p);
         if (!pts.length) return;
+        if (this.carte3d) {
+          const m0 = [...Atlas.get().coords].find(([id]) => Atlas.index().map.get(id).zone.region === d.id), q = this.carte3d.dansScene(m0 && m0[0], pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length);
+          this.carte3d.aller(q[0], q[1], 16); return;
+        }
         c.tab = 'cartes';
         Object.assign(this.vueCarte(), { z: 0.7, cx: pts.reduce((s, p) => s + p[0], 0) / pts.length, cy: pts.reduce((s, p) => s + p[1], 0) / pts.length });
         if (c.vue3d && !c.repli3d) this.ouvrir3D();
@@ -120,7 +144,7 @@ Object.assign(Hud.prototype, {
       drapeau: () => this.poserDrapeau(null),
     };
     this.simpleWin('carte', 'Carte du monde', () => this.renderCarte(), actions, {
-      width: 860, cls: 'vy-fenetre--carte',
+      width: 1200, cls: 'vy-fenetre--carte',
       after: body => this.monterCarte(body),
       onClose: () => this.fermerCarte(),
     });
@@ -158,6 +182,7 @@ Object.assign(Hud.prototype, {
     this.syncMenus();
     const c = this.carte;
     if (!c) return;
+    if (this._navCarteAbort) this._navCarteAbort.abort();
     c.survol = null; c.bulle = null; c.bulleIle = null; c.selIle = null;
     this.fermerIle();
     this.fermer3D();
@@ -168,19 +193,148 @@ Object.assign(Hud.prototype, {
 
   renderCarte() {
     const c = this.carte;
-    const tabs = [['cartes', 'Cartes'], ['monde', 'Monde']].map(([k, l]) => `<button class="vy-onglet${c.tab === k ? ' on' : ''}" data-act="ctab" data-tab="${k}" role="tab" aria-selected="${c.tab === k}">${l}</button>`).join('');
-    const cartes = c.tab === 'cartes', ile = cartes && this.carteIleActive();
-    const outils = (cartes && this.carteIleDispo() ? `<button class="vy-bouton vy-bouton--petit vy-carte__relief" data-act="vueIle" aria-pressed="${ile}" title="${ile ? 'Voir le plan peint' : 'Voir l\'île en 3D'}" aria-label="La carte 3D de l'île">${I.carte}<span>Île</span></button>` : '') +
-      (cartes ? `<button class="vy-bouton vy-bouton--petit vy-carte__relief" data-act="vue3d" aria-pressed="${!!c.vue3d && !ile}" title="Voir en relief" aria-label="Voir en relief">${I.relief}<span>Relief</span></button>` : '') +
-      (cartes && (c.vue3d || ile) ? `<button class="vy-bouton vy-bouton--petit vy-bouton--icone" data-act="tourner" data-sens="-1" aria-label="Tourner à gauche" title="Tourner à gauche">${I.tourneG}</button><button class="vy-bouton vy-bouton--petit vy-bouton--icone" data-act="tourner" data-sens="1" aria-label="Tourner à droite" title="Tourner à droite">${I.tourneD}</button>` : '') +
-      `<button class="vy-bouton vy-bouton--petit vy-bouton--icone" data-act="zoom" data-f="0.8" aria-label="Dézoomer" title="Dézoomer">${I.moins}</button>` +
-      `<button class="vy-bouton vy-bouton--petit vy-bouton--icone" data-act="zoom" data-f="1.25" aria-label="Zoomer" title="Zoomer">${I.plus}</button>` +
-      `<button class="vy-bouton vy-bouton--petit vy-bouton--icone" data-act="centrer" aria-label="Centrer sur moi" title="Centrer sur moi">${I.cible}</button>`;
-    return `<div class="vy-carte">
-      <div class="vy-carte__barre"><div class="vy-onglets vy-carte__onglets" role="tablist">${tabs}</div><div class="vy-carte__outils">${outils}</div></div>
-      <div class="vy-carte__corps"><div class="vy-carte__vue" data-carte-vue></div>
-        <aside class="vy-carte__fiche" data-defile="carte-fiche">${c.tab === 'monde' ? this.ficheRegion() : ile ? this.ficheIle() : this.ficheCarte()}</aside></div>
+    const tabs = [['cartes', 'Région'], ['monde', 'Monde']].map(([k, l]) => `<button class="vy-onglet${c.tab === k ? ' on' : ''}" data-act="ctab" data-tab="${k}" role="tab" aria-selected="${c.tab === k}">${l}</button>`).join('');
+    const ile = c.tab === 'cartes' && this.carteIleActive();
+    const outils = `<button class="vy-bouton vy-bouton--icone" data-act="tourner" data-sens="-1" aria-label="Tourner à gauche" title="Tourner à gauche">${I.tourneG}</button>` +
+      `<button class="vy-bouton vy-bouton--icone" data-act="tourner" data-sens="1" aria-label="Tourner à droite" title="Tourner à droite">${I.tourneD}</button>` +
+      `<button class="vy-bouton vy-bouton--icone" data-act="zoom" data-f="1.25" aria-label="Zoomer" title="Zoomer">${I.plus}</button>` +
+      `<button class="vy-bouton vy-bouton--icone" data-act="zoom" data-f="0.8" aria-label="Dézoomer" title="Dézoomer">${I.moins}</button>` +
+      `<button class="vy-bouton vy-bouton--icone" data-act="centrer" aria-label="Centrer sur moi" title="Centrer sur moi">${I.cible}</button>`;
+    const fiche = c.tab === 'monde' ? (c.sel ? this.ficheCase(c.sel) : this.ficheRegion()) : ile ? this.ficheIle() : this.ficheCarte();
+    return `<div class="vy-carte vy-carte--plein${c.ficheFermee ? ' vy-carte--sans-fiche' : ''}${c.catsOuvertes ? ' vy-carte--cats' : ''}" data-vue="${ile ? 'ile' : c.repli3d ? 'plan' : 'relief'}">
+      <div class="vy-carte__vue" data-carte-vue></div>
+      <div class="vy-carte__haut">
+        <div class="vy-onglets vy-carte__onglets" role="tablist">${tabs}</div>
+        <div class="vy-carte__recherche" role="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+          <input type="search" data-carte-recherche placeholder="Rechercher un lieu, un habitant…" aria-label="Rechercher sur la carte" autocomplete="off" spellcheck="false" value="${esc(c.recherche || '')}">
+          <ul class="vy-carte__resultats" data-carte-resultats role="listbox" hidden></ul>
+        </div>
+      </div>
+      <aside class="vy-carte__cats" aria-label="Catégories">${this.panneauCategories()}</aside>
+      <div class="vy-carte__outils" role="toolbar" aria-label="Commandes de la carte">${outils}</div>
+      <aside class="vy-carte__fiche" data-defile="carte-fiche">
+        <button type="button" class="vy-carte__volet" data-act="volet" aria-label="${c.ficheFermee ? 'Ouvrir la fiche' : 'Fermer la fiche'}" title="${c.ficheFermee ? 'Ouvrir la fiche' : 'Fermer la fiche'}"><span aria-hidden="true">${c.ficheFermee ? '‹' : '›'}</span></button>
+        <div class="vy-carte__fiche-corps">${fiche}${ile ? '' : this.navigationDrapeau()}</div>
+      </aside>
     </div>`;
+  },
+
+  panneauCategories() {
+    const c = this.carte, I2 = typeof CarteIcones === 'object' ? CarteIcones : null;
+    if (!I2) return '';
+    const n = this.compteCategories();
+    const lignes = I2.CATEGORIES.map(k => {
+      const off = c.masques && c.masques.has(k.id), kind = k.sortes[0];
+      return `<li><button type="button" class="vy-carte__cat${off ? ' off' : ''}" data-act="categorie" data-id="${k.id}" aria-pressed="${!off}" title="${off ? 'Montrer' : 'Masquer'} : ${esc(k.nom)}">
+        <img src="${CartePeinture.url(kind)}" alt="" width="22" height="22"><span>${esc(k.nom)}</span><b>${n[k.id] || 0}</b>
+        <i class="vy-carte__oeil" aria-hidden="true">${off ? '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 9 6 9 6a17 17 0 0 1-2.6 3.2M6.3 7.6C4.2 9.2 3 12 3 12s4 6 9 6a9 9 0 0 0 3.7-.8"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M3 12s4-6 9-6 9 6 9 6-4 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.6"/></svg>'}</i></button></li>`;
+    }).join('');
+    return `<button type="button" class="vy-carte__cats-tete" data-act="cats" aria-expanded="${!!c.catsOuvertes}"><span>Catégories</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><ul class="vy-carte__cats-liste">${lignes}</ul>`;
+  },
+
+  compteCategories() {
+    const out = {}, I2 = typeof CarteIcones === 'object' ? CarteIcones : null;
+    if (!I2) return out;
+    let items = [];
+    try { items = this.carteIleActive() ? this.donneesIle(true) : this.reperesMonde(this.donneesCarte(), true); } catch (e) { items = []; }
+    for (const it of items) { const k = I2.categorie(it.kind); if (k) out[k.id] = (out[k.id] || 0) + 1; }
+    return out;
+  },
+  masquee(kind) {
+    const c = this.carte, I2 = typeof CarteIcones === 'object' ? CarteIcones : null;
+    if (!c || !c.masques || !c.masques.size || !I2) return false;
+    const k = I2.categorie(kind);
+    return !!(k && c.masques.has(k.id));
+  },
+
+
+  normaliser(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); },
+
+  indexRecherche() {
+    const out = [], vus = new Set(), aj = e => { const k = (e.cle || '') + '|' + this.normaliser(e.nom) + '|' + (e.sous || ''); if (!e.nom || vus.has(k)) return; vus.add(k); out.push(e); };
+    const I2 = typeof CarteIcones === 'object' ? CarteIcones : null;
+    if (this.carteIleActive()) {
+      const ile = this.ile3D(), K = ile && ile.carteIle, P = this.world.plateau;
+      const L = K && (K.lieux || (K.calculerLieux && (K.lieux = K.calculerLieux())));
+      if (L) for (const n of [...L.zones, ...L.sousZones, ...L.lieux]) aj({ cle: n.sorte === 'sousZone' ? 'carte:' + n.map : 'lieu:' + P.id + ':' + n.cle, nom: n.nom, sous: n.sorte === 'zone' ? 'Zone' : 'Lieu', kind: null, aller: () => this.allerIle({ cle: n.cle, type: 'lieu', sorte: n.sorte, nom: n.nom, sous: n.sous, zone: n.zone, map: n.map || (P && P.secteurDe(n.x, n.y)), x: n.x, y: n.y }) });
+      for (const it of this.donneesIle(true)) {
+        const nom = it.npc ? it.npc.name : it.nom || (it.donjon && it.donjon.name) || (it.quest && it.quest.name);
+        aj({ cle: (this.cibleFavori({ type: 'repere', item: it, map: it.map, x: it.x, y: it.y }) || {}).cle, nom, sous: (I2 && I2.NOMS[it.kind]) || '', kind: it.kind, sub: it.sub, aller: () => this.allerIle({ cle: it.cle, type: 'repere', item: it, x: it.x, y: it.y, map: it.map || (P && P.secteurDe(it.x, it.y)) }) });
+      }
+      const nommes = new Set(out.map(e => this.normaliser(e.nom)));
+      for (const n of this.world.npcs || []) { const d = n.def || {}; if (nommes.has(this.normaliser(d.name))) continue; aj({ cle: 'pnj:' + n.id, nom: d.name, sous: d.title || 'Habitant', kind: null, aller: () => this.allerIle({ cle: 'pnj:' + n.id, type: 'repere', item: { npc: Object.assign({ id: n.id }, d), kind: 'habitant' }, x: n.x, y: n.y, map: n.carte || (P && P.secteurDe(n.x, n.y)) }) }); }
+    } else {
+      const D = this.donneesCarte();
+      for (const [id] of D.A.coords) {
+        const e = D.ix.map.get(id); if (!e) continue;
+        aj({ cle: 'carte:' + id, nom: e.def.name, sous: e.zone.name, kind: null, aller: () => this.allerMonde(id) });
+      }
+      for (const z of DATA.content.zones) { const m = z.maps.find(x => D.A.coords.has(x.id)); if (m) aj({ cle: 'carte:' + m.id, nom: z.name, sous: 'Zone', kind: null, aller: () => this.allerMonde(m.id) }); }
+      for (const it of this.reperesMonde(D, true)) {
+        const nom = it.npc ? it.npc.name : it.donjon ? it.donjon.name : null;
+        if (nom) aj({ cle: it.npc ? 'pnj:' + it.npc.id : 'donjon:' + it.donjon.id, nom, sous: (I2 && I2.NOMS[it.kind]) || '', kind: it.kind, sub: it.sub, aller: () => this.allerMonde(it.map) });
+      }
+    }
+    return out;
+  },
+
+  chercherCarte(q) {
+    const t = this.normaliser(q).trim();
+    if (!t) return this.favorisCarte().map(e => Object.assign({}, e, { favori: true, aller: () => this.allerFavori(e) })).slice(0, 7);
+    const res = [];
+    for (const e of this.indexRecherche()) {
+      const n = this.normaliser(e.nom), s = this.normaliser(e.sous);
+      let sc = n.startsWith(t) ? 3 : n.split(/[\s'’-]+/).some(m => m.startsWith(t)) ? 2 : n.includes(t) ? 1 : s.includes(t) ? 0.5 : 0;
+      if (sc) res.push({ e, sc });
+    }
+    const favoris = new Set(this.favorisCarte().map(e => e.cle));
+    for (const r of res) r.e.favori = favoris.has(r.e.cle);
+    res.sort((a, b) => Number(b.e.favori) - Number(a.e.favori) || b.sc - a.sc || a.e.nom.localeCompare(b.e.nom, 'fr'));
+    return res.slice(0, 7).map(r => r.e);
+  },
+
+  allerIle(s) {
+    const c = this.carte, ile = this.ile3D(), K = ile && ile.carteIle, cam = this.cameraIle();
+    if (!c || !K) return;
+    c.selIle = s;
+    K.sel = s.type !== 'sol' ? s.cle : null;
+    K.cible = s.type === 'sol' ? { x: s.x, y: s.y } : null;
+    c.ficheFermee = false;
+    if (cam) cam.carteVoler(s.x, s.y);
+    this.fen.render('carte');
+  },
+  allerMonde(id) {
+    const c = this.carte;
+    c.sel = id; c.selCase = null; c.ficheFermee = false;
+    const p = this.posee(id) ? CartePlateaux.centre(id) : Atlas.coordsOf(id);
+    if (this.carte3d && p) { const q = this.carte3d.dansScene(id, p[0], p[1]); this.carte3d.aller(q[0], q[1]); }
+    this.fen.render('carte');
+  },
+
+  monterRecherche(body) {
+    const inp = body.querySelector('[data-carte-recherche]'), ul = body.querySelector('[data-carte-resultats]');
+    if (!inp || !ul) return;
+    const c = this.carte;
+    let res = [], sel = 0;
+    const montrer = () => {
+      res = this.chercherCarte(inp.value);
+      sel = Math.min(sel, Math.max(0, res.length - 1));
+      ul.hidden = !inp.value.trim() && !res.length;
+      ul.innerHTML = res.length ? res.map((e, i) => `<li role="option" aria-selected="${i === sel}" data-i="${i}">${e.kind ? `<img src="${CartePeinture.url(e.kind, e.sub)}" alt="" width="20" height="20">` : '<i class="vy-carte__point" aria-hidden="true"></i>'}<span><b>${e.favori ? '★ ' : ''}${esc(e.nom)}</b><small>${esc(e.sous || '')}</small></span></li>`).join('') : '<li class="vide">Rien de ce nom ici.</li>';
+    };
+    const choisir = i => { const e = res[i]; if (!e) return; c.recherche = ''; inp.value = ''; ul.hidden = true; inp.blur(); e.aller(); };
+    inp.addEventListener('input', () => { c.recherche = inp.value; sel = 0; montrer(); });
+    inp.addEventListener('focus', montrer);
+    inp.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (res.length) { sel = (sel + (e.key === 'ArrowDown' ? 1 : res.length - 1)) % res.length; montrer(); } }
+      else if (e.key === 'Enter') { e.preventDefault(); choisir(sel); }
+      else if (e.key === 'Escape') { e.preventDefault(); inp.value = ''; c.recherche = ''; ul.hidden = true; inp.blur(); }
+    });
+    inp.addEventListener('blur', () => setTimeout(() => { ul.hidden = true; }, 150));
+    ul.addEventListener('pointerdown', e => { const li = e.target.closest('li[data-i]'); if (li) { e.preventDefault(); choisir(Number(li.dataset.i)); } });
+    if (c.recherche) montrer();
   },
 
 
@@ -191,8 +345,7 @@ Object.assign(Hud.prototype, {
     const here = Atlas.hereOf(w.mapId);
     const vus = [...A.coords.keys()].filter(id => seen.has(id)).length;
     const compte = `<p class="vy-carte__compte"><b>${vus}</b> / ${A.coords.size} cartes explorées</p>`;
-    const leg = [['toi', 'Toi'], ['quete', 'Quête suivie'], ['drapeau', 'Ton drapeau'], ['relais', 'Relais de l\'Aube'], ['donjon', 'Donjon'], ['artisan', 'Atelier', 'forgeron'], ['marchand', 'Marchand'], ['marche', 'Marché'], ['banque', 'Banque'], ['dojo', 'Dojo'], ['metiers', 'Hôtel des Métiers'], ['avis', 'Avis de recherche'], ['temple', 'Temple des Voies'], ['offre', 'Quête à prendre'], ['rendre', 'Quête à rendre']];
-    const legende = `<div class="vy-carte__legende">${leg.map(([k, l, sub]) => `<span><img src="${CartePeinture.url(k, sub)}" alt="" width="18" height="18">${l}</span>`).join('')}</div>` +
+    const legende = '' +
       `<p class="muted vy-note">${c.drapeau ? `Drapeau en ${coord(c.drapeau.map(Math.round))}. <button class="vy-carte__lien" data-act="drapeau">Retirer</button>` : 'Appui long ou clic droit sur la carte : poser ton drapeau.'}</p>`;
     const id = c.sel || (c.selCase ? null : here);
     if (!id) {
@@ -266,6 +419,10 @@ Object.assign(Hud.prototype, {
   monterCarte(body) {
     const holder = body.querySelector('[data-carte-vue]');
     if (!holder) return;
+    if (this._navCarteAbort) this._navCarteAbort.abort();
+    this._navCarteAbort = new AbortController();
+    this.monterNavigationCarte(body);
+    this.monterRecherche(body);
     const c = this.carte;
     if (!this.carteBulleEl) {
       this.carteBulleEl = document.createElement('div');
@@ -281,7 +438,7 @@ Object.assign(Hud.prototype, {
       return;
     }
     this.fermerIle();
-    if (c.tab === 'cartes' && c.vue3d && !c.repli3d) {
+    if (c.vue3d && !c.repli3d) {
       if (this.carte3d && this.carte3d.pret) { holder.appendChild(this.carte3d.dom); this.carte3d.taille(); this.carte3d.majReperes(); this.carte3d.demander(); }
       else holder.insertAdjacentHTML('beforeend', `<div class="vy-carte__charge" role="status"><span>Chargement de la vue 3D...</span><small>${this.carte3dEtape || ''}</small></div>`);
     } else {
@@ -464,6 +621,7 @@ Object.assign(Hud.prototype, {
     const p = it.map ? Atlas.coordsOf(it.map) : null, ou = p ? ` (${coord(p)})` : '';
     const nomCarte = it.map ? Atlas.index().map.get(it.map).def.name : '';
     switch (it.kind) {
+      case 'drapeau': return '<b>Ton drapeau</b><span>Touche pour le retirer.</span>';
       case 'toi': return `<b>Toi</b><span>${esc(nomCarte)}${ou}</span>`;
       case 'drapeau': return `<b>Ton drapeau</b><span>${coord(it.at.map(Math.round))}</span><span class="q">${this.carte.pointeur === 'mouse' ? 'Clic' : 'Toucher'} pour l'enlever</span>`;
       case 'quete': return `<b>Quêtes</b><span class="q">${esc(it.quest.name)}</span><span>${esc(it.text)}${ou}</span>`;
@@ -509,7 +667,8 @@ Object.assign(Hud.prototype, {
 
   poserDrapeau(at) {
     const c = this.carte;
-    c.drapeau = at;
+    c.drapeau = at; this._trajetDrapeau = null;
+    const ile = this.ile3D(); if (ile && ile.carteIle) ile.carteIle.donneesA = 0;
     try { if (at) localStorage.setItem(DRAPEAU, JSON.stringify(at)); else localStorage.removeItem(DRAPEAU); } catch (e) {   }
     this.toast(at ? `Drapeau posé en ${coord(at.map(Math.round))}.` : 'Drapeau retiré.');
     if (navigator.vibrate && at) try { navigator.vibrate(12); } catch (e) {   }
@@ -528,7 +687,8 @@ Object.assign(Hud.prototype, {
   },
 
 
-  reperesMonde(D) {
+  reperesMonde(D, tout) {
+    if (!tout && this.carte && this.carte.masques && this.carte.masques.size) return this.reperesMonde(D, true).filter(it => !this.masquee(it.kind));
     const items = [];
     for (const [id] of D.A.coords) {
       const def = D.ix.map.get(id).def, vu = D.seen.has(id);
@@ -653,7 +813,7 @@ Object.assign(Hud.prototype, {
     const v = (n, d) => st.getPropertyValue(n).trim() || d;
     const fond = v('--fen-fond', '#121c29');
     const [r, g, b] = hex(fond);
-    return { fond, fond2: v('--fen-fond-2', '#182536'), tete: v('--fen-tete', '#1c2a3d'), accent: v('--fen-accent', '#ddaa72'), actif: v('--fen-actif', '#209fec'), texte: v('--fen-texte', '#f7f0de'), texte2: v('--fen-texte-2', '#b7a697'), clair: (r * 0.3 + g * 0.59 + b * 0.11) > 140, titre: v('--vy-font-titre', 'serif'), ui: v('--vy-font-ui', 'sans-serif') };
+    return { fond, fond2: v('--fen-fond-2', '#182536'), tete: v('--fen-tete', '#1c2a3d'), accent: v('--fen-accent', '#ddaa72'), actif: v('--fen-actif', '#209fec'), texte: v('--fen-texte', '#f7f0de'), texte2: v('--fen-texte-2', '#b7a697'), clair: (r * 0.3 + g * 0.59 + b * 0.11) > 140, titre: v(document.getElementById('app').classList.contains('vy-eter') ? '--vy-font-ui' : '--vy-font-titre', 'serif'), ui: v('--vy-font-ui', 'sans-serif') };
   },
 
   drawCarte() {
@@ -954,14 +1114,15 @@ Object.assign(Hud.prototype, {
     this.carte3dEtape = '';
     this.carte3dPromesse = this.chargerThree().then(() => {
       if (typeof Carte3D !== 'function' || !Carte3D.disponible()) throw new Error('WebGL indisponible');
-      if (!this.fen.isOpen('carte') || !c.vue3d || c.tab !== 'cartes') return null;
+      if (!this.fen.isOpen('carte') || !c.vue3d || (c.tab === 'cartes' && this.carteIleActive())) return null;
       if (this.renderer && typeof this.renderer.pause3D === 'function') this.renderer.pause3D('carte3d', true);
       const vue = this.carte3d = new Carte3D(this);
       return vue.construire(etape => { this.carte3dEtape = etape; const el = document.querySelector('.vy-carte__charge small'); if (el) el.textContent = etape; }).then(() => vue);
     }).then(vue => {
       this.carte3dPromesse = null;
       if (vue && vue !== this.carte3d) { vue.dispose(); return; }
-      if (vue && (!this.fen.isOpen('carte') || !c.vue3d || c.tab !== 'cartes')) { this.fermer3D(); return; }
+      if (vue && (!this.fen.isOpen('carte') || !c.vue3d || (c.tab === 'cartes' && this.carteIleActive()))) { this.fermer3D(); return; }
+      if (vue && c.tab === 'monde') vue.voirMonde(true);
       if (this.fen.isOpen('carte')) this.fen.render('carte');
     }).catch(e => {
       console.warn('Carte du monde : la vue 3D est indisponible, le relief peint la remplace', e && e.message ? e.message : e);
@@ -1142,15 +1303,19 @@ Object.assign(Hud.prototype, {
     el.innerHTML = '<button type="button" class="vy-carte__boussole vy-carte__nord" data-act="nord" title="L\'île entière, le nord en haut" aria-label="L\'île entière, le nord en haut"><b>N</b></button>';
     const ctl = this.carteIleCtl = new CameraControls({ zoomAt() {}, fitZoom: Infinity, zoom: 1 }, el, { enabled: () => !!this.cameraIle(), keys: () => false });
     const pts = new Map();
-    let glisse = null;
+    let glisse = null, appui = 0;
+    const annulerAppui = () => { clearTimeout(appui); appui = 0; };
+    this._annulerAppuiCarte = () => { annulerAppui(); glisse = null; pts.clear(); };
     const pos = e => { const r = el.getBoundingClientRect(), k = el.clientWidth && r.width ? r.width / el.clientWidth : 1; return { x: (e.clientX - r.left) / k, y: (e.clientY - r.top) / k }; };
     el.addEventListener('contextmenu', e => e.preventDefault());
     el.addEventListener('pointerdown', e => {
       if (e.target.closest('button')) return;
       pts.set(e.pointerId, true);
       if (this.carte) this.carte.pointeur = e.pointerType;
-      if (pts.size === 1 && (e.pointerType !== 'mouse' || e.button === 0)) {
-        glisse = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, bouge: false };
+      annulerAppui();
+      if (pts.size === 1 && (e.pointerType !== 'mouse' || e.button === 0 || e.button === 2)) {
+        glisse = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, bouge: false, bouton: e.button, fait: false };
+        if (e.pointerType !== 'mouse') appui = setTimeout(() => { if (glisse && !glisse.bouge && pts.size === 1) { glisse.fait = true; this.poserDrapeauIle(pos(e)); } }, 560);
         try { el.setPointerCapture(e.pointerId); } catch (err) {   }
       } else glisse = null;
     });
@@ -1160,13 +1325,14 @@ Object.assign(Hud.prototype, {
       const g = glisse;
       if (!g || g.id !== e.pointerId || pts.size > 1 || !cam) return;
       if (!g.bouge && Math.hypot(e.clientX - g.x0, e.clientY - g.y0) > (e.pointerType === 'mouse' ? 4 : 9)) {
-        g.bouge = true; el.classList.add('glisse');
+        annulerAppui(); g.bouge = true; el.classList.add('glisse');
         this.survolIle(null);
       }
-      if (g.bouge) cam.cartePan(e.clientX - g.x, e.clientY - g.y);
+      if (g.bouge && g.bouton !== 2) cam.cartePan(e.clientX - g.x, e.clientY - g.y);
       g.x = e.clientX; g.y = e.clientY;
     });
     const fin = e => {
+      annulerAppui();
       if (!pts.has(e.pointerId)) return;
       pts.delete(e.pointerId);
       const g = glisse;
@@ -1175,7 +1341,10 @@ Object.assign(Hud.prototype, {
       el.classList.remove('glisse');
       const cam = this.cameraIle();
       if (g.bouge) { if (cam) cam.carteRelacher(); }
-      else if (e.type === 'pointerup' && !ctl.ignoreClick()) this.toucherIle(pos(e), e.pointerType);
+      else if (!g.fait && e.type === 'pointerup') {
+        if (g.bouton === 2) this.poserDrapeauIle(pos(e));
+        else if (!ctl.ignoreClick()) this.toucherIle(pos(e), e.pointerType);
+      }
     };
     el.addEventListener('pointerup', fin);
     el.addEventListener('pointercancel', fin);
@@ -1194,7 +1363,7 @@ Object.assign(Hud.prototype, {
       couvre = ix * iy >= 0.9 * b.width * b.height;
     }
     const deja = ile.carteOuverte;
-    const ok = ile.ouvrirCarte(hote, { photo: !couvre, donnees: () => this.donneesIle(), theme: this.themeCarte(), surImage: K => this.surImageIle(K), surFermeture: raison => this.surFermetureIle(raison) });
+    const ok = ile.ouvrirCarte(hote, { photo: !couvre, donnees: () => this.donneesIle(), theme: this.themeCarte(), trajet: () => this.trajetDrapeau(), surImage: K => this.surImageIle(K), surFermeture: raison => this.surFermetureIle(raison) });
     if (!ok) return false;
     if (sc && typeof sc.pause3D === 'function') sc.pause3D('carte', false);
     if (this.carteIleCtl) this.carteIleCtl.camera = ile.camera.adaptateurCarte();
@@ -1203,6 +1372,7 @@ Object.assign(Hud.prototype, {
   },
 
   fermerIle() {
+    if (this._annulerAppuiCarte) this._annulerAppuiCarte();
     const ile = this.renderer && this.renderer.ile;
     if (ile && ile.carteOuverte) ile.fermerCarte(false);
   },
@@ -1216,7 +1386,8 @@ Object.assign(Hud.prototype, {
   },
 
 
-  donneesIle() {
+  donneesIle(tout) {
+    if (!tout && this.carte && this.carte.masques && this.carte.masques.size) return this.donneesIle(true).filter(it => !this.masquee(it.kind));
     const w = this.world, ch = w.ch, P = w.plateau, out = [];
     if (!P) return out;
     const vu = new Set(ch.counters.maps);
@@ -1237,6 +1408,8 @@ Object.assign(Hud.prototype, {
       const at = this.cibleQueteIle(t.quest);
       if (at) out.push({ cle: 'quete:' + t.quest.id, kind: 'quete', epingle: true, x: at.x, y: at.y, quest: t.quest, text: t.text, map: P.secteurDe(at.x, at.y) });
     }
+    const d = this.drapeauPlateau();
+    if (d) out.push({ cle: 'drapeau', kind: 'drapeau', epingle: true, x: d.x, y: d.y, map: d.map });
     return out;
   },
 
@@ -1284,6 +1457,7 @@ Object.assign(Hud.prototype, {
     let s = null;
     if (h && h.item) {
       const it = h.item;
+      if (it.kind === 'drapeau') { this.poserDrapeau(null); return; }
       if (it.kind === 'toi') s = { cle: 'joueur', type: 'joueur', kind: 'toi', x: it.x, y: it.y };
       else if (it.kind === 'lieu') s = { cle: h.cle, type: 'lieu', sorte: it.sorte, nom: it.nom, sous: it.sous, zone: it.zone, map: it.map || P.secteurDe(it.x, it.y), x: it.x, y: it.y };
       else s = { cle: h.cle, type: 'repere', item: it, groupe: h.groupe, x: it.x, y: it.y, map: it.map || P.secteurDe(it.x, it.y) };
@@ -1302,6 +1476,11 @@ Object.assign(Hud.prototype, {
   surImageIle(K) {
     const c = this.carte, ile = this.ile3D(), cam = ile && ile.camera;
     if (!c || !cam || !cam.carte) return;
+    const nav = this.carteIleEl && this.carteIleEl.closest('.vy-carte'), texte = nav && nav.querySelector('.vy-carte__navigation span');
+    if (texte && c.drapeau) {
+      const t = this.trajetDrapeau(), s = t ? (t.accessible ? Math.round(t.distance) + ' pas · chemin accessible' : 'Aucun chemin accessible') : 'Destination dans une autre région';
+      if (texte.textContent !== s) texte.textContent = s;
+    }
     const el = this.carteIleEl, b = el && el.querySelector('.vy-carte__nord');
     if (b) {
       const k = cam.carte.cur, h = cam.carte.h, p = cam.versEcran(k.x, h, k.y), q = cam.versEcran(k.x, h, k.y - 20);
@@ -1348,8 +1527,16 @@ Object.assign(Hud.prototype, {
 
 
   majFicheIle() {
-    const w = this.fen.wins.get('carte'), el = w && w.box.querySelector('.vy-carte__fiche');
-    if (el && this.carteIleActive()) { el.innerHTML = this.ficheIle(); el.scrollTop = 0; }
+    const w = this.fen.wins.get('carte'), el = w && w.box.querySelector('.vy-carte__fiche-corps');
+    if (!el || !this.carteIleActive()) return;
+    const c = this.carte, carte = w.box.querySelector('.vy-carte--plein');
+    if (c.selIle && c.ficheFermee) {
+      c.ficheFermee = false;
+      if (carte) carte.classList.remove('vy-carte--sans-fiche');
+      const v = w.box.querySelector('.vy-carte__volet');
+      if (v) { v.setAttribute('aria-label', 'Fermer la fiche'); v.title = 'Fermer la fiche'; v.innerHTML = '<span aria-hidden="true">›</span>'; }
+    }
+    el.innerHTML = this.ficheIle(); el.scrollTop = 0;
   },
 
   ficheIle() {
@@ -1357,9 +1544,8 @@ Object.assign(Hud.prototype, {
     const A = Atlas.get(), seen = new Set(ch.counters.maps);
     const vus = [...A.coords.keys()].filter(id => seen.has(id)).length;
     const compte = `<p class="vy-carte__compte"><b>${vus}</b> / ${A.coords.size} cartes explorées</p>`;
-    const leg = [['toi', 'Toi'], ['quete', 'Quête suivie'], ['relais', 'Relais de l\'Aube']].concat(P && Hud.monuments(P.id).length ? [['monument', 'Monument']] : [], [['donjon', 'Donjon'], ['artisan', 'Atelier', 'forgeron'], ['marchand', 'Marchand'], ['marche', 'Marché'], ['banque', 'Banque'], ['dojo', 'Dojo'], ['metiers', 'Hôtel des Métiers'], ['avis', 'Avis de recherche'], ['temple', 'Temple des Voies'], ['offre', 'Quête à prendre'], ['rendre', 'Quête à rendre']]);
-    const legende = `<div class="vy-carte__legende">${leg.map(([k, l, sub]) => `<span><img src="${CartePeinture.url(k, sub)}" alt="" width="18" height="18">${l}</span>`).join('')}</div>`;
-    const aide = '<p class="muted vy-note">Touche une pastille, un nom ou le sol pour sa fiche.</p>';
+    const legende = '';
+    const aide = '<p class="muted vy-note">Touche un lieu pour sa fiche. Appui long ou clic droit : ton drapeau.</p>';
     if (!s || !P) return compte + (w.mapId && World.mapDef(w.mapId) ? this.ficheCase(w.mapId, { sansCoord: true }) : '') + aide + legende;
     const actions = `<div class="vy-carte__actions"><button class="vy-bouton vy-bouton--primaire" data-act="yAller">Y aller</button><button class="vy-bouton" data-act="centrerIle">Centrer</button></div>`;
     const ou = esc(this.ouIle(s.x, s.y));
@@ -1370,7 +1556,8 @@ Object.assign(Hud.prototype, {
       if (s.sorte === 'sousZone' && s.map) return compte + this.ficheCase(s.map, { sansCoord: true }).replace('</p>', '</p>' + actions) + legende;
       if (s.sorte === 'zone') {
         const z = (DATA.content.zones || []).find(x => x.id === s.zone);
-        const rows = z ? z.maps.filter(m => m.plateau === P.id).map(m => `<li><span>${esc(m.name.charAt(0).toUpperCase() + m.name.slice(1))}</span><b>${seen.has(m.id) ? 'explorée' : ''}</b></li>`).join('') : '';
+        const favoris = new Set(this.favorisCarte().map(f => f.cle));
+        const rows = z ? z.maps.filter(m => m.plateau === P.id).sort((a,b) => Number(favoris.has('carte:' + b.id)) - Number(favoris.has('carte:' + a.id))).map(m => `<li><span>${esc(m.name.charAt(0).toUpperCase() + m.name.slice(1))}</span><b>${seen.has(m.id) ? 'explorée' : ''}</b></li>`).join('') : '';
         html = `<h3>${esc(s.nom)}</h3><p class="vy-carte__coord">${esc(s.sous || '')}</p>${actions}${rows ? `<div class="vy-sous"><span>Lieux</span></div><ul class="vy-carte__liste">${rows}</ul>` : ''}`;
         return compte + html + legende;
       }
@@ -1424,3 +1611,4 @@ Object.assign(Hud.prototype, {
 });
 
 })();
+

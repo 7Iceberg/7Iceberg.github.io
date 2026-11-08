@@ -66,6 +66,7 @@ class Carte3D {
     if (posees.length) { etape('Vues des plateaux'); await Promise.all(posees.map(P => new Promise(r => { if (CartePlateaux.image(P, r)) r(); else setTimeout(r, 4000); }))); }
     if (this.mort) return;
     if (masse.size) { this.ile('continent', masse, D); await image(); }
+    if (Continent.pays().some(p => p.id === 'ervane' && p.open)) { this.ileErvane(D); await image(); }
     if (this.mort) return;
     etape('Arbres, rochers et maisons'); await image();
     this.decor();
@@ -79,6 +80,47 @@ class Carte3D {
     this.pret = true;
     this.demander();
   }
+
+  similitude() {
+    if (this.versContinent !== undefined) return this.versContinent;
+    const A = Atlas.get(), ix = Atlas.index(), C = Continent.centresPays();
+    const centre = id => { const l = [...A.coords].filter(([m]) => ix.map.get(m).zone.region === id && ix.map.get(m).def.layout).map(([, p]) => p); return l.length ? [l.reduce((s, p) => s + p[0], 0) / l.length, l.reduce((s, p) => s + p[1], 0) / l.length] : null; };
+    const ouverts = Continent.pays().filter(p => p.id !== 'ervane' && p.open && centre(p.id));
+    if (!ouverts.length) return (this.versContinent = null);
+    const a0 = ouverts[0], c0 = centre(a0.id), p0 = C[a0.id];
+    let s = 0.5, ang = 0;
+    if (ouverts[1]) {
+      const a1 = ouverts[1], c1 = centre(a1.id), p1 = C[a1.id], va = [p1[0] - p0[0], p1[1] - p0[1]], vb = [c1[0] - c0[0], c1[1] - c0[1]];
+      s = Math.hypot(vb[0], vb[1]) / Math.hypot(va[0], va[1]); ang = Math.atan2(vb[1], vb[0]) - Math.atan2(va[1], va[0]);
+    }
+    const f = p => { const dx = p[0] - p0[0], dy = p[1] - p0[1]; return [c0[0] + s * (dx * Math.cos(ang) - dy * Math.sin(ang)), c0[1] + s * (dx * Math.sin(ang) + dy * Math.cos(ang))]; };
+    return (this.versContinent = { f, s });
+  }
+
+  ileErvane(D) {
+    const THREE = window.THREE, avant = this.scene.children.length;
+    this.ile('ervane', new Set(['ervane']), D);
+    const data = this.iles.get('ervane'), sim = this.similitude();
+    if (!data) return;
+    const neufs = this.scene.children.slice(avant);
+    const P = typeof CartePlateaux === 'object' ? CartePlateaux.liste().find(Q => [...Q.cartes].some(id => /^ervane_/.test(id))) : null;
+    const b = P ? CartePlateaux.bornes(P) : null;
+    const ici = b ? [(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2] : [data.cx0 + data.CW / 2, data.cy0 + data.CH / 2];
+    const cible = sim ? sim.f(Continent.centresPays().ervane) : ici;
+    const dec = [cible[0] - ici[0], Carte3D.ERVANE_HAUT, cible[1] - ici[1]];
+    const g = new THREE.Group();
+    g.position.set(dec[0], dec[1], dec[2]);
+    for (const o of neufs) { this.scene.remove(o); g.add(o); }
+    this.scene.add(g);
+    data.decal = dec; data.dy = dec[1];
+    this.ervaneGroupe = g;
+    this.ervaneCentre = { x: cible[0], z: cible[1], r: b ? Math.max(b.x1 - b.x0, b.y1 - b.y0) / 2 : Math.max(data.CW, data.CH) / 2 };
+  }
+  decalDe(id) {
+    const e = id && Atlas.index().map.get(id), d = e && this.ileDe.get(e.zone.region);
+    return d && d.decal ? d.decal : null;
+  }
+  dansScene(id, x, z) { const d = this.decalDe(id); return d ? [x + d[0], z + d[2]] : [x, z]; }
 
   ciel() {
     const THREE = window.THREE;
@@ -288,7 +330,7 @@ class Carte3D {
     const i = (x - (d.cx0 - 0.5)) * d.K, j = (z - (d.cy0 - 0.5)) * d.K;
     const i0 = Math.max(0, Math.min(d.VW - 2, Math.floor(i))), j0 = Math.max(0, Math.min(d.VH - 2, Math.floor(j))), fi = Math.min(1, Math.max(0, i - i0)), fj = Math.min(1, Math.max(0, j - j0));
     const h = (a, b) => d.hv[(j0 + b) * d.VW + i0 + a];
-    return (h(0, 0) * (1 - fi) + h(1, 0) * fi) * (1 - fj) + (h(0, 1) * (1 - fi) + h(1, 1) * fi) * fj;
+    return (h(0, 0) * (1 - fi) + h(1, 0) * fi) * (1 - fj) + (h(0, 1) * (1 - fi) + h(1, 1) * fi) * fj + (d.dy || 0);
   }
 
 
@@ -386,14 +428,9 @@ class Carte3D {
     const THREE = window.THREE, A = Atlas.get(), ix = Atlas.index(), C = Continent.centresPays();
     const centre = id => { const l = [...A.coords].filter(([m]) => ix.map.get(m).zone.region === id && ix.map.get(m).def.layout).map(([, p]) => p); return l.length ? [l.reduce((s, p) => s + p[0], 0) / l.length, l.reduce((s, p) => s + p[1], 0) / l.length] : null; };
     const pays = Continent.pays().filter(p => p.id !== 'ervane'), ouverts = pays.filter(p => p.open && centre(p.id));
-    if (!ouverts.length) return;
-    const a0 = ouverts[0], c0 = centre(a0.id), p0 = C[a0.id];
-    let s = 0.5, ang = 0;
-    if (ouverts[1]) {
-      const a1 = ouverts[1], c1 = centre(a1.id), p1 = C[a1.id], va = [p1[0] - p0[0], p1[1] - p0[1]], vb = [c1[0] - c0[0], c1[1] - c0[1]];
-      s = Math.hypot(vb[0], vb[1]) / Math.hypot(va[0], va[1]); ang = Math.atan2(vb[1], vb[0]) - Math.atan2(va[1], va[0]);
-    }
-    const versMonde = p => { const dx = p[0] - p0[0], dy = p[1] - p0[1]; return [c0[0] + s * (dx * Math.cos(ang) - dy * Math.sin(ang)), c0[1] + s * (dx * Math.sin(ang) + dy * Math.cos(ang))]; };
+    const sim = this.similitude();
+    if (!ouverts.length || !sim) return;
+    const versMonde = sim.f;
     const peint = Continent.peindre(this.telephone ? 3 : 4, ouverts.map(p => p.id));
     const tex = new THREE.CanvasTexture(peint.canvas);
     tex.encoding = THREE.sRGBEncoding; tex.anisotropy = Math.min(4, this.renderer.capabilities.getMaxAnisotropy());
@@ -466,6 +503,17 @@ class Carte3D {
       s.userData.vitesse = 0.08 + R() * 0.12;
       this.scene.add(s); this.derive.push(s);
     }
+    if (this.ervaneCentre) {
+      const E = this.ervaneCentre;
+      for (let i = 0; i < 14; i++) {
+        const a = i / 14 * Math.PI * 2 + R() * 0.3, rr = E.r * (0.85 + R() * 0.45);
+        const m = new THREE.SpriteMaterial({ map: this.texNuages[i % 3], transparent: true, depthWrite: false, fog: false, opacity: 0.8 + R() * 0.15 });
+        const s = new THREE.Sprite(m), w = 2.2 + R() * 1.8;
+        s.scale.set(w, w * 0.62, 1);
+        s.position.set(E.x + Math.cos(a) * rr, Carte3D.ERVANE_HAUT - 0.55 + R() * 0.3, E.z + Math.sin(a) * rr * 0.9);
+        this.scene.add(s);
+      }
+    }
     this.borne = { x0: b.minX - 7, x1: b.maxX + 7 };
     this.brume = new Map();
     for (const [id, [x, y]] of D.A.coords) if (!D.seen.has(id) && !this.hud.posee(id) && this.ileDe.get(D.ix.map.get(id).zone.region)) this.ajouterBrume(id, x, y);
@@ -521,26 +569,38 @@ class Carte3D {
     const items = hud.reperesMonde(D).filter(it => ici(it.map));
     const parCarte = new Map();
     for (const it of items) {
-      const art = CartePeinture.pastille(it.kind, 96, it.sub), h = this.hauteur(it.at[0], it.at[1]);
-      ajoute(texture('p' + it.kind + it.sub, art.canvas), art.canvas, [it.at[0], h + 0.13, it.at[1]], 0.2, [0.5, 1 - art.ay / art.canvas.height], it, 'proche');
+      const art = CartePeinture.pastille(it.kind, 96, it.sub), h = this.hauteur(it.at[0], it.at[1]), [ax, az] = this.dansScene(it.map, it.at[0], it.at[1]);
+      ajoute(texture('p' + it.kind + it.sub, art.canvas), art.canvas, [ax, h + 0.13, az], 0.2, [0.5, 1 - art.ay / art.canvas.height], it, 'proche');
       (parCarte.get(it.map) || parCarte.set(it.map, []).get(it.map)).push(it);
     }
     const PRIO = { rendre: 6, offre: 5, relais: 4, donjon: 3, banque: 3, marche: 2, dojo: 2, metiers: 2, avis: 2, temple: 2, artisan: 2, marchand: 1 };
     for (const [id, l] of parCarte) {
       l.sort((a, b) => PRIO[b.kind] - PRIO[a.kind]);
-      const p = this.hud.posee(id) ? CartePlateaux.centre(id) : Atlas.coordsOf(id), art = Carte3D.compte(l[0], l.length), h = this.hauteur(p[0], p[1]);
-      ajoute(texture('g' + l[0].kind + l[0].sub + l.length, art.canvas), art.canvas, [p[0], h + 0.32, p[1]], 0.36, [0.5, 1 - art.ay / art.canvas.height], Object.assign({}, l[0], { groupe: l.length > 1 ? l : null }), 'loin');
+      const p = this.hud.posee(id) ? CartePlateaux.centre(id) : Atlas.coordsOf(id), art = Carte3D.compte(l[0], l.length), h = this.hauteur(p[0], p[1]), [gx, gz] = this.dansScene(id, p[0], p[1]);
+      ajoute(texture('g' + l[0].kind + l[0].sub + l.length, art.canvas), art.canvas, [gx, h + 0.32, gz], 0.36, [0.5, 1 - art.ay / art.canvas.height], Object.assign({}, l[0], { groupe: l.length > 1 ? l : null }), 'loin');
     }
     for (const pin of hud.epinglesMonde(D).filter(q => ici(q.map))) {
-      const art = CartePeinture.epingle(pin.kind, 128), h = this.hauteur(pin.at[0], pin.at[1]);
-      const s = ajoute(texture('e' + pin.kind, art.canvas), art.canvas, [pin.at[0], h, pin.at[1]], pin.kind === 'toi' ? 0.26 : 0.2, [0.5, 1 - art.ay / art.canvas.height], pin, 'epingle');
+      const art = CartePeinture.epingle(pin.kind, 128), h = this.hauteur(pin.at[0], pin.at[1]), [ex, ez] = this.dansScene(pin.map, pin.at[0], pin.at[1]);
+      const s = ajoute(texture('e' + pin.kind, art.canvas), art.canvas, [ex, h, ez], pin.kind === 'toi' ? 0.26 : 0.2, [0.5, 1 - art.ay / art.canvas.height], pin, 'epingle');
       s.renderOrder = pin.kind === 'toi' ? 23 : 22;
       if (pin.kind === 'toi') this.toi = s;
     }
+    this.majTrajet();
     this.majSelection();
     this.demander();
   }
 
+  majTrajet() {
+    if (this.trajet) { this.scene.remove(this.trajet); this.trajet.geometry.dispose(); this.trajet.material.dispose(); this.trajet = null; }
+    const r = this.hud.trajetDrapeau(), P = this.hud.world.plateau;
+    const Q = P && CartePlateaux.place(P.id); if (!r || !r.accessible || !Q) return;
+    const T = window.THREE, pts = [];
+    for (let i=1;i<r.points.length;i++) { const a=r.points[i-1],b=r.points[i],n=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)));
+      for(let j=0;j<n;j++){const t=j/n,u=a.x+(b.x-a.x)*t,v=a.y+(b.y-a.y)*t,[x,z]=CartePlateaux.versMonde(Q,u,v),id=CartePlateaux.carteA(Q,u,v),p=this.dansScene(id,x,z);pts.push(new T.Vector3(p[0],this.hauteur(x,z)+0.025,p[1]));}
+    }
+    const d=r.destination,[x,z]=CartePlateaux.versMonde(Q,d.x,d.y),p=this.dansScene(d.map,x,z);pts.push(new T.Vector3(p[0],this.hauteur(x,z)+0.025,p[1]));
+    this.trajet = new T.Line(new T.BufferGeometry().setFromPoints(pts),new T.LineBasicMaterial({color:0xddaa72,depthTest:false}));this.trajet.renderOrder=16;this.scene.add(this.trajet);
+  }
   majSelection() {
     const THREE = window.THREE, id = this.hud.carte.sel;
     if (this.selection) { this.scene.remove(this.selection); this.selection.geometry.dispose(); this.selection.material.dispose(); this.selection = null; }
@@ -562,7 +622,8 @@ class Carte3D {
     const THREE = window.THREE, d = P.d, k = d.index.get(id);
     if (!k) return;
     const at = (i, j) => (i < 0 || j < 0 || i >= d.l || j >= d.h ? 0 : d.ids[j * d.l + i]);
-    const pts = [], pt = (u, v) => { const [x, z] = CartePlateaux.versMonde(P, u, v); pts.push(x, this.hauteur(x, z) + 0.014, z); };
+    const dec = this.decalDe(id) || [0, 0, 0];
+    const pts = [], pt = (u, v) => { const [x, z] = CartePlateaux.versMonde(P, u, v); pts.push(x + dec[0], this.hauteur(x, z) + 0.014, z + dec[2]); };
     for (let j = 0; j < d.h; j++) for (let i = 0; i < d.l; i++) {
       if (d.ids[j * d.l + i] !== k) continue;
       const u0 = i * d.pas, v0 = j * d.pas, u1 = u0 + d.pas, v1 = v0 + d.pas;
@@ -600,9 +661,24 @@ class Carte3D {
     } else {
       const D = this.hud.donneesCarte();
       const pin = this.hud.epinglesMonde(D).find(p => p.kind === 'toi');
-      const at = pin ? pin.at : [0, 0];
+      const at = pin ? this.dansScene(pin.map, pin.at[0], pin.at[1]) : [0, 0];
       this.but = { x: at[0], z: at[1], theta: this.but.theta, phi: 1.02, dist: this.telephone ? 14 : 12.5 };
     }
+    if (net || !this.cam) this.cam = Object.assign({}, this.but);
+    this.reveil();
+  }
+
+  aller(x, z, dist) {
+    if (!this.but) this.centrer(true);
+    Object.assign(this.but, { x, z, phi: 1.02, dist: dist || (this.telephone ? 9 : 8) });
+    this.reveil();
+  }
+
+  voirMonde(net) {
+    const b = Atlas.get().bounds, w = (b.maxX - b.minX + 1) * 1.5, h = (b.maxY - b.minY + 1) * 1.5, phi = 0.62;
+    const t = Math.tan(this.camera.fov * Math.PI / 360), asp = this.camera.aspect || 1;
+    const dist = Math.max(10, Math.min(32, Math.max((w / 2) / (t * asp), (h * Math.cos(phi) / 2 + 1) / t)));
+    this.but = { x: (b.minX + b.maxX) / 2, z: (b.minY + b.maxY) / 2 + 1, theta: 0, phi, dist };
     if (net || !this.cam) this.cam = Object.assign({}, this.but);
     this.reveil();
   }
@@ -761,6 +837,8 @@ class Carte3D {
     const tops = [...this.iles.values()].map(d => d.dessus).filter(Boolean);
     const h = this.raycaster.intersectObjects(tops, false)[0];
     if (!h) return null;
+    const dIle = [...this.iles.values()].find(d => d.dessus === h.object);
+    if (dIle && dIle.decal) h.point = h.point.clone().set(h.point.x - dIle.decal[0], h.point.y - dIle.decal[1], h.point.z - dIle.decal[2]);
     const q = typeof CartePlateaux === 'object' ? CartePlateaux.sous(h.point.x, h.point.z) : null;
     if (q) { const k = Atlas.coordsOf(q.id); return { id: q.id, x: k[0], y: k[1], point: h.point }; }
     const x = Math.round(h.point.x), y = Math.round(h.point.z), id = Atlas.at(x, y);
@@ -795,6 +873,7 @@ class Carte3D {
   drapeauEcran(p) {
     const v = this.viser(p);
     if (v && v.item && v.item.kind === 'drapeau') { this.hud.poserDrapeau(null); return; }
+    if (v && v.item && v.item.at) { this.hud.poserDrapeau(v.item.at.slice()); return; }
     if (v && v.point) this.hud.poserDrapeau([Math.round(v.point.x * 100) / 100, Math.round(v.point.z * 100) / 100]);
   }
 
@@ -904,3 +983,5 @@ Carte3D.STRATES = {
   orsane: ['#ece6d8', '#d3cfc6', '#b4b4bd', '#9198ab', '#6c7390', '#4a5170', '#3b4260'],
   kaldum: ['#ab998c', '#8f7d70', '#76655a', '#5d4d45', '#4a3c36', '#3e3230', '#241a18'],
 };
+Carte3D.ERVANE_HAUT = 1.1;
+

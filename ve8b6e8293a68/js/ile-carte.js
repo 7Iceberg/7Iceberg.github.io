@@ -276,7 +276,7 @@ void main() {
       if (!this.lieux) this.lieux = this.calculerLieux();
       if (!this.lod) this.preparerLod();
     }
-    fermer() { this.ouverte = false; this.survole = null; }
+    fermer() { this.ouverte = false; this.survole = null; if (this.trajet) this.trajet.visible = false; }
 
 
     calculerLieux() {
@@ -403,6 +403,23 @@ void main() {
     }
     seuilProche() { return PROCHE[this.ile.qualite] || PROCHE.moyenne; }
 
+    majTrajet() {
+      const T = this.THREE, r = this.ouverte && this.opts.trajet ? this.opts.trajet() : null;
+      if (!r || !r.accessible) { if (this.trajet) this.trajet.visible = false; return; }
+      if (r !== this.trajetSource) {
+        this.trajetSource = r;
+        const pts = [];
+        for (let i = 1; i < r.points.length; i++) {
+          const a = r.points[i-1], b = r.points[i], n = Math.max(1, Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)));
+          for (let j=0;j<n;j++) { const t=j/n,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t; pts.push(new T.Vector3(x,this.ile.hauteur(x,y)+0.22,y)); }
+        }
+        const b = r.points[r.points.length-1]; if(b) pts.push(new T.Vector3(b.x,this.ile.hauteur(b.x,b.y)+0.22,b.y));
+        const geo = new T.BufferGeometry().setFromPoints(pts);
+        if (this.trajet) { this.trajet.geometry.dispose(); this.trajet.geometry = geo; }
+        else { this.trajet = new T.Line(geo,new T.LineBasicMaterial({ color: 0xddaa72,depthTest:false,depthWrite:false,transparent:true })); this.trajet.renderOrder=35; this.ile.scene.add(this.trajet); }
+      }
+      this.trajet.visible = this.alpha > 0.01; this.trajet.material.opacity = this.alpha;
+    }
 
     maj(now, vol) {
       const ile = this.ile, cam = ile.camera;
@@ -412,6 +429,7 @@ void main() {
       const arrive = vol && vol.carte && !vol.vol ? (CameraIle.calme() ? 1 : clamp((now - (vol.arrivee || 0)) / 350, 0, 1)) : 0;
       this.alpha = cible ? arrive : vol ? Math.max(0, this.alpha - dt / 0.15) : 0;
       this.items = []; this.noms = [];
+      this.majTrajet();
       if (this.alpha <= 0.001 || !vol || !cam || !cam.vw) { this.mesh.visible = false; this.geo.instanceCount = 0; return; }
       if (this.ouverte && (!this.donneesA || now - this.donneesA > 500 || now < this.donneesA)) {
         this.donneesA = now;
@@ -606,6 +624,7 @@ void main() {
     liberer() {
       if (this.mesh.parent) this.mesh.parent.remove(this.mesh);
       this.geo.dispose(); this.mat.dispose();
+      if (this.trajet) { this.trajet.removeFromParent(); this.trajet.geometry.dispose(); this.trajet.material.dispose(); this.trajet = null; }
       if (this.atlas) this.atlas.liberer();
       if (this.lod) for (const m of this.lod.meshes) { if (m.parent) m.parent.remove(m); m.geometry.dispose(); }
       this.lod = null; this.tache = null; this.atlas = null;
@@ -614,3 +633,4 @@ void main() {
 
   return { Carte, NOMS, PROCHE, FIGURES_MAX, fusionner };
 })();
+
