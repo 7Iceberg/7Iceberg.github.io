@@ -4,6 +4,7 @@ const IleArene = (() => {
   const rgb = n => [(n >> 16) & 255, (n >> 8) & 255, n & 255];
   const rgbHex = h => { const n = parseInt(String(h).replace('#', ''), 16) || 0; return rgb(n); };
   const CRISTAL = '#7fe3ff';
+  const PLACEMENT = { joueur: { fill: [0x209fec, 0.55], stroke: [0xacdded, 0.95] }, monstre: { fill: [0xd9424f, 0.56], stroke: [0xffb2ac, 0.9] } };
 
   function toile(w, h, peindre) {
     const c = document.createElement('canvas'); c.width = w; c.height = h;
@@ -302,9 +303,9 @@ void main() {
         D[o + 9] |= drapeaux;
       };
       for (let y = 0; y < map.h && y < 16; y++) for (let x = 0; x < map.w && x < 16; x++) this.ecrireFixe(x, y);
-      for (const c of d.bleues) peindre(c, [0x3f8fff, 0.55], [0x9fd7ff, 0.95], 4);
-      for (const c of d.rouges) peindre(c, [0xe83a3a, 0.56], [0xffa0a0, 0.9], 0);
-      if (d.joueur) peindre(d.joueur, [0x3f8fff, 0.55], [0x9fd7ff, 0.95], 1);
+      for (const c of d.bleues) peindre(c, PLACEMENT.joueur.fill, PLACEMENT.joueur.stroke, 4);
+      for (const c of d.rouges) peindre(c, PLACEMENT.monstre.fill, PLACEMENT.monstre.stroke, 0);
+      if (d.joueur) peindre(d.joueur, PLACEMENT.joueur.fill, PLACEMENT.joueur.stroke, 1);
       this.texCases.needsUpdate = true;
       return true;
     }
@@ -379,8 +380,8 @@ void main() {
         if (tmp && tmp.kind === 'water') { fill = [0x113f8a, 0.6]; stroke = [0x78b4e6, 0.6]; }
         if (tmp && tmp.kind === 'fente') { fill = [0x120818, 0.92]; stroke = [0xbf95ff, 0.9]; }
         if (placement) {
-          if (cb.isStartCell('player', x, y)) { fill = [0x209fec, 0.55]; stroke = [0xacdded, 0.95]; respire = true; }
-          else if (cb.isStartCell('monster', x, y)) { fill = [0xd9424f, 0.56]; stroke = [0xffb2ac, 0.9]; }
+          if (cb.isStartCell('player', x, y)) { fill = PLACEMENT.joueur.fill; stroke = PLACEMENT.joueur.stroke; respire = true; }
+          else if (cb.isStartCell('monster', x, y)) { fill = PLACEMENT.monstre.fill; stroke = PLACEMENT.monstre.stroke; }
         }
         if (H.move.has(k)) { fill = [0x80d697, 0.42]; stroke = [0xcef6d6, 0.8]; respire = false; }
         if (H.range.has(k)) { fill = [0x209fec, 0.42]; stroke = [0xacdded, 0.85]; respire = false; }
@@ -734,5 +735,5 @@ void main() {
     return t;
   };
 
-  return { Arene, N };
+  return { Arene, N, PLACEMENT };
 })();

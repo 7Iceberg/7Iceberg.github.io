@@ -36,7 +36,10 @@
     if (!c) continue;
     m.plateau = 'orsane'; m.contour = c.contour; m.coords = c.coords;
     m.secteur = Object.assign({}, DATA.modules.orsanePlateau.secteurs[m.id]);
-    m.npcs = c.npcs; m.nodes = c.nodes; m.relay = c.relay; m.porte = c.porte;
+    const avant = m.nodes || [];
+    m.npcs = c.npcs; m.relay = c.relay; m.porte = c.porte;
+    m.nodes = c.nodes.map((n, i) => { const a = avant[i], r = typeof a === 'string' ? a : a && a.resource; return r && r !== n.resource ? Object.assign({}, n, { resource: r }) : n; })
+      .concat(avant.slice(c.nodes.length).filter(a => a && typeof a === 'object' && Number.isFinite(a.u)));
     m.groups = (m.groups || []).slice(0, c.aires.length);
     m.groups.forEach((g, i) => { g.aire = Object.assign({}, c.aires[i]); });
   }

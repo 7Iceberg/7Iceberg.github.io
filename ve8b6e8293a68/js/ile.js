@@ -69,6 +69,7 @@ const Ile = (() => {
     let fait = false;
     for (const nom of ORDRE) if (!appliques.has(nom) && typeof M[nom] === 'function') { M[nom](); appliques.add(nom); fait = true; }
     disponible = disponible || appliques.has('ervane');
+    if (fait && typeof Chantier === 'object' && Chantier.appliquerNoeuds) Chantier.appliquerNoeuds();
     if (fait && typeof World === 'function' && World.reindexer) World.reindexer();
     if (fait && typeof Achievements === 'object' && Achievements.integrer) Achievements.integrer();
     return fait;

@@ -24,13 +24,21 @@ const Chantier = (() => {
       const drops = f.famille.map(m => ({ monster: m, rate: f.oeuf.taux }));
       C.consumables.push({ id: f.oeuf.id, name: f.oeuf.nom, kind: 'oeuf', level: 1, price: 40, rarity: 'rare', familier: f.id, drops, lore: '' });
     }
-    for (const z of C.zones) for (const m of z.maps) {
-      const o = O.noeuds && O.noeuds[m.id];
-      if (!o || !m.nodes) continue;
-      for (const i in o) { const n = m.nodes[i]; if (typeof n === 'string') m.nodes[i] = o[i]; else if (n) n.resource = o[i]; }
+    noeuds = O.noeuds || null;
+    ajouts = O.ajouts || null;
+    appliquerNoeuds();
+  }
+  let noeuds = null, ajouts = null;
+  function appliquerNoeuds() {
+    if (!actif || !noeuds || typeof DATA !== 'object') return;
+    for (const z of DATA.content.zones) for (const m of z.maps) {
+      const o = noeuds[m.id];
+      if (o && m.nodes) for (const i in o) { const n = m.nodes[i]; if (typeof n === 'string') m.nodes[i] = o[i]; else if (n) n.resource = o[i]; }
+      const a = ajouts && ajouts[m.id];
+      if (a && m.nodes) for (const p of a) if (!m.nodes.some(n => n && n.chantier && n.u === p.u && n.v === p.v)) m.nodes.push({ resource: p.resource, u: p.u, v: p.v, chantier: true });
     }
   }
 
   if (demande() && typeof document === 'object' && document.readyState === 'loading') document.write('<script src="content/chantier/objets-1-60.js"><\/script>');
-  return { demande, appliquer, actif: () => actif };
+  return { demande, appliquer, appliquerNoeuds, actif: () => actif };
 })();

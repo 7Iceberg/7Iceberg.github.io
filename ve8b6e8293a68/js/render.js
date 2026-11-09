@@ -3533,14 +3533,33 @@ class Renderer {
       c.fillStyle = '#d8b884'; c.beginPath(); c.ellipse(p.x, p.y - 16, 9, 4.5, 0, 0, Math.PI * 2); c.fill(); c.stroke();
       c.strokeStyle = '#9a7650'; c.lineWidth = 0.9; for (const r of [2, 4.5, 6.8]) { c.beginPath(); c.ellipse(p.x, p.y - 16, r, r * 0.5, 0, 0, Math.PI * 2); c.stroke(); }
       if (P.moss) { c.fillStyle = P.moss[1]; c.beginPath(); c.ellipse(p.x - 6, p.y - 2, 4, 2, 0, 0, Math.PI * 2); c.fill(); }
-    } else if (kind === 'pierre') {
+    } else if (kind === 'cereale') {
+      for (const [dx, h, a] of [[-7, 16, -0.28], [-3.5, 20, -0.12], [0, 22, 0], [3.5, 20, 0.12], [7, 16, 0.28]]) {
+        const tx = p.x + dx + Math.sin(a) * h, ty = p.y - Math.cos(a) * h;
+        c.strokeStyle = ink; c.lineWidth = 2.6; c.beginPath(); c.moveTo(p.x + dx * 0.3, p.y); c.lineTo(tx, ty); c.stroke();
+        c.strokeStyle = '#c9a24a'; c.lineWidth = 1.3; c.stroke();
+        c.fillStyle = '#e8c45a'; c.beginPath(); c.ellipse(tx, ty - 2.5, 2.2, 5, a, 0, Math.PI * 2); c.fill();
+        c.lineWidth = 1; c.strokeStyle = ink; c.stroke();
+      }
+      c.fillStyle = '#8a6a3a'; c.fillRect(p.x - 4, p.y - 7, 8, 2.4);
+    } else if (kind === 'poisson') {
+      c.fillStyle = 'rgba(70, 140, 190, 0.55)'; c.beginPath(); c.ellipse(p.x, p.y - 2, 15, 6, 0, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = '#bfe6ff'; c.lineWidth = 1.2;
+      for (const r of [6, 10.5, 14]) { c.beginPath(); c.ellipse(p.x, p.y - 2, r, r * 0.4, 0, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); }
+      c.fillStyle = '#7fa6c0'; c.beginPath(); c.moveTo(p.x - 8, p.y - 3); c.quadraticCurveTo(p.x - 1, p.y - 12, p.x + 7, p.y - 4); c.quadraticCurveTo(p.x, p.y - 6, p.x - 8, p.y - 3); c.fill();
+      c.lineWidth = 1.4; c.strokeStyle = ink; c.stroke();
+      c.fillStyle = '#5f8aa6'; c.beginPath(); c.moveTo(p.x + 6, p.y - 4); c.lineTo(p.x + 11, p.y - 9); c.lineTo(p.x + 11, p.y - 1); c.closePath(); c.fill(); c.stroke();
+      if (s.ready) this.bglow(p.x, p.y - 4, 10, P.lantern, 0.35);
+    } else if (kind === 'pierre' || kind === 'minerai') {
+      const minerai = kind === 'minerai';
       const pts = [[p.x - 13, p.y], [p.x - 9, p.y - 14], [p.x + 2, p.y - 19], [p.x + 13, p.y - 7], [p.x + 10, p.y]];
       c.beginPath(); pts.forEach((q, i) => (i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]))); c.closePath();
       c.lineWidth = 3.5; c.strokeStyle = ink; c.stroke();
       const g = c.createLinearGradient(p.x - 13, p.y - 19, p.x + 13, p.y);
       g.addColorStop(0, P.rock[4]); g.addColorStop(1, P.rock[1]);
       c.fillStyle = g; c.fill();
-      c.strokeStyle = P.vein[1]; c.lineWidth = 1.6; c.beginPath(); c.moveTo(p.x - 6, p.y - 12); c.lineTo(p.x - 1, p.y - 7); c.lineTo(p.x + 4, p.y - 9); c.lineTo(p.x + 7, p.y - 3); c.stroke();
+      c.strokeStyle = minerai ? '#d9c38a' : P.vein[1]; c.lineWidth = minerai ? 2.2 : 1.6; c.beginPath(); c.moveTo(p.x - 6, p.y - 12); c.lineTo(p.x - 1, p.y - 7); c.lineTo(p.x + 4, p.y - 9); c.lineTo(p.x + 7, p.y - 3); c.stroke();
+      if (minerai) { c.fillStyle = '#f2e2a8'; for (const [dx, dy] of [[-7, -9], [3, -13], [6, -6]]) { c.beginPath(); c.moveTo(p.x + dx, p.y + dy - 2.5); c.lineTo(p.x + dx + 2, p.y + dy); c.lineTo(p.x + dx, p.y + dy + 2.5); c.lineTo(p.x + dx - 2, p.y + dy); c.closePath(); c.fill(); } }
       c.fillStyle = P.lantern; c.beginPath(); c.arc(p.x + 1, p.y - 8, 2.4, 0, Math.PI * 2); c.arc(p.x - 5, p.y - 4, 1.8, 0, Math.PI * 2); c.fill();
       if (s.ready) this.bglow(p.x, p.y - 8, 10, P.lantern, 0.5);
     } else {
