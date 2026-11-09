@@ -271,7 +271,7 @@ Object.assign(Hud.prototype, {
         const e = D.ix.map.get(id); if (!e) continue;
         aj({ cle: 'carte:' + id, nom: e.def.name, sous: e.zone.name, kind: null, aller: () => this.allerMonde(id) });
       }
-      for (const z of DATA.content.zones) { const m = z.maps.find(x => D.A.coords.has(x.id)); if (m) aj({ cle: 'carte:' + m.id, nom: z.name, sous: 'Zone', kind: null, aller: () => this.allerMonde(m.id) }); }
+      for (const z of DATA.content.zones) { if (z.horsCarte) continue; const m = z.maps.find(x => D.A.coords.has(x.id)); if (m) aj({ cle: 'carte:' + m.id, nom: z.name, sous: 'Zone', kind: null, aller: () => this.allerMonde(m.id) }); }
       for (const it of this.reperesMonde(D, true)) {
         const nom = it.npc ? it.npc.name : it.donjon ? it.donjon.name : null;
         if (nom) aj({ cle: it.npc ? 'pnj:' + it.npc.id : 'donjon:' + it.donjon.id, nom, sous: (I2 && I2.NOMS[it.kind]) || '', kind: it.kind, sub: it.sub, aller: () => this.allerMonde(it.map) });

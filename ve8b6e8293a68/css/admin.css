@@ -145,3 +145,9 @@ button.vy-admin__ligne:hover { border-color: rgba(82, 210, 244, 0.4); }
 }
 .vy-admin .vy-admin__grille3 .vy-admin__champ input { flex: none !important; }
 .vy-admin .vy-admin__grille3 .vy-admin__champ label { flex-basis: auto; }
+
+.vy-mod__signalement, .vy-mod__contestation { align-items: flex-start; flex-wrap: wrap; }
+.vy-mod__signalement .vy-admin__nom q, .vy-mod__contestation .vy-admin__nom q { display: block; margin-top: 4px; padding: 4px 8px; border-left: 2px solid var(--a-texte-2); font-weight: 500; font-style: italic; white-space: normal; }
+.vy-mod__signalement .vy-admin__nom em { display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: var(--a-texte-2); white-space: normal; }
+.vy-mod__contestation input[type="text"] { flex: 1 1 220px; min-width: 160px; }
+.vy-mod__vol { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; }

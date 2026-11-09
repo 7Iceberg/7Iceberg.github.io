@@ -5,6 +5,7 @@ const Admin = (() => {
     ['open', 'Ouvrir le Conseil', 'Accès', 1],
     ['console', 'Console de commandes', 'Accès', 1],
     ['journal', 'Lire le journal du staff', 'Accès', 2],
+    ['moderation', 'Modération : signalements, sanctions, contestations (sur le serveur)', 'Modération', 1],
     ['annonce', 'Faire une annonce', 'Accès', 1],
     ['fiche', 'Voir la fiche du personnage', 'Personnage', 1],
     ['soigner', 'Soigner', 'Personnage', 1],

@@ -13,6 +13,7 @@ const ICO = {
   compagnons: svg('<circle cx="7" cy="9" r="2"/><circle cx="12" cy="6.5" r="2"/><circle cx="17" cy="9" r="2"/><path d="M8 17c0-3 1.8-5 4-5s4 2 4 5-1.8 3-4 3-4 0-4-3z"/>'),
   rangs: svg('<path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4"/>'),
   journal: svg('<path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>'),
+  moderation: svg('<path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M12 8v5M12 16h.01"/>'),
   console: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/>'),
   fermer: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
   recherche: svg('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>'),
@@ -20,7 +21,7 @@ const ICO = {
 const PAGES = [
   ['accueil', 'Accueil', 'open'], ['perso', 'Personnage', 'fiche'], ['objets', 'Objets', 'base'], ['metiers', 'Métiers', 'metiers'],
   ['monde', 'Monde', 'monde'], ['quetes', 'Quêtes', 'quetes'], ['succes', 'Succès', 'succes'], ['compagnons', 'Compagnons', 'compagnons'],
-  ['rangs', 'Rangs et droits', 'rangs'], ['journal', 'Journal', 'journal'], ['console', 'Console', 'console'],
+  ['moderation', 'Modération', 'moderation'], ['rangs', 'Rangs et droits', 'rangs'], ['journal', 'Journal', 'journal'], ['console', 'Console', 'console'],
 ];
 
 Object.assign(Hud.prototype, {
@@ -119,7 +120,7 @@ Object.assign(Hud.prototype, {
       case 'membre': { const r = Admin.membre(this.world.ch, val('#adm-membre')); this.toast(r.texte); this.rendreAdmin(); break; }
       case 'console': this.adminConsole(); break;
       case 'exemple': { const i = this.elAdmin.querySelector('#adm-console'); if (i) { i.value = d.texte; i.focus(); } break; }
-      default: break;
+      default: if (d.act.startsWith('mod') && this.clicModeration) this.clicModeration(d, b, val); break;
     }
   },
 
