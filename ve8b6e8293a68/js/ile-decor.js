@@ -73,6 +73,22 @@ const IleDecor = (() => {
       g.computeBoundingBox();
       L.pierres.push(g);
     }
+    L.blocsTailles = [];
+    for (let k = 0; k < 4; k++) {
+      const j = (a, b) => (M().hache(k * 7 + a, b, 777) - 0.5) * 0.05;
+      const anneau = (y, r, n) => [[-r, -r], [r, -r], [r, r], [-r, r]].map(([x, z], i) => [x + j(i, n), y + (n === 2 ? j(i + 4, n) * 0.6 : 0), z + j(i + 8, n)]);
+      const R = [anneau(-0.7, 0.5, 0), anneau(0.84, 0.5, 1), anneau(1, 0.41, 2)];
+      const pos = [], tri = (a, b, c) => pos.push(...a, ...b, ...c), quad = (a, b, c, d) => { tri(a, b, c); tri(a, c, d); };
+      for (let r = 0; r < 2; r++) for (let i = 0; i < 4; i++) { const i2 = (i + 1) % 4; quad(R[r][i], R[r][i2], R[r + 1][i2], R[r + 1][i]); }
+      quad(R[2][0], R[2][1], R[2][2], R[2][3]);
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      const P = g.attributes.position;
+      for (let t = 0; t < P.count; t += 3) { const x = P.getX(t + 1), y = P.getY(t + 1), z = P.getZ(t + 1); P.setXYZ(t + 1, P.getX(t + 2), P.getY(t + 2), P.getZ(t + 2)); P.setXYZ(t + 2, x, y, z); }
+      g.computeVertexNormals();
+      g.computeBoundingBox();
+      L.blocsTailles.push(g);
+    }
     const fermer = g => { g.computeBoundingBox(); return g; };
     L.cyl = n => L['cyl' + n] || (L['cyl' + n] = fermer(new THREE.CylinderGeometry(1, 1, 1, n, 1).translate(0, 0.5, 0)));
     L.tronc = n => L['tronc' + n] || (L['tronc' + n] = fermer(new THREE.CylinderGeometry(0.6, 1, 1, n, 2).translate(0, 0.5, 0)));
@@ -1076,6 +1092,12 @@ const IleDecor = (() => {
     }
   }
 
+  function pierreTaillee(z) {
+    const S = typeof Ile3D === 'function' && Ile3D.SOLS_COMBAT ? Ile3D.SOLS_COMBAT[z] : null;
+    if (!S || !S.pierre) return null;
+    if (typeof location === 'object' && /[?&](dalles|sols)=0/.test(location.search || '')) return null;
+    return S.pierre;
+  }
   function obstaclesAires(ctx, L, seau, piece, sol, palette) {
     const { T } = ctx;
     const N = 15, cases = new Map();
@@ -1125,6 +1147,18 @@ const IleDecor = (() => {
           const r = 0.4 + R() * 0.06, h = 1.35 + R() * 0.45;
           piece(s, 'roche', L.blocs[Math.floor(R() * 8)], matrice(u, y + h * 0.42, v, (R() - 0.5) * 0.1, R() * 6.28, (R() - 0.5) * 0.1, r * 0.95, h * 0.62, r * 0.82), { c: fois(roche, 0.95), bas: 0.72, haut: 1.08, mousse: coul('#8a9a6a') });
           piece(s, 'sil', L.cailloux[0], matrice(u, y + 0.3, v, 0, 0, 0, r, h * 0.5, r), { c: fois(roche, 0.8) });
+        } else if ((e.style === 'pierres' || e.style === 'libre') && pierreTaillee(z)) {
+          const c0 = coul(pierreTaillee(z)), h = 0.46 + R() * 0.1;
+          const yb = Math.min(y, sol(u - 0.45, v - 0.45), sol(u + 0.45, v - 0.45), sol(u - 0.45, v + 0.45), sol(u + 0.45, v + 0.45));
+          const haut = Math.max(y, sol(u - 0.45, v - 0.45), sol(u + 0.45, v - 0.45), sol(u - 0.45, v + 0.45), sol(u + 0.45, v + 0.45)) + h;
+          const yB = Number.isFinite(yb) ? yb : y, H = Number.isFinite(haut) ? haut - yB : h;
+          piece(s, 'roche', L.blocsTailles[Math.floor(R() * 4)], matrice(u, yB, v, 0, Math.floor(R() * 4) * Math.PI / 2, 0, 0.97, H, 0.97), { c: fois(c0, 0.96 + R() * 0.08), bas: 0.62, haut: 1.12, mousse: z === 'ervane_bois' || z === 'ervane_sources' || z === 'orsane_clairieres' ? MOUSSE : null });
+          const n = ctx.telephone ? 1 : 1 + Math.floor(R() * 3);
+          for (let q = 0; q < n; q++) {
+            const k = R(), fx = u + (R() - 0.5) * 0.5, fz = v + (R() - 0.5) * 0.5;
+            piece(s, 'roche', L.pierres[Math.floor(R() * 8)], matrice(fx, yB + H - 0.02, fz, 0, R() * 6.28, 0, 0.16 + k * 0.14, 0.05, 0.12 + k * 0.1), { c: fois(c0, 0.78 + R() * 0.1), bas: 0.85, haut: 1.05 });
+          }
+          piece(s, 'sil', L.boite, matrice(u, yB, v, 0, 0, 0, 0.97, H, 0.97), { c: fois(c0, 0.8) });
         } else {
           const r = 0.46 + R() * 0.1, ey = 0.7 + R() * 0.25;
           const mousse = z === 'ervane_bois' || z === 'ervane_sources' ? MOUSSE : z === 'ervane_murets' ? coul('#a9a46a') : null;
@@ -1144,6 +1178,63 @@ const IleDecor = (() => {
         }
       }
     }
+  }
+
+  const STYLES_BLOC = { pierres: 1, libre: 1 }, BLOC_TEINTE = 0.74;
+  function caseBloc(T, a, X, Y) {
+    if (!STYLES_BLOC[a.style || 'libre']) return false;
+    return !!pierreTaillee(T.zoneA(X + 0.5, Y + 0.5));
+  }
+  function blocsAires(three, T, hauteur, telephone, rampe) {
+    THREE = three;
+    if (!T || !T.aires || typeof T.zoneA !== 'function') return null;
+    const L = bibliotheque(!!telephone), N = 15, vus = new Set();
+    const pos = [], nor = [], col = [];
+    const v = new THREE.Vector3(), n = new THREE.Vector3(), nm = new THREE.Matrix3();
+    const ajouter = (g, m, c, bas, haut) => {
+      nm.getNormalMatrix(m);
+      const P = g.attributes.position, Nn = g.attributes.normal, bb = g.boundingBox, y0 = Math.max(bb.min.y, 0), dy = Math.max(1e-3, bb.max.y - y0);
+      for (let i = 0; i < P.count; i++) {
+        const t = Math.max(0, Math.min(1, (P.getY(i) - y0) / dy)), k = bas + (haut - bas) * t;
+        v.set(P.getX(i), P.getY(i), P.getZ(i)).applyMatrix4(m); pos.push(v.x, v.y, v.z);
+        n.set(Nn.getX(i), Nn.getY(i), Nn.getZ(i)).applyMatrix3(nm).normalize(); nor.push(n.x, n.y, n.z);
+        const f = BLOC_TEINTE * (n.y > 0.7 ? 1 : n.y > 0.2 ? 0.86 : 0.62);
+        col.push(c[0] * k * f, c[1] * k * f, c[2] * k * f);
+      }
+    };
+    let nb = 0;
+    for (const a of T.aires) {
+      if (!a.layout) continue;
+      for (let cy = 0; cy < N; cy++) for (let cx = 0; cx < N; cx++) {
+        if (a.layout[cy][cx] !== '#') continue;
+        const X = a.x + cx, Y = a.y + cy, cle = X + ',' + Y;
+        if (vus.has(cle)) continue;
+        vus.add(cle);
+        if (!caseBloc(T, a, X, Y) || IleTerrain.caseAire(T, X, Y).c !== '.') continue;
+        const u = X + 0.5, w = Y + 0.5, hs = [hauteur(u, w), hauteur(u - 0.45, w - 0.45), hauteur(u + 0.45, w - 0.45), hauteur(u - 0.45, w + 0.45), hauteur(u + 0.45, w + 0.45)].filter(Number.isFinite);
+        if (!hs.length) continue;
+        const R = M().hasard(M().hache(X, Y, 4242) * 4294967296 >>> 0);
+        const c0 = fois(coul(pierreTaillee(T.zoneA(u, w))), 0.96 + R() * 0.08);
+        const yB = Math.min(...hs), H = Math.max(...hs) - yB + 0.46 + R() * 0.1;
+        ajouter(L.blocsTailles[Math.floor(R() * 4)], matrice(u, yB, w, 0, Math.floor(R() * 4) * Math.PI / 2, 0, 0.97, H, 0.97), c0, 0.62, 1.12);
+        const q = telephone ? 1 : 1 + Math.floor(R() * 3);
+        for (let i = 0; i < q; i++) {
+          const k = R(), fx = u + (R() - 0.5) * 0.5, fz = w + (R() - 0.5) * 0.5;
+          ajouter(L.pierres[Math.floor(R() * 8)], matrice(fx, yB + H - 0.02, fz, 0, R() * 6.28, 0, 0.16 + k * 0.14, 0.05, 0.12 + k * 0.1), fois(c0, 0.78 + R() * 0.1), 0.85, 1.05);
+        }
+        nb++;
+      }
+    }
+    if (!nb) return null;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.computeBoundingSphere();
+    const mesh = new THREE.Mesh(g, new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: rampe || null }));
+    mesh.name = 'blocs des aires';
+    mesh.castShadow = mesh.receiveShadow = false;
+    return { mesh, n: nb };
   }
 
   function obstaclesDesAires(T) {
@@ -1462,5 +1553,5 @@ const IleDecor = (() => {
     return out;
   }
 
-  return { TUILE, sousLesHalles, bibliotheque, fusion, matrice, entre, construire, obstaclesDesAires, eau, escarpements, falaiseBord, dessous, decouperParSecteur, chute, departChute, bouffeesBord, coul: h => coul(h), init(three) { THREE = three; } };
+  return { TUILE, sousLesHalles, bibliotheque, fusion, matrice, entre, construire, obstaclesDesAires, blocsAires, caseBloc, pierreTaillee, eau, escarpements, falaiseBord, dessous, decouperParSecteur, chute, departChute, bouffeesBord, coul: h => coul(h), init(three) { THREE = three; } };
 })();

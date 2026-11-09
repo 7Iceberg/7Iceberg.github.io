@@ -1,3 +1,13 @@
+
+const ASTRES = { feu: 'Soleil', eau: 'Lune', air: 'Étoiles', terre: 'Astres tombés' };
+const RAYONNANT = 15;
+const LANTERNE_ASTRES = {
+  feu: { sort: 'm_lanterne_soin', couleur: '#ffd166' },
+  eau: { sort: 'm_lanterne_lune', couleur: '#9fd8f0' },
+  air: { sort: 'm_lanterne_etoile', couleur: '#e6eef8' },
+  terre: { sort: 'm_lanterne_astre', couleur: '#d9a066' },
+};
+
 class Combat {
   constructor(opts) {
     this.rng = opts.rng || Math.random;
@@ -154,6 +164,7 @@ class Combat {
     this.turnIndex = -1;
     this.debut = Date.now();
     this.log('Le combat commence.', 'system');
+    for (const e of this.entities) if (this.estOriel(e) && !e.veille) e.veille = this.veilleDuMonde();
     for (const e of this.entities.slice()) if (e.alive) this.fireTriggers(e, 'fightStart', {});
     this.applyKnots();
     this.hook('onStart');
@@ -390,6 +401,7 @@ class Combat {
   beginTurn(e) {
     this.actor = e;
     e.beginTurn();
+    if (e.isSummon && e.def.id === 'lanterne_de_veille') this.astreLanterne(e);
     e.turnsPlayed = (e.turnsPlayed || 0) + 1;
     for (const [k, tmp] of this.temp) {
       if (tmp.owner === e && isFinite(tmp.turnsLeft) && --tmp.turnsLeft <= 0) this.temp.delete(k);
@@ -441,8 +453,41 @@ class Combat {
     for (const f of e.effects.filter(f => f.type === 'soinDiffere')) {
       if (!e.alive) break;
       e.effects = e.effects.filter(x => x !== f);
+      if (f.brut) {
+        const h = e.heal(f.min);
+        this.noter(e, 'soins', h);
+        if (h > 0) { this.emit('float', { x: e.x, y: e.y, text: '+' + h, color: '#6fdc8c' }); this.log(`${e.name} récupère ${h} PV (la vie volée revient).`); }
+        continue;
+      }
       this.applyEffect(f.owner && f.owner.alive ? f.owner : null, e, { type: 'heal', min: f.min, max: f.max, mult: f.mult }, f.spell);
     }
+  }
+
+
+  estOriel(e) { return !!(e && !e.isSummon && e.kit && e.kit.id === 'oriel'); }
+
+  veilleDuMonde() {
+    try {
+      if (typeof Heure === 'object' && Heure.moment) { const m = Heure.moment(Date.now()).id; return m === 'crepuscule' || m === 'nuit' ? 'crepuscule' : 'aube'; }
+    } catch (err) {   }
+    return 'aube';
+  }
+
+  rayonner(e, t) {
+    const deja = t.hasState('rayonnant');
+    t.removeState('rayonnant');
+    t.addEffect({ type: 'state', name: 'rayonnant', turns: 1, by: e }, t === this.actor);
+    if (!deja) this.log(`${t.name} devient Rayonnant : +${RAYONNANT} % de soins reçus.`, e.team);
+  }
+
+  astreLanterne(m) {
+    if (!m || m.def.id !== 'lanterne_de_veille') return;
+    const a = (m.owner && m.owner.astre) || 'feu', L = LANTERNE_ASTRES[a] || LANTERNE_ASTRES.feu;
+    if (m.astre === a) return;
+    m.astre = a;
+    m.spells = [L.sort];
+    m.color = L.couleur;
+    this.log(`${m.name} prend la lumière ${a === 'eau' ? 'de la Lune' : a === 'air' ? 'des Étoiles' : a === 'terre' ? 'des Astres tombés' : 'du Soleil'}.`, m.team);
   }
 
   ecourter(source, t, ef) {
@@ -1247,6 +1292,7 @@ class Combat {
       for (const t of targets) {
         const tag = s.faveur && t.team === e.team ? 'faveur' : s.ombre && t.team !== e.team ? 'ombre' : null;
         if (tag) t.effects = t.effects.filter(f => f.tag !== tag);
+        const rayonnantAvant = t.hasState('rayonnant');
         const n0 = t.effects.length;
         for (const ef of s.effects) {
           if (!t.alive) break;
@@ -1261,6 +1307,13 @@ class Combat {
           else await this.applyEffect(e, t, ef, s);
         }
         if (tag) for (const f of t.effects.slice(n0)) f.tag = tag;
+        if (tag === 'faveur' && rayonnantAvant && t.hasState('rayonnant')) {
+          for (const f of t.effects.slice(n0)) if (isFinite(f.turns)) f.turns += 1;
+          t.removeState('rayonnant');
+          this.log(`${t.name} rayonnait : la Faveur dure un tour de plus.`, e.team);
+        }
+        if (e.veille === 'aube' && t.alive && t.team === e.team && !t.hasState('unhealable')
+          && s.effects.some(ef => (ef.type === 'heal' || ef.type === 'healPct') && this.effectApplies(e, t, ef))) this.rayonner(e, t);
       }
       if (s.faveur && !targets.some(t => t.team === e.team) && !this.entityAt(cell.x, cell.y) && this.isWalkable(cell.x, cell.y, null)) {
         this.placeGlyph(e, [cell], { name: 'Étincelle', turns: 2, affects: 'allies', unique: true, effects: s.effects.filter(f => f.type !== 'glyph') }, s, true);
@@ -1291,6 +1344,10 @@ class Combat {
         }
       }
       for (const ef of s.selfEffects || []) if (this.effectApplies(e, e, ef)) this.applySelfEffect(e, ef, s);
+      if (this.estOriel(e) && ASTRES[s.element] && s.effects.some(ef => ['damage', 'heal', 'soinDiffere', 'glyph'].includes(ef.type)) && e.astre !== s.element) {
+        e.astre = s.element;
+        for (const m of this.summonsOf(e)) this.astreLanterne(m);
+      }
       if (s.recharge) (e.dejaLance = e.dejaLance || {})[s.id] = true;
       if (s.cumul) {
         let f = e.effects.find(x => x.type === 'cumulSort' && x.spell === s.id);
@@ -1325,7 +1382,10 @@ class Combat {
       case 'damage':
         let ls = s.lifesteal || (s.lifestealIfState && source.hasState(s.lifestealIfState.state) ? s.lifestealIfState.pct : 0);
         if (ls && this.sangChaud(source).palier >= 3) ls += 10;
-        this.dealDamage(source, t, this.rollDamage(source, t, s.element, ef, s), s.element, { lifesteal: ls, pierce: !!(s.oathPierce && this.oathOn(t, source)) });
+        const crepuscule = source && source.veille === 'crepuscule' ? 15 : 0;
+        const volDiffere = s.volDiffere ? s.volDiffere + crepuscule : 0;
+        if (!volDiffere) ls += crepuscule;
+        this.dealDamage(source, t, this.rollDamage(source, t, s.element, ef, s), s.element, { lifesteal: ls, volDiffere, pierce: !!(s.oathPierce && this.oathOn(t, source)) });
         break;
       case 'steal':
         this.steal(source, t, ef);
@@ -1351,6 +1411,11 @@ class Combat {
       case 'ecourter':
         this.ecourter(source, t, ef);
         break;
+      case 'basculeCiel':
+        t.veille = t.veille === 'crepuscule' ? 'aube' : 'crepuscule';
+        this.emit('float', { x: t.x, y: t.y, text: t.veille === 'aube' ? 'Aube' : 'Crépuscule', color: t.veille === 'aube' ? '#ffd166' : '#a99cf0' });
+        this.log(t.veille === 'aube' ? `${t.name} passe à l'Aube : ses soins font 10 % de plus.` : `${t.name} passe au Crépuscule : ses attaques volent la vie.`, t.team);
+        break;
       case 'healPct': {
         const h = t.heal(Math.round(t.hpMax * ef.pct / 100));
         this.noter(source || t, 'soins', h);
@@ -1363,8 +1428,9 @@ class Combat {
         const fac = !source ? 1 : source.soinsPct != null ? 1 + Math.max(0, source.soinsPct) / 100 : (source.scale || 1) * source.statFactor('feu');
         const chance = source ? DATA.chanceCrit(source, s) : 0;
         const critSoin = chance > 0 && this.rng() * 100 < chance;
-        const brut = this.rand(ef.min, ef.max) * (ef.mult || 1) * (critSoin ? DATA.critJetDe(s) : 1) * fac + (source ? source.soinsFixes || 0 : 0);
-        const h = t.heal(Math.round(brut * (1 + (t.soinsRecus || 0) / 100)));
+        const aube = source && source.veille === 'aube' ? 1.1 : 1;
+        const brut = (this.rand(ef.min, ef.max) * (ef.mult || 1) * (critSoin ? DATA.critJetDe(s) : 1) * fac + (source ? source.soinsFixes || 0 : 0)) * aube;
+        const h = t.heal(Math.round(brut * (1 + ((t.soinsRecus || 0) + (t.hasState('rayonnant') ? RAYONNANT : 0)) / 100)));
         this.noter(source || t, 'soins', h);
         this.emit('float', { x: t.x, y: t.y, text: '+' + h, color: '#6fdc8c' });
         this.log(`${t.name} récupère ${h} PV${critSoin ? ' (soin critique)' : ''}.`);
@@ -1483,6 +1549,13 @@ class Combat {
       }
       case 'state':
         if (ef.name === 'invisible' && t.hasState('tracked')) { this.log(`${t.name} est traqué et ne peut pas se cacher.`); break; }
+        if (ef.name === 'unhealable' && t.hasState('rayonnant') && turns > 1) {
+          t.removeState('rayonnant');
+          this.log(`${t.name} rayonnait : insoignable un tour de moins.`);
+          t.addEffect({ type: 'state', name: ef.name, turns: turns - 1, by: source }, own);
+          this.log(`${t.name} ne peut plus être soigné pendant ${turns - 1} tour(s).`);
+          break;
+        }
         t.addEffect({ type: 'state', name: ef.name, turns, by: source, lingering: !!ef.lingering }, own);
         if (ef.name === 'invisible') t.hiddenAt = { x: t.x, y: t.y };
         { const etats = { digue: 'est sous la Carapace Close', brise_lames: 'est derrière le Bouclier à Rouage', forme_iskar: 'prend la Forme Nocturne', protege: `est protégé par ${source.name}`, gibier: `est le gibier de ${source.name}`, victime: `est la victime choisie de ${source.name}`, intaclable: 'devient intaclable', assise: 's\'assoit comme la montagne', tenu: 'est tenu' };
@@ -1792,6 +1865,10 @@ class Combat {
     }
     this.log(msg + '.');
     if (source && source !== t) {
+      if (opts.volDiffere && r.dealt > 0) {
+        const v = Math.round(r.dealt * opts.volDiffere / 100);
+        if (v > 0) { source.addEffect({ type: 'soinDiffere', min: v, max: v, brut: true, owner: source, spell: null, turns: 1 }, source === this.actor); this.log(`${source.name} récupérera ${v} PV au début de son tour.`); }
+      }
       if (opts.lifesteal && r.dealt > 0) {
         const h = source.heal(Math.round(r.dealt * opts.lifesteal / 100));
         this.noter(source, 'soins', h);
@@ -2179,7 +2256,7 @@ class Combat {
     }
     for (const id of e.spells) {
       const s = this.spellOf(id, e);
-      if (!s.effects.some(ef => ef.type === 'heal') || !this.spellState(e, id).ok) continue;
+      if (!s.effects.some(ef => ef.type === 'heal' || ef.type === 'soinDiffere') || !this.spellState(e, id).ok) continue;
       const hurt = allies.filter(a => a.hp < a.hpMax * 0.6).sort((a, b) => a.hpPct() - b.hpPct());
       for (const a of hurt) if (this.canCastAt(e, id, a.pos).ok) return { type: 'cast', spell: id, cell: a.pos };
     }

@@ -293,6 +293,7 @@
     entailles_de_forge: p => croissant(100, 118, 70, -2.75, -.45, p[1], p[0], 1.28) + croissant(100, 146, 66, -2.7, -.5, p[2], p[1], 1.28)
       + D(78, 150, 18, .62, CHAUD) + D(122, 150, 18, .62, CHAUD) + eclat(160, 54, .6, p[1], p[0]) + flamme(44, 66, .3, p),
   });
+  IconesV3.outilsDe = Object.assign(IconesV3.outilsDe || {}, { nerith: { poly, encre, place, croix, eclat, roc, croissant, flamme, P, INK, OR_C, AM, NUIT, CUIR, PIERRE, VERT, deux, trait, rond, gemme, ame, D, CHAUD, SUIE, SCHISTE, flaque, ombre, lèvreFond, lèvreAvant, nuage, main, poing, PA, PM, moins, plus, chevrons, buste, botte, ECU, bouclier, tesson, pli, sablier, cadran, piece, sceauNoir, capuchon, cape, levres, oeil, aile, chausse, entaille, bougie, bourse, trainee, bulle, dalle, spirale, SIL, VISAGE, silhouette, fleche, feu, dague } });
 })();
 
 IconesV3.TYPES = Object.assign(IconesV3.TYPES || {}, {piege_penombre:'degats',piege_ardent:'degats',piege_de_reflux:'degats',piege_d_appel:'degats',piege_de_glaise:'degats',piege_d_ecume:'degats',piege_sifflant:'degats',piege_de_lenteur:'degats',victime_choisie:'degats',poudre_aux_yeux:'degats',heure_suspendue:'degats'});

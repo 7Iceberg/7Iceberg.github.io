@@ -1,2 +1,2 @@
-Veylan, version du jeu : 171937499befd6735d014642d00a96c2de579c4b (main), déploiement du 09/11/2026
-Version des fichiers : 20261109123951
+Veylan, version du jeu : 6241595b82437c1d3edcb57921e35038541833fd (main), déploiement du 09/11/2026
+Version des fichiers : 20261109214244

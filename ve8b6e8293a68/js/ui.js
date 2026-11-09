@@ -181,9 +181,11 @@ class UI {
     if (UI._reglages) delete UI._reglages[nom];
   }
 
+  static get ACTIONS_CLASSE() { return { bascule_du_ciel: true }; }
+
   static ordreSorts(e) {
-    const list = (e && e.spells) || [];
-    return list.includes('arme') ? ['arme'].concat(list.filter(id => id !== 'arme')) : list.slice();
+    const list = ((e && e.spells) || []).filter(id => !UI.ACTIONS_CLASSE[id]);
+    return list.includes('arme') ? ['arme'].concat(list.filter(id => id !== 'arme')) : list;
   }
 
 
@@ -650,6 +652,11 @@ class UI {
       if (this.tournerPageSorts(evt.key === 'PageDown' ? 1 : -1)) evt.preventDefault();
       return;
     }
+    if (evt.code === 'Backquote' && !evt.ctrlKey && !evt.altKey && !evt.metaKey && c.player) {
+      const act = (c.player.spells || []).find(id => UI.ACTIONS_CLASSE[id]);
+      if (act) { evt.preventDefault(); this.selectSpell(act); }
+      return;
+    }
     const chiffre = /^Digit([0-9])$/.exec(evt.code || '') || /^Numpad([0-9])$/.exec(evt.code || '') || (/^[0-9]$/.test(evt.key) ? [0, evt.key] : null);
     if (chiffre && !evt.ctrlKey && !evt.altKey && !evt.metaKey) {
       const idx = chiffre[1] === '0' ? 9 : Number(chiffre[1]) - 1;
@@ -828,7 +835,7 @@ class UI {
       case 'traque': return `Traque de ${f.owner ? Util.esc(f.owner.name) : '?'}, ${f.crans} / 3 (+${f.crans * 8} % subis, ${t})`;
       case 'filon': return `Filon de ${f.owner ? Util.esc(f.owner.name) : '?'}, ${f.charges} déclenchement(s) (${t})`;
       case 'state': {
-        const names = { tenu: 'tenu (moitié moins de dégâts)', invisible: 'invisible', stunned: 'sonné', invulnerable: 'invulnérable', lanterne: 'tient sa lanterne (esquive à distance)', assise: 'assis comme la montagne (rien ne le déplace, ses prises portent une case de plus, vole de la vie au contact)', unhealable: 'insoignable', forme_iskar: 'Forme Nocturne (40 % des soins seulement)', intaclable: 'intaclable', protege: 'protégé (le Velmar prend ses coups)', digue: 'Carapace Close (invulnérable au contact)', brise_lames: 'Bouclier à Rouage (invulnérable à distance)' };
+        const names = { tenu: 'tenu (moitié moins de dégâts)', invisible: 'invisible', stunned: 'sonné', invulnerable: 'invulnérable', lanterne: 'tient sa lanterne (esquive à distance)', assise: 'assis comme la montagne (rien ne le déplace, ses prises portent une case de plus, vole de la vie au contact)', unhealable: 'insoignable', rayonnant: 'Rayonnant (+15 % de soins reçus)', forme_iskar: 'Forme Nocturne (40 % des soins seulement)', intaclable: 'intaclable', protege: 'protégé (le Velmar prend ses coups)', digue: 'Carapace Close (invulnérable au contact)', brise_lames: 'Bouclier à Rouage (invulnérable à distance)' };
         if (f.name === 'provoked') return `provoqué par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
         if (f.name === 'sworn') return `juré par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
         if (f.name === 'tracked') return `traqué par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
@@ -859,6 +866,8 @@ class UI {
     { const af = c.affutDe(p); if (af.pct > 0) kit.push(`Affût +${af.pct} %${af.range ? `, +${af.range} PO` : ''}`); }
     if (p.kit && p.kit.traque) { const cible = c.entities.find(x => x.alive && c.traqueDe(p, x)); if (cible) kit.push(`Traque ${c.traqueDe(p, cible).crans} / ${p.kit.traque.max} (${Util.esc(cible.name)})`); }
     if (p.kit && p.kit.braise) kit.push(`Soif ${c.braiseOf(p)} / ${p.kit.braise.max}${c.braiseOf(p) >= p.kit.braise.surchauffe ? ' (dévorante)' : ''}`);
+    if (p.veille) kit.push(p.veille === 'aube' ? 'Aube (soins +10 %, Rayonnant)' : 'Crépuscule (+15 % de vol de vie)');
+    if (p.veille && p.astre) kit.push(`Astre : ${{ feu: 'le Soleil', eau: 'la Lune', air: 'les Étoiles', terre: 'les Astres tombés' }[p.astre] || p.astre}`);
     if (c.isArmed(p)) kit.push(`armé (−${p.kit.armed.reduction} % subis)`);
     const effects = kit.concat(p.effects.map(f => this.describeEffect(f))).join(', ');
     this.effetsTexte = effects;

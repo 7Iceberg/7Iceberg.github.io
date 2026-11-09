@@ -268,6 +268,7 @@
       return pilier(46, 120, 22) + pilier(100, 136, 18) + pilier(154, 100, 22) + pointille('M50 104 Q100 10 150 86', p[1]) + cairn(46, 96, .62) + impact(154, 90, .45, p);
     },
   });
+  IconesV3.outilsDe = Object.assign(IconesV3.outilsDe || {}, { thalor: { poly, encre, place, croix, eclat, roc, croissant, flamme, P, INK, OR_C, CAL, ARD, SAPH, MAGMA, RUB, ORS, R, deux, trait, pointille, ngon, coulee, bande, chevrons, echange, impact, G, M, ov, cairn, pion, bloc, galet, pic, sol, faille, dent, goutte, glace, flocon, nuage, eclair, spirale, glyphe, botte, coeurPierre, gantelet, main } });
 })();
 
 IconesV3.TYPES = Object.assign(IconesV3.TYPES || {}, {boue_des_cols:'degats',glyphe_pesant:'degats',givre_des_cimes:'degats',dent_de_durren:'placement',echine_de_pierre:'placement'});

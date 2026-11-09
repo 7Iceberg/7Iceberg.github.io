@@ -72,6 +72,21 @@ const Metiers = (() => {
     return Object.assign({ xp: Math.round(xp) }, gagner(ch, m.id, xp));
   }
 
+  function xpFabrication(ch, rec) {
+    const m = deAtelier(rec.workshop);
+    if (!m) return 0;
+    const nv = niveau(ch, m.id), n = niveauRecette(rec);
+    if (R().exigeNiveau && nv < n) return 0;
+    return nv >= MAX ? 0 : Math.round(xpNiveau(nv) * part(n, nv));
+  }
+  function xpRecolte(ch, rid, n) {
+    const m = deRessource(rid);
+    if (!m) return 0;
+    const nv = niveau(ch, m.id), nr = niveauRessource(rid);
+    if (R().exigeNiveau && nv < nr) return 0;
+    return nv >= MAX ? 0 : Math.round(xpNiveau(nv) * R().partRecolte * part(nr, nv) * (n || 1));
+  }
+
   function nettoyer(o) {
     const out = {};
     if (!o || typeof o !== 'object' || Array.isArray(o)) return out;
@@ -85,5 +100,5 @@ const Metiers = (() => {
     return out;
   }
 
-  return { MAX, liste, get, xpNiveau, etat, niveau, deAtelier, deRessource, niveauRessource, niveauRecette, atelierAccepte, ateliersDe, part, gagner, peutFabriquer, peutRecolter, apresFabrication, apresRecolte, nettoyer };
+  return { MAX, liste, get, xpNiveau, etat, niveau, deAtelier, deRessource, niveauRessource, niveauRecette, atelierAccepte, ateliersDe, part, gagner, peutFabriquer, peutRecolter, apresFabrication, apresRecolte, xpFabrication, xpRecolte, nettoyer };
 })();

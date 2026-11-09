@@ -352,6 +352,7 @@
     benediction_du_pilleur: p => pile(56, 146, 3) + pile(100, 146, 5) + pile(144, 146, 3) + croix(56, 106, 1) + croix(144, 106, 1) + eclat(100, 52, 1, OR_C, OR_V) + eclat(150, 60, .6, p[1]),
     ruee_des_mineurs: p => PI(p, 106, 110, -40, .72) + PI(p, 94, 110, 40, .72) + chevrons(100, 162, .72, OR_C, -90) + eclat(150, 150, .6, OR_C, OR_V) + eclat(50, 150, .6, OR_C, OR_V),
   });
+  IconesV3.outilsDe = Object.assign(IconesV3.outilsDe || {}, { orvald: { poly, encre, place, croix, eclat, roc, croissant, flamme, P, INK, OR_C, IV_C, AC_C, BOIS_C, CUIR_C, PI_C, NUIT, feu, deux, trait, ngone, etire, PI, PIC, PEP, pepite, goutte, chevrons, filets, impact, ondes, montagne, glace, ecu, piece, pile, poing, main, GANT_C, serre, lanterne, wagonnet, rails, besace, idole, fosse, coffre, balance, perle, CAL_V, gourde, botte, cle, grille, etai, galerie, casque, creuset, dalle, ECA, ecaille, filonRoc, poussiere, bourse, buche, manteau, pioche } });
 })();
 
 IconesV3.TYPES = Object.assign(IconesV3.TYPES || {}, {avidite:'degats',cle_des_galeries:'degats',croc_en_jambe_de_mineur:'degats',mauvais_pas:'degats',filon_brulant:'degats',poussiere_volante:'degats'});

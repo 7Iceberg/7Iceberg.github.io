@@ -322,6 +322,7 @@ const IleModeles = (() => {
         if (vus.has(cle)) continue;
         vus.add(cle);
         if (typeof IleTerrain === 'object' && IleTerrain.caseAire && IleTerrain.caseAire(T, X, Y).c !== '.') continue;
+        if (c === '#' && typeof IleDecor === 'object' && IleDecor.caseBloc && IleDecor.caseBloc(T, a, X, Y)) continue;
         const table = OBSTACLES[c], choix = table[a.style] || table.defaut;
         const nom = choix[0] === 'rocher2' && volcan() && S.modeles['k-roche'] ? 'k-roche' : choix[0] === 'souche' && volcan() && S.modeles['k-souche'] ? 'k-souche'
           : choix[0] === 'rocher2' && montagne(X + 0.5, Y + 0.5) && S.modeles['o-roche'] ? 'o-roche' : choix[0], M = S.modeles[nom];

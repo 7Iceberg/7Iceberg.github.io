@@ -76,6 +76,7 @@ class Entity {
     this.aiMoves = 0;
     this.turnStartPos = null;
     this.kit = def.shape === 'player' ? DATA.classes[def.classId || def.id] || null : null;
+    if (this.kit && this.kit.id === 'oriel' && DATA.spells.bascule_du_ciel && !this.spells.includes('bascule_du_ciel')) this.spells.push('bascule_du_ciel');
     this.fury = 0;
     this.reserve = 0;
     this.braise = this.kit && this.kit.braise ? this.kit.braise.debut || 0 : 0;

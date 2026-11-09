@@ -428,6 +428,9 @@ class Ile3D {
       const A = Ile3D.SOIR.arbres, arbres = this.soir && this.ambianceVoulue.arbres ? Object.assign({}, A, { detailCoeur: this.telephone ? A.detailCoeurTel : A.detailCoeur }) : null;
       try { await IleCharge.glb(); if (typeof IleGlb === 'object') await IleGlb.poser(THREE, this, scene, IleGlb.source(rendu.monde), { semis, arbres }); } catch (e) { console.warn('Ervane : monde modelé indisponible', e); }
       this.semisMeshy = !!(semis && this.monde && this.monde.userData.semisMeshy);
+      if (this.monde && IleDecor.blocsAires) {
+        try { const B = IleDecor.blocsAires(THREE, this.T, (u, v) => this.hauteur(u, v), this.telephone, this.rampe); if (B) { scene.add(B.mesh); this.meshBlocs = B.mesh; this.blocsAires = B.n; } } catch (e) { console.warn('Ervane : blocs des aires indisponibles', e); }
+      }
       if (this.monde) this.fondreMonde(THREE);
       const LC = this.soir && this.ambianceVoulue.lointain && this.monde ? Ile3D.SOIR.lointain[plateau.id] : null;
       if (LC && IleGlb.lointain) { try { this.poserLointain(THREE, scene, LC); } catch (e) { console.warn('Ervane : décor lointain indisponible', e); } }
@@ -1929,6 +1932,23 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this.figures.zonesHUD = zones;
   }
 
+  solCombat(zone) {
+    const def = zone && Ile3D.SOLS_COMBAT[zone];
+    if (!def || (typeof location === 'object' && /[?&]sols=0/.test(location.search || ''))) return null;
+    const cache = this._solsCombat || (this._solsCombat = {});
+    if (cache[def.image] !== undefined) return cache[def.image];
+    cache[def.image] = null;
+    const THREE = this.THREE || window.THREE;
+    try {
+      new THREE.TextureLoader().load(IleGlb.source('assets/sols/' + def.image + '.jpg'), t => {
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.anisotropy = Math.min(8, this.renderer && this.renderer.capabilities ? this.renderer.capabilities.getMaxAnisotropy() : 1);
+        cache[def.image] = t;
+      });
+    } catch (e) {   }
+    return null;
+  }
+
   majArene(now) {
     const A = this.arene, cam = this.camera, w = this.world, cb = this.combat;
     if (!A || !cam) return;
@@ -1974,6 +1994,15 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       const sol = this.T && this.T.solA ? this.T.solA(A.x0 + 7.5, A.y0 + 7.5) : 'calcaire';
       u.natureDalles.value = sol === 'herbe' || sol === 'sous_bois' ? 1 : sol === 'terre' || sol === 'lande' ? 2 : sol === 'roche' ? 3 : 0;
     }
+    if (u.solCombat && A.etat) {
+      const z = this.T && this.T.zoneA ? this.T.zoneA(A.x0 + 7.5, A.y0 + 7.5) : null;
+      const tex = this.solCombat(z);
+      u.solCombat.value = tex; u.solCombatOn.value = tex ? 1 : 0;
+      u.solCombatLum.value = (Ile3D.SOLS_COMBAT[z] || {}).lum || 1;
+      if (u.solCombatTerre) { const t = (Ile3D.SOLS_COMBAT[z] || {}).terre; u.solCombatTerre.value = Number.isFinite(t) ? t : 0.4; }
+      if (u.solCombatDetail) { const t = (Ile3D.SOLS_COMBAT[z] || {}).detail; u.solCombatDetail.value = Number.isFinite(t) ? t : 0.6; }
+      if (u.taillerDalles) u.taillerDalles.value = typeof location === 'object' && /[?&]dalles=0/.test(location.search || '') ? 0 : 1;
+    }
     u.tactiqueSol.value = ici && this.tactique ? 1 : 0;
     if (u.grilleSol) u.grilleSol.value = typeof UI === 'function' && UI.reglage && !UI.reglage('grille') ? 0 : 1;
     if (A.etat) {
@@ -1981,6 +2010,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
       const se = Math.sin(el), f = se / (0.7071 * Math.sqrt(1 + se * se));
       const v = cam.vise, ppu = cam.pixelsParU(v.x, v.h, v.y);
       u.traitU.value = 1 / Math.max(1e-3, ppu * f);
+      if (u.camSol && cam.cadre && cam.cadre.dir) { const d = cam.cadre.dir, n = Math.hypot(d[0], d[2]) || 1; u.camSol.value.set(d[0] / n, d[2] / n); }
     }
   }
 
@@ -2268,6 +2298,22 @@ Ile3D.vecteurZone = (THREE, z) => {
   coul('lavis'); v.push(pris('lavis', 1, 0));
   coul('bord'); v.push(pris('bord', 1, 0));
   return v;
+};
+Ile3D.SOLS_COMBAT = {
+  ervane_mailles: { image: 'ervane-mailles', lum: 0.95, pierre: '#d8d6bf' },
+  ervane_sources: { image: 'ervane-sources', lum: 0.95, pierre: '#c9c6a8' },
+  ervane_bois: { image: 'ervane-bois', lum: 1.05, pierre: '#857a55' },
+  ervane_murets: { image: 'ervane-murets', lum: 0.92, pierre: '#d4ac82' },
+  ervane_amarre: { image: 'ervane-amarre', lum: 1, pierre: '#94a6b0' },
+  orsane_cimes: { image: 'cimes-cite', lum: 0.86, pierre: '#cfd3cf' },
+  orsane_clairieres: { image: 'cimes-clairieres', lum: 0.95, terre: 0.12, pierre: '#bcc0ae' },
+  orsane_sentiers: { image: 'cimes-sentiers', lum: 0.88, pierre: '#d1ab7b' },
+  orsane_toiles: { image: 'cimes-toiles', lum: 0.95, terre: 0.3, pierre: '#9c9a92' },
+  orsane_eboulis: { image: 'cimes-eboulis', lum: 0.9, pierre: '#d0c7b2' },
+  kaldum_ville: { image: 'kaldum-ville', lum: 1.3, terre: 0.2, detail: 0.8, pierre: '#7d7979' },
+  kaldum_galeries: { image: 'kaldum-galeries', lum: 1.5, terre: 0.15, detail: 0.85, pierre: '#606762' },
+  kaldum_vapeurs: { image: 'kaldum-vapeurs', lum: 0.72, terre: 0.45, detail: 0.7, pierre: '#d6cfb4' },
+  kaldum_fonderie: { image: 'kaldum-fonderie', lum: 1.6, terre: 0.05, detail: 1, pierre: '#4a4648' },
 };
 Ile3D.ZONE_FONDU = 1.1;
 Ile3D.TOUR_CLAVIER = 1.5;

@@ -362,6 +362,7 @@
     place_a_la_bete: p => capuche(62, 70, 1.05) + grouk(138, 132, .75)
       + fleche('M88 52 Q148 44 150 90', p[1], 150, 92, 92) + fleche('M112 150 Q52 158 50 112', p[1], 50, 110, -88),
   });
+  IconesV3.outilsDe = Object.assign(IconesV3.outilsDe || {}, { fennal: { poly, encre, place, croix, eclat, roc, croissant, flamme, P, INK, OR_C, MET_C, BOIS_C, CUIR_C, OS_C, GR_C, NUIT, PI_C, PEAU_C, RUB_C, FEUILLE, eau, deux, mir, trait, losange, bulle, chevrons, vitesse, ondes, goutte, eclair, impact, coeur, plus, trajet, fleche, cible, cercleAppel, sol, bague, lanterne, CROCHET, corne, FACE, grouk, AILE_H, AILE_P, glym, molh, groukGalop, groukHurle, mur, croc, gueule, plume, galet, charbon, fumee, main, collier, cristal, oreille, oeil, sifflet, conque, coquille, pelage, museau, capuche, zone, serre, houlette } });
 })();
 
 IconesV3.TYPES = Object.assign(IconesV3.TYPES || {}, {hurlement_de_meute:'degats',odeur_du_gibier:'degats',laisse_d_ecume:'degats',filet:'degats'});

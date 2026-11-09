@@ -173,6 +173,9 @@ const IleSol = (() => {
 
 
   const GRILLE = `
+  // Le genre d'une case de l'aire (0 sol, 1 rocher, 2 trou, 3 eau, 4 arbre, 5 hors de l'aire : un
+  // trou relié au bord, Arene.ecrireFixe) ; hors du carré, 5.
+#define GENRE_AIRE(c) (((c).x < 0.0 || (c).y < 0.0 || (c).x > 14.0 || (c).y > 14.0) ? 5.0 : floor(texture2D(etatCases, vec2(((c).x * 4.0 + 2.5) / 64.0, ((c).y + 0.5) / 16.0)).r * 255.0 + 0.5))
   if (aireOn > 0.002) {
     vec2 qA = vMonde.xz - aireO;
     vec2 dhA = max(max(-qA, qA - 15.0), vec2(0.0));
@@ -180,6 +183,19 @@ const IleSol = (() => {
     gl_FragColor.rgb *= 1.0 - aireOn * mix(0.36 * smoothstep(0.0, 2.5, horsA), 0.9 * smoothstep(0.0, 0.35, horsA), tactiqueSol);
     // Un liseré sombre juste hors du carré : le bord de l'aire se lit sur l'herbe claire comme sur la lande.
     gl_FragColor.rgb *= 1.0 - aireOn * (1.0 - tactiqueSol) * 0.22 * (1.0 - smoothstep(0.0, 0.28, horsA)) * step(0.0005, horsA);
+    // Le sol peint en dalles : l'aire est une plaque posée sur le terrain. Sur ses côtés tournés vers la
+    // caméra, sa tranche (la peinture assombrie, plus claire en haut) ; tout autour, au pied, un liseré
+    // ambré qui dit où finit le combat.
+    if (horsA > 0.0 && solCombatOn > 0.5 && taillerDalles > 0.5 && tactiqueSol < 0.5 && GENRE_AIRE(clamp(floor(qA), 0.0, 14.0)) < 4.5) {
+      vec2 oA = sign(qA - 7.5) * step(0.0005, dhA);
+      float faceA = step(0.05, dot(normalize(oA + 1e-5), camSol));
+      float epA = 0.26 * faceA;
+      float tA = 1.0 - smoothstep(epA - 0.012, epA + 0.012, horsA);
+      vec3 flancA = texture2D(solCombat, vMonde.xz / 4.0 + 0.37).rgb * solCombatLum * mix(0.62, 0.36, clamp(horsA / max(epA, 0.01), 0.0, 1.0));
+      gl_FragColor.rgb = mix(gl_FragColor.rgb, flancA, tA * faceA * aireOn);
+      float lA = (1.0 - smoothstep(0.0, 0.03, abs(horsA - epA - 0.05))) ;
+      gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.85, 0.53, 0.22), 0.85 * lA * aireOn);
+    }
     if (horsA <= 0.0) {
       vec2 celA = clamp(floor(qA), 0.0, 14.0);
       vec2 fA = qA - celA;
@@ -210,11 +226,11 @@ const IleSol = (() => {
         // La vue tactique : un damier d'ardoise ; l'eau, le vide, les obstacles en pierre sombre.
         vec3 ardA = mod(celA.x + celA.y, 2.0) > 0.5 ? vec3(0.231, 0.263, 0.337) : vec3(0.204, 0.231, 0.302);
         if (sorteA > 2.5 && sorteA < 3.5) ardA = vec3(0.114, 0.278, 0.4);
-        else if (sorteA > 1.5 && sorteA < 2.5) ardA = vec3(0.02, 0.027, 0.043);
+        else if ((sorteA > 1.5 && sorteA < 2.5) || sorteA > 4.5) ardA = vec3(0.02, 0.027, 0.043);
         else if (sorteA > 0.5) ardA = vec3(0.071, 0.086, 0.125);
         float dansT = 1.0 - smoothstep(0.49 - wA * 0.5, 0.49 + wA * 0.5, mA);
         gl_FragColor.rgb = mix(gl_FragColor.rgb, mix(vec3(0.027, 0.043, 0.078), ardA, dansT), aireOn);
-        if (sorteA > 0.5 && (sorteA < 1.5 || sorteA > 3.5)) {
+        if (sorteA > 0.5 && (sorteA < 1.5 || (sorteA > 3.5 && sorteA < 4.5))) {
           float tbA = 1.0 - smoothstep(wA * 0.6, wA * 1.4, abs(mA - 0.47));
           gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.788, 0.651, 0.42), 0.35 * tbA * aireOn);
         }
@@ -231,13 +247,59 @@ const IleSol = (() => {
           float hachA = step(0.5, fract((fA.x + fA.y) * 5.0));
           gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.05, 0.06, 0.09), (0.2 + 0.18 * hachA) * dedans * aireOn);
           gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.64, 0.62, 0.56), 0.5 * lisere * aireOn);
-        } else if (sorteA > 1.5) {
+        } else if (sorteA > 1.5 && !(solCombatOn > 0.5 && taillerDalles > 0.5 && (sorteA < 2.5 || sorteA > 4.5))) {
           gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.03, 0.04, 0.07), 0.35 * lisere * aireOn);
         }
       }
       // Dalles : pierre opaque, joints et petits chanfreins éclairés selon le terrain.
       // La couleur du terrain ne traverse plus le pavement. Les repères tactiques restent au-dessus.
-      if (sorteA < 0.5 && (grilleSol > 0.5 || tactiqueSol > 0.5)) {
+      if (sorteA < 0.5 && solCombatOn > 0.5) {
+        // Le sol peint de la zone (assets/sols, Ile3D.SOLS_COMBAT), taillé en dalles comme sur les planches
+        // de référence (le 9 novembre 2026) : chaque case est une dalle à part, son propre morceau de la peinture
+        // (un décalage tiré de la case), un ton à elle et le damier ; un joint sombre, un chanfrein clair au
+        // bord loin de la caméra, la tranche sombre de la dalle au bord proche. taillerDalles = 0 (?dalles=0) :
+        // la peinture continue d'avant, un filet fin et un damier léger.
+        vec2 hS = fract(sin(vec2(dot(celA + aireO, vec2(127.1, 311.7)), dot(celA + aireO, vec2(269.5, 183.3)))) * 43758.5453);
+        vec3 peintS;
+        if (taillerDalles > 0.5) {
+          peintS = texture2D(solCombat, (vMonde.xz + floor(hS * 4.0) + hS.yx * 0.5) / 4.0).rgb * solCombatLum;
+          // Une pierre calme : le détail de la peinture adouci vers sa moyenne (le plus petit niveau de la
+          // texture), le dessin de la dalle (joint, chanfrein, tranche) porte le reste.
+          vec3 moyS = texture2D(solCombat, vec2(0.5), 12.0).rgb * solCombatLum;
+          peintS = mix(moyS, peintS, solCombatDetail);
+          // La pierre prend la teinte du terrain sous elle (solCombatTerre : la part, par zone) : l'aire
+          // appartient au paysage, comme les dalles beiges de la référence sur l'herbe jaune.
+          vec3 terreS = gl_FragColor.rgb;
+          float lumP = dot(peintS, vec3(0.299, 0.587, 0.114)), lumT = max(dot(terreS, vec3(0.299, 0.587, 0.114)), 0.04);
+          peintS = mix(peintS, lumP * mix(vec3(1.0), terreS / lumT, 0.85), solCombatTerre);
+          peintS *= (mod(celA.x + celA.y, 2.0) > 0.5 ? 0.9 : 1.0) * (0.92 + 0.16 * hS.x);
+          float dS = 0.5 - mA, aaS = clamp(wA * 0.5, 0.003, 0.02);
+          vec2 eS = cA.x > cA.y ? vec2(sign(fA.x - 0.5), 0.0) : vec2(0.0, sign(fA.y - 0.5));
+          float procheS = step(0.0, dot(eS, camSol));
+          float jS = 0.012 + wA * 0.55;
+          float jointS = 1.0 - smoothstep(jS - aaS, jS + aaS, dS);
+          float trancheS = (1.0 - smoothstep(jS + 0.04 - aaS, jS + 0.04 + aaS, dS)) * procheS;
+          float chanfreinS = (1.0 - smoothstep(jS + 0.035 - aaS, jS + 0.035 + aaS, dS)) * (1.0 - procheS);
+          peintS = mix(peintS, peintS * 1.16 + 0.03, 0.8 * chanfreinS);
+          peintS = mix(peintS, peintS * 0.7, trancheS);
+          // Dans les joints, le terrain : l'herbe ou la terre, plus sombre au fond ; à certains coins, une
+          // touffe qui déborde un peu sur les dalles voisines.
+          vec2 kS = floor(qA + 0.5);
+          float hK = fract(sin(dot(kS + aireO, vec2(41.3, 289.1))) * 15731.743);
+          float touffeS = (1.0 - smoothstep(0.05, 0.13 + 0.06 * hK, length(qA - kS))) * step(0.55, hK);
+          vec3 fondS = mix(terreS * 0.55, terreS * 0.9, 0.5 + 0.5 * sin(dot(qA, vec2(23.0, 17.0))));
+          peintS = mix(peintS, fondS, 0.9 * max(jointS, touffeS));
+        } else {
+          peintS = texture2D(solCombat, vMonde.xz / 4.0).rgb * solCombatLum;
+          peintS *= mod(celA.x + celA.y, 2.0) > 0.5 ? 0.955 : 1.0;
+          if (grilleSol > 0.5 || tactiqueSol > 0.5) {
+            float filetS = smoothstep(0.5 - wA * 1.3, 0.5 - wA * 0.15, mA);
+            peintS = mix(peintS, peintS * 0.42, 0.6 * filetS);
+          }
+        }
+        if (tactiqueSol > 0.5) peintS = mix(peintS, gl_FragColor.rgb, 0.7);
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, peintS, aireOn);
+      } else if (sorteA < 0.5 && (grilleSol > 0.5 || tactiqueSol > 0.5)) {
         vec2 idD = floor(vMonde.xz);
         float rD = fract(sin(dot(idD, vec2(127.1, 311.7))) * 43758.5453);
         float r2D = fract(sin(dot(idD, vec2(269.5, 183.3))) * 15731.743);
@@ -275,6 +337,45 @@ const IleSol = (() => {
         if (rD < 0.26) fondD = mix(fondD, mousseCouleurD, 0.72 * min(1.0, mousseD) * detailNetD * faceD);
         if (tactiqueSol > 0.5) fondD = mix(fondD, gl_FragColor.rgb, 0.7);
         gl_FragColor.rgb = mix(gl_FragColor.rgb, fondD, aireOn);
+      }
+      // Les trous et le bord découpé de l'aire, avec le sol en dalles (les planches de référence,
+      // docs/charte/propositions/trous-contour/). Pour chaque côté de la case, d : la distance du point
+      // à ce côté, et g : le genre de la voisine de ce côté.
+      if (solCombatOn > 0.5 && taillerDalles > 0.5 && tactiqueSol < 0.5 && sorteA > 1.5 && (sorteA < 2.5 || sorteA > 4.5)) {
+        vec2 dX = vec2(1.0, 0.0), dY = vec2(0.0, 1.0);
+        float gPx = GENRE_AIRE(celA + dX), gMx = GENRE_AIRE(celA - dX), gPy = GENRE_AIRE(celA + dY), gMy = GENRE_AIRE(celA - dY);
+        float ePx = 1.0 - fA.x, eMx = fA.x, ePy = 1.0 - fA.y, eMy = fA.y;
+        // Les côtés loin de la caméra (la voisine est plus loin qu'elle) : 1, les autres : 0.
+        float lPx = step(dot(dX, camSol), 0.0), lMx = step(-dot(dX, camSol), 0.0), lPy = step(dot(dY, camSol), 0.0), lMy = step(-dot(dY, camSol), 0.0);
+        vec3 terreT = gl_FragColor.rgb;
+        if (sorteA < 2.5) {
+          // Un trou : le fond sombre ; sur les côtés loin de la caméra bordés par l'aire, la paroi de
+          // terre (le terrain assombri vers le bas) et, au bord, une lèvre d'herbe claire.
+          float murT = 9.0;
+          if (lPx > 0.5 && gPx < 4.5 && abs(gPx - 2.0) > 0.5) murT = min(murT, ePx);
+          if (lMx > 0.5 && gMx < 4.5 && abs(gMx - 2.0) > 0.5) murT = min(murT, eMx);
+          if (lPy > 0.5 && gPy < 4.5 && abs(gPy - 2.0) > 0.5) murT = min(murT, ePy);
+          if (lMy > 0.5 && gMy < 4.5 && abs(gMy - 2.0) > 0.5) murT = min(murT, eMy);
+          vec3 trouT = terreT * 0.16;
+          float tT = clamp(murT / 0.7, 0.0, 1.0);
+          vec3 paroiT = mix(terreT * 0.95, terreT * 0.3, tT);
+          // Des strates de terre sur la paroi (des bandes douces, parallèles au bord).
+          paroiT *= 0.92 + 0.08 * sin(murT * 38.0 + dot(celA, vec2(1.7, 2.3)));
+          trouT = mix(trouT, paroiT, 1.0 - smoothstep(0.68, 0.72, murT));
+          trouT = mix(trouT, terreT * 1.05, 1.0 - smoothstep(0.035, 0.05, murT));
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, trouT, aireOn);
+        } else {
+          // Hors de l'aire (le bord découpé) : le terrain ; contre une case de l'aire plus loin de la
+          // caméra, la tranche de la plaque ; le long de l'aire, le liseré ambré.
+          float trT = 9.0, liT = 9.0;
+          if (gPx < 4.5) { if (lPx > 0.5) trT = min(trT, ePx); liT = min(liT, abs(ePx - (lPx > 0.5 ? 0.31 : 0.05))); }
+          if (gMx < 4.5) { if (lMx > 0.5) trT = min(trT, eMx); liT = min(liT, abs(eMx - (lMx > 0.5 ? 0.31 : 0.05))); }
+          if (gPy < 4.5) { if (lPy > 0.5) trT = min(trT, ePy); liT = min(liT, abs(ePy - (lPy > 0.5 ? 0.31 : 0.05))); }
+          if (gMy < 4.5) { if (lMy > 0.5) trT = min(trT, eMy); liT = min(liT, abs(eMy - (lMy > 0.5 ? 0.31 : 0.05))); }
+          vec3 flancT = texture2D(solCombat, vMonde.xz / 4.0 + 0.37).rgb * solCombatLum * mix(0.62, 0.36, clamp(trT / 0.26, 0.0, 1.0));
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, flancT, (1.0 - smoothstep(0.248, 0.272, trT)) * aireOn);
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.85, 0.53, 0.22), 0.85 * (1.0 - smoothstep(0.0, 0.03, liT)) * aireOn);
+        }
       }
       float poulsA = fRespire > 0.5 ? 0.72 + 0.28 * sin(tempsSol / 0.34) : 1.0;
       if (remA.a > 0.0) {
@@ -339,7 +440,7 @@ const IleSol = (() => {
       matieres: { value: tex.matieres }, moyennes: { value: moy.map(c => new THREE.Vector3(c[0], c[1], c[2])) },
       forceLueur: { value: 1 }, reperage: { value: 4 },
       aireOn: { value: 0 }, aireO: { value: new THREE.Vector2(0, 0) }, etatCases: { value: null },
-      tempsSol: { value: 0 }, traitU: { value: 0.05 }, tactiqueSol: { value: 0 }, grilleSol: { value: 1 }, natureDalles: { value: 0 },
+      tempsSol: { value: 0 }, traitU: { value: 0.05 }, tactiqueSol: { value: 0 }, grilleSol: { value: 1 }, natureDalles: { value: 0 }, solCombat: { value: null }, solCombatOn: { value: 0 }, solCombatLum: { value: 1 }, taillerDalles: { value: 1 }, camSol: { value: new THREE.Vector2(0.7071, 0.7071) }, solCombatTerre: { value: 0.4 }, solCombatDetail: { value: 0.6 },
     };
     const tableau = !!tex.matieres;
     const fabriquer = bord => {
@@ -354,7 +455,7 @@ const IleSol = (() => {
 varying vec3 vMonde;
 uniform sampler2D poids1; uniform sampler2D poids2; uniform sampler2D teinteIle; uniform sampler2D lueurIle; uniform sampler2D grainSol;
 uniform vec2 tailleIle; uniform float forceLueur; uniform float reperage; uniform vec3 moyennes[6];
-uniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol; uniform float natureDalles;
+uniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol; uniform float natureDalles; uniform sampler2D solCombat; uniform float solCombatOn; uniform float solCombatLum; uniform float taillerDalles; uniform vec2 camSol; uniform float solCombatTerre; uniform float solCombatDetail;
 ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
           .replace('#include <map_fragment>', `
   vec2 bruitSol = texture2D(grainSol, vMonde.xz / 5.3).rg - 0.5;
@@ -388,7 +489,7 @@ ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
   }
 
   function materiauSalle(THREE, texSol, rampe) {
-    const uniforms = { aireOn: { value: 0 }, aireO: { value: new THREE.Vector2(0, 0) }, etatCases: { value: null }, tempsSol: { value: 0 }, traitU: { value: 0.05 }, tactiqueSol: { value: 0 }, grilleSol: { value: 1 }, natureDalles: { value: 0 } };
+    const uniforms = { aireOn: { value: 0 }, aireO: { value: new THREE.Vector2(0, 0) }, etatCases: { value: null }, tempsSol: { value: 0 }, traitU: { value: 0.05 }, tactiqueSol: { value: 0 }, grilleSol: { value: 1 }, natureDalles: { value: 0 }, solCombat: { value: null }, solCombatOn: { value: 0 }, solCombatLum: { value: 1 }, taillerDalles: { value: 1 }, camSol: { value: new THREE.Vector2(0.7071, 0.7071) }, solCombatTerre: { value: 0.4 }, solCombatDetail: { value: 0.6 } };
     const m = new THREE.MeshToonMaterial({ color: 0xffffff, map: texSol, gradientMap: rampe, side: THREE.DoubleSide });
     m.onBeforeCompile = sh => {
       Object.assign(sh.uniforms, uniforms);
@@ -396,7 +497,7 @@ ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
         .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;')
         .replace('#include <project_vertex>', '#include <project_vertex>\nvMonde = (modelMatrix * vec4(transformed, 1.0)).xyz;');
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;\nuniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol; uniform float natureDalles;')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;\nuniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol; uniform float natureDalles; uniform sampler2D solCombat; uniform float solCombatOn; uniform float solCombatLum; uniform float taillerDalles; uniform vec2 camSol; uniform float solCombatTerre; uniform float solCombatDetail;')
         .replace('#include <fog_fragment>', '#include <fog_fragment>\n' + GRILLE);
     };
     m.customProgramCacheKey = () => 'ile-sol-salle';
@@ -412,7 +513,7 @@ ${tableau ? 'uniform highp sampler2DArray matieres;' : ''}`)
         .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;')
         .replace('#include <project_vertex>', '#include <project_vertex>\nvMonde = (modelMatrix * vec4(transformed, 1.0)).xyz;');
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;\nuniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol; uniform float natureDalles;')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vMonde;\nuniform float aireOn; uniform vec2 aireO; uniform sampler2D etatCases; uniform float tempsSol; uniform float traitU; uniform float tactiqueSol; uniform float grilleSol; uniform float natureDalles; uniform sampler2D solCombat; uniform float solCombatOn; uniform float solCombatLum; uniform float taillerDalles; uniform vec2 camSol; uniform float solCombatTerre; uniform float solCombatDetail;')
         .replace('#include <fog_fragment>', '#include <fog_fragment>\n' + GRILLE);
     };
     materiau.customProgramCacheKey = () => 'ile-sol-grille-' + (materiau.vertexColors ? 'c' : 'u') + (materiau.map ? 't' : '') + (cle ? '/' + cle.call(materiau) : '');

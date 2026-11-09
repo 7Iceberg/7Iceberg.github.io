@@ -231,15 +231,6 @@
 #app.vy-da #bas-centre .vy-xp-barre:hover span { opacity: 1; }
 
 #app.vy-da #fenetres .vy-onglet { white-space: nowrap !important; }
-#app.vy-da .vy-quetes__fiche { border-color: var(--da-ligne-2) !important; background: var(--da-case-2) !important; border-radius: var(--da-rayon) !important; }
-#app.vy-da .vy-q-tete.illustree { background: radial-gradient(ellipse 55% 130% at 52px 100%, rgba(var(--da-cristal-rgb), 0.16), transparent 70%), linear-gradient(180deg, var(--da-tete), var(--da-panneau)) !important; border-bottom-color: var(--da-ligne-2) !important; }
-#app.vy-da .vy-q-cat-tag { color: var(--da-or) !important; }
-#app.vy-da .vy-q-bas { background: var(--da-panneau) !important; border-top-color: var(--da-ligne-2) !important; }
-#app.vy-da .vy-q-gain { height: 26px !important; border-radius: 6px !important; background: var(--da-case) !important; border-color: var(--da-ligne) !important; }
-#app.vy-da .vy-q-gain.xp { color: var(--da-cristal) !important; }
-#app.vy-da .vy-q-gain.fils { color: var(--da-or) !important; }
-#app.vy-da .vy-q-item.on { box-shadow: inset 3px 0 0 var(--da-or) !important; }
-#app.vy-da .vy-q-etat { border-radius: 5px !important; }
 
 
 .vy-opt-cache { display: none !important; }

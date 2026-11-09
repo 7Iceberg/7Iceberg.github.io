@@ -725,7 +725,12 @@ class CameraIle {
     return { x: v.px + (sx - f.cx) * v.s, y: v.py - (sy - f.cy) * v.s };
   }
 
-  bornerEchelle(s) { const c = this.cadre; return Math.max(c.sFit / 2.5, Math.min(c.sFit / 0.75, s)); }
+  bornerEchelle(s) { const c = this.cadre; return Math.max(c.sFit / 2.5, Math.min(this.echelleMax(), s)); }
+  echelleMax() {
+    const c = this.cadre, D = CameraIle.RECUL_COMBAT;
+    if (!this.vw || !this.vh) return c.sFit / 0.75;
+    return Math.max(c.sFit, D[0] / this.vw, D[1] / this.vh);
+  }
   bornerVue() {
     const c = this.cadre, v = this.vue;
     if (!c || !v) return;
@@ -1203,6 +1208,7 @@ class CameraIle {
 
 CameraIle.CLE_REGARD = 'veylan.regard';
 CameraIle.CARTE = { ouverture: 30, elevation: [50, 74], min: 0.11, max: 3.55, approche: 0.41, depart: 0.9, retour: 0.7, marge: 0.05 };
+CameraIle.RECUL_COMBAT = [32, 16.75];
 CameraIle.MARGE_COMBAT = 0.06;
 CameraIle.SUIVI = { raideur: 3.8, avance: 0.22, avanceMax: 1.4, lissageMarche: 0.4, retour: 2.4, zoom: 0.17 };
 CameraIle.ORBITE = { tour: 0.006, pente: 0.135, min: 6, max: 72, leve: 2.6, lissage: 0.09 };

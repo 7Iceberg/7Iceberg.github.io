@@ -325,6 +325,7 @@ class HudJeu {
     b.setAttribute('aria-label', 'Sorts du combat');
     b.innerHTML = '<div class="vy-barre-sorts__boite"><span class="vy-barre-sorts__etats" hidden></span>' +
       `<div class="vy-barre-sorts__vie">${Gemmes.bloc(this.hud.styleVital(), false)}</div>` +
+      '<button type="button" class="vy-barre-sorts__veille" data-spell="bascule_du_ciel" hidden><span class="vy-barre-sorts__veille-ic"></span><i class="vy-barre-sorts__veille-touche" aria-hidden="true">²</i></button>' +
       '<div class="vy-barre-sorts__sorts"><span class="vy-barre-sorts__titre">Sorts</span><div class="vy-barre-sorts__rangee">' +
       `<div class="vy-barre-sorts__pages"><button type="button" class="vy-barre-sorts__page" data-pb="-1" aria-label="Page de sorts précédente">${HudJeu.ICON.haut}</button>` +
       '<button type="button" class="vy-barre-sorts__num" data-pb="tour" aria-label="Page de sorts 1 sur 1, toucher pour la suivante">1</button>' +
@@ -338,6 +339,7 @@ class HudJeu {
     this.pageBarre = 0;
     b.addEventListener('click', evt => {
       if (this.glisseBarreFini && Date.now() < this.glisseBarreFini) return;
+      if (evt.target.closest('.vy-barre-sorts__veille')) { this.ui.selectSpell('bascule_du_ciel'); return; }
       const pb = evt.target.closest('[data-pb]');
       if (pb) { this.tournerPageBarre(pb.dataset.pb === 'tour' ? 'tour' : Number(pb.dataset.pb)); return; }
       const s = evt.target.closest('[data-slot]');
@@ -538,7 +540,7 @@ class HudJeu {
     const act = this.ui.el.turnBar && this.ui.el.turnBar.querySelector('.vy-barre-tour__action');
     const etat = act ? [act.textContent, act.disabled ? 1 : 0, act.dataset.ui, act.classList.contains('hidden') ? 1 : 0].join('|') : '';
     const fx = this.ui.effetsTexte || '';
-    const sig = [cases, this.pageBarre, pages, cols, rows, p.pa, p.pm, p.hp, p.hpMax, etat, fx, this.hud.styleVital()].join('§');
+    const sig = [cases, this.pageBarre, pages, cols, rows, p.pa, p.pm, p.hp, p.hpMax, etat, fx, this.hud.styleVital(), p.veille || '', p.casts && p.casts.bascule_du_ciel || 0, tour].join('§');
     if (!force && sig === this.barreSig2) return;
     this.barreSig2 = sig;
     const liste = b.querySelector('.vy-barre-sorts__liste');
@@ -565,6 +567,17 @@ class HudJeu {
     }
     const plein = k => Math.max(p[k], (k === 'pa' ? p.paMax : p.pmMax) + (p.modifier ? p.modifier(k) : 0));
     Gemmes.maj(b.querySelector('.vy-gemmes'), { hp: p.hp, hpMax: p.hpMax, pa: p.pa, paMax: plein('pa'), pm: p.pm, pmMax: plein('pm') });
+    const veille = b.querySelector('.vy-barre-sorts__veille');
+    const aBascule = !!p.veille && p.spells.includes('bascule_du_ciel');
+    veille.hidden = !aBascule;
+    if (aBascule) {
+      const st = cb.spellState(p, 'bascule_du_ciel'), vers = p.veille === 'aube' ? 'le Crépuscule' : 'l\'Aube';
+      veille.dataset.v = p.veille;
+      veille.querySelector('.vy-barre-sorts__veille-ic').innerHTML = HudJeu.VEILLE[p.veille];
+      veille.classList.toggle('indispo', !tour || !st.ok);
+      veille.title = (p.veille === 'aube' ? 'Aube : soins +10 %, l\'allié soigné devient Rayonnant.' : 'Crépuscule : +15 % de vol de vie sur ses coups.') + ` Bascule du Ciel vers ${vers} : 1 PA, une fois par tour (touche ²).`;
+      veille.setAttribute('aria-label', `${p.veille === 'aube' ? 'Aube' : 'Crépuscule'}. Bascule du Ciel vers ${vers}, 1 PA, touche ²`);
+    }
     const etats = b.querySelector('.vy-barre-sorts__etats');
     etats.hidden = !fx;
     etats.innerHTML = fx;
@@ -620,7 +633,7 @@ class HudJeu {
     const nom = id === 'arme' ? (Items.get(ch.equipment.arme) || {}).name || s.name : s.name;
     const el = DATA.elements[s.element] || DATA.elements.neutre;
     const icone = typeof SortIcones === 'object' && id !== 'arme' ? SortIcones.url(id, s, 72) : '';
-    const tuile = typeof SortTuiles === 'object' && SortTuiles.a(id);
+    const tuile = id !== 'arme' && (typeof SortIcones === 'object' && SortIcones.tuile ? SortIcones.tuile(id) : typeof SortTuiles === 'object' && SortTuiles.a(id));
     const fond = icone ? `<img class="vy-sort__icone" src="${icone}" alt="">` : `<span class="vy-sort__icone vy-sort__icone--arme">${id === 'arme' ? Hud.picto({ kind: 'weapon' }) : Util.esc(nom.charAt(0))}</span>`;
     return `<button type="button" class="vy-sort${tuile ? ' vy-sort--tuile' : ''}${off ? ' indispo' : ''}${choisi ? ' choisi' : ''}" data-slot data-spell="${id}" style="--el:${el.color}" aria-label="${Util.esc(nom)}, ${s.pa} PA${st.ok ? '' : ' : ' + Util.esc(st.reason || 'indisponible')}" title="${Util.esc(nom)} · ${s.pa} PA">` +
       `${fond}<em class="vy-sort__pa">${s.pa}</em>${rang < 10 && ligne < 2 ? `<i class="vy-sort__touche">${seconde ? '⇧' : ''}${(rang + 1) % 10}</i>` : ''}${cd ? `<span class="vy-sort__cd">${cd}</span>` : ''}</button>`;
@@ -970,6 +983,11 @@ HudJeu.avancement = (ch, t) => {
 };
 
 HudJeu.TAILLE_BARRE = { pc: { cols: 6, rows: 2, rowsMax: 3 }, tel: { cols: 6, rows: 1, rowsMax: 2 } };
+
+HudJeu.VEILLE = {
+  aube: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17a7 7 0 0 1 14 0z" fill="currentColor"/><path d="M12 4v3M4.6 8.6l2.1 2.1M19.4 8.6l-2.1 2.1M2 17h2M20 17h2M3 20h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>',
+  crepuscule: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3.5a8.5 8.5 0 1 0 5.5 14.9A7 7 0 0 1 15 3.5z" fill="currentColor"/><path d="M18.5 5.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" fill="currentColor"/></svg>',
+};
 
 HudJeu.ICON = (() => {
   const s = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;

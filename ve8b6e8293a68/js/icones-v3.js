@@ -177,5 +177,6 @@ const IconesV3 = (() => {
       ${o.rang ? `<g transform="translate(172 24) scale(${.95 + o.rang * .12})">${poly([[0, -16], [11, -3], [6, 16], [-8, 13], [-11, -4]], '#209fec')}${poly([[0, -16], [11, -3], [1, 0]], '#e6fbff')}${poly([[-11, -4], [0, -16], [1, 0]], '#6fe0f2')}${poly([[1, 0], [6, 16], [-8, 13]], '#113f8a')}${encre([[0, -16], [11, -3], [6, 16], [-8, 13], [-11, -4]], 2.4)}</g>` : ''}
     </svg>`;
   }
-  return { icone, SUJETS, P, FORMES, INK, outils: { poly, encre, place, croix, eclat, roc, croissant, flamme, lame, epeeA, epeeB, epeeC } };
+  const epee = v => { EPEE = v || 'detail'; };
+  return { icone, epee, SUJETS, P, FORMES, INK, outils: { poly, encre, place, croix, eclat, roc, croissant, flamme, lame, epeeA, epeeB, epeeC } };
 })();

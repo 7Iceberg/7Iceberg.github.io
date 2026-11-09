@@ -277,6 +277,7 @@
         + plus(156, 150, .5) + eclat(46, 140, .6, p[1]);
     },
   });
+  IconesV3.outilsDe = Object.assign(IconesV3.outilsDe || {}, { oriel: { poly, encre, place, croix, eclat, roc, croissant, flamme, epeeC, P, INK, OR_C, IV_C, MET_C, NUIT, VIT_CH, PEAU_C, PIERRE_C, RUBIS, deux, trait, ngone, rai, rayons, halo, chevrons, plus, moins, coeur, goutte, bille, soleil, sol, bez, ruban, nClip, main, lanterne, B, NU, nuage, ecaille, ECA, plaque, bulle, tuile, pied, silhouette, volute, cage, baton } });
 })();
 
 IconesV3.TYPES = Object.assign(IconesV3.TYPES || {}, {eblouissement:'degats',voile_du_soir:'degats'});

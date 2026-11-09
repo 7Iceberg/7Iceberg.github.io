@@ -23,7 +23,7 @@ function typesOf(s) {
     }
   };
   walk(all);
-  if (s.lifesteal) t.add('soin');
+  if (s.lifesteal || s.volDiffere) t.add('soin');
   if (s.target === 'summon') t.add('invocation');
   if (all.some(ef => ef.type === 'pmNow' || (ef.type === 'pm' && ef.value > 0)) && !all.some(ef => ef.type === 'power' || ef.type === 'damage')) t.add('deplacement');
   if (!t.size) t.add('autres');
@@ -91,6 +91,7 @@ function lignes(ef, s, crit) {
     case 'rebond': return [['Rebond', `sur l\'ennemi le plus proche à ${plural(ef.cells || 2, 'case')}, ${ef.pct || 50} % des dégâts`]];
     case 'glyph': return [[ef.name || 'Glyphe', `${tours(ef.turns)} sur la zone, au début du tour ${ef.affects === 'allies' ? 'd\'un allié' : 'd\'un ennemi'} qui s'y tient`]].concat(sous([].concat(...(ef.effects || []).map(x => lignes(x, s, crit)))));
     case 'soinDiffere': return [['Soin différé', `${jet(ef)} PV, au début du prochain tour de la cible`]];
+    case 'basculeCiel': return [['Veille', 'passe de l\'Aube (soins +10 %, l\'allié soigné devient Rayonnant : +15 % de soins reçus) au Crépuscule (attaques : +15 points de vol de vie), ou l\'inverse']];
     case 'ecourter': return [['Heure Juste', `sur un allié, ses malus durent ${plural(ef.tours || 1, 'tour')} de moins ; sur un ennemi, ses bonus et ses boucliers`]];
     case 'ordreMeute': return [['Ordre', `toutes ses bêtes frappent tout de suite, à ${ef.pct || 50} % de leurs dégâts`]];
     case 'horde': return [['Horde', `+${ef.jauge || 3} de jauge pendant ${plural(ef.turns || 2, 'tour')}, ses appels coûtent ${ef.rabais || 1} PA de moins ; au bout, ses bêtes s'en vont`]];
@@ -120,6 +121,7 @@ function propres(s) {
   if (s.parPiege) out.push(['Pli', `+${s.parPiege} % par piège déclenché (5 au plus), le Pli dépensé`]);
   if (s.bascule) out.push(['Assis', `relancée assis, elle relève le Thalor${s.basculeRend ? ` et rend ${s.basculeRend} PA` : ''}`]);
   if (s.lifesteal) out.push(['Vol de vie', `${s.lifesteal} % des dégâts`]);
+  if (s.volDiffere) out.push(['Vol de vie différé', `${s.volDiffere} % des dégâts, rendus au début de ton prochain tour`]);
   if (s.lowHpBonus) out.push(['Sous ' + s.lowHpBonus.below + ' % de tes PV', `dégâts × ${String(s.lowHpBonus.mult).replace('.', ',')}`]);
   if (s.executeBelow) out.push(['Cible sous ' + s.executeBelow + ' % de PV', 'dégâts doublés']);
   if (s.bonusIfInvisible) out.push(['Invisible', `dégâts × ${String(s.bonusIfInvisible).replace('.', ',')}`]);

@@ -253,6 +253,7 @@ void main() {
       const H = (u, v) => this.ile.hauteur(u, v);
       const { hMin, hMax, hMoy } = this.mesurer(map);
       this.donnees.fill(0);
+      this.horsAire = Arene.horsAire(map);
       for (let y = 0; y < map.h && y < 16; y++) for (let x = 0; x < map.w && x < 16; x++) this.ecrireFixe(x, y);
       this.texCases.needsUpdate = true;
       const coin = (u, v) => { const h = H(u, v); return [u, v, Number.isFinite(h) ? h : hMoy]; };
@@ -293,6 +294,7 @@ void main() {
       this.etat = 'apercu';
       this.sig = null;
       this.mesurer(map);
+      this.horsAire = Arene.horsAire(map);
       const D = this.donnees;
       D.fill(0);
       const peindre = (c, fill, stroke, drapeaux) => {
@@ -340,9 +342,20 @@ void main() {
     versMonde(x, y) { return { u: this.x0 + x + 0.5, v: this.y0 + y + 0.5 }; }
     caseSous(u, v) { return { x: Math.floor(u - this.x0), y: Math.floor(v - this.y0) }; }
 
+    static horsAire(map) {
+      const hors = new Set(), file = [];
+      const trou = (x, y) => x >= 0 && y >= 0 && x < map.w && y < map.h && map.cells[y][x] === Grid.HOLE;
+      for (let y = 0; y < map.h; y++) for (let x = 0; x < map.w; x++) if ((x === 0 || y === 0 || x === map.w - 1 || y === map.h - 1) && trou(x, y)) { hors.add(x + ',' + y); file.push([x, y]); }
+      for (let i = 0; i < file.length; i++) {
+        const [x, y] = file[i];
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy, k = nx + ',' + ny; if (trou(nx, ny) && !hors.has(k)) { hors.add(k); file.push([nx, ny]); } }
+      }
+      return hors;
+    }
+
     ecrireFixe(x, y) {
       const D = this.donnees, o = (y * 64 + x * 4) * 4;
-      D[o + 8] = this.map.cells[y][x];
+      D[o + 8] = this.map.cells[y][x] === Grid.HOLE && this.horsAire && this.horsAire.has(x + ',' + y) ? 5 : this.map.cells[y][x];
       const h = this.ile.hauteur(this.x0 + x + 0.5, this.y0 + y + 0.5);
       D[o + 10] = Number.isFinite(h) ? Math.max(0, Math.min(255, Math.round(128 + (h - (this.hMoy || 0)) * 32))) : 128;
       D[o + 11] = 0;

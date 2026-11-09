@@ -247,9 +247,35 @@ const SortIcones = (() => {
     return SPEC[id] || (s && s.icone) || (s ? deduce(s) : ['etincelles']);
   }
 
+  const V4 = (() => { try { return new URLSearchParams(location.search).get('icones') !== 'v3'; } catch (e) { return true; } })();
+  const v4 = id => V4 && typeof IconesV4 === 'object' && IconesV4.a(id);
+  function typeV4(id, s) {
+    const t = (s.effects || []).map(e => e.type);
+    if (!t.includes('summon') && IconesV4.TYPES && IconesV4.TYPES[id]) return IconesV4.TYPES[id];
+    return typeV3(id, s);
+  }
+  let variantes = null;
+  function variante(id) {
+    if (!variantes) {
+      variantes = new Set();
+      for (const c of Object.values(DATA.classes)) for (const p of c.paires || []) if (p[1]) variantes.add(p[1]);
+    }
+    return variantes.has(id);
+  }
+  function tuile(id) { return v4(id) || (typeof SortTuiles === 'object' && SortTuiles.a(id)); }
+
   function url(id, spell, px) {
     const s = spell || DATA.spells[id];
     if (!s || typeof document === 'undefined') return '';
+    if (v4(id)) {
+      px = Math.round(px || 64);
+      const el = s.element || 'neutre', rang = s.rank || 0, key = `v4|${id}|${el}|${rang}|${px}`;
+      if (!cache.has(key)) {
+        const svg = IconesV4.icone({ id, el: IconesV3.P[el] ? el : 'neutre', type: typeV4(id, s) }, px, { rang, variante: variante(id) });
+        cache.set(key, 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
+      }
+      return cache.get(key);
+    }
     if (typeof IconesV3 === 'object' && IconesV3.SUJETS[id]) {
       px = Math.round(px || 64);
       const el = s.element || 'neutre', rang = s.rank || 0, key = `v3|${id}|${el}|${rang}|${px}`;
@@ -271,5 +297,5 @@ const SortIcones = (() => {
     return cache.get(key);
   }
 
-  return { url, spec, SPEC, motifs: Object.keys(M), details: Object.keys(D) };
+  return { url, tuile, spec, SPEC, motifs: Object.keys(M), details: Object.keys(D) };
 })();

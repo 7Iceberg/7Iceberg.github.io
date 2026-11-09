@@ -142,6 +142,9 @@ spells.lumiere_aveuglante = S('lumiere_aveuglante', { name: 'Lumière aveuglante
 spells.lanterne_de_veille = S('lanterne_de_veille', { name: 'Lanterne de Veille', element: 'neutre', pa: 3, range: [1, 3], target: 'free', effects: [{ type: 'summon', monster: 'lanterne_de_veille', count: 1, hpPctOfOwner: 25 }], cooldown: 4, desc: 'Une lanterne (25 % des PV de l\'Oriel) qui soigne les alliés blessés ; en tombant, elle laisse un halo qui soigne 2 tours.' });
 spells.renaissance = S('renaissance', { name: 'Renaissance', element: 'neutre', pa: 4, range: [0, 3], target: 'ally', affectsCaster: true, effects: [{ type: 'healPct', pct: 100 }, state('unhealable', 3)], cooldown: 6, desc: 'Rend tous ses PV à un allié, qui ne peut plus être soigné pendant 3 tours.' });
 spells.m_lanterne_soin = S('m_lanterne_soin', { name: 'Clarté', element: 'neutre', pa: 3, range: [0, 4], target: 'ally', affectsCaster: true, effects: [heal(8, 11)], maxPerTurn: 1 });
+spells.m_lanterne_lune = S('m_lanterne_lune', { name: 'Clarté de Lune', element: 'neutre', pa: 3, range: [0, 4], target: 'ally', affectsCaster: true, aoe: circle1, affects: 'allies', effects: [heal(4, 6)], maxPerTurn: 1 });
+spells.m_lanterne_etoile = S('m_lanterne_etoile', { name: 'Clarté d\'Étoile', element: 'neutre', pa: 3, range: [0, 4], target: 'ally', affectsCaster: true, effects: [{ type: 'soinDiffere', min: 10, max: 13 }], maxPerTurn: 1 });
+spells.m_lanterne_astre = S('m_lanterne_astre', { name: 'Clarté d\'Astre', element: 'neutre', pa: 3, range: [0, 4], target: 'ally', affectsCaster: true, effects: [heal(4, 6), shield(8, 1)], maxPerTurn: 1 });
 spells.veille = S('veille', { name: 'Veille', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [shield(20, 2)], cooldown: 3, desc: 'Un bouclier sur soi.' });
 spells.ardeur = S('ardeur', { name: 'Ardeur', element: 'feu', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(10, 14), push(1)], desc: 'Brûle et repousse d\'une case.' });
 
@@ -509,6 +512,8 @@ DATA.signesSort = s => {
   if (s.steal) t.add('vol');
   if (s.purse) t.add('bourse');
   if (s.soinDiffere) t.add('soin_differe');
+  if (s.volDiffere) t.add('vol_differe');
+  if ((s.effects || []).some(e => e.type === 'glyph' && (e.effects || []).some(x => x.type === 'heal'))) t.add('soin_sol');
   if (s.fury || s.furySpend) t.add('fureur');
   if (s.braise || s.braiseSpend) t.add('braise');
   if (s.parPiege) t.add('piege');
