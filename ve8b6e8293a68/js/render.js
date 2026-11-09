@@ -2624,10 +2624,11 @@ class Renderer {
   combatSprites(now) {
     const cb = this.combat;
     return cb.entities.filter(e => e.alive && cb.canSee(cb.player, e)).map(e => {
-      const moving = Math.abs(e.rx - Math.round(e.rx)) + Math.abs(e.ry - Math.round(e.ry)) > 0.02;
-      const hop = moving ? Math.abs(Math.sin((e.rx + e.ry) * Math.PI)) * 5 : 0;
+      const appui = e.porteur || e;
+      const moving = Math.abs(appui.rx - Math.round(appui.rx)) + Math.abs(appui.ry - Math.round(appui.ry)) > 0.02;
+      const hop = (e.porteur ? 36 : 0) + (moving ? Math.abs(Math.sin((appui.rx + appui.ry) * Math.PI)) * 5 : 0);
       return {
-        kind: 'entity', rx: e.rx, ry: e.ry, shape: e.shape, color: e.color, glyph: e.glyph, name: e.name,
+        kind: 'entity', rx: appui.rx, ry: appui.ry, shape: e.shape, color: e.color, glyph: e.glyph, name: e.name,
         scale: e.boss ? 1.35 : (e.isSummon && !e.ally ? 0.8 : 1), alpha: (e.alpha == null ? 1 : e.alpha) * (e.hasState('invisible') ? 0.45 : 1), look: e.def.look, auraCos: this.quality === 'basse' ? null : e.def.auraCos, lueur: e.def.lueur,
         team: e.team, flash: now < e.flashUntil, current: cb.actor === e, immune: e.immuneElement,
         hp: e.hp / e.hpMax, shield: e.shield / e.hpMax, bob: hop, motif: e.team === 'monster' ? Renderer.motifOf(e.def.id) : null, figure: e.team === 'monster' ? (typeof Figures === 'object' ? Figures.de(e.def.id) : null) : null,
@@ -3586,3 +3587,4 @@ class Renderer {
   }
 
 }
+

@@ -90,7 +90,7 @@ const RENAMES = {
   poigne: { name: 'Poing de Roche', desc: 'Un poing dur comme la roche, au contact : le coup de base de l\'Ébouleur.', unlock: 1 },
   ancre: { name: 'Racine de Pierre', desc: 'La pierre monte autour des jambes : la cible ne bouge plus pendant un tour.', unlock: 13 },
   bascule: { name: 'Caillou dans le Pas', desc: 'Un caillou sous le pied : la cible recule d\'une case et perd 1 PM.', unlock: 9 },
-  gorgee_de_cime: { name: 'Assise de Durren', desc: 'Le Thalor prend l\'assise de la montagne, deux tours : il ne bouge plus d\'un pas (−1 PM), rien ne le déplace, ses prises portent une case de plus, et Poing de Roche et Étau de Montagne lui rendent 40 % de leurs dégâts en PV.', unlock: 9 },
+  gorgee_de_cime: { name: 'Ancrage de Durren', desc: 'Le Thalor renforce ses appuis pendant deux tours : −1 PM immédiatement, résistance aux déplacements forcés, une case de plus aux poussées et attractions. Il peut encore marcher. Certains coups au contact lui rendent 40 % de leurs dégâts en PV.', unlock: 9 },
   glyphe_de_garde: { name: 'Glyphe de Garde', desc: 'Un cercle tracé au sol : qui commence son tour dedans reçoit un bouclier pris sur la carrure du lanceur (8 % de ses PV), deux tours durant. Un glyphe par tour.', unlock: 3 },
   glyphe_pesant: { name: 'Glyphe Pesant', desc: 'Un cercle qui alourdit tout ce qui s\'y tient : chaque ennemi qui y commence son tour encaisse 6 à 8 terre et perd 2 PM, deux tours durant. Un glyphe par tour.', unlock: 17 },
   mur_de_chair: { name: 'Dos de Montagne', desc: 'Le Thalor fait le dos rond comme une montagne et encaisse : bouclier de 26 pendant deux tours.', unlock: 17 },
@@ -119,3 +119,4 @@ for (const id in TRAP_RENAMES) {
   if (trap) trap.name = TRAP_RENAMES[id];
 }
 })();
+

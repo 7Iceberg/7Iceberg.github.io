@@ -291,7 +291,7 @@ class UI {
   }
 
   effectLine(ef) {
-    if (ef.siAssis || ef.siDebout) return this.effectLine(Object.assign({}, ef, { siAssis: false, siDebout: false })) + (ef.siAssis ? ' (assis)' : ' (debout)');
+    if (ef.siAssis || ef.siDebout) return this.effectLine(Object.assign({}, ef, { siAssis: false, siDebout: false })) + (ef.siAssis ? ' (ancré)' : ' (mobile)');
     if (ef.onAlly || ef.onFoe) return (ef.onAlly ? 'Sur un allié ou une bête : ' : 'Sur un ennemi : ') + this.effectLine(Object.assign({}, ef, { onAlly: false, onFoe: false })).replace(/^./, c => c.toLowerCase());
     const v = DATA.rankShown(ef);
     switch (ef.type) {
@@ -319,7 +319,7 @@ class UI {
       case 'push': return `Pousse de ${ef.cells} case(s)${ef.ifSworn ? ' (contre le juré)' : ''}`;
       case 'pull': return `Attire de ${ef.cells} case(s)`;
       case 'swap': return 'Échange les places';
-      case 'empoigner': return 'Empoigne la cible : tenue jusqu\'au jet, elle fait moitié moins de dégâts';
+      case 'empoigner': return 'Porte la cible et peut marcher avec elle jusqu’au dépôt ou au jet';
       case 'jeter': return 'Jette ce que le Thalor tient sur la case visée';
       case 'depuisCentre': return `Repousse de ${ef.cells} case(s) depuis le point de chute`;
       case 'versCentre': return `Attire de ${ef.cells} case(s) vers le point de chute`;
@@ -835,7 +835,7 @@ class UI {
       case 'traque': return `Traque de ${f.owner ? Util.esc(f.owner.name) : '?'}, ${f.crans} / 3 (+${f.crans * 8} % subis, ${t})`;
       case 'filon': return `Filon de ${f.owner ? Util.esc(f.owner.name) : '?'}, ${f.charges} déclenchement(s) (${t})`;
       case 'state': {
-        const names = { tenu: 'tenu (moitié moins de dégâts)', invisible: 'invisible', stunned: 'sonné', invulnerable: 'invulnérable', lanterne: 'tient sa lanterne (esquive à distance)', assise: 'assis comme la montagne (rien ne le déplace, ses prises portent une case de plus, vole de la vie au contact)', unhealable: 'insoignable', rayonnant: 'Rayonnant (+15 % de soins reçus)', forme_iskar: 'Forme Nocturne (40 % des soins seulement)', intaclable: 'intaclable', protege: 'protégé (le Velmar prend ses coups)', digue: 'Carapace Close (invulnérable au contact)', brise_lames: 'Bouclier à Rouage (invulnérable à distance)' };
+        const names = { tenu: 'porté par le Thalor', invisible: 'invisible', stunned: 'sonné', invulnerable: 'invulnérable', lanterne: 'tient sa lanterne (esquive à distance)', ancrée: 'assis comme la montagne (rien ne le déplace, ses prises portent une case de plus, vole de la vie au contact)', unhealable: 'insoignable', rayonnant: 'Rayonnant (+15 % de soins reçus)', forme_iskar: 'Forme Nocturne (40 % des soins seulement)', intaclable: 'intaclable', protege: 'protégé (le Velmar prend ses coups)', digue: 'Carapace Close (invulnérable au contact)', brise_lames: 'Bouclier à Rouage (invulnérable à distance)' };
         if (f.name === 'provoked') return `provoqué par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
         if (f.name === 'sworn') return `juré par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
         if (f.name === 'tracked') return `traqué par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
@@ -894,6 +894,12 @@ class UI {
 
     for (const id in this.spellButtons) {
       const b = this.spellButtons[id];
+      if (id === 'empoigne' || id === 'prise_ferme') {
+        const sort = c.spellOf(id, p);
+        b.querySelector('.name').textContent = sort.name;
+        b.querySelector('.cost').textContent = `${sort.pa} PA`;
+        b.setAttribute('aria-label', `${sort.name}, ${sort.pa} PA`);
+      }
       const st = c.spellState(p, id);
       b.classList.toggle('selected', this.selectedSpell === id);
       b.classList.toggle('disabled', !playerTurn || !st.ok);
@@ -1082,4 +1088,5 @@ UI.ICON = {
   oui: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
   pa: '<svg class="vy-sceau-pa" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2l8.5 4.9v9.8L12 21.8l-8.5-4.9V7.1z" fill="#ddaa72" stroke="#a67349" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 5.4l5.7 3.3v6.6L12 18.6l-5.7-3.3V8.7z" fill="#f2dcaa"/><path d="M12 5.4l5.7 3.3L12 12 6.3 8.7z" fill="#fff3d2" opacity="0.7"/></svg>',
 };
+
 

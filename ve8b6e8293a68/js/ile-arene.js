@@ -473,7 +473,9 @@ void main() {
           if (mort >= 1) continue;
         } else if (!cb.canSee(cb.player, e)) continue;
         else { this.vus.add(e.id); this.morts.delete(e.id); }
-        const p = this.versMonde(e.rx, e.ry), h = this.ile.hauteur(p.u, p.v);
+        const appui = e.porteur || e;
+        const p = this.versMonde(appui.rx, appui.ry);
+        const h = this.ile.hauteur(p.u, p.v) + (e.porteur ? 0.9 : 0);
         const hpF = Math.max(0, Math.min(1, e.hp / e.hpMax));
         if (e._trace == null || hpF >= e._trace) e._trace = hpF;
         else {
@@ -487,7 +489,7 @@ void main() {
           scale: (e.boss ? 1.3 : (e.isSummon && !e.ally ? 0.8 : 1)) * (telephone ? (e.team === 'monster' ? 1.3 : 1.12) : 1),
           alpha: (e.alpha == null ? 1 : e.alpha) * (e.hasState('invisible') ? 0.45 : 1),
           facing: e.shape === 'player' ? e.facing || Renderer.faceFoe(cb, e) : 1,
-          x: p.u, y: p.v, h, normale: this.ile.normale(p.u, p.v), bob: e.hop || 0,
+          x: p.u, y: p.v, h, normale: this.ile.normale(p.u, p.v), bob: appui.hop || 0,
           cible: { type: 'combattant', ref: e },
           combat: {
             hp: hpF, trace: e._trace, bouclier: e.shield / e.hpMax, equipe: e.team, actif: cb.actor === e && cb.phase === 'battle', boss: !!e.boss,
@@ -750,3 +752,4 @@ void main() {
 
   return { Arene, N, PLACEMENT };
 })();
+

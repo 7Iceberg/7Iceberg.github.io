@@ -136,11 +136,15 @@ class Combat {
   }
 
   place(e, x, y) {
+    if (e.caseRepliPortage && e.caseRepliPortage.x === x && e.caseRepliPortage.y === y) {
+      e.caseRepliPortage = e.pos;
+    }
     e.x = x; e.y = y; e.rx = x; e.ry = y;
+    if (e.tient && e.tient.porteur === e) this.place(e.tient, x, y);
   }
 
   entityAt(x, y) {
-    return this.entities.find(e => e.alive && e.x === x && e.y === y) || null;
+    return this.entities.find(e => e.alive && !e.porteur && e.x === x && e.y === y) || null;
   }
 
   isStartCell(team, x, y) {
@@ -221,6 +225,7 @@ class Combat {
 
   isWalkable(x, y, e) {
     if (!Grid.inBounds(this.map, x, y)) return false;
+    if (this.caseReserveePortage(x, y, e)) return false;
     const t = Grid.tile(this.map, x, y);
     const tmp = this.tempAt(x, y);
     if (t === Grid.HOLE || t === Grid.WATER || (tmp && tmp.kind === 'fente')) return false;
@@ -545,9 +550,9 @@ class Combat {
     if (this.phase !== 'battle' || !this.actor || this.busy) return;
     this.clearTimer();
     const e = this.actor;
+    if (e.tient) this.lacher(e);
     if (e.alive) this.fireTriggers(e, 'turnEnd', {});
     if (e.alive && e.rewind) this.rewindTurn(e);
-    if (e.tient) this.lacher(e);
     e.resteFixe = !e.moved;
     if (e === this.player) this.hook('onTurnEnd', e);
     if (e.effects.some(f => f.type === 'state' && f.name === 'invisible' && f.revealAtEnd)) {
@@ -578,7 +583,6 @@ class Combat {
       prev = step;
     }
     this.busy = true;
-    if (e.tient) this.lacher(e);
     try {
       for (const step of path) {
         if (!this.isWalkable(step.x, step.y, e) || this.entityAt(step.x, step.y)) break;
@@ -675,7 +679,7 @@ class Combat {
 
   async swap(a, b) {
     if (a.def.fixed || b.def.fixed || a.unpushable || b.unpushable) { this.log(`${a.def.fixed || a.unpushable ? a.name : b.name} ne bouge pas.`); return; }
-    if (b.hasState('assise')) { this.log(`${b.name} tient bon : assis comme la montagne.`); return; }
+    if (b.hasState('assise')) { this.log(`${b.name} tient bon : ancré comme la montagne.`); return; }
     const pa = a.pos, pb = b.pos;
     await Promise.all([
       this.emitAsync('animMove', { entity: a, to: pb, teleport: true }),
@@ -696,7 +700,7 @@ class Combat {
       : Grid.pushDirection(target.pos, from);
     if (!dir) return;
     if (target.def.fixed || target.unpushable) { this.log(`${target.name} ne bouge pas.`); return; }
-    if (target !== caster && target.hasState('assise')) { this.log(`${target.name} tient bon : assis comme la montagne.`); return; }
+    if (target !== caster && target.hasState('assise')) { this.log(`${target.name} tient bon : ancré comme la montagne.`); return; }
     const cells = ef.cells + (caster && caster !== target && caster.hasState('assise') ? 1 : 0)
       + (ef.type === 'pull' && caster && caster !== target && this.sangChaud(caster).palier >= 2 ? 1 : 0);
     let moved = 0;
@@ -851,7 +855,7 @@ class Combat {
   placeObstacles(e, cells, ef) {
     let n = 0;
     for (const c of cells) {
-      if (Grid.tile(this.map, c.x, c.y) !== Grid.FLOOR || this.tempAt(c.x, c.y) || this.entityAt(c.x, c.y)) continue;
+      if (Grid.tile(this.map, c.x, c.y) !== Grid.FLOOR || this.tempAt(c.x, c.y) || this.entityAt(c.x, c.y) || this.caseReserveePortage(c.x, c.y)) continue;
       this.temp.set(Grid.key(c.x, c.y), { kind: ef.kind || 'rock', owner: e, turnsLeft: ef.turns });
       n++;
     }
@@ -900,6 +904,8 @@ class Combat {
   }
 
   onDeath(t, source, silent) {
+    if (t.tient) this.lacher(t);
+    if (t.porteur) this.lacher(t.porteur);
     if (!silent) this.log(`${t.name} est vaincu.`, 'system');
     const ctx = this.castCtx;
     if (ctx && source && source === ctx.caster) {
@@ -937,6 +943,7 @@ class Combat {
 
   spellOf(id, e) {
     const s = (e && e.extraSpells && e.extraSpells[id]) || DATA.spells[id];
+    if (s && (id === 'empoigne' || id === 'prise_ferme') && this.tenuPar(e)) return DATA.depotThalor;
     const rank = s && e && e.spellRanks ? e.spellRanks[id] || 1 : 1;
     if (rank <= 1) return s;
     const cache = e.rankedSpells || (e.rankedSpells = {});
@@ -951,8 +958,8 @@ class Combat {
     if (s.maxPerTurn && (e.casts[spellId] || 0) >= s.maxPerTurn) return { ok: false, reason: 'Déjà lancé le maximum de fois ce tour' };
     if (s.braiseCost && this.braiseOf(e) < s.braiseCost) return { ok: false, reason: `Il faut ${s.braiseCost} de Soif` };
     if (e.glyphThisTurn && s.effects.some(ef => ef.type === 'glyph')) return { ok: false, reason: 'Un seul glyphe par tour' };
-    if (s.exigeDebout && e.hasState('assise')) return { ok: false, reason: 'Il faut être debout' };
-    if (s.exigeTenu && !this.tenuPar(e)) return { ok: false, reason: 'Il faut tenir quelqu\'un (Empoigne)' };
+    if (s.exigeDebout && e.hasState('assise')) return { ok: false, reason: 'Il faut la posture Mobile' };
+    if (s.exigeTenu && !this.tenuPar(e)) return { ok: false, reason: 'Il faut tenir une cible (Prise de Trompe)' };
     if (s.exigeLeurre && !this.leurreDe(e)) return { ok: false, reason: 'Il faut ton Leurre' };
     return { ok: true };
   }
@@ -1002,22 +1009,64 @@ class Combat {
 
   tenuPar(e) {
     const t = e && e.tient;
-    return t && t.alive && t.effects.some(f => f.type === 'state' && f.name === 'tenu' && f.by === e) ? t : null;
+    return t && t.alive && t.porteur === e ? t : null;
   }
 
-  lacher(e) {
-    const t = e && e.tient;
-    if (t) t.effects = t.effects.filter(f => !(f.type === 'state' && f.name === 'tenu' && f.by === e));
-    if (e) e.tient = null;
+  caseReserveePortage(x, y, e) {
+    const porteur = this.actor;
+    const repli = porteur && porteur.caseRepliPortage;
+    return !!repli && e !== porteur && e !== porteur.tient && repli.x === x && repli.y === y;
+  }
+
+  repliDuPorte(e, t) {
+    const libre = c => this.isWalkable(c.x, c.y, t) && !this.entityAt(c.x, c.y);
+    if (!e.alive && libre(e.pos)) return e.pos;
+    const voisine = Grid.neighbors(this.map, e.pos).find(libre);
+    if (voisine) return voisine;
+    if (e.caseRepliPortage && libre(e.caseRepliPortage)) return e.caseRepliPortage;
+    let proche = null;
+    for (let y = 0; y < this.map.h; y++) {
+      for (let x = 0; x < this.map.w; x++) {
+        const c = { x, y };
+        if (libre(c) && (!proche || Grid.dist(c, e.pos) < Grid.dist(proche, e.pos))) proche = c;
+      }
+    }
+    return proche;
+  }
+
+  lacher(e, destination) {
+    const t = e.tient;
+    if (!t) return;
+    const sol = t.alive ? destination || this.repliDuPorte(e, t) : null;
+    if (t.alive && !sol) return;
+    e.tient = null;
+    e.caseRepliPortage = null;
+    t.porteur = null;
+    t.effects = t.effects.filter(f => !(f.type === 'state' && f.name === 'tenu' && f.by === e));
+    if (sol) this.place(t, sol.x, sol.y);
+    if (sol && !destination) this.log(e.name + ' dépose ' + t.name + '.', e.team);
+  }
+
+  priseRefusee(e, t) {
+    if (t.porteur || t.tient) return 'Cette cible participe déjà à un portage';
+    const bloc = t.isSummon && t.owner === e && t.def.id === 'bloc_de_durren';
+    if (!bloc && (t.def.fixed || t.unpushable || t.hasState('assise'))) return 'Cette cible ne peut pas être soulevée';
+    if (!this.isWalkable(t.x, t.y, t)) return 'Il faut pouvoir reposer cette cible au sol';
+    return null;
   }
 
   empoigner(e, t) {
-    if (!t || t === e) return;
-    this.lacher(e);
+    if (!t || !t.alive || t === e || e.tient || this.priseRefusee(e, t)) return;
     t.addEffect({ type: 'state', name: 'tenu', by: e, turns: 1 }, t === this.actor);
+    t.porteur = e;
     e.tient = t;
-    this.log(`${e.name} empoigne ${t.name}.`, e.team);
-    if (t.isSummon && t.owner === e && e === this.actor) { e.pa += 1; this.log(`${e.name} reprend 1 PA.`, e.team); }
+    e.caseRepliPortage = t.pos;
+    this.place(t, e.x, e.y);
+    this.log(e.name + ' soulève ' + t.name + ' avec sa trompe.', e.team);
+    if (t.isSummon && t.owner === e && e === this.actor) {
+      e.pa += 1;
+      this.log(e.name + ' reprend 1 PA.', e.team);
+    }
   }
 
 
@@ -1227,6 +1276,10 @@ class Combat {
       const telefrag = s.telefrag && seen && seen !== e;
       if (s.target === 'free' && !telefrag && (occ || !this.isWalkable(cell.x, cell.y, e))) return { ok: false, reason: 'Il faut une case libre' };
       if (s.target === 'entity' && !seen) return { ok: false, reason: 'Aucune cible sur cette case' };
+      if (seen && s.effects.some(ef => ef.type === 'empoigner')) {
+        const reason = this.priseRefusee(e, seen);
+        if (reason) return { ok: false, reason };
+      }
       if (s.target === 'enemy' && (!seen || seen.team === e.team)) return { ok: false, reason: 'Vise un ennemi' };
       if (s.target === 'ally' && (!seen || seen.team !== e.team)) return { ok: false, reason: 'Vise un allié' };
       if (s.target === 'summon' && (!seen || seen.team !== e.team || !seen.isSummon)) return { ok: false, reason: 'Vise une invocation alliée' };
@@ -1237,6 +1290,9 @@ class Combat {
       if (s.effects.some(ef => ef.type === 'trap') && !s.trapReplaceOldest && this.traps.filter(t => t.owner === e).length >= DATA.rules.maxTrapsPerOwner) {
         return { ok: false, reason: `${DATA.rules.maxTrapsPerOwner} pièges posés au plus` };
       }
+    }
+    if (this.tenuPar(e) && Grid.dist(from, cell) === 0 && s.effects.some(ef => ef.type === 'state' && ef.name === 'assise')) {
+      return { ok: false, reason: 'Dépose ou projette ta cible avant de t’ancrer' };
     }
     const summonEf = s.effects.find(ef => ef.type === 'summon');
     if (summonEf) { const why = this.summonBlock(e, summonEf.monster); if (why) return { ok: false, reason: why }; }
@@ -1277,7 +1333,7 @@ class Combat {
     const ctx = this.castCtx = { caster: e, spell: s, fury: e.fury, braise: e.braise || 0, reserve: e.reserve || 0, hitFoe: false, kills: [] };
     try {
       e.pa -= this.coutPa(e, s);
-      e.casts[spellId] = (e.casts[spellId] || 0) + 1;
+      if (s !== DATA.depotThalor) e.casts[spellId] = (e.casts[spellId] || 0) + 1;
       if (s.cooldown) e.cooldowns[spellId] = s.cooldown;
       if (s.furySpend && e.fury > 0) { this.log(`${e.name} dépense ${e.fury} de Fureur.`, e.team); e.fury = 0; }
       if (s.braiseCost) { e.braise = Math.max(0, (e.braise || 0) - s.braiseCost); this.log(`${e.name} étanche ${s.braiseCost} de Soif.`, e.team); }
@@ -1292,17 +1348,20 @@ class Combat {
       if (s.bascule && e.hasState(s.bascule)) {
         e.removeState(s.bascule);
         if (s.basculeRend) e.pa += s.basculeRend;
-        this.log(`${e.name} se relève${s.basculeRend ? ` et reprend ${s.basculeRend} PA` : ''}.`, e.team);
+        this.log(`${e.name} reprend sa mobilité${s.basculeRend ? ` et reprend ${s.basculeRend} PA` : ''}.`, e.team);
         this.emit('update');
         return { ok: true };
       }
       if (s.effects.some(ef => ef.type === 'jeter')) {
         const t = this.tenuPar(e);
-        this.lacher(e);
         if (t && !this.entityAt(cell.x, cell.y)) {
-          await this.emitAsync('animMove', { entity: t, to: { x: cell.x, y: cell.y }, fast: true });
+          const depart = { x: t.rx, y: t.ry };
+          this.lacher(e, cell);
+          t.rx = depart.x;
+          t.ry = depart.y;
+          await this.emitAsync('animMove', { entity: t, to: cell, fast: s !== DATA.depotThalor });
           this.place(t, cell.x, cell.y);
-          this.log(`${e.name} jette ${t.name}.`, e.team);
+          this.log(e.name + (s === DATA.depotThalor ? ' dépose ' : ' jette ') + t.name + '.', e.team);
           await this.checkTraps(t);
         }
       }
@@ -1584,7 +1643,7 @@ class Combat {
         }
         t.addEffect({ type: 'state', name: ef.name, turns, by: source, lingering: !!ef.lingering }, own);
         if (ef.name === 'invisible') t.hiddenAt = { x: t.x, y: t.y };
-        { const etats = { digue: 'est sous la Carapace Close', brise_lames: 'est derrière le Bouclier à Rouage', forme_iskar: 'prend la Forme Nocturne', protege: `est protégé par ${source.name}`, gibier: `est le gibier de ${source.name}`, victime: `est la victime choisie de ${source.name}`, intaclable: 'devient intaclable', assise: 's\'assoit comme la montagne', tenu: 'est tenu' };
+        { const etats = { digue: 'est sous la Carapace Close', brise_lames: 'est derrière le Bouclier à Rouage', forme_iskar: 'prend la Forme Nocturne', protege: `est protégé par ${source.name}`, gibier: `est le gibier de ${source.name}`, victime: `est la victime choisie de ${source.name}`, intaclable: 'devient intaclable', ancrée: 'ancre ses appuis comme la montagne', tenu: 'est tenu' };
           this.log(ef.name === 'invisible' ? `${t.name} devient invisible.` : ef.name === 'unhealable' ? `${t.name} ne peut plus être soigné pendant ${turns} tour(s).` : ef.name === 'ivre' ? `${t.name} est ivre pendant ${turns} tour(s).` : etats[ef.name] ? `${t.name} ${etats[ef.name]} (${turns} tour(s)).` : `${t.name} est provoqué par ${source.name}.`); }
         break;
       case 'range':
@@ -2224,7 +2283,7 @@ class Combat {
     const free = [];
     for (let y = 0; y < this.map.h; y++) {
       for (let x = 0; x < this.map.w; x++) {
-        if (Grid.tile(this.map, x, y) === Grid.FLOOR && !this.tempAt(x, y) && !this.entityAt(x, y)) free.push({ x, y });
+        if (Grid.tile(this.map, x, y) === Grid.FLOOR && !this.tempAt(x, y) && !this.entityAt(x, y) && !this.caseReserveePortage(x, y)) free.push({ x, y });
       }
     }
     for (let i = 0; i < count && free.length; i++) {
@@ -2442,3 +2501,4 @@ class Combat {
     return null;
   }
 }
+

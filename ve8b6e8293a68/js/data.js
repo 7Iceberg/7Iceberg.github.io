@@ -198,7 +198,7 @@ spells.lancer = S('lancer', { name: 'Lancer', element: 'terre', pa: 3, range: [1
 spells.projection = S('projection', { name: 'Projection', element: 'terre', pa: 3, range: [2, 5], effects: [dmg(5, 7), pull(3)], desc: 'Attire la cible de 3 cases.' });
 spells.poigne = S('poigne', { name: 'Poigne', element: 'terre', pa: 3, range: [1, 1], effects: [dmg(14, 18)], maxPerTurn: 2, lifestealIfState: { state: 'assise', pct: 40 }, desc: 'Un coup de poing.' });
 spells.ancre = S('ancre', { name: 'Ancre', element: 'eau', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(6, 8), root], cooldown: 2, desc: 'La cible ne bouge plus un tour.' });
-spells.gorgee_de_cime = S('gorgee_de_cime', { name: 'Assise de Durren', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [state('assise', 2)], selfEffects: [{ type: 'pmNow', value: -1 }], cooldown: 3, desc: 'Assis comme la montagne 2 tours : −1 PM tout de suite, rien ne le déplace, ses prises portent une case de plus, et les coups au contact rendent 30 % des dégâts en PV.' });
+spells.gorgee_de_cime = S('gorgee_de_cime', { name: 'Ancrage de Durren', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [state('assise', 2)], selfEffects: [{ type: 'pmNow', value: -1 }], cooldown: 3, desc: 'Ancré comme la montagne 2 tours : −1 PM tout de suite, rien ne le déplace, ses prises portent une case de plus, et les coups au contact concernés rendent 40 % des dégâts en PV.' });
 spells.bascule = S('bascule', { name: 'Bascule', element: 'neutre', pa: 2, range: [1, 2], effects: [dmg(3, 5), push(1), pm(-1, 1)], desc: 'Pousse d\'une case et retire 1 PM.' });
 spells.glyphe_de_garde = S('glyphe_de_garde', { name: 'Glyphe de Garde', element: 'neutre', pa: 3, range: [0, 3], target: 'any', los: false, aoe: circle1, effects: [{ type: 'glyph', name: 'Glyphe de Garde', turns: 2, affects: 'allies', effects: [{ type: 'shield', pctOwnerHp: 8 }] }], cooldown: 2, desc: 'Trace un glyphe pour 2 tours : chaque allié qui commence son tour dedans, le lanceur compris, reçoit un bouclier de 8 % des PV du lanceur.' });
 spells.glyphe_pesant = S('glyphe_pesant', { name: 'Glyphe Pesant', element: 'terre', pa: 3, range: [1, 4], target: 'any', aoe: circle1, effects: [{ type: 'glyph', name: 'Glyphe Pesant', turns: 2, affects: 'enemies', effects: [dmg(6, 8), pm(-2, 1)] }], cooldown: 3, desc: 'Trace un glyphe pour 2 tours : chaque ennemi qui commence son tour dedans subit 6 à 8 terre et perd 2 PM.' });
@@ -414,7 +414,7 @@ DATA.classes = {
     desc: 'Donne des PA et des PM, chante des zones, affaiblit l\'ennemi.' },
   thalor: { id: 'thalor', name: 'Thalor', title: 'Ébouleur', role: 'Positionneur', glyph: 'T', color: '#8a93a6', hp: 175, pa: 6, pm: 3, initiative: 75,
     spells: ['transposition', 'lancer', 'projection', 'poigne', 'ancre', 'gorgee_de_cime', 'elan', 'vague', 'etreinte', 'mur_de_chair'],
-    desc: 'Jette, attire, échange les places, et prend l\'assise de la montagne ; le roi des combos.' },
+    desc: 'Éléphant martial de Durren : saisit et projette avec sa trompe, échange les places et alterne entre mobilité et ancrage pour maîtriser le terrain.' },
   fennal: { id: 'fennal', name: 'Fennal', title: 'Meneur de Meute', role: 'Invocateur', glyph: 'F', color: '#6fdc8c', hp: 110, pa: 6, pm: 3, initiative: 85, summonGauge: 4, jaugeNiveaux: [25, 50],
     spells: ['appel_du_grouk', 'appel_du_pilou', 'rappel_sacrificiel', 'morsure', 'soin_de_meute', 'cri_de_ralliement', 'fleche_de_fil', 'filet', 'appel_du_molh', 'traque'],
     desc: 'Mène une meute (jauge de 4 : Glym 1, Grouk 2, Molh 3), la sacrifie pour prendre sa force.' },
@@ -679,3 +679,4 @@ DATA.encounters = [
   { id: 'gardien', region: 'basvoiles', name: 'Le Gardien', monsters: ['thane', 'craneux'] },
   { id: 'fente_basse', region: 'basvoiles', name: 'Fente-Basse (boss)', monsters: ['veilleur_dechu', 'oubli'] },
 ];
+

@@ -1,0 +1,93 @@
+.vy-ency {
+  container: encyclopedie / inline-size;
+  color: var(--fen-texte);
+  font: 500 13px/1.4 var(--vy-font-ui);
+}
+.vy-ency__onglets { display: flex; overflow: auto; gap: .35rem; border-bottom: 1px solid var(--fen-filet); margin-bottom: .65rem; }
+.vy-ency__onglet {
+  flex: none;
+  min-height: 40px;
+  padding: .45rem .75rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--fen-texte-2);
+  font: inherit;
+  cursor: pointer;
+}
+.vy-ency__onglet[aria-pressed="true"] { color: var(--fen-accent); border-bottom-color: currentColor; }
+.vy-ency__grille { display: grid; grid-template-columns: minmax(9rem, 1fr) minmax(0, 4fr); gap: .65rem; align-items: start; }
+.vy-ency__grille.avec-fiche { grid-template-columns: minmax(9rem, 1fr) minmax(0, 2.6fr) minmax(0, 1.8fr); }
+.vy-ency__filtres, .vy-ency__fiche {
+  display: grid;
+  gap: .65rem;
+  padding: .75rem;
+  min-width: 0;
+  border: 1px solid var(--fen-filet);
+  border-radius: 8px;
+  background: var(--fen-fond);
+}
+.vy-ency__filtres label { display: grid; gap: .3rem; color: var(--fen-texte-2); }
+.vy-ency__filtres select, .vy-ency__filtres input {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 32px;
+  padding: .3rem .45rem;
+  border: 1px solid var(--fen-filet);
+  border-radius: 5px;
+  background: var(--fen-fond-2);
+  color: var(--fen-texte);
+  font: inherit;
+}
+.vy-ency__filtres fieldset { padding: .25rem 0; margin: 0; border: 0; min-width: 0; }
+.vy-ency__filtres legend { color: var(--fen-texte-2); }
+.vy-ency__filtres input[type="number"] { width: calc(50% - .25rem); }
+.vy-ency__resultats { min-width: 0; }
+.vy-ency__liste { display: grid; gap: 4px; max-height: min(52vh, 35rem); overflow: auto; align-content: start; }
+.vy-ency__colonnes, .vy-ency__ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, .9fr) minmax(3ch, .3fr) minmax(0, 1.15fr);
+  gap: .4rem;
+  align-items: center;
+  padding: .35rem .5rem;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+.vy-ency__colonnes { color: var(--fen-texte-2); }
+.vy-ency__ligne {
+  min-height: 38px;
+  background: var(--fen-fond-2);
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--fen-texte);
+  font: inherit;
+  cursor: pointer;
+}
+.vy-ency__ligne.on, .vy-ency__ligne:hover { border-color: var(--fen-accent); }
+.vy-ency__nom { display: flex; align-items: center; gap: .4rem; min-width: 0; }
+.vy-ency__nom .vy-case { --vy-case: 24px; flex: 0 0 24px; width: 24px; height: 24px; min-height: 0; }
+.vy-ency__pied, .vy-ency__fiche-tete { display: flex; justify-content: space-between; align-items: start; gap: .35rem; flex-wrap: wrap; }
+.vy-ency__pied { margin-top: .45rem; color: var(--fen-texte-2); }
+.vy-ency__fiche { overflow: auto; max-height: min(60vh, 42rem); overflow-wrap: anywhere; }
+.vy-ency__fiche p, .vy-ency__fiche h3, .vy-ency__fiche h4 { margin: 0 0 .35rem; }
+.vy-ency__bloc { border-top: 1px solid var(--fen-filet); padding-top: .45rem; }
+.vy-ency__fiche ul { margin: 0; padding-left: 1.15rem; }
+.vy-ency__fiche li small { display: block; color: var(--fen-texte-2); }
+.vy-ency__fiche .vy-ency__ingredients { list-style: none; padding: 0; }
+.vy-ency__ingredients li { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; padding: .25rem 0; }
+.vy-ency__ingredients .manque { color: var(--fen-accent); font-weight: 700; }
+.vy-ency__lien { border: 0; padding: .15rem 0; background: none; color: var(--fen-accent); text-align: start; font: inherit; text-decoration: underline; cursor: pointer; }
+
+@container encyclopedie (max-width: 850px) {
+  .vy-ency__grille.avec-fiche { grid-template-columns: minmax(8rem, 1fr) minmax(0, 3fr); }
+  .vy-ency__fiche { grid-column: 2; grid-row: 1; max-height: 55vh; }
+  .avec-fiche .vy-ency__resultats { grid-column: 2; }
+}
+@container encyclopedie (max-width: 510px) {
+  .vy-ency__grille, .vy-ency__grille.avec-fiche { grid-template-columns: minmax(0, 1fr); }
+  .vy-ency__filtres { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .45rem; }
+  .vy-ency__fiche, .avec-fiche .vy-ency__resultats { grid-column: 1; }
+  .vy-ency__fiche { grid-row: auto; order: -1; max-height: none; }
+  .vy-ency__colonnes, .vy-ency__ligne { grid-template-columns: minmax(0, 2.5fr) minmax(0, 1.15fr) minmax(3ch, .4fr); }
+  .vy-ency__obtention { display: none; }
+}

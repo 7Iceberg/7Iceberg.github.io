@@ -37,7 +37,7 @@ const jet = ef => { const v = DATA.rankShown(ef); return v.min === v.max ? `${v.
 const pct = m => `+${Math.round((m - 1) * 100)} %`;
 
 function lignes(ef, s, crit) {
-  if (ef.siAssis || ef.siDebout) return lignes(Object.assign({}, ef, { siAssis: false, siDebout: false }), s, crit).map(([l, v, sub]) => [`${l} (${ef.siAssis ? 'assis' : 'debout'})`, v, sub]);
+  if (ef.siAssis || ef.siDebout) return lignes(Object.assign({}, ef, { siAssis: false, siDebout: false }), s, crit).map(([l, v, sub]) => [`${l} (${ef.siAssis ? 'ancré' : 'mobile'})`, v, sub]);
   if (ef.onAlly || ef.onFoe) return lignes(Object.assign({}, ef, { onAlly: false, onFoe: false }), s, crit).map(([l, v, sub]) => [`${l} (${ef.onAlly ? 'allié ou bête' : 'ennemi'})`, v, sub]);
   const k = DATA.critJetDe(s), aCrit = crit && DATA.critDe(s) > 0;
   const jetCrit = () => `${Math.round(ef.min * (ef.mult || 1) * k)} à ${Math.round(ef.max * (ef.mult || 1) * k)}`;
@@ -84,7 +84,7 @@ function lignes(ef, s, crit) {
     case 'paNow': return [['Gagne', `${ef.value} PA tout de suite`]];
     case 'rewind': return [['Fin du tour', 'revient sur sa case de départ']];
     case 'pmNow': return [['Gagne', `${plural(ef.value, 'PM').replace('PMs', 'PM')} tout de suite`]];
-    case 'empoigner': return [['Empoigne', 'la cible est tenue jusqu\'au jet, et fait moitié moins de dégâts']];
+    case 'empoigner': return [['Porte', 'la cible suit le Thalor jusqu’au dépôt ou au jet']];
     case 'jeter': return [['Jette', 'ce que le Thalor tient, sur la case visée']];
     case 'depuisCentre': return [['Repousse', `de ${plural(ef.cells, 'case')} depuis le point de chute`]];
     case 'versCentre': return [['Attire', `de ${plural(ef.cells, 'case')} vers le point de chute`]];
@@ -108,9 +108,9 @@ function lignes(ef, s, crit) {
 
 function propres(s) {
   const out = [];
-  if (s.porteeAssis || s.assisBonus) out.push(['Assis', `${s.porteeAssis ? `portée × ${String(s.porteeAssis).replace('.', ',')}` : ''}${s.porteeAssis && s.assisBonus ? ', ' : ''}${s.assisBonus ? `+${s.assisBonus} % de dégâts` : ''}`]);
-  if (s.exigeDebout) out.push(['Condition', 'debout']);
-  if (s.exigeTenu) out.push(['Condition', 'tenir quelqu\'un (Empoigne)']);
+  if (s.porteeAssis || s.assisBonus) out.push(['Ancré', `${s.porteeAssis ? `portée × ${String(s.porteeAssis).replace('.', ',')}` : ''}${s.porteeAssis && s.assisBonus ? ', ' : ''}${s.assisBonus ? `+${s.assisBonus} % de dégâts` : ''}`]);
+  if (s.exigeDebout) out.push(['Condition', 'mobile']);
+  if (s.exigeTenu) out.push(['Condition', 'tenir une cible (Prise de Trompe)']);
   if (s.exigeLeurre) out.push(['Condition', 'avoir son Leurre en jeu']);
   if (s.recharge) out.push(['Se charge', `+${s.recharge} % à chaque retour de relance, une fois lancé`]);
   if (s.cumul) out.push(['Se cumule', `+${s.cumul.par} % par lancer (${s.cumul.max} au plus), perdu sans le relancer dans les ${plural(s.cumul.tours || 2, 'tour')}`]);
@@ -120,7 +120,7 @@ function propres(s) {
   if (s.parPmRestant) out.push(['PM restants', `+${s.parPmRestant} % par PM qui te reste`]);
   if (s.traque) out.push(['Traque', 'chaque autre tir sur la cible ajoute un cran : +8 % chacun, 3 au plus ; marquer une autre cible repart de zéro']);
   if (s.parPiege) out.push(['Pli', `+${s.parPiege} % par piège déclenché (5 au plus), le Pli dépensé`]);
-  if (s.bascule) out.push(['Assis', `relancée assis, elle relève le Thalor${s.basculeRend ? ` et rend ${s.basculeRend} PA` : ''}`]);
+  if (s.bascule) out.push(['Ancré', `relancé en posture Ancré, il rend sa mobilité au Thalor${s.basculeRend ? ` et rend ${s.basculeRend} PA` : ''}`]);
   if (s.lifesteal) out.push(['Vol de vie', `${s.lifesteal} % des dégâts`]);
   if (s.volDiffere) out.push(['Vol de vie différé', `${s.volDiffere} % des dégâts, rendus au début de ton prochain tour`]);
   if (s.lowHpBonus) out.push(['Sous ' + s.lowHpBonus.below + ' % de tes PV', `dégâts × ${String(s.lowHpBonus.mult).replace('.', ',')}`]);
@@ -347,3 +347,4 @@ Hud.prototype.initFenetres = function () {
   this.marquerSorts();
 };
 })();
+
