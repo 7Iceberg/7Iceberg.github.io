@@ -172,7 +172,7 @@ const Veille = (() => {
   function remise(ch, workshop, date) {
     const b = bonusActif(ch, date);
     const m = workshop && DATA.content && (DATA.content.metiers || []).find(x => x.ateliers.includes(workshop));
-    return b && b.type === 'atelier' && (b.atelier === workshop || (m && m.hote === b.atelier)) ? b.pct : 0;
+    return b && b.type === 'atelier' && (b.atelier === workshop || (m && m.jour === b.atelier)) ? b.pct : 0;
   }
 
   function aLieu(nom) {

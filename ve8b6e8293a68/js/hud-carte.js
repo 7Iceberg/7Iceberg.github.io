@@ -13,7 +13,8 @@ const REGION = {
 };
 const BASE = 100;
 const ZOOM = { cartes: [0.22, 2.6], monde: [0.8, 3.4] };
-const ATELIERS = { tailleur: 'tailleur', cordonnier: 'cordonnier', bijoutier: 'bijoutier', forgeron: 'forgeron', alchimiste: 'alchimiste' };
+const ATELIERS = { tailleur: 'tailleur', cordonnier: 'cordonnier', bijoutier: 'bijoutier', forgeron: 'forgeron', alchimiste: 'alchimiste',
+  bucheron: 'bûcheron', mineur: 'mineur', paysan: 'paysan', pecheur: 'pêcheur', sculpteur: 'sculpteur', faconneur: 'façonneur', bricoleur: 'bricoleur' };
 const DRAPEAU = 'veylan.carte.drapeau';
 const PEINT = { continent: null, enCours: false };
 const BRUME_PLATEAU = [34, 46, 72, 175];

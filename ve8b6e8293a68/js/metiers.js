@@ -25,9 +25,9 @@ const Metiers = (() => {
     if (!atelierPnj) return false;
     if (atelierPnj === atelierRecette) return true;
     const m = deAtelier(atelierRecette);
-    return !!(m && m.hote === atelierPnj);
+    return !!(m && m.ateliers.includes(atelierPnj));
   }
-  const ateliersDe = atelierPnj => [...new Set([atelierPnj].concat(liste().filter(m => m.hote === atelierPnj).flatMap(m => m.ateliers)))];
+  const ateliersDe = atelierPnj => { const m = deAtelier(atelierPnj); return m ? m.ateliers.slice() : [atelierPnj]; };
 
   function part(nivChose, nivMetier) {
     const r = R(), e = nivMetier - nivChose;

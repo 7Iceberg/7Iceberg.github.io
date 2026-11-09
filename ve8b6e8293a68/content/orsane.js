@@ -62,7 +62,7 @@ DATA.content.zones.push({
       layout: [
         '###############',
         '#,,,,,,,,,,,,,#',
-        '#,#P#.....#P#,#',
+        '#,#PPPP.#PPP#,#',
         '#,...........,#',
         '#,...........,#',
         '#,.L.......L.,#',
@@ -72,12 +72,12 @@ DATA.content.zones.push({
         '#,.L.......L.,#',
         '#,...........,#',
         '#,...........,#',
-        '#,#P#.#P#.#P#,#',
+        '#,#P.P.P.P.P#,#',
         '#,,,,,,,,,,,,,#',
         '###############',
       ],
       exits: { n: null, e: null, s: null, w: 'orsane_cimes_place' },
-      npcs: ['thila', 'korvel', 'rilka', 'thorak', 'velka'],
+      npcs: ['thorak', 'evrin', 'ostrid', 'jorrin', 'thila', 'korvel', 'rilka', 'velka', 'nilo', 'tessel', 'dunna', 'borrik'],
       nodes: [],
       groups: [],
       dungeon: null,
@@ -864,6 +864,34 @@ DATA.content.npcs.push({
 DATA.content.npcs.push({
   id: 'velka', name: 'Velka', title: 'Alchimiste', look: 'artisan', workshop: 'alchimiste',
   dialogue: ['Herbe de veille, cire de Veilloche, un peu de patience : voilà une potion de Relais.', 'Ne bois pas ce qui fume en vert. Celle-là, c\'est pour les Grouks.'],
+});
+DATA.content.npcs.push({
+  id: 'borrik', name: 'Borrik', title: 'Bûcheron', look: 'artisan', workshop: 'bucheron',
+  dialogue: ['Un arbre, ça ne se coupe pas, ça se demande. Ensuite on scie, et on scie droit.', 'Le Bois Noueux casse les mauvaises lames. Les bonnes, il les rend meilleures.'],
+});
+DATA.content.npcs.push({
+  id: 'dunna', name: 'Dunna', title: 'Mineuse', look: 'artisan', workshop: 'mineur',
+  dialogue: ['Le calcaire des Cimes, on le casse à la main. Le minerai, on le fond ici, et on en tire des lingots.', 'Thorak dit que mes alliages sont trop durs. Il dit ça parce qu\'ils lui usent ses marteaux.'],
+});
+DATA.content.npcs.push({
+  id: 'tessel', name: 'Tessel', title: 'Paysanne', look: 'artisan', workshop: 'paysan',
+  dialogue: ['On fauche dans les Clairières, on moud ici. La farine des Cimes fait le pain de toute la ville.', 'Pétra me prend tout mon grain. Je fais semblant de m\'en plaindre.'],
+});
+DATA.content.npcs.push({
+  id: 'nilo', name: 'Nilo', title: 'Pêcheur', look: 'artisan', workshop: 'pecheur',
+  dialogue: ['Un poisson bien préparé te rend plus de forces qu\'une potion ratée. Demande à Velka, elle te le dira.', 'Les ruisseaux des Clairières sont froids. Les poissons qui y vivent ont du caractère.'],
+});
+DATA.content.npcs.push({
+  id: 'evrin', name: 'Évrin', title: 'Sculpteur', look: 'artisan', workshop: 'sculpteur',
+  dialogue: ['Un arc, c\'est du bois qui a envie de revenir droit. Mon travail, c\'est de l\'en empêcher.', 'Bâtons, baguettes, arcs : apporte-moi le bois, je trouve ce qu\'il cache.'],
+});
+DATA.content.npcs.push({
+  id: 'ostrid', name: 'Ostrid', title: 'Façonneuse', look: 'artisan', workshop: 'faconneur',
+  dialogue: ['Un bouclier ne gagne pas les combats. Il te laisse le temps de les gagner.', 'Les pierres d\'âme se façonnent à froid. Le feu, c\'est pour Thorak.'],
+});
+DATA.content.npcs.push({
+  id: 'jorrin', name: 'Jorrin', title: 'Bricoleur', look: 'artisan', workshop: 'bricoleur',
+  dialogue: ['Une porte de donjon, une serrure, une clé. Je fais les clés ; les donjons, c\'est toi.', 'Rapporte-moi de quoi tailler une clé et je te rouvre ce que tu veux.'],
 });
 DATA.content.npcs.push({
   id: 'ysolde', name: 'Ysolde', title: 'Banquière de l\'Aube', look: 'tisseur', banque: true,

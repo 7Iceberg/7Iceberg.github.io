@@ -20,7 +20,8 @@ Object.assign(Hud.prototype, {
       const quoi = m.genre === 'recolte'
         ? `Récolte : ${res.length ? res.map(r => `${esc(r.name)}${(r.niveau || 1) > nv ? ` <small class="muted">(niv. ${r.niveau})</small>` : ''}`).join(', ') : '-'}${recettes.length ? ` · ${faites} / ${recettes.length} recettes` : ''}`
         : `${faites} / ${recettes.length} recettes à ta portée${prochaine ? ` · la suivante au niveau ${prochaine}` : ''}`;
-      const atelier = m.hote ? ` <small class="muted">(en attendant ses artisans : chez ${esc(m.hote)})</small>` : '';
+      const HALLES = { recoltes: 'la Halle des Récoltes', forges: 'la Halle des Forges', parures: 'la Halle des Parures' };
+      const atelier = HALLES[m.halle] ? ` <small class="muted">(${HALLES[m.halle]}, aux Cimes)</small>` : '';
       return `<div class="row item"><span><b>${esc(m.nom)}</b> <small class="muted">niveau ${nv} / ${M.MAX}</small>${atelier}<br><small>${esc(m.description)}</small><br><small>${quoi}</small>
         <span class="vy-jauge" style="display:block;height:5px;margin-top:4px;border-radius:3px;background:rgba(255,255,255,0.08)"><span style="display:block;height:100%;width:${nv >= M.MAX ? 100 : Math.round(100 * (e.xp || 0) / besoin)}%;border-radius:3px;background:var(--fen-accent, #52d2f4)"></span></span>
         <small class="muted">${nv >= M.MAX ? 'niveau maximum' : `${nf(e.xp)} / ${nf(besoin)} XP`}</small></span></div>`;
