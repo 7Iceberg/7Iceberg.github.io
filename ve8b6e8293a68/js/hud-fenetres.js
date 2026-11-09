@@ -47,6 +47,7 @@ const MENUS = [
   ['metiers', 'Métiers', '', I.metiers || I.sac],
   ['carte', 'Carte du monde', 'M', I.carte],
   ['journal', 'Journal', 'J', I.journal],
+  ['aventure', 'Aventure / Guide', '?', I.carnet],
   ['profil', 'Profil', 'A', PROFIL],
   ['options', 'Options', 'O', I.options],
 ];
@@ -84,6 +85,7 @@ Object.assign(Hud.prototype, {
       if (!this.el.panel.classList.contains('hidden')) return;
       if (this.vue3d || document.querySelector('#app > .vy-b3d')) { if (evt.key === 'Escape') { evt.preventDefault(); evt.stopImmediatePropagation(); this.fermerBete3D(); } return; }
       if (evt.key === 'Escape' && this.fen.closeTop()) { evt.preventDefault(); evt.stopImmediatePropagation(); this.syncMenus(); return; }
+      if (evt.shiftKey && evt.key.toLowerCase() === 'a' && document.getElementById('title').classList.contains('hidden')) { evt.preventDefault(); this.toggleWin('aventure'); return; }
       const m = MENUS.find(x => x[2] && x[2].toLowerCase() === evt.key.toLowerCase());
       if (m && document.getElementById('title').classList.contains('hidden')) { evt.preventDefault(); this.toggleWin(m[0]); }
     }, true);
@@ -171,7 +173,7 @@ Object.assign(Hud.prototype, {
 
   toggleWin(id) {
     if (this.fen.isOpen(ALIAS[id] || id)) this.fen.close(ALIAS[id] || id);
-    else ({ carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), guilde: () => this.openGuilde(), succes: () => this.openAchievements(), boutique: () => this.openBoutique(), carnet: () => this.openCarnet(), garderobe: () => this.openGarderobe(), familiers: () => this.openFamiliers(), montures: () => this.openMontures(), metiers: () => this.openMetiersPerso(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu(), profil: () => this.openProfil() }[id] || (() => {}))();
+    else ({ aventure: () => this.openAventure(), carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), guilde: () => this.openGuilde(), succes: () => this.openAchievements(), boutique: () => this.openBoutique(), carnet: () => this.openCarnet(), garderobe: () => this.openGarderobe(), familiers: () => this.openFamiliers(), montures: () => this.openMontures(), metiers: () => this.openMetiersPerso(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu(), profil: () => this.openProfil() }[id] || (() => {}))();
     this.syncMenus();
   },
 
@@ -439,3 +441,4 @@ Hud.themesDisponibles = () => Hud.THEMES.concat(typeof Garderobe !== 'undefined'
 Hud.STAT = STAT;
 Hud.pic = pic;
 })();
+

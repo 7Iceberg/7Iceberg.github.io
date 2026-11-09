@@ -625,6 +625,8 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-barre-sorts__vie .vy-gemmes--grappe { --u: 28px; }
 .vy-barre-sorts__veille { position: relative; flex: none; align-self: center; display: grid; place-items: center; width: 30px; height: 30px; margin: 0 4px 0 -2px; padding: 0; border-radius: 50%; color: #ffd166; cursor: pointer; background: rgba(var(--v-fen-rgb, 11, 17, 30), 0.9); border: 1.5px solid currentColor; box-shadow: 0 0 12px -2px currentColor; transition: transform .12s ease, box-shadow .12s ease; }
 .vy-barre-sorts__veille[data-v="crepuscule"] { color: #b9c6f0; }
+.vy-barre-sorts__veille[data-v="demontage"] { color: #e3b54a; }
+.vy-barre-sorts__veille.choisi { box-shadow: 0 0 0 2px var(--v-act, #52d2f4), 0 0 14px rgba(var(--v-act-rgb, 82, 210, 244), 0.6); }
 .vy-barre-sorts__veille[hidden] { display: none; }
 .vy-barre-sorts__veille:hover:not(.indispo) { transform: scale(1.08); box-shadow: 0 0 16px 0 currentColor; }
 .vy-barre-sorts__veille.indispo { cursor: default; box-shadow: none; opacity: 0.7; }

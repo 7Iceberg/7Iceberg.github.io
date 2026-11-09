@@ -91,6 +91,7 @@ function lignes(ef, s, crit) {
     case 'rebond': return [['Rebond', `sur l\'ennemi le plus proche à ${plural(ef.cells || 2, 'case')}, ${ef.pct || 50} % des dégâts`]];
     case 'glyph': return [[ef.name || 'Glyphe', `${tours(ef.turns)} sur la zone, au début du tour ${ef.affects === 'allies' ? 'd\'un allié' : 'd\'un ennemi'} qui s'y tient`]].concat(sous([].concat(...(ef.effects || []).map(x => lignes(x, s, crit)))));
     case 'soinDiffere': return [['Soin différé', `${jet(ef)} PV, au début du prochain tour de la cible`]];
+    case 'demontage': return [['Démontage', 'sur une de ses reliques : elle joue son coup une dernière fois là où elle est, puis disparaît ; +1 Trouvaille']];
     case 'basculeCiel': return [['Veille', 'passe de l\'Aube (soins +10 %, l\'allié soigné devient Rayonnant : +15 % de soins reçus) au Crépuscule (attaques : +15 points de vol de vie), ou l\'inverse']];
     case 'ecourter': return [['Heure Juste', `sur un allié, ses malus durent ${plural(ef.tours || 1, 'tour')} de moins ; sur un ennemi, ses bonus et ses boucliers`]];
     case 'ordreMeute': return [['Ordre', `toutes ses bêtes frappent tout de suite, à ${ef.pct || 50} % de leurs dégâts`]];

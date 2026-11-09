@@ -531,8 +531,7 @@ class Accueil {
         <div class="classe-choix">
           <div class="classe-grille" role="radiogroup" aria-label="Classe">${cells}</div>
           <div class="classe-genre" role="radiogroup" aria-label="Genre">
-            <button class="e-nu classe-genre__btn${b.gender === 'f' ? ' on' : ''}" data-act="genre" data-g="f" role="radio" aria-checked="${b.gender === 'f'}">${ICONES.femme}<span>Femme</span></button>
-            <button class="e-nu classe-genre__btn${b.gender === 'm' ? ' on' : ''}" data-act="genre" data-g="m" role="radio" aria-checked="${b.gender === 'm'}">${ICONES.homme}<span>Homme</span></button>
+            ${['f', 'm'].map(g => `<button class="e-nu classe-genre__btn${b.gender === g ? ' on' : ''}" data-act="genre" data-g="${g}" role="radio" aria-checked="${b.gender === g}">${this.genreBouton(b.classId, g)}</button>`).join('')}
           </div>
         </div>
         <div class="classe-actions">
@@ -587,10 +586,17 @@ class Accueil {
     this.majClasse();
   }
 
+  genreBouton(classId, g) {
+    const sil = DATA.classes[classId] && DATA.classes[classId].silhouettes;
+    const x = sil && sil[g];
+    if (x) return `${ICONES[x.icone] || ICONES[g === 'f' ? 'femme' : 'homme']}<span>${Util.esc(x.nom)}</span>`;
+    return g === 'f' ? `${ICONES.femme}<span>Femme</span>` : `${ICONES.homme}<span>Homme</span>`;
+  }
+
   majClasse() {
     const el = this.ecranEl, b = this.b;
     el.querySelectorAll('.classe-case[data-act="classe"]').forEach(x => { const on = x.dataset.id === b.classId; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
-    el.querySelectorAll('.classe-genre__btn').forEach(x => { const on = x.dataset.g === b.gender; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
+    el.querySelectorAll('.classe-genre__btn').forEach(x => { const on = x.dataset.g === b.gender; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); x.innerHTML = this.genreBouton(b.classId, x.dataset.g); });
     el.querySelector('.classe-infos').innerHTML = fines(this.infosClasse());
     this.calerTournant();
     this.teinter(this.couleurClasse());
@@ -1268,6 +1274,8 @@ const ICONES = (() => {
     de: s('<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.1" fill="currentColor"/><circle cx="15" cy="15" r="1.1" fill="currentColor"/><circle cx="15" cy="9" r="1.1" fill="currentColor"/><circle cx="9" cy="15" r="1.1" fill="currentColor"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/>'),
     femme: s('<circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/>', 2),
     homme: s('<circle cx="10" cy="14" r="5"/><path d="M14 10l6-6M15 4h5v5"/>', 2),
+    antenne: s('<circle cx="12" cy="15" r="5"/><path d="M12 10V4M12 4h3"/><circle cx="12" cy="15" r="1.6"/>', 2),
+    cables: s('<circle cx="12" cy="15" r="5"/><path d="M8 11Q5 7 7 3M11 10Q10 6 12 3M15 10Q17 6 17 3M16 12Q20 9 20 5"/><circle cx="12" cy="15" r="1.6"/>', 2),
     cadenas: s('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>', 2),
     etoile: s('<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6.1L12 16.6 6.6 19.6l1.2-6.1-4.5-4.2 6.1-.7z"/>'),
     bulle: s('<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H10l-4 4v-4h0.5A2.5 2.5 0 0 1 4 13.5z"/><path d="M8.5 10h.01M12 10h.01M15.5 10h.01"/>'),

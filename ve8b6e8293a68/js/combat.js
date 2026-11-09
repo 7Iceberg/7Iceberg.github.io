@@ -306,7 +306,8 @@ class Combat {
   protecteurDe(t) {
     const f = t.effects.find(x => x.type === 'state' && x.name === 'protege');
     const k = f && f.by && f.by.alive ? f.by : null;
-    return k && k !== t ? k : null;
+    if (k && k !== t) return k;
+    return this.entities.find(b => b.alive && b !== t && b.def.encaisse && b.team === t.team && Grid.dist(b.pos, t.pos) <= b.def.encaisse) || null;
   }
 
   coutPa(e, s) {
@@ -330,6 +331,27 @@ class Combat {
       this.dealDamage(m, t, this.rollDamage(m, t, s.element, { min: dm.min * k, max: dm.max * k }, s), s.element, { label: 'ordre' });
     }
     if (!n) this.log('Aucune bête n\'a de proie à portée.', e.team);
+  }
+
+  async demonter(e, m) {
+    if (!m || !m.alive || !m.isSummon || m.owner !== e || !m.def.relique) { this.log('Il faut viser une de ses reliques.', e.team); return; }
+    const s = (m.spells || []).map(id => this.spellOf(id, m)).find(Boolean);
+    if (s) {
+      const aPortee = u => u !== m && this.canSee(m, u) && Grid.dist(m.pos, u.pos) >= s.range[0] && Grid.dist(m.pos, u.pos) <= s.range[1];
+      const soutien = s.target === 'ally' || s.affects === 'allies';
+      const t = soutien ? this.allies(m).filter(aPortee).sort((a, b) => a.hpPct() - b.hpPct())[0]
+        : this.enemies(m).filter(aPortee).sort((a, b) => a.hp - b.hp)[0];
+      if (t) {
+        this.log(`${m.name} donne son dernier coup.`, e.team);
+        for (const f of s.effects) {
+          if (!t.alive) break;
+          if (f.type === 'push' || f.type === 'pull') await this.displace(m, t, f, m.pos);
+          else await this.applyEffect(m, t, f, s);
+        }
+      }
+    }
+    this.kill(m, `${e.name} démonte ${m.name} et en garde les pièces.`);
+    if (e.kit && e.kit.reserve) this.gainReserve(e, 1);
   }
 
   pacte(e, ef) {
@@ -1208,6 +1230,7 @@ class Combat {
       if (s.target === 'enemy' && (!seen || seen.team === e.team)) return { ok: false, reason: 'Vise un ennemi' };
       if (s.target === 'ally' && (!seen || seen.team !== e.team)) return { ok: false, reason: 'Vise un allié' };
       if (s.target === 'summon' && (!seen || seen.team !== e.team || !seen.isSummon)) return { ok: false, reason: 'Vise une invocation alliée' };
+      if (s.exigeRelique && !(seen && seen.isSummon && seen.owner === e && seen.def.relique)) return { ok: false, reason: 'Vise une de ses reliques' };
       if (s.effects.some(ef => ef.type === 'trap') && this.traps.some(t => t.x === cell.x && t.y === cell.y && t.owner.team === e.team)) {
         return { ok: false, reason: 'Il y a déjà un piège ici' };
       }
@@ -1398,6 +1421,9 @@ class Combat {
         break;
       case 'leap':
       case 'declencherMares':
+      case 'demontage':
+        await this.demonter(source, t);
+        break;
       case 'ordreMeute':
       case 'pacte':
       case 'horde':
@@ -1708,7 +1734,8 @@ class Combat {
   filonDe(source, t) {
     if (!source || !t || !t.effects) return null;
     const m = (source.isSummon && source.owner) || source;
-    return t.effects.find(f => f.type === 'filon' && f.owner === m && f.charges > 0) || null;
+    return t.effects.find(f => f.type === 'filon' && f.owner === m && f.charges > 0)
+      || t.effects.find(f => f.type === 'filon' && f.charges > 0 && f.owner && f.owner.team === m.team) || null;
   }
 
   declencherFilon(source, t, raison) {
@@ -1798,7 +1825,7 @@ class Combat {
   dealDamage(source, t, amount, element, opts) {
     opts = opts || {};
     if (amount > 0 && source && !opts.trap && !opts.redirige) {
-      const k = this.protecteurDe(t);
+      const k = source.team !== t.team ? this.protecteurDe(t) : null;
       if (k && k !== source) { this.log(`${k.name} prend le coup à la place de ${t.name}.`, k.team); return this.dealDamage(source, k, amount, element, Object.assign({}, opts, { redirige: true })); }
     }
     const dist = source ? Grid.dist(source.pos, t.pos) : 99;
@@ -1876,6 +1903,11 @@ class Combat {
           this.emit('float', { x: source.x, y: source.y, text: '+' + h, color: '#6fdc8c' });
           this.log(`${source.name} récupère ${h} PV.`);
         }
+      }
+      if (t.def.relique && t.team === source.team && r.dealt > 0 && source.alive && !opts.trap) {
+        const h = source.heal(Math.round(r.dealt * 0.75));
+        this.noter(source, 'soins', h);
+        if (h > 0) { this.emit('float', { x: source.x, y: source.y, text: '+' + h, color: '#6fdc8c' }); this.log(`${source.name} récupère ${h} PV sur ${t.name}.`, source.team); }
       }
       const inv = source.effects.find(f => f.type === 'state' && f.name === 'invisible');
       if (inv && !inv.persistent && !opts.trap) {

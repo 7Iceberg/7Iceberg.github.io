@@ -77,6 +77,8 @@ class Entity {
     this.turnStartPos = null;
     this.kit = def.shape === 'player' ? DATA.classes[def.classId || def.id] || null : null;
     if (this.kit && this.kit.id === 'oriel' && DATA.spells.bascule_du_ciel && !this.spells.includes('bascule_du_ciel')) this.spells.push('bascule_du_ciel');
+    if (this.kit && this.kit.id === 'orvald' && DATA.spells.demontage && !this.spells.includes('demontage')
+      && this.spells.some(id => DATA.spells[id] && DATA.spells[id].effects.some(f => f.type === 'summon' && DATA.monsters[f.monster] && DATA.monsters[f.monster].relique))) this.spells.push('demontage');
     this.fury = 0;
     this.reserve = 0;
     this.braise = this.kit && this.kit.braise ? this.kit.braise.debut || 0 : 0;

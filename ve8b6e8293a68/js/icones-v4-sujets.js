@@ -170,6 +170,41 @@
       detour_par_la_besace: p => V.besace(66, 124, .82) + V.botte(146, 136, .5, 0)
         + jet('M66 76 Q104 36 142 82', OR_V) + pointe(142, 82, 70, OR_C) + jet('M146 168 Q104 196 70 166', OR_V) + pointe(70, 166, 210, OR_C),
     });
+
+    const LAI = ['#ffe6a8', '#e0a85a', '#9a6430'], HUILE = ['#ffe9a0', '#e8b23c', '#a8701c'];
+    const r1 = v => +v.toFixed(1);
+    const engrenage = (x, y, r, rot = 0, c = LAI) => {
+      const n = 10, pts = [];
+      for (let j = 0; j < n * 4; j++) { const a = j / (n * 4) * Math.PI * 2, rr = (j % 4 < 2) ? r : r * .78; pts.push([r1(Math.cos(a) * rr), r1(Math.sin(a) * rr)]); }
+      const moy = Array.from({ length: 12 }, (_, j) => { const a = j / 12 * Math.PI * 2; return [r1(Math.cos(a) * r * .32), r1(Math.sin(a) * r * .32)]; });
+      return place(poly(pts, c[1]) + poly(pts.slice(n, n * 3).concat([[0, 0]]), c[2]) + poly(pts.slice(n * 2.5, n * 4).concat(pts.slice(0, n * .5)).concat([[0, 0]]), c[0], 'opacity=".55"')
+        + encre(pts, 2.6) + poly(moy, '#3a2a1c') + encre(moy, 2), x, y, rot);
+    };
+    const gouttes = (pts, c = HUILE) => pts.map(([x, y, s]) => place(poly([[0, -12], [8, 2], [6, 10], [0, 13], [-6, 10], [-8, 2]], c[1]) + poly([[0, -12], [0, 13], [-6, 10], [-8, 2]], c[2]) + poly([[-3, 0], [-1, -6], [-1, 4]], c[0]) + encre([[0, -12], [8, 2], [6, 10], [0, 13], [-6, 10], [-8, 2]], 2.2), x, y, 0, s)).join('');
+    Object.assign(S, {
+      gourde_de_mineur: p => engrenage(64, 138, 30, 8) + engrenage(108, 156, 20, 20)
+        + place(poly([[-30, 26], [-24, -22], [24, -22], [30, 26]], LAI[1]) + poly([[-30, 26], [-24, -22], [0, -22], [-4, 26]], LAI[0]) + encre([[-30, 26], [-24, -22], [24, -22], [30, 26]], 3)
+          + poly([[-14, -22], [-8, -34], [8, -34], [14, -22]], LAI[2]) + encre([[-14, -22], [-8, -34], [8, -34], [14, -22]], 2.6)
+          + trait('M20 -14 L70 -52', LAI[1], 6, 11) + trait('M-24 -6 Q-50 -6 -48 14 Q-46 26 -28 20', LAI[2], 5, 10)
+          + `<path d="M-22 4 H22" stroke="${LAI[2]}" stroke-width="2.4"/>` + IconesV3.outils.croix(0, 10, .8), 112, 82, 18)
+        + gouttes([[166, 92, .7], [158, 120, .55], [92, 116, .5]]) + V.chevrons(40, 70, .45, OR_C, -90),
+      charge_de_mineur: p => V.filets(54, 108, 1.1, p[1])
+        + place(poly([[-46, -22], [-6, -22], [-6, 22], [-46, 22]], LAI[1]) + poly([[-46, -22], [-6, -22], [-6, 0], [-46, 0]], LAI[0]) + encre([[-46, -22], [-6, -22], [-6, 22], [-46, 22]], 3)
+          + poly([[-6, -24], [58, 0], [-6, 24]], '#c9d3e2') + poly([[-6, -24], [58, 0], [-6, 0]], '#eef4fb') + encre([[-6, -24], [58, 0], [-6, 24]], 3)
+          + [8, 22, 36].map(x => `<path d="M${x} ${-24 + (x + 6) * .375} L${x + 10} ${24 - (x + 16) * .375}" stroke="#5a6a8a" stroke-width="3"/>`).join('')
+          + engrenage(-26, 0, 14, 0), 112, 104, -14)
+        + V.impact(172, 82, p, .62),
+      demontage: p => {
+        const arc = (r, a0, a1, n) => Array.from({ length: n + 1 }, (_, j) => { const a = (a0 + (a1 - a0) * j / n) * Math.PI / 180; return [r1(Math.cos(a) * r - 30), r1(Math.sin(a) * r)]; });
+        const tete = arc(24, 40, 320, 14).concat(arc(11, 320, 40, 8));
+        const ombre = arc(24, 180, 320, 8).concat(arc(11, 320, 180, 5));
+        return place(poly([[-10, -9], [58, -9], [58, 9], [-10, 9]], '#c9d3e2') + poly([[-10, -9], [58, -9], [58, 0], [-10, 0]], '#eef4fb') + encre([[-10, -9], [58, -9], [58, 9], [-10, 9]], 3)
+          + `<circle cx="50" cy="0" r="3.4" fill="#5a6a8a"/>`
+          + poly(tete, '#eef4fb') + poly(ombre, '#c9d3e2') + encre(tete, 3), 106, 112, -38, 1.1)
+        + engrenage(148, 62, 22, 12) + engrenage(56, 64, 14, 30) + place(poly(Array.from({ length: 6 }, (_, j) => [r1(Math.cos(j * Math.PI / 3) * 9), r1(Math.sin(j * Math.PI / 3) * 9)]), LAI[1]) + `<circle r="3.6" fill="#3a2a1c"/>` + encre(Array.from({ length: 6 }, (_, j) => [r1(Math.cos(j * Math.PI / 3) * 9), r1(Math.sin(j * Math.PI / 3) * 9)]), 2.2), 160, 116)
+        + V.pepite(140, 154, .55, 20) + eclat(108, 44, .7, OR_C, OR_V);
+      },
+    });
   }
 
   if (O.fennal) {
@@ -326,6 +361,6 @@
   IconesV4.TYPES = Object.assign(IconesV4.TYPES || {}, {
     hantise: 'placement', appel_du_leurre: 'placement', rejet_du_leurre: 'placement', piege_de_vase: 'degats',
     empoigne: 'placement', coup_de_sifflet: 'degats', fouet_de_meneur: 'placement',
-    bascule_du_ciel: 'soin',
+    bascule_du_ciel: 'soin', demontage: 'soin',
   });
 })();

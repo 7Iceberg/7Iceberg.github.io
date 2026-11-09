@@ -1,0 +1,68 @@
+#app .vy-aventure { height: min(610px, calc(100% - 32px)); max-height: calc(100% - 16px); }
+#app .vy-aventure .vy-fenetre__corps { display: flex; flex-direction: column; padding: 0; overflow: hidden; flex: 1; }
+#app .vy-aventure.reduite { height: auto; }
+#app .vy-aventure.reduite .vy-fenetre__corps { display: none; }
+.vy-av__onglets { display: flex; justify-content: center; gap: 18px; background: var(--fen-fond-2); border-bottom: 1px solid var(--fen-filet); flex-shrink: 0; }
+.vy-av__onglet { padding: 13px 12px 10px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--fen-texte-2); font: 600 12px var(--vy-font-ui); cursor: pointer; }
+.vy-av__onglet.on { color: var(--fen-accent); border-bottom-color: var(--fen-accent); }
+.vy-av__guide { display: grid; grid-template-columns: 215px minmax(0, 1fr); min-height: 0; flex: 1; }
+.vy-av__sommaire { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--fen-filet); background: var(--fen-fond-2); padding: 10px 6px 6px; }
+.vy-av__sommaire nav { overflow: auto; min-height: 0; overscroll-behavior: contain; }
+.vy-aventure input[type="search"], .vy-aventure select, .vy-aventure input[type="number"] { min-width: 0; padding: 8px; border: 1px solid var(--fen-filet); border-radius: 3px; background: var(--fen-fond); color: var(--fen-texte); font: inherit; }
+.vy-av__sommaire input { width: 100%; margin-bottom: 10px; }
+.vy-av__rubrique-titre { display: flex; align-items: center; gap: 7px; width: 100%; padding: 10px 6px; text-align: left; border: 0; border-bottom: 1px solid var(--fen-filet); background: transparent; color: var(--fen-texte); font: 600 11px var(--vy-font-ui); cursor: pointer; }
+.vy-av__rubrique-titre > svg { width: 17px; height: 17px; color: var(--fen-accent); flex-shrink: 0; }
+.vy-av__rubrique-titre span:first-of-type { flex: 1; }
+.vy-av__ancre { display: block; width: 100%; padding: 8px 8px 8px 30px; text-align: left; border: 0; background: transparent; color: var(--fen-texte-2); font: 12px/1.35 var(--vy-font-ui); cursor: pointer; }
+.vy-av__ancre.on { color: var(--fen-texte); background: var(--fen-tete); box-shadow: inset 2px 0 var(--fen-accent); }
+.vy-av__ancre:hover, .vy-av__rubrique-titre:hover { background: var(--fen-tete); }
+.vy-av__article { position: relative; overflow: auto; min-width: 0; min-height: 0; padding: 22px 32px 45px; overscroll-behavior: contain; }
+.vy-av__surtitre { color: var(--fen-accent); letter-spacing: .1em; text-transform: uppercase; font-size: 10px; }
+.vy-av__article section { padding: 25px 0 35px; border-bottom: 1px solid var(--fen-filet); }
+#app .vy-av__article h3 { text-align: center; color: var(--fen-texte); margin: 8px 0 22px; font-size: 19px; }
+.vy-av__article p { line-height: 1.8; color: var(--fen-texte-2); }
+.vy-av__embleme { display: grid; place-items: center; color: var(--fen-accent); }
+.vy-av__embleme > svg { width: 32px; height: 32px; }
+.vy-av__bouton { border: 1px solid var(--fen-filet); border-radius: 4px; background: var(--fen-fond-2); color: var(--fen-accent); padding: 8px 12px; font: 600 11px var(--vy-font-ui); cursor: pointer; }
+.vy-av__bouton:hover { border-color: var(--fen-accent); }
+.vy-av__bouton:disabled { opacity: .4; cursor: default; }
+.vy-aventure :is(button, input, select, main):focus-visible { outline: 2px solid var(--fen-accent); outline-offset: -2px; }
+.vy-av__filtres { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--fen-filet); flex-shrink: 0; }
+.vy-av__filtres input[type="search"] { flex: 1 1 180px; }
+.vy-av__filtres label { display: inline-flex; align-items: center; gap: 5px; color: var(--fen-texte-2); font-size: 11px; }
+.vy-av__filtres input[type="number"] { width: 58px; }
+.vy-av__resultats { overflow: auto; padding: 14px; min-height: 0; flex: 1; overscroll-behavior: contain; }
+.vy-av__intro { margin-bottom: 18px; color: var(--fen-texte-2); font-size: 12px; }
+.vy-av__cartes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.vy-av__carte { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--fen-filet); border-radius: 5px; background: var(--fen-fond-2); overflow: hidden; }
+.vy-av__carte header { display: flex; justify-content: space-between; gap: 5px; padding: 8px; background: var(--fen-tete); font-size: 10px; }
+.vy-av__carte.accomplie { border-color: var(--fen-accent); }
+.vy-av__carte.accomplie header small { color: var(--fen-accent); }
+.vy-av__sceau { display: grid; place-items: center; width: 64px; height: 64px; border: 1px solid var(--fen-filet); transform: rotate(45deg); border-radius: 15px; margin: 28px auto 20px; color: var(--fen-accent); }
+.vy-av__sceau svg { width: 34px; height: 34px; transform: rotate(-45deg); }
+#app .vy-av__carte h3 { margin: 6px 12px; color: var(--fen-texte); font-size: 14px; }
+.vy-av__carte p { margin: 4px 12px 14px; color: var(--fen-texte-2); font-size: 12px; line-height: 1.5; }
+.vy-av__carte footer { display: grid; gap: 8px; padding: 12px; margin-top: auto; border-top: 1px solid var(--fen-filet); }
+.vy-av__carte footer small { color: var(--fen-texte-2); }
+.vy-aventure progress { width: 100%; height: 5px; accent-color: var(--fen-accent); }
+.vy-av__pagination { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--fen-filet); flex-shrink: 0; }
+.vy-av__pagination span { margin-right: auto; color: var(--fen-texte-2); font-size: 11px; }
+@media (max-width: 720px) {
+  #app .vy-aventure { width: calc(100% - 8px); height: calc(100% - 8px); max-height: calc(100% - 8px); }
+  .vy-av__guide { grid-template-columns: 145px minmax(0, 1fr); }
+  .vy-av__article { padding: 12px 16px 25px; }
+  .vy-av__ancre { padding-left: 15px; font-size: 11px; }
+  .vy-av__rubrique-titre { font-size: 10px; }
+  .vy-av__cartes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vy-av__onglet { padding: 10px 6px 8px; }
+  .vy-av__filtres { padding: 6px; gap: 5px; }
+}
+@media (max-width: 430px) {
+  .vy-av__guide { grid-template-columns: 125px minmax(0, 1fr); }
+  .vy-av__sommaire { padding: 6px 3px; }
+  .vy-av__sommaire input { font-size: 10px; padding: 6px 3px; }
+  .vy-av__article { padding: 10px 12px 24px; }
+  #app .vy-av__article h3 { font-size: 16px; }
+  .vy-av__cartes { grid-template-columns: 1fr; }
+  .vy-av__onglets { gap: 12px; }
+}

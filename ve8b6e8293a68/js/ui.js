@@ -181,7 +181,7 @@ class UI {
     if (UI._reglages) delete UI._reglages[nom];
   }
 
-  static get ACTIONS_CLASSE() { return { bascule_du_ciel: true }; }
+  static get ACTIONS_CLASSE() { return { bascule_du_ciel: true, demontage: true }; }
 
   static ordreSorts(e) {
     const list = ((e && e.spells) || []).filter(id => !UI.ACTIONS_CLASSE[id]);
