@@ -130,9 +130,13 @@ class Scene {
         if (this.pauses && this.pauses.size) this.ile.endormirDessin(true);
       }
       const t0 = performance.now();
-      let minuterie = null;
-      const garde = new Promise((ok, ko) => { minuterie = setTimeout(() => ko(new Error('la scène met trop de temps à se construire (45 s)')), 45000); });
-      try { await Promise.race([this.ile.preparer(this.world, etape => { if (gen === this.generation) this.voileEtape(etape); }), garde]); } finally { clearTimeout(minuterie); }
+      let minuterie = null, plafond = null, rejeter = null;
+      const garde = new Promise((ok, ko) => { rejeter = ko; });
+      const armer = () => { clearTimeout(minuterie); minuterie = setTimeout(() => rejeter(new Error('la scène ne se construit plus depuis 45 s')), 45000); };
+      armer();
+      plafond = setTimeout(() => rejeter(new Error('la scène met trop de temps à se construire (4 min)')), 240000);
+      IleCharge.surActivite = armer;
+      try { await Promise.race([this.ile.preparer(this.world, etape => { armer(); if (gen === this.generation) this.voileEtape(etape); }), garde]); } finally { clearTimeout(minuterie); clearTimeout(plafond); if (IleCharge.surActivite === armer) IleCharge.surActivite = null; }
       if (gen !== this.generation) return;
       const ms = performance.now() - t0;
       if (ms > 10000) console.info('Ervane : scène construite en ' + Math.round(ms) + ' ms', this.ile.chargement);

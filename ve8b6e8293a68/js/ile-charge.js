@@ -198,5 +198,51 @@ const IleCharge = (() => {
     return glb().then(() => (typeof IleReperes === 'object' ? null : script('js/ile-reperes.js')));
   }
 
-  return { three, webgl, ambiance, vignette, style, lisiere, script, nuit, monde, glb, heros, herosScript, peauScript, modeles, modelesScript, reperes, reperesScript, faible, cache: { lire, ecrire, vider }, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
+  const journal = [];
+  (function surveiller() {
+    if (typeof console !== 'object') return;
+    for (const genre of ['warn', 'error']) {
+      const avant = console[genre];
+      if (typeof avant !== 'function') continue;
+      console[genre] = function (...a) {
+        try {
+          if (typeof a[0] === 'string' && /^(Ervane|Carte du monde|Orsane)/.test(a[0])) {
+            journal.push((genre === 'error' ? '[erreur] ' : '') + a.map(x => (x && x.message) ? x.message : String(x)).join(' ').slice(0, 220));
+            if (journal.length > 30) journal.shift();
+          }
+        } catch (e) {   }
+        return avant.apply(this, a);
+      };
+    }
+  })();
+  function diagDemande() { try { return /[?&]diag=1\b/.test(location.search); } catch (e) { return false; } }
+  function diagnostic() {
+    const V = typeof window === 'object' ? window.VEYLAN : null, I = V && V.scene && V.scene.ile;
+    const l = [];
+    l.push('Veylan ' + ((typeof DATA === 'object' && DATA.version) || '') + ' · ' + (typeof navigator === 'object' ? navigator.userAgent.replace(/^.*?\(([^)]*)\).*$/, '$1').slice(0, 60) : ''));
+    l.push('carte ' + ((V && V.world && V.world.mapId) || '?') + ' · 3D ' + !!(V && V.scene && V.scene.en3D) + ' · monde ' + (monde() || 'code') + ' · faible ' + faible());
+    if (I) {
+      let st = null; try { st = I.stats(); } catch (e) { st = null; }
+      let etc = '?'; try { etc = !!I.renderer.getContext().getExtension('WEBGL_compressed_texture_etc'); } catch (e) {   }
+      l.push('qualité ' + I.qualite + ' · téléphone ' + !!I.telephone + ' · webgl2 ' + !!I.webgl2 + ' · etc2 ' + etc);
+      l.push('monde modelé ' + !!I.monde + ' · semis Meshy ' + !!I.semisMeshy + ' · modèles ' + (I.modeles ? 'oui' : 'non'));
+      if (st) l.push('triangles ' + st.triangles + ' · appels ' + st.appels + ' · mémoire ' + Math.round(st.octets.total / 1048576) + ' Mo · construit en ' + Math.round((st.chargement.total || 0) / 1000) + ' s');
+    }
+    if (V && V.scene && V.scene.echecs && V.scene.echecs.length) l.push('échecs : ' + V.scene.echecs.slice(-3).join(' | '));
+    return l.concat(journal.slice(-12));
+  }
+  if (typeof document === 'object' && diagDemande()) {
+    const montrer = () => {
+      let el = document.getElementById('veylan-diag');
+      if (!el) {
+        el = document.createElement('pre'); el.id = 'veylan-diag';
+        el.style.cssText = 'position:fixed;left:4px;bottom:4px;z-index:99999;max-width:62vw;max-height:46vh;overflow:auto;margin:0;padding:6px 8px;font:10px/1.35 monospace;color:#e8f0ff;background:rgba(10,14,24,.82);border:1px solid #55658a;border-radius:6px;white-space:pre-wrap;pointer-events:none';
+        document.body.appendChild(el);
+      }
+      el.textContent = diagnostic().join('\n');
+    };
+    setInterval(() => { if (document.body) montrer(); }, 2000);
+  }
+
+  return { three, webgl, ambiance, vignette, style, lisiere, script, nuit, monde, glb, heros, herosScript, peauScript, modeles, modelesScript, reperes, reperesScript, faible, cache: { lire, ecrire, vider }, diagnostic, get journal() { return journal.slice(); }, surActivite: null, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
 })();

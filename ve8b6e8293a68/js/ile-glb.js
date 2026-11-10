@@ -8,8 +8,18 @@ const IleGlb = (() => {
     return src;
   }
 
-  function octets(url) {
-    if (!/^file:/.test(url)) return fetch(url).then(r => { if (!r.ok) throw new Error('GLB introuvable : ' + r.status); return r.arrayBuffer(); });
+  function octets(url, essai = 0) {
+    if (!/^file:/.test(url)) {
+      return fetch(url).then(r => {
+        if (r.ok) { if (typeof IleCharge === 'object' && typeof IleCharge.surActivite === 'function') IleCharge.surActivite(); return r.arrayBuffer(); }
+        const e = new Error('GLB introuvable : ' + r.status);
+        e.reessayer = r.status >= 500 || r.status === 429;
+        throw e;
+      }).catch(e => {
+        if (essai >= 2 || (e && e.reessayer === false)) throw e;
+        return new Promise(ok => setTimeout(ok, essai ? 1500 : 500)).then(() => octets(url, essai + 1));
+      });
+    }
     return new Promise((ok, ko) => {
       const x = new XMLHttpRequest();
       x.open('GET', url, true);

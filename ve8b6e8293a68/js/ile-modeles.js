@@ -854,10 +854,11 @@ const IleModeles = (() => {
     let etc = null;
     if (etcLu(renderer)) { try { etc = await atlasEtc(THREE); } catch (e) { console.warn('Ervane : atlas ETC2 illisibles, toiles peintes', e); etc = null; } }
     const toiles = etc ? null : ATLAS.map(([l, h]) => { const c = document.createElement('canvas'); c.width = l; c.height = h; const x = c.getContext('2d'); x.fillStyle = '#3a4a3a'; x.fillRect(0, 0, l, h); return { c, x, l, h }; });
-    const modeles = {};
+    const modeles = {}, manquants = [];
     let geo = 0;
     await Promise.all(Object.entries(SEMIS).map(async ([nom, d]) => {
-      const { json: G, bin } = await IleGlb.lire(source('assets/decor/' + nom + '-semis.glb'));
+      let G, bin;
+      try { ({ json: G, bin } = await IleGlb.lire(source('assets/decor/' + nom + '-semis.glb'))); } catch (e) { manquants.push(nom); return; }
       const prim = G.meshes[0].primitives[0], at = prim.attributes;
       const pos = accesseur(G, bin, at.POSITION).array, nrm = accesseur(G, bin, at.NORMAL).array, uv0 = accesseur(G, bin, at.TEXCOORD_0).array;
       const idx = accesseur(G, bin, prim.indices).array;
@@ -886,7 +887,9 @@ const IleModeles = (() => {
       return mat;
     });
     const tex = etc ? etc.reduce((a, t) => a + t.octets, 0) : ATLAS.reduce((a, [l, h]) => a + l * h * 4 * 4 / 3, 0);
-    return { modeles, mat: mats[0], mats, formes: FORMES, genres: GENRES, etc: !!etc, octets: { tex, geo }, sombre: (x, z) => dansBois(x, z) };
+    if (!Object.keys(modeles).length) throw new Error('aucun modèle du semis n\'a pu être lu');
+    if (manquants.length) console.warn('Ervane : ' + manquants.length + ' modèle(s) du semis absent(s), le reste est semé : ' + manquants.join(', '));
+    return { modeles, manquants, mat: mats[0], mats, formes: FORMES, genres: GENRES, etc: !!etc, octets: { tex, geo }, sombre: (x, z) => dansBois(x, z) };
   }
 
   const SOLS = {
