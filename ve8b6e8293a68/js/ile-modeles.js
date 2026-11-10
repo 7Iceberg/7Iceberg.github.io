@@ -679,7 +679,7 @@ const IleModeles = (() => {
     const pts = semerDense(T, CARTES_DENSES, 0.9, 1, 777).concat(cartesParcelles(T), nenuphars(T));
     if (!pts.length) return null;
     const tel = !!ile.telephone;
-    const tex = await new Promise((ok, ko) => new THREE.TextureLoader().load(source(tel ? 'assets/decor/cartes-tel.png' : 'assets/decor/cartes.png'), ok, undefined, ko));
+    const tex = await chargerTexture(THREE, source(tel ? 'assets/decor/cartes-tel.png' : 'assets/decor/cartes.png'));
     tex.encoding = THREE.sRGBEncoding;
     tex.anisotropy = 2;
     const mat = new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide, vertexColors: true, fog: true });
@@ -949,6 +949,12 @@ const IleModeles = (() => {
   };
   const VILLAGES = [[210, 104, 36, 1], [175, 28, 14, 0.7]];
   const VILLAGES_PLATEAU = { ervane: { zone: 'ervane_mailles', centres: VILLAGES }, orsane: { zone: 'orsane_cimes', centres: [[222, 92, 62, 1]] }, kaldum: { zone: 'kaldum_ville', centres: [[190, 96, 52, 1]] } };
+  function chargerTexture(THREE, url, essai = 0) {
+    return new Promise((ok, ko) => new THREE.TextureLoader().load(url, ok, undefined, ko)).catch(e => {
+      if (essai >= 2) throw e;
+      return new Promise(ok => setTimeout(ok, essai ? 1500 : 500)).then(() => chargerTexture(THREE, url, essai + 1));
+    });
+  }
   async function texSol(THREE, nom, etc) {
     const m = SOLS[nom].moyenne, moyenne = new THREE.Vector3(m[0], m[1], m[2]);
     if (etc) {
@@ -959,13 +965,10 @@ const IleModeles = (() => {
         return { t, moyenne, octets };
       } catch (e) { console.warn('Ervane : sol ETC2 ' + nom + ' illisible', e); }
     }
-    return new Promise((ok, ko) => {
-      new THREE.TextureLoader().load(source('assets/decor/sols/jeu-' + nom + '.jpg'), t => {
-        t.wrapS = t.wrapT = THREE.RepeatWrapping;
-        t.anisotropy = 4;
-        ok({ t, moyenne, octets: t.image.width * t.image.height * 4 * 4 / 3 });
-      }, undefined, ko);
-    });
+    const t = await chargerTexture(THREE, source('assets/decor/sols/jeu-' + nom + '.jpg'));
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.anisotropy = 4;
+    return { t, moyenne, octets: t.image.width * t.image.height * 4 * 4 / 3 };
   }
   function bruitSol(THREE) {
     const n = 256, data = new Uint8Array(n * n * 4);

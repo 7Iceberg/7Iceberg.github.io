@@ -58,6 +58,7 @@ const IlePeau = (() => {
     return b ? new URL(chemin, b.href).href + b.search : chemin;
   }
   function octets(url) {
+    if (!/^file:/.test(url) && typeof IleGlb === 'object' && typeof IleGlb.octets === 'function') return IleGlb.octets(url);
     if (!/^file:/.test(url)) return fetch(url).then(r => { if (!r.ok) throw new Error('GLB de la peau introuvable : ' + r.status); return r.arrayBuffer(); });
     return new Promise((ok, ko) => {
       const x = new XMLHttpRequest();

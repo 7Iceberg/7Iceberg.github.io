@@ -15,6 +15,7 @@ const IleHeros = (() => {
   }
 
   function octets(url) {
+    if (!/^file:/.test(url) && typeof IleGlb === 'object' && typeof IleGlb.octets === 'function') return IleGlb.octets(url);
     if (!/^file:/.test(url)) return fetch(url).then(r => { if (!r.ok) throw new Error('GLB du héros introuvable : ' + r.status); return r.arrayBuffer(); });
     return new Promise((ok, ko) => {
       const x = new XMLHttpRequest();
