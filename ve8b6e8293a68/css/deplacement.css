@@ -1,0 +1,40 @@
+.ile-pad {
+  position: absolute; z-index: 24;
+  left: calc(18px + var(--sc-gauche, env(safe-area-inset-left, 0px)));
+  bottom: calc(96px + var(--sc-bas, env(safe-area-inset-bottom, 0px)));
+  width: 126px; height: 142px;
+  pointer-events: none; user-select: none; -webkit-user-select: none;
+}
+.ile-pad[hidden], .ile-pad__zone[hidden] { display: none; }
+.ile-pad__zone {
+  position: absolute; left: 0; bottom: 0; width: 116px; height: 116px;
+  border: 1px solid rgba(216, 206, 182, .42); border-radius: 50%;
+  background: radial-gradient(circle, rgba(28, 28, 41, .25) 0 38%, rgba(44, 43, 60, .74) 39% 100%);
+  box-shadow: inset 0 0 0 8px rgba(20, 20, 31, .22), 0 3px 14px rgba(0, 0, 0, .22);
+  touch-action: none; pointer-events: auto; -webkit-tap-highlight-color: transparent;
+}
+.ile-pad__axes { position: absolute; inset: 19px; border: 1px dashed rgba(216, 206, 182, .28); border-radius: 50%; }
+.ile-pad__axes::before, .ile-pad__axes::after { content: ''; position: absolute; background: rgba(216, 206, 182, .32); }
+.ile-pad__axes::before { width: 1px; height: 100%; left: 50%; }
+.ile-pad__axes::after { height: 1px; width: 100%; top: 50%; }
+.ile-pad__pommeau {
+  position: absolute; left: calc(50% - 22px); top: calc(50% - 22px); width: 44px; height: 44px;
+  border: 1px solid #bdb4a1; border-radius: 50%; box-sizing: border-box;
+  background: #5b5967; box-shadow: 0 2px 6px rgba(0, 0, 0, .4), inset 0 0 0 5px rgba(255, 255, 255, .05);
+  transition: transform 130ms ease-out, background 130ms; will-change: transform;
+}
+.ile-pad.en-main .ile-pad__pommeau { transition: background 130ms; border-color: #e0c272; background: #82724f; }
+.ile-pad.course .ile-pad__zone { border-color: #e0c272; }
+.ile-pad__toggle {
+  position: absolute; right: 0; top: 0; width: 44px; height: 44px; padding: 10px;
+  color: #ddd7c9; background: rgba(46, 45, 62, .94); border: 1px solid #77717c; border-radius: 8px;
+  touch-action: manipulation; pointer-events: auto; cursor: pointer;
+}
+.ile-pad__toggle svg { width: 100%; height: 100%; }
+.ile-pad__toggle:focus-visible { outline: 2px solid #e0c272; outline-offset: 3px; }
+.ile-pad.replie { width: 44px; height: 44px; }
+.ile-pad.replie .ile-pad__toggle { color: #e0c272; }
+@media (orientation: landscape) and (max-height: 500px) {
+  .ile-pad { bottom: calc(18px + var(--sc-bas, env(safe-area-inset-bottom, 0px))); }
+}
+@media (prefers-reduced-motion: reduce) { .ile-pad__pommeau { transition: none; } }

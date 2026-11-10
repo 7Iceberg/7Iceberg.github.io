@@ -175,7 +175,7 @@ const Achievements = (() => {
     const de = n => /^Les /.test(n) ? 'des ' + n.slice(4) : /^Le /.test(n) ? 'du ' + n.slice(3) : /^(La |L')/.test(n) ? 'de ' + article(n) : /^[AEIOUYÉÈÊ]/i.test(n) ? 'd\'' + n : 'de ' + n;
     for (const z of C.zones) {
       const id = `explorer_${z.id}`;
-      if (!(z.maps || []).length || C.achievements.some(a => a.id === id)) continue;
+      if (z.horsCarte || !(z.maps || []).length || C.achievements.some(a => a.id === id)) continue;
       const [lo, hi] = z.level || [1, 1];
       C.achievements.push({
         id, name: `Explorer ${article(z.name)}`, desc: `Visiter les ${z.maps.length} cartes ${de(z.name)}.`,

@@ -234,7 +234,8 @@ class UI {
   buildSpellBar() {
     this.el.spells.innerHTML = '';
     this.spellButtons = {};
-    UI.ordreSorts(this.combat.player).forEach((id, i) => {
+    const p = this.combat.player, actions = Object.keys(UI.ACTIONS_CLASSE).filter(id => (p.spells || []).includes(id));
+    UI.ordreSorts(p).concat(actions).forEach((id, i) => {
       const s = this.combat.spellOf(id, this.combat.player);
       const b = document.createElement('button');
       b.className = 'spell';
@@ -242,7 +243,7 @@ class UI {
       b.style.setProperty('--el', DATA.elements[s.element].color);
       const icone = typeof SortIcones === 'object' ? SortIcones.url(id, s, 48) : '';
       if (icone) b.classList.add('avec-icone');
-      b.innerHTML = `<span class="key">${(i + 1) % 10}</span><span class="icon" style="--el:${DATA.elements[s.element].color}">${icone ? `<img src="${icone}" alt="">` : s.name.charAt(0)}</span><span class="name">${s.name}</span><span class="cost">${s.pa} PA</span><span class="cd"></span>`;
+      b.innerHTML = `<span class="key">${UI.ACTIONS_CLASSE[id] ? '²' : (i + 1) % 10}</span><span class="icon" style="--el:${DATA.elements[s.element].color}">${icone ? `<img src="${icone}" alt="">` : s.name.charAt(0)}</span><span class="name">${s.name}</span><span class="cost">${s.pa} PA</span><span class="cd"></span>`;
       b.addEventListener('click', () => { if (this.suppressClick && Date.now() < this.suppressClick) { this.suppressClick = 0; return; } this.selectSpell(id); });
       b.addEventListener('mouseenter', () => this.showTooltip(b, id));
       b.addEventListener('mouseleave', () => this.hideTooltip());
@@ -306,7 +307,7 @@ class UI {
       case 'dot': return `Brûle ${v.value} par tour pendant ${ef.turns} tour(s)`;
       case 'echo': return `Écho ${ef.turns} tour(s) : ${v.min} à ${v.max} à chaque PM perdu, ${ef.uses} fois au plus`;
       case 'filon': return `Filon ${ef.turns} tour(s), ${ef.charges || 3} déclenchements : ${v.min} à ${v.max} à chaque retrait (PA, PM, portée) sur l'ennemi marqué, ou en zone autour de l'allié marqué soigné ; +1 Trouvaille`;
-      case 'state': if (ef.name === 'forme_iskar') return `Forme Nocturne ${ef.turns} tour(s) : 40 % des soins seulement`; if (ef.name === 'intaclable') return `Intaclable ${ef.turns} tour(s)`; if (ef.name === 'protege') return `Protégé ${ef.turns} tour(s) : le Velmar prend ses coups`; if (ef.name === 'digue') return `Digue ${ef.turns} tour(s) : invulnérable au contact`; if (ef.name === 'brise_lames') return `Brise-Lames ${ef.turns} tour(s) : invulnérable à distance`; return ef.name === 'invisible' ? `Invisible ${ef.turns} tour(s)${ef.lingering ? ', révélée à la fin du tour où elle frappe' : ''}` : `Provoque ${ef.turns} tour(s)`;
+      case 'state': if (ef.name === 'forme_iskar') return `Forme Nocturne ${ef.turns} tour(s) : 40 % des soins seulement`; if (ef.name === 'intaclable') return `Intaclable ${ef.turns} tour(s)`; if (ef.name === 'protege') return `Protégé ${ef.turns} tour(s) : le Velmar prend ses coups`; if (ef.name === 'digue') return `Carapace Close ${ef.turns} tour(s) : invulnérable au contact`; if (ef.name === 'brise_lames') return `Bouclier à Rouage ${ef.turns} tour(s) : invulnérable à distance`; if (ef.name === 'unhealable') return `Incurable ${ef.turns} tour(s) : ne peut plus être soigné`; if (ef.name === 'assise') return `Ancré ${ef.turns} tour(s) : rien ne le déplace`; if (ef.name === 'rayonnant') return `Rayonnant ${ef.turns} tour(s) : +15 % de soins reçus`; if (ef.name === 'victime') return `Victime choisie ${ef.turns} tour(s) : quitter son contact coûte tous les PM`; if (ef.name === 'gibier') return `Gibier ${ef.turns} tour(s) : les bêtes du Fennal ne chassent que lui`; if (ef.name === 'provoked') return `Provoque ${ef.turns} tour(s)`; return ef.name === 'invisible' ? `Invisible ${ef.turns} tour(s)${ef.lingering ? ', révélée à la fin du tour où elle frappe' : ''}` : `État ${ef.turns} tour(s)`;
       case 'oath': return `Juré ${ef.turns} tour(s) : +${ef.power} % de dégâts contre lui`;
       case 'track': return `Traqué ${ef.turns} tour(s) : ne peut plus être invisible`;
       case 'steal': return ef.what === 'shield' ? `Vole le bouclier${ef.orBonus ? ' (ou le meilleur bonus)' : ''}` : `Vole ${ef.value} ${ef.what.toUpperCase()}`;
@@ -835,7 +836,7 @@ class UI {
       case 'traque': return `Traque de ${f.owner ? Util.esc(f.owner.name) : '?'}, ${f.crans} / 3 (+${f.crans * 8} % subis, ${t})`;
       case 'filon': return `Filon de ${f.owner ? Util.esc(f.owner.name) : '?'}, ${f.charges} déclenchement(s) (${t})`;
       case 'state': {
-        const names = { tenu: 'porté par le Thalor', invisible: 'invisible', stunned: 'sonné', invulnerable: 'invulnérable', lanterne: 'tient sa lanterne (esquive à distance)', ancrée: 'assis comme la montagne (rien ne le déplace, ses prises portent une case de plus, vole de la vie au contact)', unhealable: 'insoignable', rayonnant: 'Rayonnant (+15 % de soins reçus)', forme_iskar: 'Forme Nocturne (40 % des soins seulement)', intaclable: 'intaclable', protege: 'protégé (le Velmar prend ses coups)', digue: 'Carapace Close (invulnérable au contact)', brise_lames: 'Bouclier à Rouage (invulnérable à distance)' };
+        const names = { tenu: 'porté par le Thalor', invisible: 'invisible', stunned: 'sonné', invulnerable: 'invulnérable', lanterne: 'tient sa lanterne (esquive à distance)', assise: 'ancré comme la montagne (rien ne le déplace, ses prises portent une case de plus, vole de la vie au contact)', unhealable: 'insoignable', rayonnant: 'Rayonnant (+15 % de soins reçus)', forme_iskar: 'Forme Nocturne (40 % des soins seulement)', intaclable: 'intaclable', protege: 'protégé (le Velmar prend ses coups)', digue: 'Carapace Close (invulnérable au contact)', brise_lames: 'Bouclier à Rouage (invulnérable à distance)' };
         if (f.name === 'provoked') return `provoqué par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
         if (f.name === 'sworn') return `juré par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;
         if (f.name === 'tracked') return `traqué par ${f.by ? Util.esc(f.by.name) : '?'} (${t})`;

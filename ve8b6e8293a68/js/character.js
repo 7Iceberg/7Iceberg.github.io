@@ -139,7 +139,7 @@ class Character {
 
   get classDef() { return DATA.classes[this.classId]; }
 
-  derived() {
+  derived(equipment = this.equipment) {
     const c = this.classDef;
     const total = Object.assign({}, this.stats);
     for (const k in this.scrolls || {}) total[k] = (total[k] || 0) + (this.scrolls[k] || 0);
@@ -150,7 +150,7 @@ class Character {
     const seen = new Set();
     const add = stats => { for (const k in stats) { if (k in extra) extra[k] += stats[k]; else if (Items.STATS.includes(k)) total[k] = (total[k] || 0) + stats[k]; } };
     for (const slot of Items.EQUIP_SLOTS) {
-      const id = this.equipment[slot];
+      const id = equipment[slot];
       if (!id) continue;
       const d = Items.get(id);
       if (!d) continue;
@@ -359,31 +359,71 @@ class Character {
     if (this.hp != null) this.hp = Math.min(this.hp, this.derived().hpMax);
   }
 
-  saveEnsemble() {
+  static nomEnsemble(nom) {
+    return typeof nom === 'string' ? nom.replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 28) : '';
+  }
+
+  saveEnsemble(nom) {
     this.ensembles = this.ensembles || [];
     if (this.ensembles.length >= 6) return { ok: false, reason: 'Six ensembles au plus.' };
     const e = {};
     for (const slot of Items.EQUIP_SLOTS) if (this.equipment[slot]) e[slot] = this.equipment[slot];
-    if (!Object.keys(e).length) return { ok: false, reason: 'Rien n\'est équipé.' };
+    if (!Object.keys(e).length) return { ok: false, reason: 'Rien n’est équipé.' };
+    const titre = Character.nomEnsemble(nom);
+    if (titre) e.nom = titre;
     this.ensembles.push(e);
     return { ok: true, index: this.ensembles.length - 1 };
   }
 
+  renameEnsemble(i, nom) {
+    const e = (this.ensembles || [])[i];
+    const titre = Character.nomEnsemble(nom);
+    if (!e || !titre) return false;
+    e.nom = titre;
+    return true;
+  }
+
+  planEnsemble(tenue) {
+    const equipment = {};
+    const inventory = { ...this.inventory };
+    const changements = [];
+    const erreurs = [];
+    for (const slot of Items.EQUIP_SLOTS) {
+      const porte = this.equipment[slot] || null;
+      if (porte) inventory[porte] = (inventory[porte] || 0) + 1;
+      const voulu = tenue[slot] || null;
+      equipment[slot] = voulu;
+      if (porte !== voulu) changements.push({ slot, porte, voulu });
+    }
+    for (const slot of Items.EQUIP_SLOTS) {
+      const id = equipment[slot];
+      if (!id) continue;
+      const d = Items.get(id);
+      let raison;
+      if (!d) raison = 'Objet inconnu';
+      else if (d.kind === 'weapon' ? slot !== 'arme' : d.kind !== 'equip' || d.slot !== slot.replace(/\d$/, '')) raison = 'Emplacement incompatible';
+      else if (d.level > this.level) raison = 'Niveau ' + d.level + ' requis';
+      else if (!(inventory[id] > 0)) raison = 'Absent du sac';
+      if (raison) { erreurs.push({ slot, id, raison }); continue; }
+      if (--inventory[id] === 0) delete inventory[id];
+    }
+    return { ok: erreurs.length === 0, equipment, inventory, changements, erreurs };
+  }
+
+  equiperEnsemble(tenue) {
+    const plan = this.planEnsemble(tenue);
+    if (!plan.ok) return { ok: false, reason: 'Cet ensemble contient des pièces indisponibles.' };
+    if (!plan.changements.length) return { ok: true };
+    const hp = Math.min(this.hp, this.derived(plan.equipment).hpMax);
+    this.equipment = plan.equipment;
+    this.inventory = plan.inventory;
+    this.hp = hp;
+    return { ok: true };
+  }
+
   useEnsemble(i) {
     const e = (this.ensembles || [])[i];
-    if (!e) return { ok: false, reason: 'Ensemble inconnu.' };
-    let missing = 0;
-    for (const slot of Items.EQUIP_SLOTS) {
-      const want = e[slot] || null;
-      if (this.equipment[slot] === want) continue;
-      if (this.equipment[slot]) this.unequip(slot);
-      if (!want) continue;
-      if (!this.canEquip(want).ok) { missing++; continue; }
-      this.removeItem(want, 1);
-      this.equipment[slot] = want;
-    }
-    this.hp = Math.min(this.hp, this.derived().hpMax);
-    return { ok: true, missing };
+    return e ? this.equiperEnsemble(e) : { ok: false, reason: 'Ensemble inconnu.' };
   }
 
   deleteEnsemble(i) { if (this.ensembles) this.ensembles.splice(i, 1); }
@@ -582,3 +622,4 @@ class Character {
 
   static fromJSON(o) { return new Character(o); }
 }
+

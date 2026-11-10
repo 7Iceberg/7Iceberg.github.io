@@ -40,6 +40,7 @@ class Ile3D {
     this.qualiteForcee = q.force;
     this.qualiteDepart = q.q;
     this.telephone = CameraIle.telephone();
+    this.pad = typeof IlePad === 'function' ? new IlePad(this.stage) : null;
     this.ambianceVoulue = Ile3D.ambiance();
     this.soir = this.ambianceVoulue.soir;
     this.chargement = {};
@@ -69,6 +70,7 @@ class Ile3D {
   creerRendu() {
     if (this.renderer) return;
     const THREE = window.THREE;
+    if (!this.pad && typeof IlePad === 'function') this.pad = new IlePad(this.stage);
     if (THREE.ColorManagement) THREE.ColorManagement.legacyMode = false;
     const cv = this.canvas = document.createElement('canvas');
     cv.className = 'board-repli board-3d';
@@ -1410,7 +1412,17 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     const w = this.world, P = w && w.plateau, cam = this.camera, K = Ile3D.clavier();
     if (!P || typeof P.pasClavier !== 'function' || !cam) return;
     let f = 0, t = 0;
-    if (w.state === 'explore' && !this.salle && !this.enArene && cam.mode === 'exploration' && !cam.trans) {
+    const panel = document.getElementById('panel'), fenetres = document.getElementById('fenetres');
+    const libre = !document.hidden && !document.body.classList.contains('vy-discussion-ouverte') && !(panel && !panel.classList.contains('hidden')) && !(fenetres && fenetres.childElementCount);
+    const peut = this.actif && w.state === 'explore' && !w.talkNpc && !this.salle && !this.enArene && cam.mode === 'exploration' && !cam.trans && !cam.retourCarte && libre;
+    if (this.pad) this.pad.maj(peut && CameraIle.telephone());
+    const pad = peut && this.pad && this.pad.direction;
+    if (pad) {
+      const az = cam.azimut, x = pad.x * Math.cos(az) + pad.y * Math.sin(az), y = -pad.x * Math.sin(az) + pad.y * Math.cos(az);
+      P.pasClavier({ x, y }, dt, pad.course, pad.force);
+      return;
+    }
+    if (peut) {
       if (K.has('KeyW') || K.has('ArrowUp')) f++;
       if (K.has('KeyS') || K.has('ArrowDown')) f--;
       if (K.has('KeyA') || K.has('ArrowLeft')) t++;
@@ -1547,11 +1559,21 @@ void main() { float a = texture2D(carte, vUv).a * vA;
   marques3D(THREE, scene) {
     const anneau = new THREE.RingGeometry(0.55, 0.78, 32).rotateX(-Math.PI / 2);
     const mk = (couleur, op) => new THREE.MeshBasicMaterial({ color: new THREE.Color(couleur), transparent: true, opacity: op, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6, fog: false });
-    this.marque = new THREE.Mesh(anneau, mk('#ffe9a8', 0.9)); this.marque.visible = false; this.marque.renderOrder = 6;
+    this.marque = new THREE.Group(); this.marque.visible = false;
+    const socle = new THREE.Mesh(new THREE.CircleGeometry(0.92, 40).rotateX(-Math.PI / 2), mk('#15151f', 0.5));
+    socle.renderOrder = 5;
+    const cercle = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.8, 48).rotateX(-Math.PI / 2), mk('#e6bf63', 1));
+    cercle.renderOrder = 7; cercle.position.y = 0.012;
+    const coeur = new THREE.Mesh(new THREE.CircleGeometry(0.18, 4).rotateX(-Math.PI / 2), mk('#e6bf63', 1));
+    coeur.renderOrder = 7; coeur.position.y = 0.02;
+    const onde = new THREE.Mesh(new THREE.RingGeometry(0.72, 0.78, 48).rotateX(-Math.PI / 2), mk('#e6bf63', 0.8));
+    onde.renderOrder = 6; onde.position.y = 0.025;
+    this.marque.add(socle, cercle, coeur, onde);
+    this.pingPieces = { socle, cercle, coeur, onde, haut: new THREE.Vector3(0, 1, 0), normale: new THREE.Vector3() };
     this.survol = new THREE.Mesh(anneau, mk('#8fe9ff', 0.75)); this.survol.visible = false; this.survol.renderOrder = 6;
     this.repere = new THREE.Mesh(new THREE.RingGeometry(0.7, 1.0, 40).rotateX(-Math.PI / 2), mk('#00c2ff', 0.8)); this.repere.visible = false; this.repere.renderOrder = 6;
-    const pt = new THREE.CircleGeometry(0.09, 8).rotateX(-Math.PI / 2);
-    this.points = new THREE.InstancedMesh(pt, mk('#ffffff', 0.75), 48); this.points.count = 0; this.points.frustumCulled = false; this.points.renderOrder = 6;
+    const pt = new THREE.CircleGeometry(0.12, 8).rotateX(-Math.PI / 2);
+    this.points = new THREE.InstancedMesh(pt, mk('#795c31', 0.95), 48); this.points.count = 0; this.points.frustumCulled = false; this.points.renderOrder = 6;
     this.traces = new THREE.InstancedMesh(new THREE.RingGeometry(0.2, 0.36, 16).rotateX(-Math.PI / 2), mk('#00c2ff', 0.92), 48); this.traces.count = 0; this.traces.frustumCulled = false; this.traces.renderOrder = 6;
     scene.add(this.marque, this.survol, this.repere, this.points, this.traces);
   }
@@ -1580,6 +1602,8 @@ void main() { float a = texture2D(carte, vUv).a * vA;
   desactiver() {
     const carte = this.carteOuverte;
     this.actif = false;
+    if (this.pad) this.pad.maj(false);
+    if (this.world && this.world.plateau) this.world.plateau.pasClavier(null, 0);
     if (carte) this.fermerCarte(true, 'desactive');
     cancelAnimationFrame(this.raf);
     if (this.arene) this.arene.finirAnimations();
@@ -1619,13 +1643,14 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     this.matEauRef = null; this.matChute = null; this.matHalos = null; this.matBouffees = null;
     this.uFondu = null; this.uHerbe = null; this.ponctuelle = null; this.decorFixe = null;
     this.meshEscarpement = null; this.meshFalaise = null; this.meshDessous = null; this.meshChute = null;
-    this.marque = null; this.survol = null; this.repere = null; this.points = null; this.traces = null;
+    this.marque = null; this.pingPieces = null; this.survol = null; this.repere = null; this.points = null; this.traces = null;
     this.salle = null;
     this.effacerZone();
     this.directions.clear();
     if (this.camera) this.camera.terrain = null;
     this.marques = {}; this.marquesA = 0; this.brumeCle = null; this.cielHex = null;
     this.vus = null; this.caches = null;
+    if (total && this.pad) { this.pad.liberer(); this.pad = null; }
     if (total && this.renderer) {
       this.renderer.dispose();
       if (!this.renderer.getContext().isContextLost()) this.renderer.forceContextLoss();
@@ -1756,7 +1781,16 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (this.enPause) return;
     const dtReel = this.dernier ? now - this.dernier : 16;
     this.dernier = now;
-    if (this.dessinEndormi) { if (this.onTick) this.onTick(now); return; }
+    if (this.dessinEndormi) {
+      if (this.onTick) this.onTick(now);
+      const p = this.world && this.world.player, cam = this.camera;
+      if (p && cam) {
+        this.majArene(now);
+        const q = this.versScene(p.rx, p.ry);
+        cam.update(now, { x: q.u, y: q.v, h: this.hauteur(q.u, q.v) }, p.moving);
+      }
+      return;
+    }
     if (!this.enArene && !this.salle && typeof Util === 'object' && Util.absent && Util.absent(now)) {
       this.enAbsence = true;
       if (this.onTick) this.onTick(now);
@@ -1770,6 +1804,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
   }
 
   endormirDessin(oui) {
+    if (oui && this.pad) { this.pad.maj(false); if (this.world && this.world.plateau) this.world.plateau.pasClavier(null, 0); }
     oui = !!oui;
     if (oui === !!this.dessinEndormi) return;
     this.dessinEndormi = oui;
@@ -2138,18 +2173,38 @@ void main() { float a = texture2D(carte, vUv).a * vA;
 
   majMarques(now, hp) {
     const w = this.world, P = w.plateau, p = w.player, enCombat = this.enArene;
-    const m = !enCombat && P && P.marque;
+    const ping = P && P.ping, termine = ping && (ping.etat === 'arrive' || ping.etat === 'refuse');
+    const recent = ping && Math.max(0, (w.time || 0) - ping.change) < 0.65;
+    const m = !enCombat && P && (ping && (!termine || recent) ? ping : P.marque);
     this.marque.visible = !!m;
     if (m) {
-      const k = 1 + 0.12 * Math.sin(now / 160);
-      this.marque.position.set(m.x, this.hauteur(m.x, m.y) + 0.06, m.y);
-      this.marque.scale.set(k, 1, k);
+      const calme = CameraIle.calme(), age = Math.max(0, (w.time || 0) - (m.cree || 0));
+      const fini = m.etat === 'arrive' || m.etat === 'refuse';
+      const ageEtat = Math.max(0, (w.time || 0) - (m.change || 0));
+      const fade = fini ? Math.max(0, 1 - ageEtat / 0.65) : 1;
+      const couleur = m.etat === 'refuse' ? '#e99d8d' : m.etat === 'arrive' ? '#a0d8ad' : m.etat === 'calcul' ? '#d8d1be' : '#e6bf63';
+      const pieces = this.pingPieces;
+      const hauteur = this.hauteur(m.x, m.y), ppu = this.camera.pixelsParU(m.x, hauteur, m.y);
+      const k = Math.max(0.65, Math.min(1.8, (this.telephone ? 21 : 17) / Math.max(1, ppu)));
+      this.marque.position.set(m.x, hauteur + 0.09, m.y);
+      this.marque.scale.setScalar(k * (calme ? 1 : fini ? 1 + ageEtat * 0.35 : 1 + 0.025 * Math.sin(age * 3)));
+      const normale = this.normale(m.x, m.y);
+      this.marque.quaternion.setFromUnitVectors(pieces.haut, pieces.normale.set(...normale).normalize());
+      for (const piece of [pieces.cercle, pieces.coeur, pieces.onde]) piece.material.color.set(couleur);
+      pieces.cercle.material.opacity = fade;
+      pieces.coeur.material.opacity = fade * 0.9;
+      pieces.socle.material.opacity = fade * 0.46;
+      const pulse = Math.min(1, age / 0.55);
+      pieces.onde.visible = !calme && !fini && pulse < 1;
+      pieces.onde.scale.setScalar(0.9 + pulse * 1.2);
+      pieces.onde.material.opacity = 0.85 * (1 - pulse);
     }
     const ch = p.chemin;
     let n = 0;
     if (!enCombat && ch && ch.pts && ch.pts.length > 1) {
       const THREE = window.THREE, mat = new THREE.Matrix4();
-      for (let s = ch.s + 1.2; s < ch.longueur - 0.6 && n < 48; s += 1.2) {
+      const pas = Math.max(1.2, ch.longueur / 48);
+      for (let s = (Math.floor(ch.s / pas) + 1) * pas; s < ch.longueur - 0.6 && n < 48; s += pas) {
         const q = P.pointACopie(ch, s);
         mat.makeTranslation(q.x, this.hauteur(q.x, q.y) + 0.05, q.y);
         this.points.setMatrixAt(n++, mat);

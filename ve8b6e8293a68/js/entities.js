@@ -11,7 +11,7 @@ class Entity {
     this.level = level || def.level && typeof def.level === 'number' ? (level || def.level) : range[0];
     const R = DATA.rules;
     const steps = def.ai ? Math.max(0, this.level - range[0]) : 0;
-    const mob = def.ai && !def.summon;
+    const mob = def.ai && !def.summon && !def.epreuve;
     const k = mob ? (R.echelleVeilleurs || 0) : 0;
     const e = k ? Entity.ecartEchelle(this.level) : { degats: 1, pv: 1 };
     const absolu = 1 + k * (e.pv - 1);

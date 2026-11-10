@@ -621,6 +621,7 @@ class World {
     const d = Items.get(id);
     n = n == null ? 1 : Number(n);
     if (!d || !World.okCount(n) || !this.ch.has(id, n) || this.state === 'combat') return false;
+    if (!(this.talkNpc && this.talkNpc.def && this.talkNpc.def.shop)) return false;
     this.ch.removeItem(id, n);
     const gain = Items.sellPrice(d) * n;
     this.ch.fils += gain;

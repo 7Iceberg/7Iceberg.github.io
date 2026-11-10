@@ -95,12 +95,12 @@ Object.assign(Hud.prototype, {
   openInventaire() {
     const s = this.inv = this.inv || { onglet: 'tout', filtre: '', q: '', tri: 'recent', page: 0, cols: 6, parPage: 30, sel: null, fiche: 'effets', facing: null, feuille: null };
     const ouvert = this.fen.isOpen('sac');
-    if (!ouvert) s.feuille = null;
+    if (!ouvert) { s.feuille = null; s.ensEdition = null; }
     if (s.facing == null) { const f = this.world.ch.facing != null ? this.world.ch.facing : this.world.player && this.world.player.facing; s.facing = f === -1 ? -1 : 1; }
     const ch = () => this.world.ch;
     const r = () => this.fen.render('sac');
     const actions = {
-      onglet: d => { s.onglet = d.onglet; s.filtre = ''; s.page = 0; r(); },
+      onglet: d => { s.onglet = d.onglet; s.filtre = ''; s.page = 0; s.ensEdition = null; r(); },
       garderobe: () => this.toggleWin('garderobe'),
       page: d => { s.page += Number(d.sens) || 0; r(); },
       pick: d => { if (this.invIgnore()) return; if (ch().has(d.id)) { s.sel = { de: 'sac', id: d.id }; r(); } },
@@ -132,12 +132,19 @@ Object.assign(Hud.prototype, {
       fN: d => { const f = s.feuille; if (!f) return; const max = ch().count(f.id); f.n = d.n === 'max' ? max : Math.max(1, Math.min(max, f.n + Number(d.n))); r(); },
       fOk: () => this.invDetruire(),
       fNon: () => { s.feuille = null; r(); },
-      ensSave: () => { const x = ch().saveEnsemble(); this.toast(x.ok ? `Ensemble ${x.index + 1} enregistré.` : x.reason); this.world.emit('update'); },
-      ensUse: d => { if (!this.invGarde()) return; const x = ch().useEnsemble(Number(d.i)); this.toast(x.ok ? (x.missing ? `Ensemble mis, ${x.missing} pièce(s) manquante(s).` : 'Ensemble mis.') : x.reason); this.world.emit('update'); },
-      ensDel: d => { ch().deleteEnsemble(Number(d.i)); this.world.emit('update'); },
+      ensOpen: d => { s.onglet = 'tenues'; if (d.i != null) s.ensemble = Number(d.i); s.ensEdition = null; r(); },
+      ensPick: d => { s.ensemble = Number(d.i); s.ensEdition = null; r(); },
+      ensSave: () => { s.onglet = 'tenues'; s.ensEdition = { type: 'save', nom: '', focus: true }; r(); },
+      ensRename: d => { const i = Number(d.i); s.ensEdition = { type: 'rename', i, nom: this.invNomEnsemble(ch(), i), focus: true }; r(); },
+      ensDelete: d => { s.ensEdition = { type: 'delete', i: Number(d.i), focus: true }; r(); },
+      ensCancel: () => { s.ensEdition = null; r(); },
+      ensConfirm: () => this.invConfirmerEnsemble(),
+      ensUse: d => this.invEquiperEnsemble(Number(d.i)),
+      ensUndo: () => this.invAnnulerEnsemble(),
       theme: d => { this.applyTheme(d.theme); r(); },
     };
     const onField = (el, kind) => {
+      if (el.id === 'inv-ensemble-nom' && kind === 'input' && s.ensEdition) s.ensEdition.nom = el.value;
       if (el.id === 'inv-q' && kind === 'input') { s.q = el.value; s.page = 0; r(); }
       if (el.id === 'inv-filtre' && kind === 'change') { s.filtre = el.value; s.page = 0; r(); }
       if (el.id === 'inv-tri' && kind === 'change') { s.tri = el.value; s.page = 0; r(); }
@@ -146,7 +153,7 @@ Object.assign(Hud.prototype, {
     this.simpleWin('sac', 'Inventaire', () => this.renderInventaire(), actions, {
       width: 900, cls: 'vy-fenetre--inventaire', onField, annonce: 'inventaire',
       after: body => this.apresInventaire(body),
-      onEscape: () => { if (!s.feuille) return false; s.feuille = null; r(); return true; },
+      onEscape: () => { if (s.ensEdition && s.onglet === 'tenues') { s.ensEdition = null; r(); return true; } if (!s.feuille) return false; s.feuille = null; r(); return true; },
       onClose: () => { this.invFinGlisser(); this.syncMenus(); },
     });
   },
@@ -154,6 +161,7 @@ Object.assign(Hud.prototype, {
   renderInventaire() {
     const ch = this.world.ch;
     this.invVerifier(ch);
+    if (this.inv.onglet === 'tenues') return this.invTenues(ch);
     return `<div class="vy-inv">${this.invPoupee(ch)}${this.invFiche(ch)}${this.invSac(ch)}</div>${this.inv.feuille ? this.invFeuille(ch) : ''}`;
   },
 
@@ -227,8 +235,11 @@ Object.assign(Hud.prototype, {
 
   invBarreEnsembles(ch) {
     const list = ch.ensembles || [];
-    const cases = list.map((e, i) => `<button type="button" class="vy-inv__ens" data-act="ensUse" data-i="${i}" title="Mettre l'ensemble ${i + 1} (${Object.keys(e).length} pièce${Object.keys(e).length > 1 ? 's' : ''})" aria-label="Mettre l'ensemble ${i + 1}">${i + 1}</button>`).join('');
-    return `<div class="vy-inv__groupe vy-inv__ensembles-barre"><small class="vy-inv__ens-titre">Équiper un ensemble</small><div class="vy-inv__ens-ligne">${cases}<button type="button" class="vy-inv__ens vy-inv__ens--plus" data-act="ensSave" ${list.length >= MAX_ENSEMBLES ? 'disabled' : ''} title="Enregistrer la tenue portée" aria-label="Enregistrer la tenue portée">${I.plus}</button></div><button type="button" class="vy-inv__mes-ens" data-act="onglet" data-onglet="tenues">Mes ensembles (${list.length})</button></div>`;
+    const cases = list.map((e, i) => {
+      const nom = esc(this.invNomEnsemble(ch, i));
+      return '<button type="button" class="vy-inv__ens" data-act="ensOpen" data-i="' + i + '" title="Comparer ' + nom + '" aria-label="Comparer ' + nom + '">' + (i + 1) + '</button>';
+    }).join('');
+    return `<div class="vy-inv__groupe vy-inv__ensembles-barre"><small class="vy-inv__ens-titre">Ensembles</small><div class="vy-inv__ens-ligne">${cases}<button type="button" class="vy-inv__ens vy-inv__ens--plus" data-act="ensSave" ${list.length >= MAX_ENSEMBLES ? 'disabled' : ''} title="Enregistrer la tenue portée" aria-label="Enregistrer la tenue portée">${I.plus}</button></div><button type="button" class="vy-inv__mes-ens" data-act="ensOpen">Mes ensembles (${list.length})</button></div>`;
   },
 
   ouvrirTrousseau() {
@@ -461,7 +472,7 @@ Object.assign(Hud.prototype, {
     const tabs = ONGLETS.map(([k, l, ico, f]) => tab(k, l, ico, ids.filter(id => { const d = Items.get(id); return d && f(d); }).length)).join('') +
       tab('favoris', 'Favoris', ICO.etoile, ids.filter(id => fav.has(id)).length) +
       '<span class="vy-inv__sep" aria-hidden="true"></span>' + VUES.map(([k, l, ico]) => tab(k, l, ico)).join('');
-    const corps = s.onglet === 'tenues' ? this.invTenues(ch) : s.onglet === 'apparence' ? this.invApparence(ch) : this.invGrille(ch);
+    const corps = s.onglet === 'apparence' ? this.invApparence(ch) : this.invGrille(ch);
     return `<section class="vy-inv__sac" data-depot="sac" aria-label="Sac"><div class="vy-inv__sac-cadre"><nav class="vy-inv__onglets" role="tablist" aria-label="Catégories du sac">${tabs}</nav><div class="vy-inv__sac-corps">${corps}</div></div></section>`;
   },
 
@@ -537,22 +548,134 @@ Object.assign(Hud.prototype, {
       </footer>`;
   },
 
+  invNomEnsemble(ch, i) {
+    const e = (ch.ensembles || [])[i];
+    return (e && Character.nomEnsemble(e.nom)) || 'Ensemble ' + (i + 1);
+  },
+
+  invConfirmerEnsemble() {
+    const s = this.inv, e = s.ensEdition, ch = this.world.ch;
+    if (!e) return;
+    if (e.type === 'delete') {
+      ch.deleteEnsemble(e.i);
+      s.ensemble = Math.max(0, e.i - 1);
+    } else {
+      const nom = Character.nomEnsemble(e.nom);
+      if (!nom) { this.toast('Donne un nom à cet ensemble.'); return; }
+      if (e.type === 'rename') {
+        if (!ch.renameEnsemble(e.i, nom)) return;
+      } else {
+        const r = ch.saveEnsemble(nom);
+        if (!r.ok) { this.toast(r.reason); return; }
+        s.ensemble = r.index;
+      }
+    }
+    s.ensEdition = null;
+    this.world.emit('update');
+    this.fen.render('sac');
+  },
+
+  invEquiperEnsemble(i) {
+    if (!this.invGarde()) return;
+    const ch = this.world.ch, avant = { ...ch.equipment };
+    const result = ch.useEnsemble(i);
+    if (!result.ok) { this.toast(result.reason); this.fen.render('sac'); return; }
+    this.inv.ensRetour = { ch, avant, apres: { ...ch.equipment } };
+    this.toast(this.invNomEnsemble(ch, i) + ' équipé.');
+    this.world.emit('update');
+    this.fen.render('sac');
+  },
+
+  invRetourEnsemble(ch) {
+    const retour = this.inv.ensRetour;
+    return retour && retour.ch === ch && Items.EQUIP_SLOTS.every(sl => ch.equipment[sl] === retour.apres[sl]) ? retour : null;
+  },
+
+  invAnnulerEnsemble() {
+    if (!this.invGarde()) return;
+    const ch = this.world.ch, retour = this.invRetourEnsemble(ch);
+    if (!retour) return;
+    const result = ch.equiperEnsemble(retour.avant);
+    if (!result.ok) { this.toast('La tenue précédente contient une pièce indisponible.'); return; }
+    this.inv.ensRetour = null;
+    this.toast('Tenue précédente rééquipée.');
+    this.world.emit('update');
+    this.fen.render('sac');
+  },
+
   invTenues(ch) {
-    const dd = ch.derived();
-    const sets = Object.keys(dd.setCount).map(id => Items.getSet(id)).filter(Boolean).map(set => {
-      const n = dd.setCount[set.id], b = set.bonuses[n], next = set.bonuses[n + 1];
-      return `<div class="vy-inv__pano"><div class="vy-inv__pano-titre"><b>${esc(set.name)}</b><span>${n} / ${set.pieces.length}</span></div>
-        <p>${b ? Items.statLines(b).join(', ') : 'Pas encore de bonus'}</p>${next ? `<small>${n + 1} pièces : ${Items.statLines(next).join(', ')}</small>` : ''}</div>`;
+    const s = this.inv, list = ch.ensembles || [];
+    const i = list[s.ensemble] ? s.ensemble : 0;
+    const ensemble = list[i], nom = ensemble ? this.invNomEnsemble(ch, i) : 'Tenue portée';
+    const plan = ch.planEnsemble(ensemble || ch.equipment);
+    const courant = ch.derived(), apres = ch.derived(plan.equipment);
+    const changement = new Set(plan.changements.map(x => x.slot));
+    const erreurs = new Set(plan.erreurs.map(x => x.slot));
+    const nomObjet = id => id ? (Items.get(id) || {}).name || id : 'Vide';
+    const liste = list.map((e, j) => {
+      const p = j === i ? plan : ch.planEnsemble(e);
+      const etat = !p.ok ? (p.erreurs.length === 1 ? '1 pièce indisponible' : p.erreurs.length + ' pièces indisponibles') : p.changements.length ? p.changements.length + ' emplacement(s) à changer' : 'Équipé';
+      return `<button type="button" class="vy-ens__choix" id="inv-ensemble-${j}" data-act="ensPick" data-i="${j}" aria-pressed="${j === i}"><span aria-hidden="true">${ICO.tenues}</span><span><b>${esc(this.invNomEnsemble(ch, j))}</b><small>${etat}</small></span></button>`;
     }).join('');
-    const list = ch.ensembles || [];
-    const ens = list.map((e, i) => `<span class="vy-ensemble"><button class="vy-bouton vy-bouton--petit" data-act="ensUse" data-i="${i}" title="Mettre l'ensemble ${i + 1} (${Object.keys(e).length} pièce${Object.keys(e).length > 1 ? 's' : ''})">Ensemble ${i + 1}</button><button class="vy-ensemble__suppr" data-act="ensDel" data-i="${i}" aria-label="Supprimer l'ensemble ${i + 1}">${I.fermer}</button></span>`).join('');
-    return `<div class="vy-inv__vue" data-defile="tenues">
-      <div class="vy-sous"><span>Panoplies portées</span></div>
-      ${sets || '<p class="muted vy-note">Aucune pièce de panoplie portée. Deux pièces d\'une même panoplie donnent un bonus, la panoplie complète le plus grand.</p>'}
-      <div class="vy-sous"><span>Ensembles</span><span class="muted">${list.length} / ${MAX_ENSEMBLES}</span></div>
-      <div class="vy-ensembles">${ens}<button class="vy-bouton vy-bouton--petit vy-bouton--fantome" data-act="ensSave" ${list.length >= MAX_ENSEMBLES ? 'disabled' : ''}>${I.plus} Enregistrer la tenue</button></div>
-      <p class="muted vy-note">Un ensemble garde la tenue portée ; le remettre rééquipe chaque pièce encore dans ton sac.</p>
-    </div>`;
+    const cases = slots => slots.map(slot => {
+      const id = plan.equipment[slot], def = id && Items.get(id);
+      const etat = erreurs.has(slot) ? ' manque' : changement.has(slot) ? ' change' : '';
+      const titre = esc(LABEL[slot] + ' · ' + nomObjet(id));
+      return `<span class="vy-case vy-ens__case${etat}${def ? '' : ' vy-case--emplacement'}" ${def ? 'data-rarete="' + esc(Items.rarity(def)) + '"' : ''} title="${titre}" aria-label="${titre}"><span class="vy-case__icone">${Hud.picto(def || KIND(slot))}</span></span>`;
+    }).join('');
+    const pieces = plan.changements.map(x => `<li><span>${LABEL[x.slot]}</span><span>${esc(nomObjet(x.porte))} → <b>${esc(nomObjet(x.voulu))}</b></span></li>`).join('');
+    const stat = [
+      ['PA', courant.pa, apres.pa], ['PM', courant.pm, apres.pm], ['Portée', courant.po, apres.po],
+      ['PV max', courant.hpMax, apres.hpMax],
+      [Items.STAT_LABEL[ch.mainStat] || 'Terra', courant.stats[ch.mainStat] || 0, apres.stats[ch.mainStat] || 0],
+      ['Tacle', courant.tacle, apres.tacle],
+    ];
+    const valeurs = stat.map(([label, de, vers]) => {
+      const delta = vers - de;
+      return `<tr><th scope="row">${esc(label)}</th><td>${nf(de)}</td><td><b>${nf(vers)}</b></td><td class="${delta > 0 ? 'gain' : delta < 0 ? 'perte' : ''}">${delta ? (delta > 0 ? '+' : '−') + nf(Math.abs(delta)) : '-'}</td></tr>`;
+    }).join('');
+    const sets = Object.keys(courant.setCount).map(id => Items.getSet(id)).filter(Boolean).map(set => {
+      const n = courant.setCount[set.id], b = set.bonuses[n], next = set.bonuses[n + 1];
+      return `<div class="vy-inv__pano"><div class="vy-inv__pano-titre"><b>${esc(set.name)}</b><span>${n} / ${set.pieces.length}</span></div><p>${b ? Items.statLines(b).join(', ') : 'Pas encore de bonus'}</p>${next ? '<small>' + (n + 1) + ' pièces · ' + Items.statLines(next).join(', ') + '</small>' : ''}</div>`;
+    }).join('');
+    const edition = s.ensEdition;
+    const champ = edition && (edition.type === 'delete'
+      ? `<p>Supprimer « ${esc(this.invNomEnsemble(ch, edition.i))} » ?</p>`
+      : `<label for="inv-ensemble-nom">${edition.type === 'rename' ? 'Renommer l’ensemble' : 'Nom de l’ensemble'}</label><input id="inv-ensemble-nom" type="text" maxlength="28" value="${esc(edition.nom)}" autocomplete="off">`);
+    const manque = plan.erreurs.map(e => `<li><b>${esc(nomObjet(e.id))}</b> · ${esc(e.raison)}</li>`).join('');
+    const message = !plan.ok ? 'Équipement bloqué' : !ensemble ? 'Enregistre ta tenue pour commencer' : plan.changements.length ? 'Toutes les pièces sont disponibles' : 'Tenue déjà portée';
+    const combat = this.world.state === 'combat';
+    return `<section class="vy-ens" data-defile="ensembles" aria-label="Ensembles d’équipement">
+      <header class="vy-ens__barre"><button type="button" class="vy-bouton vy-bouton--petit" data-act="onglet" data-onglet="tout">‹ Inventaire</button><b>Ensembles</b><span>${esc(ch.classDef.name)} · niv. ${ch.level}</span></header>
+      <div class="vy-ens__grille">
+        <aside class="vy-ens__panneau">
+          <div class="vy-ens__titre"><b>Mes ensembles</b><small>${list.length} / ${MAX_ENSEMBLES}</small></div>
+          <div class="vy-ens__liste">${liste || '<p class="muted">Aucun ensemble enregistré.</p>'}</div>
+          <button type="button" class="vy-bouton vy-bouton--petit" data-act="ensSave" ${list.length >= MAX_ENSEMBLES ? 'disabled' : ''}>${I.plus} Enregistrer la tenue portée</button>
+          ${edition ? `<div class="vy-ens__edition">${champ}<div><button type="button" class="vy-bouton vy-bouton--petit" data-act="ensCancel">Annuler</button><button type="button" class="vy-bouton vy-bouton--petit vy-bouton--primaire" data-act="ensConfirm">${edition.type === 'delete' ? 'Supprimer' : 'Enregistrer'}</button></div></div>` : ''}
+        </aside>
+        <section class="vy-ens__panneau">
+          <div class="vy-ens__titre"><b>${esc(nom)}</b><small>${plan.changements.length ? 'Aperçu' : 'Porté'}</small></div>
+          <div class="vy-ens__scene">
+            <div>${cases(GAUCHE)}</div>
+            <div class="vy-ens__figure"><canvas class="vy-inv__cv" role="img" aria-label="${esc(ch.name)}, ${esc(ch.classDef.name)}"></canvas></div>
+            <div>${cases(DROITE)}</div>
+          </div>
+          <div class="vy-ens__pieces"><b>Pièces qui changent</b>${pieces ? '<ul>' + pieces + '</ul>' : '<p class="muted">Aucun changement.</p>'}</div>
+        </section>
+        <section class="vy-ens__panneau">
+          <div class="vy-ens__titre"><b>Effet sur ta tenue</b></div>
+          <table class="vy-ens__stats"><thead><tr><th scope="col">Stat</th><th scope="col">Porté</th><th scope="col">Aperçu</th><th scope="col">Écart</th></tr></thead><tbody>${valeurs}</tbody></table>
+          <div class="vy-ens__etat${manque ? ' manque' : ''}" role="status"><b>${message}</b>${manque ? '<ul>' + manque + '</ul>' : ''}${combat ? '<p>Changement indisponible en combat.</p>' : ''}</div>
+          <div class="vy-ens__actions">
+            <button type="button" class="vy-bouton vy-bouton--primaire" data-act="ensUse" data-i="${i}" ${!ensemble || !plan.ok || !plan.changements.length || combat ? 'disabled' : ''}>Équiper cet ensemble</button>
+            ${ensemble ? `<div><button type="button" class="vy-bouton vy-bouton--petit" data-act="ensRename" data-i="${i}">Renommer</button><button type="button" class="vy-bouton vy-bouton--petit" data-act="ensDelete" data-i="${i}">Supprimer</button></div>` : ''}
+            ${this.invRetourEnsemble(ch) && !combat ? '<button type="button" class="vy-bouton vy-bouton--petit" data-act="ensUndo">Annuler le changement</button>' : ''}
+          </div>
+        </section>
+      </div>
+      <details class="vy-ens__panoplies"><summary>Panoplies portées</summary>${sets || '<p class="muted">Aucune pièce de panoplie portée.</p>'}</details>
+    </section>`;
   },
 
   invApparence(ch) {
@@ -678,6 +801,19 @@ Object.assign(Hud.prototype, {
 
   apresInventaire(body) {
     this.dessinerPoupee(body);
+    const edition = this.inv.ensEdition;
+    if (edition && edition.focus) {
+      edition.focus = false;
+      const field = body.querySelector('#inv-ensemble-nom, [data-act="ensCancel"]');
+      if (field) { field.focus(); if (field.select) field.select(); }
+    }
+    const field = body.querySelector('#inv-ensemble-nom');
+    if (field) field.onkeydown = evt => {
+      if (evt.key === 'Escape') { evt.preventDefault(); this.inv.ensEdition = null; this.fen.render('sac'); return; }
+      if (evt.key !== 'Enter' || evt.isComposing) return;
+      evt.preventDefault();
+      this.invConfirmerEnsemble();
+    };
     this.invMesurer(body);
     if (!body.invGestes) {
       body.invGestes = true;
@@ -852,3 +988,4 @@ Object.assign(Hud.prototype, {
   },
 });
 })();
+

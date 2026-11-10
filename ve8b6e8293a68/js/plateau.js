@@ -13,6 +13,7 @@ class Plateau {
     this.machines = [];
     this.sorties = (def.sorties || []).map(s => { const p = (def.lieux || {})[s.lieu]; return p ? { carte: s.carte, cote: s.cote, vers: s.vers, arrivee: s.arrivee, x: p[0], y: p[1], rayon: s.rayon || 3 } : null; }).filter(Boolean);
     this.marque = null;
+    this.ping = null;
     this.recherche = null;
     this.budgetFond = 2000;
     this.annonces = new Map();
@@ -57,7 +58,7 @@ class Plateau {
     arrivee = arrivee || {};
     this.nav.vider();
     this.recherche = null;
-    this.marque = null;
+    this.marque = null; this.ping = null;
     this.cartes = [];
     for (const z of (DATA.content && DATA.content.zones) || []) for (const m of z.maps || []) if (m.plateau === this.id) this.cartes.push({ def: m, zone: z });
     const now = Date.now();
@@ -113,7 +114,7 @@ class Plateau {
     Object.assign(p, { x, y, rx: x, ry: y, path: [], moving: false, onArrive: null, chemin: null, vitesse: 0, course: false });
     if (p.cap == null) p.cap = 2.356;
     this.recherche = null;
-    this.marque = null;
+    this.marque = null; this.ping = null;
     this.noterPosition(this.secteurDe(x, y) || w.mapId);
   }
 
@@ -325,18 +326,20 @@ class Plateau {
     if (ch.s >= ch.longueur - 1e-9) this.arriver();
   }
 
-  pasClavier(dir, dt, course) {
+  pasClavier(dir, dt, course, intensite) {
     const w = this.world, p = w.player;
+    if (dir && w.ch && w.ch.surcharge()) { w.avertirSurcharge(); dir = null; }
     if (!dir) {
       if (p.clavier) { p.clavier = false; p.moving = false; p.vitesse = 0; this.noterPosition(); }
       return;
     }
     if (!p.clavier) {
-      p.chemin = null; p.path = []; p.onArrive = null; this.recherche = null; this.marque = null; this.departTrajet = null;
+      p.chemin = null; p.path = []; p.onArrive = null; this.recherche = null; this.marque = null; this.ping = null; this.departTrajet = null;
       p.clavier = true; p.vitesse = 0;
       p.horsSortie = !this.sortieProche();
     }
-    const vmax = (course ? 7 : 4.5) * (typeof Montures !== 'undefined' ? Montures.vitesse(w.ch, true) : 1);
+    const force = intensite == null ? 1 : Math.max(0.1, Math.min(1, intensite));
+    const vmax = (course ? 7 : 4.5) * force * (typeof Montures !== 'undefined' ? Montures.vitesse(w.ch, true) : 1);
     p.vitesse = Math.min(vmax, p.vitesse + vmax / 0.15 * dt);
     p.course = !!course;
     const pas = p.vitesse * dt, comp = this.composanteJoueur();
@@ -389,6 +392,7 @@ class Plateau {
   arriver() {
     const w = this.world, p = w.player;
     p.chemin = null; p.path = []; p.moving = false; p.vitesse = 0;
+    if (this.marque) this.signalerDestination(this.marque.x, this.marque.y, 'arrive', true);
     this.marque = null;
     this.noterPosition();
     const fn = p.onArrive;
@@ -529,16 +533,25 @@ class Plateau {
     const comp = this.composanteJoueur();
     let but = this.nav.libre(x, y) && this.nav.composanteA(x, y) === comp ? [x, y] : this.nav.plusProche(x, y, 12, { comp });
     if (!but) but = this.nav.plusProche(x, y, 12);
-    if (!but) return 'impossible';
+    if (!but) { this.signalerDestination(x, y, 'refuse'); return 'impossible'; }
     return this.planifier(but, action || null);
+  }
+
+  signalerDestination(x, y, etat, conserver) {
+    const t = this.world.time || 0, p = this.ping;
+    if (conserver && p && Math.hypot(p.x - x, p.y - y) < 0.05) {
+      if (p.etat !== etat) { p.etat = etat; p.change = t; }
+    } else this.ping = { x, y, etat, cree: t, change: t };
   }
 
   planifier(but, action, garderVitesse, surEchec) {
     if (this.world.ch && this.world.ch.surcharge()) { this.world.avertirSurcharge(); if (surEchec) surEchec(); return 'impossible'; }
     const p = this.world.player;
     if (!garderVitesse) { p.chemin = null; p.path = []; p.moving = false; p.vitesse = 0; }
+    p.clavier = false;
     p.onArrive = null;
     this.marque = { x: but[0], y: but[1] };
+    this.signalerDestination(but[0], but[1], 'calcul', !!garderVitesse);
     const r = this.nav.chercher([p.x, p.y], but);
     this.recherche = { r, but: { x: but[0], y: but[1] }, action: action || null, garderVitesse: !!garderVitesse, surEchec: surEchec || null };
     return this.poursuivre(true);
@@ -552,6 +565,7 @@ class Plateau {
     this.recherche = null;
     const res = rq.r.resultat;
     if (etat !== 'trouve' || !res || !res.points.length) {
+      this.signalerDestination(rq.but.x, rq.but.y, 'refuse', true);
       this.marque = null;
       if (!premier) this.world.toast('Impossible d\'y aller.');
       if (rq.surEchec) rq.surEchec();
@@ -574,6 +588,7 @@ class Plateau {
     p.path = points.slice(1);
     p.moving = true;
     this.marque = { x: p.chemin.but.x, y: p.chemin.but.y };
+    this.signalerDestination(this.marque.x, this.marque.y, 'route', true);
     w.emit('path', points);
   }
 
@@ -645,7 +660,7 @@ class Plateau {
     const p = w.player;
     Object.assign(p, { path: [], moving: false, onArrive: null, chemin: null, vitesse: 0 });
     this.recherche = null;
-    this.marque = null;
+    this.marque = null; this.ping = null;
   }
 
   apresCombat(combat) {

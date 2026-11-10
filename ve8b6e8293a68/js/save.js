@@ -102,7 +102,8 @@ const Save = (() => {
   const TITRES_RENOMMES = new Map([['Fléau des Pilous', 'Fléau des Glyms'], ['Enfant des Cimes', 'Veilleur des Cimes'],
     ['Bout de fil', 'Étincelle'], ['Couseur', 'Lueur'], ['Point', 'Rayon'], ['Ourlet', 'Flambeau'], ['Trame', 'Fanal'], ['Navette', 'Phare'], ['Fuseau', 'Aurore'], ['Métier', 'Zénith'], ['Grand Tisserand', 'Grand Éveilleur'], ['Main du Fil', 'Main de l\'Aube'],
     ['Accroc', 'Maillon'], ['Éraflure', 'Crochet'], ['Entaille', 'Anneau'], ['Fêlure', 'Rivet'], ['Fente', 'Fer'], ['Lézarde', 'Entrave'], ['Brèche', 'Carcan'], ['Faille', 'Joug'], ['Gouffre', 'Grand Lieur'], ['Voix de la Déchirure', 'Voix de la Chaîne'],
-    ['Vétéran des Voiles', 'Vétéran des Cimes'], ['Tisseur de Fils', 'Grand Argentier'], ['Bras du Fil', 'Bras de l\'Aube'], ['Veilleur des sept Voiles', 'Veilleur des Sept Dragons']]);
+    ['Vétéran des Voiles', 'Vétéran des Cimes'], ['Tisseur de Fils', 'Grand Argentier'], ['Bras du Fil', 'Bras de l\'Aube'], ['Veilleur des sept Voiles', 'Veilleur des Sept Dragons'],
+    ['Colosse des Voiles', 'Colosse des Cimes'], ['Dandy des Voiles', 'Dandy des Cimes'], ['Arpenteur du Fil', 'Arpenteur des Cimes'], ['Trappeur du Fil', 'Trappeur des Cimes']]);
   function migrerTitres(o) {
     if (Array.isArray(o.titles)) o.titles = o.titles.map(t => (TITRES_RENOMMES.has(t) ? TITRES_RENOMMES.get(t) : t));
     if (TITRES_RENOMMES.has(o.title)) o.title = TITRES_RENOMMES.get(o.title);
@@ -306,7 +307,16 @@ const Save = (() => {
       }
     }
     o.knots = (Array.isArray(o.knots) ? o.knots : []).filter(id => inv[id]);
-    o.ensembles = (Array.isArray(o.ensembles) ? o.ensembles : []).slice(0, 6).filter(e => e && typeof e === 'object').map(e => { const r = {}; for (const s of Object.keys(eq)) if (typeof e[s] === 'string' && Items.get(e[s])) r[s] = e[s]; return r; });
+    o.ensembles = (Array.isArray(o.ensembles) ? o.ensembles : []).slice(0, 6).filter(e => e && typeof e === 'object' && !Array.isArray(e)).map(e => {
+      const r = {};
+      for (const slot of Items.EQUIP_SLOTS) {
+        const id = e[slot];
+        if (typeof id === 'string' && (Items.get(id) || /^[a-z0-9_-]{1,96}$/i.test(id))) r[slot] = id;
+      }
+      const nom = Character.nomEnsemble(e.nom);
+      if (nom) r.nom = nom;
+      return r;
+    });
     if (o.hp != null && !isInt(o.hp, 0, 99999)) { bad('PV'); o.hp = null; }
     if (typeof o.playTime !== 'number' || !Number.isFinite(o.playTime) || o.playTime < 0) o.playTime = 0;
     o.autoStats = !!o.autoStats;
@@ -533,3 +543,4 @@ const Save = (() => {
 
   return { MAX, LEGACY_KEY, keyOf, list, read, write, remove, lastUid, free, clear, exportText, importText, suspend, validate, accorder, get KEY() { return keyOf(lastUid() || ''); } };
 })();
+

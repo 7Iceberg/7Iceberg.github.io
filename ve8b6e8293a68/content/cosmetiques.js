@@ -90,7 +90,7 @@
       description: 'Chaque familier éclos et gardé. Une patte, frappée dans l\'or.', data: { glyphe: '✦', couleur: '#6eb19f' } },
   );
   L.push(
-    { id: 'aura_fil', nom: 'Le fil recousu', type: 'aura', rarete: 'legendaire', source: { genre: 'succes', id: 'le_monde_recousu' }, collection: null,
+    { id: 'aura_fil', nom: 'Le monde arpenté', type: 'aura', rarete: 'legendaire', source: { genre: 'succes', id: 'le_monde_recousu' }, collection: null,
       description: 'Un cercle d\'or sous les pas : Ervane, Orsane et Kaldum explorées en entier.', data: { couleur: '#f3bc72', forme: 'cercle' } },
     { id: 'aura_trophees', nom: 'Brume du trappeur', type: 'aura', rarete: 'legendaire', source: { genre: 'succes', id: 'trappeur_du_fil' }, collection: null,
       description: 'Une brume verte qui suit le pas : tout le Bestiaire accompli.', data: { couleur: '#80d697', forme: 'brume' } },

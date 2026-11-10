@@ -114,7 +114,7 @@ Object.assign(Hud.prototype, {
     for (const g of list) for (const it of g.items) { const d = Items.get(it.id); if (d) objets.push(d.name + (it.count > 1 ? ' ×' + it.count : '')); }
     for (const g of list) for (const e of g.cosmetiques || []) { this.chat('gain', World.texteCosmetique(e)); this.toast(World.texteCosmetique(e)); }
     const eclats = list.reduce((t, g) => t + (g.eclats || 0), 0);
-    if (eclats) { this.chat('gain', `+${eclats} Éclats pour la Boutique des Voiles.`); this.toast(`+${eclats} Éclats`); }
+    if (eclats) { this.chat('gain', `+${eclats} Éclats pour la Boutique des Cimes.`); this.toast(`+${eclats} Éclats`); }
     for (const g of list) for (const d of g.fidelite || []) this.toast(d.article ? `Fidélité : ${d.article.nom} offert.` : `Fidélité : −${d.remise} % sur ton prochain panier.`);
     if (xp) this.chat('gain', `Tu as gagné ${nf(xp)} points d'expérience.`);
     if (fils) this.chat('gain', `Tu as obtenu ${nf(fils)} Dragmes.`);

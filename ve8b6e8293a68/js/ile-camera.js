@@ -28,6 +28,7 @@ class CameraIle {
     this.vitCible = { x: 0, y: 0 };
     this.vitJoueur = { x: 0, y: 0 };
     this.joueurPrec = null;
+    this.suiviPrec = null;
     this.regards = {
       jeu: { ouverture: this.ouverture, elevations: this.elevations.slice(), leve: this.leve, champs: this.champs.slice(), champDefaut: this.champDefaut, proche: this.proche },
       basse: { ouverture: 58, elevations: [5, 9], leve: 2.2, champs: [9, 22], champDefaut: telephone ? 12 : 14 },
@@ -251,6 +252,7 @@ class CameraIle {
   user() { this.userUntil = performance.now() + 4000; this.revient = false; }
 
   deplacer(dx, dy) {
+    this.suiviPrec = null;
     const d = this.decalage;
     let nx = d.x + dx, ny = d.y + dy;
     const n = Math.sqrt(nx * nx + ny * ny);
@@ -344,6 +346,10 @@ class CameraIle {
   static ressort(x, v, cible, w, dt) {
     const d = x - cible, e = Math.exp(-w * dt), t = (v + w * d) * dt;
     return { x: cible + (d + t) * e, v: (v - t * w) * e };
+  }
+  static ressortMobile(x, v, cible, vitesse, w, dt) {
+    const r = CameraIle.ressort(x, v - vitesse, cible - vitesse * dt, w, dt);
+    return { x: r.x + vitesse * dt, v: r.v + vitesse };
   }
   static diagonale(az) { return CameraIle.arc(Math.round((az - Math.PI / 4) / (Math.PI / 2)) * (Math.PI / 2) + Math.PI / 4); }
 
@@ -514,6 +520,7 @@ class CameraIle {
   }
 
   fit(animate) {
+    this.suiviPrec = null;
     if (this.mode === 'carte') { this.carteRecentrer(); return; }
     if (this.trans) return;
     this.userUntil = 0;
@@ -544,6 +551,7 @@ class CameraIle {
   }
 
   sauter(x, y, h) {
+    this.suiviPrec = null;
     this.finirRegard();
     if (x != null) { this.joueur.x = x; this.joueur.y = y; this.joueur.h = h || 0; }
     if (this.mode === 'carte') { this.decalage.x = 0; this.decalage.y = 0; this.cible.x = this.joueur.x; this.cible.y = this.joueur.y; this.cible.h = this.joueur.h; this.vitCible.x = 0; this.vitCible.y = 0; return; }
@@ -777,20 +785,23 @@ class CameraIle {
 
 
   update(now, joueur, marche) {
-    const dt = this.lastStep ? Math.min(0.1, Math.max(0, (now - this.lastStep) / 1000)) : 0.016;
+    const ecoule = this.lastStep ? Math.max(0, (now - this.lastStep) / 1000) : 0.016;
+    const dt = Math.min(0.1, ecoule);
     this.lastStep = now;
     if (joueur) {
       const jp = this.joueurPrec, jv = this.vitJoueur;
       if (jp && dt > 0) {
-        const vx = (joueur.x - jp.x) / dt, vy = (joueur.y - jp.y) / dt, k = 1 - Math.exp(-dt / CameraIle.SUIVI.lissageMarche);
-        if (Math.hypot(vx, vy) < 20) { jv.x += (vx - jv.x) * k; jv.y += (vy - jv.y) * k; } else { jv.x = 0; jv.y = 0; }
+        const vx = (joueur.x - jp.x) / dt, vy = (joueur.y - jp.y) / dt;
+        const k = 1 - Math.exp(-dt / (marche ? CameraIle.SUIVI.lissageMarche : CameraIle.SUIVI.arret));
+        if (Math.hypot(vx, vy) < 20 && ecoule < 0.25) { jv.x += (vx - jv.x) * k; jv.y += (vy - jv.y) * k; }
+        else { jv.x = 0; jv.y = 0; this.suiviPrec = null; }
       }
       this.joueurPrec = { x: joueur.x, y: joueur.y };
       this.joueur.x = joueur.x; this.joueur.y = joueur.y; this.joueur.h = joueur.h;
     }
-    if (this.trans) return this.majPassage(now);
-    if (this.mode === 'combat') return this.majCombat(dt, now);
-    if (this.mode === 'carte') return this.majCarte(dt, now);
+    if (this.trans) { this.suiviPrec = null; return this.majPassage(now); }
+    if (this.mode === 'combat') { this.suiviPrec = null; return this.majCombat(dt, now); }
+    if (this.mode === 'carte') { this.suiviPrec = null; return this.majCarte(dt, now); }
     const avant = { x: this.cible.x, y: this.cible.y, h: this.cible.h, c: this.champ, az: this.azimut };
     if (marche && !this.focusMarche) this.revient = true;
     this.focusMarche = !!marche;
@@ -834,9 +845,14 @@ class CameraIle {
       if (Math.abs(da) < 0.003) { this.azimut = this.animAz; this.animAz = null; } else this.azimut = CameraIle.arc(this.azimut + da * (1 - Math.exp(-dt / 0.15)));
       this.changed();
     }
-    const S = CameraIle.SUIVI, jv = this.vitJoueur, nv = Math.hypot(jv.x, jv.y), av = Math.min(S.avanceMax, nv * S.avance);
+    const S = CameraIle.SUIVI, jv = this.vitJoueur, nv = Math.hypot(jv.x, jv.y);
+    const calme = CameraIle.calme(), av = calme ? 0 : Math.min(S.avanceMax, this.champ * 0.045, nv * S.avance);
     const cx = this.joueur.x + d.x + (nv > 1e-3 ? jv.x / nv * av : 0), cy = this.joueur.y + d.y + (nv > 1e-3 ? jv.y / nv * av : 0);
-    const vc = this.vitCible, rx = CameraIle.ressort(this.cible.x, vc.x, cx, S.raideur, dt), ry = CameraIle.ressort(this.cible.y, vc.y, cy, S.raideur, dt);
+    const prec = this.suiviPrec, vc = this.vitCible;
+    const vx = prec && dt > 0 ? (cx - prec.x) / dt : 0, vy = prec && dt > 0 ? (cy - prec.y) / dt : 0;
+    const rx = CameraIle.ressortMobile(this.cible.x, vc.x, cx, vx, S.raideur, dt);
+    const ry = CameraIle.ressortMobile(this.cible.y, vc.y, cy, vy, S.raideur, dt);
+    this.suiviPrec = { x: cx, y: cy };
     this.cible.x = rx.x; vc.x = rx.v;
     this.cible.y = ry.x; vc.y = ry.v;
     this.cible.h += (this.joueur.h - this.cible.h) * (1 - Math.exp(-dt * 5));
@@ -1210,6 +1226,6 @@ CameraIle.CLE_REGARD = 'veylan.regard';
 CameraIle.CARTE = { ouverture: 30, elevation: [50, 74], min: 0.11, max: 3.55, approche: 0.41, depart: 0.9, retour: 0.7, marge: 0.05 };
 CameraIle.RECUL_COMBAT = [32, 16.75];
 CameraIle.MARGE_COMBAT = 0.06;
-CameraIle.SUIVI = { raideur: 3.8, avance: 0.22, avanceMax: 1.4, lissageMarche: 0.4, retour: 2.4, zoom: 0.17 };
+CameraIle.SUIVI = { raideur: 7, avance: 0.18, avanceMax: 1.25, lissageMarche: 0.22, arret: 0.12, retour: 3.2, zoom: 0.17 };
 CameraIle.ORBITE = { tour: 0.006, pente: 0.135, min: 6, max: 72, leve: 2.6, lissage: 0.09 };
 CameraIle.SOL = { tete: 1.4, marge: [0.4, 3], points: 24, montee: 0.25, descente: 0.7, ecart: 0.035, max: 76, levee: 30, anticipation: 0.6, approche: 0.2, recul: 0.5, brasMin: 6, brasPart: 0.3 };

@@ -42,7 +42,7 @@ const MENUS = [
   ['carnet', 'Bestiaire', 'B', I.carnet],
   ['encyclopedie', 'Encyclopédie', '', I.carnet],
   ['garderobe', 'Garde-robe', 'G', I.garderobe],
-  ['boutique', 'Boutique des Voiles', 'Y', I.boutique],
+  ['boutique', 'Boutique des Cimes', 'Y', I.boutique],
   ['familiers', 'Familiers', 'K', I.familiers],
   ['montures', 'Montures', 'L', I.montures],
   ['metiers', 'Métiers', '', I.metiers || I.sac],

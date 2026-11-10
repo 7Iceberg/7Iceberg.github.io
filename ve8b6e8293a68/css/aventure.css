@@ -66,3 +66,52 @@
   .vy-av__cartes { grid-template-columns: 1fr; }
   .vy-av__onglets { gap: 12px; }
 }
+.vy-av__rubrique-titre { padding-left: calc(6px + var(--niveau, 0) * 10px); }
+.vy-av__ancre { padding-left: calc(20px + var(--niveau, 0) * 10px); }
+.vy-av__statut { display: inline-block; padding: 4px 8px; margin-bottom: 12px; border: 1px solid var(--fen-filet); border-radius: 3px; color: var(--fen-accent); font-size: 10px; }
+.vy-av__classe-meta { display: flex; gap: 14px; align-items: center; margin-bottom: 20px; }
+.vy-av__classe-meta p { margin: 4px 0; font-size: 12px; }
+.vy-av__repertoire { margin: 18px 0; }
+.vy-av__repertoire details { border-top: 1px solid var(--fen-filet); }
+.vy-av__repertoire summary { cursor: pointer; padding: 12px 4px; color: var(--fen-texte); line-height: 1.5; }
+.vy-av__sort { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; }
+.vy-av__sort img { flex-shrink: 0; border-radius: 5px; }
+.vy-av__sort small { display: block; margin-top: 4px; color: var(--fen-accent); font-size: 10px; }
+.vy-av__sort p { margin-top: 8px; font-size: 12px; }
+.vy-av__schema { display: grid; justify-items: center; gap: 12px; padding: 14px; margin: 22px 0; border: 1px solid var(--fen-filet); border-radius: 5px; }
+.vy-av__schema svg { width: min(100%, 300px); height: auto; }
+.vy-av__schema polygon { fill: var(--fen-fond-2); stroke: var(--fen-texte-2); stroke-width: .5; }
+.vy-av__schema polygon.touchee { fill: var(--fen-accent); fill-opacity: .65; }
+.vy-av__schema circle { fill: var(--fen-texte); }
+.vy-av__schema path { fill: none; stroke: var(--fen-texte); stroke-width: 1.5; }
+.vy-av__schema figcaption { color: var(--fen-texte-2); font-size: 11px; text-align: center; line-height: 1.7; }
+@media (max-width: 430px) {
+  .vy-av__rubrique-titre { padding-left: calc(3px + var(--niveau, 0) * 5px); }
+  .vy-av__ancre { padding-left: calc(8px + var(--niveau, 0) * 5px); }
+  .vy-av__schema { padding: 8px; }
+  .vy-av__classe-meta { gap: 8px; flex-wrap: wrap; }
+}
+.vy-av__outils { display: flex; gap: 5px; flex-wrap: wrap; padding: 7px 10px; border-bottom: 1px solid var(--fen-filet); flex-shrink: 0; }
+.vy-av__outils .vy-av__bouton { padding: 6px 9px; min-height: 30px; }
+.vy-av__outils [aria-pressed="true"] { background: var(--fen-tete); border-color: var(--fen-accent); }
+.vy-av__fil { color: var(--fen-texte-2); font-size: 10px; line-height: 1.6; }
+.vy-av__recherche-tete { margin: 0 0 22px; }
+#app .vy-av__recherche-tete h3 { text-align: left; margin: 8px 0; }
+.vy-av__resultat { display: grid; gap: 7px; width: 100%; margin-bottom: 10px; padding: 14px; border: 1px solid var(--fen-filet); border-radius: 5px; background: var(--fen-fond-2); text-align: left; color: var(--fen-texte); font: inherit; cursor: pointer; }
+.vy-av__resultat:hover { border-color: var(--fen-accent); }
+.vy-av__resultat small { font-size: 10px; color: var(--fen-accent); }
+.vy-av__resultat span { color: var(--fen-texte-2); font-size: 12px; line-height: 1.6; }
+.vy-av__resultat em { font-size: 10px; color: var(--fen-accent); font-style: normal; }
+.vy-av__resultat mark { color: var(--fen-accent); background: transparent; font-weight: 700; }
+@media (max-width: 720px) and (max-height: 500px) {
+  .vy-av__outils { padding: 3px 6px; }
+  .vy-av__outils .vy-av__bouton { min-height: 26px; padding: 4px 7px; }
+  .vy-av__onglet { padding: 7px 6px; }
+}
+.vy-av__guide--lecture { grid-template-columns: minmax(0, 1fr); }
+.vy-av__guide--lecture .vy-av__sommaire { display: none; }
+.vy-av__guide--lecture .vy-av__article { padding-right: max(24px, calc((100% - 650px) / 2)); padding-left: max(24px, calc((100% - 650px) / 2)); }
+.vy-av__suggestion-outils { display: flex; gap: 6px; }
+.vy-av__suggestion-outils button { flex: 1; padding: 6px; }
+.vy-av__suggestion-outils [aria-pressed="true"] { color: var(--fen-texte); border-color: var(--fen-accent); }
+.vy-av__portrait { width: 96px; height: 112px; flex-shrink: 0; border: 1px solid var(--fen-filet); border-radius: 5px; }

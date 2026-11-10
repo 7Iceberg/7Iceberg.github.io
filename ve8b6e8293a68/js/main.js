@@ -106,8 +106,12 @@
 
   const titleEl = document.getElementById('title'), panelEl = document.getElementById('panel');
   const controls = R.controls = new CameraControls(R.camera, canvas, {
-    enabled: () => !!world && titleEl.classList.contains('hidden'),
-    keys: () => panelEl.classList.contains('hidden'),
+    enabled: () => !!world && titleEl.classList.contains('hidden') && panelEl.classList.contains('hidden') && !(hud && hud.conversation && hud.conversation.ouverte),
+    keys: () => {
+      if (hud && hud.discussion && hud.discussion.ouverte) return false;
+      const f = hud && hud.fen;
+      return !f || !f.wins.size || f.wins.size === 1 && f.isOpen('carte') && R.camera.mode === 'carte';
+    },
     leftPan: () => !!(world && world.showCombat),
     zeroTaken: () => !!(world && world.showCombat && combat.player && combat.player.spells.length >= 10),
     onRightClick: () => { if (world && world.showCombat) ui.selectSpell(null); },

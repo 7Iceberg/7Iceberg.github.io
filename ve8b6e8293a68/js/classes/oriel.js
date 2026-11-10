@@ -29,7 +29,7 @@ DATA.kit('oriel', [
     { id: 'premier_souffle', icone: ['coeur', 'etoile'], name: 'Souffle Retrouvé', element: 'neutre', pa: 3, range: [0, 4], target: 'ally', affectsCaster: true, effects: [{ type: 'healPct', pct: 35 }], cooldown: 4,
       desc: 'Le souffle que Ruhani expire chaque matin passe sur un allié : il retrouve 35 % de ses PV, et rien ne l\'empêche d\'être soigné ensuite.' }],
   ['manteau_partage',
-    { id: 'ecaille_partagee', icone: ['garde', 'etoile'], name: 'Écaille Partagée', element: 'neutre', pa: 3, range: [0, 4], los: false, target: 'any', aoe: cross1, affects: 'allies', affectsCaster: true,
+    { id: 'ecaille_partagee', icone: ['garde', 'etoile'], name: 'Égide Partagée', element: 'neutre', pa: 3, range: [0, 4], los: false, target: 'any', aoe: cross1, affects: 'allies', affectsCaster: true,
       effects: [{ type: 'armor', value: 20, turns: 2 }], cooldown: 3,
       desc: 'Une écaille de Ruhani se pose sur chaque allié d\'une croix, de la couleur de l\'astre qui la traverse : −20 % de dégâts subis pendant deux tours.' }],
   ['aube',
@@ -57,7 +57,7 @@ DATA.kit('oriel', [
       desc: 'La lune tire l\'eau d\'une flaque et l\'onde s\'en va en croix, tranchante comme du verre, sur tout ce qu\'elle touche.' }],
   [{ id: 'plein_midi', icone: ['soleil', 'plus'], name: 'Plein Midi', element: 'neutre', pa: 3, range: [0, 0], los: false, target: 'self', aoe: circle2, affects: 'allies', affectsCaster: true, effects: [power(25, 2)], cooldown: 5,
       desc: 'L\'Oriel lève sa lanterne et le soleil monte d\'un coup à midi : lui et ses alliés à deux cases font +25 % de dégâts pendant deux tours.' },
-    { id: 'voile_du_soir', icone: ['lune', 'moins'], name: 'Voile du Soir', element: 'neutre', pa: 2, range: [1, 5], target: 'enemy', ombre: true, effects: [power(-25, 2)], cooldown: 3,
+    { id: 'voile_du_soir', icone: ['lune', 'moins'], name: 'Manteau du Soir', element: 'neutre', pa: 2, range: [1, 5], target: 'enemy', ombre: true, effects: [power(-25, 2)], cooldown: 3,
       desc: 'Un voile de crépuscule tombe sur l\'ennemi : ses coups perdent leur force, −25 % de dégâts pendant deux tours. Une Ombre : elle remplace l\'Ombre déjà posée sur la cible.' }],
   [{ id: 'plume_d_aube', icone: ['plume', 'pm'], name: 'Queue de Comète', element: 'air', pa: 4, range: [2, 6], effects: [dmg(17, 22), pm(-1, 1)], maxPerTurn: 2,
       desc: 'Une comète passe de loin et sa queue de lumière fouette la cible aux jambes : −1 PM au prochain tour.' },
@@ -67,9 +67,9 @@ DATA.kit('oriel', [
       effects: [Object.assign(heal(10, 13), { onAlly: true }), Object.assign(dmg(15, 19), { onFoe: true })], cooldown: 1,
       desc: 'Une larme du dragon, claire comme la lune, tombe sur une case et éclabousse autour : elle blesse les ennemis qu\'elle touche et soigne les alliés de 10 à 13 PV.' },
     { id: 'sable_d_aube', icone: ['sablier', 'coeur'], name: 'Cratère', element: 'terre', pa: 4, range: [1, 4],
-      effects: [dmg(19, 24), { type: 'glyph', name: 'Cratère', turns: 2, affects: 'allies', effects: [heal(8, 10)] }], maxPerTurn: 2,
-      desc: 'Un astre tombe sur la cible et creuse le sol : le cratère qu\'il laisse garde sa chaleur deux tours, et soigne de 8 à 10 l\'allié qui y commence son tour.' }],
-  [{ id: 'ecaille_d_or', icone: ['bouclier', 'lune'], name: 'Écaille d\'Or', element: 'neutre', pa: 2, range: [0, 5], target: 'any', affects: 'allies', affectsCaster: true, faveur: true, effects: [shield(36, 2)], cooldown: 2,
+      effects: [dmg(19, 24), { type: 'glyph', name: 'Cratère', turns: 2, affects: 'allies', effects: [heal(8, 10)] }], maxPerTurn: 1,
+      desc: 'Un astre tombe sur la cible et creuse le sol : le cratère qu\'il laisse garde sa chaleur deux tours, et soigne de 8 à 10 l\'allié qui y commence son tour. Un seul glyphe par tour, Lit d\'Étoiles compris.' }],
+  [{ id: 'ecaille_d_or', icone: ['bouclier', 'lune'], name: 'Égide d\'Or', element: 'neutre', pa: 2, range: [0, 5], target: 'any', affects: 'allies', affectsCaster: true, faveur: true, effects: [shield(36, 2)], cooldown: 2,
       desc: 'Une écaille d\'or ancien se pose sur un allié comme une plaque d\'armure : un bouclier de 36 qui tient deux tours. Une Faveur (une seule par allié) ; sur une case vide, elle reste au sol en Étincelle.' },
     { id: 'clarte_offerte', icone: ['lanterne', 'plus'], name: 'Clarté Offerte', element: 'neutre', pa: 2, range: [0, 5], target: 'any', affects: 'allies', affectsCaster: true, faveur: true, effects: [power(30, 2)], cooldown: 3,
       desc: 'L\'Oriel tourne sa lanterne vers un allié, qui voit enfin clair où frapper : +30 % de dégâts pendant deux tours. Une Faveur (une seule par allié) ; sur une case vide, elle reste au sol en Étincelle.' }],
@@ -84,7 +84,7 @@ DATA.kit('oriel', [
   ['rappel',
     { id: 'heure_juste', icone: ['sablier', 'etoile'], name: 'Heure Juste', element: 'neutre', pa: 2, range: [0, 5], target: 'entity', affectsCaster: true, effects: [{ type: 'ecourter', tours: 1 }], cooldown: 2,
       desc: 'L\'Oriel avance l\'heure d\'un coup de lanterne, comme les astres tournent : sur un allié, ses malus durent un tour de moins ; sur un ennemi, ses bonus et ses boucliers. Plus souple qu\'une purge, et dans les deux sens.' }],
-], { classe: { title: 'Veilleur des Astres', desc: 'Lit le ciel où nage Ruhani : soigne à l\'Aube, protège au Crépuscule, et chaque astre soigne à sa façon.' } });
+], { classe: { title: 'Veilleur des Astres', desc: 'Lit le ciel où nage Ruhani : soigne mieux à l\'Aube, frappe en volant la vie au Crépuscule, et chaque astre soigne à sa façon.' } });
 
 DATA.spells.bascule_du_ciel = S('bascule_du_ciel', { name: 'Bascule du Ciel', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [{ type: 'basculeCiel' }], maxPerTurn: 1,
   desc: 'L\'Oriel tourne sa lanterne vers l\'autre moitié du ciel : il passe de l\'Aube au Crépuscule, ou l\'inverse. À l\'Aube, ses soins font 10 % de plus et rendent l\'allié soigné Rayonnant ; au Crépuscule, ses attaques volent 15 points de vie de plus. Une fois par tour.' });

@@ -119,16 +119,16 @@ spells.lame_de_braise = S('lame_de_braise', { name: 'Lame de Braise', element: '
 spells.ferveur = S('ferveur', { name: 'Ferveur', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [power(30, 1)], selfEffects: [{ type: 'pmNow', value: 1 }], cooldown: 3, desc: '+30 % de dégâts ce tour et le suivant, et +1 PM ce tour.' });
 spells.verdict = S('verdict', { name: 'Verdict', element: 'terre', pa: 5, range: [1, 1], effects: [dmg(16, 20)], furySpend: 20, oathPierce: true, cooldown: 2, desc: '+20 % par point de Fureur dépensé (toute la Fureur). Contre le juré : ni esquive ni armure.' });
 
-spells.trait_tisse = S('trait_tisse', { name: 'Flèche Ailée', element: 'air', pa: 3, range: [3, 7], effects: [dmg(10, 14)], maxPerTurn: 2, desc: 'Le tir de base, précis et long.' });
+spells.trait_tisse = S('trait_tisse', { name: 'Carreau Ailé', element: 'air', pa: 3, range: [3, 7], effects: [dmg(10, 14)], maxPerTurn: 2, desc: 'Le tir de base, précis et long.' });
 spells.fil_tendu = S('fil_tendu', { name: 'Corde Tendue', element: 'air', pa: 3, range: [2, 6], effects: [dmg(8, 11), push(2)], maxPerTurn: 2, desc: 'Repousse de 2 cases, deux fois par tour ; contre un obstacle, +6 dégâts par case non parcourue.' });
 spells.collet = S('collet', { name: 'Collet', element: 'neutre', pa: 2, range: [1, 5], target: 'free', effects: [{ type: 'trap', name: 'Collet', effects: [dmg(6, 9), root] }], trapReplaceOldest: true, maxPerTurn: 1, desc: 'Un collet invisible : la cible est blessée et enracinée 1 tour. Un quatrième collet fait disparaître le plus ancien.' });
 spells.repli_traqueur = S('repli_traqueur', { name: 'Repli', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', effects: [{ type: 'retreat', cells: 2 }], keepsAffut: true, cooldown: 2, desc: 'Recule de 2 cases à l\'opposé de l\'ennemi le plus proche, sans casser l\'Affût.' });
-spells.fleche_lourde = S('fleche_lourde', { name: 'Flèche Lourde', element: 'terre', pa: 4, range: [2, 6], effects: [dmg(15, 19)], maxPerTurn: 1, desc: 'Le tir lourd, la voie de la Force.' });
+spells.fleche_lourde = S('fleche_lourde', { name: 'Carreau Lourd', element: 'terre', pa: 4, range: [2, 6], effects: [dmg(15, 19)], maxPerTurn: 1, desc: 'Le tir lourd, la voie de la Force.' });
 spells.corde_longue = S('corde_longue', { name: 'Corde Longue', element: 'neutre', pa: 1, range: [0, 0], los: false, target: 'self', affectsCaster: true, effects: [{ type: 'range', value: 3, turns: 1 }], cooldown: 3, desc: '+3 portée ce tour et le suivant.' });
 spells.balise_de_fil = S('balise_de_fil', { name: 'Balise de Plume', element: 'neutre', pa: 2, range: [1, 5], target: 'free', effects: [{ type: 'summon', monster: 'balise_de_fil', count: 1, hpPctOfOwner: 20 }], cooldown: 3, desc: 'Plante un piquet à plume. La première fois que le Lyssar est blessé, il échange sa place avec le piquet.' });
 spells.marque_traqueur = S('marque_traqueur', { name: 'Marque du Traqueur', element: 'neutre', pa: 2, range: [1, 7], los: false, target: 'enemy', effects: [{ type: 'vuln', value: 10, turns: 2 }, { type: 'track', turns: 2 }], traque: true, cooldown: 1, desc: 'La cible subit +10 % de dégâts 2 tours et ne peut plus être invisible ; elle est prise en traque : chaque tir qui la touche ajoute un cran (+8 % chacun, 3 au plus).' });
-spells.pluie_de_fil = S('pluie_de_fil', { name: 'Pluie de Flèches', element: 'air', pa: 4, range: [3, 7], los: false, target: 'any', aoe: circle1, affects: 'enemies', effects: [dmg(8, 11)], cooldown: 2, desc: 'Une volée sans ligne de vue sur une case et ses voisines : chaque ennemi est touché.' });
-spells.fleche_ancre = S('fleche_ancre', { name: 'Flèche Ancre', element: 'terre', pa: 3, range: [2, 6], effects: [dmg(6, 9), pm(-2, 2)], cooldown: 2, desc: 'La cible perd 2 PM pendant 2 tours.' });
+spells.pluie_de_fil = S('pluie_de_fil', { name: 'Pluie de Carreaux', element: 'air', pa: 4, range: [3, 7], los: false, target: 'any', aoe: circle1, affects: 'enemies', effects: [dmg(8, 11)], cooldown: 2, desc: 'Une volée sans ligne de vue sur une case et ses voisines : chaque ennemi est touché.' });
+spells.fleche_ancre = S('fleche_ancre', { name: 'Carreau Ancre', element: 'terre', pa: 3, range: [2, 6], effects: [dmg(6, 9), pm(-2, 2)], cooldown: 2, desc: 'La cible perd 2 PM pendant 2 tours.' });
 spells.trait_du_veilleur = S('trait_du_veilleur', { name: 'Trait du Veilleur', element: 'air', pa: 5, range: [4, 10], line: true, target: 'any', aoe: { shape: 'pierce', size: 0 }, markSight: true, effects: [dmg(18, 24)], affutBonus: 30, cooldown: 3, desc: 'La flèche traverse : chaque entité de la ligne jusqu\'au bord ou au premier rocher. +30 % à l\'Affût.' });
 
 spells.lueur = S('lueur', { name: 'Lueur', element: 'feu', pa: 3, range: [0, 5], target: 'entity', affectsCaster: true, effects: [Object.assign(heal(22, 28), { onAlly: true }), Object.assign(dmg(10, 13), { onFoe: true })], maxPerTurn: 1, desc: 'Soigne un allié, ou brûle un ennemi.' });
@@ -389,10 +389,10 @@ DATA.classes = {
     fury: { max: 5, onMeleeHit: 1, power: 3 },
     spells: ['taille_franche', 'saut_delan', 'serment_jure', 'garde_de_scorie', 'lame_tournoyante', 'defi', 'poigne_juree', 'lame_de_braise', 'ferveur', 'verdict'],
     desc: 'Saute dans la mêlée, jure contre une cible et ne la lâche plus ; sa Fureur monte à chaque coup, et le Verdict la dépense.' },
-  lyssar: { id: 'lyssar', name: 'Lyssar', title: 'Traqueur', role: 'Archer', glyph: 'L', color: '#2fbf71', hp: 85, pa: 6, pm: 3, initiative: 115,
+  lyssar: { id: 'lyssar', name: 'Lyssar', title: 'Traqueur', role: 'Distance', glyph: 'L', color: '#2fbf71', hp: 85, pa: 6, pm: 3, initiative: 115,
     affut: { range: 1, power: 12, parPm: 4, parSaut: 4 }, traque: { max: 3, par: 8, turns: 2 },
     spells: ['trait_tisse', 'fil_tendu', 'collet', 'repli_traqueur', 'balise_de_fil', 'corde_longue', 'marque_traqueur', 'pluie_de_fil', 'fleche_ancre', 'trait_du_veilleur'],
-    desc: 'Choisit sa case et ne bouge plus : à l\'affût, il tire plus loin et plus fort, repousse ce qui approche et pose ses collets.' },
+    desc: 'Guetteur du Guet, il choisit sa case et ne bouge plus : à l\'affût, il tire plus loin et plus fort, marque ce qu\'il voit, repousse ce qui approche et pose ses collets.' },
   oriel: { id: 'oriel', name: 'Oriel', title: 'Veilleur de Lumière', role: 'Soigneur', glyph: 'O', color: '#ffd166', hp: 110, pa: 6, pm: 3, initiative: 90,
     spells: ['lueur', 'eclair_solaire', 'manteau_partage', 'rappel', 'flamme_vive', 'renaissance', 'aube', 'lumiere_aveuglante', 'lanterne_de_veille', 'ardeur'],
     desc: 'Soigne, pose des boucliers, retire les malus ; ses flammes rendent des PV.' },

@@ -1,8 +1,8 @@
 DATA.kit('orvald', [
   [{ id: 'pepite_lancee', icone: ['etincelles', 'goutte'], name: 'Pépite Lancée', element: 'eau', pa: 3, range: [1, 5], effects: [dmg(10, 13)], purse: 10, maxPerTurn: 2,
       desc: 'Une pépite encore humide du torrent, lancée à cinq cases. Si la cible tombe, +10 % de Dragmes et de butin.' },
-    { id: 'eclat_d_ecaille', icone: ['comete', 'feu'], name: 'Éclat d\'Écaille', element: 'feu', pa: 3, range: [1, 5], effects: [dmg(12, 15)], purse: 10, maxPerTurn: 2,
-      desc: 'Un éclat d\'Écaille de dragon, encore tiède, lancé comme une pierre. Si la cible tombe, +10 % de Dragmes et de butin.' }],
+    { id: 'eclat_d_ecaille', icone: ['comete', 'feu'], name: 'Éclat de Scorie', element: 'feu', pa: 3, range: [1, 5], effects: [dmg(12, 15)], purse: 10, maxPerTurn: 2,
+      desc: 'Un éclat de scorie ramassé au fond des galeries, encore tiède, lancé comme une pierre. Si la cible tombe, +10 % de Dragmes et de butin.' }],
   [{ id: 'coup_de_vieux_briscard', icone: ['poing', 'pm'], name: 'Coup de Vieille Ferraille', element: 'terre', pa: 3, range: [1, 1], effects: [dmg(14, 17)], selfEffects: [{ type: 'pmNow', value: 1 }], maxPerTurn: 2,
       desc: 'La vieille machine a encore du ressort : un coup de poing de laiton au contact, et elle gagne 1 PM tout de suite.' },
     { id: 'pioche_de_braise', icone: ['marteau', 'pm'], name: 'Pioche de Braise', element: 'feu', pa: 3, range: [1, 1], effects: [dmg(14, 17)], selfEffects: [{ type: 'pmNow', value: 1 }], maxPerTurn: 2,

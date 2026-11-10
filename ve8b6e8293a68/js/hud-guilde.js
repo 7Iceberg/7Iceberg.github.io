@@ -34,7 +34,7 @@ const ACTIVITES = [
 ];
 const ANNUAIRE = [
   { nom: 'Le Relais des Braises', niveau: 12, membres: 8, mode: 'Candidature', style: 'Entraide', desc: 'Exploration, artisanat et donjons en petit groupe.' },
-  { nom: 'Les Veilleurs du Fil', niveau: 7, membres: 14, mode: 'Ouvert', style: 'Exploration', desc: 'Cartographier les chemins d’Orsane et accueillir les nouveaux Veilleurs.' },
+  { nom: 'Les Veilleurs de l\'Aube', niveau: 7, membres: 14, mode: 'Ouvert', style: 'Exploration', desc: 'Cartographier les chemins d’Orsane et accueillir les nouveaux Veilleurs.' },
   { nom: 'La Veille des Cimes', niveau: 16, membres: 60, mode: 'Fermé', style: 'Donjons', desc: 'Sorties de donjon et entraînement à la Loge.' },
 ];
 const bouton = (act, texte, d = '', actif = false) =>

@@ -74,3 +74,12 @@
 .vy-met__pied input { accent-color: var(--m-or); }
 .vy-met__compte { margin-left: auto; color: var(--m-texte); font-weight: 700; }
 #app.vy-eter #fenetres .vy-fenetre--metiers .vy-met__q input, #app .vy-fenetre--metiers .vy-met__q input { border: 0 !important; box-shadow: none !important; outline: none; background: transparent !important; }
+@media (max-width: 700px) {
+  .vy-met { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 32%) minmax(0, 1fr); height: calc(100dvh - 70px); }
+  .vy-met__liste { border-right: 0; border-bottom: 1px solid rgba(0, 0, 0, 0.35); }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .vy-met { grid-template-columns: 250px minmax(0, 1fr); height: calc(100dvh - 60px); }
+  .vy-met__page { overflow-y: auto; }
+  .vy-met__recettes, .vy-met__table { flex: none; overflow: visible; }
+}

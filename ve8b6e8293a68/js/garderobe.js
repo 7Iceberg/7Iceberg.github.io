@@ -104,7 +104,7 @@ const Garderobe = (() => {
       case 'artisanat': { const d = typeof Items !== 'undefined' && Items.get(s.id); return `Artisanat : ${d ? d.name : s.id}, fabriquée par le tailleur, à utiliser`; }
       case 'collection': { const k = collection(s.id); return `Collection : ${k ? k.nom : s.id}, complète`; }
       case 'evenement': return 'Un événement';
-      case 'boutique': return 'La Boutique des Voiles';
+      case 'boutique': return 'La Boutique des Cimes';
       default: return 'En jouant';
     }
   }

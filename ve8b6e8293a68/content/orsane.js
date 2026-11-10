@@ -2069,11 +2069,11 @@ DATA.content.quests.push({
   steps: [
     { type: 'collect', item: 'pain_de_cime', count: 2, text: 'Cuire deux pains de Cime chez l\'alchimiste' },
     { type: 'collect', item: 'potion_de_relais', count: 1, text: 'Préparer une potion de Relais' },
-    { type: 'collect', item: 'ceinture_de_plume', count: 1, text: 'Coudre une ceinture de plume chez le cordonnier' },
+    { type: 'collect', item: 'ceinture_marcheur', count: 1, text: 'Coudre une Ceinture du Marcheur chez le cordonnier' },
     { type: 'talk', npc: 'thila', text: 'Apporter les trois ouvrages à Thila' },
   ],
   dialogue: {
-    offer: ['Un Veilleur qui ne sait rien faire de ses mains, c\'est un Veilleur qui paie tout au Comptoir. Lotha adore, moi moins.', 'Trois ouvrages, trois ateliers : deux pains, une potion de Relais, une ceinture de plume. Les recettes sont au mur.'],
+    offer: ['Un Veilleur qui ne sait rien faire de ses mains, c\'est un Veilleur qui paie tout au Comptoir. Lotha adore, moi moins.', 'Trois ouvrages, trois ateliers : deux pains, une potion de Relais, une ceinture du Marcheur. Les recettes sont au mur.'],
     progress: ['L\'alchimiste pour le pain et la potion, le cordonnier pour la ceinture. Tout est dans la rue.'],
     done: ['Le pain est un peu cuit, la ceinture un peu de travers. Parfait pour une première fois.'],
   },

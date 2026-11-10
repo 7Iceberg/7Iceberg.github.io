@@ -269,12 +269,31 @@ class CameraControls {
     el.addEventListener('pointermove', e => this.move(e));
     el.addEventListener('pointerup', e => this.up(e, false));
     el.addEventListener('pointercancel', e => this.up(e, true));
+    el.addEventListener('lostpointercapture', e => {
+      if (this.touches.has(e.pointerId) || this.drag && this.drag.id === e.pointerId) this.annulerGestes();
+    });
+    addEventListener('blur', () => this.annulerGestes());
+    addEventListener('resize', () => this.annulerGestes());
+    addEventListener('veylan:windowOpen', () => this.annulerGestes());
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.hidden) this.annulerGestes(); });
     el.addEventListener('mousedown', e => { if (e.button === 1) e.preventDefault(); });
     el.addEventListener('gesturestart', e => e.preventDefault());
     addEventListener('keydown', e => this.key(e));
   }
 
   enabled() { return !this.opts.enabled || this.opts.enabled(); }
+
+  annulerGestes() {
+    const ids = [...this.touches.keys()];
+    if (this.drag) ids.push(this.drag.id);
+    const actif = ids.length || this.pinch || this.pan1 || this.quietUntil === Infinity;
+    this.touches.clear(); this.drag = null; this.pinch = null; this.pan1 = null;
+    this.el.classList.remove('glisse');
+    if (actif) { this.tapMoved = true; this.quietUntil = performance.now() + 350; }
+    for (const id of ids) {
+      try { if (this.el.hasPointerCapture(id)) this.el.releasePointerCapture(id); } catch (e) {   }
+    }
+  }
 
   static tactile(e) { return e.pointerType === 'touch' || e.pointerType === 'pen'; }
 
@@ -324,6 +343,7 @@ class CameraControls {
   }
 
   move(e) {
+    if (!this.enabled()) { this.annulerGestes(); return; }
     if (CameraControls.tactile(e)) {
       const t = this.touches.get(e.pointerId);
       if (!t) return;
@@ -398,7 +418,7 @@ class CameraControls {
   }
 
   key(e) {
-    if (e.ctrlKey || e.metaKey || e.altKey || !this.enabled() || (this.opts.keys && !this.opts.keys())) return;
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || !this.enabled() || (this.opts.keys && !this.opts.keys())) return;
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
     const cam = this.camera;

@@ -106,6 +106,11 @@ class Fenetres {
   render(id) {
     const w = this.wins.get(id);
     if (!w) return;
+    if (w.spec.revision) {
+      const revision = w.spec.revision();
+      if (revision !== undefined && w.revision === revision) return;
+      w.revision = revision;
+    }
     const scrolls = [...w.body.querySelectorAll('[data-defile]')].map(el => [el.dataset.defile, el.scrollTop]);
     const top = w.body.scrollTop;
     const active = document.activeElement && w.body.contains(document.activeElement) ? document.activeElement : null;
@@ -244,3 +249,4 @@ Fenetres.ICON = (() => {
     quitterPleinEcran: s('<path d="M20 10h-6V4M14 10l6-6M4 14h6v6M10 14l-6 6"/>'),
   };
 })();
+

@@ -15,13 +15,13 @@
     ],
     articles: [
       ...[['sarkan', 'La Lame du V', 'Épée', 'legendaire', 'La garde en V du logo, la gemme saphir au croisement, une rainure d\'or qui s\'allume le long de la lame.'],
-        ['lyssar', 'L\'Arc des deux ailes', 'Arc', 'epique', 'Deux ailes de calcaire et d\'acier relevées en V, une corde de fil d\'or, une gemme verte à la poignée.'],
+        ['lyssar', 'L\'Arbalète des deux ailes', 'Arbalète', 'epique', 'Deux ailes de calcaire et d\'acier relevées en V au bout du fût, une corde de fil d\'or, une gemme verte à la crosse.'],
         ['oriel', 'La Lanterne ramée', 'Bâton', 'epique', 'Un bâton qui se ramifie pour tenir une lanterne de vitrail, son cœur de lumière toujours allumé.'],
         ['nerith', 'Les Dagues-gemmes', 'Dagues', 'legendaire', 'Deux lames taillées comme des pierres précieuses, sombres, fendues d\'améthyste.'],
-        ['karsh', 'La Scorie allumée', 'Lame large', 'epique', 'Une lame de pierre noire fendue de braise, qui s\'allume de l\'intérieur.'],
+        ['karsh', 'La Lame de sang', 'Épée', 'epique', 'Une lame courbe de sang figé taillé comme un cristal, une garde en ailes de chauve-souris, une poignée bandée et un pommeau en goutte.'],
         ['thalor', 'Le Poing de calcaire', 'Gantelet', 'legendaire', 'Un poing de pierre facetté, cerclé d\'or, un cœur saphir qui brille à travers la roche.'],
         ['fennal', 'La Houlette à lanterne', 'Bâton', 'rare', 'Une houlette à crochet ; une lanterne à tête de bête pend à sa chaîne d\'or.'],
-        ['velmar', 'Le Bouclier-vague', 'Bouclier', 'epique', 'Une vague d\'or roulée en spirale sur un bouclier de mer, et son harpon.'],
+        ['velmar', 'Le Bouclier à rouage', 'Bouclier', 'epique', 'Un bouclier de planches cerclé d\'acier, un rouage au cœur, et le bâton torsadé qui tient l\'éclat de Morrha.'],
         ['orvald', 'La Pioche-relique', 'Pioche', 'rare', 'Une pioche d\'ivoire cerclée d\'or, une pépite sertie sur un quartz.']]
         .map(([c, nom, type, rarete, desc]) => art('arme_' + c, nom, 'armes', type, rarete, { legendaire: 900, epique: 700, rare: 500 }[rarete], null, { classe: c[0].toUpperCase() + c.slice(1), image: `arme-${c}.webp`, desc, nouveau: true, bientot: true })),
       art('b_teinture_nuit', 'Teinture nuit indigo', 'tenues', 'Teinture', 'rare', 250, cos('b_teinture_nuit'), { desc: 'Le bleu de nuit du ciel de Veylan, cousu d\'or.' }),
@@ -65,13 +65,13 @@
     ],
     fidelite: [
       { seuil: 1000, nom: 'Habitué', remise: 10 },
-      { seuil: 2500, nom: 'Ami des Voiles', article: 'b_lueur_feuille' },
+      { seuil: 2500, nom: 'Ami des Cimes', article: 'b_lueur_feuille' },
       { seuil: 5000, nom: 'Pilier du comptoir', remise: 20 },
       { seuil: 10000, nom: 'Mécène d\'honneur', article: 'b_aura_fil' },
     ],
     packs: [[10, 1000, 0], [20, 2000, 200], [30, 3000, 300], [50, 5000, 500], [100, 10000, 1000]],
     codes: [
-      { empreinte: '13ytk7f1kvc', eclats: 200, texte: 'Bienvenue dans la Boutique des Voiles' },
+      { empreinte: '13ytk7f1kvc', eclats: 200, texte: 'Bienvenue dans la Boutique des Cimes' },
     ],
   };
 })();

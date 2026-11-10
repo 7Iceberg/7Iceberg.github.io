@@ -2,7 +2,7 @@
   const E = Encyclopedie;
   const esc = s => Util.esc(String(s ?? ''));
   const boutons = (texte, cible) => `<button type="button" class="vy-ency__lien" data-act="suivre" data-cle="${esc(cible)}">${esc(texte)}</button>`;
-  const niv = e => e.niveau.length && e.niveau[0] !== e.niveau.at(-1) ? e.niveau[0] + '–' + e.niveau.at(-1) : e.niveau[0] ?? '—';
+  const niv = e => e.niveau.length && e.niveau[0] !== e.niveau.at(-1) ? e.niveau[0] + '-' + e.niveau.at(-1) : e.niveau[0] ?? '-';
   const PAGE = 30;
   const filtresVides = () => ({ q: '', min: '', max: '', cat: '', stat: '', source: '', region: '', tri: 'nom' });
   const select = (id, titre, valeurs, choix) => `<label>${titre}<select id="ency-${id}">${valeurs.map(([v, nom]) =>
@@ -30,8 +30,8 @@
 
   function resultat(e, s) {
     const icon = e.type === 'objet' ? `<span class="vy-case" data-rarete="${esc(Items.rarity(e.def))}"><span class="vy-case__icone">${Hud.picto(e.def)}</span></span>` : '';
-    const info = e.type === 'monstre' ? (e.butin.length ? e.butin.length + ' butins' : '—') :
-      e.type === 'panoplie' ? e.def.pieces.length + ' pièces' : E.modes(e, s.index).join(' · ') || '—';
+    const info = e.type === 'monstre' ? (e.butin.length ? e.butin.length + ' butins' : '-') :
+      e.type === 'panoplie' ? e.def.pieces.length + ' pièces' : E.modes(e, s.index).join(' · ') || '-';
     return `<button type="button" class="vy-ency__ligne${s.choisi === e.cle ? ' on' : ''}" data-act="choisir" data-cle="${esc(e.cle)}" aria-pressed="${s.choisi === e.cle}">
       <span class="vy-ency__nom">${icon}<b>${esc(e.nom)}</b></span><span>${esc(e.categorie)}</span>
       <span>${niv(e)}</span><span class="vy-ency__obtention">${esc(info)}</span></button>`;

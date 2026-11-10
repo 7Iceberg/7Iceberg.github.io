@@ -193,7 +193,7 @@ const Ile = (() => {
   const FICHIERS = {
     donnees: ['js/data-ile.js', 'content/ervane.js', 'content/ervane-aires.js', 'content/ervane-orsane.js', 'content/tutoriel-ile.js', 'content/orsane-plateau.js', 'content/orsane-aires.js', 'content/kaldum-plateau.js', 'content/kaldum-aires.js', 'content/reperes.js', 'content/carte-plateaux.js'],
     moteur: ['js/ile-terrain.js', 'js/ile-nav.js', 'js/plateau.js'],
-    rendu: ['js/ile-peinture.js', 'js/ile-camera.js', 'js/ile-sol.js', 'js/ile-decor.js', 'js/ile-figures.js', 'js/ile-arene.js', 'js/ile-salle.js', 'js/ile-3d.js', 'js/ile-carte.js', 'js/voile-paysage.js', 'js/voile-medaille.js', 'js/scene.js'],
+    rendu: ['js/ile-peinture.js', 'js/ile-camera.js', 'js/ile-pad.js', 'js/ile-sol.js', 'js/ile-decor.js', 'js/ile-figures.js', 'js/ile-arene.js', 'js/ile-salle.js', 'js/ile-3d.js', 'js/ile-carte.js', 'js/voile-paysage.js', 'js/voile-medaille.js', 'js/scene.js'],
   };
   let charges = false;
   function charger() {

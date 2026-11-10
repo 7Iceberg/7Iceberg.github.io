@@ -3414,12 +3414,14 @@ class Renderer {
     const line = (pts, w, color) => { c.lineWidth = w; c.strokeStyle = color; c.beginPath(); pts.forEach((q, i) => (i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]))); c.stroke(); };
     switch (s.glyph) {
       case 'L': {
-        const x = p.x + 14;
-        const arc = () => { c.beginPath(); c.moveTo(x, top + 2); c.quadraticCurveTo(x + 11, top + 22, x, top + 42); };
-        arc(); c.lineWidth = ow(2.2, 4.4); c.strokeStyle = ink; c.stroke();
-        arc(); c.lineWidth = 2.2; c.strokeStyle = '#c9a66b'; c.stroke();
-        line([[x, top + 3], [x - 1.5, top + 41]], 0.9, 'rgba(240,240,255,0.85)');
-        glow(x, top + 2, 8); gem(x, top + 1, 2.4, 3.8);
+        const x = p.x + 14, n = top + 8, bas = top + 42;
+        line([[x, bas], [x, n + 2]], ow(3.2, 5.4), ink); line([[x, bas], [x, n + 2]], 3.2, '#8a6a46');
+        line([[x - 2.6, bas - 3], [x + 2.6, bas - 3]], ow(2, 3.8), ink); line([[x - 2.6, bas - 3], [x + 2.6, bas - 3]], 2, '#6b5236');
+        const arc = () => { c.beginPath(); c.moveTo(x - 9, n + 10); c.quadraticCurveTo(x, n + 1, x + 9, n + 10); };
+        arc(); c.lineWidth = ow(2.4, 4.6); c.strokeStyle = ink; c.stroke();
+        arc(); c.lineWidth = 2.4; c.strokeStyle = '#c9a66b'; c.stroke();
+        line([[x - 9, n + 10], [x, n + 17], [x + 9, n + 10]], 0.9, 'rgba(240,240,255,0.85)');
+        glow(x, n, 8); gem(x, n - 1, 2.4, 3.8);
         break;
       }
       case 'O': {

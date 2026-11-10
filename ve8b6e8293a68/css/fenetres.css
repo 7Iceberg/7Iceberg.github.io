@@ -296,7 +296,7 @@
 #app #fenetres .vy-fenetre--quetes .vy-quetes .vy-quetes__onglets .vy-onglet { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 36px; padding: 0 4px !important; white-space: nowrap; font-size: 10.5px !important; letter-spacing: 0.07em !important; }
 .vy-quetes__onglets .vy-onglet small { font: 700 10px var(--vy-font-ui); letter-spacing: 0; opacity: 0.8; }
 .vy-quetes__outils { flex: none; display: grid; gap: 8px; padding: 10px 10px 8px; border-bottom: 1px solid rgba(0, 0, 0, 0.25); }
-.vy-quetes__cherche { display: flex; gap: 6px; }
+.vy-quetes__cherche { display: flex; gap: 6px; min-width: 0; }
 .vy-quetes__recherche { flex: 1; min-width: 0; }
 .vy-quetes__recherche input { height: 30px; font-size: 12px; }
 .vy-q-entonnoir { flex: none; width: 30px; height: 30px; padding: 6px; display: grid; place-items: center; border: 0; border-radius: 5px; background: var(--fen-fond-2); color: var(--fen-texte-2); cursor: pointer; }

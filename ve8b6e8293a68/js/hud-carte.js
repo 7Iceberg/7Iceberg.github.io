@@ -1374,6 +1374,7 @@ Object.assign(Hud.prototype, {
 
   fermerIle() {
     if (this._annulerAppuiCarte) this._annulerAppuiCarte();
+    if (this.carteIleCtl) this.carteIleCtl.annulerGestes();
     const ile = this.renderer && this.renderer.ile;
     if (ile && ile.carteOuverte) ile.fermerCarte(false);
   },

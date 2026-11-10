@@ -95,7 +95,7 @@ Object.assign(Hud.prototype, {
       if (el.id === 'bt-recherche') { s.recherche = el.value; if (s.page === 'accueil' && el.value.trim().length >= 2) s.page = 'recherche'; r(); }
       if (el.id === 'bt-code') s.code = el.value;
     };
-    this.simpleWin('boutique', 'Boutique des Voiles', () => this.renderBoutique(), actions, { width: 1180, cls: 'vy-fenetre--boutique', onField });
+    this.simpleWin('boutique', 'Boutique des Cimes', () => this.renderBoutique(), actions, { width: 1180, cls: 'vy-fenetre--boutique', onField });
   },
 
   renderBoutique() {
@@ -106,7 +106,7 @@ Object.assign(Hud.prototype, {
     const pts = { recompenses: typeof Veille === 'object' && Veille.badge && Veille.badge(this.world.ch) ? 'or' : '', roue: Bq.toursRestants() ? 'cristal' : '', mecenat: Bq.teintureDisponible() ? 'or' : '' };
     const d = Bq.devis(s.panier);
     const rail = `<nav class="vy-bt__rail" data-defile="bt-rail">
-      <div class="vy-bt__marque"><i></i><div><b>BOUTIQUE</b><small>DES VOILES</small></div></div>
+      <div class="vy-bt__marque"><i></i><div><b>BOUTIQUE</b><small>DES CIMES</small></div></div>
       <button type="button" class="vy-bt__solde" data-act="page" data-page="eclats"><span class="vy-bt__lbl">Mon solde</span><span class="m">${eclat(true)}<b>${nb(Bq.solde())}</b><small>Éclats</small></span><span class="lien">Gagner des Éclats ›</span></button>
       <button type="button" class="vy-bt__ent${page === 'accueil' ? ' on' : ''}" data-act="page" data-page="accueil">${ICO.accueil}<span>Accueil</span></button>
       ${B.rayons.map(([id, nom]) => `<button type="button" class="vy-bt__ent${page === id ? ' on' : ''}" data-act="page" data-page="${id}">${ICO[id] || ICO.packs}<span>${esc(nom)}</span><small>${compte(id)}</small></button>`).join('')}
@@ -239,7 +239,7 @@ Object.assign(Hud.prototype, {
         : res && res.lot === 'cadeau' ? `<span class="vy-bt__lbl cristal">Ton lot</span><p class="vy-bt__h4">Un article offert</p><div class="vy-bt__lot">${this.btTuile(res.article)}<p><b>${esc(res.article.nom)}</b> est dans ta Garde-robe.</p></div>`
           : `<span class="vy-bt__lbl cristal">Ton lot de la semaine</span><p class="vy-bt__h4">${restants ? 'La roue t\'attend' : 'Rien cette semaine'}</p><p>Une remise sur un article, des Éclats, ou un article offert.</p>`;
     return `<div class="vy-bt__roue-page">${roue}<div class="cote"><div class="vy-bt__lotcadre">${panneau}</div>
-      <div class="vy-bt__chiffres"><div><small>Prochaine semaine dans</small><b>${duree(Bq.avantSemaine(t))}</b></div><div><small>Tours restants</small><b>${restants} / ${Bq.toursMax(t)}</b></div><div><small>Mécène</small><b>${Bq.avantage('roue', t) ? '+1 tour' : '—'}</b></div></div>
+      <div class="vy-bt__chiffres"><div><small>Prochaine semaine dans</small><b>${duree(Bq.avantSemaine(t))}</b></div><div><small>Tours restants</small><b>${restants} / ${Bq.toursMax(t)}</b></div><div><small>Mécène</small><b>${Bq.avantage('roue', t) ? '+1 tour' : '-'}</b></div></div>
       ${restants ? `<button type="button" class="vy-bouton vy-bouton--primaire grand" data-act="tourner" ${s.tourne ? 'disabled' : ''}>${s.tourne ? 'La roue tourne…' : 'Tourner la roue'}</button>` : '<div class="vy-bt__fait">Tour déjà utilisé cette semaine</div>'}
       <div class="vy-bt__etapes"><div><b>Un tour</b>Chaque semaine, offert à tous ; un de plus pour les Mécènes.</div><div><b>Un lot</b>Une remise, des Éclats, ou un article offert.</div><div><b>Jusqu'à lundi</b>La remise vaut jusqu'au lundi suivant, 6 h.</div></div></div></div>`;
   },
@@ -251,7 +251,7 @@ Object.assign(Hud.prototype, {
       return `<div class="vy-bt__palier${actif ? ' actif' : ''}"><span class="etoiles">${'★'.repeat(p.palier)}</span><p class="vy-bt__h4">${esc(p.nom)}</p><ul>${p.avantages.map(k => `<li>${ICO.coche}<span><b>${esc(B.avantages[k][0])}</b><small>${esc(B.avantages[k][1])}</small></span></li>`).join('')}</ul>
         <div class="vy-bt__achat"><span class="prix">${eclat(true)}<b>${nb(a.prix)}</b><small>/ 30 jours</small></span><button type="button" class="vy-bouton ${actif ? '' : 'vy-bouton--primaire'}" data-act="ajouter" data-id="${a.id}">${actif ? 'Prolonger' : 'Choisir'}</button></div></div>`;
     }).join('');
-    const teinture = m && Bq.avantage('teinture', t) ? (() => { const a = Bq.teintureDuMois(t); return `<div class="vy-bt__teinture"><span>${a ? this.btVignette(a) : ''}</span><div><b>La teinture du mois : ${esc(a ? a.nom : '—')}</b><small>Offerte au Mécène Tisseur, une fois par mois.</small></div>${Bq.teintureDisponible(t) ? '<button type="button" class="vy-bouton vy-bouton--primaire" data-act="teinture">Récupérer</button>' : '<span class="vy-bt__possede">' + ICO.coche + 'Reçue ce mois-ci</span>'}</div>`; })() : '';
+    const teinture = m && Bq.avantage('teinture', t) ? (() => { const a = Bq.teintureDuMois(t); return `<div class="vy-bt__teinture"><span>${a ? this.btVignette(a) : ''}</span><div><b>La teinture du mois : ${esc(a ? a.nom : '-')}</b><small>Offerte au Mécène Tisseur, une fois par mois.</small></div>${Bq.teintureDisponible(t) ? '<button type="button" class="vy-bouton vy-bouton--primaire" data-act="teinture">Récupérer</button>' : '<span class="vy-bt__possede">' + ICO.coche + 'Reçue ce mois-ci</span>'}</div>`; })() : '';
     const hist = et.historique.slice().reverse().map(h => `<li><b>${esc((B.mecene.find(p => p.palier === h.palier) || {}).nom || '')}</b><span>${dateCourte(h.debut)} → ${dateCourte(h.fin)}</span></li>`).join('');
     return `<div class="vy-bt__statut">${m ? `${ICO.mecene}<div><b>Mécène ${esc(m.def.nom)}</b><small>actif jusqu'au ${dateCourte(m.fin)}</small></div>` : `${ICO.mecene}<div><b>Pas de Mécène en cours</b><small>Trois paliers, rien que du confort et de l'apparence. Les avantages d'un palier passent aux suivants.</small></div>`}</div>
       ${teinture}<div class="vy-bt__paliers">${cartes}</div>
@@ -289,7 +289,7 @@ Object.assign(Hud.prototype, {
   btEclats() {
     const B = DATA.boutique;
     const packs = B.packs.map(([eur, n, bonus], i) => `<div class="vy-bt__pack"><span class="pile">${Array.from({ length: Math.min(5, i + 1) }, () => eclat(true)).join('')}</span><b>${nb(n)}</b>${bonus ? `<em>+${nb(bonus)} offerts</em>` : '<em class="vide"></em>'}<span class="eur">${eur} €</span><button type="button" class="vy-bouton vy-bouton--petit" disabled>Bientôt</button></div>`).join('');
-    return `<div class="vy-bt__solde-grand">${eclat(true)}<div><b>${nb(Boutique.solde())} Éclats</b><small>La monnaie de la Boutique des Voiles, sur ton compte : partagée par tous tes personnages.</small></div></div>
+    return `<div class="vy-bt__solde-grand">${eclat(true)}<div><b>${nb(Boutique.solde())} Éclats</b><small>La monnaie de la Boutique des Cimes, sur ton compte : partagée par tous tes personnages.</small></div></div>
       <div class="vy-bt__sec"><p class="vy-bt__h4">En jouant</p><span class="ligne"></span></div>
       <div class="vy-bt__sources"><div><b>Succès</b>Métas et paliers de score : 10 à 500 Éclats.</div><div><b>La roue</b>Chaque semaine, peut-être 50 ou 100 Éclats.</div><div><b>Codes cadeaux</b>Donnés par l'équipe du jeu.</div><div><b>Événements</b>Bientôt.</div></div>
       <div class="vy-bt__code"><label class="vy-recherche"><input id="bt-code" type="text" maxlength="32" placeholder="Code cadeau" value="${esc(this.btEtat.code)}" aria-label="Code cadeau"></label><button type="button" class="vy-bouton vy-bouton--primaire" data-act="code">Utiliser le code</button></div>

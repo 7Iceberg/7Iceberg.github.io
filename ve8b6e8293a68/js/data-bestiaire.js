@@ -43,7 +43,8 @@ DATA.monsters.mannequin = M('mannequin', { name: 'Mannequin du Dojo', region: 'd
   desc: 'De la paille serrée sur un poteau. Il ne rend pas les coups.' });
 for (const [cid, c] of Object.entries(DATA.classes)) {
   const purs = (c.spells || []).filter(s => { const d = DATA.spells[s]; return d && d.target === 'enemy' && (d.effects || []).length && d.effects.every(e => e.type === 'damage'); });
-  const sorts = purs.slice(0, 2);
+  let sorts = purs.slice(0, 2);
+  if (!sorts.length) sorts = (c.spells || []).filter(s => { const d = DATA.spells[s]; return d && d.target !== 'self' && (d.effects || []).some(e => e.type === 'damage') && !(d.effects || []).some(e => /heal|soin/i.test(e.type)); }).slice(0, 2);
   if (!sorts.length && c.spells && c.spells[0]) sorts.push(c.spells[0]);
   const loin = sorts.some(s => (DATA.spells[s].range || [1, 1])[1] >= 3);
   DATA.monsters['reflet_' + cid] = M('reflet_' + cid, { name: 'Reflet de ' + c.name, region: 'dojo', level: '1 à 60', shape: 'player', classId: cid, glyph: c.glyph, color: c.color, gender: 'm',

@@ -682,6 +682,8 @@
   R('potion_de_relais', 'alchimiste', [['herbe_de_veille', 3], ['plume_de_pilou', 2], ['pierre_de_calcaire', 1]], 2);
   R('potion_de_veille', 'alchimiste', [['lueur_de_veilloche', 1], ['cire_de_veilloche', 4], ['herbe_de_veille', 4], ['meche_de_veilloche', 2]], 1);
 
+  for (const id of ['masse_de_calcaire', 'baguette_de_duvet']) C.recipes.find(r => r.result === id).niveau = 1;
+
 
   C.resources.push(
     { id: 'aile_de_sivr', name: 'Aile de Sivr', lore: 'Une aile de toile tendue sur deux baleines de cuivre. Elle vibre encore quand le vent passe.',

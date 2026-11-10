@@ -97,7 +97,10 @@ class Scene {
   surCarte(d) {
     const voulu = this.supportVoulu();
     if (voulu && voulu === (this.voulu || this.support)) {
-      if (this.en3D && voulu === this.support && !(d && (d.secteur || d.apresCombat))) this.ile.sauter();
+      if (this.en3D && voulu === this.support && !(d && (d.secteur || d.apresCombat))) {
+        if (this.controls && this.controls.annulerGestes) this.controls.annulerGestes();
+        this.ile.sauter();
+      }
       return;
     }
     if (!voulu && !this.voulu && this.actif === this.cases && !this.cases.suspendu && !this.voileEl) return;
@@ -107,6 +110,7 @@ class Scene {
   }
 
   async vers3D(voulu, gen) {
+    if (this.controls && this.controls.annulerGestes) this.controls.annulerGestes();
     this.voulu = voulu;
     this.cases.suspendre();
     if (this.en3D) { this.ile.desactiver(); this.actif = this.cases; }
@@ -157,6 +161,7 @@ class Scene {
   }
 
   activer(voulu) {
+    if (this.controls && this.controls.annulerGestes) this.controls.annulerGestes();
     const ile = this.ile;
     const ins = this.cases.camera.insets;
     ile.camera.setInsets(ins);
@@ -170,6 +175,7 @@ class Scene {
   }
 
   versCases() {
+    if (this.controls && this.controls.annulerGestes) this.controls.annulerGestes();
     this.voulu = null;
     if (this.ile) {
       if (this.en3D) this.ile.camera.muette = true;
@@ -203,6 +209,7 @@ class Scene {
   }
 
   perte(texte) {
+    if (this.controls && this.controls.annulerGestes) this.controls.annulerGestes();
     if (!this.en3D && !this.voulu) return;
     const voulu = this.support || this.voulu;
     this.actif = this.cases;
@@ -244,12 +251,12 @@ class Scene {
       ['astuce', 'Au survol d\'un objet du sac, la bulle le compare à celui que tu portes.'],
       ['astuce', 'Le bloc vital a deux styles, Cœur et losanges ou Grappe : choisis le tien dans les Options.'],
       ['astuce', 'Les notifications se règlent dans les Options : position, style, durée et taille.'],
-      ['legende', 'Veylan est un continent que sept Grands Dragons ont façonné. Ils gardent ; ils ne règnent pas.'],
+      ['legende', 'Veylan est un monde que sept Grands Dragons ont façonné. Ils gardent ; ils ne règnent pas.'],
       ['legende', 'Il n\'y a pas de dieux à Veylan, mais sept Grands Dragons. Ruhani, le Dragon de l\'Aube, est le plus fort.'],
       ['legende', 'Il y a cent ans, quelqu\'un a pris l\'Écaille d\'Ithren : sa colère a brûlé le nord. On appelle ça la Grande Colère.'],
       ['legende', 'La Flamme des dragons s\'allume dans quelques-uns, sans prévenir. Ce sont les Veilleurs.'],
-      ['legende', 'Ervane est le plus haut sommet des Cimes, au-dessus de la mer de nuages, relié à Orsane par le câble de la Nacelle.'],
-      ['legende', 'L\'Aube garde les Marques et les dragons, la Chaîne veut les lier. Au niveau 20, tu prêteras serment, ou pas.'],
+      ['legende', 'Ervane est le plus haut sommet des Cimes, au-dessus de la mer de nuages, relié à la Cité des Cimes par le câble de la Nacelle.'],
+      ['legende', 'L\'Aube garde les Marques et les dragons, la Chaîne veut les lier. Au niveau 39, tu prêteras serment, ou pas.'],
       ['legende', 'Les Francs-Marcheurs de Thessa commercent avec tout le monde, et vendent de fausses Marques très bien gravées.'],
       ['legende', 'Au fond du Puits de l\'Amarre attend Krobb, le Ronge-Amarre.'],
     ];
@@ -382,7 +389,7 @@ class Scene {
         : basse ? '<button type="button" class="vy-bouton" data-voile="qualitebasse">Réessayer en qualité basse</button>' : '');
     el.appendChild(boutons);
     const e = el.querySelector('.scene-voile__etape');
-    if (e) e.textContent = descendre ? 'Tu peux réessayer, ou descendre par la Nacelle jusqu\'à la Place du Relais d\'Orsane.' : basse ? 'Tu peux réessayer, ou réessayer en qualité basse : tu gardes tout, et la partie reprend au même endroit.' : 'Tu peux réessayer.';
+    if (e) e.textContent = descendre ? 'Tu peux réessayer, ou descendre par la Nacelle jusqu\'à la Place du Relais de la Cité des Cimes.' : basse ? 'Tu peux réessayer, ou réessayer en qualité basse : tu gardes tout, et la partie reprend au même endroit.' : 'Tu peux réessayer.';
   }
 
   repliOrsane(ch) {

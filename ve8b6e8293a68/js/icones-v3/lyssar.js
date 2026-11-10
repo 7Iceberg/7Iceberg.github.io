@@ -41,12 +41,19 @@
       + place(deux([[0, -6], [7, 0], [0, 6], [-7, 0]], [[0, -6], [7, 0], [0, 0]], OR_C, OR_S, 2), 97, 30);
   }
   function arc(p, o = {}) {
-    const ty = o.tire || 30;
-    const corde = o.tire ? `M-97 30 L0 ${ty} L97 30` : 'M-97 30 L97 30';
-    const lg = o.fleche ? (o.fleche.len || 128) : 0;
-    return fil(corde, 3)
+    const ty = 52;
+    const fl = o.fleche ? Object.assign({}, o.fleche, { len: Math.round((o.fleche.len || 128) * .75) }) : null;
+    const lg = fl ? fl.len : 0;
+    const bas = 92;
+    const fut = [[-10, -28], [10, -28], [12, bas - 28], [22, bas - 8], [22, bas + 8], [-22, bas + 8], [-22, bas - 8], [-12, bas - 28]];
+    const futO = [[-10, -28], [0, -28], [0, bas + 8], [-22, bas + 8], [-22, bas - 8], [-12, bas - 28]];
+    return deux(fut, futO, BOIS_C, BOIS_S, 2.8)
+      + trait(`M-22 ${bas - 2} L22 ${bas - 2}`, OR_S, 2, 4.4)
+      + trait(`M11 ${ty + 10} Q26 ${ty + 16} 18 ${ty + 28}`, MET_S, 3.4, 7.4)
+      + fil(`M-97 30 L0 ${ty} L97 30`, 3)
       + aile() + `<g transform="scale(-1 1)">${aile()}</g>`
-      + (o.fleche ? place(fleche(p, o.fleche), 0, ty - lg / 2) : '')
+      + (fl ? place(fleche(p, fl), 0, ty - lg / 2) : '')
+      + place(deux([[-9, -5], [9, -5], [9, 5], [-9, 5]], [[-9, -5], [0, -5], [0, 5], [-9, 5]], OR_C, OR_S, 2), 0, ty)
       + deux([[-13, -10], [13, -10], [13, 10], [-13, 10]], [[-13, -10], [0, -10], [0, 10], [-13, 10]], '#4a3e62', NUIT, 2.6)
       + [-13, 13].map(x => deux([[x - 3, -12], [x + 3, -12], [x + 3, 12], [x - 3, 12]], [[x - 3, -12], [x, -12], [x, 12], [x - 3, 12]], OR_C, OR_S, 2)).join('')
       + gemme(0, 0, 9);
@@ -160,8 +167,8 @@
     lys_bond_de_plume: p => pointille('M40 150 Q84 24 150 124', p[1], 4.4) + tuile(150, 150, 1.1) + plume(96, 78, 1.2, 40) + eclat(48, 58, .7, p[1]),
     collet: p => collet(100, 120, 1.1) + eclat(158, 64, .6, p[1]) + croix(46, 66, .9),
     lys_collet_de_braise: p => collet(100, 120, 1.1, '#ffb347', '#fff3c0', true) + flamme(52, 136, .45, p) + flamme(150, 140, .5, p) + flamme(100, 156, .4, p) + eclat(158, 64, .6, p[1], p[0]),
-    fil_tendu: p => A(p, 56, 100, 90, .62, { tire: 74, fleche: { tete: 'emousse', len: 168 } }) + chevrons(150, 100, 1.1, p[1]) + eclat(148, 48, .6, '#ffffff', p[1]),
-    lys_corde_d_ecume: p => A(p, 56, 100, 90, .62, { tire: 74, fleche: { tete: 'emousse', len: 168, plume: [p[1], p[2]] } }) + chevrons(150, 100, 1.1, p[1])
+    fil_tendu: p => A(p, 68, 100, 90, .62, { tire: 74, fleche: { tete: 'emousse', len: 168 } }) + chevrons(150, 100, 1.1, p[1]) + eclat(148, 48, .6, '#ffffff', p[1]),
+    lys_corde_d_ecume: p => A(p, 68, 100, 90, .62, { tire: 74, fleche: { tete: 'emousse', len: 168, plume: [p[1], p[2]] } }) + chevrons(150, 100, 1.1, p[1])
       + [[114, 74, .5], [108, 128, .45], [128, 142, .38], [132, 60, .36]].map(([x, y, k]) => goutte(x, y, k, p)).join(''),
     marque_traqueur: p => trait('M100 44 L148 66 L156 116 L120 154 L74 150 L44 110 L52 62 Z', ROUGE, 6, 11) + empreinte(100, 108, 1.4) + eclat(156, 46, .7, p[1]),
     lys_marque_de_battue: p => trait('M100 36 L156 58 L168 114 L130 160 L70 160 L32 114 L44 58 Z', ROUGE, 6, 11) + empreinte(74, 84, .8, -16) + empreinte(126, 84, .8, 14) + empreinte(100, 130, .8),

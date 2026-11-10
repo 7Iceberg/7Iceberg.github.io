@@ -120,6 +120,7 @@ class Combat {
     opts.monsters.forEach((m, i) => {
       const e = new Entity(DATA.monsters[m.id], 'monster', this.nextId++, this.rng, m.level);
       e.scale *= this.puissanceMonstres;
+      if (e.def.epreuve) { e.hpMax = Math.round(player.hpMax * 1.25); e.hp = e.hpMax; }
       const fixe = opts.monsterAssign && opts.monsterCells[i] && !this.entityAt(opts.monsterCells[i].x, opts.monsterCells[i].y) ? opts.monsterCells[i] : null;
       const c = fixe || (opts.monsterAssign ? this.freeCellNear(opts.monsterCells[0]) : reds.length ? reds.splice(Math.floor(this.rng() * reds.length), 1)[0] : this.freeCellNear(opts.monsterCells[0]));
       if (c) this.place(e, c.x, c.y);
@@ -494,6 +495,7 @@ class Combat {
   estOriel(e) { return !!(e && !e.isSummon && e.kit && e.kit.id === 'oriel'); }
 
   veilleDuMonde() {
+    if (typeof globalThis !== 'undefined' && (globalThis.VEILLE_FIXE === 'aube' || globalThis.VEILLE_FIXE === 'crepuscule')) return globalThis.VEILLE_FIXE;
     try {
       if (typeof Heure === 'object' && Heure.moment) { const m = Heure.moment(Date.now()).id; return m === 'crepuscule' || m === 'nuit' ? 'crepuscule' : 'aube'; }
     } catch (err) {   }
@@ -1003,7 +1005,7 @@ class Combat {
       .sort((a, b) => Grid.dist(a.pos, t.pos) - Grid.dist(b.pos, t.pos))[0];
     if (!u) return;
     const k = (ef.pct || 50) / 100;
-    this.log(`La flèche rebondit sur ${u.name}.`, e.team);
+    this.log(`Le carreau rebondit sur ${u.name}.`, e.team);
     this.dealDamage(e, u, this.rollDamage(e, u, s.element, { min: dmg.min * k, max: dmg.max * k }, s), s.element, { label: 'rebond' });
   }
 
@@ -1478,14 +1480,14 @@ class Combat {
       case 'track':
         this.track(source, t, ef);
         break;
-      case 'leap':
-      case 'declencherMares':
       case 'demontage':
         await this.demonter(source, t);
         break;
       case 'ordreMeute':
       case 'pacte':
       case 'horde':
+      case 'leap':
+      case 'declencherMares':
       case 'retreat':
         break;
       case 'soinDiffere': {
@@ -1643,7 +1645,7 @@ class Combat {
         }
         t.addEffect({ type: 'state', name: ef.name, turns, by: source, lingering: !!ef.lingering }, own);
         if (ef.name === 'invisible') t.hiddenAt = { x: t.x, y: t.y };
-        { const etats = { digue: 'est sous la Carapace Close', brise_lames: 'est derrière le Bouclier à Rouage', forme_iskar: 'prend la Forme Nocturne', protege: `est protégé par ${source.name}`, gibier: `est le gibier de ${source.name}`, victime: `est la victime choisie de ${source.name}`, intaclable: 'devient intaclable', ancrée: 'ancre ses appuis comme la montagne', tenu: 'est tenu' };
+        { const etats = { digue: 'est sous la Carapace Close', brise_lames: 'est derrière le Bouclier à Rouage', forme_iskar: 'prend la Forme Nocturne', protege: `est protégé par ${source.name}`, gibier: `est le gibier de ${source.name}`, victime: `est la victime choisie de ${source.name}`, intaclable: 'devient intaclable', assise: 'ancre ses appuis comme la montagne', tenu: 'est tenu' };
           this.log(ef.name === 'invisible' ? `${t.name} devient invisible.` : ef.name === 'unhealable' ? `${t.name} ne peut plus être soigné pendant ${turns} tour(s).` : ef.name === 'ivre' ? `${t.name} est ivre pendant ${turns} tour(s).` : etats[ef.name] ? `${t.name} ${etats[ef.name]} (${turns} tour(s)).` : `${t.name} est provoqué par ${source.name}.`); }
         break;
       case 'range':
@@ -2452,7 +2454,7 @@ class Combat {
         if (!this.canCastAt(e, id, from, from).ok) continue;
         const zone = s.aoe ? Grid.aoeCells(this.map, s.aoe.shape, s.aoe.size, from, from) : [from];
         const score = enemies
-          .filter(t => !t.def.invulnerable && !t.hasState('invulnerable') && t.absorbElement !== s.element && zone.some(c => c.x === t.x && c.y === t.y))
+          .filter(t => !t.def.invulnerable && !t.hasState('invulnerable') && t.absorbElement !== s.element && zone.some(c => c.x === t.x && c.y === t.y) && !(Grid.dist(from, t.pos) > 1 && t.effects.some(f => f.type === 'state' && f.farDodge)))
           .reduce((sum, t) => sum + Math.max(0, ((dmg.min + dmg.max) / 2) * (1 - this.resistOf(t, s.element) / 100)), 0);
         if (score > 0 && (!best || score > best.score)) best = { type: 'cast', spell: id, cell: { x: from.x, y: from.y }, score };
         continue;
@@ -2460,6 +2462,7 @@ class Combat {
       for (const t of enemies) {
         if (t.def.invulnerable || t.hasState('invulnerable')) continue;
         if (t.absorbElement === s.element) continue;
+        if (Grid.dist(from, t.pos) > 1 && t.effects.some(f => f.type === 'state' && f.farDodge)) continue;
         if (!this.canSee(e, t) || !this.canCastAt(e, id, t.pos, from).ok) continue;
         const expected = ((dmg.min + dmg.max) / 2) * (1 - this.resistOf(t, s.element) / 100);
         if (expected <= 0) continue;

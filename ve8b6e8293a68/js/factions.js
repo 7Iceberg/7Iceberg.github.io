@@ -9,7 +9,7 @@ const Factions = (() => {
   const LIST = {
     fil: {
       id: 'fil', nom: 'l\'Aube', Nom: 'L\'Aube', au: 'à l\'Aube', du: 'de l\'Aube',
-      capitale: 'Orsane, sur les Cimes', couleurs: 'blanc et or', teinte: '#e2c690',
+      capitale: 'la Cité des Cimes, sur les Cimes', couleurs: 'blanc et or', teinte: '#e2c690',
       veut: 'Garder les Marques sur des peaux dignes, protéger les Grands Dragons, retrouver Ithren.',
       juste: 'La Colère a déjà brûlé un tiers du monde : l\'Aube protège les vivants et éteint ce qui couve.',
       sombre: 'Elle décide qui a le droit de porter une Marque, enferme ce qui gêne, et cache ce qu\'elle sait d\'Ithren.',
@@ -25,7 +25,7 @@ const Factions = (() => {
         { text: 'Le titre, l\'insigne d\'or et les quêtes d\'Okrel.' },
         { text: 'Une broderie d\'or au bord de la cape.', venir: true },
         { text: 'Le choix de l\'ordre : Gardes d\'Aube, Porteurs de Flamme ou Gardiens des Marques.' },
-        { text: 'Le comptoir de l\'Aube, à Orsane.', venir: true },
+        { text: 'Le comptoir de l\'Aube, à la Cité des Cimes.', venir: true },
         { text: 'La tour des Fanaux : un raccourci vers les hauts d\'Orsane.', venir: true },
         { text: 'Une cape blanche brodée d\'or.', venir: true },
         { text: 'Les archives de l\'Aube : ce qu\'on sait vraiment d\'Ithren.', venir: true },

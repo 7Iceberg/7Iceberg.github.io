@@ -4,11 +4,11 @@ DATA.actualites = [
   { id: 'garde_robe', date: '2026-11-03', art: 'fenetres', image: 'garde-robe.webp', titre: 'La Garde-robe',
     texte: 'Teintures, lueurs de lanterne, auras, blasons, émotes et thèmes d\'interface se gagnent en jouant : succès, premières victoires contre les boss, paliers de la Veille, quêtes de Voie, teintures du tailleur. Tout ce qu\'un personnage gagne sert à tous les autres. La fenêtre Garde-robe (touche G) essaie tout le catalogue, possédé ou non, et garde cinq looks. Jamais de puissance : seulement de l\'allure.' },
   { id: 'ervane', date: '2026-10-20', art: 'carte', titre: 'Ervane, l\'île de l\'Éveil',
-    texte: 'Tout nouveau Veilleur s\'éveille désormais sur Ervane, une île en 3D amarrée au-dessus des Cimes. On y marche librement, on combat sur le terrain même, et Varek t\'apprend le jeu jusqu\'au Puits de l\'Amarre. La Nacelle te descend ensuite à Orsane, au niveau 8.' },
+    texte: 'Tout nouveau Veilleur s\'éveille désormais sur Ervane, le plus haut sommet des Cimes, en 3D, au-dessus de la mer de nuages. On y marche librement, on combat sur le terrain même, et Varek t\'apprend le jeu jusqu\'au Puits de l\'Amarre. La Nacelle te descend ensuite à la Cité des Cimes.' },
   { id: 'factions', date: '2026-10-15', art: 'factions', titre: 'L\'Aube contre la Chaîne',
     texte: 'Au niveau 39, à la Passe de Kaldum, tu prêtes serment à l\'Aube, qui garde les Marques et les dragons depuis Orsane, ou à la Chaîne, qui veut les lier depuis Kessane, au bord du gouffre. Tu peux aussi refuser : les Francs-Marcheurs de Thessa restent neutres et commercent avec tout le monde. Dix rangs, trois ordres par faction, et jamais de puissance de combat : des titres, des apparences, des raccourcis.' },
   { id: 'carte_du_monde', date: '2026-10-15', art: 'carte', titre: 'La carte du monde, peinte et en 3D',
-    texte: 'Chaque carte a ses coordonnées [x, y] et se peint d\'après son vrai décor : prés, chemins, eau, forêts, toits, falaises et lave de Kaldum, avec des nuages sur ce que tu n\'as pas encore exploré. Des pastilles montrent les Relais, les donjons, les ateliers et les quêtes, et un appui long pose ton drapeau. La touche M l\'ouvre ; le bouton 3D dresse le continent en îles flottantes, à faire tourner du doigt.' },
+    texte: 'Chaque carte a ses coordonnées [x, y] et se peint d\'après son vrai décor : prés, chemins, eau, forêts, toits, falaises et lave de Kaldum, avec des nuages sur ce que tu n\'as pas encore exploré. Des pastilles montrent les Relais, les donjons, les ateliers et les quêtes, et un appui long pose ton drapeau. La touche M l\'ouvre ; le bouton 3D dresse le continent en relief, à faire tourner du doigt.' },
   { id: 'grands_dragons', date: '2026-10-14', art: 'dragons', titre: 'Les sept Grands Dragons',
     texte: 'Veylan n\'a pas de dieux : il a sept Grands Dragons, plus vieux que tous les peuples. Chacun grave sa Marque sur la peau de ceux qu\'il accepte : plume d\'argent, losange de pierre, goutte de verre de mer ou bouclier de braise. Ruhani, le Dragon de l\'Aube, réunit les quatre éléments ; Ithren a disparu le jour de la Grande Colère.' },
   { id: 'plan_des_quetes', date: '2026-10-14', art: 'quetes', titre: 'La route jusqu\'au niveau 100',
@@ -25,7 +25,7 @@ DATA.journal = [
   { date: '2026-10-20', titre: 'Ervane, l\'île de départ', points: [
     'Un nouveau personnage naît sur Ervane, en 3D : cinq zones, onze quêtes principales, le Puits de l\'Amarre, puis la Nacelle vers Orsane.',
     'Déplacement libre hors combat ; en combat, les cases et les règles ne changent pas.',
-    'Sans 3D sur l\'appareil, on naît à Orsane comme avant.',
+    'Tout le monde naît sur Ervane, même sans 3D sur l\'appareil.',
   ] },
   { date: '2026-10-15', titre: 'Nouvel accueil, cinq personnages', points: [
     'Accueil refait : actualités, journal des mises à jour, réglages, partie d\'invité sans sauvegarde.',
@@ -35,13 +35,13 @@ DATA.journal = [
   ] },
   { date: '2026-10-15', titre: 'Les factions', points: [
     'L\'Aube (Orsane) contre la Chaîne (Kessane, la Fosse en attendant) ; les Francs-Marcheurs restent neutres.',
-    'Prélude de 17 à 20, serment au niveau 20 à la Passe de Kaldum, dix rangs nommés, trois ordres par faction choisis au rang 3.',
+    'Prélude de 17 à 20, serment au niveau 39 à la Passe de Kaldum, dix rangs nommés, trois ordres par faction choisis au rang 3.',
     'Le reniement coûte deux rangs ; la faction ne donne jamais de puissance de combat.',
   ] },
   { date: '2026-10-15', titre: 'Carte du monde peinte et vue 3D', points: [
     'Chaque carte peinte d\'après son décor, quadrillage fin, noms de zones, nuages sur l\'inexploré.',
     'Pastilles (Relais, donjon, atelier, marchand, quêtes), épingles et bulles « x,y · zone · niveau ».',
-    'Vue 3D : chaque région en île flottante, caméra qui tourne au doigt ; un relief peint sans WebGL.',
+    'Vue 3D : chaque région en relief, caméra qui tourne au doigt ; un relief peint sans WebGL.',
   ] },
   { date: '2026-10-14', titre: 'Carte du monde', points: [
     'Coordonnées [x, y] pour chaque carte, déduites de ses sorties.',

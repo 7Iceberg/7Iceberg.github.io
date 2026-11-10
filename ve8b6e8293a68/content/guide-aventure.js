@@ -47,7 +47,7 @@ const GuideAventure = (() => {
       article('inventaire', 'Équipement et panoplies', 'Le sac rassemble ressources, consommables et équipements. Lis les conditions et les effets d’un objet avant de l’équiper. Plusieurs pièces d’une même panoplie peuvent donner un bonus supplémentaire.', 'sac'),
       article('dragmes', 'Dragmes et banque', 'Les Dragmes sont la monnaie de ton aventure. Tu en gagnes notamment par les combats, les quêtes et les ventes. La banque permet de déposer des objets et des Dragmes pour alléger le sac ; consulte un service bancaire dans le monde.', 'sac'),
       article('metiers', 'Récolte et artisanat', 'Les métiers permettent de récolter des ressources et de fabriquer des objets. La fenêtre Métiers présente les niveaux, recettes et ingrédients. Utilise les ateliers et les ressources de ta région pour préparer ton équipement.', 'metiers'),
-      article('boutique', 'Éclats et Boutique des Voiles', 'Les Éclats servent à la Boutique des Voiles, notamment pour les cosmétiques. Ils sont distincts des Dragmes. Consulte les sources d’Éclats, les conditions des offres et leur disponibilité dans la boutique. Un article annoncé « Bientôt » n’est pas encore livré en jeu.', 'boutique'),
+      article('boutique', 'Éclats et Boutique des Cimes', 'Les Éclats servent à la Boutique des Cimes, notamment pour les cosmétiques. Ils sont distincts des Dragmes. Consulte les sources d’Éclats, les conditions des offres et leur disponibilité dans la boutique. Un article annoncé « Bientôt » n’est pas encore livré en jeu.', 'boutique'),
       article('garderobe', 'Garde-robe et apparence', 'La Garde-robe permet de composer ton apparence avec les cosmétiques possédés. Tes choix visuels accompagnent ton personnage sans remplacer les caractéristiques de son équipement.', 'garderobe'),
     ] },
     { id: 'compagnons', titre: 'Compagnons de route', icone: 'familiers', articles: [
@@ -60,7 +60,47 @@ const GuideAventure = (() => {
     ] },
   ];
   const normaliser = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const trouver = id => rubriques.flatMap(r => r.articles).find(a => a.id === id);
-  const chercher = q => { const termes = normaliser(q).trim().split(/\s+/).filter(Boolean); return rubriques.map(r => ({ ...r, articles: r.articles.filter(a => termes.every(t => normaliser(r.titre + ' ' + a.titre + ' ' + a.texte).includes(t))) })).filter(r => r.articles.length); };
-  return { rubriques, trouver, chercher, normaliser };
+  const complements = [];
+  let catalogue = null, indexLecture = null;
+  const obtenir = () => {
+    if (!catalogue) {
+      catalogue = rubriques.map(r => ({ ...r, articles: r.articles.slice() }));
+      for (const fn of complements) fn(catalogue);
+    }
+    return catalogue;
+  };
+  const noeuds = (liste = obtenir()) => liste.flatMap(r => [r, ...noeuds(r.enfants || [])]);
+  const trouver = id => noeuds().flatMap(r => r.articles || []).find(a => a.id === id);
+  const branche = (id, liste = obtenir()) => noeuds(liste).find(r => (r.articles || []).some(a => a.id === id));
+  const chemin = (id, liste = obtenir()) => {
+    for (const r of liste) {
+      if ((r.articles || []).some(a => a.id === id)) return [r.id];
+      const suite = chemin(id, r.enfants || []);
+      if (suite.length) return [r.id, ...suite];
+    }
+    return [];
+  };
+  const index = () => {
+    if (!indexLecture) {
+      const visiter = (liste, parents = []) => liste.flatMap(r => [
+        ...(r.articles || []).map(article => ({ article, rubrique: r, parents: [...parents, r], texte: normaliser([...parents, r].map(p => p.titre).join(' ') + ' ' + article.titre + ' ' + article.texte + ' ' + (article.sortsClasse ? (DATA.classes[article.sortsClasse].spells || []).map(id => { const d = DATA.spells[id]; return d ? d.name + ' ' + d.desc : ''; }).join(' ') : '')) })),
+        ...visiter(r.enfants || [], [...parents, r]),
+      ]);
+      indexLecture = visiter(obtenir());
+    }
+    return indexLecture;
+  };
+  const resultats = q => {
+    const termes = normaliser(q).trim().split(/\s+/).filter(Boolean);
+    return index().filter(r => termes.every(t => r.texte.includes(t)));
+  };
+  const chercher = q => {
+    const ids = new Set(resultats(q).map(r => r.article.id));
+    const filtrer = liste => liste.map(r => ({ ...r,
+      articles: (r.articles || []).filter(a => ids.has(a.id)), enfants: filtrer(r.enfants || []),
+    })).filter(r => r.articles.length || r.enfants.length);
+    return filtrer(obtenir());
+  };
+  const completer = fn => { complements.push(fn); catalogue = null; indexLecture = null; };
+  return { get rubriques() { return obtenir(); }, trouver, branche, chemin, noeuds, chercher, resultats, index, normaliser, completer };
 })();
