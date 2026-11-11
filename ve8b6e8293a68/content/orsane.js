@@ -2282,3 +2282,99 @@ for (const [cid, c] of Object.entries(DATA.classes)) {
   });
 }
 }
+
+DATA.content.quests.push(
+  { id: 'orsane_la_glaise_chaude', name: 'La glaise chaude', level: 31, main: false,
+    giver: 'elkor', requires: { level: 29, quests: [] },
+    steps: [
+      { type: 'kill', monster: 'glek', count: 8, text: 'Disperser huit Gleks sur la Pente aux Galets' },
+      { type: 'collect', item: 'argile_de_thelk', count: 6, text: 'Rapporter six mottes d\'argile de Thelk' },
+      { type: 'talk', npc: 'elkor', text: 'Rendre l\'argile à Elkor' },
+    ],
+    dialogue: {
+      offer: ['Mes mules s\'enfoncent jusqu\'au jarret : les Gleks ont arrosé la Pente de glaise chaude.', 'Chasse-les, et rapporte-moi leur argile. Cuite, elle fait de bonnes semelles. Je te ferai une paire, Franc-Marcheur ou pas.'],
+      progress: ['Les Gleks giclent quand on les touche. Garde tes distances, ou tes bottes.'],
+      done: ['Voilà de la belle glaise. Mes mules te remercient, à leur façon : en ne te mordant pas.', 'Tiens, un anneau d\'argile vernie. Il porte bonheur aux convoyeurs. Aux autres aussi, on verra.'],
+    },
+    rewards: { xp: 2027, fils: 90, items: [{ id: 'anneau_thelk', count: 1 }] } },
+  { id: 'orsane_les_lueurs_de_la_pente', name: 'Les lueurs de la Pente', level: 32, main: false,
+    giver: 'karvel', requires: { level: 30, quests: [] },
+    steps: [
+      { type: 'visit', map: 'orsane_eboulis_pente', text: 'Descendre sur la Pente aux Galets à la tombée du jour' },
+      { type: 'kill', monster: 'veilloche', count: 6, text: 'Éteindre six Veilloches' },
+      { type: 'collect', item: 'meche_de_veilloche', count: 4, text: 'Ramasser quatre mèches encore chaudes' },
+      { type: 'talk', npc: 'karvel', text: 'Montrer les mèches à Larkoth' },
+    ],
+    dialogue: {
+      offer: ['Chaque soir, des lueurs dansent sur la Pente. Les marcheurs croient voir le Relais et se perdent.', 'Ce sont des Veilloches. Éteins-en quelques-unes et rapporte leurs mèches : je veux savoir ce qui les allume.'],
+      progress: ['Une Veilloche soigne ses voisines. Frappe celle qui soigne, pas celle qui brille le plus.'],
+      done: ['De la cire, du fil et un peu de lumière qui refuse de mourir. Je n\'aime pas ça.', 'Garde ces bottes du Thelk : sur la Pente, elles ne glissent pas.'],
+    },
+    rewards: { xp: 2129, fils: 90, items: [{ id: 'bottes_thelk', count: 1 }] } },
+  { id: 'orsane_ce_que_la_fosse_entend', name: 'Ce que la Fosse entend', level: 33, main: false,
+    giver: 'kethril', requires: { level: 31, quests: [] },
+    steps: [
+      { type: 'visit', map: 'orsane_eboulis_terrier', text: 'Rejoindre Kethril devant la Gueule du Terrier' },
+      { type: 'kill', monster: 'grouk', count: 10, text: 'Faire taire dix Grouks qui grattent autour de la Fosse' },
+      { type: 'talk', npc: 'kethril', text: 'Revenir écouter avec Kethril' },
+    ],
+    dialogue: {
+      offer: ['La Fosse parle, la nuit. Pas fort. Mais les Grouks grattent si fort qu\'on n\'entend plus rien.', 'Fais-les taire. Ensuite, on écoutera ensemble.'],
+      progress: ['Ils sont nombreux, mais ils ne sont pas patients. Toi, sois-le.'],
+      done: ['Tu entends ? Non ? Moi non plus. Mais le silence aussi, c\'est une réponse.', 'Prends cette coiffe de glaise. Elle étouffe le bruit du monde, un peu.'],
+    },
+    rewards: { xp: 2232, fils: 80, items: [{ id: 'coiffe_thelk', count: 1 }] } },
+  { id: 'orsane_les_brimbes_brulees', name: 'Les Brimbes brûlées', level: 34, main: false,
+    giver: 'karvel', requires: { level: 32, quests: ['orsane_les_lueurs_de_la_pente'] },
+    steps: [
+      { type: 'kill', monster: 'brimbe_fendue', count: 4, text: 'Abattre quatre Brimbes Fendues autour du Terrier' },
+      { type: 'collect', item: 'oeil_de_brimbe', count: 3, text: 'Rapporter trois yeux de Brimbe' },
+      { type: 'talk', npc: 'karvel', text: 'Rendre compte à Larkoth' },
+    ],
+    dialogue: {
+      offer: ['Des Brimbes brûlées sortent du Terrier. Fendues, noircies, et elles éclatent quand elles tombent.', 'Quelque chose les a cuites. Ramène-moi leurs yeux : ils ont vu ce que c\'était.'],
+      progress: ['Ne reste pas à côté d\'une Brimbe Fendue quand elle tombe. Elle éclate.'],
+      done: ['Des yeux tout ronds, tout gris. Ils ont vu du feu, beaucoup de feu, et rien d\'autre.', 'Tiens. Ce n\'est pas grand-chose, mais la Garde paie ses dettes.'],
+    },
+    rewards: { xp: 2337, fils: 95, items: [{ id: 'potion_de_veille', count: 2 }] } },
+  { id: 'orsane_les_tisseuses_de_lueur', name: 'Les tisseuses de lueur', level: 36, main: false,
+    giver: 'elkor', requires: { level: 34, quests: ['orsane_la_glaise_chaude'] },
+    steps: [
+      { type: 'kill', monster: 'veilloche_tissee', count: 5, text: 'Défaire cinq Veilloches Tissées' },
+      { type: 'collect', item: 'lueur_de_veilloche', count: 2, text: 'Rapporter deux lueurs intactes' },
+      { type: 'talk', npc: 'elkor', text: 'Vendre les lueurs à Elkor' },
+    ],
+    dialogue: {
+      offer: ['Une lueur de Veilloche, à Kaldum, ça se paie en or. Les Kaldrins éclairent leurs galeries avec.', 'Les Veilloches Tissées en portent des belles. Elles se défendent, et elles se soignent entre elles. Je t\'en prends deux.'],
+      progress: ['Une lueur fêlée ne vaut rien. Frappe vite et proprement.'],
+      done: ['Intactes ! Les Kaldrins vont pleurer en voyant mon prix.', 'Ta part : une amulette tissée de leurs fils. Garde-la, elle bat quand tu te bats.'],
+    },
+    rewards: { xp: 2552, fils: 110, items: [{ id: 'amulette_veilloche_tissee', count: 1 }] } },
+  { id: 'orsane_le_poids_du_col', name: 'Le poids du col', level: 38, main: false,
+    giver: 'ulkara', requires: { level: 36, quests: ['orsane_la_passe_au_crepuscule'] },
+    steps: [
+      { type: 'visit', map: 'orsane_eboulis_passe', text: 'Retrouver Ulkara sur la Passe de Kaldum' },
+      { type: 'kill', monster: 'thelk', count: 6, text: 'Repousser six Thelks qui coulent sur le chemin' },
+      { type: 'kill', monster: 'brimbe', count: 6, text: 'Repousser six Brimbes qui suivent Korvath' },
+      { type: 'talk', npc: 'ulkara', text: 'Rendre la Passe à Ulkara' },
+    ],
+    dialogue: {
+      offer: ['Korvath ne descend pas seul. Derrière lui coulent la glaise et les galets, et la Passe se bouche un peu plus chaque soir.', 'Dégage le chemin. Je ne prends pas parti, mais je tiens à ce qu\'on puisse encore passer.'],
+      progress: ['La glaise d\'abord, les galets ensuite. Ce qui coule bouche plus vite que ce qui roule.'],
+      done: ['La Passe respire. Elle ne le fera pas longtemps, mais ce soir, elle respire.', 'Prends cette ceinture. Les guetteuses en portent une pareille, pour les nuits froides du col.'],
+    },
+    rewards: { xp: 2773, fils: 100, items: [{ id: 'ceinture_veilloche_tissee', count: 1 }] } },
+  { id: 'orsane_la_fenetre_de_la_fosse', name: 'La fenêtre de la Fosse', level: 38, main: false,
+    giver: 'kethril', requires: { level: 36, quests: ['orsane_ce_que_la_fosse_entend'] },
+    steps: [
+      { type: 'visit', map: 'orsane_eboulis_chaos', text: 'Suivre le murmure de la Fosse jusqu\'au Chaos' },
+      { type: 'kill', monster: 'pilou_defait', count: 6, text: 'Délivrer six Glyms Défaits' },
+      { type: 'talk', npc: 'kethril', text: 'Raconter à Kethril ce que disent les Glyms' },
+    ],
+    dialogue: {
+      offer: ['Ce que la Fosse murmurait, je l\'ai compris : elle appelle les Glyms brûlés du Chaos.', 'Ils gardent ce qu\'ils volent. Va les délivrer de ce qu\'ils portent, et écoute ce qu\'ils disent en tombant.'],
+      progress: ['Un Glym Défait garde le PM qu\'il te vole. Ne te laisse pas prendre deux fois.'],
+      done: ['Ils disaient tous la même chose ? « Plus bas. » Alors la fenêtre donne vers le bas.', 'Garde cet anneau tissé. Il voit un peu dans le noir, comme nous.'],
+    },
+    rewards: { xp: 2773, fils: 100, items: [{ id: 'anneau_veilloche_tissee', count: 1 }] } },
+);

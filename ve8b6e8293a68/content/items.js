@@ -960,6 +960,46 @@
     R2('masse_de_tholou', 'forgeron', [['pierre_de_molh', 5], ['poil_de_tholou', 5], ['basalte_de_kaldum', 4]]);
   }
 
+  C.sets.push({
+    id: 'thelk', name: 'Panoplie du Thelk', family: ['thelk', 'glek'], level: 31,
+    profile: { chance: 50, force: 25, vita: 25 },
+    pieces: [
+      { slot: 'coiffe', id: 'coiffe_thelk', name: 'Coiffe du Thelk', lore: 'Un bol de glaise cuite retourné sur la tête. Il garde la chaleur des sources longtemps après.' },
+      { slot: 'cape', id: 'cape_thelk', name: 'Cape du Thelk', lore: 'Une toile trempée dans la glaise et séchée au soleil des Éboulis. Elle craque, puis elle tient.' },
+      { slot: 'amulette', id: 'amulette_thelk', name: 'Amulette du Thelk', lore: 'Une goutte de glaise figée autour d\'un galet. Elle est toujours un peu tiède.' },
+      { slot: 'anneau', id: 'anneau_thelk', name: 'Anneau du Thelk', lore: 'Un anneau d\'argile vernie. Il laisse une trace grise sur les doigts, puis plus rien.' },
+      { slot: 'bottes', id: 'bottes_thelk', name: 'Bottes du Thelk', lore: 'Des semelles épaisses de glaise cuite. On n\'y glisse plus, on y colle un peu.' },
+    ],
+    bonusProfile: { chance: 60, vita: 40 },
+    lore: 'Glaise des sources chaudes, cuite et vernie, pour ceux qui frappent avec l\'eau. Les Veilloches n\'aiment pas la voir arriver.',
+  });
+  C.sets.push({
+    id: 'veilloche_tissee', name: 'Panoplie de la Veilloche Tissée', family: ['veilloche_tissee', 'veilloche'], level: 38,
+    profile: { intel: 50, agi: 25, vita: 25 },
+    pieces: [
+      { slot: 'coiffe', id: 'coiffe_veilloche_tissee', name: 'Coiffe de la Veilloche Tissée', lore: 'Un capuchon de mèches tressées où brillent trois petites lueurs. Il éclaire en dessous, jamais au-dessus.' },
+      { slot: 'amulette', id: 'amulette_veilloche_tissee', name: 'Amulette de la Veilloche Tissée', lore: 'Une lueur prise dans un réseau de fils de cire. Elle bat plus vite quand on se bat.' },
+      { slot: 'anneau', id: 'anneau_veilloche_tissee', name: 'Anneau de la Veilloche Tissée', lore: 'Une mèche roulée en anneau, jamais tout à fait éteinte. Elle sent la bougie froide.' },
+      { slot: 'ceinture', id: 'ceinture_veilloche_tissee', name: 'Ceinture de la Veilloche Tissée', lore: 'Des fils de mèche serrés sur une sangle de cuir. Elle chauffe les reins par les soirs du col.' },
+      { slot: 'bottes', id: 'bottes_veilloche_tissee', name: 'Bottes de la Veilloche Tissée', lore: 'Tissées de mèches et cirées. Elles laissent derrière elles une traînée de lueur qui s\'éteint vite.' },
+    ],
+    bonusProfile: { intel: 60, vita: 40 },
+    lore: 'Les mèches et les lueurs des Veilloches Tissées, nouées pour ceux qui frappent par le feu. Elles éclairent le chemin et un peu la cible.',
+  });
+  {
+    const R3 = (result, workshop, pairs) => C.recipes.push({ result, count: 1, workshop, ingredients: pairs.map(([id, n]) => ({ id, count: n })) });
+    R3('coiffe_thelk', 'tailleur', [['argile_de_thelk', 6], ['galet_de_brimbe', 3], ['cuir_de_grouk', 2]]);
+    R3('cape_thelk', 'tailleur', [['argile_de_thelk', 5], ['cuir_de_grouk', 4], ['ecaille_de_brimbe', 2]]);
+    R3('amulette_thelk', 'bijoutier', [['argile_de_thelk', 4], ['galet_de_brimbe', 4], ['pierre_de_calcaire', 3]]);
+    R3('anneau_thelk', 'bijoutier', [['argile_de_thelk', 4], ['oeil_de_brimbe', 1], ['pierre_de_calcaire', 3]]);
+    R3('bottes_thelk', 'cordonnier', [['argile_de_thelk', 5], ['cuir_de_grouk', 3], ['bois_noueux', 2]]);
+    R3('coiffe_veilloche_tissee', 'tailleur', [['meche_de_veilloche', 6], ['lueur_de_veilloche', 1], ['soie_de_tissefil', 3]]);
+    R3('amulette_veilloche_tissee', 'bijoutier', [['lueur_de_veilloche', 2], ['cire_de_veilloche', 5], ['pierre_de_calcaire', 3]]);
+    R3('anneau_veilloche_tissee', 'bijoutier', [['meche_de_veilloche', 4], ['cire_de_veilloche', 4], ['oeil_de_brimbe', 1]]);
+    R3('ceinture_veilloche_tissee', 'cordonnier', [['meche_de_veilloche', 5], ['cuir_de_grouk', 4], ['cire_de_veilloche', 2]]);
+    R3('bottes_veilloche_tissee', 'cordonnier', [['meche_de_veilloche', 5], ['cire_de_veilloche', 3], ['cuir_de_grouk', 3]]);
+  }
+
   C.items.push(
     { id: 'coque_de_l_eveil', name: 'Coque de l\'Éveil', slot: 'veylith', level: 20, stats: {}, passif: 'veylith_sursaut', quete: 'ervane_descente',
       lie: true, marque: true, source: 'quest', rarity: 'epique', image: 'assets/ui/objets/coque-eveil.png',
