@@ -111,7 +111,7 @@ html, body {
   position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background: radial-gradient(ellipse 70% 60% at 50% 46%, rgba(10, 9, 16, 0.35) 0%, rgba(10, 9, 16, 0.86) 100%),
     linear-gradient(180deg, rgba(10, 9, 16, 0.55) 0%, rgba(10, 9, 16, 0.25) 40%, rgba(10, 9, 16, 0.92) 100%),
-    url("../assets/ui/fond-chargement.webp") 50% 40% / cover no-repeat;
+    url("../assets/ui/medaille.webp") 50% 45% / cover no-repeat;
   animation: scene-voile-fond 24s ease-in-out infinite alternate;
 }
 @keyframes scene-voile-fond { from { transform: scale(1); } to { transform: scale(1.08); } }

@@ -266,17 +266,8 @@ class Scene {
     ];
   }
 
-  static fondVoile() {
-    try {
-      const q = new URLSearchParams(location.search).get('chargement');
-      if (q) return q === 'medaille' ? 'medaille' : 'paysage';
-      return localStorage.getItem('veylan.chargement') === 'medaille' ? 'medaille' : 'paysage';
-    } catch (e) { return 'paysage'; }
-  }
-  static fondAnime(fond) {
-    if (fond === 'medaille') return typeof VoileMedaille === 'object' ? VoileMedaille : null;
-    return typeof VoilePaysage === 'object' ? VoilePaysage : null;
-  }
+  static fondVoile() { return 'medaille'; }
+  static fondAnime() { return typeof VoileMedaille === 'object' ? VoileMedaille : null; }
 
   montrerVoile(titre, etape, liste) {
     if (!this.stage) return;
@@ -294,11 +285,9 @@ class Scene {
     const el = this.voileEl;
     el.classList.remove('repli');
     el.classList.toggle('sans-barre', !liste);
-    let fond = Scene.fondVoile(), anime = Scene.fondAnime(fond);
-    if (!anime) fond = 'paysage';
+    const fond = Scene.fondVoile(), anime = Scene.fondAnime();
     this.fondAnime = anime;
-    el.classList.toggle('medaille', fond === 'medaille');
-    el.classList.toggle('paysage', fond === 'paysage' && !!anime);
+    el.classList.toggle('medaille', true);
     el.innerHTML = `<div class="scene-voile__fond" data-fond="${fond}"${anime ? ' data-anime' : ''} aria-hidden="true">${anime ? anime.html() : ''}</div>` +
       '<div class="scene-voile__fil" aria-hidden="true"></div>' +
       `<p class="scene-voile__titre">${Util.esc(titre)}</p>` +

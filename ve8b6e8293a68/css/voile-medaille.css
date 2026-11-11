@@ -9,7 +9,7 @@
 
 .vy-medaille {
   position: absolute; left: 50%; top: calc((100cqh - var(--bas)) / 2);
-  width: max(100cqw, calc((100cqh - var(--bas) + 40px) * 2.4573)); aspect-ratio: 1612 / 656;
+  width: max(100cqw, calc((100cqh - var(--bas) + 40px) * 1.7937)); aspect-ratio: 2000 / 1115;
   transform: translate(-50%, -50%);
   -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 88%, transparent 100%); mask-image: linear-gradient(180deg, #000 0%, #000 88%, transparent 100%);
 }
@@ -21,21 +21,21 @@
 .vy-medaille__cristaux { mix-blend-mode: screen; opacity: 0.2; animation: vy-med-respire 3.8s ease-in-out infinite alternate; will-change: opacity; }
 @keyframes vy-med-respire { from { opacity: 0.12; } to { opacity: 0.9; } }
 .vy-medaille__balayage {
-  left: 50%; top: 49.09%; width: 110%; aspect-ratio: 1; transform: translate(-50%, -50%) rotate(0deg);
+  left: 50.1%; top: 48.43%; width: 110%; aspect-ratio: 1; transform: translate(-50%, -50%) rotate(0deg);
   -webkit-mask-image: conic-gradient(from 0deg, transparent 0deg 125deg, #000 155deg, transparent 180deg 305deg, #000 335deg, transparent 360deg);
   mask-image: conic-gradient(from 0deg, transparent 0deg 125deg, #000 155deg, transparent 180deg 305deg, #000 335deg, transparent 360deg);
   animation: vy-med-tour 9s linear infinite; will-change: transform; mix-blend-mode: screen;
 }
 .vy-medaille__balayage img {
-  position: absolute; left: 4.545%; top: 31.839%; width: 90.909%; height: 36.995%;
-  transform-origin: 50% 49.09%; animation: vy-med-tour-envers 9s linear infinite; will-change: transform;
+  position: absolute; left: 4.4545%; top: 25.3636%; width: 90.909%; height: 50.682%;
+  transform-origin: 50.1% 48.43%; animation: vy-med-tour-envers 9s linear infinite; will-change: transform;
   filter: brightness(1.8);
 }
 @keyframes vy-med-tour { to { transform: translate(-50%, -50%) rotate(360deg); } }
 @keyframes vy-med-tour-envers { to { transform: rotate(-360deg); } }
 
 .vy-medaille__eclat {
-  width: 1.7%; aspect-ratio: 1; transform: translate(-50%, -50%) scale(0); opacity: 0;
+  width: 1.9%; aspect-ratio: 1; transform: translate(-50%, -50%) scale(0); opacity: 0;
   background: radial-gradient(circle, #fff 0 8%, rgba(160, 232, 255, 0.95) 16%, rgba(80, 190, 255, 0.35) 34%, transparent 62%);
   mix-blend-mode: screen; animation: vy-med-eclat 3s ease-in-out infinite; will-change: transform, opacity;
 }
@@ -65,7 +65,7 @@
 @keyframes vy-med-contour { from { stroke-dashoffset: 0; } to { stroke-dashoffset: calc(-1px * var(--l, 1000)); } }
 
 .vy-medaille__pastille {
-  width: 5%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; opacity: 0;
+  width: 7.8%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; opacity: 0;
   background: radial-gradient(circle, color-mix(in srgb, var(--c) 55%, #fff) 0%, color-mix(in srgb, var(--c) 70%, transparent) 30%, transparent 68%);
   mix-blend-mode: screen; transition: opacity 0.5s ease;
 }

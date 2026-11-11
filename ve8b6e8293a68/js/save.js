@@ -283,6 +283,7 @@ const Save = (() => {
     }
     const earned = new Set(achs.map(id => (Achievements.get(id).rewards || {}).title).filter(Boolean));
     for (const t of Factions.titles(o.faction)) earned.add(t);
+    for (const id of o.quests.done) { const r = (Quests.get(id) || {}).rewards; if (r && r.title) earned.add(r.title); }
     o.titles = (Array.isArray(o.titles) ? o.titles : []).filter(t => { const ok = typeof t === 'string' && earned.has(t); if (!ok) bad('titre'); return ok; });
     if (o.title != null && !o.titles.includes(o.title)) { bad('titre affiché'); o.title = null; }
     o.relays = (Array.isArray(o.relays) ? o.relays : []).filter(id => typeof id === 'string' && World.mapDef(id));

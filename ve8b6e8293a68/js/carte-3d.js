@@ -58,6 +58,7 @@ class Carte3D {
     }
     if (this.mort) return;
     etape('Relief des îles'); await image();
+    if (this.mort) return;
     this.ciel();
     const D = this.hud.donneesCarte();
     this.vus = new Set(D.seen);
@@ -66,9 +67,11 @@ class Carte3D {
     if (posees.length) { etape('Vues des plateaux'); await Promise.all(posees.map(P => new Promise(r => { if (CartePlateaux.image(P, r)) r(); else setTimeout(r, 4000); }))); }
     if (this.mort) return;
     if (masse.size) { this.ile('continent', masse, D); await image(); }
+    if (this.mort) return;
     if (Continent.pays().some(p => p.id === 'ervane' && p.open)) { this.ileErvane(D); await image(); }
     if (this.mort) return;
     etape('Arbres, rochers et maisons'); await image();
+    if (this.mort) return;
     this.decor();
     this.ponts();
     this.lointain();

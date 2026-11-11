@@ -1121,7 +1121,11 @@ Object.assign(Hud.prototype, {
       return vue.construire(etape => { this.carte3dEtape = etape; const el = document.querySelector('.vy-carte__charge small'); if (el) el.textContent = etape; }).then(() => vue);
     }).then(vue => {
       this.carte3dPromesse = null;
-      if (vue && vue !== this.carte3d) { vue.dispose(); return; }
+      if (vue && vue !== this.carte3d) {
+        vue.dispose();
+        if (this.fen.isOpen('carte') && c.vue3d && !c.repli3d && !(c.tab === 'cartes' && this.carteIleActive())) return this.ouvrir3D();
+        return;
+      }
       if (vue && (!this.fen.isOpen('carte') || !c.vue3d || (c.tab === 'cartes' && this.carteIleActive()))) { this.fermer3D(); return; }
       if (vue && c.tab === 'monde') vue.voirMonde(true);
       if (this.fen.isOpen('carte')) this.fen.render('carte');
