@@ -423,7 +423,7 @@ class Ile3D {
       etape('Le monde modelé');
       await pause();
       let semis = null;
-      this.T.facteurSemis = this.telephone && this.T.largeur > 300 ? 0.72 : 1;
+      this.T.facteurSemis = this.telephone && this.T.largeur > 300 ? 0.52 : 1;
       if (rendu.modeles && IleCharge.modeles && IleCharge.modeles()) {
         try { await IleCharge.modelesScript(); if (typeof IleModeles === 'object') { semis = await IleModeles.chargerSemis(THREE, this.renderer); semis.poses = IleModeles.poses(semis, this.T, (u, v) => this.hauteur(u, v)); } } catch (e) { console.warn('Ervane : semis Meshy indisponible', e); semis = null; }
       }

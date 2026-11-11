@@ -666,7 +666,7 @@ class Hud {
     const ui = this.ui, c = this.combat;
     if (ui && c && c.player && c.phase !== 'ended' && ui.buildSpellBar) { ui.buildSpellBar(); ui.timelineHtml = null; ui.refresh(); }
     this.refresh();
-    if (this.fen) for (const id of ['carac', 'sorts', 'inventaire', 'bestiaire']) if (this.fen.isOpen(id)) this.fen.render(id);
+    if (this.fen) for (const id of ['carac', 'sorts', 'sac', 'bestiaire']) if (this.fen.isOpen(id)) this.fen.render(id);
   }
 
   openPotionClasse() {

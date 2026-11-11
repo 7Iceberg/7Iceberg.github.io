@@ -759,6 +759,28 @@ class World {
       g.level = Math.round(g.monsters.reduce((s, m) => s + m.level, 0) / g.monsters.length);
     }
   }
+  rattraperRecompenses() {
+    const ch = this.ch, dons = [];
+    if (!ch || !ch.quests) return dons;
+    const possede = id => ch.has(id) || Object.values(ch.equipment || {}).includes(id) || !!(ch.coffre && ch.coffre.items && ch.coffre.items[id]);
+    for (const qid of ch.quests.done) {
+      const q = Quests.get(qid);
+      for (const it of (q && q.rewards && q.rewards.items) || []) {
+        const d = Items.get(it.id);
+        if (!d || !d.lie || d.quete !== qid || possede(d.id)) continue;
+        ch.addItem(d.id, 1);
+        dons.push({ id: d.id, count: 1, quete: q });
+      }
+    }
+    if (dons.length) {
+      this.emit('gain', { source: 'quete', items: dons.map(x => ({ id: x.id, count: 1 })) });
+      for (const x of dons) this.toast(`${Items.get(x.id).name} : la récompense de « ${x.quete.name} », arrivée depuis. Elle est dans ton sac.`);
+      this.emit('save');
+      this.emit('update');
+    }
+    return dons;
+  }
+
   potionClasseOfferte(npc) {
     const d = Items.get(Character.POTION_CLASSE);
     return !!(npc && npc.def && npc.def.changeClasse && d && !this.ch.invite && this.ch.level <= (d.niveauMax || 19) && !this.ch.has(d.id));

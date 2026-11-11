@@ -519,6 +519,24 @@
     bonusProfile: { force: 60, vita: 40 },
     lore: 'Pierre, gravier et fil d\'or : ce qui reste de l\'amarre, porté par ceux qui l\'ont défendue.',
   });
+  C.weapons.push(
+    { id: 'dagues_de_piquant', name: 'Dagues de Piquant', type: 'dague', level: 13, element: 'terre', profile: { force: 70, vita: 30 }, source: 'drop', from: 'chateigne',
+      lore: 'Deux piquants de bogue montés sur un manche de noisetier. Ça pique dans les deux sens : il faut le savoir avant de les ranger.' },
+    { id: 'baguette_de_lampion', name: 'Baguette de Lampion', type: 'baguette', level: 14, element: 'feu', profile: { intel: 60, vita: 40 }, source: 'drop', from: 'lampignon',
+      lore: 'Le pied d\'un Lampignon, séché, son œil de verre encore tiède au bout. Il s\'allume quand on le pointe.' },
+    { id: 'lame_de_mante', name: 'Lame de Mante', type: 'epee', level: 15, element: 'air', profile: { agi: 60, vita: 40 }, source: 'drop', from: 'mante_chene',
+      lore: 'Une aile d\'écorce de mante, durcie et affûtée. Elle coupe en sifflant comme du bois sec.' },
+    { id: 'pelle_grignotee', name: 'Pelle Grignotée', type: 'pelle', level: 16, element: 'air', profile: { agi: 60, vita: 40 }, source: 'drop', from: 'krobbet',
+      lore: 'Une pelle courte que les Krobbets ont rongée en dents de scie. Elle creuse vite et sans un bruit.' },
+    { id: 'baton_d_alveoles', name: 'Bâton d\'Alvéoles', type: 'baton', level: 17, element: 'eau', profile: { chance: 60, vita: 40 }, source: 'drop', from: 'scarabee_ruche',
+      lore: 'Une branche creusée d\'alvéoles, encore poisseuse de miel. Elle tient l\'eau comme une ruche tient le miel.' },
+    { id: 'arc_de_meuliere', name: 'Arc de Meulière', type: 'arc', level: 18, element: 'eau', profile: { chance: 60, vita: 40 }, source: 'drop', from: 'meuliere',
+      lore: 'Du bois noueux lesté d\'un galet de meulière poli. La corde revient toujours au même endroit.' },
+    { id: 'hache_de_chitine', name: 'Hache de Chitine', type: 'hache', level: 18, element: 'feu', profile: { intel: 60, vita: 40 }, source: 'drop', from: 'grillon_ruche',
+      lore: 'Une lame de carapace de grillon frottée de cire chaude. Elle chante un peu quand on la lève.' },
+    { id: 'masse_de_gravier', name: 'Masse de Gravier', type: 'marteau', level: 19, element: 'terre', profile: { force: 70, vita: 30 }, source: 'drop', from: 'gravelin',
+      lore: 'Un sac de cuir bourré du gravier que crachent les Gravelins. Il ne se casse pas : il s\'étale.' },
+  );
   const RA = (result, workshop, pairs) => C.recipes.push({ result, count: 1, workshop, ingredients: pairs.map(([id, count]) => ({ id, count })) });
   RA('coiffe_ronge_amarre', 'tailleur', [['gravier_d_amarre', 5], ['pierre_de_calcaire', 2], ['herbe_de_veille', 2]]);
   RA('cape_ronge_amarre', 'tailleur', [['gravier_d_amarre', 6], ['pierre_de_calcaire', 2]]);
@@ -658,7 +676,7 @@
         progress: ['La Pointe de la Nacelle est à l\'extrême sud-ouest, au bout du sentier qui passe le Champ des Bornes.'],
         done: ['Tiens-toi au bord, ne regarde pas en bas. Enfin si, regarde : c\'est Orsane.', 'Quand tu veux redescendre ou remonter, tu me le dis. La Nacelle ne refuse personne que l\'Aube a éveillé.'],
       },
-      rewards: { xp: 0, fils: 20 } },
+      rewards: { xp: 0, fils: 20, items: [{ id: 'coque_de_l_eveil', count: 1 }] } },
   );
 
   C.quests.push(

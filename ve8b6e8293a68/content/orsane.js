@@ -1406,7 +1406,7 @@ DATA.content.quests.push({
     progress: ['Ne cherche pas à l\'arrêter. Regarde-le descendre, et tiens ta place.'],
     done: ['Tu l\'as vu. Korvath : un col entier qui marche. Il descend chaque soir, et chaque matin il remonte là-haut.', 'Ne le touche pas encore, tu n\'as pas son poids. Le jour où tu le disperseras, Kaldum te connaîtra.', 'Tu as tenu la Passe. Écoute, maintenant : c\'est ici, en terrain neutre, que les Veilleurs prêtent serment.'],
   },
-  rewards: { xp: 5336, fils: 140, items: [{ id: 'pain_de_scorie', count: 3 }] },
+  rewards: { xp: 5336, fils: 140, items: [{ id: 'pain_de_scorie', count: 3 }, { id: 'coque_des_cimes', count: 1 }] },
 });
 DATA.content.quests.push({
   id: 'orsane_le_serment', name: 'Le serment', level: 39, main: true, category: 'faction', repeat: true,

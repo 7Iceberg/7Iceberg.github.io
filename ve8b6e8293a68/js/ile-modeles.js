@@ -441,7 +441,7 @@ const IleModeles = (() => {
     ervane_amarre: [['arbre', 0.008, [2.8, 3.8], ['jt-rouille']], ['buisson', 0.01, [0.8, 1.2], ['v-buisson']], ['rocher', 0.012, [0.8, 1.3], ['v-rochers']]],
     ervane_bois: [['amanite', 0.025, [0.45, 0.65], ['v-amanites']], ['buisson', 0.006, [0.9, 1.2], ['v-buisson']]],
     orsane_cimes: [['buisson', 0.005, [0.9, 1.2], ['v-buisson']], ['arbuste', 0.006, [0.55, 0.75], ['v-fleurs-blanc', 'v-fleurs-lavande']],
-      ['arbre', 0.0015, [2.6, 3.4], ['o-cypres']], ['arbuste', 0.002, [1.0, 1.3], ['o-topiaire']]],
+      ['arbre', 0.0008, [2.6, 3.4], ['o-cypres']], ['arbuste', 0.0012, [1.0, 1.3], ['o-topiaire']]],
     orsane_clairieres: [['arbre', 0.009, [3.0, 4.4], ['jt-ambre', 'jt-ambre', 'jt-vert']], ['buisson', 0.008, [0.9, 1.4], ['v-buisson']],
       ['arbuste', 0.006, [0.55, 0.8], ['v-fleurs-blanc', 'v-fleurs-blanc', 'v-fleurs-lavande']], ['rocher', 0.003, [0.8, 1.2], ['v-rochers']], ['amanite', 0.002, [0.45, 0.6], ['v-amanites']]],
     orsane_sentiers: [['arbre', 0.004, [2.8, 4.0], ['jt-ambre', 'jt-rouille']], ['buisson', 0.006, [0.8, 1.2], ['o-buisson']], ['rocher', 0.008, [0.8, 1.3], ['o-roche']]],

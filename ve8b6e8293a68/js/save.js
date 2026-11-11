@@ -253,6 +253,22 @@ const Save = (() => {
       if (st.choices != null) { const c = Quests.checkChoices(def, st.choices, st.step); if (c) quests.active[id].choices = c; else bad(`choix de la quête ${id}`); }
     }
     o.quests = quests;
+    {
+      let vus = new Set();
+      const lieQuete = id => { const d = Items.get(id); return d && d.lie && d.quete ? d : null; };
+      for (const sl of Object.keys(o.equipment)) {
+        const d = lieQuete(o.equipment[sl]);
+        if (!d) continue;
+        if (!quests.done.includes(d.quete) || vus.has(d.id)) { bad(`objet de quête ${d.id}`); o.equipment[sl] = null; } else vus.add(d.id);
+      }
+      for (const lieu of [o.inventory, o.coffre.items]) for (const id of Object.keys(lieu)) {
+        const d = lieQuete(id);
+        if (!d) continue;
+        if (!quests.done.includes(d.quete) || vus.has(id)) { bad(`objet de quête ${id}`); delete lieu[id]; continue; }
+        if (lieu[id] > 1) { bad(`objet de quête ${id}`); lieu[id] = 1; }
+        vus.add(id);
+      }
+    }
     if (o.faction != null) {
       const f = Factions.validate(o.faction, { level: o.level, done: quests.done });
       for (const e of f.errors) bad(e);

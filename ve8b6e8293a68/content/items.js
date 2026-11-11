@@ -930,6 +930,51 @@
     lore: 'Cousue avec ce que la Colère laisse des humains qu\'elle a traversés. Elle donne la force et la vitesse des Fendus, et un peu de leur façon d\'être à deux endroits à la fois.',
   });
 
+  C.weapons.push(
+    { id: 'baguette_de_lueur', name: 'Baguette de Lueur', type: 'baguette', level: 35, element: 'air', profile: { agi: 60, vita: 40 }, source: 'craft',
+      lore: 'Une tige de cire de Veilloche où dort une lueur. Elle éclaire juste assez pour viser.' },
+    { id: 'arc_de_meche', name: 'Arc de Mèche', type: 'arc', level: 36, element: 'feu', profile: { intel: 60, vita: 40 }, source: 'craft',
+      lore: 'Sa corde est une mèche de Veilloche tressée. Chaque trait part en traînant une étincelle.' },
+    { id: 'dagues_d_ecaille', name: 'Dagues d\'Écaille', type: 'dague', level: 37, element: 'air', profile: { agi: 60, vita: 40 }, source: 'craft',
+      lore: 'Deux écailles de Brimbe taillées en feuille. Légères comme une pierre qui aurait oublié d\'en être une.' },
+    { id: 'baton_de_molh', name: 'Bâton de Molh', type: 'baton', level: 38, element: 'terre', profile: { force: 60, vita: 40 }, source: 'craft',
+      lore: 'Du bois noueux tenu par une pierre de Molh et sa mousse. Il pèse le poids d\'une décision.' },
+    { id: 'lame_d_argile_cuite', name: 'Lame d\'Argile Cuite', type: 'epee', level: 39, element: 'eau', profile: { chance: 60, vita: 40 }, source: 'craft',
+      lore: 'De la glaise de Thelk cuite au four des Cimes, autour d\'une âme d\'écaille. Elle garde l\'humidité des sources chaudes.' },
+    { id: 'pelle_cuite', name: 'Pelle Cuite', type: 'pelle', level: 39, element: 'feu', profile: { intel: 60, vita: 40 }, source: 'craft',
+      lore: 'Une pelle d\'argile cuite, cerclée de cire durcie. Elle reste chaude des heures après le feu.' },
+    { id: 'hache_fendue', name: 'Hache Fendue', type: 'hache', level: 39, element: 'terre', profile: { force: 70, vita: 30 }, source: 'craft',
+      lore: 'Un galet de Brimbe fendu net, emmanché serré. Le fil vient de la fente, pas de la meule.' },
+    { id: 'masse_de_tholou', name: 'Masse de Tholou', type: 'marteau', level: 43, element: 'eau', profile: { chance: 60, vita: 40 }, source: 'craft',
+      lore: 'Une tête de pierre de Molh gainée de poil de Tholou. Elle frappe fort et ne fait presque pas de bruit.' },
+  );
+  {
+    const R2 = (result, workshop, pairs) => C.recipes.push({ result, count: 1, workshop, ingredients: pairs.map(([id, n]) => ({ id, count: n })) });
+    R2('baguette_de_lueur', 'sculpteur', [['lueur_de_veilloche', 2], ['cire_de_veilloche', 5], ['bois_noueux', 4]]);
+    R2('arc_de_meche', 'sculpteur', [['meche_de_veilloche', 5], ['bois_noueux', 6], ['cire_de_veilloche', 3]]);
+    R2('dagues_d_ecaille', 'forgeron', [['ecaille_de_brimbe', 6], ['oeil_de_brimbe', 2], ['bois_noueux', 3]]);
+    R2('baton_de_molh', 'sculpteur', [['pierre_de_molh', 4], ['mousse_de_molh', 5], ['bois_noueux', 5]]);
+    R2('lame_d_argile_cuite', 'forgeron', [['argile_de_thelk', 8], ['ecaille_de_brimbe', 4], ['pierre_de_calcaire', 4]]);
+    R2('pelle_cuite', 'forgeron', [['argile_de_thelk', 6], ['cire_de_veilloche', 4], ['pierre_de_calcaire', 4]]);
+    R2('hache_fendue', 'forgeron', [['galet_de_brimbe', 8], ['ecaille_de_brimbe', 4], ['bois_noueux', 4]]);
+    R2('masse_de_tholou', 'forgeron', [['pierre_de_molh', 5], ['poil_de_tholou', 5], ['basalte_de_kaldum', 4]]);
+  }
+
+  C.items.push(
+    { id: 'coque_de_l_eveil', name: 'Coque de l\'Éveil', slot: 'veylith', level: 20, stats: {}, passif: 'veylith_sursaut', quete: 'ervane_descente',
+      lie: true, marque: true, source: 'quest', rarity: 'epique', image: 'assets/ui/objets/coque-eveil.png',
+      effet: 'Une fois par combat, au début de ton tour sous 20 % de ta vie : rend 20 % de la vie.',
+      lore: 'Du calcaire des Mailles, poli au fil d\'or, là où un Grand Dragon a frôlé Ervane à l\'aube. Le peu de Veylor qu\'elle garde ne sert qu\'une fois par combat, au moment où tout lâche.' },
+    { id: 'coque_des_cimes', name: 'Coque des Cimes', slot: 'veylith', level: 40, stats: { sagesse: 40 }, passif: 'veylith_parade', quete: 'orsane_la_passe_au_crepuscule',
+      lie: true, marque: true, source: 'quest', rarity: 'epique', image: 'assets/ui/objets/coque-cimes.png',
+      effet: 'Un retrait de PA ou de PM subi donne +25 Esquive de ce genre jusqu\'à la fin de ton prochain tour (pas les deux à la fois).',
+      lore: 'Taillée dans la pierre bleue de la Cité et cerclée d\'argent sur le col où un Grand Dragon s\'est posé. Ce qu\'elle retient n\'aime pas qu\'on lui prenne son élan.' },
+    { id: 'coque_des_forges', name: 'Coque des Forges', slot: 'veylith', level: 60, stats: {}, passif: 'veylith_souffle', quete: 'kaldum_la_forge_morte',
+      lie: true, marque: true, source: 'quest', rarity: 'epique', image: 'assets/ui/objets/coque-forges.png',
+      effet: 'Tous les trois tours, au début de ton tour : rend 10 % de la vie.',
+      lore: 'Du basalte de Kaldum serré dans des bandes de bronze, forgé là où un Grand Dragon a soufflé sur la Fonderie. Elle respire comme un soufflet : tous les trois tours, un peu de chaleur revient.' },
+  );
+
   C.items.push(
     { id: 'ceinture_de_varech', name: 'Ceinture de Varech', slot: 'ceinture', level: 61, profile: { intel: 50, vita: 30, sagesse: 20 }, source: 'craft',
       lore: 'De l\'algue de ressac tressée et séchée. Elle sent la marée basse et les idées neuves.' },

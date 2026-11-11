@@ -84,6 +84,7 @@
     }
     if (abandoned) hud.toast('Combat abandonné : il compte comme perdu.');
     if (character.integrity && character.integrity.length) hud.toast('Sauvegarde corrigée : des valeurs impossibles ont été remises en ordre.');
+    if (world.rattraperRecompenses) world.rattraperRecompenses();
     Save.write(character);
     if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist().catch(() => {}); } catch (e) {   } }
     Son.musique(musiqueDuLieu(world));

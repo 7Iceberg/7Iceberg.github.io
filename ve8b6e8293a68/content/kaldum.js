@@ -836,7 +836,7 @@ DATA.content.quests.push({
       "Kaldum te doit sa chaleur, Veilleur. Ça ne s'oublie pas, ici.",
     ],
   },
-  rewards: { xp: 10497, fils: 100, items: [{ id: 'bottes_cendrou', count: 1 }] },
+  rewards: { xp: 10497, fils: 100, items: [{ id: 'bottes_cendrou', count: 1 }, { id: 'coque_des_forges', count: 1 }] },
 });
 
 
