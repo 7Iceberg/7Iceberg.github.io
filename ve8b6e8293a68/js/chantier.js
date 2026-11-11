@@ -7,6 +7,10 @@ const Chantier = (() => {
   function appliquer(O) {
     const C = DATA.content;
     actif = true;
+    const N = typeof CHANTIER_NOMS === 'object' && CHANTIER_NOMS ? CHANTIER_NOMS : {};
+    const nommer = x => { const n = x && N[x.id]; if (n) { if (n.name) x.name = n.name; if (n.lore) x.lore = n.lore; } return x; };
+    for (const liste of [O.ressources, O.intermediaires, O.objets, O.armes]) for (const x of liste || []) nommer(x);
+    for (const p of O.panoplies || []) { nommer(p); for (const x of p.pieces || []) nommer(x); }
     for (const r of O.ressources) C.resources.push({ id: r.id, name: r.name, lore: r.lore || '', drops: r.drops || [], node: r.node || null, price: r.price || 1, niveau: r.niveau || 1 });
     for (const r of O.intermediaires) C.resources.push({ id: r.id, name: r.name, lore: r.lore || '', drops: [], node: null, price: r.price || 1, niveau: r.niveau || 1 });
     for (const p of O.panoplies) {
@@ -57,6 +61,6 @@ const Chantier = (() => {
     });
   }
 
-  if (demande() && typeof document === 'object' && document.readyState === 'loading') document.write('<script src="content/chantier/objets-1-60.js"><\/script>');
+  if (demande() && typeof document === 'object' && document.readyState === 'loading') document.write('<script src="content/chantier/noms-1-60.js"><\/script><script src="content/chantier/objets-1-60.js"><\/script>');
   return { demande, appliquer, appliquerNoeuds, pierresPleines, actif: () => actif };
 })();

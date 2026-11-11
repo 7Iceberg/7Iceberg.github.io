@@ -647,6 +647,13 @@ const IleModeles = (() => {
     }
   }
 
+  async function imageFichier(url) {
+    try {
+      const b = await IleGlb.octets(url), blob = new Blob([b], { type: 'image/jpeg' });
+      if (typeof createImageBitmap === 'function') return await createImageBitmap(blob);
+      return await new Promise((ok, ko) => { const i = new Image(), u = URL.createObjectURL(blob); i.onload = () => { URL.revokeObjectURL(u); ok(i); }; i.onerror = ko; i.src = u; });
+    } catch (e) { return null; }
+  }
   function imageDe(G, bin, idx) {
     const t = (G.textures || [])[idx], im = t && (G.images || [])[t.source];
     if (!im || im.bufferView == null) return Promise.resolve(null);
@@ -880,7 +887,7 @@ const IleModeles = (() => {
       for (let i = 0; i < pos.length; i += 3) { h = Math.max(h, pos[i + 1]); lx = Math.max(lx, Math.abs(pos[i])); lz = Math.max(lz, Math.abs(pos[i + 2])); }
       if (toiles) {
         const m = (G.materials || [])[0] || {}, pbr = m.pbrMetallicRoughness || {};
-        const img = pbr.baseColorTexture ? await imageDe(G, bin, pbr.baseColorTexture.index) : null;
+        const img = pbr.baseColorTexture ? await imageDe(G, bin, pbr.baseColorTexture.index) : await imageFichier(source('assets/decor/' + nom + '-semis.jpg'));
         if (img) { toiles[d.atlas || 0].x.drawImage(img, x0, y0, c, c); if (typeof img.close === 'function') img.close(); }
       }
       modeles[nom] = { pos, nrm, uv, idx, atlas: d.atlas || 0, hauteur: h || 1, largeur: 2 * lx || 1, profondeur: 2 * lz || 1, n: pos.length / 3 };

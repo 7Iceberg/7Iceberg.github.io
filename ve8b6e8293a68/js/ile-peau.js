@@ -46,6 +46,8 @@ const IlePeau = (() => {
   const AURAS = {
     braise: { style: 'ruban', couleur: [0.78, 0.06, 0.12], vif: [1, 0.45, 0.5], flamme: [1, 0.42, 0.06], flammeVif: [1, 0.86, 0.35], force: 0.55, rayon: 2.6, hauteur: 1, flammeches: 3 },
   };
+  for (const id of ['glym_aer', 'glym_ignis', 'glym_terra', 'glym_aqua', 'chateigne', 'grillon_ruche', 'scarabee_ruche', 'mante_chene'])
+    if (PEAUX[id]) PEAUX[id].carte = PEAUX[id].fichier.replace(/\.glb$/, '-carte.glb');
   const MONSTRES = ['filin', 'lampignard', 'glym_aer', 'glym_ignis', 'glym_terra', 'glym_aqua', 'chateigne', 'grillon_ruche', 'scarabee_ruche', 'mante_chene'];
   const TAU_CAP = 0.08, TAU_MARCHE = 0.12, TAU_GESTE = 0.08;
 
@@ -1148,10 +1150,10 @@ void main() {
     }
   }
 
-  async function charger(THREE, nom) {
+  async function charger(THREE, nom, carte) {
     const P = Object.assign({ nom }, PEAUX[nom]);
     const compte = { octets: 0 };
-    const glb = await lire(P.fichier);
+    const glb = await lire(carte && P.carte ? P.carte : P.fichier);
     const M = new Modele(THREE, glb, P, compte);
     if (P.arme) {
       try {
@@ -1171,6 +1173,7 @@ void main() {
     constructor(THREE, modeles, opts, attente) {
       this.THREE = THREE; this.modeles = modeles; this.opts = opts || {};
       this.attente = new Set(attente || []); this.charges = new Map(); this.vusDe = new Map();
+      this.complets = {}; this.chargesC = new Map(); this.vusC = new Map();
       this.groupe = new THREE.Group(); this.groupe.name = 'peaux';
       this.etats = new Map();
       this.now = 0; this.n = 0;
@@ -1183,7 +1186,7 @@ void main() {
     emprise(s) { const P = this.reglages(s.modele); return P ? (s.scale || 1) * P.ombre * 1.6 : 1; }
     appeler(id) {
       if (this.charges.has(id)) return;
-      this.charges.set(id, charger(this.THREE, id).then(M => { if (this.attente.has(id)) { this.modeles[id] = M; this.attente.delete(id); } else M.liberer(); this.charges.delete(id); })
+      this.charges.set(id, charger(this.THREE, id, true).then(M => { if (this.attente.has(id)) { this.modeles[id] = M; this.attente.delete(id); } else M.liberer(); this.charges.delete(id); })
         .catch(e => { console.warn('Peau du monstre ' + id + ' indisponible : ' + e.message); this.attente.delete(id); this.charges.delete(id); }));
     }
     debut(now, camera) {
@@ -1192,8 +1195,17 @@ void main() {
       camera.updateMatrixWorld();
       this._ch.setFromProjectionMatrix(this._pv.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
     }
+    appelerComplet(id) {
+      if (this.chargesC.has(id)) return;
+      this.chargesC.set(id, charger(this.THREE, id).then(M => { this.complets[id] = M; this.chargesC.delete(id); })
+        .catch(e => { console.warn('Peau complète du monstre ' + id + ' indisponible : ' + e.message); this.chargesC.delete(id); }));
+    }
     poser(s) {
-      const M = this.modeles[s.modele];
+      let M = this.modeles[s.modele], complet = false;
+      if (M && s.combat && PEAUX[s.modele] && PEAUX[s.modele].carte) {
+        this.vusC.set(s.modele, this.now);
+        if (this.complets[s.modele]) { M = this.complets[s.modele]; complet = true; } else this.appelerComplet(s.modele);
+      }
       if (!M) {
         const P = this.attente.has(s.modele) ? PEAUX[s.modele] : null;
         if (P && (s.alpha == null || s.alpha >= 0.05)) { const H = (s.scale || 1) * P.hauteur; this._sp.center.set(s.x, s.h + H * 0.5, s.y); this._sp.radius = H; if (this._ch.intersectsSphere(this._sp)) this.appeler(s.modele); }
@@ -1204,7 +1216,7 @@ void main() {
       const H = (s.scale || 1) * M.P.hauteur;
       this._sp.center.set(s.x, s.h + H * 0.5, s.y); this._sp.radius = H;
       if (!this._ch.intersectsSphere(this._sp)) return true;
-      const cle = s.modeleCle || (s.modele + '|' + this.n);
+      const cle = (s.modeleCle || (s.modele + '|' + this.n)) + (complet ? '#complet' : '');
       let e = this.etats.get(cle);
       if (!e) {
         const ex = M.prendre();
@@ -1236,9 +1248,15 @@ void main() {
       }
       for (const id of this.opts.aLaDemande || []) {
         const M = this.modeles[id];
-        if (!M || this.now - (this.vusDe.get(id) || this.now) < 30000) continue;
+        if (!M || this.now - (this.vusDe.get(id) || this.now) < (this.opts.telephone ? 10000 : 30000)) continue;
         if ([...this.etats.values()].some(e => e.M === M)) continue;
         M.liberer(); delete this.modeles[id]; this.attente.add(id); this.vusDe.delete(id);
+      }
+      for (const id of Object.keys(this.complets)) {
+        const M = this.complets[id];
+        if (this.now - (this.vusC.get(id) || 0) < 10000) continue;
+        if ([...this.etats.values()].some(e => e.M === M)) continue;
+        M.liberer(); delete this.complets[id]; this.vusC.delete(id);
       }
     }
     stats() {
@@ -1247,16 +1265,16 @@ void main() {
       for (const e of this.etats.values()) if (e.pose) { tri += e.M.triangles; appels += e.M.appels || 2; }
       return { peaux: this.n, appels, triangles: tri };
     }
-    octets() { let o = 0; for (const M of Object.values(this.modeles)) o += M.octets || 0; return o; }
-    liberer() { for (const M of Object.values(this.modeles)) M.liberer(); this.modeles = {}; this.etats.clear(); this.attente.clear(); }
+    octets() { let o = 0; for (const M of [...Object.values(this.modeles), ...Object.values(this.complets)]) o += M.octets || 0; return o; }
+    liberer() { for (const M of [...Object.values(this.modeles), ...Object.values(this.complets)]) M.liberer(); this.modeles = {}; this.complets = {}; this.etats.clear(); this.attente.clear(); }
   }
   async function parc(THREE, opts) {
-    if (opts && opts.telephone) TEXTURE_MAX = 768;
+    TEXTURE_MAX = opts && opts.telephone ? 768 : 2048;
     const modeles = {}, ids = (opts && opts.ids) || MONSTRES;
-    const aLaDemande = opts && opts.telephone ? ids.filter(id => PEAUX[id] && PEAUX[id].gabarit === 'libre') : [];
+    const aLaDemande = ids.filter(id => PEAUX[id] && PEAUX[id].gabarit === 'libre');
     for (const id of ids) {
       if (aLaDemande.includes(id)) continue;
-      try { modeles[id] = await charger(THREE, id); } catch (e) { console.warn('Peau du monstre ' + id + ' indisponible : ' + e.message); }
+      try { modeles[id] = await charger(THREE, id, true); } catch (e) { console.warn('Peau du monstre ' + id + ' indisponible : ' + e.message); }
     }
     return Object.keys(modeles).length || aLaDemande.length ? new Parc(THREE, modeles, Object.assign({}, opts, { aLaDemande }), aLaDemande) : null;
   }
