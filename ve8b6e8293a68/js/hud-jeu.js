@@ -42,6 +42,7 @@ class HudJeu {
     w.on('map', d => { if (!(d && d.secteur)) this.page = 0; this.rafraichir(); });
     w.on('update', () => this.rafraichir());
     w.on('hp', () => this.rafraichirVie());
+    w.on('artifice', () => this.artifice());
     w.on('questProgress', () => this.rafraichirCarte());
     w.on('achievement', () => this.rafraichirCarte());
     w.on('fightEnd', () => this.rafraichirCarte());
@@ -933,6 +934,33 @@ class HudJeu {
       el.classList.add('sort');
       setTimeout(() => { el.classList.add('hidden'); if (this.lacherEmote) { this.lacherEmote(); this.lacherEmote = null; } }, 400);
     }, 2600);
+  }
+
+  artifice() {
+    const el = document.createElement('div');
+    el.className = 'vy-artifice';
+    el.setAttribute('aria-hidden', 'true');
+    const couleurs = ['#ffd27a', '#7fe3ff', '#ff8fc8', '#b9ff8a', '#ffffff'];
+    let html = '';
+    for (let g = 0; g < 3; g++) {
+      const gx = (g - 1) * 34, gy = -18 * (g % 2), delai = g * 0.35;
+      for (let i = 0; i < 14; i++) {
+        const a = (i / 14) * Math.PI * 2, r = 34 + (i % 3) * 8;
+        html += `<i style="--x:${gx}px;--y:${gy}px;--dx:${Math.round(Math.cos(a) * r)}px;--dy:${Math.round(Math.sin(a) * r)}px;--c:${couleurs[(i + g) % couleurs.length]};animation-delay:${delai}s"></i>`;
+      }
+    }
+    el.innerHTML = html;
+    this.stage.appendChild(el);
+    const place = () => {
+      const cb = this.combat, w = this.world;
+      const who = this.enCombat && cb.player ? { x: cb.player.rx, y: cb.player.ry } : { x: w.player.rx, y: w.player.ry };
+      const hr = this.stage.getBoundingClientRect();
+      const k = UI.cellScale(this.renderer, who.x, who.y), q = UI.cellClient(this.renderer, who.x, who.y);
+      el.style.transform = `translate(${Math.round(q.x - hr.left)}px, ${Math.round(q.y - hr.top - 110 * k)}px)`;
+    };
+    const lacher = UI.ancrer(place);
+    place();
+    setTimeout(() => { lacher(); el.remove(); }, 2400);
   }
 
 

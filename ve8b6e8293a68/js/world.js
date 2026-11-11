@@ -803,6 +803,8 @@ class World {
     const d = Items.get(id);
     const r = this.ch.use(id);
     if (r === 'relais') { this.teleportToRelay(); return true; }
+    if (r === 'artifice') { this.emit('artifice', { id, def: d }); this.toast(`${d.name} : le ciel s'allume.`); this.emit('update'); return true; }
+    if (r === 'pierre') return this.combatPierre(id);
     if (r) this.toast(r);
     this.emit('update');
     if (r && d && (d.sub === 'oeuf' || d.sub === 'monture')) this.emit('save');
@@ -1084,6 +1086,35 @@ class World {
     return true;
   }
 
+  capturerAme(monsters) {
+    const ch = this.ch, g = this.currentGroup, R = Object.assign({ chance: 0.35 }, DATA.rules.pierreAme || {});
+    if (!g || (g.tpl && g.tpl.epreuve)) return null;
+    const vides = Object.keys(ch.inventory).map(id => Items.get(id)).filter(d => d && d.sub === 'pierre_ame' && ch.has(d.id)).sort((a, b) => (a.niveauMax || 0) - (b.niveauMax || 0));
+    if (!vides.length) return null;
+    const cible = monsters.filter(e => (e.boss || (e.def && e.def.rare)) && Items.get('pierre_pleine_' + e.def.id)).sort((a, b) => b.level - a.level)
+      .find(e => vides.some(p => (p.niveauMax || 0) >= e.level));
+    if (!cible || this.rng() >= R.chance) return null;
+    const pierre = vides.find(p => (p.niveauMax || 0) >= cible.level);
+    ch.removeItem(pierre.id, 1);
+    ch.addItem('pierre_pleine_' + cible.def.id, 1);
+    return { pierre: pierre.id, monstre: cible.def.id, nom: cible.def.name || cible.name, pleine: 'pierre_pleine_' + cible.def.id };
+  }
+
+  combatPierre(id) {
+    const d = Items.get(id);
+    if (!d || d.sub !== 'pierre_pleine' || !this.ch.has(id)) return false;
+    if (this.state === 'combat') { this.toast('Pas pendant un combat.'); return false; }
+    if (this.ch.dungeon) { this.toast('Pas dans un donjon.'); return false; }
+    const proche = this.groups.filter(x => !this.estDojo(x) && x.monsters && x.monsters.length).sort((a, b) => Math.hypot(a.x - this.player.x, a.y - this.player.y) - Math.hypot(b.x - this.player.x, b.y - this.player.y))[0];
+    if (!proche) { this.toast('Il faut une aire de combat : approche-toi d\'un groupe de monstres.'); return false; }
+    const g = Object.assign({}, proche, { monsters: [{ id: d.monstre, level: d.niveauCombat || this.ch.level }], level: d.niveauCombat || this.ch.level, tpl: Object.assign({}, proche.tpl, { dojo: false, epreuve: 'pierre' }), hold: false });
+    if (this.state !== 'explore') { this.talkNpc = null; this.state = 'explore'; }
+    if (this.startFight(g) === false) return false;
+    this.ch.removeItem(id, 1);
+    this.emit('update');
+    return true;
+  }
+
   startFight(group) {
     const arene = this.plateau ? this.plateau.arene(group) : null;
     if (this.plateau && !arene) { if (group) group.hold = false; this.toast('Ce combat n\'est pas prêt.'); return false; }
@@ -1137,6 +1168,10 @@ class World {
     result.tours = this.combat.round || 1;
     result.duree = this.combat.debut ? Math.round((Date.now() - this.combat.debut) / 1000) : 0;
     const monsters = this.combat.entities.filter(e => e.team === 'monster' && !e.isSummon);
+    if (ch.bonbon && ch.bonbon.combats > 0 && !this.combat.entrainement) {
+      ch.bonbon.combats--;
+      if (ch.bonbon.combats <= 0) { const bd = Items.get(ch.bonbon.id); result.bonbonFini = bd ? bd.name : true; ch.bonbon = null; this.toast(`${result.bonbonFini === true ? 'Le bonbon' : result.bonbonFini} ne fait plus effet.`); }
+    }
     if (d.victory && this.dispositionEnCours && !(this.mapDef && this.mapDef.room)) this.avancerPlacement(this.dispositionEnCours.cle);
     const chal = this.combat.challenge, defis = this.combat.challenges.filter(Boolean);
     const knotCount = this.combat.knots ? this.combat.knots.size : 0;
@@ -1195,7 +1230,8 @@ class World {
         }
         result.quests.push(...Quests.onEvent(ch, { type: 'kill', monster: e.def.id }));
       }
-      result.xp = Math.round(result.xp * (1 + (bonus + parDefi.xp) / 100));
+      const bonbonXp = ch.bonbon && ch.bonbon.combats > 0 && ch.bonbon.stat === 'xp' ? ch.bonbon.value : 0;
+      result.xp = Math.round(result.xp * (1 + (bonus + parDefi.xp + bonbonXp) / 100));
       if (typeof Montures !== 'undefined') { result.monture = Montures.partCombat(ch, result.xp); if (result.monture) result.xp -= result.monture.cede; }
       if (this.combat.epreuveDojo) {
         const tours = this.combat.round || 1, limite = this.combat.epreuveDojo.limite;
@@ -1210,6 +1246,8 @@ class World {
       result.gained = g.gained; result.levels = g.levels;
       ch.fils += result.fils; ch.counters.filsEarned += result.fils;
       for (const dr of result.drops) ch.addItem(dr.id, dr.count);
+      result.capture = this.capturerAme(monsters);
+      if (result.capture) { this.emit('gain', { source: 'capture', items: [{ id: result.capture.pleine, count: 1 }] }); this.toast(`La pierre d'âme capture ${result.capture.nom} !`); }
       if (typeof Familiers !== 'undefined') result.familier = Familiers.apresCombat(ch, this.zone && this.zone.region, monsters.length);
       if (!g.levels) ch.hp = Math.max(1, this.combat.player.hp);
       if (g.levels) result.quests.push(...Quests.onEvent(ch, { type: 'level', level: ch.level }));

@@ -10,21 +10,21 @@ const Factions = (() => {
     fil: {
       id: 'fil', nom: 'l\'Aube', Nom: 'L\'Aube', au: 'à l\'Aube', du: 'de l\'Aube',
       capitale: 'la Cité des Cimes, sur les Cimes', couleurs: 'blanc et or', teinte: '#e2c690',
-      veut: 'Garder les Marques sur des peaux dignes, protéger les Grands Dragons, retrouver Ithren.',
+      veut: 'Garder les Veyliths entre des mains dignes, protéger les Grands Dragons, retrouver Ithren.',
       juste: 'La Colère a déjà brûlé un tiers du monde : l\'Aube protège les vivants et éteint ce qui couve.',
-      sombre: 'Elle décide qui a le droit de porter une Marque, enferme ce qui gêne, et cache ce qu\'elle sait d\'Ithren.',
+      sombre: 'Elle décide qui a le droit de porter un Veylith, enferme ce qui gêne, et cache ce qu\'elle sait d\'Ithren.',
       insigne: 'Une flamme d\'or en auréole, qui brille plus fort à chaque rang.',
       contact: 'Okrel, capitaine de l\'Aube, à la Porte de Kaldum',
       orders: [
         { id: 'gardes_fil', name: 'les Gardes d\'Aube', role: 'le combat' },
         { id: 'couseurs', name: 'les Porteurs de Flamme', role: 'le soin, les feux des Relais' },
-        { id: 'gardiens_ecailles', name: 'les Gardiens des Marques', role: 'le savoir, les dragons' },
+        { id: 'gardiens_ecailles', name: 'les Gardiens des Veyliths', role: 'le savoir, les dragons' },
       ],
       ranks: ['Étincelle', 'Lueur', 'Rayon', 'Flambeau', 'Fanal', 'Phare', 'Aurore', 'Zénith', 'Grand Éveilleur', 'Main de l\'Aube'],
       unlocks: [
         { text: 'Le titre, l\'insigne d\'or et les quêtes d\'Okrel.' },
         { text: 'Une broderie d\'or au bord de la cape.', venir: true },
-        { text: 'Le choix de l\'ordre : Gardes d\'Aube, Porteurs de Flamme ou Gardiens des Marques.' },
+        { text: 'Le choix de l\'ordre : Gardes d\'Aube, Porteurs de Flamme ou Gardiens des Veyliths.' },
         { text: 'Le comptoir de l\'Aube, à la Cité des Cimes.', venir: true },
         { text: 'La tour des Fanaux : un raccourci vers les hauts d\'Orsane.', venir: true },
         { text: 'Une cape blanche brodée d\'or.', venir: true },
@@ -66,7 +66,7 @@ const Factions = (() => {
 
   const MARCHEURS = {
     nom: 'les Francs-Marcheurs',
-    texte: 'La guilde de Thessa commerce avec tout le monde, loue ses lames et vend de fausses Marques très bien gravées. Ils ne prennent pas parti : on gagne leur confiance, pas un rang.',
+    texte: 'La guilde de Thessa commerce avec tout le monde, loue ses lames et vend de faux Veyliths très bien imités. Ils ne prennent pas parti : on gagne leur confiance, pas un rang.',
     neutres: 'Les neutres y sont bien reçus : sans serment, chaque service compte moitié plus.',
     tiers: [{ at: 0, name: 'Inconnu' }, { at: 10, name: 'Client' }, { at: 25, name: 'Habitué' }, { at: 50, name: 'Associé' }, { at: 100, name: 'Compagnon de route' }],
   };

@@ -434,6 +434,7 @@ class Ile3D {
         try { const B = IleDecor.blocsAires(THREE, this.T, (u, v) => this.hauteur(u, v), this.telephone, this.rampe); if (B) { scene.add(B.mesh); this.meshBlocs = B.mesh; this.blocsAires = B.n; } } catch (e) { console.warn('Ervane : blocs des aires indisponibles', e); }
       }
       if (this.monde) this.fondreMonde(THREE);
+      if (this.monde && this.eau) { this.eau.position.y = 0.06; this.eau.updateMatrix(); }
       const LC = this.soir && this.ambianceVoulue.lointain && this.monde ? Ile3D.SOIR.lointain[plateau.id] : null;
       if (LC && IleGlb.lointain) { try { this.poserLointain(THREE, scene, LC); } catch (e) { console.warn('Ervane : décor lointain indisponible', e); } }
       if (semis && this.monde) { try { this.octetsTex += await IleModeles.habillerSol(THREE, this); } catch (e) { console.warn('Ervane : sols Meshy indisponibles', e); } }

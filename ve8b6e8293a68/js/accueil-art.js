@@ -703,29 +703,23 @@ const AccueilArt = (() => {
       }
       c.strokeStyle = 'rgba(255,240,200,0.6)'; c.lineWidth = 3;
       for (let i = 0; i < 12; i++) { const [x, y] = pts[Math.floor(i * 6.5)]; c.beginPath(); c.moveTo(x, y - 22); c.quadraticCurveTo(x - 10, y - 55, x - 26, y - 62); c.stroke(); }
-      const E = [['plume', '#cfd6e6'], ['losange', '#3e997e'], ['goutte', '#52d2f4'], ['bouclier', '#2a1d1a'], ['papier', '#1d2a5a'], ['disque', '#f3bc72'], ['perdue', '#ffffff']];
-      E.forEach(([forme, col], i) => {
-        const x = 150 + i * 110, y = 430 + Math.abs(i - 3) * 12, s = 30;
-        lueur(c, x, y, 60, forme === 'bouclier' ? '#ff7a45' : col, 0.35);
+      const oeufs = [
+        ['#cfd6e6', '#b8f0ff'], ['#3e997e', '#a9cf9f'], ['#52d2f4', '#c3f6ff'],
+        ['#2a1d1a', '#ff7a45'], ['#1d2a5a', '#c6cfff'], ['#f3bc72', '#fff3d2'],
+      ];
+      oeufs.forEach(([coquille, veylor], i) => {
+        const x = 180 + i * 120, y = 440 + Math.abs(i - 2.5) * 10;
+        lueur(c, x, y, 60, veylor, 0.35);
         c.save(); c.translate(x, y);
-        c.lineWidth = 3; c.strokeStyle = OR_CLAIR; c.fillStyle = col;
-        c.beginPath();
-        if (forme === 'plume') { c.moveTo(0, -s * 1.4); c.quadraticCurveTo(s * 0.8, 0, 0, s * 1.3); c.quadraticCurveTo(-s * 0.5, 0, 0, -s * 1.4); }
-        else if (forme === 'losange') { c.moveTo(0, -s * 1.2); c.lineTo(s * 0.9, 0); c.lineTo(0, s * 1.2); c.lineTo(-s * 0.9, 0); }
-        else if (forme === 'goutte') { c.moveTo(0, -s * 1.3); c.bezierCurveTo(s * 1.1, 0, s * 0.8, s * 1.1, 0, s * 1.1); c.bezierCurveTo(-s * 0.8, s * 1.1, -s * 1.1, 0, 0, -s * 1.3); }
-        else if (forme === 'bouclier') { c.moveTo(-s, -s); c.lineTo(s, -s); c.lineTo(s * 0.8, s * 0.4); c.lineTo(0, s * 1.3); c.lineTo(-s * 0.8, s * 0.4); }
-        else if (forme === 'papier') { c.moveTo(-s * 0.8, -s); c.lineTo(s * 0.9, -s * 0.8); c.lineTo(s * 0.7, s); c.lineTo(-s, s * 0.8); }
-        else if (forme === 'disque') { c.arc(0, 0, s * 1.05, 0, Math.PI * 2); }
-        else { c.setLineDash([5, 5]); c.arc(0, 0, s, 0, Math.PI * 2); }
-        c.closePath();
-        if (forme !== 'perdue') c.fill();
-        c.stroke(); c.setLineDash([]);
-        if (forme === 'plume') { c.strokeStyle = '#7fdcf2'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, -s); c.lineTo(4, -2); c.lineTo(-3, 4); c.lineTo(2, s * 0.8); c.stroke(); }
-        if (forme === 'losange') { c.strokeStyle = '#a9cf9f'; c.lineWidth = 2; c.beginPath(); c.moveTo(-s * 0.4, -s * 0.3); c.lineTo(s * 0.2, s * 0.4); c.stroke(); lueur(c, 0, 0, 16, '#80d697', 0.6); }
-        if (forme === 'goutte') { c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 2; c.beginPath(); c.moveTo(-s * 0.5, s * 0.3); c.quadraticCurveTo(0, 0, s * 0.5, s * 0.35); c.stroke(); }
-        if (forme === 'bouclier') { c.strokeStyle = '#ff7a45'; c.lineWidth = 3; c.beginPath(); c.moveTo(0, -s); c.lineTo(3, -2); c.lineTo(-2, 6); c.lineTo(0, s * 1.2); c.stroke(); }
-        if (forme === 'papier') { c.strokeStyle = OR_CLAIR; c.lineWidth = 1.5; c.beginPath(); c.arc(0, 0, s * 0.45, 0, Math.PI * 2); c.moveTo(0, 0); c.lineTo(s * 0.3, -s * 0.2); c.stroke(); for (let k = 0; k < 6; k++) { c.fillStyle = '#fff3d2'; c.fillRect(Math.cos(k) * s * 0.6, Math.sin(k * 1.3) * s * 0.6, 2, 2); } }
-        if (forme === 'disque') { c.strokeStyle = '#fff3d2'; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, s * 0.55, 0, Math.PI * 2); c.stroke(); lueur(c, 0, 0, 22, '#fff3d2', 0.7); }
+        c.fillStyle = coquille; c.strokeStyle = OR_CLAIR; c.lineWidth = 3;
+        c.beginPath(); c.moveTo(0, -43);
+        c.bezierCurveTo(15, -43, 31, -9, 31, 10);
+        c.bezierCurveTo(31, 45, -31, 45, -31, 10);
+        c.bezierCurveTo(-31, -9, -15, -43, 0, -43);
+        c.closePath(); c.fill(); c.stroke();
+        c.strokeStyle = veylor; c.lineWidth = 2;
+        c.beginPath(); c.moveTo(-3, -23); c.lineTo(5, -8); c.lineTo(-5, 5); c.lineTo(2, 22); c.stroke();
+        lueur(c, 0, 0, 18, veylor, 0.65);
         c.restore();
       });
     },
@@ -750,7 +744,7 @@ const AccueilArt = (() => {
         texte(c, n, x, y - 62, 24, '#fff3d2', { police: 'Cinzel, Georgia, serif', poids: 700 });
       }
       lueur(c, 860, 80, 110, '#ffd98a', 0.65);
-      c.fillStyle = '#f3bc72'; c.beginPath(); c.arc(860, 80, 24, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#f3bc72'; c.beginPath(); c.moveTo(860, 50); c.bezierCurveTo(880, 50, 894, 104, 860, 104); c.bezierCurveTo(826, 104, 840, 50, 860, 50); c.fill();
       c.strokeStyle = '#fff3d2'; c.lineWidth = 2; c.beginPath(); c.arc(860, 80, 14, 0, Math.PI * 2); c.stroke();
       texte(c, 'Orsane', 150, 520, 16, '#e8e1d3'); texte(c, 'Kaldum', 380, 505, 16, '#ffb37a'); texte(c, 'Thessa', 560, 440, 16, '#9ff0e6'); texte(c, 'Lisière', 720, 330, 16, '#f0d6ff');
     },

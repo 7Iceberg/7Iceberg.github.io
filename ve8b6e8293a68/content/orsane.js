@@ -974,7 +974,7 @@ DATA.content.npcs.push({
 
 DATA.content.npcs.push({
   id: 'avreth', name: 'Avreth', title: 'Émissaire de l\'Aube', look: 'tisseur',
-  dialogue: ['L\'Aube tient les feux allumés et les Marques sur des peaux dignes, Veilleur. Quelqu\'un doit bien le faire.', 'La Chaîne t\'a déjà parlé ? Elle parle beaucoup. Nous, nous scellons.'],
+  dialogue: ['L\'Aube tient les feux allumés et les Veyliths entre des mains dignes, Veilleur. Quelqu\'un doit bien le faire.', 'La Chaîne t\'a déjà parlé ? Elle parle beaucoup. Nous, nous scellons.'],
   factionLines: {
     fil: ['Un fil d\'or au-dessus de la tête : tu es des nôtres. Okrel t\'attend à la Porte de Kaldum.'],
     dechirure: ['Tu portes la cape fendue. Passe, Veilleur : l\'Aube ne retient personne. Elle scelle derrière.'],
@@ -990,7 +990,7 @@ DATA.content.npcs.push({
 });
 DATA.content.npcs.push({
   id: 'elkor', name: 'Elkor', title: 'Convoyeur des Francs-Marcheurs', look: 'marchand',
-  dialogue: ['L\'Aube, la Chaîne : ma guilde vend aux deux, et les deux paient. Chacun son serment, moi je garde mes mules.', 'Une Marque ? J\'en ai trois. Des vraies, presque. Non, je plaisante. Enfin, à moitié.'],
+  dialogue: ['L\'Aube, la Chaîne : ma guilde vend aux deux, et les deux paient. Chacun son serment, moi je garde mes mules.', 'Un Veylith ? J\'en ai trois. Des vrais, presque. Non, je plaisante. Enfin, à moitié.'],
 });
 DATA.content.npcs.push({
   id: 'ulkara', name: 'Ulkara', title: 'Guetteuse de la Passe', look: 'ancien',
@@ -1353,7 +1353,7 @@ DATA.content.quests.push({
   dialogue: {
     offer: ['Dans le Chaos, la roche s\'est fendue. Un doigt de large, pas plus : assez pour que des Glyms en remontent, gris, à moitié brûlés.', 'L\'Aube ne laisse pas une fissure ouverte. Renvoie ce qui en sort, apporte de la soie, et scelle. C\'est ainsi qu\'on protège les vivants.'],
     progress: ['La soie de Tissefil tient tout, même une fissure. Il en traîne dans les Toiles, juste à l\'ouest.'],
-    done: ['Scellée. Elle tiendra une saison, peut-être deux. Ensuite, quelqu\'un d\'autre la scellera.', 'Voilà l\'Aube, Veilleur : on scelle, encore et encore. Au niveau 20, à la Passe de Kaldum, tu pourras nous prêter serment.'],
+    done: ['Scellée. Elle tiendra une saison, peut-être deux. Ensuite, quelqu\'un d\'autre la scellera.', 'Voilà l\'Aube, Veilleur : on scelle, encore et encore. Au niveau 39, à la Passe de Kaldum, tu pourras nous prêter serment.'],
   },
   rewards: { xp: 2447, fils: 85, items: [{ id: 'pain_de_scorie', count: 2 }] },
 });
@@ -1369,7 +1369,7 @@ DATA.content.quests.push({
   dialogue: {
     offer: ['L\'Aube va te demander de sceller la fissure du Chaos. Avant, regarde ce qui en sort.', 'Les Glyms Défaits, les Brimbes Fendues : ils viennent de la cendre, et ils en rapportent quelque chose. Étudie-les, puis va voir Kethril. La Fosse est au-dessus du Terrier : cherche bien.'],
     progress: ['Une Brimbe Fendue éclate en mourant. Regarde la couleur de l\'éclat, pas tes blessures.'],
-    done: ['Tu as trouvé la Fosse. Peu de gens la trouvent sans qu\'on les y conduise.', 'Tes notes disent ce que l\'Aube ne dit jamais : ce qui sort de la cendre n\'est pas mauvais, c\'est perdu. Au niveau 20, à la Passe de Kaldum, tu pourras nous prêter serment.'],
+    done: ['Tu as trouvé la Fosse. Peu de gens la trouvent sans qu\'on les y conduise.', 'Tes notes disent ce que l\'Aube ne dit jamais : ce qui sort de la cendre n\'est pas mauvais, c\'est perdu. Au niveau 39, à la Passe de Kaldum, tu pourras nous prêter serment.'],
   },
   rewards: { xp: 2447, fils: 85, items: [{ id: 'pain_de_scorie', count: 2 }] },
 });
@@ -1384,7 +1384,7 @@ DATA.content.quests.push({
     { type: 'talk', npc: 'ravok', text: 'Faire signer le laissez-passer par Thulvar' },
   ],
   dialogue: {
-    offer: ['Un convoi de mules pour Kaldum : du sel, des clous, et trois Marques. Fausses, les Marques. Très bien gravées.', 'La Passe est pleine de Brimbes et de boue qui marche. Ouvre la route devant mes mules, puis fais signer le laissez-passer à la Porte. Je paie comme un Franc-Marcheur : bien, et sans te demander ton serment.'],
+    offer: ['Un convoi de mules pour Kaldum : du sel, des clous, et trois Veyliths. Faux, les Veyliths. Très bien imités.', 'La Passe est pleine de Brimbes et de boue qui marche. Ouvre la route devant mes mules, puis fais signer le laissez-passer à la Porte. Je paie comme un Franc-Marcheur : bien, et sans te demander ton serment.'],
     progress: ['Les mules ne passent pas sur les Brimbes. Elles passent encore moins sur les Thelks.'],
     done: ['Le convoi d\'Elkor ? Passé, compté, signé. Les mules sentaient le sel et la mauvaise humeur.', 'Il m\'a laissé ta part. Les Francs-Marcheurs paient toujours : c\'est même la seule chose qu\'ils jurent.'],
   },
@@ -1839,7 +1839,7 @@ DATA.content.npcs.push({
 });
 DATA.content.npcs.push({
   id: 'fenna', name: 'Fenna', title: 'Archiviste de l\'Aube', look: 'tisseur',
-  dialogue: ['Les archives de l\'Aube tiennent dans trois coffres et ma tête. Les coffres sont mieux rangés.', 'Les Marques, Veilleur. Sept dragons, six Marques, et une Écaille volée. Tout commence là.'],
+  dialogue: ['Les archives de l\'Aube tiennent dans trois coffres et ma tête. Les coffres sont mieux rangés.', 'Les Veyliths, Veilleur. Des œufs de dragon, avec le Veylor à l’intérieur. Sept dragons, six Veyliths, et une Écaille volée. Tout commence là.'],
 });
 DATA.content.npcs.push({
   id: 'brann', name: 'Brann', title: 'Aubergiste de la Lanterne', look: 'marchand',
@@ -1872,7 +1872,7 @@ DATA.content.quests.push({
     { type: 'talk', npc: 'maelis', text: 'Se présenter à Maëlis, la doyenne, sur la place du Relais' },
   ],
   dialogue: {
-    offer: ['Tu as la Flamme dans les mains, et des questions plein les yeux. Les Marques, les dragons, la Colère : tout ça se tient.', 'Je te réponds, puis tu iras voir Maëlis. Une ville, ça se découvre par ses gens.'],
+    offer: ['Tu as la Flamme dans les mains, et des questions plein les yeux. Les Veyliths, les dragons, la Colère : tout ça se tient.', 'Je te réponds, puis tu iras voir Maëlis. Une ville, ça se découvre par ses gens.'],
     progress: ['Maëlis est sur la place du Relais. Elle te trouvera avant que tu la trouves.'],
     done: ['Kelthar t\'envoie ? Alors il t\'a déjà posé sa question. Il la pose à tout le monde depuis quarante ans.'],
   },
@@ -1889,9 +1889,9 @@ DATA.content.quests.push({
     { type: 'talk', npc: 'fenna', text: 'Rejoindre Fenna, l\'archiviste, sur les Terrasses' },
   ],
   dialogue: {
-    offer: ['Quatre personnes font tenir les Cimes : Thila pour les ateliers, Brann pour l\'auberge, Lotha pour le Comptoir, Orvak pour la Porte.', 'Va les saluer. Ensuite, parle à Fenna sur les Terrasses : tu as des questions sur les Marques, elle a des réponses.'],
+    offer: ['Quatre personnes font tenir les Cimes : Thila pour les ateliers, Brann pour l\'auberge, Lotha pour le Comptoir, Orvak pour la Porte.', 'Va les saluer. Ensuite, parle à Fenna sur les Terrasses : tu as des questions sur les Veyliths, elle a des réponses.'],
     progress: ['Thila, Brann, Lotha, Orvak, puis Fenna. Ce n\'est pas une liste, c\'est une ville.'],
-    done: ['Maëlis t\'a fait faire le tour ? Bien. Maintenant, les Marques. Assieds-toi, ça va prendre un moment.'],
+    done: ['Maëlis t\'a fait faire le tour ? Bien. Maintenant, les Veyliths. Assieds-toi, ça va prendre un moment.'],
   },
   rewards: { xp: 139, fils: 15, items: [{ id: 'ceinture_de_plume', count: 1 }] },
 });

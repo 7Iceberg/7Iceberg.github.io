@@ -41,6 +41,7 @@ const Save = (() => {
   ALLOWED.add('bonusDefi');
   ALLOWED.add('repos');
   ALLOWED.add('metiers');
+  ALLOWED.add('bonbon');
   ALLOWED.add('rares');
   const ORIGINES = ['orsane', 'ervane'];
 
@@ -261,7 +262,8 @@ const Save = (() => {
       if (!a || demandes.some(x => x.id === id)) { bad(`succès ${id}`); continue; }
       demandes.push(a);
     }
-    const merite = a => !a.cond || AILLEURS.includes(a.cond.type) || Achievements.met(tmp, a.cond);
+    const condAdmise = c => (c.type === 'meta' && Array.isArray(c.ajoutes) ? Object.assign({}, c, { succes: (c.succes || []).filter(id => !c.ajoutes.includes(id)) }) : c);
+    const merite = a => !a.cond || AILLEURS.includes(a.cond.type) || Achievements.met(tmp, condAdmise(a.cond));
     for (const a of demandes) if (!SUITE.includes((a.cond || {}).type)) { if (merite(a)) achs.push(a.id); else bad(`succès non mérité ${a.id}`); }
     let reste = demandes.filter(a => SUITE.includes((a.cond || {}).type));
     for (let avance = true; avance && reste.length;) {
@@ -350,6 +352,11 @@ const Save = (() => {
     if (typeof Montures !== 'undefined') { const m = Montures.nettoyer(o.monture); o.monture = m.monture; for (const e of m.errors) bad(e); }
     if (o.fight && typeof o.fight !== 'object') o.fight = null;
     if (o.mapTimers && typeof o.mapTimers !== 'object') o.mapTimers = {};
+    if (o.bonbon != null) {
+      const b = o.bonbon, d = b && typeof b === 'object' && typeof b.id === 'string' && Items.get(b.id);
+      if (d && d.sub === 'bonbon' && ['sagesse', 'pp', 'xp'].includes(b.stat) && b.stat === d.stat && isInt(b.combats, 1, d.combats || 5) && b.value === d.value) o.bonbon = { id: b.id, stat: b.stat, value: b.value, combats: b.combats };
+      else { bad('bonbon'); o.bonbon = null; }
+    }
     if (typeof Metiers === 'object') {
       if (o.metiers == null && Number.isInteger(o.level) && o.level > 1) { o.metiers = {}; for (const m of Metiers.liste()) o.metiers[m.id] = { niveau: m.genre === 'artisanat' ? Math.min(Metiers.MAX, o.level) : 1, xp: 0 }; }
       else o.metiers = Metiers.nettoyer(o.metiers);

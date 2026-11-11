@@ -249,6 +249,7 @@ spells.m_coup = S('m_coup', { name: 'Coup de corne', element: 'neutre', pa: 3, r
 spells.m_soin = S('m_soin', { name: 'Lueur', element: 'neutre', pa: 3, range: [0, 5], target: 'ally', affectsCaster: true, effects: [heal(12, 16)], maxPerTurn: 1 });
 spells.m_pique = S('m_pique', { name: 'Pique', element: 'neutre', pa: 3, range: [1, 3], target: 'enemy', effects: [dmg(6, 8)] });
 spells.m_flamme = S('m_flamme', { name: 'Flamme', element: 'feu', pa: 3, range: [1, 4], target: 'enemy', effects: [dmg(11, 14)] });
+spells.m_tourbillon = S('m_tourbillon', { name: 'Tourbillon', element: 'feu', pa: 2, range: [2, 4], target: 'enemy', effects: [dmg(3, 5), { type: 'swap' }], cooldown: 2 });
 spells.m_echange = S('m_echange', { name: 'Échange', element: 'neutre', pa: 2, range: [1, 5], target: 'enemy', effects: [dmg(3, 5), { type: 'swap' }], cooldown: 2 });
 spells.m_lame_fendue = S('m_lame_fendue', { name: 'Lame fendue', element: 'air', pa: 3, range: [1, 1], target: 'enemy', effects: [dmg(9, 12)] });
 spells.m_devorer = S('m_devorer', { name: 'Dévorer', element: 'neutre', pa: 3, range: [1, 1], target: 'enemy', effects: [{ type: 'devourShield' }, dmg(8, 11)] });
@@ -415,7 +416,7 @@ DATA.classes = {
   thalor: { id: 'thalor', name: 'Thalor', title: 'Ébouleur', role: 'Positionneur', glyph: 'T', color: '#8a93a6', hp: 175, pa: 6, pm: 3, initiative: 75,
     spells: ['transposition', 'lancer', 'projection', 'poigne', 'ancre', 'gorgee_de_cime', 'elan', 'vague', 'etreinte', 'mur_de_chair'],
     desc: 'Éléphant martial de Durren : saisit et projette avec sa trompe, échange les places et alterne entre mobilité et ancrage pour maîtriser le terrain.' },
-  fennal: { id: 'fennal', name: 'Fennal', title: 'Meneur de Meute', role: 'Invocateur', glyph: 'F', color: '#6fdc8c', hp: 110, pa: 6, pm: 3, initiative: 85, summonGauge: 4, jaugeNiveaux: [25, 50],
+  fennal: { id: 'fennal', name: 'Fennal', title: 'Fouette-Marée', role: 'Invocateur', glyph: 'F', color: '#6fdc8c', hp: 110, pa: 6, pm: 3, initiative: 85, summonGauge: 4, jaugeNiveaux: [25, 50],
     spells: ['appel_du_grouk', 'appel_du_pilou', 'rappel_sacrificiel', 'morsure', 'soin_de_meute', 'cri_de_ralliement', 'fleche_de_fil', 'filet', 'appel_du_molh', 'traque'],
     desc: 'Mène une meute (jauge de 4 : Glym 1, Grouk 2, Molh 3), la sacrifie pour prendre sa force.' },
   velmar: { id: 'velmar', name: 'Velmar', title: 'Garde-Carapace', role: 'Protecteur', glyph: 'Vm', color: '#2aa6b8', hp: 165, pa: 6, pm: 3, initiative: 70,
@@ -556,9 +557,9 @@ DATA.monsters = {
     desc: 'Tank. Masse de pierre lente, ancienne sentinelle des galeries.' }),
   kaldrik: M('kaldrik', { name: 'Rakthul', region: 'kaldum', level: '27 à 64', shape: 'square', color: '#6b4f3a', hp: 130, dmgMult: 0.85, pa: 6, pm: 3, initiative: 55, resist: { feu: 15, neutre: 10, eau: -20 }, spells: ['m_poing'], ai: 'melee',
     desc: 'Cogneur. Homme de scorie qui marche vers le bruit des marteaux.' }),
-  fumerolle: M('fumerolle', { name: 'Fumerolle', region: 'kaldum', level: '31 à 68', shape: 'circle', color: '#d0d0e0', hp: 57, dmgMult: 0.45, pa: 6, pm: 3, initiative: 95, resist: { feu: 20, neutre: 10, air: -25 }, spells: ['m_bouffee'], ai: 'ranged',
+  fumerolle: M('fumerolle', { name: 'Fumerolle', region: 'kaldum', level: '31 à 68', shape: 'circle', color: '#d0d0e0', hp: 57, dmgMult: 0.45, pa: 6, pm: 3, initiative: 95, resist: { feu: 20, neutre: 10, air: -25 }, spells: ['m_bouffee', 'm_tourbillon'], ai: 'ranged',
     triggers: [{ when: 'turnStart', do: [{ act: 'toggleState', name: 'invisible' }] }],
-    desc: 'Contrôleur. Brûle en croix, invisible un tour sur deux.' }),
+    desc: 'Contrôleur. Brûle en croix, invisible un tour sur deux, et dérive : elle prend la place de sa cible.' }),
   pioche_vive: M('pioche_vive', { name: 'Pioche-Vive', region: 'kaldum', level: '35 à 72', shape: 'diamond', color: '#b0b0b0', hp: 127, dmgMult: 1.1, pa: 6, pm: 2, initiative: 65, resist: { neutre: 20, terre: 5, eau: -15 }, spells: ['m_pic'], ai: 'ranged',
     desc: 'Tireur. Frappe en ligne à 2 à 4 cases.' }),
   cendrou: M('cendrou', { name: 'Cendrou', region: 'kaldum', level: '37 à 80', shape: 'hex', color: '#ff9a3c', hp: 115, dmgMult: 1.15, pa: 6, pm: 2, initiative: 75, resist: { feu: 25, air: -20, eau: -10 }, spells: ['m_appel_braise', 'm_etincelle'], ai: 'summoner',

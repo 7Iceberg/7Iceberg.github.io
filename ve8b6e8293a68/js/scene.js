@@ -260,8 +260,8 @@ class Scene {
       ['legende', 'Il y a cent ans, quelqu\'un a pris l\'Écaille d\'Ithren : sa colère a brûlé le nord. On appelle ça la Grande Colère.'],
       ['legende', 'La Flamme des dragons s\'allume dans quelques-uns, sans prévenir. Ce sont les Veilleurs.'],
       ['legende', 'Ervane est le plus haut sommet des Cimes, au-dessus de la mer de nuages, relié à la Cité des Cimes par le câble de la Nacelle.'],
-      ['legende', 'L\'Aube garde les Marques et les dragons, la Chaîne veut les lier. Au niveau 39, tu prêteras serment, ou pas.'],
-      ['legende', 'Les Francs-Marcheurs de Thessa commercent avec tout le monde, et vendent de fausses Marques très bien gravées.'],
+      ['legende', 'L\'Aube garde les Veyliths et les dragons, la Chaîne veut les lier. Au niveau 39, tu prêteras serment, ou pas.'],
+      ['legende', 'Les Francs-Marcheurs de Thessa commercent avec tout le monde, et vendent de faux Veyliths très bien imités.'],
       ['legende', 'Au fond du Puits de l\'Amarre attend Krobb, le Ronge-Amarre.'],
     ];
   }

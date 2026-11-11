@@ -230,6 +230,19 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
 .vy-confirmer__boutons { display: flex; justify-content: center; gap: 10px; }
 .vy-confirmer__boutons .vy-bouton { min-height: 40px; min-width: 96px; }
 
+.vy-artifice { position: absolute; left: 0; top: 0; z-index: 12; width: 0; height: 0; pointer-events: none; }
+.vy-artifice i {
+  position: absolute; left: var(--x); top: var(--y); width: 5px; height: 5px; margin: -2.5px; border-radius: 50%;
+  background: var(--c); box-shadow: 0 0 6px 2px var(--c); opacity: 0;
+  animation: vy-artifice 1.3s cubic-bezier(0.15, 0.7, 0.3, 1) both;
+}
+@keyframes vy-artifice {
+  0% { opacity: 1; transform: translate(0, 24px) scale(0.6); }
+  25% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 22px)) scale(0.4); }
+}
+@media (prefers-reduced-motion: reduce) { .vy-artifice i { animation-duration: 0.01s; } }
+
 .vy-emote-bulle {
   position: absolute; left: 0; top: 0; z-index: 12;
   width: 40px; height: 40px; padding: 8px;

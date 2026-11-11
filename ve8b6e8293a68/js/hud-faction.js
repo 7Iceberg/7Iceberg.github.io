@@ -140,7 +140,7 @@ Object.assign(Hud.prototype, {
     const passe = f.renounced ? `<p class="muted vy-note">Tu as renié un serment (${f.renounced} fois). Ton prochain serment commencera au rang ${Factions.rankFor(f.points)}.</p>` : '';
     const prelude = Quests.tracker(ch).filter(t => t.quest.category === 'faction');
     const enCours = prelude.length ? `<div class="vy-sous"><span>Le prélude en cours</span></div>${prelude.map(t => `<div class="vy-ligne-quete"><b>${esc(t.quest.name)}</b><small>${esc(t.text)}</small></div>`).join('')}` : '';
-    return `<p class="vy-note vy-faction__intro">Deux factions se disputent les Marques. Aucune n'est « gentille » : chacune a raison sur un point et tort sur un autre. Au niveau ${Factions.SWEAR_LEVEL}, tu prêteras serment à l'une, ou tu refuseras.</p>
+    return `<p class="vy-note vy-faction__intro">Deux factions se disputent les Veyliths. Aucune n'est « gentille » : chacune a raison sur un point et tort sur un autre. Au niveau ${Factions.SWEAR_LEVEL}, tu prêteras serment à l'une, ou tu refuseras.</p>
       <div class="vy-faction-cartes">${Factions.IDS.map(carte).join('')}</div>${ou}${passe}${enCours}`;
   },
 

@@ -52,7 +52,7 @@
         recit: 'À Kaldum, on ressemelle ses bottes plus souvent qu\'on ne change de chemise : la roche chaude mange le cuir.',
         bonus: { type: 'atelier', atelier: 'cordonnier', pct: 25 } },
       { voile: 5, element: 'terre', nom: 'La Mousse qui luit',
-        recit: 'Sur la Marque de Durren pousse encore une mousse qui luit. Les Molhs en portent une toute pareille sur le dos, et personne n\'ose leur demander d\'où elle vient.',
+        recit: 'Sur la coquille du Veylith de Durren pousse encore une mousse qui luit. Les Molhs en portent une toute pareille sur le dos, et personne n\'ose leur demander d\'où elle vient.',
         bonus: { type: 'xp_famille', famille: 'molh', pct: 50 } },
       { voile: 6, element: 'terre', nom: 'Les Heures lentes',
         recit: 'Là où Nohra pose ses ailes, les heures ralentissent. Les mineurs jurent qu\'elle s\'est posée un jour sur la Mine des Tholous, et que les Tholous y font la sieste depuis.',
@@ -102,7 +102,7 @@
         recit: 'Dans le Nid des Toiles, la rosée tient sur les fils jusqu\'au soir. La Fileuse s\'y abreuve, et ce qu\'elle tisse ensuite ne casse plus.',
         bonus: { type: 'butin_donjon', donjon: 'nid_des_toiles', pct: 25 } },
       { voile: 7, element: 'eau', nom: 'Le Verre de mer',
-        recit: 'La Marque de Morrha est une goutte de verre de mer où bouge une vague. À Thessa, les Francs-Marcheurs en gravent des fausses, et les meilleures ont leur vague aussi.',
+        recit: 'Le Veylith de Morrha est un œuf aux reflets de verre de mer, où le Veylor bouge comme une vague. À Thessa, les Francs-Marcheurs en vendent de faux, et les meilleurs ont leur vague aussi.',
         bonus: { type: 'atelier', atelier: 'bijoutier', pct: 25 } },
 
       { voile: 1, element: 'air', nom: 'L\'Orage sans nuage',

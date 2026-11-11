@@ -441,9 +441,10 @@ const IleTerrain = (() => {
 
     const eau = new Float64Array(N).fill(NaN);
     const poserEau = (i, niv) => { if (h[i] < niv - 0.005 && !(eau[i] >= niv)) eau[i] = niv; };
+    const distRu = new Float32Array(N).fill(Infinity), demiRu = new Float32Array(N), profRu = new Float32Array(N);
     for (const l of parSorte('ru')) {
       const prof = l.profondeur || 0.5;
-      const surf = profilLigne(l, hA, 9, null, true);
+      const profil = profilLigne(l, hA, 9, null, true), surf = s => profil(s) - 0.08;
       l.surface = surf;
       for (const [i, d, s] of relever(l, l.demi + 0.6)) {
         const ws = surf(s);
@@ -451,6 +452,7 @@ const IleTerrain = (() => {
         const fondRigole = ws - prof * t;
         if (h[i] > fondRigole) h[i] = fondRigole + (h[i] - fondRigole) * fondu(d, l.demi, l.demi + 0.6);
         if (d <= l.demi + 0.3) poserEau(i, ws);
+        if (d < distRu[i]) { distRu[i] = d; demiRu[i] = l.demi; profRu[i] = prof; }
       }
     }
     const eaux = (def.eaux || []).filter(e => e.sorte !== 'ru').map(e => Object.assign({}, e));
@@ -490,6 +492,7 @@ const IleTerrain = (() => {
     }
 
     const RACCORD = 2;
+    const gueAire = new Uint8Array(N);
     const carres = [];
     for (const c of cartes) for (const g of c.groups || []) {
       const a = g.aire;
@@ -525,6 +528,22 @@ const IleTerrain = (() => {
         const w = 1 - fondu(d, 0, RACCORD);
         if (w > 0) h[i] += (hm - h[i]) * w;
       }
+      const ruPlateau = new Uint8Array(N);
+      for (let v = max(0, ceil(Y0 - RACCORD)); v <= min(H - 1, floor(Y1 + RACCORD)); v++) for (let u = max(0, ceil(X0 - RACCORD)); u <= min(W - 1, floor(X1 + RACCORD)); u++) {
+        const i = idx(u, v), d = distRu[i], demi = demiRu[i];
+        if (!(d < demi + 0.6) || vide[i]) continue;
+        const w = 1 - fondu(min(...cs.map(c => distCarre(c, u, v))), 0, RACCORD);
+        if (w <= 0) continue;
+        const gue = profRu[i] <= 0.3;
+        const ws = hm - (gue ? 0.03 : 0.08), prof = gue ? 0.1 : profRu[i];
+        const fond = ws - prof * (1 - fondu(d, 0, demi));
+        h[i] += (fond + (hm - fond) * fondu(d, demi, demi + 0.6) - h[i]) * w;
+        if (d <= demi + 0.3) {
+          const niv = eau[i] === eau[i] ? eau[i] + (ws - eau[i]) * w : ws;
+          eau[i] = h[i] < niv - 0.005 ? niv : NaN;
+        }
+        if (eau[i] === eau[i]) { ruPlateau[i] = 1; if (gue) gueAire[i] = 1; }
+      }
       const sec = new Uint8Array(N);
       for (let v = max(0, ceil(Y0)); v <= min(H - 1, floor(Y1)); v++) for (let u = max(0, ceil(X0)); u <= min(W - 1, floor(X1)); u++) {
         const i = idx(u, v);
@@ -532,7 +551,7 @@ const IleTerrain = (() => {
       }
       for (let v = max(1, ceil(Y0)); v <= min(H - 2, floor(Y1)); v++) for (let u = max(1, ceil(X0)); u <= min(W - 2, floor(X1)); u++) {
         const i = idx(u, v);
-        if (eau[i] !== eau[i] || vide[i] || eau[i] > hm + 0.05) continue;
+        if (eau[i] !== eau[i] || vide[i] || eau[i] > hm + 0.05 || ruPlateau[i]) continue;
         if (!cs.some(c => u >= c.x0 && u <= c.x1 && v >= c.y0 && v <= c.y1)) continue;
         let berge = false;
         for (let dv = -1; dv <= 1 && !berge; dv++) for (let du = -1; du <= 1; du++) if ((du || dv) && sec[idx(u + du, v + dv)]) { berge = true; break; }
@@ -617,7 +636,7 @@ const IleTerrain = (() => {
 
     const T = {
       id: def.id, largeur: L, hauteur: Hh, W, H, FX, FY, graine: G,
-      haut, eau: eauQ, vide, videF, region, secteur, sol, pente, distSentier, pontF, passageF,
+      haut, eau: eauQ, gueAire, vide, videF, region, secteur, sol, pente, distSentier, pontF, passageF,
       secteurs, zoneDeCarte, regionsZone: regions.map(r => r.zone),
       contour, echancrure: baie, trous,
       lignes: lignes.map(l => ({ id: l.id, sorte: l.sorte, index: l.index, points: l.points, pts: l.pts, longueur: l.longueur, demi: l.demi, largeur: l.demi * 2,
@@ -833,6 +852,29 @@ const IleTerrain = (() => {
       return c ? s / c : null;
     };
     T.profondeurA = (u, v) => { const e = T.eauA(u, v); return e == null ? 0 : max(0, e - bilin(T.haut, W, H, u, v)); };
+    T.profondeurLisseA = (u, v) => {
+      let P = T._profN;
+      if (!P) {
+        P = new Float32Array(W * H);
+        for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+          const k = j * W + i, e = T.eau[k];
+          let niv = e === e ? e : NaN;
+          if (niv !== niv) {
+            let s = 0, n = 0;
+            for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+              const x = i + di, y = j + dj;
+              if (x < 0 || y < 0 || x >= W || y >= H) continue;
+              const f = T.eau[y * W + x];
+              if (f === f) { s += f; n++; }
+            }
+            if (n) niv = s / n;
+          }
+          P[k] = niv === niv ? niv - T.haut[k] : -1;
+        }
+        Object.defineProperty(T, '_profN', { value: P, enumerable: false, configurable: true });
+      }
+      return bilin(P, W, H, u, v);
+    };
     T.regionA = (u, v) => T.region[pres(u, v)];
     T.solA = (u, v) => MATIERES[T.sol[pres(u, v)]];
     T.secteurIndexA = (u, v) => { const s = T.secteur[pres(u, v)]; return s === 255 ? -1 : s; };
@@ -920,7 +962,7 @@ const IleTerrain = (() => {
     for (const [u, v] of [[X, Y], [X + 1, Y], [X, Y + 1], [X + 1, Y + 1]]) {
       if (u < 0 || v < 0 || u >= T.W || v >= T.H) continue;
       const i = v * T.W + u, e = T.eau[i];
-      if (e === e && e > T.haut[i] + 0.02) return { c: '~', pourquoi: 'berge' };
+      if (e === e && e > T.haut[i] + 0.02 && !(T.gueAire && T.gueAire[i])) return { c: '~', pourquoi: 'berge' };
     }
     return { c: '.', pourquoi: null };
   }

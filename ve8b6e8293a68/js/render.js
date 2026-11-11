@@ -3058,6 +3058,7 @@ class Renderer {
   }
 
   drawHero(c, p, s, color, ink, rim, top) {
+    if (Renderer.charte && this.drawHeroCharte) return this.drawHeroCharte(c, p, s, color, ink, rim, top);
     const L = Renderer.heroLook(s);
     const [skin, , tenue, tenue2, capeC, lantern] = L.couleurs;
     const facing = Renderer.FACINGS.includes(s.facing) ? s.facing : 'se';

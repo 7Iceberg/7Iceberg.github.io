@@ -235,7 +235,7 @@ function fabriqueIlePeinture() {
         const f = 1 - lisse(p.rayon - 0.6, p.rayon + 0.5, d + jitter * 0.6);
         if (f > place) { place = f; placeM = p.sol === 'terre' ? 2 : p.sol === 'herbe' ? 0 : 3; }
       }
-      const prof = T.profondeurA(u, v);
+      const prof = T.profondeurLisseA(u, v);
       const eau = lisse(0.02, 0.25, prof);
       const fosse = 1 - lisse(0.5, 1.6, dHaie[o]);
       const pied = 1 - lisse(0.4, 1.2, dMuret[o]);
@@ -375,9 +375,7 @@ function fabriqueIlePeinture() {
     const gN = M().graineDe(T.graine, 'ecume');
     for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
       const u = (i + 0.5) / k, v = (j + 0.5) / k, o = (j * W + i) * 4;
-      const e = T.eauA(u, v);
-      let p = 0;
-      if (e != null) p = clamp((e - T.solBrutA(u, v)) / 1.2, 0, 1);
+      const p = clamp(T.profondeurLisseA(u, v) / 1.2, 0, 1);
       out[o] = Math.round(p * 255);
       out[o + 1] = Math.round(clamp(M().fbm(u / 1.5, v / 1.5, gN, 3), 0, 1) * 255);
       out[o + 2] = 0; out[o + 3] = 255;

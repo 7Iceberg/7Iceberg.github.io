@@ -203,6 +203,18 @@
   const VEYLAN = { combat, renderer, scene, ui, seed, DATA, Grid, Items, Save, startGame, title, controls };
   if (scene) Object.defineProperty(VEYLAN, 'ile', { get: () => scene.ile });
   if (DEV) window.VEYLAN = VEYLAN;
+  if (typeof IleCharge === 'object' && IleCharge.diagDemande && IleCharge.diagDemande()) {
+    IleCharge.etatDiag = () => {
+      const I = scene && scene.ile, e = { carte: world && world.mapId ? String(world.mapId) : null, en3D: !!(scene && scene.en3D), echecs: scene && scene.echecs ? scene.echecs.slice(-3).map(String) : [] };
+      if (I) {
+        let st = null; try { st = I.stats(); } catch (x) { st = null; }
+        let etc = '?'; try { etc = !!I.renderer.getContext().getExtension('WEBGL_compressed_texture_etc'); } catch (x) {   }
+        e.ile = { qualite: String(I.qualite), telephone: !!I.telephone, webgl2: !!I.webgl2, etc2: etc, monde: !!I.monde, semisMeshy: !!I.semisMeshy, modeles: !!I.modeles,
+          triangles: st ? +st.triangles : null, appels: st ? +st.appels : null, mo: st ? Math.round(st.octets.total / 1048576) : null, s: st ? Math.round((st.chargement.total || 0) / 1000) : null };
+      }
+      return e;
+    };
+  }
 
   const vignette = scene && typeof IleCharge === 'object' && IleCharge.vignette ? IleCharge.vignette() : null;
   if (vignette && Ile.allumee && typeof Ile3D === 'function' && Ile3D.disponible()) {

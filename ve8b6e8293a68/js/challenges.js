@@ -236,8 +236,8 @@ const Challenges = (() => {
     const ok = LIST.filter(d => (!d.eligible || d.eligible(combatLike)) && !(exclus || []).includes(d.id));
     const imposes = (typeof DATA === 'object' && DATA.succes && DATA.succes.defisBoss) || {};
     const boss = ((combatLike && combatLike.entities) || []).find(e => e.team === 'monster' && e.boss && imposes[e.def.id]);
-    const impose = boss && ok.find(d => d.id === imposes[boss.def.id]);
-    if (impose) return new Challenge(impose);
+    const liste = boss ? [].concat(imposes[boss.def.id]) : [];
+    for (const id of liste) { const impose = ok.find(d => d.id === id); if (impose) return new Challenge(impose); }
     return ok.length ? new Challenge(ok[Math.floor(rng() * ok.length)]) : null;
   }
 

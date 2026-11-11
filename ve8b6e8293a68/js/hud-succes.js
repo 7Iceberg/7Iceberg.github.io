@@ -147,7 +147,7 @@ Object.assign(Hud.prototype, {
       if (/ \(Clé\)$/.test(a.name)) return a.desc.replace(/\.$/, '');
       return a.name;
     };
-    const tuile = a => `<button type="button" class="vy-succes__tuile ${etat(a)}${a.cond.type === 'noeudsBoss' ? ' noue' : ''}${a.id === s.choisi ? ' choisi' : ''}" data-act="choisir" data-id="${a.id}" title="${esc(a.name)} : ${esc(a.desc)}"><small class="pt">${A.points(a)}</small><i class="vy-succes__gemme"></i><span class="k">${attente.has(a.id) ? 'Réclamer' : ETIQ[a.cond.type] || A.sousCategorie(a)}</span><span class="nm">${esc(court(a))}</span></button>`;
+    const tuile = a => `<button type="button" class="vy-succes__tuile ${etat(a)}${a.cond.type === 'noeudsBoss' ? ' noue' : ''}${a.id === s.choisi ? ' choisi' : ''}" data-act="choisir" data-id="${a.id}" title="${esc(a.name)} : ${esc(a.desc)}"><small class="pt">${A.points(a)}</small><i class="vy-succes__gemme"></i><span class="k">${attente.has(a.id) ? 'Réclamer' : (/_defi2$/.test(a.id) ? 'Défi 2' : ETIQ[a.cond.type]) || A.sousCategorie(a)}</span><span class="nm">${esc(court(a))}</span></button>`;
     const ligne = a => {
       const v = A.avancement(ch, a), fait = a_(a.id);
       return `<button type="button" class="vy-succes__ligne ${etat(a)}${a.id === s.choisi ? ' choisi' : ''}" data-act="choisir" data-id="${a.id}"><i class="vy-succes__gemme"></i>` +

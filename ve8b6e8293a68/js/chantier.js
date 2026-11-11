@@ -39,6 +39,14 @@ const Chantier = (() => {
     }
   }
 
+  function pierresPleines() {
+    if (!actif || typeof DATA !== 'object') return [];
+    return Object.entries(DATA.monsters).filter(([, m]) => !m.summon && (m.boss || (m.rare && m.base)) && m.ai).map(([id, m]) => {
+      const r = String(m.level || '').match(/(\d+)\D+(\d+)/), haut = r ? Number(r[2]) : Number(m.level) || 1;
+      return { id: 'pierre_pleine_' + id, name: `[pierre pleine] ${m.name}`, kind: 'pierre_pleine', level: 1, monstre: id, niveauCombat: haut, price: 20 + haut * 3, rarity: m.boss ? 'epique' : 'rare', lore: '' };
+    });
+  }
+
   if (demande() && typeof document === 'object' && document.readyState === 'loading') document.write('<script src="content/chantier/objets-1-60.js"><\/script>');
-  return { demande, appliquer, appliquerNoeuds, actif: () => actif };
+  return { demande, appliquer, appliquerNoeuds, pierresPleines, actif: () => actif };
 })();

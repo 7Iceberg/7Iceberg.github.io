@@ -369,7 +369,8 @@ void main() {
       const hv = H.hover && Grid.inBounds(m, H.hover.x, H.hover.y) ? H.hover : null;
       const chemin = H.path && H.path.length && cb.actor ? [{ x: cb.actor.x, y: cb.actor.y }].concat(H.path) : [];
       const cible = H.cible != null ? cb.entities.find(e => e.id === H.cible && e.alive) : null;
-      const sig = [placement ? 1 : 0, [...H.move].join(','), [...H.range].join(','), [...H.blocked].join(','), [...H.aoe].join(','), [...cb.temp.keys()].map(k => k + cb.temp.get(k).kind).join(','), traps.map(t => t.x + ',' + t.y + t.element).join(';'), hv ? hv.x + ',' + hv.y : '', chemin.map(p => p.x + ',' + p.y).join(';'), cible ? cible.x + ',' + cible.y : ''].join('|');
+      const departs = placement ? ['player', 'monster'].map(t => ((cb.placementCells ? cb.placementCells[t] : (m.starts || {})[t]) || []).map(c => c.x + ',' + c.y).join(';')).join('/') : '';
+      const sig = [placement ? 1 : 0, departs, [...H.move].join(','), [...H.range].join(','), [...H.blocked].join(','), [...H.aoe].join(','), [...cb.temp.keys()].map(k => k + cb.temp.get(k).kind).join(','), traps.map(t => t.x + ',' + t.y + t.element).join(';'), hv ? hv.x + ',' + hv.y : '', chemin.map(p => p.x + ',' + p.y).join(';'), cible ? cible.x + ',' + cible.y : ''].join('|');
       this.majRochers(cb);
       this.majGlyphes(cb);
       if (sig === this.sig) return;

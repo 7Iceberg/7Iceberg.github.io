@@ -8,7 +8,7 @@ class Character {
       coffre: { items: {}, fils: 0 },
       quests: { active: {}, done: [] },
       counters: { fights: 0, wins: 0, kills: {}, maps: [], crafts: 0, gathers: 0, filsEarned: 0, filsRecus: 0, dungeons: [], dungeonTurns: {}, bosses: [], questsDone: 0, feats: {} },
-      achievements: [], pos: null, relay: null, relays: [], dungeon: null, autoStats: true, playTime: 0, knots: [], ensembles: [], voie: null, scrolls: {},
+      achievements: [], pos: null, relay: null, relays: [], dungeon: null, autoStats: true, playTime: 0, knots: [], ensembles: [], voie: null, scrolls: {}, bonbon: null,
       variantes: {},
       look: null, porte: null, ensemblesLook: [],
       familiers: {}, familier: null, metiers: {},
@@ -143,12 +143,15 @@ class Character {
     const c = this.classDef;
     const total = Object.assign({}, this.stats);
     for (const k in this.scrolls || {}) total[k] = (total[k] || 0) + (this.scrolls[k] || 0);
+    const bb = this.bonbon && this.bonbon.combats > 0 ? this.bonbon : null;
+    if (bb && bb.stat === 'sagesse') total.sagesse = (total.sagesse || 0) + bb.value;
     const extra = { pa: 0, pm: 0, po: 0, init: 0, crit: 0, dmg: 0, tacle: 0, fuite: 0, pp: 0, soin: 0, puissance: 0, invocation: 0, pods: 0,
       esquive_pa: 0, esquive_pm: 0, retrait_pa: 0, retrait_pm: 0, dmg_crit: 0, dmg_pou: 0, res_pct: 0, res_fixe: 0, res_crit: 0, res_pou: 0,
       dmg_terre: 0, dmg_feu: 0, dmg_eau: 0, dmg_air: 0, res_terre: 0, res_feu: 0, res_eau: 0, res_air: 0, res_neutre: 0 };
     const setCount = {};
     const seen = new Set();
     const add = stats => { for (const k in stats) { if (k in extra) extra[k] += stats[k]; else if (Items.STATS.includes(k)) total[k] = (total[k] || 0) + stats[k]; } };
+    if (bb && bb.stat === 'pp') extra.pp += bb.value;
     for (const slot of Items.EQUIP_SLOTS) {
       const id = equipment[slot];
       if (!id) continue;
@@ -610,7 +613,16 @@ class Character {
       return `${d.name} : ${Object.entries(recu).map(([n, k]) => `${k} ${n}`).join(', ')}.`;
     }
     if (d.sub === 'parchemin' && d.xp) { this.removeItem(id, 1); const g = this.gainXp(d.xp); return `${d.name} : +${g.gained} XP.`; }
-    if (['bonbon', 'artifice', 'pierre_ame'].includes(d.sub)) return `${d.name} : bientôt.`;
+    if (d.sub === 'bonbon') {
+      this.removeItem(id, 1);
+      const avant = this.bonbon && Items.get(this.bonbon.id);
+      this.bonbon = { id, stat: d.stat, value: d.value || 0, combats: d.combats || 5 };
+      const quoi = d.stat === 'xp' ? `+${d.value} % d'XP` : `+${d.value} ${Items.STAT_LABEL[d.stat] || d.stat}`;
+      return `${d.name} : ${quoi} pendant ${this.bonbon.combats} combats.${avant ? ` (${avant.name} ne compte plus.)` : ''}`;
+    }
+    if (d.sub === 'artifice') { this.removeItem(id, 1); return 'artifice'; }
+    if (d.sub === 'pierre_ame') return `${d.name} : garde-la dans ton sac. Après une victoire contre un boss ou une variante rare de niveau ${d.niveauMax} au plus, elle a une chance de le capturer.`;
+    if (d.sub === 'pierre_pleine') return 'pierre';
     return null;
   }
 

@@ -1181,13 +1181,13 @@ DATA.content.quests.push({
   ],
   dialogue: {
     offer: [
-      "Les Gardiens des Marques disent que la roche de Kaldum respire. Pas fort : une fois par heure, sous les Souffleries.",
+      "Les Gardiens des Veyliths disent que la roche de Kaldum respire. Pas fort : une fois par heure, sous les Souffleries.",
       "Ils veulent savoir si c'est un Grand Dragon qui dort, ou la Colère qui couve. Va écouter. Et arrête les Pioche-Vives : elles creusent vers le bruit.",
     ],
     progress: ["Pose la main sur la roche, et attends. Si elle te répond, ne lui réponds pas."],
     done: [
       "Une respiration lente, et chaude. Ce n'est pas la Colère : elle ne respire pas, elle brûle.",
-      "Les Gardiens des Marques vont écrire ça quelque part, et le ranger loin. L'Aube range beaucoup de choses loin.",
+      "Les Gardiens des Veyliths vont écrire ça quelque part, et le ranger loin. L'Aube range beaucoup de choses loin.",
     ],
   },
   rewards: { xp: 4682, fils: 60, faction: 10 },
@@ -1205,7 +1205,7 @@ DATA.content.quests.push({
   dialogue: {
     offer: [
       "Un Rayon, chez nous, c'est la première lumière qui porte loin. Celle qui tient quand le reste s'éteint.",
-      "Les Molhs Anciens remontent de la Fonderie vers la ville. Arrête-les. Après, tu choisiras ton ordre : Gardes d'Aube, Porteurs de Flamme ou Gardiens des Marques.",
+      "Les Molhs Anciens remontent de la Fonderie vers la ville. Arrête-les. Après, tu choisiras ton ordre : Gardes d'Aube, Porteurs de Flamme ou Gardiens des Veyliths.",
     ],
     progress: ["Un Molh Ancien change de peau, un tour sur deux : la terre, puis le feu. Frappe avec l'élément qu'il ne porte pas."],
     done: [

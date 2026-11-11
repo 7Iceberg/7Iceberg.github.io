@@ -8,7 +8,7 @@ const ICO = {
   corbeille: svg('<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/>'),
   vendre: svg('<circle cx="12" cy="12" r="8.5"/><path d="M14.8 8.8c-.5-.9-1.5-1.3-2.8-1.3-1.7 0-2.9.8-2.9 2.1 0 2.9 6 1.6 6 4.6 0 1.3-1.3 2.3-3.1 2.3-1.4 0-2.5-.5-3-1.5M12 5.5v1.7M12 17v1.6"/>'),
   cadenas: svg('<rect x="6" y="11" width="12" height="9" rx="1.6"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/>'),
-  ecaille: svg('<path d="M12 3.5c3.6 1.8 5.5 4.6 5.5 8.3 0 3.6-2.4 6.6-5.5 8.7-3.1-2.1-5.5-5.1-5.5-8.7 0-3.7 1.9-6.5 5.5-8.3z"/><path d="M12 8.5v7M9.4 12.2 12 14.6l2.6-2.4"/>'),
+  veylith: svg('<path d="M12 3c-3 0-7 7-7 11a7 7 0 0 0 14 0c0-4-4-11-7-11z"/><path d="m12 8 2 4-2 5-2-5z"/>'),
   fils: svg('<rect x="6" y="3.5" width="12" height="2.6" rx="1"/><rect x="6" y="17.9" width="12" height="2.6" rx="1"/><path d="M8.5 9h7M8.5 12h7M8.5 15h7"/>'),
   precedent: svg('<path d="M15 5l-7 7 7 7"/>'),
   suivant: svg('<path d="M9 5l7 7-7 7"/>'),
@@ -34,7 +34,7 @@ const ICO_COS = (() => {
     theme: s('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 20V9"/>'),
   };
 })();
-const ECAILLES = ['Marque d\'Aïven', 'Marque de Durren', 'Marque de Morrha', 'Marque d\'Iskar', 'Marque de Nohra', 'Marque d\'Aube'];
+const VEYLITHS = ['Veylith d\'Aïven', 'Veylith de Durren', 'Veylith de Morrha', 'Veylith d\'Iskar', 'Veylith de Nohra', 'Veylith d\'Aube'];
 
 const portable = d => d.kind === 'equip' || d.kind === 'weapon';
 const ONGLETS = [
@@ -207,7 +207,7 @@ Object.assign(Hud.prototype, {
       : `<button class="vy-case vy-case--emplacement vy-inv__slot vy-inv__mont" data-act="montureSlot" title="Monture : aucune. Toucher : la fenêtre Montures." aria-label="Monture : aucune"><span class="vy-case__icone">${(Fenetres.ICON && Fenetres.ICON.montures) || ''}</span></button>`;
     const tr = Object.keys(ch.trousseau || {});
     const trCase = `<button class="vy-case${tr.length ? '' : ' vy-case--emplacement'} vy-inv__slot vy-inv__trousseau" data-rarete="${tr.length ? 'rare' : ''}" data-act="trousseauSlot" title="Trousseau : ${tr.length ? tr.length + (tr.length > 1 ? ' clés' : ' clé') : 'vide'}. Toucher : ses clés." aria-label="Trousseau, ${tr.length} clé${tr.length > 1 ? 's' : ''}"><span class="vy-case__icone"><img class="vy-case__img" src="assets/ui/objets/trousseau.png" alt="" draggable="false"></span>${tr.length ? `<span class="vy-case__nombre">${tr.length}</span>` : ''}</button>`;
-    const ecailles = ECAILLES.map(n => `<span class="vy-case vy-inv__ecaille" title="${n} : bientôt" aria-label="${n}, bientôt" aria-disabled="true"><span class="vy-case__icone">${ICO.ecaille}</span><span class="vy-inv__cadenas">${ICO.cadenas}</span></span>`).join('');
+    const veyliths = VEYLITHS.map(n => `<span class="vy-case vy-inv__ecaille" title="${n}, œuf de dragon contenant le Veylor : bientôt" aria-label="${n}, œuf de dragon contenant le Veylor, bientôt" aria-disabled="true"><span class="vy-case__icone">${ICO.veylith}</span><span class="vy-inv__cadenas">${ICO.cadenas}</span></span>`).join('');
     const cos = s.poupee === 'cosmetiques' && typeof Garderobe !== 'undefined';
     const onglets = `<nav class="vy-inv__vues" role="tablist" aria-label="Le personnage"><button type="button" class="vy-inv__vue${cos ? '' : ' on'}" role="tab" aria-selected="${!cos}" data-act="poupee" data-vue="equip">Équipement</button><button type="button" class="vy-inv__vue${cos ? ' on' : ''}" role="tab" aria-selected="${cos}" data-act="poupee" data-vue="cosmetiques">Cosmétiques</button></nav>`;
     const caseCos = type => {
@@ -217,7 +217,7 @@ Object.assign(Hud.prototype, {
     const colCos = types => types.map(caseCos).join('');
     return `<section class="vy-inv__poupee${cos ? ' vy-inv__poupee--cos' : ''}" aria-label="${cos ? 'Cosmétiques portés' : 'Équipement porté'}">
       ${onglets}
-      ${cos ? '' : `<div class="vy-inv__col vy-inv__marques" title="Marques des Grands Dragons : bientôt">${ecailles}</div>`}
+      ${cos ? '' : `<div class="vy-inv__col vy-inv__marques" title="Veyliths des Grands Dragons : bientôt">${veyliths}</div>`}
       <div class="vy-inv__col">${cos ? colCos(['teinture', 'lueur', 'aura']) : col(GAUCHE) + trCase}</div>
       <div class="vy-inv__perso" data-depot="poupee">
         <canvas class="vy-inv__cv" role="img" aria-label="${esc(ch.name)}, ${esc(cls.name)}"></canvas>

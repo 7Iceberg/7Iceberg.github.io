@@ -216,19 +216,30 @@ const IleCharge = (() => {
     }
   })();
   function diagDemande() { try { return /[?&]diag=1\b/.test(location.search); } catch (e) { return false; } }
+  function etatJeu() {
+    const f = typeof IleCharge === 'object' && typeof IleCharge.etatDiag === 'function' ? IleCharge.etatDiag : null;
+    if (f) { try { return f() || {}; } catch (e) { return {}; } }
+    const V = typeof window === 'object' ? window.VEYLAN : null, sc = V && V.scene, I = sc && sc.ile;
+    const e = { carte: V && V.world && V.world.mapId, en3D: !!(sc && sc.en3D), echecs: sc && sc.echecs ? sc.echecs.slice(-3) : [] };
+    if (I) {
+      let st = null; try { st = I.stats(); } catch (x) { st = null; }
+      let etc = '?'; try { etc = !!I.renderer.getContext().getExtension('WEBGL_compressed_texture_etc'); } catch (x) {   }
+      e.ile = { qualite: I.qualite, telephone: !!I.telephone, webgl2: !!I.webgl2, etc2: etc, monde: !!I.monde, semisMeshy: !!I.semisMeshy, modeles: !!I.modeles,
+        triangles: st && st.triangles, appels: st && st.appels, mo: st ? Math.round(st.octets.total / 1048576) : null, s: st ? Math.round((st.chargement.total || 0) / 1000) : null };
+    }
+    return e;
+  }
   function diagnostic() {
-    const V = typeof window === 'object' ? window.VEYLAN : null, I = V && V.scene && V.scene.ile;
+    const E = etatJeu(), I = E.ile;
     const l = [];
     l.push('Veylan ' + ((typeof DATA === 'object' && DATA.version) || '') + ' · ' + (typeof navigator === 'object' ? navigator.userAgent.replace(/^.*?\(([^)]*)\).*$/, '$1').slice(0, 60) : ''));
-    l.push('carte ' + ((V && V.world && V.world.mapId) || '?') + ' · 3D ' + !!(V && V.scene && V.scene.en3D) + ' · monde ' + (monde() || 'code') + ' · faible ' + faible());
+    l.push('carte ' + (E.carte || '?') + ' · 3D ' + !!E.en3D + ' · monde ' + (monde() || 'code') + ' · faible ' + faible());
     if (I) {
-      let st = null; try { st = I.stats(); } catch (e) { st = null; }
-      let etc = '?'; try { etc = !!I.renderer.getContext().getExtension('WEBGL_compressed_texture_etc'); } catch (e) {   }
-      l.push('qualité ' + I.qualite + ' · téléphone ' + !!I.telephone + ' · webgl2 ' + !!I.webgl2 + ' · etc2 ' + etc);
-      l.push('monde modelé ' + !!I.monde + ' · semis Meshy ' + !!I.semisMeshy + ' · modèles ' + (I.modeles ? 'oui' : 'non'));
-      if (st) l.push('triangles ' + st.triangles + ' · appels ' + st.appels + ' · mémoire ' + Math.round(st.octets.total / 1048576) + ' Mo · construit en ' + Math.round((st.chargement.total || 0) / 1000) + ' s');
+      l.push('qualité ' + I.qualite + ' · téléphone ' + I.telephone + ' · webgl2 ' + I.webgl2 + ' · etc2 ' + I.etc2);
+      l.push('monde modelé ' + I.monde + ' · semis Meshy ' + I.semisMeshy + ' · modèles ' + (I.modeles ? 'oui' : 'non'));
+      if (I.triangles != null) l.push('triangles ' + I.triangles + ' · appels ' + I.appels + ' · mémoire ' + I.mo + ' Mo · construit en ' + I.s + ' s');
     }
-    if (V && V.scene && V.scene.echecs && V.scene.echecs.length) l.push('échecs : ' + V.scene.echecs.slice(-3).join(' | '));
+    if (E.echecs && E.echecs.length) l.push('échecs : ' + E.echecs.join(' | '));
     return l.concat(journal.slice(-12));
   }
   if (typeof document === 'object' && diagDemande()) {
@@ -236,7 +247,7 @@ const IleCharge = (() => {
       let el = document.getElementById('veylan-diag');
       if (!el) {
         el = document.createElement('pre'); el.id = 'veylan-diag';
-        el.style.cssText = 'position:fixed;left:4px;bottom:4px;z-index:99999;max-width:62vw;max-height:46vh;overflow:auto;margin:0;padding:6px 8px;font:10px/1.35 monospace;color:#e8f0ff;background:rgba(10,14,24,.82);border:1px solid #55658a;border-radius:6px;white-space:pre-wrap;pointer-events:none';
+        el.style.cssText = 'position:fixed;left:4px;top:24vh;z-index:99999;max-width:46vw;max-height:44vh;overflow:auto;margin:0;padding:6px 8px;font:10px/1.35 monospace;color:#e8f0ff;background:rgba(10,14,24,.82);border:1px solid #55658a;border-radius:6px;white-space:pre-wrap;pointer-events:none';
         document.body.appendChild(el);
       }
       el.textContent = diagnostic().join('\n');
@@ -244,5 +255,5 @@ const IleCharge = (() => {
     setInterval(() => { if (document.body) montrer(); }, 2000);
   }
 
-  return { three, webgl, ambiance, vignette, style, lisiere, script, nuit, monde, glb, heros, herosScript, peauScript, modeles, modelesScript, reperes, reperesScript, faible, cache: { lire, ecrire, vider }, diagnostic, get journal() { return journal.slice(); }, surActivite: null, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
+  return { three, webgl, ambiance, vignette, style, lisiere, script, nuit, monde, glb, heros, herosScript, peauScript, modeles, modelesScript, reperes, reperesScript, faible, cache: { lire, ecrire, vider }, diagnostic, diagDemande, etatDiag: null, get journal() { return journal.slice(); }, surActivite: null, get essais() { return essais; }, get charge() { return typeof window !== 'undefined' && !!window.THREE; } };
 })();

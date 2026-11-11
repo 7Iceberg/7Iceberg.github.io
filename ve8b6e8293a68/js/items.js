@@ -122,8 +122,11 @@ const Items = (() => {
       defs.set(w.id, { id: w.id, name: w.name, kind: 'weapon', slot: 'arme', type: w.type, element: w.element, level: w.level, set: null, lore: w.lore || '', stats: wstats, source: w.source || 'craft', from: w.from || null, spell: weaponSpell(w), image: w.image || null });
     }
     for (const c of C.consumables || []) {
-      defs.set(c.id, { id: c.id, name: c.name, kind: 'consumable', sub: c.kind, level: c.level, heal: c.heal || 0, price: c.price || 5, lore: c.lore || '', stats: {}, stat: c.stat || null, value: c.value || 0, cosmetique: c.cosmetique || null, familier: c.familier || null, monture: c.monture || null, drops: c.drops || [], rarity: c.rarity || null });
+      const propres = Object.assign({}, c); delete propres.kind; delete propres.lot;
+      defs.set(c.id, Object.assign(propres, { id: c.id, name: c.name, kind: 'consumable', sub: c.kind, level: c.level, heal: c.heal || 0, price: c.price || 5, lore: c.lore || '', stats: {}, stat: c.stat || null, value: c.value || 0, cosmetique: c.cosmetique || null, familier: c.familier || null, monture: c.monture || null, drops: c.drops || [], rarity: c.rarity || null }));
     }
+    const pleines = typeof Chantier === 'object' && Chantier.pierresPleines ? Chantier.pierresPleines() : [];
+    for (const c of pleines) defs.set(c.id, { id: c.id, name: c.name, kind: 'consumable', sub: 'pierre_pleine', level: 1, price: c.price, lore: c.lore, stats: {}, monstre: c.monstre, niveauCombat: c.niveauCombat, rarity: c.rarity, drops: [] });
     for (const k of DATA.knots || []) {
       defs.set(k.id, { id: k.id, name: k.name, kind: 'knot', level: k.level, lore: k.desc, price: Math.round(20 + (k.level + 1) * 3), stats: {} });
     }
