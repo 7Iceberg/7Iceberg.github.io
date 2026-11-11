@@ -54,5 +54,5 @@
   #app #toasts .vy-notif { min-width: 0; max-width: 300px; }
 }
 @media (min-width: 721px) and (min-height: 501px) {
-  #app.vy-verre #toasts:not([data-pos]) { top: calc(14px + var(--sc-haut, 0px)); bottom: auto; }
+  #app.vy-verre #toasts:not([data-pos]) { top: var(--notifs-haut, calc(14px + var(--sc-haut, 0px))); bottom: auto; }
 }

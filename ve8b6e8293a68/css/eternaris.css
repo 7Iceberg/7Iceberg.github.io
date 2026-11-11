@@ -62,6 +62,9 @@
 #app.vy-eter #panel .vy-modale__tete { background: var(--e-titre) !important; border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: 1px solid rgba(0, 0, 0, 0.35) !important; }
 #app.vy-eter #panel .vy-modale__tete::before, #app.vy-eter #panel .vy-modale__tete::after { display: none !important; }
 #app.vy-eter #panel #panel-title { font: 800 16px var(--vy-font-ui) !important; letter-spacing: 0.02em !important; text-transform: none !important; color: var(--e-texte) !important; text-shadow: none !important; }
+#app.vy-eter:not([data-ui-theme="duality"]) #panel .vy-modale__tete { position: relative; }
+#app.vy-eter:not([data-ui-theme="duality"]) #panel #panel-title { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: max-content; max-width: calc(100% - 140px); text-align: center; pointer-events: none; }
+#app.vy-eter:not([data-ui-theme="duality"]) #panel #panel-close { margin-left: auto; }
 #app.vy-eter #panel-body .vy-svc__onglet { font: 800 11px var(--vy-font-ui) !important; letter-spacing: 0.16em !important; text-transform: uppercase; }
 #app.vy-eter #panel-body .vy-svc__onglet.on::after { left: 0; right: 0; height: 3px; border-radius: 0; }
 #app.vy-eter #panel-body .vy-fdd__boss h3 { font: 800 22px/1.15 var(--vy-font-ui) !important; letter-spacing: 0.01em; }

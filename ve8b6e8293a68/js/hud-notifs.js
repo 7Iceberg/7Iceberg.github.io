@@ -55,8 +55,18 @@
       while (t.children.length > r.max) t.firstChild.remove();
     },
 
+    placerNotifs() {
+      const t = this.el.toasts, m = document.getElementById('menus');
+      if (!t) return;
+      const app = document.getElementById('app'), b = m && m.getBoundingClientRect(), a = (app || document.body).getBoundingClientRect();
+      const cx = a.left + a.width / 2, demi = 200;
+      const gene = !t.dataset.pos && b && b.width > 0 && b.height > 0 && b.top - a.top < 90 && b.left < cx + demi && b.right > cx - demi;
+      if (gene) t.style.setProperty('--notifs-haut', Math.round(b.bottom - a.top + 8) + 'px'); else t.style.removeProperty('--notifs-haut');
+    },
+
     poserNotif(el, ms) {
       const r = this.notifs || DEFAUT, t = this.el.toasts;
+      this.placerNotifs();
       t.appendChild(el);
       while (t.children.length > r.max) t.firstChild.remove();
       setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, ms);

@@ -155,17 +155,27 @@ class Fenetres {
   place(w) {
     if (Fenetres.compact) return;
     const r = this.layer.getBoundingClientRect();
-    const auMilieu = () => {
-      const lw = w.box.offsetWidth || 600, lh = w.box.offsetHeight || 500;
-      return this.moveTo(w, Math.round(r.width / 2 - lw / 2), Math.round(Math.max(8, Math.min(Math.max(64, (r.height - lh) / 2), r.height - lh - 8))));
-    };
-    if (w.box.classList.contains('vy-fenetre--livre')) return auMilieu();
-    const saved = this.pos[w.id];
-    if (w.spec.centre && !saved) return auMilieu();
     const width = w.box.offsetWidth || 360, height = w.box.offsetHeight || 300;
-    const y = Math.max(8, Math.min(64, r.height - height - 8));
-    if (saved) return this.moveTo(w, saved.x, saved.y);
+    const saved = this.pos[w.id];
+    if (saved && !w.box.classList.contains('vy-fenetre--livre')) return this.moveTo(w, saved.x, saved.y);
     const others = [...this.wins.values()].filter(o => o !== w);
+    if (w.spec.centre !== false || w.box.classList.contains('vy-fenetre--livre')) {
+      const haut = h => Math.round(Math.max(8, Math.min(Math.max(64, (r.height - h) / 2), r.height - h - 8)));
+      w.auto = true;
+      const o = others.length === 1 ? others[0] : null;
+      if (o && o.auto && o.spec.centre !== false) {
+        const ow = o.box.offsetWidth || 360, total = ow + 16 + width;
+        if (total <= r.width - 24) {
+          const x0 = Math.round((r.width - total) / 2), y0 = haut(Math.max(o.box.offsetHeight || 300, height));
+          this.moveTo(o, x0, y0);
+          return this.moveTo(w, x0 + ow + 16, y0);
+        }
+      }
+      let x = Math.round(r.width / 2 - width / 2), y = haut(height);
+      for (let k = 0; k < 8 && others.some(f => Math.abs(f.box.offsetLeft - x) < 14 && Math.abs(f.box.offsetTop - y) < 14); k++) { x += 26; y += 26; }
+      return this.moveTo(w, x, y);
+    }
+    const y = Math.max(8, Math.min(64, r.height - height - 8));
     const free = x0 => others.every(o => x0 + width + 8 <= o.box.offsetLeft || x0 >= o.box.offsetLeft + o.box.offsetWidth + 8);
     for (let x0 = 12; x0 + width <= r.width - 12; x0 += 12) if (free(x0)) return this.moveTo(w, x0, y);
     const n = others.length;
@@ -198,6 +208,7 @@ class Fenetres {
       if (!start) return;
       start = null;
       w.box.classList.remove('deplacee');
+      w.auto = false;
       this.pos[w.id] = { x: w.box.offsetLeft, y: w.box.offsetTop };
       try { localStorage.setItem('veylan.fenetres', JSON.stringify(this.pos)); } catch (e) {   }
     };

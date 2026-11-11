@@ -80,6 +80,9 @@
 #app.vy-verre .vy-fenetre.active .vy-fenetre__tete { border-color: rgba(var(--v-a-rgb), 0.34); }
 #app.vy-verre .vy-fenetre__icone { width: 26px; height: 26px; padding: 4px; border-radius: 8px; color: var(--v-accent-texte); background: rgba(var(--v-a-rgb), 0.12); }
 #app.vy-verre .vy-fenetre__titre { font: 700 13.5px/1.2 var(--vy-font-titre); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-titre); text-align: center; }
+#app.vy-verre:not([data-ui-theme="duality"]) .vy-fenetre__tete { position: relative; }
+#app.vy-verre:not([data-ui-theme="duality"]) .vy-fenetre__titre { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: max-content; max-width: calc(100% - 200px); pointer-events: none; }
+#app.vy-verre:not([data-ui-theme="duality"]) .vy-fenetre__titre + * { margin-left: auto; }
 #app.vy-verre .vy-fenetre__touche { display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 6px; border: 1px solid rgba(var(--v-ligne-rgb), 0.22); background: rgba(var(--v-champ-rgb), 0.7); color: var(--v-texte-2); font: 700 10px/1 var(--vy-font-ui); }
 #app.vy-verre .vy-fenetre__boutons { gap: 4px; }
 #app.vy-verre .vy-fenetre__bouton { width: 30px; height: 30px; border-radius: 9px; border: 1px solid rgba(var(--v-ligne-rgb), 0.16); background: rgba(var(--v-champ-rgb), 0.7); color: var(--v-texte-2); }
