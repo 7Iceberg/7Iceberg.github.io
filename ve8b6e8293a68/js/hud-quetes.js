@@ -126,7 +126,7 @@ Object.assign(Hud.prototype, {
         r();
       }
     };
-    this.simpleWin('quetes', 'Quêtes', () => this.renderQuetes(), actions, { width: 920, cls: 'vy-fenetre--quetes', onField });
+    this.simpleWin('quetes', 'Quêtes', () => this.renderQuetes(), actions, { width: 920, cls: 'vy-fenetre--quetes', centre: true, onField });
   },
 
   renderQuetes() {

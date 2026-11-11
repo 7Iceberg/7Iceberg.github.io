@@ -155,11 +155,13 @@ class Fenetres {
   place(w) {
     if (Fenetres.compact) return;
     const r = this.layer.getBoundingClientRect();
-    if (w.box.classList.contains('vy-fenetre--livre')) {
+    const auMilieu = () => {
       const lw = w.box.offsetWidth || 600, lh = w.box.offsetHeight || 500;
       return this.moveTo(w, Math.round(r.width / 2 - lw / 2), Math.round(Math.max(8, Math.min(Math.max(64, (r.height - lh) / 2), r.height - lh - 8))));
-    }
+    };
+    if (w.box.classList.contains('vy-fenetre--livre')) return auMilieu();
     const saved = this.pos[w.id];
+    if (w.spec.centre && !saved) return auMilieu();
     const width = w.box.offsetWidth || 360, height = w.box.offsetHeight || 300;
     const y = Math.max(8, Math.min(64, r.height - height - 8));
     if (saved) return this.moveTo(w, saved.x, saved.y);
