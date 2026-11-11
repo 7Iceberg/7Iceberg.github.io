@@ -78,6 +78,7 @@ class HudJeu {
     const I = Fenetres.ICON, J = HudJeu.ICON;
     const menus = (Hud.MENUS || []).map(([id, label, key, icon]) => `<button type="button" class="vy-rond" data-win="${id}" aria-label="${label}${key ? ` (${key})` : ''}" title="${label}">${icon}<span class="vy-badge" hidden></span></button>`).join('');
     const veille = typeof Veille !== 'undefined' ? `<button type="button" class="vy-rond" data-win="veille" aria-label="Veille du jour (V)" title="Veille du jour">${Hud.VEILLE_ICONE || J.veille}<span class="vy-badge" hidden></span></button>` : '';
+    const conseil = typeof Admin === 'object' ? `<button type="button" class="vy-rond" data-conseil hidden aria-label="Le Conseil (F8)" title="Le Conseil">${Fenetres.ICON.options}</button>` : '';
     const bientot = HudJeu.BIENTOT.map(([id, label]) => `<button type="button" class="vy-rond vy-rond--bientot" data-bientot="${id}" aria-disabled="true" aria-label="${label} : bientôt" title="${label} : bientôt">${J[id]}</button>`).join('');
     p.innerHTML =
       '<div class="vy-panneau__haut">' +
@@ -97,7 +98,7 @@ class HudJeu {
       `<button type="button" class="vy-panneau__onglet" data-onglet="sorts" role="tab">${J.sorts}<span>Sorts</span></button>` +
       `<button type="button" class="vy-panneau__onglet" data-onglet="objets" role="tab">${I.sac}<span>Objets</span></button>` +
       `<button type="button" class="vy-panneau__verrou" aria-pressed="true" title="Verrouiller la grille">${J.verrou}</button></div>` +
-      `<nav class="vy-panneau__menus" aria-label="Menus">${menus}${veille}${bientot}</nav>` +
+      `<nav class="vy-panneau__menus" aria-label="Menus">${menus}${veille}${conseil}${bientot}</nav>` +
       '<div class="vy-panneau__bas">' +
       `<button type="button" class="vy-panneau__emote" aria-label="Émotes" aria-expanded="false">${J.emote}</button>` +
       `<button type="button" class="vy-panneau__discussion" aria-label="Discussion">${Discussion.ICONE}<span>Discussion</span><span class="vy-panneau__nonlu" hidden></span></button></div>` +
@@ -177,6 +178,7 @@ class HudJeu {
     if (this.glisserFini && Date.now() < this.glisserFini) return;
     const win = t.closest('[data-win]');
     if (win) { this.hud.toggleWin(win.dataset.win); this.rafraichirBadges(); return; }
+    if (t.closest('[data-conseil]')) { if (this.hud.basculerAdmin) this.hud.basculerAdmin(); return; }
     const bientot = t.closest('[data-bientot]');
     if (bientot) { this.bulleBientot(bientot); return; }
     const onglet = t.closest('[data-onglet]');
@@ -859,6 +861,7 @@ class HudJeu {
       quetes: Quests.tracker(ch).some(t => t.done) ? '!' : '',
       veille: typeof Veille !== 'undefined' && Veille.badge(ch) ? '•' : '',
     };
+    for (const b of document.querySelectorAll('#panneau [data-conseil]')) b.hidden = !(typeof Admin === 'object' && Admin.peut('open'));
     for (const b of document.querySelectorAll('#menus [data-win], #panneau [data-win]')) {
       let badge = b.querySelector('.vy-badge');
       const m = marks[b.dataset.win] || '';

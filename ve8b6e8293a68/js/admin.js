@@ -58,12 +58,38 @@ const Admin = (() => {
     } catch (e) { return false; }
   };
 
+  const CLE_FONDATEUR = 'veylan.conseil';
+  const EMPREINTE_FONDATEUR = '5bf17059cec26de794d0673f43c886d319fb714746f43f3ca431b7843b6581e0';
+  let fondateur = false;
+  const cle = (() => {
+    try {
+      if (typeof location === 'undefined' || typeof localStorage === 'undefined' || !(typeof crypto === 'object' && crypto.subtle)) return Promise.resolve(null);
+      const q = new URLSearchParams((location.hash || '').replace(/^#/, '')), donnee = q.get('conseil');
+      if (donnee !== null) {
+        if (donnee === '0') localStorage.removeItem(CLE_FONDATEUR);
+        q.delete('conseil');
+        const reste = q.toString();
+        if (history && history.replaceState) history.replaceState(null, '', location.pathname + location.search + (reste ? '#' + reste : ''));
+      }
+      const k = (donnee && donnee !== '0' ? donnee : localStorage.getItem(CLE_FONDATEUR) || '').trim().toUpperCase();
+      if (!k) return Promise.resolve(null);
+      return crypto.subtle.digest('SHA-256', new TextEncoder().encode(k)).then(b => {
+        const hex = Array.from(new Uint8Array(b), x => x.toString(16).padStart(2, '0')).join('');
+        if (hex !== EMPREINTE_FONDATEUR) return donnee ? 'refusee' : null;
+        fondateur = true;
+        try { localStorage.setItem(CLE_FONDATEUR, k); } catch (e) {   }
+        return donnee ? 'nouvelle' : 'gardee';
+      }).catch(() => null);
+    } catch (e) { return Promise.resolve(null); }
+  })();
+
   let ctx = { world: null, hud: null };
   const ch = () => ctx.world && ctx.world.ch;
   const cleMembre = c => c ? (c.uid || c.name) : null;
 
   function rangDe(c) {
     try { if (dev() && /[?&]admin=fondateur\b/.test(location.search)) return 'fondateur'; } catch (e) {   }
+    if (fondateur) return 'fondateur';
     const e = lire(), k = cleMembre(c || ch());
     const id = k && e.membres[k];
     if (!dev()) return 'veilleur';
@@ -315,7 +341,7 @@ const Admin = (() => {
 
   return {
     DROITS, DROIT, COMMANDES, CLE,
-    attacher, dev, rangDe, rang, rangs: () => lire().rangs, peut, executer, console: console_, journal: () => lire().journal.slice().reverse(),
+    attacher, dev, rangDe, rang, cle, fondateur: () => fondateur, rangs: () => lire().rangs, peut, executer, console: console_, journal: () => lire().journal.slice().reverse(),
     outil: k => !!lire().outils[k], gererRang, nouveauRang,
     membre: (c, idRang) => { if (!peut('rangs')) return non('Ton rang ne permet pas de gérer les rangs.'); const e = lire(); if (!e.rangs[idRang]) return non('Rang inconnu.'); e.membres[cleMembre(c)] = idRang; ecrire(); noter('rang', `${c.name || c.uid} → ${e.rangs[idRang].label}`); return ok('Rang donné.'); },
     membres: () => Object.assign({}, lire().membres),

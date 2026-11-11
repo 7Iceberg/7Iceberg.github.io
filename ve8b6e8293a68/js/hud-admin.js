@@ -29,6 +29,11 @@ Object.assign(Hud.prototype, {
     if (typeof Admin !== 'object') return;
     Admin.attacher(this.world, this);
     this.admin = { page: 'accueil', filtre: '', cat: '', choisi: null, sortie: [], historique: [], hist: -1, rang: null };
+    if (Admin.cle && Admin.cle.then) Admin.cle.then(r => {
+      if (r === 'nouvelle') this.toast('Clé du fondateur reconnue : F8 ou le bouton du Conseil l\'ouvre.');
+      else if (r === 'refusee') this.toast('Cette clé du Conseil n\'est pas la bonne.');
+      if (this.jeu && this.jeu.rafraichirBadges) this.jeu.rafraichirBadges();
+    });
     window.addEventListener('keydown', evt => {
       if (evt.key === 'Escape' && this.elAdmin) { evt.preventDefault(); evt.stopImmediatePropagation(); this.basculerAdmin(false); return; }
       if (evt.key !== 'F8' || evt.repeat) return;
@@ -41,7 +46,7 @@ Object.assign(Hud.prototype, {
     const ouvert = !!this.elAdmin;
     const voulu = on == null ? !ouvert : on;
     if (!voulu) { if (this.elAdmin) { this.elAdmin.remove(); this.elAdmin = null; } return; }
-    if (!Admin.peut('open')) { this.toast('Le Conseil est réservé au staff.'); return; }
+    if (!Admin.peut('open')) { const t = Date.now(); if (!(t - (this._refusConseil || 0) < 2500)) this.toast('Le Conseil est réservé au staff.'); this._refusConseil = t; return; }
     if (!this.elAdmin) {
       const el = this.elAdmin = document.createElement('div');
       el.className = 'vy-admin';
