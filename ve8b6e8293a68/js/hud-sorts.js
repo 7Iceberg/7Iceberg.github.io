@@ -267,7 +267,7 @@ Object.assign(Hud.prototype, {
     const cls = ['vy-sort', S.sel === id ? 'on' : '', locked ? 'bloque' : '', p && p.variante ? 'variante' : '', equipes.has(id) ? 'equipe' : ''].filter(Boolean).join(' ');
     const name = `<button class="vy-sort__choix" data-act="choisir" data-id="${id}" aria-label="${esc(s.name)}${p && p.variante ? ', variante' : ''}${locked ? `, s'obtient au niveau ${unlock}` : `, rang ${rank}`}${equipes.has(id) ? ', équipé' : ''}">` +
       `<img class="vy-sort__icone" src="${SortIcones.url(id, s, 88)}" width="44" height="44" alt="">` +
-      `<span class="vy-sort__nom"><span>${esc(s.name)}</span><small>${s.pa} PA · ${el(s.element)}</small></span></button>`;
+      `<span class="vy-sort__nom"><span>${esc(s.name)}</span><small>${s.pa} PA · ${typeof Daltonien === 'object' ? Daltonien.signe(s.element) : ''}${el(s.element)}</small></span></button>`;
     const obtention = `<span class="vy-sort__obt" aria-hidden="true">${obt}</span>`;
     let etat;
     if (locked) etat = `<span class="vy-sort__niveau">${VERROU}niveau ${unlock}</span>`;

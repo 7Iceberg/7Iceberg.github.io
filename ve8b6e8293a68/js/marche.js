@@ -23,7 +23,7 @@ const Marche = (() => {
     const drops = r.drops || [];
     return drops.length > 0 && !drops.some(x => boss(x.monster)) && drops.some(x => x.rate >= 10 && O.monstres.has(x.monster));
   }
-  const aLEtal = d => d.source !== 'drop' && d.sub !== 'parchemin' && d.sub !== 'oeuf' && (d.kind !== 'resource' || ressourceALEtal(d));
+  const aLEtal = d => !d.lie && d.source !== 'drop' && d.sub !== 'parchemin' && d.sub !== 'oeuf' && (d.kind !== 'resource' || ressourceALEtal(d));
   const ETAL = 6, BAISSE = 0.05, PLANCHER = 0.5;
 
   const jour = () => (typeof Veille === 'object' ? Veille.jour() : Math.floor(Date.now() / 86400000));

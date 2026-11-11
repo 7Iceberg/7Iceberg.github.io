@@ -170,7 +170,7 @@ const IleModeles = (() => {
     'b-fougere': { case: [1536, 256, 256] }, 'b-tronc': { case: [1024, 512, 256] }, 'b-pieux': { case: [1536, 512, 256] },
     'b-arbre': { atlas: 3, case: [0, 0, 512] }, 'b-bobine': { atlas: 3, case: [512, 0, 256] }, 'b-cabane': { atlas: 3, case: [768, 0, 256] },
     'b-arbre2': { atlas: 3, case: [0, 512, 512] }, 'b-arbre3': { atlas: 3, case: [512, 512, 512] },
-    't-arbre': { atlas: 1, case: [512, 768, 256] }, 'o-pin': { atlas: 1, case: [768, 768, 256] },
+    'o-pin': { atlas: 1, case: [768, 768, 256] },
     'o-cypres': { atlas: 5, case: [512, 768, 256] }, 'o-topiaire': { atlas: 5, case: [768, 768, 256] },
     'b-rocher': { atlas: 3, case: [512, 256, 256] }, 'b-champignons': { atlas: 3, case: [768, 256, 256] },
     'a-arcade': { atlas: 4, case: [0, 0, 256] }, 'a-mur': { atlas: 4, case: [256, 0, 256] }, 'a-borne': { atlas: 4, case: [512, 0, 256] },
@@ -178,7 +178,6 @@ const IleModeles = (() => {
     'a-ancre': { atlas: 4, case: [512, 256, 256] },
     'br-racines': { case: [1280, 512, 256] }, 'br-cristaux': { case: [1792, 768, 256] },
     'br-ilot': { atlas: 2, case: [768, 768, 256] }, 'br-pont': { atlas: 4, case: [768, 256, 256] },
-    'jt-vert': { atlas: 5, case: [0, 0, 256] }, 'jt-ambre': { atlas: 5, case: [256, 0, 256] }, 'jt-rouille': { atlas: 5, case: [512, 0, 256] },
     'v-buisson': { atlas: 5, case: [768, 0, 256] }, 'v-fleurs-blanc': { atlas: 5, case: [0, 256, 256] }, 'v-fleurs-lavande': { atlas: 5, case: [256, 256, 256] },
     'v-rochers': { atlas: 5, case: [512, 256, 256] }, 'v-amanites': { atlas: 5, case: [768, 256, 256] }, 'v-pierre': { atlas: 5, case: [0, 512, 256] },
     'ch-choux': { atlas: 5, case: [256, 512, 256] }, 'ch-courges': { atlas: 5, case: [512, 512, 256] }, 'ch-epouvantail': { atlas: 5, case: [768, 512, 256] },
@@ -201,7 +200,11 @@ const IleModeles = (() => {
     'k-arbre': { atlas: 9, case: [512, 768, 256] }, 'k-buisson': { atlas: 9, case: [768, 768, 256] },
     'k-cristaux': { atlas: 7, case: [768, 768, 256] }, 'k-fumerolle': { atlas: 10, case: [0, 0, 256] },
   };
-  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [512, 256]];
+  Object.assign(SEMIS, {
+    'jt-vert': { atlas: 11, case: [0, 0, 512] }, 'jt-ambre': { atlas: 11, case: [512, 0, 512] },
+    'jt-rouille': { atlas: 11, case: [0, 512, 512] }, 't-arbre': { atlas: 11, case: [512, 512, 512] },
+  });
+  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [512, 256], [1024, 1024]];
   const SOURCES = [['eau', 160, 148], ['feu', 130, 125], ['terre', 140, 166], ['air', 105, 120], [null, 92, 164]];
   let ICI = null;
   const ici = T => { if (T) ICI = T; return ICI; };
@@ -429,11 +432,11 @@ const IleModeles = (() => {
   }
 
   const DENSE = {
-    ervane_mailles: [['arbre', 0.03, [3.0, 4.2], ['jt-ambre', 'jt-ambre', 'jt-vert']], ['buisson', 0.02, [0.9, 1.3], ['v-buisson']],
+    ervane_mailles: [['arbre', 0.016, [3.0, 4.2], ['jt-ambre', 'jt-ambre', 'jt-vert']], ['buisson', 0.02, [0.9, 1.3], ['v-buisson']],
       ['arbuste', 0.02, [0.55, 0.8], ['v-fleurs-blanc', 'v-fleurs-lavande']], ['rocher', 0.004, [0.7, 1.0], ['v-rochers']]],
-    ervane_sources: [['arbre', 0.025, [3.0, 4.4], ['jt-vert', 'jt-vert', 'jt-ambre']], ['buisson', 0.018, [0.9, 1.4], ['v-buisson']],
+    ervane_sources: [['arbre', 0.017, [3.0, 4.4], ['jt-vert', 'jt-vert', 'jt-ambre']], ['buisson', 0.018, [0.9, 1.4], ['v-buisson']],
       ['arbuste', 0.014, [0.55, 0.8], ['v-fleurs-blanc']], ['rocher', 0.006, [0.8, 1.2], ['v-rochers']], ['amanite', 0.004, [0.45, 0.6], ['v-amanites']]],
-    ervane_murets: [['arbre', 0.018, [2.8, 4.0], ['jt-rouille', 'jt-rouille', 'jt-ambre']], ['buisson', 0.014, [0.9, 1.3], ['v-buisson']],
+    ervane_murets: [['arbre', 0.014, [2.8, 4.0], ['jt-rouille', 'jt-rouille', 'jt-ambre']], ['buisson', 0.014, [0.9, 1.3], ['v-buisson']],
       ['arbuste', 0.01, [0.55, 0.75], ['v-fleurs-lavande']], ['rocher', 0.012, [0.8, 1.3], ['v-rochers']]],
     ervane_amarre: [['arbre', 0.008, [2.8, 3.8], ['jt-rouille']], ['buisson', 0.01, [0.8, 1.2], ['v-buisson']], ['rocher', 0.012, [0.8, 1.3], ['v-rochers']]],
     ervane_bois: [['amanite', 0.025, [0.45, 0.65], ['v-amanites']], ['buisson', 0.006, [0.9, 1.2], ['v-buisson']]],

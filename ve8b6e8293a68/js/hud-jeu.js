@@ -649,7 +649,7 @@ class HudJeu {
     const tuile = id !== 'arme' && (typeof SortIcones === 'object' && SortIcones.tuile ? SortIcones.tuile(id) : typeof SortTuiles === 'object' && SortTuiles.a(id));
     const fond = icone ? `<img class="vy-sort__icone" src="${icone}" alt="">` : `<span class="vy-sort__icone vy-sort__icone--arme">${id === 'arme' ? Hud.picto({ kind: 'weapon' }) : Util.esc(nom.charAt(0))}</span>`;
     return `<button type="button" class="vy-sort${tuile ? ' vy-sort--tuile' : ''}${off ? ' indispo' : ''}${choisi ? ' choisi' : ''}" data-slot data-spell="${id}" style="--el:${el.color}" aria-label="${Util.esc(nom)}, ${s.pa} PA${st.ok ? '' : ' : ' + Util.esc(st.reason || 'indisponible')}" title="${Util.esc(nom)} · ${s.pa} PA">` +
-      `${fond}<em class="vy-sort__pa">${s.pa}</em>${rang < 10 && ligne < 2 ? `<i class="vy-sort__touche">${seconde ? '⇧' : ''}${(rang + 1) % 10}</i>` : ''}${cd ? `<span class="vy-sort__cd">${cd}</span>` : ''}</button>`;
+      `${fond}${typeof Daltonien === 'object' ? Daltonien.signe(s.element) : ''}<em class="vy-sort__pa">${s.pa}</em>${rang < 10 && ligne < 2 ? `<i class="vy-sort__touche">${seconde ? '⇧' : ''}${(rang + 1) % 10}</i>` : ''}${cd ? `<span class="vy-sort__cd">${cd}</span>` : ''}</button>`;
   }
 
   insetHaut() {

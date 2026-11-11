@@ -857,7 +857,7 @@ class RendererGL {
       e.hpBg.visible = e.hpFill.visible = showHp;
       if (showHp) {
         e.hpFill.width = Math.max(0, 36 * Math.max(0, Math.min(1, s.hp)));
-        e.hpFill.tint = s.team === 'player' ? (s.hp <= 0.25 ? 0xf07a5c : 0x8db585) : 0xf07a5c;
+        e.hpFill.tint = s.team === 'player' ? (s.hp <= 0.25 ? 0xf07a5c : (typeof Daltonien === 'object' ? Daltonien.vie()[3] : 0x8db585)) : 0xf07a5c;
         e.shieldFill.visible = s.shield > 0;
         if (s.shield > 0) e.shieldFill.width = 36 * Math.min(1, s.shield);
       } else e.shieldFill.visible = false;

@@ -458,7 +458,7 @@
     { id: 'sefra', name: 'Sefra', title: 'Marchande des Mailles', look: 'marchand',
       dialogue: ['Du pain, des potions, de quoi tenir debout. Le reste, tu le trouveras au bord des sources.', 'Les cailloux tièdes des sources, je les reprends. Ne me demande pas ce que j\'en fais.'],
       shop: ['pain_de_cime', 'potion_de_relais', 'coiffe_marcheur', 'cape_marcheur', 'amulette_marcheur', 'bottes_marcheur'] },
-    { id: 'haldrec', name: 'Haldrec', title: 'Maître d\'armes', look: 'garde',
+    { id: 'haldrec', name: 'Haldrec', title: 'Maître d\'armes', look: 'garde', changeClasse: true,
       dialogue: ['Une arme ne fait pas le Veilleur. Mais elle aide, les jours où le Veilleur hésite.', 'Les poteaux ne rendent pas les coups. Les Lampignards, si.'] },
     { id: 'grenne', name: 'Grenne', title: 'Archiviste des Mailles', look: 'ancien',
       dialogue: ['Toute l\'île est peinte sur ces murs. Enfin, presque : le Bois ne se laisse pas dessiner.', 'Les Éléments des Sources ont des cousins à Orsane : les Glyms. Une affaire de famille, comme toujours.'] },

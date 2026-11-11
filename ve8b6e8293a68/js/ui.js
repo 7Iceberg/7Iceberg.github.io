@@ -259,7 +259,7 @@ class UI {
       b.style.setProperty('--el', DATA.elements[s.element].color);
       const icone = typeof SortIcones === 'object' ? SortIcones.url(id, s, 48) : '';
       if (icone) b.classList.add('avec-icone');
-      b.innerHTML = `<span class="key">${UI.ACTIONS_CLASSE[id] ? '²' : (i + 1) % 10}</span><span class="icon" style="--el:${DATA.elements[s.element].color}">${icone ? `<img src="${icone}" alt="">` : s.name.charAt(0)}</span><span class="name">${s.name}</span><span class="cost">${s.pa} PA</span><span class="cd"></span>`;
+      b.innerHTML = `<span class="key">${UI.ACTIONS_CLASSE[id] ? '²' : (i + 1) % 10}</span><span class="icon" style="--el:${DATA.elements[s.element].color}">${icone ? `<img src="${icone}" alt="">` : s.name.charAt(0)}</span><span class="name">${s.name}</span><span class="cost">${s.pa} PA</span><span class="cd"></span>${typeof Daltonien === 'object' ? Daltonien.signe(s.element) : ''}`;
       b.addEventListener('click', () => { if (this.suppressClick && Date.now() < this.suppressClick) { this.suppressClick = 0; return; } this.selectSpell(id); });
       b.addEventListener('mouseenter', () => this.showTooltip(b, id));
       b.addEventListener('mouseleave', () => this.hideTooltip());
@@ -1075,7 +1075,7 @@ class UI {
       const heal = s.effects.find(ef => ef.type === 'heal');
       const shown = DATA.rankShown(dmg || heal || {});
       const what = dmg ? `${shown.min}-${shown.max}` : heal ? `soin ${shown.min}-${shown.max}` : '';
-      return `<li><span style="color:${DATA.elements[s.element].color}">${s.name}</span> <span class="muted">${s.pa} PA · ${s.target === 'self' ? 'soi' : s.range[0] + '-' + s.range[1]}</span> ${what}</li>`;
+      return `<li>${typeof Daltonien === 'object' ? Daltonien.signe(s.element) : ''}<span style="color:${DATA.elements[s.element].color}">${s.name}</span> <span class="muted">${s.pa} PA · ${s.target === 'self' ? 'soi' : s.range[0] + '-' + s.range[1]}</span> ${what}</li>`;
     }).join('');
     const effects = e.effects.map(f => this.describeEffect(f)).join(', ');
     const tags = [];

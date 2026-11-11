@@ -371,6 +371,7 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .classe-case.on { border-color: var(--vy-or-clair); box-shadow: 0 0 0 1.5px var(--vy-or-clair), 0 0 16px color-mix(in srgb, var(--c) 75%, transparent); }
 .classe-case.on .classe-case__nom { color: var(--vy-texte-or); }
 .classe-case.reco:not(.on) { border-color: rgba(82, 210, 244, 0.7); }
+.classe-case.actuelle:not(.on) { border-style: dashed; border-color: rgba(243, 236, 221, 0.55); }
 .classe-case__reco { position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; color: #052033; background: #acdded; box-shadow: 0 0 10px rgba(82, 210, 244, 0.8); }
 .classe-case__reco svg { width: 13px; height: 13px; }
 .classe-case--verrou { cursor: not-allowed; border-style: dashed; }
@@ -439,6 +440,10 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .app-nom__compte { padding: 0 8px; font: 500 11px/1 var(--vy-font-ui); font-variant-numeric: tabular-nums; color: var(--vy-texte-2); }
 .app-nom .vy-bouton svg { width: 20px; height: 20px; }
 .app-creer { min-width: 116px; font-size: 16px; }
+.app-nom--classe { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.app-classe__texte { margin: 0; font-size: 13px; line-height: 1.45; color: var(--vy-texte-2); }
+.app-classe__texte b { color: var(--vy-texte-or); }
+.app-nom--classe .app-erreur { grid-column: 1 / -1; }
 @container (max-width: 480px) {
   .app-nom [data-act="nom-aleatoire"] { width: 44px; padding: 0; }
   .app-nom [data-act="nom-aleatoire"] span { display: none; }
@@ -804,6 +809,7 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .perso-plaque__niv { display: flex; align-items: baseline; gap: 8px; font: 800 12.5px var(--vy-font-ui); letter-spacing: 0.12em; text-transform: uppercase; color: #f2c14e; }
 .perso-plaque__niv small { font: 700 11px var(--vy-font-ui); letter-spacing: 0.12em; color: color-mix(in srgb, var(--c) 70%, #fff); }
 .perso-estrade__pied { position: absolute; left: 50%; top: var(--roche, 82%); transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 100%; }
+.perso-classe { min-height: 34px; font-size: 13px; }
 .perso-jouer { min-width: 230px; font-size: 20px; letter-spacing: 0.16em; text-transform: uppercase; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 28px rgba(242, 193, 78, 0.35); }
 .perso-estrade__lieu { max-width: 100%; padding: 3px 11px; border-radius: 999px; font: 600 12px var(--vy-font-ui); color: var(--vy-texte-2); background: rgba(10, 14, 22, 0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .perso-estrade--vide { display: grid; place-items: center; }

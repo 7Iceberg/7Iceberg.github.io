@@ -2892,7 +2892,7 @@ class Renderer {
       const w = bw * Math.max(0, Math.min(1, s.hp));
       if (w > 0.5) {
         const g = c.createLinearGradient(0, by, 0, by + bh);
-        if (s.team === 'player') { g.addColorStop(0, '#9af0a8'); g.addColorStop(0.5, '#4cc46a'); g.addColorStop(1, '#2a8a48'); }
+        if (s.team === 'player') { const V = typeof Daltonien === 'object' ? Daltonien.vie() : ['#9af0a8', '#4cc46a', '#2a8a48']; g.addColorStop(0, V[0]); g.addColorStop(0.5, V[1]); g.addColorStop(1, V[2]); }
         else { g.addColorStop(0, '#ffa58a'); g.addColorStop(0.5, '#f0583c'); g.addColorStop(1, '#b02e1e'); }
         Util.roundRect(c, bx, by, Math.max(3, w), bh, 2.5); c.fillStyle = g; c.fill();
         c.fillStyle = 'rgba(255,255,255,0.35)'; c.fillRect(bx + 1.5, by + 1, Math.max(0, w - 3), 1.2);

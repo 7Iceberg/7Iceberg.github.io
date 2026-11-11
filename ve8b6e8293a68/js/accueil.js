@@ -37,7 +37,11 @@ class Accueil {
     let retour = null;
     try { retour = sessionStorage.getItem('veylan.entree'); sessionStorage.removeItem('veylan.entree'); } catch (e) {   }
     this.premier = true;
-    this.aller(retour === 'personnages' && Save.list().length ? 'personnages' : 'accueil', { racine: true });
+    const versClasse = retour && retour.indexOf('classe:') === 0 ? retour.slice(7) : null;
+    const avecPotion = versClasse && Save.list().some(p => p.uid === versClasse && p.potionClasse);
+    if (avecPotion) this.choix = versClasse;
+    this.aller((retour === 'personnages' || avecPotion) && Save.list().length ? 'personnages' : 'accueil', { racine: true });
+    if (avecPotion) setTimeout(() => this.commencerChangementClasse(versClasse), 0);
     if (typeof Ile === 'object' && Ile.raisons.includes('personnage') && Save.list().some(p => Ile.origineDe(p.uid) === 'ervane')) Accueil.prechargerIle();
     let attente = null;
     try { attente = sessionStorage.getItem('veylan.ile.import'); if (attente) sessionStorage.removeItem('veylan.ile.import'); } catch (e) { attente = null; }
@@ -110,6 +114,7 @@ class Accueil {
   }
 
   afficher(id, sens) {
+    if (this.reprise && id !== 'classe' && id !== 'apparence') { this.reprise = null; this.parcours = null; }
     const old = this.vue.querySelector('.ecran:not(.ecran--sortie)');
     this.ecran = id;
     this.anime = null;
@@ -176,6 +181,7 @@ class Accueil {
   }
 
   nouveauBrouillon(invite) {
+    this.reprise = null;
     const id = DATA.defaultClass;
     this.b = { classId: id, gender: 'f', look: apparenceDeClasse(id, 'f'), lookTouche: false, name: '', tuto: 'court', recommandee: null, invite: !!invite, facing: 'se' };
     this.slot = 0;
@@ -206,6 +212,32 @@ class Accueil {
     const deja = premier || invite;
     this.parcours = (monde ? ['monde'] : []).concat(deja ? ['deja'] : [], ['classe', 'apparence']);
     this.aller(this.parcours[0]);
+  }
+
+  commencerChangementClasse(uid) {
+    const ch = Accueil.lirePersonnage(uid);
+    if (!ch) { this.toast('Cette sauvegarde est illisible.'); return; }
+    const r = ch.peutBoirePotionClasse();
+    if (!r.ok) { this.toast(r.reason); return; }
+    this.reprise = ch;
+    const look = ch.look ? JSON.parse(JSON.stringify(ch.look)) : apparenceDeClasse(ch.classId, ch.gender);
+    this.b = { classId: ch.classId, gender: ch.gender === 'm' ? 'm' : 'f', look, lookTouche: true, name: ch.name, tuto: 'court', recommandee: null, invite: false, facing: 'se', classe: ch.classId };
+    this.slot = 0;
+    this.parcours = ['classe', 'apparence'];
+    this.aller('classe');
+  }
+
+  validerChangementClasse() {
+    const ch = this.reprise, b = this.b;
+    if (!ch || !b) return;
+    const p = ch.peutBoirePotionClasse();
+    if (!p.ok) { this.erreur(p.reason); return; }
+    const r = ch.changerDeClasse(b.classId, { gender: b.gender, look: b.look });
+    if (!r.ok) { this.erreur(r.reason); return; }
+    ch.removeItem(Character.POTION_CLASSE, 1);
+    if (!Save.write(ch)) { this.erreur('Impossible d\'enregistrer : le navigateur refuse le stockage.'); return; }
+    this.reprise = null;
+    this.demarrer(ch);
   }
 
   suite(apres) {
@@ -409,6 +441,7 @@ class Accueil {
       </div>
       <div class="perso-estrade__pied">
         <button class="vy-bouton vy-bouton--primaire vy-bouton--grand perso-jouer" data-act="jouer" data-focus>Jouer</button>
+        ${sel.potionClasse ? `<button class="vy-bouton perso-classe" data-act="changer-classe" data-uid="${sel.uid}" title="La Potion de changement de classe attend dans son sac">Changer de classe</button>` : ''}
         ${lieu ? `<small class="perso-estrade__lieu">${esc(lieu.name)}${zone ? ` · ${esc(zone.name)}` : ''}</small>` : ''}
       </div>
     </div>`;
@@ -513,12 +546,12 @@ class Accueil {
   ecran_classe() {
     this.ecranVise = 'classe';
     const b = this.b;
-    const cells = DATA.classesJouables().map(c => `<button class="e-nu classe-case${c.id === b.classId ? ' on' : ''}${c.id === b.recommandee ? ' reco' : ''}" data-act="classe" data-id="${c.id}" style="--c:${c.color}" role="radio" aria-checked="${c.id === b.classId}" aria-label="${esc(c.name)}, ${esc(epithete(c.title))}${c.id === b.recommandee ? ', recommandée pour toi' : ''}" title="${esc(c.name)}">
+    const cells = DATA.classesJouables().map(c => `<button class="e-nu classe-case${c.id === b.classId ? ' on' : ''}${c.id === b.recommandee ? ' reco' : ''}${c.id === b.classe ? ' actuelle' : ''}" data-act="classe" data-id="${c.id}" style="--c:${c.color}" role="radio" aria-checked="${c.id === b.classId}" aria-label="${esc(c.name)}, ${esc(epithete(c.title))}${c.id === b.recommandee ? ', recommandée pour toi' : ''}" title="${esc(c.name)}">
         <canvas class="classe-case__toile" data-id="${c.id}" aria-hidden="true"></canvas><span class="classe-case__nom">${esc(c.name)}</span>${c.id === b.recommandee ? `<span class="classe-case__reco" aria-hidden="true">${ICONES.etoile}</span>` : ''}</button>`)
       .concat(Object.values(DATA.futureClasses || {}).concat(Object.values(DATA.classes).filter(c => c.season)).map(c => `<button class="e-nu classe-case classe-case--verrou" data-act="classe-verrou" data-id="${c.id}" aria-disabled="true" aria-label="${esc(c.name)}, ${esc(epithete(c.title))} : saison ${c.season}" title="${esc(c.name)} : saison ${c.season}">
         <canvas class="classe-case__toile" data-id="${c.id}" aria-hidden="true"></canvas><span class="classe-case__nom">${esc(c.name)}</span><span class="classe-case__cadenas" aria-hidden="true">${ICONES.cadenas}</span></button>`)).join('');
     return `<section class="ecran ecran--classe" aria-label="Choix de la classe">
-      ${this.tete('Crée ton personnage', b.invite ? 'partie d\'invité, sans sauvegarde' : this.libres(), 'Annuler')}
+      ${this.reprise ? this.tete('Change de classe', `${esc(this.reprise.name)}, niveau ${this.reprise.level}`, 'Annuler') : this.tete('Crée ton personnage', b.invite ? 'partie d\'invité, sans sauvegarde' : this.libres(), 'Annuler')}
       <div class="classe-corps">
         <div class="classe-scene">
           <div class="classe-illu"><canvas class="classe-illu__toile" aria-hidden="true"></canvas><img class="classe-illu__image" alt="" hidden></div>
@@ -672,7 +705,7 @@ class Accueil {
     const tetes = TETES.map((n, i) => `<button class="e-nu app-tete${b.look.tete === i ? ' on' : ''}" data-act="tete" data-i="${i}" role="radio" aria-checked="${b.look.tete === i}" aria-label="Coiffure : ${n}" title="${n}"><canvas class="app-tete__toile" data-i="${i}" aria-hidden="true"></canvas></button>`).join('');
     const cases = Character.COULEURS.slice(0, Character.COULEURS_CHOISIES).map((k, i) => `<button class="e-nu app-case${this.slot === i ? ' on' : ''}" data-act="case" data-i="${i}" role="radio" aria-checked="${this.slot === i}" style="--k:${b.look.couleurs[i]}"><span class="app-case__teinte"></span><span class="app-case__nom">${COULEURS_NOMS[i]}</span></button>`).join('');
     return `<section class="ecran ecran--apparence" aria-label="Apparence">
-      ${this.tete('Crée ton personnage', b.invite ? 'partie d\'invité, sans sauvegarde' : this.libres(), 'Retour')}
+      ${this.reprise ? this.tete('Change de classe', `${esc(this.reprise.name)}, niveau ${this.reprise.level}`, 'Retour') : this.tete('Crée ton personnage', b.invite ? 'partie d\'invité, sans sauvegarde' : this.libres(), 'Retour')}
       <div class="app-corps">
         <div class="app-scene">
           <canvas class="classe-particules" aria-hidden="true"></canvas>
@@ -708,15 +741,24 @@ class Accueil {
             <button class="vy-bouton" data-act="aleatoire">${ICONES.de}<span>Aléatoire</span></button>
             <button class="vy-bouton" data-act="reinit">Réinitialiser tout</button>
           </div>
-          <div class="app-bloc app-nom">
+          ${this.reprise ? this.blocChangementClasse() : `<div class="app-bloc app-nom">
             <label class="app-nom__champ"><input id="entree-nom" maxlength="19" placeholder="Nom du personnage" autocomplete="off" spellcheck="false" value="${esc(b.name)}" data-entree="creer-perso"><span class="app-nom__compte">${b.name.length}/${Character.NOM_MAX}</span></label>
             <button class="vy-bouton" data-act="nom-aleatoire" aria-label="Nom aléatoire" title="Nom aléatoire">${ICONES.de}<span>Nom aléatoire</span></button>
             <button class="vy-bouton vy-bouton--primaire app-creer" data-act="creer-perso">${b.invite ? 'Jouer' : 'Créer'}</button>
             <p class="app-erreur" role="alert"></p>
-          </div>
+          </div>`}
         </div>
       </div>
     </section>`;
+  }
+
+  blocChangementClasse() {
+    const ch = this.reprise, b = this.b, meme = b.classId === ch.classId, cl = DATA.classes[b.classId];
+    return `<div class="app-bloc app-nom app-nom--classe">
+            <p class="app-classe__texte">${meme ? `<b>${esc(ch.name)}</b> reste ${esc(cl.name)} et change seulement d'apparence.` : `<b>${esc(ch.name)}</b> devient ${esc(cl.name)}. Tu gardes ton niveau ${ch.level}, ton sac, tes Dragmes, tes quêtes faites, tes succès et tes titres ; tes caractéristiques, tes Sceaux et tes variantes de sorts te sont rendus.`}</p>
+            <button class="vy-bouton vy-bouton--primaire app-creer" data-act="classe-ok">${meme ? 'Garder cette apparence' : 'Changer de classe'}</button>
+            <p class="app-erreur" role="alert"></p>
+          </div>`;
   }
 
   monterApparence() {
@@ -1160,6 +1202,8 @@ Accueil.prototype.actions = {
     this.erreur('');
   },
   'creer-perso'() { this.creerPersonnage(); },
+  'classe-ok'() { this.validerChangementClasse(); },
+  'changer-classe'(b) { this.commencerChangementClasse(b.dataset.uid || this.choix); },
 };
 
 const PROFILS = {

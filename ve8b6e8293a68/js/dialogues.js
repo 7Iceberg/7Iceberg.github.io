@@ -301,6 +301,7 @@ class BullePnj {
       combat: s('<path d="M4 4l9 9M4 4v4M4 4h4M20 4l-9 9M20 4v4M20 4h-4"/><path d="M8.5 15.5l-3 3M15.5 15.5l3 3"/>'),
       avis: s('<path d="M5 3h14v18H5z"/><circle cx="12" cy="10" r="3"/><path d="M8 17c1-2 2.5-3 4-3s3 1 4 3"/>'),
       insigne: s('<path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/>'),
+      classe: s('<path d="M10 3h4M11 3v5l-5 9a2 2 0 0 0 2 3h8a2 2 0 0 0 2-3l-5-9V3"/><path d="M8 14h8"/>'),
       banque: s('<path d="M3 9l9-5 9 5M5 9v9M19 9v9M9 9v9M15 9v9M3 20h18"/>'),
       quitter: s('<path d="M6 6l12 12M18 6L6 18"/>'),
     };
@@ -416,6 +417,7 @@ class Conversation {
     if (ctx.epreuveDojo) out.push({ label: 'Tenter l\'épreuve du jour.', picto: 'combat', groupe: 'Services', action: () => this.ailleurs(() => { hud.world.endDialogue && hud.world.endDialogue(); hud.world.epreuveDojo(); }) });
     if (ctx.avis) out.push({ label: 'Voir les avis de recherche.', picto: 'avis', groupe: 'Services', action: () => this.ailleurs(() => hud.openAvis(ctx)) });
     if (ctx.temple) out.push({ label: 'Échanger des Insignes de la Garde.', picto: 'insigne', groupe: 'Services', action: () => this.ailleurs(() => hud.openTemple(ctx)) });
+    if (ctx.potionClasse) out.push({ label: 'À la réflexion, ma classe ne me ressemble pas.', picto: 'classe', groupe: 'Services', data: { classe: '1' }, action: () => this.potionClasse() });
     if (ctx.banque) out.push({ label: 'Ouvrir ton coffre.', picto: 'banque', groupe: 'Services', action: () => this.ailleurs(() => hud.openBanque(ctx)) });
     const rang = c => c.primaire ? 0 : c.groupe === 'Quêtes' ? 1 : c.groupe === 'Services' ? 2 : 3;
     out.sort((x, y) => rang(x) - rang(y));
@@ -454,6 +456,21 @@ class Conversation {
     this.montrerPage();
   }
 
+  potionClasse() {
+    const def = this.ctx.npc.def;
+    const lines = def.lignesClasse || ['Ça arrive. On choisit sa Voie un matin, et le soir on se rend compte qu\'on tient l\'arme à l\'envers.', 'Bois ceci quand tu seras prêt. Tu garderas ton niveau, ton sac et tout ce que tu as fait. Tes gestes, eux, seront à réapprendre.'];
+    this.page = { kind: 'classe', lines, i: 0 };
+    this.montrerPage();
+  }
+
+  prendrePotionClasse() {
+    const w = this.hud.world;
+    if (!w.prendrePotionClasse()) { this.retour(); return; }
+    this.ctx = w.dialogueContext(this.ctx.npc);
+    this.page = { kind: 'classe-recue', lines: ['Avant le niveau 20, ça ne coûte rien. Après, ta Voie est la tienne.'], i: 0, note: 'Reçu : Potion de changement de classe. Bois-la depuis ton sac : le choix se fait à l\'écran des personnages.' };
+    this.montrerPage();
+  }
+
   montrerPage() {
     const p = this.page, last = p.i >= p.lines.length - 1;
     this.bulle.cacherBulle();
@@ -463,9 +480,13 @@ class Conversation {
       choix = [{ label: 'Accepter', act: 'accepter', primaire: true, action: () => this.accepter(p.q) }, { label: 'Plus tard', act: 'plus-tard', action: () => this.retour() }];
       note = `Récompense : ${Conversation.recompense(p.q.rewards || {})}`;
     }
-    if (last && p.kind === 'fin') { choix = [{ label: 'Continuer', act: 'continuer', primaire: true, action: () => this.retour() }]; note = p.note; }
-    const titre = p.kind === 'offre' ? p.q.name : `${p.q.name} : terminée`;
-    this.boite.montrer({ npc: Object.assign({}, this.ctx.npc.def, { title: titre }), texte: p.lines[p.i], suite: !last, choix, note, humeur: p.kind === 'fin' ? 'joie' : 'neutre', painter: this.painter, fermer: true });
+    if (last && (p.kind === 'fin' || p.kind === 'classe-recue')) { choix = [{ label: 'Continuer', act: 'continuer', primaire: true, action: () => this.retour() }]; note = p.note; }
+    if (last && p.kind === 'classe') {
+      choix = [{ label: 'Prendre la potion', act: 'prendre-potion', primaire: true, action: () => this.prendrePotionClasse() }, { label: 'Plus tard', act: 'plus-tard', action: () => this.retour() }];
+      note = 'Gratuit jusqu\'au niveau 19. Tu gardes ton niveau, tes objets, tes Dragmes, tes quêtes et tes succès ; tes caractéristiques, tes Sceaux et tes variantes de sorts sont rendus.';
+    }
+    const titre = p.kind === 'offre' ? p.q.name : p.kind === 'classe' || p.kind === 'classe-recue' ? 'Changer de classe' : `${p.q.name} : terminée`;
+    this.boite.montrer({ npc: Object.assign({}, this.ctx.npc.def, { title: titre }), texte: p.lines[p.i], suite: !last, choix, note, humeur: p.kind === 'fin' || p.kind === 'classe-recue' ? 'joie' : 'neutre', painter: this.painter, fermer: true });
     this.dire(p.lines[p.i]);
   }
 

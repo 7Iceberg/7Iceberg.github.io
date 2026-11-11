@@ -489,6 +489,7 @@ class World {
       dojo: !!npc.def.dojo,
       avis: !!npc.def.avis,
       temple: !!npc.def.temple,
+      potionClasse: this.potionClasseOfferte(npc),
       epreuve: this.epreuveVoieDispo(npc),
       epreuveDojo: !!npc.def.dojo && this.epreuveDojoDispo(),
       metiers: !!npc.def.metiers,
@@ -758,6 +759,18 @@ class World {
       g.level = Math.round(g.monsters.reduce((s, m) => s + m.level, 0) / g.monsters.length);
     }
   }
+  potionClasseOfferte(npc) {
+    const d = Items.get(Character.POTION_CLASSE);
+    return !!(npc && npc.def && npc.def.changeClasse && d && !this.ch.invite && this.ch.level <= (d.niveauMax || 19) && !this.ch.has(d.id));
+  }
+  prendrePotionClasse() {
+    if (!this.potionClasseOfferte(this.talkNpc) || this.state === 'combat') return false;
+    this.ch.addItem(Character.POTION_CLASSE, 1);
+    this.emit('gain', { source: 'don', items: [{ id: Character.POTION_CLASSE, count: 1 }] });
+    this.emit('save');
+    this.emit('update');
+    return true;
+  }
   auTemple() { return !!(this.talkNpc && this.talkNpc.def && this.talkNpc.def.temple) && this.state !== 'combat'; }
   echangerTemple(id) {
     if (!this.auTemple()) return false;
@@ -804,6 +817,11 @@ class World {
     const d = Items.get(id);
     const r = this.ch.use(id);
     if (r === 'relais') { this.teleportToRelay(); return true; }
+    if (r === 'classe') {
+      if (this.state === 'combat') { this.toast('Pas en plein combat.'); return false; }
+      this.emit('potionClasse', { id, def: d });
+      return true;
+    }
     if (r === 'artifice') { this.emit('artifice', { id, def: d }); this.toast(`${d.name} : le ciel s'allume.`); this.emit('update'); return true; }
     if (r === 'pierre') return this.combatPierre(id);
     if (r) this.toast(r);

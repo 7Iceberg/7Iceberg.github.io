@@ -463,7 +463,9 @@ const Save = (() => {
       const v = o ? validate(o.character) : null;
       if (!v || !v.data) continue;
       const d = v.data;
-      out.push({ uid, name: d.name, classId: d.classId, level: d.level, gender: d.gender, voie: d.voie, look: d.look, at: Number(o.t) || 0, tampered: forged(o) || v.errors.length > 0 || !!d.flags.tampered });
+      const pc = typeof Character === 'function' && Character.POTION_CLASSE, pd = pc && Items.get(pc);
+      const potionClasse = !!(pd && d.inventory && d.inventory[pc] > 0 && !(pd.niveauMax && d.level > pd.niveauMax));
+      out.push({ uid, name: d.name, classId: d.classId, level: d.level, gender: d.gender, voie: d.voie, look: d.look, at: Number(o.t) || 0, tampered: forged(o) || v.errors.length > 0 || !!d.flags.tampered, potionClasse });
     }
     return out;
   }

@@ -369,6 +369,37 @@ class Character {
     return this.scrolls[stat] - before;
   }
 
+  static get POTION_CLASSE() { return 'potion_changement_classe'; }
+  peutBoirePotionClasse(d) {
+    d = d || Items.get(Character.POTION_CLASSE);
+    if (!d || !this.has(d.id)) return { ok: false, reason: 'Il te faut une Potion de changement de classe.' };
+    if (d.niveauMax && this.level > d.niveauMax) return { ok: false, reason: `Cette potion ne sert plus après le niveau ${d.niveauMax}.` };
+    if (this.dungeon) return { ok: false, reason: 'Pas au milieu d\'un donjon.' };
+    return { ok: true };
+  }
+  changerDeClasse(id, o) {
+    o = o || {};
+    if (!DATA.classes[id] || !DATA.classesJouables().some(x => x.id === id)) return { ok: false, reason: 'Cette classe ne se joue pas encore.' };
+    if (this.dungeon) return { ok: false, reason: 'Pas au milieu d\'un donjon.' };
+    const ancienne = this.classId, change = id !== ancienne;
+    if (o.gender === 'f' || o.gender === 'm') this.gender = o.gender;
+    if (change) {
+      this.classId = id;
+      this.variantes = {};
+      this.resetStats();
+      if (this.autoStats) this.autoAllocate();
+      for (const qid of Object.keys(this.quests.active || {})) {
+        const q = typeof Quests === 'object' ? Quests.get(qid) : null;
+        if (q && q.requires && q.requires.classe && q.requires.classe !== id) delete this.quests.active[qid];
+      }
+      const F = this.counters.feats || (this.counters.feats = {});
+      F.classesChangees = (F.classesChangees || 0) + 1;
+    }
+    this.look = Character.cleanLook(o.look || this.look, id).look;
+    this.hp = this.derived().hpMax;
+    return { ok: true, ancienne, nouvelle: id, change };
+  }
+
   resetStats() {
     for (const k in this.stats) this.stats[k] = 0;
     this.statPoints = 5 * (this.level - 1);
@@ -598,6 +629,7 @@ class Character {
       return `Tu montes ton ${r.monture.nom}. Il t'attend dans tes Montures (L).`;
     }
     if (d.sub === 'potion') {
+      if (d.effect === 'classe') { const r = this.peutBoirePotionClasse(d); return r.ok ? 'classe' : r.reason; }
       if (d.effect === 'oubli') { this.removeItem(id, 1); this.resetStats(); if (this.autoStats) this.autoAllocate(); return `${d.name} : tes caractéristiques et tes Sceaux sont rendus.`; }
       if (d.heal && d.heal < 999) {
         const max = this.derived().hpMax;

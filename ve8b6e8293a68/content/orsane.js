@@ -923,7 +923,8 @@ DATA.content.npcs.push({
   dialogue: ['La Garde des Cimes tient la Place, la Porte et les murs. Dehors, c\'est à toi de tenir.', 'Les avis de recherche sont cloués à la tour : un par zone, une prime chacun. Ramène-moi la bête, je paie en Dragmes et en Insignes.'],
 });
 DATA.content.npcs.push({
-  id: 'ismere', name: 'Ismère', title: 'Gardienne du Temple des Voies', look: 'ancien', temple: true,
+  id: 'ismere', name: 'Ismère', title: 'Gardienne du Temple des Voies', look: 'ancien', temple: true, changeClasse: true,
+  lignesClasse: ['Neuf statues, et tu regardes celle d\'à côté. Ce n\'est pas une faute : c\'est un aveu.', 'Bois ceci quand tu seras prêt. Tu garderas ton niveau, ton sac et tout ce que tu as fait. Tes gestes, eux, seront à réapprendre.'],
   dialogue: ['Neuf statues, neuf Voies. Chacune a commencé par un geste, et chacune a fini par un serment.', 'La Garde paie ses primes en Insignes. Ici, un Insigne vaut une page de ce que les Voies ont appris.', 'Les maîtres des Voies se tiennent près de leur statue. Ils ne parlent pas aux Veilleurs : ils les regardent, et c\'est moi qui transmets.'],
 });
 DATA.content.resources.push({ id: 'sceau_de_la_garde', name: 'Insigne de la Garde', monnaie: true, drops: [], node: null, price: 8,

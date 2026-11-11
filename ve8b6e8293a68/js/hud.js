@@ -61,6 +61,7 @@ class Hud {
     w.on('relay', d => this.openRelay(d));
     w.on('dungeonPrompt', d => this.openDungeonPrompt(d));
     w.on('dungeonLeavePrompt', d => this.openDungeonLeave(d));
+    w.on('potionClasse', d => this.openPotionClasse(d));
     w.on('questProgress', () => this.refresh());
     w.on('save', () => Save.write(w.ch));
     this.discussion = new Discussion(this);
@@ -312,7 +313,9 @@ class Hud {
       <div class="row"><span class="muted">${ch.bonusDefi === 'xp' ? 'Un défi réussi double son bonus, tout en expérience.' : ch.bonusDefi === 'butin' ? 'Un défi réussi double son bonus, tout en chances de butin.' : 'Un défi réussi ajoute son bonus à l\'expérience et aux chances de butin.'}</span></div>`;
     const curseur = (id, cls, label, v, min, max) => `<div class="row vy-reglage ${cls}"><label for="${id}">${label}</label><input type="range" id="${id}" min="${min}" max="${max}" step="5" value="${v}" style="--v:${v};--min:${min};--max:${max}" aria-valuetext="${v} %"><output for="${id}">${v} %</output></div>`;
     const opacite = () => curseur('opt-opacite', 'vy-opacite', 'Opacité des fonds', this.opacite || this.loadOpacite(), 40, 100) +
-      curseur('opt-taille', 'vy-taille', 'Taille de l\'interface', this.taille || this.loadTaille(), 80, 130);
+      curseur('opt-taille', 'vy-taille', 'Taille de l\'interface', this.taille || this.loadTaille(), 80, 130) + daltonien();
+    const daltonien = () => typeof Daltonien !== 'object' ? '' : `<div class="row"><span>Mode daltonien</span><select id="opt-daltonien" aria-label="Mode daltonien">${Daltonien.MODES.map(([v, l]) => `<option value="${v}"${Daltonien.mode() === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+      <div class="row"><span class="muted">${Daltonien.mode() ? 'Les couleurs des éléments, de la vie des alliés et des signaux sont choisies pour rester distinctes.' : 'Change les couleurs qui se confondent : les éléments, la vie des alliés, le succès et le danger.'}</span><span class="vy-daltonien__apercu" aria-hidden="true">${['terre', 'feu', 'eau', 'air'].map(k => `<i style="--c:${DATA.elements[k].color}" title="${DATA.elements[k].stat}"></i>`).join('')}</span></div>`;
     const vitaux = () => Gemmes.STYLES.map(([id, label]) => { const on = this.styleVital() === id;
       return `<button class="vy-style-vital${on ? ' on' : ''}" data-act="vital" data-vital="${id}" aria-pressed="${on}"><span class="vy-style-vital__apercu" aria-hidden="true">${Gemmes.apercu(id)}</span><span class="vy-style-vital__nom">${label}</span></button>`; }).join('');
     const son = () => `<h4>Son</h4>
@@ -409,6 +412,7 @@ class Hud {
       if (el.id === 'opt-confirmer') { try { localStorage.setItem('veylan.confirmerSorts', el.checked ? '1' : '0'); } catch (e) {   } }
       if (/^opt-combat-/.test(el.id)) { UI.regler(el.id.slice(11), el.checked); if (this.ui && this.ui.updateHighlights) this.ui.updateHighlights(); if (el.id === 'opt-combat-agression' && this.world) this.world.agression = el.checked; }
       if (el.id === 'opt-gaucher' && this.jeu) this.jeu.mettreGaucher(el.checked);
+      if (el.id === 'opt-daltonien' && typeof Daltonien === 'object') { Daltonien.regler(el.value); this.apresDaltonien(); this.fen.render('options'); }
       if (el.id === 'opt-duree-tour') { this.combat.turnSeconds = UI.reglerDureeTour(el.value); this.fen.render('options'); }
       if (el.id === 'opt-bonus-defi') { if (el.value) ch.bonusDefi = el.value; else delete ch.bonusDefi; Save.write(ch); this.fen.render('options'); if (this.ui && this.ui.renderChallenge) this.ui.renderChallenge(); }
       if (el.id === 'opt-qualite-image') {
@@ -656,6 +660,29 @@ class Hud {
   openDungeonLeave(d) {
     this.actions.leaved = () => { this.closePanel(); this.world.leaveDungeon(); };
     this.openPanel('dungeon', d ? d.name : 'Donjon', `<p>Quitter le donjon ? La progression des salles sera perdue.</p><div class="row"><button data-act="leaved" class="danger">Sortir</button></div>`);
+  }
+
+  apresDaltonien() {
+    const ui = this.ui, c = this.combat;
+    if (ui && c && c.player && c.phase !== 'ended' && ui.buildSpellBar) { ui.buildSpellBar(); ui.timelineHtml = null; ui.refresh(); }
+    this.refresh();
+    if (this.fen) for (const id of ['carac', 'sorts', 'inventaire', 'bestiaire']) if (this.fen.isOpen(id)) this.fen.render(id);
+  }
+
+  openPotionClasse() {
+    const ch = this.world.ch;
+    if (ch.invite) { this.toast('Une partie d\'invité ne se garde pas : crée ton personnage pour changer de classe.'); return; }
+    this.actions.potionClasseOk = () => {
+      if (!Save.write(ch)) { this.toast('Impossible d\'enregistrer : le navigateur refuse le stockage.'); return; }
+      Save.suspend();
+      try { sessionStorage.setItem('veylan.entree', 'classe:' + ch.uid); } catch (e) {   }
+      location.reload();
+    };
+    this.actions.potionClasseNon = () => this.closePanel();
+    this.openPanel('classe', 'Potion de changement de classe', `<p>Tu passes à l'écran des personnages pour choisir ta nouvelle classe, ton genre, ta coiffure et tes couleurs. La potion n'est bue qu'une fois le choix validé.</p>
+      <ul class="vy-classe-regles"><li><b>Tu gardes</b> ton niveau et ton XP, ton sac et ton équipement, tes Dragmes, tes métiers, tes quêtes faites, tes succès, tes titres et tes parchemins appris.</li>
+      <li><b>Te sont rendus</b> tes points de caractéristiques et tes Sceaux (replacés seuls si la répartition automatique est cochée) et tes variantes de sorts. Une quête de classe en cours est abandonnée : celle de ta nouvelle classe se prend au Temple des Voies.</li></ul>
+      <div class="row"><button data-act="potionClasseOk" class="vy-bouton vy-bouton--primaire">Choisir ma nouvelle classe</button><button data-act="potionClasseNon" class="vy-bouton">Plus tard</button></div>`);
   }
 
 

@@ -514,6 +514,8 @@
       lore: 'Les marges sont pleines de remarques. Ce sont elles qui comptent.' },
     { id: 'potion_de_relais', name: 'Potion de Relais', kind: 'potion', level: 1, heal: 0, effect: 'relais', price: 15,
       lore: 'Un fil blanc dans une fiole. On la boit, on tire, on se retrouve au Relais.' },
+    { id: 'potion_changement_classe', name: 'Potion de changement de classe', kind: 'potion', level: 1, heal: 0, effect: 'classe', niveauMax: 19, lie: true, price: 1,
+      lore: 'Un liquide sans couleur qui prend celle de la Voie qu\'on regarde en la buvant. Elle ne sert plus après le niveau 19.' },
     { id: 'potion_de_veille', name: 'Potion de Veille', kind: 'potion', level: 29, heal: 999, price: 60,
       lore: 'Lueur de Veilloche et herbe de veille. Elle rend tous les PV et un peu de courage.' },
   );
