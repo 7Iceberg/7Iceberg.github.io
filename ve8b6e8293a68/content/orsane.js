@@ -1135,7 +1135,7 @@ DATA.content.quests.push({
   dialogue: {
     offer: ['Le Grand Grouk s\'est réveillé le premier. C\'est lui qui a chassé sa horde vers la ville, lui qui a laissé les Toiles monter.', 'Les Brimbes gardent la pente. Passe-les, prends leurs galets pour caler la porte, et entre. Je ne peux pas quitter le Relais.', 'Tiens, la Clé du Terrier. Je n\'en ai qu\'une : la pierre la garde quand on entre. Les suivantes, Thorak te les forgera aux Cimes, avec de la corne, du cuir et des galets.'],
     progress: ['À 60 % de vie, il appelle sa horde. Garde des PA pour ce moment-là.'],
-    done: ['Le Grand Grouk est tombé. Les Cimes dormiront mieux, et toi aussi.', 'Mais ce qui l\'a réveillé n\'est pas d\'Orsane. Les Kaldrin ont vu la même chose sous leurs forges. Prends la passe de l\'est : Kaldum t\'attend.'],
+    done: ['Le Grand Grouk est tombé. Les Cimes dormiront mieux, et toi aussi.', 'Mais ce qui l\'a réveillé n\'est pas d\'Orsane. Les Kaldrins ont vu la même chose sous leurs forges. Prends la passe de l\'est : Kaldum t\'attend.'],
   },
   rewards: { xp: 4466, fils: 130, items: [{ id: 'heaume_de_calcaire', count: 1 }, { id: 'potion_de_relais', count: 2 }] },
 });
@@ -1401,7 +1401,7 @@ DATA.content.quests.push({
     { type: 'talk', npc: 'ulkara', text: 'Revenir auprès d\'Ulkara' },
   ],
   dialogue: {
-    offer: ['Le Grand Grouk est tombé, mais la Passe ne dort toujours pas. Chaque soir, au crépuscule, quelque chose descend du col, et les Kaldrin ferment leur Porte.', 'Monte voir. Sur la Passe se tient Ulkara, la guetteuse. Elle ne prend aucun parti : elle regarde. Fais comme elle.'],
+    offer: ['Le Grand Grouk est tombé, mais la Passe ne dort toujours pas. Chaque soir, au crépuscule, quelque chose descend du col, et les Kaldrins ferment leur Porte.', 'Monte voir. Sur la Passe se tient Ulkara, la guetteuse. Elle ne prend aucun parti : elle regarde. Fais comme elle.'],
     progress: ['Ne cherche pas à l\'arrêter. Regarde-le descendre, et tiens ta place.'],
     done: ['Tu l\'as vu. Korvath : un col entier qui marche. Il descend chaque soir, et chaque matin il remonte là-haut.', 'Ne le touche pas encore, tu n\'as pas son poids. Le jour où tu le disperseras, Kaldum te connaîtra.', 'Tu as tenu la Passe. Écoute, maintenant : c\'est ici, en terrain neutre, que les Veilleurs prêtent serment.'],
   },

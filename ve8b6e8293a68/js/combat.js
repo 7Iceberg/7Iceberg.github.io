@@ -440,6 +440,7 @@ class Combat {
     e.glyphThisTurn = false;
     e.telefragThisTurn = false;
     e.aubaineTour = false;
+    if (e.alive) this.veylithsDebutTour(e);
     if (e.turnsPlayed === 1 && e.aPassif('air_gk')) { e.pm += 1; this.log(`${e.name} est libre comme l'air : +1 PM.`); }
     if (this.gibierDe(e)) { e.pm += 1; this.log(`${e.name} sent le gibier : +1 PM.`, e.team); }
     e.turnStartPos = { x: e.x, y: e.y };
@@ -606,7 +607,21 @@ class Combat {
     return true;
   }
 
+  immobile(e, mode) {
+    if (e.hasState('rive')) return this.nomEtat('rive');
+    if (mode === 'pousse' && e.hasState('leste')) return this.nomEtat('leste');
+    if ((mode === 'echange' || mode === 'teleport') && e.hasState('arrime')) return this.nomEtat('arrime');
+    return null;
+  }
+
+  nomEtat(id) {
+    const E = (typeof DATA === 'object' && DATA.etats) || {};
+    return (E[id] && E[id].nom) || id;
+  }
+
   async teleport(e, cell, s, verb) {
+    const bloque = this.immobile(e, 'teleport');
+    if (bloque) { this.log(`${e.name} est ${bloque.toLowerCase()} : il ne se téléporte pas.`); return; }
     await this.emitAsync('animMove', { entity: e, to: cell, teleport: true });
     this.place(e, cell.x, cell.y);
     this.affutSaut(e, s);
@@ -682,6 +697,7 @@ class Combat {
   async swap(a, b) {
     if (a.def.fixed || b.def.fixed || a.unpushable || b.unpushable) { this.log(`${a.def.fixed || a.unpushable ? a.name : b.name} ne bouge pas.`); return; }
     if (b.hasState('assise')) { this.log(`${b.name} tient bon : ancré comme la montagne.`); return; }
+    for (const x of [a, b]) { const bloque = this.immobile(x, 'echange'); if (bloque) { this.log(`${x.name} est ${bloque.toLowerCase()} : pas d'échange de place.`); return; } }
     const pa = a.pos, pb = b.pos;
     await Promise.all([
       this.emitAsync('animMove', { entity: a, to: pb, teleport: true }),
@@ -703,6 +719,7 @@ class Combat {
     if (!dir) return;
     if (target.def.fixed || target.unpushable) { this.log(`${target.name} ne bouge pas.`); return; }
     if (target !== caster && target.hasState('assise')) { this.log(`${target.name} tient bon : ancré comme la montagne.`); return; }
+    { const bloque = target !== caster && this.immobile(target, 'pousse'); if (bloque) { this.log(`${target.name} est ${bloque.toLowerCase()} : il ne bouge pas.`); return; } }
     const cells = ef.cells + (caster && caster !== target && caster.hasState('assise') ? 1 : 0)
       + (ef.type === 'pull' && caster && caster !== target && this.sangChaud(caster).palier >= 2 ? 1 : 0);
     let moved = 0;
@@ -961,6 +978,7 @@ class Combat {
     if (s.braiseCost && this.braiseOf(e) < s.braiseCost) return { ok: false, reason: `Il faut ${s.braiseCost} de Soif` };
     if (e.glyphThisTurn && s.effects.some(ef => ef.type === 'glyph')) return { ok: false, reason: 'Un seul glyphe par tour' };
     if (s.exigeDebout && e.hasState('assise')) return { ok: false, reason: 'Il faut la posture Mobile' };
+    if (e.hasState('muet')) return { ok: false, reason: `${this.nomEtat('muet')} : aucun sort ce tour` };
     if (s.exigeTenu && !this.tenuPar(e)) return { ok: false, reason: 'Il faut tenir une cible (Prise de Trompe)' };
     if (s.exigeLeurre && !this.leurreDe(e)) return { ok: false, reason: 'Il faut ton Leurre' };
     return { ok: true };
@@ -971,7 +989,7 @@ class Combat {
   }
 
   async echangeLeurre(l, t) {
-    if (t.def.fixed || t.unpushable || t.hasState('assise')) { this.log(`${t.name} ne bouge pas.`); return; }
+    if (t.def.fixed || t.unpushable || t.hasState('assise') || this.immobile(t, 'echange')) { this.log(`${t.name} ne bouge pas.`); return; }
     const pl = l.pos, pt = t.pos;
     this.place(l, pt.x, pt.y);
     this.place(t, pl.x, pl.y);
@@ -1703,7 +1721,7 @@ class Combat {
     let tacle = 0;
     for (const n of Grid.neighbors(this.map, e.pos)) {
       const o = this.entityAt(n.x, n.y);
-      if (o && o.alive && o.team !== e.team && !o.hasState('stunned')) tacle += o.tacle || 0;
+      if (o && o.alive && o.team !== e.team && !o.hasState('stunned') && !o.hasState('sans_prise')) tacle += o.tacle || 0;
     }
     if (tacle <= 0) return;
     const kept = Math.min(1, ((e.fuite || 0) + 2) / (2 * (tacle + 2)));
@@ -1733,8 +1751,36 @@ class Combat {
     if (landed > 0 && caster && caster.team !== t.team) {
       if (t === this.player) this.hook('onLose', t, kind);
       if (caster.team === 'player') this.hook('onRetrait', t, kind);
+      if (t.aPassif('veylith_parade')) {
+        const v = this.veylithRegle('veylith_parade').esquive;
+        t.veylithEsquive = { kind, value: v, tour: (t.turnsPlayed || 0) + 1 };
+        this.log(`${t.name} se garde : +${v} Esquive ${kind.toUpperCase()}.`, t.team);
+      }
     }
     return landed;
+  }
+
+  veylithRegle(id) {
+    const D = { veylith_sursaut: { seuil: 20, soin: 20 }, veylith_parade: { esquive: 25 }, veylith_souffle: { tous: 3, soin: 10 } };
+    return Object.assign({}, D[id], ((DATA.rules && DATA.rules.veyliths) || {})[id] || {});
+  }
+  veylithsDebutTour(e) {
+    if (e.veylithEsquive && (e.turnsPlayed || 0) > e.veylithEsquive.tour) e.veylithEsquive = null;
+    const soigner = (pct, texte) => {
+      const h = e.heal(Math.round(e.hpMax * pct / 100));
+      this.noter(e, 'soins', h);
+      if (h <= 0) return;
+      this.emit('float', { x: e.x, y: e.y, text: '+' + h, color: '#6fdc8c' });
+      this.log(`${e.name} ${texte} : +${h} PV.`, e.team);
+    };
+    if (e.aPassif('veylith_sursaut') && !e.veylithSursaut) {
+      const r = this.veylithRegle('veylith_sursaut');
+      if (e.hp < e.hpMax * r.seuil / 100) { e.veylithSursaut = true; soigner(r.soin, 'se reprend'); }
+    }
+    if (e.aPassif('veylith_souffle')) {
+      const r = this.veylithRegle('veylith_souffle');
+      if (e.turnsPlayed % r.tous === 0) soigner(r.soin, 'reprend son souffle');
+    }
   }
 
   tirerRetrait(caster, t, kind, n) {
@@ -1893,9 +1939,20 @@ class Combat {
     const elName0 = element ? DATA.elements[element].label.toLowerCase() : '';
     if (amount > 0 && (t.def.invulnerable || t.hasState('invulnerable'))) {
       this.emit('float', { x: t.x, y: t.y, text: '0', color: '#9fd7ff' });
-      this.log(`${t.name} est invulnérable.`);
+      this.log(`${t.name} est ${this.nomEtat('invulnerable').toLowerCase()} : le coup ne passe pas.`);
       this.fireTriggers(t, 'hit', { source, element, dist, dealt: 0, blocked: true });
       return { dealt: 0, absorbed: 0 };
+    }
+    if (amount > 0 && source && source !== t && !opts.trap) {
+      const raison = source.hasState('eteint') ? `${source.name} est ${this.nomEtat('eteint').toLowerCase()} : ses coups ne blessent pas`
+        : t.hasState('clos') && dist <= 1 ? `${t.name} est ${this.nomEtat('clos').toLowerCase()} : rien ne passe au contact`
+        : t.hasState('fuyant') && dist > 1 ? `${t.name} est ${this.nomEtat('fuyant').toLowerCase()} : rien ne l'atteint à distance` : null;
+      if (raison) {
+        this.emit('float', { x: t.x, y: t.y, text: '0', color: '#9fd7ff' });
+        this.log(raison + '.');
+        this.fireTriggers(t, 'hit', { source, element, dist, dealt: 0, blocked: true });
+        return { dealt: 0, absorbed: 0 };
+      }
     }
     if (amount > 0 && source && source !== t && !opts.trap) {
       const digue = t.effects.find(f => f.type === 'state' && (f.name === 'digue' || f.name === 'brise_lames'));

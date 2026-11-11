@@ -697,6 +697,7 @@ class Accueil {
             </div>
           </div>
           <div class="app-bloc app-ligne">
+            <div class="app-recents app-gamme" aria-label="Couleurs de la classe">${this.gammeHtml()}</div>
             <div class="app-recents" aria-label="Couleurs récentes">${this.recentsHtml()}</div>
             <label class="app-hex"><span>#</span><input class="app-hex__champ" maxlength="6" spellcheck="false" autocomplete="off" aria-label="Couleur en hexadécimal" value="${b.look.couleurs[this.slot].slice(1)}"></label>
           </div>
@@ -735,6 +736,14 @@ class Accueil {
     const r = Accueil.recents();
     return '<span class="app-titre">Récentes</span>' + (r.length ? r.map(c => `<button class="e-nu app-recent" data-act="recent" data-c="${c}" style="--k:${c}" aria-label="Couleur ${c}" title="${c}"></button>`).join('') : '<span class="app-recents__vide">aucune</span>');
   }
+  gammeHtml() {
+    const p = DATA.palettes && DATA.palettes[this.b.classId];
+    const cle = Character.COULEURS[this.slot];
+    const l = p && p[cle];
+    if (!l) return '';
+    return '<span class="app-titre">De la classe</span>' + l.map(c => `<button class="e-nu app-recent" data-act="recent" data-c="${c}" style="--k:${c}" aria-label="Couleur ${c}" title="${c}"></button>`).join('');
+  }
+  majGamme() { const box = this.ecranEl && this.ecranEl.querySelector('.app-gamme'); if (box) box.innerHTML = this.gammeHtml(); }
   retenirCouleur(c) {
     const r = [c].concat(Accueil.recents().filter(x => x !== c)).slice(0, 8);
     try { localStorage.setItem('veylan.couleurs', JSON.stringify(r)); } catch (e) {   }
@@ -833,6 +842,8 @@ class Accueil {
   paletteAleatoire() {
     const R = Math.random, pick = a => a[Math.floor(R() * a.length)];
     const cl = DATA.classes[this.b.classId], H = hexHsv(cl.color).h;
+    const pal = DATA.palettes && DATA.palettes[cl.id];
+    if (pal) return { tete: Math.floor(R() * Character.TETES), couleurs: [pick(pal.peau), pick(pal.cheveux), pick(pal.tenue), pick(pal.tenue2), pick(pal.cape), cl.color] };
     const peaux = ['#f6dcc4', '#f2d9bf', '#e8c4a0', '#d8a982', '#c68e6a', '#a86f4c', '#8a5536', '#6b3f28'];
     const cheveux = ['#1c1410', '#3a2a20', '#5a3a24', '#7a4a2a', '#b5542c', '#d8b070', '#e8d5a0', '#9a9aa6'];
     const t = H + (R() - 0.5) * 70;
@@ -1132,6 +1143,7 @@ Accueil.prototype.actions = {
     this.hsv = hexHsv(this.b.look.couleurs[this.slot]);
     const f = this.ecranEl.querySelector('.app-hex__champ'); if (f) f.value = this.b.look.couleurs[this.slot].slice(1);
     this.dessinerSelecteur();
+    this.majGamme();
   },
   recent(b) { this.poserCouleur(b.dataset.c, false); },
   aleatoire() { this.b.look = this.paletteAleatoire(); this.b.lookTouche = true; this.majApparence(); },
@@ -1163,7 +1175,8 @@ const PROFILS = {
 function apparenceDeClasse(id, g) {
   const base = Character.defaultLook(id), P = PROFILS[id];
   if (!P || !P.look) return base;
-  return { tete: g === 'm' ? P.look[1] : P.look[0], couleurs: [P.look[2], P.look[3]].concat(base.couleurs.slice(2)) };
+  const couleurs = DATA.palettes && DATA.palettes[id] ? base.couleurs : [P.look[2], P.look[3]].concat(base.couleurs.slice(2));
+  return { tete: g === 'm' ? P.look[1] : P.look[0], couleurs };
 }
 const FUTURES = { kaelum: { color: '#7a3b5e', glyph: 'Ka' }, lheth: { color: '#4b5a8a', glyph: 'Lh' } };
 

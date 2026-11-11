@@ -25,7 +25,7 @@ const Continent = (() => {
       ville: 'la Cité des Cimes, capitale d\'Orsane', entree: 'la Nacelle depuis Ervane ; les deux portes à escaliers de la Cité', desc: 'Le dos de Durren. La Cité des Cimes, capitale d\'Orsane et siège de l\'Aube, et son pays : les Clairières, les Sentiers, les Toiles, les Éboulis.' },
     { id: 'kaldum', nom: 'Kaldum', centre: [66, 47], poids: 0.95, alt: 0.6, niveaux: [39, 60], anneau: 2, livraison: 'base', dragon: 'Iskar',
       sol: ['#7e6d60', '#5f5047', '#b2583c'], lanterne: '#ff6a2b', biome: 'le basalte, le cuivre et la braise ; le travertin à l\'eau turquoise',
-      ville: 'Kaldum, la ville des forges, au carrefour', entree: 'la Passe, un col, à pied', desc: 'Mines, forges, roche chaude, terre des Kaldrin. Sa ville est au carrefour : la Passe, le funiculaire de Thessa, la porte de fer d\'Ostrum.' },
+      ville: 'Kaldum, la ville des forges, au carrefour', entree: 'la Passe, un col, à pied', desc: 'Mines, forges, roche chaude, terre des Kaldrins. Sa ville est au carrefour : la Passe, le funiculaire de Thessa, la porte de fer d\'Ostrum.' },
     { id: 'ostrum', nom: 'Ostrum', centre: [83, 40], poids: 1.1, alt: 0.3, niveaux: [139, 160], anneau: 4, livraison: 'ext2', dragon: 'Iskar',
       sol: ['#e9c58b', '#d8a86a', '#b5664a'], lanterne: '#ffe45c', biome: 'les dunes ocre, le grès rouge en voiles, les oasis turquoise ; le soleil',
       ville: 'la Porte des Sables, l\'Oasis de Sel', entree: 'la caravane de Thessa, puis la porte de fer de la Fonderie', desc: 'Les ailes d\'Iskar ont arrêté le feu de la Colère et séché le pays : le désert, derrière les Cimes.' },

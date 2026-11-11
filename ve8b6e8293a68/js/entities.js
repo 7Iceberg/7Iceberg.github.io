@@ -125,7 +125,8 @@ class Entity {
 
   esquive(kind) {
     if (this.owner) return this.owner.esquive(kind);
-    return (this.esquivePts[kind] || 0) + Math.floor(this.wisdom / 10);
+    const vy = this.veylithEsquive && this.veylithEsquive.kind === kind ? this.veylithEsquive.value : 0;
+    return (this.esquivePts[kind] || 0) + Math.floor(this.wisdom / 10) + vy;
   }
   retrait(kind) {
     if (this.owner) return this.owner.retrait(kind);

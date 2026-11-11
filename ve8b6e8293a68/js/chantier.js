@@ -17,6 +17,9 @@ const Chantier = (() => {
     for (const o of O.objets) C.items.push({ id: o.id, name: o.name, slot: o.slot, level: o.niveau, poids: o.poids, extra: Object.keys(o.extra || {}).length ? o.extra : null, source: o.source, from: o.from || null, lore: o.lore || '' });
     for (const a of O.armes) C.weapons.push({ id: a.id, name: a.name, type: a.type, level: a.niveau, element: a.element, poids: a.poids, extra: Object.keys(a.extra || {}).length ? a.extra : null, degats: a.degats, source: a.source, from: a.from || null, lore: a.lore || '' });
     for (const c of O.consommables) C.consumables.push(Object.assign({}, c, { name: c.name, kind: c.kind, level: c.level, price: c.price || Math.max(5, (c.level || 1) * 2), lore: c.lore || '' }));
+    veyliths = O.petitsVeyliths || [];
+    for (const v of veyliths) C.items.push({ id: v.id, name: v.name, slot: 'veylith', level: v.niveau, stats: v.stats || {}, passif: v.passif || null, effet: v.effet || '',
+      lie: true, marque: true, quete: v.quete, source: 'quete', rarity: 'epique', lore: v.lore || '' });
     for (const r of O.recettes) C.recipes.push({ result: r.result, count: r.count || 1, workshop: r.workshop, niveau: r.niveau, ingredients: r.ingredients });
     C.familiers = C.familiers || [];
     for (const f of O.familiers) {
@@ -28,9 +31,16 @@ const Chantier = (() => {
     ajouts = O.ajouts || null;
     appliquerNoeuds();
   }
-  let noeuds = null, ajouts = null;
+  let noeuds = null, ajouts = null, veyliths = [];
   function appliquerNoeuds() {
-    if (!actif || !noeuds || typeof DATA !== 'object') return;
+    if (!actif || typeof DATA !== 'object') return;
+    for (const v of veyliths) {
+      const q = (DATA.content.quests || []).find(x => x.id === v.quete);
+      if (!q) continue;
+      q.rewards = q.rewards || {}; q.rewards.items = q.rewards.items || [];
+      if (!q.rewards.items.some(it => it.id === v.id)) q.rewards.items.push({ id: v.id, count: 1 });
+    }
+    if (!noeuds) return;
     for (const z of DATA.content.zones) for (const m of z.maps) {
       const o = noeuds[m.id];
       if (o && m.nodes) for (const i in o) { const n = m.nodes[i]; if (typeof n === 'string') m.nodes[i] = o[i]; else if (n) n.resource = o[i]; }

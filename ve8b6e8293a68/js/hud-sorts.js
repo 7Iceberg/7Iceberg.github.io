@@ -68,17 +68,16 @@ function lignes(ef, s, crit) {
     case 'obstacle': return [['Mur', tours(ef.turns)]];
     case 'state':
       if (ef.name === 'forme_iskar') return [['Forme Nocturne', `${tours(ef.turns)} : ne reçoit plus que 40 % des soins`]];
-      if (ef.name === 'intaclable') return [['Intaclable', tours(ef.turns)]];
       if (ef.name === 'protege') return [['Protégé', `${tours(ef.turns)} : les coups reçus tombent sur le Velmar`]];
       if (ef.name === 'digue') return [['Carapace Close', `${tours(ef.turns)} : invulnérable au contact ; frappé à distance, +1 PM`]];
       if (ef.name === 'brise_lames') return [['Bouclier à Rouage', `${tours(ef.turns)} : invulnérable à distance ; frappé au contact, +15 % de dégâts`]];
       if (ef.name === 'invisible') return [['Invisible', `${tours(ef.turns)}${ef.lingering ? ', jusqu\'à la fin du tour où tu frappes' : ''}`]];
-      if (ef.name === 'unhealable') return [['Incurable', `${tours(ef.turns)} : ne peut plus être soigné`]];
       if (ef.name === 'assise') return [['Ancré', `${tours(ef.turns)} : rien ne le déplace`]];
       if (ef.name === 'rayonnant') return [['Rayonnant', `${tours(ef.turns)} : +15 % de soins reçus`]];
       if (ef.name === 'victime') return [['Victime choisie', `${tours(ef.turns)} : quitter son contact coûte tous les PM`]];
       if (ef.name === 'gibier') return [['Gibier', `${tours(ef.turns)} : les bêtes du Fennal ne chassent que lui`]];
       if (ef.name === 'provoked') return [['Provoque', tours(ef.turns)]];
+      { const E = DATA.etats && DATA.etats[ef.name]; if (E) return [[E.nom, `${tours(ef.turns)} : ${E.desc}`]]; }
       return [['État', tours(ef.turns)]];
     case 'oath': return [['Serment', `${tours(ef.turns)}, +${ef.power} % contre le juré`], ['Brûlure du serment', `${Math.round(ef.burn)} feu`]];
     case 'track': return [['Repéré', `${tours(ef.turns)}, ne peut plus se cacher`]];

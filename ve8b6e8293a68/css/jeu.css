@@ -350,6 +350,8 @@ body.vy-discussion-ouverte .vy-discussion__flottant, body.vy-guide-visible .vy-d
   .vy-discussion__onglet { padding: 3px 6px; letter-spacing: 0; }
   body.vy-discussion-ouverte .vy-carte-info { display: none; }
   .vy-discussion__flottant { left: calc(6px + var(--sc-gauche)); bottom: calc(8px + var(--sc-bas)); max-width: min(330px, 42%); }
+  #stage:has(> .ile-pad:not([hidden]):not(.replie)) .vy-discussion__flottant { left: calc(156px + var(--sc-gauche)); bottom: calc(10px + var(--sc-bas)); max-width: min(240px, calc(50% - 190px)); }
+  #app #stage .vy-discussion__flottant .vy-chat { font-size: 11.5px; line-height: 1.3; padding: 4px 9px; border-radius: 8px; }
 
   #app.mode-combat .vy-barre-tour {
     display: block;

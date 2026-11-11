@@ -2,6 +2,7 @@ const DATA = {};
 
 DATA.rules = {
   turnSeconds: 20,
+  nomsEtatsVeylan: false,
   pushDamagePerCell: 6,
   bouclierPvRef: 300,
   maxSummonsPerOwner: 2,
@@ -50,6 +51,23 @@ DATA.elements = {
   terre:  { label: 'Terre',  stat: 'Terra', color: '#6dbb4f', desc: 'La nature, les roches et la stabilité.' },
   neutre: { label: 'Neutre', color: '#e4e4e4' },
 };
+
+DATA.etats = {
+  invulnerable: { nom: 'Invulnérable', nomVeylan: 'Voilé', desc: 'aucun dégât ne passe' },
+  clos: { nom: 'Invulnérable en mêlée', nomVeylan: 'Clos', desc: 'aucun dégât au contact' },
+  fuyant: { nom: 'Invulnérable à distance', nomVeylan: 'Fuyant', desc: 'aucun dégât à distance' },
+  eteint: { nom: 'Pacifiste', nomVeylan: 'Éteint', desc: 'ses coups ne blessent personne' },
+  muet: { nom: 'Silencieux', nomVeylan: 'Muet', desc: 'ne lance aucun sort, l\'arme comprise ; il peut encore marcher' },
+  stunned: { nom: 'Sonné', nomVeylan: 'Sonné', desc: 'passe son tour' },
+  unhealable: { nom: 'Insoignable', nomVeylan: 'Incurable', desc: 'ne peut plus être soigné' },
+  rive: { nom: 'Indéplaçable', nomVeylan: 'Rivé', desc: 'rien ne le déplace : ni poussée, ni attirance, ni échange de place, ni téléportation' },
+  leste: { nom: 'Inébranlable', nomVeylan: 'Lesté', desc: 'ni poussé ni attiré' },
+  arrime: { nom: 'Pesanteur', nomVeylan: 'Arrimé', desc: 'ni échange de place ni téléportation' },
+  sans_prise: { nom: 'Intacleur', nomVeylan: 'Sans prise', desc: 'ne tacle personne' },
+  intaclable: { nom: 'Intaclable', nomVeylan: 'Glissant', desc: 'personne ne le tacle' },
+  invisible: { nom: 'Invisible', nomVeylan: 'Invisible', desc: 'on ne le voit pas sur la grille' },
+};
+if (DATA.rules.nomsEtatsVeylan) for (const e of Object.values(DATA.etats)) e.nom = e.nomVeylan;
 
 const single = { shape: 'single', size: 0 };
 const cross1 = { shape: 'cross', size: 1 };
@@ -397,7 +415,7 @@ DATA.classes = {
   oriel: { id: 'oriel', name: 'Oriel', title: 'Veilleur de Lumière', role: 'Soigneur', glyph: 'O', color: '#ffd166', hp: 110, pa: 6, pm: 3, initiative: 90,
     spells: ['lueur', 'eclair_solaire', 'manteau_partage', 'rappel', 'flamme_vive', 'renaissance', 'aube', 'lumiere_aveuglante', 'lanterne_de_veille', 'ardeur'],
     desc: 'Soigne, pose des boucliers, retire les malus ; ses flammes rendent des PV.' },
-  nerith: { id: 'nerith', name: 'Nerith', title: "Lame d'Ombre", role: 'Voleuse', glyph: 'N', color: '#9b59d0', hp: 110, pa: 6, pm: 3, initiative: 135,
+  nerith: { id: 'nerith', name: 'Nerith', title: "Lame d'Ombre", role: 'Voleuse', glyph: 'N', color: '#5b8fc7', hp: 110, pa: 6, pm: 3, initiative: 135,
     pli: { max: 5 }, ombre: { sort: 'voile_penombre' },
     spells: ['double_entaille', 'voile_penombre', 'piege_penombre', 'larcin', 'pas_ombre', 'coup_penombre', 'main_leste', 'piege_de_reflux', 'leurre_penombre', 'dernier_souffle_ombre'],
     desc: 'Disparaît, choisit son moment et frappe ; vole les PA, les PM et les boucliers, et vide les poches de ce qu\'elle achève.' },
@@ -405,7 +423,7 @@ DATA.classes = {
     armed: { reduction: 10, summon: 'tourelle' },
     spells: ['tourelle_de_kaldum', 'mur_articule', 'mine_a_fil', 'marteau', 'surchauffe', 'reparation', 'propulseur', 'grappin', 'detonation', 'forge'],
     desc: 'Pose des tourelles, des murs, des mines ; fait éclater sa tourelle, et tient mieux tant qu\'elle n\'est pas posée.' },
-  karsh: { id: 'karsh', name: 'Karsh', title: 'Lame de Sang', role: 'Mêlée', glyph: 'Kr', color: '#d9452b', hp: 150, pa: 6, pm: 3, initiative: 80,
+  karsh: { id: 'karsh', name: 'Karsh', title: 'Lame de Sang', role: 'Mêlée', glyph: 'Kr', color: '#b3283a', hp: 150, pa: 6, pm: 3, initiative: 80,
     braise: { max: 5, debut: 2, perTurn: 2, power: 0, surchauffe: 5, brulure: 4 }, tacle: 5,
     sangChaud: { paliers: [[75, 6, 'Pâle'], [50, 14, 'Affamé'], [25, 24, 'Nocturne']] },
     spells: ['serment_de_sang', 'charge', 'taillade', 'dernier_souffle', 'hurlement', 'sang_pour_sang', 'lien_de_sang', 'colosse', 'frappe_lourde', 'rage'],
@@ -416,14 +434,14 @@ DATA.classes = {
   thalor: { id: 'thalor', name: 'Thalor', title: 'Ébouleur', role: 'Positionneur', glyph: 'T', color: '#8a93a6', hp: 175, pa: 6, pm: 3, initiative: 75,
     spells: ['transposition', 'lancer', 'projection', 'poigne', 'ancre', 'gorgee_de_cime', 'elan', 'vague', 'etreinte', 'mur_de_chair'],
     desc: 'Éléphant martial de Durren : saisit et projette avec sa trompe, échange les places et alterne entre mobilité et ancrage pour maîtriser le terrain.' },
-  fennal: { id: 'fennal', name: 'Fennal', title: 'Fouette-Marée', role: 'Invocateur', glyph: 'F', color: '#6fdc8c', hp: 110, pa: 6, pm: 3, initiative: 85, summonGauge: 4, jaugeNiveaux: [25, 50],
+  fennal: { id: 'fennal', name: 'Fennal', title: 'Fouette-Marée', role: 'Invocateur', glyph: 'F', color: '#a55ce0', hp: 110, pa: 6, pm: 3, initiative: 85, summonGauge: 4, jaugeNiveaux: [25, 50],
     spells: ['appel_du_grouk', 'appel_du_pilou', 'rappel_sacrificiel', 'morsure', 'soin_de_meute', 'cri_de_ralliement', 'fleche_de_fil', 'filet', 'appel_du_molh', 'traque'],
     desc: 'Mène une meute (jauge de 4 : Glym 1, Grouk 2, Molh 3), la sacrifie pour prendre sa force.' },
   velmar: { id: 'velmar', name: 'Velmar', title: 'Garde-Carapace', role: 'Protecteur', glyph: 'Vm', color: '#2aa6b8', hp: 165, pa: 6, pm: 3, initiative: 70,
     mare: { armure: 15 },
     spells: [],
     desc: 'Un vieux sage mi-homme, mi-tortue, des grèves de Morrha : il trace au sol ses glyphes protecteurs, lève son bouclier à rouage et prend les siens sous sa carapace.' },
-  orvald: { id: 'orvald', name: 'Orvald', title: 'Prospecteur des Lieurs', role: 'Prospecteur', glyph: 'Ov', color: '#c9a24a', hp: 115, pa: 6, pm: 3, initiative: 95,
+  orvald: { id: 'orvald', name: 'Orvald', title: 'Prospecteur des Lieurs', role: 'Prospecteur', glyph: 'Ov', color: '#e8893a', hp: 115, pa: 6, pm: 3, initiative: 95,
     reserve: { nom: 'Trouvailles', max: 5, gain: 'filon', par: 1 }, prospection: 20,
     silhouettes: { f: { nom: 'Câbles tressés', icone: 'cables' }, m: { nom: 'Antenne', icone: 'antenne' } },
     spells: [],
@@ -443,6 +461,40 @@ DATA.defaultClass = 'lyssar';
 Object.assign(DATA.classes.vaelith, { season: 3, remplacee: 'orvald' });
 Object.assign(DATA.classes.kaldrin, { season: 3, remplacee: 'fennal' });
 Object.assign(DATA.classes.mirel, { season: 3, remplacee: 'oriel' });
+{
+  const HUMAINS = ['#f2d9bf', '#f6dcc4', '#e8c4a0', '#d8a982', '#c68e6a', '#a86f4c', '#8a5536', '#6b3f28'];
+  const CHEVEUX = ['#1c1410', '#3a2a20', '#5a3a24', '#7a4a2a', '#b5542c', '#d8b070', '#e8d5a0', '#9a9aa6'];
+  DATA.palettes = {
+    nerith: { peau: ['#7a4e33'].concat(HUMAINS), cheveux: ['#8fa4b8', '#c8d4de'].concat(CHEVEUX),
+      tenue: ['#1c2b36', '#243a4c', '#2f4a60', '#162029', '#3a4f66', '#4c6e8d'], tenue2: ['#12181f', '#1e2a36', '#2b3048', '#3a4555'],
+      cape: ['#d7c49e', '#e6d8b8', '#bfa77c', '#8fc3c8', '#4c6e8d'] },
+    karsh: { peau: ['#d9d2d0', '#efe6e2', '#c8bcc0', '#b8aab0', '#e6d0c8', '#a89aa0'], cheveux: ['#1c1418', '#2c1c1a'].concat(CHEVEUX),
+      tenue: ['#1e1a24', '#2a2230', '#3a2a36', '#8e1e2a', '#6e1a24', '#4a2a3a'], tenue2: ['#141118', '#241c26', '#3a3440', '#6e7c8e'],
+      cape: ['#8e1e2a', '#b3283a', '#5a1620', '#1e1a24', '#3a2a40'] },
+    lyssar: { peau: ['#e2b896'].concat(HUMAINS), cheveux: ['#b5542c'].concat(CHEVEUX),
+      tenue: ['#1f3326', '#2a4433', '#36543f', '#43604a', '#2e3a2a', '#6b5a43'], tenue2: ['#141f18', '#24302a', '#3a3326', '#4e4434'],
+      cape: ['#d9d4c7', '#c8c2b2', '#e8e4da', '#9fd8a8', '#6b5a43'] },
+    oriel: { peau: ['#6e4630'].concat(HUMAINS), cheveux: ['#1c1410'].concat(CHEVEUX),
+      tenue: ['#f4f1ea', '#eae4d6', '#fbf8f0', '#e2d8c4', '#d8cfe0', '#f0e6c8'], tenue2: ['#2b2a5e', '#22234a', '#3a3470', '#6a4e8a', '#1e1e40'],
+      cape: ['#2b2a5e', '#3a3470', '#6a4e8a', '#4a3a78', '#1e1e40'] },
+    sarkan: { peau: ['#8e8a80', '#a09a8e', '#7a766e', '#b39a74', '#9a8a76', '#6e6a64'], cheveux: ['#c8bfae', '#a89f90', '#8e8a80', '#d8d0c0', '#6e6a64'],
+      tenue: ['#8a3a26', '#9a4630', '#7a3220', '#a8553a', '#6e2a1c', '#8a4a2e'], tenue2: ['#2f333a', '#25282e', '#3a3f47', '#1e2126', '#454a52'],
+      cape: ['#2f333a', '#3a3f47', '#c9a35c', '#8a3a26', '#5a4a3a'] },
+    thalor: { peau: ['#9a9ea4', '#8a8e94', '#a8acb2', '#7e8288', '#b4b0aa', '#9c948c'], cheveux: ['#efe6d2', '#f6f0e2', '#d8cfbc', '#c8bfae', '#3a3430'],
+      tenue: ['#2e333d', '#8a2e26', '#5a5a2e', '#4a2a3e', '#4a6a8a', '#b8662a'], tenue2: ['#eadbc0', '#f2e6cc', '#d8c8a8', '#c8b48e'],
+      cape: ['#9e3b2c', '#b04a30', '#7a2e24', '#c89a3a', '#3a4a6a'] },
+    velmar: { peau: ['#7e8c4e', '#6e7c42', '#8e9a5a', '#5e6e3e', '#9aa66a', '#7a7e52'], cheveux: ['#f2efe6', '#e6e0d2', '#d8d0c0', '#c8c0b0', '#b8b0a0'],
+      tenue: ['#2e6e6a', '#285e5a', '#357a74', '#2a5a62', '#3e7e6a', '#1e4e4a'], tenue2: ['#e2d3b0', '#eadfc0', '#d6c49c', '#c8b48a'],
+      cape: ['#6e4e30', '#5e4228', '#7e5a38', '#8a6a44', '#4e3a24'] },
+    fennal: { peau: ['#c8936a'].concat(HUMAINS), cheveux: ['#e8d5a0', '#d8b070'].concat(CHEVEUX),
+      tenue: ['#7a2632', '#8a2e3a', '#6a1e2a', '#5a2a3a', '#7a3a2a', '#8e3a2e'], tenue2: ['#3e2a22', '#2e2018', '#4e3a2e', '#5a4234'],
+      cape: ['#c8322e', '#d8482e', '#b02a28', '#e06a3a', '#8a6a2e'] },
+    orvald: { peau: ['#cdb894', '#c2ab84', '#d8c6a4', '#b89f78', '#a8b0b4', '#9aa6a0'], cheveux: ['#3a2e28', '#7a5038', '#c86a2e', '#4e5a5a', '#2a2622'],
+      tenue: ['#7a5038', '#5a3a28', '#8a6a48', '#6a4a30', '#4e3a2a'], tenue2: ['#3a2e28', '#2a221e', '#4a3a30', '#5a4a3e'],
+      cape: ['#c86a2e', '#a8552a', '#8a6a48', '#5a6e6e', '#b8923a'] },
+  };
+}
+
 DATA.classesJouables = () => Object.values(DATA.classes).filter(c => !c.season);
 
 DATA.kit = (classId, paires, opts) => {

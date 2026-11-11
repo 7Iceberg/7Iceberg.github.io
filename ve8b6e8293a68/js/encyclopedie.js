@@ -1,6 +1,6 @@
 const Encyclopedie = (() => {
   const ONGLETS = { bestiaire: 'Bestiaire', equipements: 'Équipements', consommables: 'Consommables', ressources: 'Ressources', cosmetiques: 'Cosmétiques' };
-  const SLOTS = { coiffe: 'Coiffe', cape: 'Cape', amulette: 'Amulette', anneau: 'Anneau', anneau1: 'Anneau', anneau2: 'Anneau', ceinture: 'Ceinture', bottes: 'Bottes' };
+  const SLOTS = { coiffe: 'Coiffe', cape: 'Cape', amulette: 'Amulette', anneau: 'Anneau', anneau1: 'Anneau', anneau2: 'Anneau', ceinture: 'Ceinture', bottes: 'Bottes', bouclier: 'Bouclier', veylith: 'Veylith' };
   const CONSOS = { pain: 'Pain', potion: 'Potion', parchemin: 'Parchemin', cle: 'Clé', oeuf: 'Œuf de familier', monture: 'Monture' };
   const NOEUDS = { bois: 'Bois', pierre: 'Pierre', plante: 'Plante', poisson: 'Poisson', cereale: 'Céréale' };
   const label = (l, id, autre) => Object.hasOwn(l, id) ? l[id] : autre;

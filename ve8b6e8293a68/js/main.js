@@ -157,7 +157,7 @@
   recentrer.addEventListener('click', () => R.camera.fit(true));
   addEventListener('veylan:camera', evt => recentrer.classList.toggle('au-cadre', !!evt.detail.atFit));
   const regard = document.getElementById('vue-regard');
-  const NOMS_REGARD = { jeu: 'la vue du jeu', basse: 'la vue basse', iso: 'la vue isométrique' };
+  const NOMS_REGARD = { dos: 'la vue de dos', jeu: 'la vue plongeante', basse: 'la vue basse', iso: 'la vue isométrique' };
   const majRegard = () => {
     const cam = R.camera, ok = !!cam && typeof cam.changerRegard === 'function' && cam.mode === 'exploration';
     regard.hidden = !ok;

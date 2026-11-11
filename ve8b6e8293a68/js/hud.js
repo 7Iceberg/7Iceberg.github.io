@@ -189,6 +189,7 @@ class Hud {
       bottes: '<path d="M8 3h5v10l6 3v4H6V3z"/><path d="M6 17h13"/>',
       arme: '<path d="M18 3h3v3L9 18l-3-3z"/><path d="M5 14l5 5M4 20l3-3"/>',
       bouclier: '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M12 7v10M8 11h8"/>',
+      veylith: '<path d="M12 3c-3 0-7 7-7 11a7 7 0 0 0 14 0c0-4-4-11-7-11z"/><path d="m12 8 2 4-2 5-2-5z"/>',
       ressource: '<path d="M12 3l6 6-6 12-6-12z"/><path d="M6 9h12M12 3v18"/>',
       consommable: '<path d="M10 3h4v5l4 8a3 3 0 0 1-3 4H9a3 3 0 0 1-3-4l4-8z"/><path d="M8 14h8"/>',
       knot: '<path d="M8 8a4 4 0 1 1 4 4 4 4 0 1 0 4 4"/><path d="M16 8a4 4 0 1 0-4 4 4 4 0 1 1-4 4"/>',

@@ -30,6 +30,7 @@ class CameraIle {
     this.joueurPrec = null;
     this.suiviPrec = null;
     this.regards = {
+      dos: { ouverture: 50, elevations: [12, 52], leve: 1.5, champs: [8, 44], champDefaut: telephone ? 14 : 17, suit: true },
       jeu: { ouverture: this.ouverture, elevations: this.elevations.slice(), leve: this.leve, champs: this.champs.slice(), champDefaut: this.champDefaut, proche: this.proche },
       basse: { ouverture: 58, elevations: [5, 9], leve: 2.2, champs: [9, 22], champDefaut: telephone ? 12 : 14 },
       iso: { ouverture: 6, elevations: [30, 30], leve: 0, champs: [16, 56], champDefaut: telephone ? 24 : 30, fixe: true },
@@ -38,7 +39,13 @@ class CameraIle {
     this.passageRegard = null;
     let garde = null;
     try { garde = localStorage.getItem(CameraIle.CLE_REGARD); } catch (e) {   }
-    if (garde && garde !== 'jeu' && this.regards[garde]) this.poserRegard(garde);
+    const voulu = opts.regard && this.regards[opts.regard] ? opts.regard : garde && this.regards[garde] ? garde : CameraIle.REGARD_DEFAUT;
+    if (voulu !== 'jeu') this.poserRegard(voulu);
+    this.tourPad = 0;
+    this.orbiteVue = -Infinity;
+    this.inertie = 0;
+    this.vitOrbite = 0;
+    this.tOrbite = 0;
     this.cam = new THREE.PerspectiveCamera(this.ouverture, 1, 1, 900);
     this.champ = this.champDefaut;
     this.cible = { x: 0, y: 0, h: 0 };
@@ -127,11 +134,33 @@ class CameraIle {
     if (this.mode !== 'exploration' || this.trans || this.passageRegard) return;
     const fixe = this.regards[this.regard].fixe, O = CameraIle.ORBITE;
     const o = this.orbite || (this.orbite = { az: this.azimut, incl: this.inclinaison });
+    const t = typeof performance === 'object' ? performance.now() : 0, dtv = (t - this.tOrbite) / 1000;
+    if (!(dtv > 0 && dtv < 0.12)) this.vitOrbite = 0;
+    else if (!fixe) this.vitOrbite += (dx * O.tour / dtv - this.vitOrbite) * Math.min(1, dtv / 0.05);
+    this.tOrbite = t; this.orbiteVue = t; this.inertie = 0; this.tourPad = 0;
     if (!fixe && dx) { o.az = this.azimut + CameraIle.arc(o.az + dx * O.tour - this.azimut); this.animAz = null; }
     if (!fixe && dy) {
       const base = this.elevationSans() * 180 / Math.PI;
       o.incl = Math.max(O.min - base, Math.min(O.max - base, o.incl + dy * O.pente));
     }
+    this.changed();
+  }
+  lacherOrbite() {
+    const t = typeof performance === 'object' ? performance.now() : 0;
+    const v = t - this.tOrbite < 100 ? this.vitOrbite : 0;
+    this.vitOrbite = 0;
+    if (this.mode !== 'exploration' || this.regards[this.regard].fixe || CameraIle.calme() || Math.abs(v) < CameraIle.ORBITE.elan[0]) return;
+    this.inertie = Math.max(-CameraIle.ORBITE.elan[1], Math.min(CameraIle.ORBITE.elan[1], v));
+  }
+  suivrePad(lat, avant, dt) {
+    const P = CameraIle.PAD, t = typeof performance === 'object' ? performance.now() : 0;
+    if (this.mode !== 'exploration' || this.trans || this.passageRegard || this.retourCarte || this.regards[this.regard].fixe || this.orbite || this.inertie || t - this.orbiteVue < P.attente) { this.tourPad = 0; return; }
+    const voulu = -P.tour * Math.max(-1, Math.min(1, lat || 0)) * ((avant || 0) < -0.3 ? P.recul : 1);
+    const k = dt > 0 ? 1 - Math.exp(-dt / P.lissage) : 1;
+    this.tourPad += (voulu - this.tourPad) * k;
+    if (Math.abs(this.tourPad) < 2e-3 && !voulu) { this.tourPad = 0; return; }
+    this.azimut = CameraIle.arc(this.azimut + this.tourPad * Math.min(dt, 0.1));
+    this.animAz = null;
     this.changed();
   }
   elevationSans() { const i = this.inclinaison; this.inclinaison = 0; const e = this.elevation(); this.inclinaison = i; return e; }
@@ -404,13 +433,14 @@ class CameraIle {
   }
   majDegagement(dt) {
     const T = this.terrain;
-    if (this.mode !== 'exploration' || this.regard !== 'basse' || !T || typeof T.solBrutA !== 'function') { this.dLibre = Infinity; return; }
+    const basse = this.regard === 'basse';
+    if (this.mode !== 'exploration' || !(basse || this.regards[this.regard].suit) || !T || typeof T.solBrutA !== 'function') { this.dLibre = Infinity; return; }
     const e = this.etatExploration(), d0 = this.distance(e.largeur), sx = Math.sin(e.az), sy = Math.cos(e.az);
     const ce = Math.cos(e.el), se = Math.sin(e.el), hv = e.h + (e.leve || 0);
     let libre = d0, plein = 0, debut = 0;
     for (let k = 1.2; k <= d0; k += 0.5) {
       const x = e.x + sx * ce * k, y = e.y + sy * ce * k, ligne = hv + se * k, sol = T.solBrutA(x, y);
-      if (Number.isFinite(sol) && sol > ligne - 0.4) { libre = k - 0.8; break; }
+      if (basse && Number.isFinite(sol) && sol > ligne - 0.4) { libre = k - 0.8; break; }
       if (this.bloque && this.bloque(x, y) && (!Number.isFinite(sol) || ligne - sol < 6)) {
         if (!plein) debut = k;
         plein++;
@@ -528,12 +558,14 @@ class CameraIle {
       const c = this.cadre;
       if (!c) return;
       this.atFit = true;
-      if (animate && !CameraIle.calme()) this.anim = { fit: true, s: c.sFit, zoom: 1 / c.sFit, px: c.vcx, py: c.vcy };
-      else { this.anim = null; this.vue = { s: c.sFit, px: c.vcx, py: c.vcy }; this.placerOrtho(); }
+      const sv = this.suiviCombat, j = sv ? this.vueJeu(sv.u, sv.h, sv.v) : this.vueJeu();
+      if (animate && !CameraIle.calme()) this.anim = { fit: true, s: j.s, zoom: 1 / j.s, px: j.px, py: j.py };
+      else { this.anim = null; this.vue = j; this.placerOrtho(); }
       this.changed();
       return;
     }
     this.revient = true;
+    this.inertie = 0; this.tourPad = 0;
     if (animate && !CameraIle.calme()) {
       this.anim = { champ: this.champDefaut, zoom: 1, recentre: true };
       this.animAz = this.azimut === this.azimutDefaut ? null : this.azimutDefaut;
@@ -604,6 +636,7 @@ class CameraIle {
     if (this.mode === 'carte') this.sortirCarte(true);
     this.retourCarte = null;
     const premier = this.mode !== 'combat';
+    this.inertie = 0; this.tourPad = 0;
     if (premier) { this.avantCombat = { champ: this.champ }; this.azimutCombat = CameraIle.diagonale(this.azimut); this.animAz = null; }
     const de = this.trans && this.dernierEtat ? this.dernierEtat : (premier ? this.etatExploration() : null);
     this.mode = 'combat';
@@ -611,8 +644,8 @@ class CameraIle {
     this.anim = null; this.userUntil = 0; this.revient = false;
     this.dernierFocus = null;
     this.cadre = this.cadrerCombat();
-    this.vue = this.cadre ? { s: this.cadre.sFit, px: this.cadre.vcx, py: this.cadre.vcy } : null;
-    this.fitZoom = this.cadre ? 1 / this.cadre.sFit : 0;
+    this.vue = this.cadre ? this.vueJeu(this.joueur.x, this.joueur.h, this.joueur.y) : null;
+    this.fitZoom = this.cadre ? 1 / this.cadre.sJeu : 0;
     this.atFit = true;
     this.trans = de && this.cadre && !immediat && !CameraIle.calme() ? { sens: 'aller', t0: null, duree: 600, de } : null;
     if (!this.trans) { this.fondu = 1; this.placerOrtho(); }
@@ -693,7 +726,16 @@ class CameraIle {
       }
       if (meilleur) { sFit = meilleur.s; vcx = meilleur.vcx; vcy = meilleur.vcy; }
     }
-    return { cx, cy, h: ch, el, dir, right, up, D: 120, x0, x1, y0, y1, vcx, vcy, sFit };
+    const tCase = CameraIle.CASE_COMBAT[CameraIle.telephone() ? 0 : 1];
+    const sJeu = Math.min(sFit, Math.SQRT2 / tCase);
+    return { cx, cy, h: ch, el, dir, right, up, D: 120, x0, x1, y0, y1, vcx, vcy, sFit, sJeu, m };
+  }
+  vueJeu(u, h, v) {
+    const c = this.cadre, s = c.sJeu, f = this.focusRect();
+    if (!(s < c.sFit * 0.995) || u == null || !Number.isFinite(u)) return { s, px: c.vcx, py: c.vcy };
+    const q = this.versVue(u, h || c.h, v);
+    const borne = (x, a, b, demi) => (b - a <= 2 * demi ? (a + b) / 2 : Math.max(a + demi, Math.min(b - demi, x)));
+    return { s, px: borne(q.x, c.x0, c.x1, Math.max(0, f.w / 2 - c.m) * s), py: borne(q.y, c.y0, c.y1, Math.max(0, f.h / 2 - c.m) * s) };
   }
 
   setCoin(coin) {
@@ -712,10 +754,10 @@ class CameraIle {
     this.cadre = this.cadrerCombat();
     if (!this.cadre) return;
     const c = this.cadre;
-    this.fitZoom = 1 / c.sFit;
-    if (this.atFit || !centre) this.vue = { s: c.sFit, px: c.vcx, py: c.vcy };
+    this.fitZoom = 1 / c.sJeu;
+    if (this.atFit || !centre) { const sv = this.suiviCombat, cj = centre || {}; this.vue = sv ? this.vueJeu(sv.u, sv.h, sv.v) : this.vueJeu(cj.u, cj.h, cj.v); }
     else { const q = this.versVue(centre.u, centre.h, centre.v); this.vue = { s: c.sFit / k, px: q.x, py: q.y }; this.bornerVue(); }
-    if (this.anim && this.anim.fit) this.anim = { fit: true, s: c.sFit, zoom: 1 / c.sFit, px: c.vcx, py: c.vcy };
+    if (this.anim && this.anim.fit) { const j = this.vue; this.anim = { fit: true, s: j.s, zoom: 1 / j.s, px: j.px, py: j.py }; }
     else this.anim = null;
     if (!this.trans) this.placerOrtho();
   }
@@ -733,7 +775,7 @@ class CameraIle {
     return { x: v.px + (sx - f.cx) * v.s, y: v.py - (sy - f.cy) * v.s };
   }
 
-  bornerEchelle(s) { const c = this.cadre; return Math.max(c.sFit / 2.5, Math.min(this.echelleMax(), s)); }
+  bornerEchelle(s) { const c = this.cadre; return Math.max(Math.min(c.sFit / 2.5, c.sJeu / 1.8), Math.min(this.echelleMax(), s)); }
   echelleMax() {
     const c = this.cadre, D = CameraIle.RECUL_COMBAT;
     if (!this.vw || !this.vh) return c.sFit / 0.75;
@@ -840,6 +882,16 @@ class CameraIle {
       if (fini) this.orbite = null;
       this.changed();
     }
+    if (this.inertie && !this.orbite) {
+      if (this.regards[this.regard].fixe || this.passageRegard) this.inertie = 0;
+      else {
+        this.azimut = CameraIle.arc(this.azimut + this.inertie * dt);
+        this.inertie *= Math.exp(-dt / CameraIle.ORBITE.elan[2]);
+        if (Math.abs(this.inertie) < 0.05) this.inertie = 0;
+        this.animAz = null;
+        this.changed();
+      }
+    }
     if (this.animAz != null) {
       const da = CameraIle.arc(this.animAz - this.azimut);
       if (Math.abs(da) < 0.003) { this.azimut = this.animAz; this.animAz = null; } else this.azimut = CameraIle.arc(this.azimut + da * (1 - Math.exp(-dt / 0.15)));
@@ -906,7 +958,7 @@ class CameraIle {
     } else {
       const sv = this.suiviCombat;
       if (sv && sv.focus !== this.dernierFocus) { this.dernierFocus = sv.focus; this.userUntil = 0; }
-      if (sv && 1 / v.s > this.fitZoom * 1.02 && !(this.userUntil && now < this.userUntil)) {
+      if (sv && v.s < c.sFit / 1.02 && !(this.userUntil && now < this.userUntil)) {
         const q = this.versVue(sv.u, sv.h, sv.v), f = this.focusRect();
         const sx = f.cx + (q.x - v.px) / v.s, sy = f.cy - (q.y - v.py) / v.s - 30;
         const mx = f.w * 0.2, my = f.h * 0.2;
@@ -922,7 +974,7 @@ class CameraIle {
       }
     }
     this.placerOrtho();
-    const fit = Math.abs(c.sFit / v.s - 1) < 0.02 && Math.hypot(v.px - c.vcx, v.py - c.vcy) < 0.3;
+    const fit = Math.abs(c.sJeu / v.s - 1) < 0.02 && (c.sJeu < c.sFit * 0.995 || Math.hypot(v.px - c.vcx, v.py - c.vcy) < 0.3);
     if (fit !== this.atFit) { this.atFit = fit; this.changed(); }
     return Math.abs(avant[0] - v.s) + Math.abs(avant[1] - v.px) + Math.abs(avant[2] - v.py) > 1e-7;
   }
@@ -939,7 +991,7 @@ class CameraIle {
     this.elJeu = this.el;
     if (opts.el) this.el = opts.el;
     this.mode = 'carte';
-    this.anim = null; this.animAz = null; this.userUntil = 0; this.revient = false;
+    this.anim = null; this.animAz = null; this.userUntil = 0; this.revient = false; this.inertie = 0; this.tourPad = 0;
     const [L, H] = this.taille;
     const b = opts.bornes || { x0: 0, y0: 0, x1: L, y1: H };
     const contour = opts.contour && opts.contour.length >= 3 ? opts.contour : [[b.x0, b.y0], [b.x1, b.y0], [b.x1, b.y1], [b.x0, b.y1]];
@@ -1222,10 +1274,13 @@ class CameraIle {
   }
 }
 
-CameraIle.CLE_REGARD = 'veylan.regard';
+CameraIle.CLE_REGARD = 'veylan.regard.v2';
+CameraIle.REGARD_DEFAUT = 'dos';
 CameraIle.CARTE = { ouverture: 30, elevation: [50, 74], min: 0.11, max: 3.55, approche: 0.41, depart: 0.9, retour: 0.7, marge: 0.05 };
 CameraIle.RECUL_COMBAT = [32, 16.75];
 CameraIle.MARGE_COMBAT = 0.06;
+CameraIle.CASE_COMBAT = [50, 60];
 CameraIle.SUIVI = { raideur: 7, avance: 0.18, avanceMax: 1.25, lissageMarche: 0.22, arret: 0.12, retour: 3.2, zoom: 0.17 };
-CameraIle.ORBITE = { tour: 0.006, pente: 0.135, min: 6, max: 72, leve: 2.6, lissage: 0.09 };
+CameraIle.ORBITE = { tour: 0.006, pente: 0.135, min: 6, max: 72, leve: 2.6, lissage: 0.09, elan: [0.6, 4, 0.28] };
+CameraIle.PAD = { tour: 0.62, recul: 0.35, lissage: 0.3, attente: 1000 };
 CameraIle.SOL = { tete: 1.4, marge: [0.4, 3], points: 24, montee: 0.25, descente: 0.7, ecart: 0.035, max: 76, levee: 30, anticipation: 0.6, approche: 0.2, recul: 0.5, brasMin: 6, brasPart: 0.3 };

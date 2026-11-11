@@ -1,6 +1,7 @@
 const Items = (() => {
   const SLOTS = ['coiffe', 'cape', 'amulette', 'anneau', 'ceinture', 'bottes', 'bouclier'];
-  const EQUIP_SLOTS = ['coiffe', 'cape', 'amulette', 'anneau1', 'anneau2', 'ceinture', 'bottes', 'arme', 'bouclier'];
+  const VEYLITH_SLOTS = ['veylith1', 'veylith2', 'veylith3', 'veylith4', 'veylith5', 'veylith6'];
+  const EQUIP_SLOTS = ['coiffe', 'cape', 'amulette', 'anneau1', 'anneau2', 'ceinture', 'bottes', 'arme', 'bouclier'].concat(VEYLITH_SLOTS);
   const STATS = ['vita', 'sagesse', 'force', 'intel', 'chance', 'agi'];
   const STAT_LABEL = { vita: 'Vitalité', sagesse: 'Sagesse', force: 'Terra', intel: 'Ignis', chance: 'Aqua', agi: 'Aer', pa: 'PA', pm: 'PM', po: 'Portée', init: 'Initiative', crit: 'Critique', dmg: 'Dommages',
     puissance: 'Puissance', invocation: 'Invocation', pp: 'Prospection', pods: 'Pods', soin: 'Soins', tacle: 'Tacle', fuite: 'Fuite',
@@ -112,9 +113,11 @@ const Items = (() => {
       sets.set(s.id, { id: s.id, name: s.name, level: s.level, family: s.family || [], pieces, bonuses, lore: s.lore || '' });
     }
     for (const i of C.items || []) {
-      const stats = statsFromParts(resteApres(budgetPoids(i.level, i.slot) * 0.9, i.extra), i.poids || partsDe(i.profile));
+      const stats = i.stats ? Object.assign({}, i.stats) : statsFromParts(resteApres(budgetPoids(i.level, i.slot) * 0.9, i.extra), i.poids || partsDe(i.profile));
       if (i.extra) Object.assign(stats, i.extra);
-      defs.set(i.id, { id: i.id, name: i.name, kind: 'equip', slot: i.slot, level: i.level, set: null, lore: i.lore || '', stats, source: i.source || 'craft', from: i.from || null, image: i.image || null });
+      const def = { id: i.id, name: i.name, kind: 'equip', slot: i.slot, level: i.level, set: null, lore: i.lore || '', stats, source: i.source || 'craft', from: i.from || null, image: i.image || null };
+      for (const k of ['lie', 'marque', 'passif', 'quete', 'rarity', 'effet']) if (i[k] != null) def[k] = i[k];
+      defs.set(i.id, def);
     }
     for (const w of C.weapons || []) {
       const wstats = statsFromParts(resteApres(budgetPoids(w.level, 'arme') * 0.9, w.extra), w.poids || partsDe(w.profile));
@@ -202,5 +205,5 @@ const Items = (() => {
     return out;
   }
 
-  return { SLOTS, EQUIP_SLOTS, STATS, STAT_LABEL, POIDS, WEAPON_TYPES, RARITIES, RARITY_LABEL, budget, budgetPoids, partsDe, statsFromParts, degatsParPA, usagesParTour, statsFromProfile, weaponSpell, build, get, all, setOf, getSet, allSets, recipes, recipeFor, sellPrice, statLines, dropsOf, rarity, poids, tauxEquipement, multProspection };
+  return { SLOTS, EQUIP_SLOTS, VEYLITH_SLOTS, STATS, STAT_LABEL, POIDS, WEAPON_TYPES, RARITIES, RARITY_LABEL, budget, budgetPoids, partsDe, statsFromParts, degatsParPA, usagesParTour, statsFromProfile, weaponSpell, build, get, all, setOf, getSet, allSets, recipes, recipeFor, sellPrice, statLines, dropsOf, rarity, poids, tauxEquipement, multProspection };
 })();

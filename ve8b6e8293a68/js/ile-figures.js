@@ -506,7 +506,7 @@ void main() {
           if (s.labelSorte === 'ennemi' && surVeilleur(s)) items.push({ x: s.x, y: tete, z: s.y, dy: s.badge ? 30 : 16, sorte: 'ennemi', texte: s.label, a });
           else items.push({ x: s.x, y: s.h, z: s.y, dy: -22, sorte: s.labelSorte || 'nom', texte: s.label, a });
         }
-        if (s.quest) items.push({ x: s.x, y: tete, z: s.y, dy: 14 + Math.sin(now / 300) * 2, sorte: 'marque', texte: s.quest, a: Math.max(a, 0.6) });
+        if (s.quest) items.push({ x: s.x, y: tete, z: s.y, dy: 22 + Math.sin(now / 300) * 2.5, w: 184, h: 46, sorte: 'marque', texte: s.quest, a: Math.max(a, 0.6) });
         if (s.badge) items.push({ x: s.x, y: tete - 0.3, z: s.y, dy: 2, dx: 18, sorte: 'badge', texte: s.badge, a });
         const c = s.combat;
         if (c) {
@@ -524,7 +524,7 @@ void main() {
         if (!(it.sorte === 'nom' || it.sorte === 'ennemi' || it.sorte === 'badge' || it.sorte === 'marque')) { gardes.push(it); continue; }
         const p = cam.versEcran(it.x, it.y, it.z);
         if (!p.devant) continue;
-        const w = it.w || (it.sorte === 'marque' ? 32 : this.largeurTexte(it.sorte, it.texte)), h = it.h || (it.sorte === 'marque' ? 32 : 22);
+        const w = it.sorte === 'marque' ? 40 : it.w || this.largeurTexte(it.sorte, it.texte), h = it.sorte === 'marque' ? 46 : it.h || 22;
         let dy = it.dy || 0;
         const boite = () => ({ x0: p.x + (it.dx || 0) - w / 2, y0: p.y - dy - h / 2, x1: p.x + (it.dx || 0) + w / 2, y1: p.y - dy + h / 2 });
         const croise = (a, b) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;

@@ -19,8 +19,9 @@ const ICO = {
   pods: svg('<path d="M7 9h10l1.5 10.5h-13z"/><path d="M9.5 9V7.5a2.5 2.5 0 0 1 5 0V9"/>'),
 };
 
-const LABEL = { coiffe: 'Coiffe', cape: 'Cape', amulette: 'Amulette', anneau1: 'Anneau', anneau2: 'Anneau', ceinture: 'Ceinture', bottes: 'Bottes', arme: 'Arme', bouclier: 'Bouclier' };
-const KIND = slot => ({ kind: slot === 'arme' ? 'weapon' : 'equip', slot: slot.startsWith('anneau') ? 'anneau' : slot });
+const LABEL = { coiffe: 'Coiffe', cape: 'Cape', amulette: 'Amulette', anneau1: 'Anneau', anneau2: 'Anneau', ceinture: 'Ceinture', bottes: 'Bottes', arme: 'Arme', bouclier: 'Bouclier', veylith: 'Veylith' };
+for (const sl of Items.VEYLITH_SLOTS) LABEL[sl] = 'Veylith';
+const KIND = slot => ({ kind: slot === 'arme' ? 'weapon' : 'equip', slot: slot.startsWith('anneau') ? 'anneau' : slot.startsWith('veylith') ? 'veylith' : slot });
 const GAUCHE = ['amulette', 'bouclier', 'anneau1', 'ceinture', 'bottes'];
 const DROITE = ['coiffe', 'arme', 'anneau2', 'cape'];
 const MAX_ENSEMBLES = 6;
@@ -34,7 +35,6 @@ const ICO_COS = (() => {
     theme: s('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 20V9"/>'),
   };
 })();
-const VEYLITHS = ['Veylith d\'Aïven', 'Veylith de Durren', 'Veylith de Morrha', 'Veylith d\'Iskar', 'Veylith de Nohra', 'Veylith d\'Aube'];
 
 const portable = d => d.kind === 'equip' || d.kind === 'weapon';
 const ONGLETS = [
@@ -67,7 +67,7 @@ const TRI = {
 const TYPE_CONSO = { pain: 'Pain', potion: 'Potion', parchemin: 'Parchemin' };
 const typeObjet = d => d.kind === 'weapon' ? ((Items.WEAPON_TYPES[d.type] || {}).label || 'Arme') : d.kind === 'equip' ? (LABEL[d.slot === 'anneau' ? 'anneau1' : d.slot] || d.slot) : d.kind === 'knot' ? 'Nœud' : d.kind === 'consumable' ? (TYPE_CONSO[d.sub] || 'Consommable') : 'Ressource';
 Hud.typeObjet = typeObjet;
-const va = (d, slot) => d.kind === 'weapon' ? slot === 'arme' : d.kind === 'equip' && (d.slot === 'anneau' ? slot.startsWith('anneau') : d.slot === slot);
+const va = (d, slot) => d.kind === 'weapon' ? slot === 'arme' : d.kind === 'equip' && (d.slot === 'anneau' ? slot.startsWith('anneau') : d.slot === 'veylith' ? slot.startsWith('veylith') : d.slot === slot);
 const nf = n => Number(n).toLocaleString('fr-FR');
 const element = el => DATA.elements[el] || DATA.elements.neutre;
 const picStat = k => Hud.pic(k, 15);
@@ -207,7 +207,7 @@ Object.assign(Hud.prototype, {
       : `<button class="vy-case vy-case--emplacement vy-inv__slot vy-inv__mont" data-act="montureSlot" title="Monture : aucune. Toucher : la fenêtre Montures." aria-label="Monture : aucune"><span class="vy-case__icone">${(Fenetres.ICON && Fenetres.ICON.montures) || ''}</span></button>`;
     const tr = Object.keys(ch.trousseau || {});
     const trCase = `<button class="vy-case${tr.length ? '' : ' vy-case--emplacement'} vy-inv__slot vy-inv__trousseau" data-rarete="${tr.length ? 'rare' : ''}" data-act="trousseauSlot" title="Trousseau : ${tr.length ? tr.length + (tr.length > 1 ? ' clés' : ' clé') : 'vide'}. Toucher : ses clés." aria-label="Trousseau, ${tr.length} clé${tr.length > 1 ? 's' : ''}"><span class="vy-case__icone"><img class="vy-case__img" src="assets/ui/objets/trousseau.png" alt="" draggable="false"></span>${tr.length ? `<span class="vy-case__nombre">${tr.length}</span>` : ''}</button>`;
-    const veyliths = VEYLITHS.map(n => `<span class="vy-case vy-inv__ecaille" title="${n}, œuf de dragon contenant le Veylor : bientôt" aria-label="${n}, œuf de dragon contenant le Veylor, bientôt" aria-disabled="true"><span class="vy-case__icone">${ICO.veylith}</span><span class="vy-inv__cadenas">${ICO.cadenas}</span></span>`).join('');
+    const veyliths = Items.VEYLITH_SLOTS.map(sl => this.invSlot(ch, sl).replace('vy-inv__slot', 'vy-inv__slot vy-inv__vey')).join('');
     const cos = s.poupee === 'cosmetiques' && typeof Garderobe !== 'undefined';
     const onglets = `<nav class="vy-inv__vues" role="tablist" aria-label="Le personnage"><button type="button" class="vy-inv__vue${cos ? '' : ' on'}" role="tab" aria-selected="${!cos}" data-act="poupee" data-vue="equip">Équipement</button><button type="button" class="vy-inv__vue${cos ? ' on' : ''}" role="tab" aria-selected="${cos}" data-act="poupee" data-vue="cosmetiques">Cosmétiques</button></nav>`;
     const caseCos = type => {
@@ -217,7 +217,7 @@ Object.assign(Hud.prototype, {
     const colCos = types => types.map(caseCos).join('');
     return `<section class="vy-inv__poupee${cos ? ' vy-inv__poupee--cos' : ''}" aria-label="${cos ? 'Cosmétiques portés' : 'Équipement porté'}">
       ${onglets}
-      ${cos ? '' : `<div class="vy-inv__col vy-inv__marques" title="Veyliths des Grands Dragons : bientôt">${veyliths}</div>`}
+      ${cos ? '' : `<div class="vy-inv__col vy-inv__marques">${veyliths}</div>`}
       <div class="vy-inv__col">${cos ? colCos(['teinture', 'lueur', 'aura']) : col(GAUCHE) + trCase}</div>
       <div class="vy-inv__perso" data-depot="poupee">
         <canvas class="vy-inv__cv" role="img" aria-label="${esc(ch.name)}, ${esc(cls.name)}"></canvas>
@@ -257,7 +257,7 @@ Object.assign(Hud.prototype, {
     const id = ch.equipment[slot], def = id && Items.get(id);
     const s = this.inv, choisi = s.sel && s.sel.de === 'slot' && s.sel.slot === slot ? ' est-choisie' : '';
     if (!def) return `<button class="vy-case vy-case--emplacement vy-inv__slot${choisi}" data-act="slot" data-slot="${slot}" data-depot="slot" title="${LABEL[slot]} : vide" aria-label="${LABEL[slot]}, vide"><span class="vy-case__icone">${Hud.picto(KIND(slot))}</span></button>`;
-    return `<button class="vy-case vy-inv__slot${choisi}" data-rarete="${Items.rarity(def)}" data-act="slot" data-slot="${slot}" data-depot="slot" data-glisse="slot" title="${esc(def.name)} (${LABEL[slot]}). Toucher deux fois ou glisser vers le sac : retirer." aria-label="${LABEL[slot]} : ${esc(def.name)}"><span class="vy-case__icone">${Hud.picto(def)}</span><span class="vy-case__niveau">${def.level}</span></button>`;
+    return `<button class="vy-case vy-inv__slot${choisi}" data-rarete="${Items.rarity(def)}" data-act="slot" data-slot="${slot}" data-depot="slot" data-glisse="slot" title="${esc(def.name)} (${LABEL[slot]}). Toucher deux fois ou glisser vers le sac : retirer.${/^(veylith|anneau)\d$/.test(slot) ? ' Glisser sur une autre case : déplacer.' : ''}" aria-label="${LABEL[slot]} : ${esc(def.name)}"><span class="vy-case__icone">${Hud.picto(def)}</span><span class="vy-case__niveau">${def.level}</span></button>`;
   },
 
   dessinerPoupee(body) {
@@ -319,6 +319,7 @@ Object.assign(Hud.prototype, {
     if (!portable(d)) return null;
     let slot = d.kind === 'weapon' ? 'arme' : d.slot;
     if (slot === 'anneau') slot = !ch.equipment.anneau1 ? 'anneau1' : !ch.equipment.anneau2 ? 'anneau2' : 'anneau1';
+    if (slot === 'veylith') slot = Items.VEYLITH_SLOTS.find(sl => !ch.equipment[sl]) || Items.VEYLITH_SLOTS[0];
     const id = ch.equipment[slot];
     return { slot, def: id && id !== d.id ? Items.get(id) : null };
   },
@@ -340,6 +341,7 @@ Object.assign(Hud.prototype, {
       if (v) L.push(li(`${picStat(k)}${Items.STAT_LABEL[k]}`, `${v > 0 ? '+' : ''}${v}${k === 'crit' ? ' %' : ''}`, v < 0 ? 'neg' : '', ecart(v - w)));
       else if (w && face) L.push(li(`${picStat(k)}${Items.STAT_LABEL[k]}`, '0', 'perdu', ecart(-w)));
     }
+    if (d.effet) L.push(li(esc(d.effet), null, 'vy-inv__effet-texte'));
     if (d.kind === 'consumable') {
       if (d.sub === 'pain') L.push(li(`${Hud.pic('pv', 15)}Rend`, `${d.heal} PV`));
       if (d.sub === 'potion') L.push(d.heal ? li(`${Hud.pic('pv', 15)}Rend`, 'tous les PV') : li('Ramène au dernier Relais de l\'Aube'));
@@ -405,7 +407,7 @@ Object.assign(Hud.prototype, {
       if (d.node) L.push(li('Se récolte', 'sur les cartes'));
     }
     L.push(li('Poids', `${Items.poids(d)} pod${Items.poids(d) > 1 ? 's' : ''}`));
-    L.push(li('Revente', `${Items.sellPrice(d)} Dragmes, chez un marchand`));
+    L.push(li('Revente', d.lie ? 'lié au personnage : ni vendu ni échangé' : `${Items.sellPrice(d)} Dragmes, chez un marchand`));
     return `<ul class="vy-inv__liste">${L.join('')}</ul>`;
   },
 
@@ -436,7 +438,7 @@ Object.assign(Hud.prototype, {
     else if (d.kind === 'knot') B.push(principal('nouer', e.noue ? 'Dénouer' : 'Nouer', `data-id="${d.id}"`));
     if (e.de === 'sac') {
       B.push('<span class="vy-inv__espace"></span>');
-      if (this.invMarchand()) B.push(icone('vendre', ICO.vendre, `Vendre 1 pour ${Items.sellPrice(d)} Dragmes`, `data-id="${d.id}"`));
+      if (this.invMarchand() && !d.lie) B.push(icone('vendre', ICO.vendre, `Vendre 1 pour ${Items.sellPrice(d)} Dragmes`, `data-id="${d.id}"`));
       B.push(icone('detruire', ICO.corbeille, 'Détruire', `data-id="${d.id}"`, 'vy-bouton--danger'));
     }
     return B.join('');
@@ -743,6 +745,16 @@ Object.assign(Hud.prototype, {
     return true;
   },
 
+  invDeplacer(de, vers) {
+    if (!this.invGarde()) return false;
+    const r = this.world.ch.deplacer(de, vers);
+    if (!r.ok) { this.toast(r.reason); return false; }
+    this.inv.sel = { de: 'slot', slot: vers };
+    this.world.emit('update');
+    this.fen.render('sac');
+    return true;
+  },
+
   invRetirer(slot) {
     const ch = this.world.ch, id = ch.equipment[slot];
     if (!id || !this.invGarde() || !ch.unequip(slot)) return false;
@@ -935,6 +947,7 @@ Object.assign(Hud.prototype, {
       if (depot === 'poupee') return portable(d) || d.kind === 'consumable' || d.kind === 'knot';
       return false;
     }
+    if (g.kind === 'slot' && depot === 'slot') return slot !== g.slot && va(d, slot);
     return depot === 'sac';
   },
 
@@ -983,6 +996,7 @@ Object.assign(Hud.prototype, {
       if (c.depot === 'poupee') return portable(d) ? this.invEquiper(g.id) : d.kind === 'consumable' ? this.invUtiliser(g.id) : this.invNouer(g.id, true);
       return false;
     }
+    if (g.kind === 'slot' && c.depot === 'slot') return this.invDeplacer(g.slot, c.slot);
     if (c.depot !== 'sac') return false;
     return g.kind === 'slot' ? this.invRetirer(g.slot) : this.invNouer(g.id, false);
   },

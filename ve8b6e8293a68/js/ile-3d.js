@@ -571,7 +571,7 @@ class Ile3D {
     this.salle = { id: mapId, map: world.map, aire: S.aire, style, index };
     this.effacerZone();
     this.T = null; this.def = null; this.plateauId = null;
-    const cam = this.camera = new CameraIle({ el: this.board, def: { taille: [15, 15], camera: { champ: [10, 30], champDefaut: [18, 22] } }, terrain: null });
+    const cam = this.camera = new CameraIle({ el: this.board, def: { taille: [15, 15], camera: { champ: [10, 30], champDefaut: [18, 22] } }, terrain: null, regard: 'jeu' });
     this.redimensionner();
     this.sauter();
     this.figures.maj(this.sprites(performance.now()), cam, performance.now());
@@ -1418,6 +1418,7 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     const peut = this.actif && w.state === 'explore' && !w.talkNpc && !this.salle && !this.enArene && cam.mode === 'exploration' && !cam.trans && !cam.retourCarte && libre;
     if (this.pad) this.pad.maj(peut && CameraIle.telephone());
     const pad = peut && this.pad && this.pad.direction;
+    if (typeof cam.suivrePad === 'function') cam.suivrePad(pad ? pad.x * pad.force : 0, pad ? -pad.y * pad.force : 0, dt);
     if (pad) {
       const az = cam.azimut, x = pad.x * Math.cos(az) + pad.y * Math.sin(az), y = -pad.x * Math.sin(az) + pad.y * Math.cos(az);
       P.pasClavier({ x, y }, dt, pad.course, pad.force);
@@ -1866,10 +1867,13 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const pres = champ * (this.qualite === 'haute' ? 1.6 : this.qualite === 'basse' ? 0.9 : 1.15) + 6;
     const distTuile = t => Math.hypot(Math.max(0, Math.abs(t.centre[0] - c.x) - 15), Math.max(0, Math.abs(t.centre[1] - c.y) - 15));
     const solMax = this.nuit && this.nuit.solMax && !this.enArene && !vol ? this.nuit.solMax : Infinity;
+    const fl = this.scene.fog, pc = cam.courante.position;
+    const loinBrume = fl && !fl.isFogExp2 && !this.enArene && !vol && !cam.trans ? fl.far + 4 : Infinity;
+    const distCam = t => Math.hypot(Math.max(0, Math.abs(t.centre[0] - pc.x) - 15), Math.max(0, Math.abs(t.centre[1] - pc.z) - 15));
     for (const t of this.tuilesSol) {
-      const d = distTuile(t), proche = !t.loin || d < pres;
-      t.proche.visible = proche && d < solMax;
-      if (t.loin) t.loin.visible = !proche && d < solMax;
+      const d = distTuile(t), proche = !t.loin || d < pres, vu = d < solMax && (loinBrume === Infinity || distCam(t) < loinBrume);
+      t.proche.visible = proche && vu;
+      if (t.loin) t.loin.visible = !proche && vu;
     }
     const kNuit = this.nuit ? (this.nuit.kDetail || (this.telephone ? 0.8 : 0.85)) : 1;
     let rDet = (this.qualite === 'haute' ? 60 : this.qualite === 'basse' ? 30 : 45) * kNuit, rSil = (this.qualite === 'haute' ? 120 : 80) * (this.nuit ? (this.nuit.kSil || 0.72) : 1);
@@ -2072,7 +2076,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const ks = this.soir && !this.nuit ? Ile3D.SOIR.recul : 1;
     const kp = (this.nuit ? 0.92 : 1.1) * ks, kl = (this.nuit ? 2.0 : 2.7) * ks;
     if (f.isFogExp2) f.density = (this.nuit.densite || 0.016) * (1 - fc) + 0.0035 * fc;
-    else { f.near = d * kp * (1 - fc) + (d + 30) * fc; f.far = d * kl * (1 - fc) + (d + 120) * fc; }
+    else { const dB = Math.max(d, Ile3D.BRUME_DMIN); f.near = dB * kp * (1 - fc) + (d + 30) * fc; f.far = dB * kl * (1 - fc) + (d + 120) * fc; }
     if (za && za.brumeF !== 1) {
       const fz = 1 + (za.brumeF - 1) * (1 - fc);
       if (f.isFogExp2) f.density *= fz; else { f.near /= fz; f.far /= fz; }
@@ -2374,6 +2378,7 @@ Ile3D.SOLS_COMBAT = {
 Ile3D.ZONE_FONDU = 1.1;
 Ile3D.TOUR_CLAVIER = 1.5;
 Ile3D.QUALITES = ['basse', 'moyenne', 'haute'];
+Ile3D.BRUME_DMIN = 16;
 Ile3D.ABSENCE_MS = 100;
 
 Ile3D.SOIR = {

@@ -2821,23 +2821,50 @@ class Renderer {
     const W = 30 * k, H = 36 * k, cv = typeof document === 'object' ? document.createElement('canvas') : null;
     if (!cv) return null;
     cv.width = Math.ceil(W); cv.height = Math.ceil(H);
-    const g = cv.getContext('2d'), r = 7 * k, w = 26 * k, x0 = 2 * k, y0 = 2 * k;
-    const or = m === '!';
-    const fond = g.createLinearGradient(0, y0, 0, y0 + w);
-    if (or) { fond.addColorStop(0, '#ffe08a'); fond.addColorStop(0.55, '#f2c14e'); fond.addColorStop(1, '#d99a2b'); }
-    else { fond.addColorStop(0, '#b8f1ff'); fond.addColorStop(0.55, '#52d2f4'); fond.addColorStop(1, '#1f9fd0'); }
-    g.beginPath();
-    g.moveTo(x0 + r, y0); g.lineTo(x0 + w - r, y0); g.quadraticCurveTo(x0 + w, y0, x0 + w, y0 + r);
-    g.lineTo(x0 + w, y0 + w - r); g.quadraticCurveTo(x0 + w, y0 + w, x0 + w - r, y0 + w);
-    g.lineTo(x0 + w / 2 + 5 * k, y0 + w); g.lineTo(x0 + w / 2, y0 + w + 7 * k); g.lineTo(x0 + w / 2 - 5 * k, y0 + w);
-    g.lineTo(x0 + r, y0 + w); g.quadraticCurveTo(x0, y0 + w, x0, y0 + w - r);
-    g.lineTo(x0, y0 + r); g.quadraticCurveTo(x0, y0, x0 + r, y0); g.closePath();
-    g.shadowColor = 'rgba(0,0,0,0.45)'; g.shadowBlur = 4 * k; g.shadowOffsetY = 1.5 * k;
-    g.fillStyle = fond; g.fill();
+    const g = cv.getContext('2d');
+    if (!g) return null;
+    const or = m === '!', cx = W / 2;
+    const P = or
+      ? { halo: [255, 198, 84, 0.5], bord: '#3b2405', haut: '#fff1bf', milieu: '#f6c447', bas: '#c47c12' }
+      : { halo: [96, 214, 246, 0.48], bord: '#082a3d', haut: '#e2fbff', milieu: '#5cd3f3', bas: '#1a7fb3' };
+    const [hr, hg, hb, ha] = P.halo;
+    const halo = g.createRadialGradient(cx, 16 * k, 1 * k, cx, 16 * k, 15 * k);
+    halo.addColorStop(0, `rgba(${hr}, ${hg}, ${hb}, ${ha})`); halo.addColorStop(1, `rgba(${hr}, ${hg}, ${hb}, 0)`);
+    g.fillStyle = halo; g.fillRect(0, 0, W, H);
+    const trait = () => {
+      g.beginPath();
+      if (or) { g.moveTo(cx, 5 * k); g.lineTo(cx, 17.4 * k); }
+      else {
+        g.arc(cx, 10.6 * k, 5.1 * k, Math.PI + 0.3, Math.PI * 2 + 0.38, false);
+        g.quadraticCurveTo(cx + 1.2 * k, 15.6 * k, cx, 17.6 * k);
+        g.lineTo(cx, 18.6 * k);
+      }
+    };
+    const losange = (e) => {
+      g.beginPath();
+      g.moveTo(cx, 25.4 * k - e); g.lineTo(cx + 3.3 * k + e, 29.2 * k); g.lineTo(cx, 33 * k + e); g.lineTo(cx - 3.3 * k - e, 29.2 * k); g.closePath();
+    };
+    const larg = (or ? 5.4 : 4.6) * k;
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    g.shadowColor = 'rgba(0, 0, 0, 0.45)'; g.shadowBlur = 3 * k; g.shadowOffsetY = 1.2 * k;
+    g.strokeStyle = P.bord; g.lineWidth = larg + 3 * k; trait(); g.stroke();
+    g.fillStyle = P.bord; losange(1.6 * k); g.fill();
     g.shadowColor = 'transparent';
-    g.lineWidth = 1.5 * k; g.strokeStyle = or ? '#8a5a10' : '#0e5f80'; g.stroke();
-    g.font = `900 ${19 * k}px Inter, "Segoe UI", system-ui, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillStyle = or ? '#2a1d05' : '#062a38'; g.fillText(m, x0 + w / 2, y0 + w / 2 + 1 * k);
+    const corps = g.createLinearGradient(0, 4 * k, 0, 33 * k);
+    corps.addColorStop(0, P.haut); corps.addColorStop(0.45, P.milieu); corps.addColorStop(1, P.bas);
+    g.strokeStyle = corps; g.lineWidth = larg; trait(); g.stroke();
+    g.fillStyle = corps; losange(0); g.fill();
+    g.save();
+    g.translate(-0.7 * k, -0.8 * k);
+    g.strokeStyle = 'rgba(255, 255, 255, 0.62)'; g.lineWidth = larg * 0.3; trait(); g.stroke();
+    g.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    g.beginPath(); g.moveTo(cx, 26.6 * k); g.lineTo(cx + 1.3 * k, 28.3 * k); g.lineTo(cx - 1.3 * k, 28.3 * k); g.closePath(); g.fill();
+    g.restore();
+    const ex = cx + (or ? 5.6 : 7.2) * k, ey = 5.2 * k, r = 2.6 * k, t = 0.6 * k;
+    g.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    g.beginPath();
+    g.moveTo(ex, ey - r); g.lineTo(ex + t, ey - t); g.lineTo(ex + r, ey); g.lineTo(ex + t, ey + t);
+    g.lineTo(ex, ey + r); g.lineTo(ex - t, ey + t); g.lineTo(ex - r, ey); g.lineTo(ex - t, ey - t); g.closePath(); g.fill();
     cache.set(cle, cv);
     return cv;
   }

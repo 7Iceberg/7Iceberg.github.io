@@ -302,6 +302,12 @@ class CameraControls {
     return this.enabled() && z > c.fitZoom * 1.02;
   }
 
+  geste1() {
+    const c = this.camera;
+    if (typeof c.orbiter === 'function') return this.enabled() && c.mode === 'exploration' ? 'orbite' : null;
+    return this.oneFingerPan() ? 'pan' : null;
+  }
+
   gesturing() { return !!this.pinch || this.touches.size >= 2 || !!(this.drag && this.drag.moved) || !!(this.pan1 && this.pan1.moved); }
 
   ignoreClick() {
@@ -327,7 +333,8 @@ class CameraControls {
       this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY });
       if (this.touches.size === 1) {
         this.tapMoved = false;
-        this.pan1 = this.oneFingerPan() ? { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false } : null;
+        const g = this.geste1();
+        this.pan1 = g ? { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false, orbite: g === 'orbite' } : null;
       }
       if (this.touches.size >= 2) {
         if (this.pan1) { this.pan1 = null; this.el.classList.remove('glisse'); }
@@ -373,11 +380,13 @@ class CameraControls {
       if (p && p.id === e.pointerId) {
         this.pan1 = null;
         if (p.moved) { this.el.classList.remove('glisse'); this.quietUntil = Math.max(this.quietUntil, performance.now() + 250); }
+        if (p.moved && p.orbite && !cancel && typeof this.camera.lacherOrbite === 'function') this.camera.lacherOrbite();
       }
       if (this.touches.size >= 2) this.startPinch(); else this.pinch = null;
-      if (!cancel && apresPincement && this.touches.size === 1 && this.oneFingerPan()) {
+      const g = !cancel && apresPincement && this.touches.size === 1 ? this.geste1() : null;
+      if (g) {
         const [id, t] = this.touches.entries().next().value;
-        this.pan1 = { id, x: t.x, y: t.y, moved: false };
+        this.pan1 = { id, x: t.x, y: t.y, moved: false, orbite: g === 'orbite' };
         this.tapMoved = true;
       }
       if (!this.touches.size && this.quietUntil === Infinity) this.quietUntil = performance.now() + 350;
@@ -397,7 +406,7 @@ class CameraControls {
     if (!p.moved) { p.moved = true; this.el.classList.add('glisse'); }
     const dx = e.clientX - p.x, dy = e.clientY - p.y;
     p.x = e.clientX; p.y = e.clientY;
-    this.camera.panBy(dx, dy);
+    if (p.orbite) this.camera.orbiter(dx, dy); else this.camera.panBy(dx, dy);
   }
 
   startPinch() {

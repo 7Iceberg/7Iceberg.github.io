@@ -711,7 +711,7 @@ DATA.content.npcs.push({
   id: 'okrel', name: 'Okrel', title: 'Capitaine de l\'Aube', look: 'garde',
   dialogue: [
     "La Porte tient parce que quelqu'un la tient. Ici, c'est l'Aube.",
-    "Les Kaldrin n'aiment pas qu'on les aide. Ils aiment encore moins les Molhs.",
+    "Les Kaldrins n'aiment pas qu'on les aide. Ils aiment encore moins les Molhs.",
   ],
   factionLines: {
     fil: ["Une flamme d'or de plus à la Porte. Bien. Il y a toujours un Molh de trop."],
@@ -1094,11 +1094,11 @@ DATA.content.quests.push({
   ],
   dialogue: {
     offer: [
-      "Les Molhs remontent jusqu'à la Porte, et les Kaldrin les repoussent seuls. L'Aube ne laisse pas une ville seule.",
+      "Les Molhs remontent jusqu'à la Porte, et les Kaldrins les repoussent seuls. L'Aube ne laisse pas une ville seule.",
       "Tiens la Porte avec moi. Six Molhs, trois Molhins, et la nuit sera calme.",
     ],
     progress: ["Un Molh ne court pas. Toi, tu peux."],
-    done: ["La Porte tient. Les Kaldrin ne diront pas merci, mais ils ont ouvert une fenêtre. C'est leur façon."],
+    done: ["La Porte tient. Les Kaldrins ne diront pas merci, mais ils ont ouvert une fenêtre. C'est leur façon."],
   },
   rewards: { xp: 2896, fils: 40, faction: 10 },
 });

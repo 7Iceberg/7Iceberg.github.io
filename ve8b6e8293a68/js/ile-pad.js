@@ -18,8 +18,9 @@ class IlePad {
     this.zone.addEventListener('pointerdown', e => {
       if (!this.actif || this.replie || this.pointer != null || e.button > 0) return;
       e.preventDefault(); e.stopPropagation();
-      const r = this.zone.getBoundingClientRect();
-      this.centre = { x: r.left + r.width / 2, y: r.top + r.height / 2, rayon: r.width * 0.32 };
+      const r = this.zone.getBoundingClientRect(), mx = r.left + r.width / 2, my = r.top + r.height / 2, rayon = r.width * 0.32;
+      const ox = e.clientX - mx, oy = e.clientY - my, od = Math.hypot(ox, oy), k = od > rayon * 0.5 ? rayon * 0.5 / od : 1;
+      this.centre = { x: mx + ox * k, y: my + oy * k, rayon, ox: ox * k, oy: oy * k };
       this.pointer = e.pointerId;
       this.zone.setPointerCapture(e.pointerId);
       el.classList.add('en-main'); this.bouger(e);
@@ -52,14 +53,14 @@ class IlePad {
     const nom = this.replie ? 'Afficher le joystick' : 'Masquer le joystick';
     this.toggle.setAttribute('aria-label', nom); this.toggle.title = nom;
     this.toggle.innerHTML = this.replie
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M12 12v6M7 15H5l-2 6h18l-2-6h-2"/></svg>'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg>';
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M7 12h10"/></svg>';
   }
 
   bouger(e) {
     const c = this.centre, dx = e.clientX - c.x, dy = e.clientY - c.y;
     const d = Math.hypot(dx, dy), n = Math.min(1, d / c.rayon);
-    this.pommeau.style.transform = `translate(${d ? dx / d * n * c.rayon : 0}px, ${d ? dy / d * n * c.rayon : 0}px)`;
+    this.pommeau.style.transform = `translate(${c.ox + (d ? dx / d * n * c.rayon : 0)}px, ${c.oy + (d ? dy / d * n * c.rayon : 0)}px)`;
     const force = Math.max(0, (n - 0.16) / 0.84);
     this.direction = force > 0 ? { x: dx / d, y: dy / d, force, course: n > 0.92 } : null;
     this.el.classList.toggle('course', !!(this.direction && this.direction.course));

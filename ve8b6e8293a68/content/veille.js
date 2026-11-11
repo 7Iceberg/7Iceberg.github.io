@@ -80,7 +80,7 @@
         recit: 'Le Forgeron Enseveli frappe encore sous la roche de la Forge Morte. Les nuits calmes, tout Kaldum l\'entend battre la mesure.',
         bonus: { type: 'butin_donjon', donjon: 'forge_morte', pct: 25 } },
       { voile: 7, element: 'feu', nom: 'Le Pont de Scorie',
-        recit: 'Vaskor a tenu le Pont de Scorie trois jours, seul d\'abord, puis avec ceux qui revenaient en le voyant tenir. Les Sarkan y gravent encore leur serment.',
+        recit: 'Vaskor a tenu le Pont de Scorie trois jours, seul d\'abord, puis avec ceux qui revenaient en le voyant tenir. Les Sarkans y gravent encore leur serment.',
         bonus: { type: 'xp_zone', zone: 'kaldum_ville', pct: 20 } },
 
       { voile: 1, element: 'eau', nom: 'Le Ciel sans étoiles',
@@ -124,7 +124,7 @@
         recit: 'En une nuit, les Glyms ont volé la moitié des lanternes des Cimes. Le Grenier en est encore plein, et aucune n\'éclaire droit.',
         bonus: { type: 'butin_donjon', donjon: 'grenier_des_pilous', pct: 25 } },
       { voile: 7, element: 'air', nom: 'Le Carreau qui tombe',
-        recit: 'Ysvane a tiré un carreau dans la Colère d\'Ithren, et les Lyssar disent qu\'il tombe encore, quelque part au-delà de la Brûlure. Les jours de grand vent, on tend l\'oreille.',
+        recit: 'Ysvane a tiré un carreau dans la Colère d\'Ithren, et les Lyssars disent qu\'il tombe encore, quelque part au-delà de la Brûlure. Les jours de grand vent, on tend l\'oreille.',
         bonus: { type: 'xp_zone', zone: 'orsane_toiles', pct: 20 } },
     ],
   };

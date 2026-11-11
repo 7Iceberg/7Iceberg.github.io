@@ -3,7 +3,7 @@ class Character {
     Object.assign(this, {
       classId: DATA.defaultClass, name: 'Veilleur', gender: 'f', level: 1, xp: 0, statPoints: 0,
       stats: { vita: 0, sagesse: 0, force: 0, intel: 0, chance: 0, agi: 0 },
-      equipment: { coiffe: null, cape: null, amulette: null, anneau1: null, anneau2: null, ceinture: null, bottes: null, arme: null, bouclier: null },
+      equipment: Object.fromEntries(Items.EQUIP_SLOTS.map(sl => [sl, null])),
       inventory: {}, fils: 0, hp: null, titles: [], title: null,
       coffre: { items: {}, fils: 0 },
       quests: { active: {}, done: [] },
@@ -71,7 +71,7 @@ class Character {
   static defaults() {
     return {
       stats: { vita: 0, sagesse: 0, force: 0, intel: 0, chance: 0, agi: 0 },
-      equipment: { coiffe: null, cape: null, amulette: null, anneau1: null, anneau2: null, ceinture: null, bottes: null, arme: null, bouclier: null },
+      equipment: Object.fromEntries(Items.EQUIP_SLOTS.map(sl => [sl, null])),
       quests: { active: {}, done: [] },
       counters: { fights: 0, wins: 0, kills: {}, maps: [], crafts: 0, gathers: 0, filsEarned: 0, filsRecus: 0, dungeons: [], dungeonTurns: {}, bosses: [], questsDone: 0, feats: {} },
     };
@@ -89,6 +89,8 @@ class Character {
   static get COULEURS() { return ['peau', 'cheveux', 'tenue', 'tenue2', 'cape', 'lanterne']; }
   static defaultLook(classId) {
     const c = DATA.classes[classId] || DATA.classes[DATA.defaultClass];
+    const p = DATA.palettes && DATA.palettes[c.id];
+    if (p) return { tete: 0, couleurs: [p.peau[0], p.cheveux[0], p.tenue[0], p.tenue2[0], p.cape[0], c.color] };
     return Util.defaultLook(c.color);
   }
 
@@ -197,7 +199,7 @@ class Character {
       dmgFixe: { terre: a('fixe_terre') + extra.dmg_terre, neutre: a('fixe_terre') + extra.dmg_terre, feu: a('fixe_feu') + extra.dmg_feu, eau: a('fixe_eau') + extra.dmg_eau, air: a('fixe_air') + extra.dmg_air },
       dmgCrit: a('dmgCrit') + extra.dmg_crit, reduc: a('reduc') + extra.res_fixe, resCrit: extra.res_crit, resPou: extra.res_pou,
       soinsFixes: a('soinsFixes'), soinsRecus: a('soinsRecus'), boucliers: a('boucliers'), poussee: a('poussee') + extra.dmg_pou,
-      passifs: sc.passifs, sceauxPoses: sc.poses,
+      passifs: sc.passifs.concat(Items.VEYLITH_SLOTS.map(sl => { const d = equipment[sl] && Items.get(equipment[sl]); return d && d.passif; }).filter(Boolean)), sceauxPoses: sc.poses,
     };
   }
 
@@ -510,6 +512,7 @@ class Character {
     if (d.kind !== 'equip' && d.kind !== 'weapon') return { ok: false, reason: 'Ne s\'équipe pas' };
     if (d.level > this.level) return { ok: false, reason: `Niveau ${d.level} requis` };
     if (!this.has(id)) return { ok: false, reason: 'Pas dans l\'inventaire' };
+    if (d.slot === 'veylith' && Items.VEYLITH_SLOTS.some(sl => this.equipment[sl] === id)) return { ok: false, reason: 'Déjà porté' };
     return { ok: true };
   }
 
@@ -519,12 +522,20 @@ class Character {
     const d = Items.get(id);
     let slot = d.slot;
     if (slot === 'anneau') slot = want === 'anneau1' || want === 'anneau2' ? want : (!this.equipment.anneau1 ? 'anneau1' : (!this.equipment.anneau2 ? 'anneau2' : 'anneau1'));
+    if (slot === 'veylith') slot = Items.VEYLITH_SLOTS.includes(want) ? want : (Items.VEYLITH_SLOTS.find(sl => !this.equipment[sl]) || Items.VEYLITH_SLOTS[0]);
     const old = this.equipment[slot];
     this.removeItem(id, 1);
     this.equipment[slot] = id;
     if (old) this.addItem(old, 1);
     this.hp = Math.min(this.hp, this.derived().hpMax);
     return { ok: true, slot };
+  }
+
+  deplacer(de, vers) {
+    const famille = sl => /^veylith\d$/.test(sl) ? 'veylith' : /^anneau\d$/.test(sl) ? 'anneau' : null;
+    if (de === vers || !famille(de) || famille(de) !== famille(vers) || !this.equipment[de]) return { ok: false, reason: 'Emplacement incompatible' };
+    [this.equipment[de], this.equipment[vers]] = [this.equipment[vers] || null, this.equipment[de]];
+    return { ok: true, slot: vers };
   }
 
   unequip(slot) {
