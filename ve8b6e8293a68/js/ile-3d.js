@@ -1883,7 +1883,9 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const distMorceau = t => Math.hypot(Math.max(0, Math.abs(t.centre[0] - c.x) - demi), Math.max(0, Math.abs(t.centre[1] - c.y) - demi));
     const reste = Math.max(rSil, 60) + (Math.min(Math.max(rSil, 60), champ * 0.9 + 20) - Math.max(rSil, 60)) * ri;
     const solVu = Number.isFinite(solMax) ? solMax + (Math.min(solMax, champ * 0.9 + 14) - solMax) * ri : solMax;
-    if (this.monde && typeof IleGlb === 'object' && IleGlb.portee && !tact) IleGlb.portee(this.monde, c, { sol: solVu, semis: rSil, reste });
+    const dosTel = this.telephone && !vol && cam.regards && cam.regards[cam.regard] && cam.regards[cam.regard].suit;
+    const semisVu = dosTel ? Math.min(rSil, Ile3D.SEMIS_DOS) : rSil;
+    if (this.monde && typeof IleGlb === 'object' && IleGlb.portee && !tact) IleGlb.portee(this.monde, c, { sol: solVu, semis: semisVu, reste, cam: pc, brume: loinBrume });
     if (this.reperesGeants && typeof IleReperes === 'object') IleReperes.voir(this.reperesGeants, c, { tact, vol: !!vol, nuit: this.nuit ? (this.nuit.amb ? this.nuit.amb.nuit : 1) : 0, t: this.temps });
     for (const t of this.tuilesDecor) {
       const d = distMorceau(t);
@@ -2234,6 +2236,14 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (o) {
       let x = o.rx != null ? o.rx : o.x != null ? o.x : o.u, y = o.ry != null ? o.ry : o.y != null ? o.y : o.v;
       if ((enCombat && !cue.group && !cue.point) || (this.salle && !cue.point)) { const q = this.versScene(x, y); x = q.u; y = q.v; }
+      if (cue !== this._cueTourne) {
+        this._cueTourne = cue;
+        const cm = this.camera, pj = this.world && this.world.player;
+        if (!enCombat && !this.salle && cm && cm.mode === 'exploration' && !cm.trans && pj && typeof cm.tournerVers === 'function' && !cm.dansChamp(x, y, 0)) {
+          const dx = x - pj.rx, dy = y - pj.ry;
+          if (Math.hypot(dx, dy) > 0.5) { cm.tournerVers(Math.atan2(-dx, -dy)); this.toursRepere = (this.toursRepere || 0) + 1; }
+        }
+      }
       const k = 1 + 0.18 * Math.sin(now / 280);
       this.repere.position.set(x, this.hauteur(x, y) + 0.07, y);
       this.repere.scale.set(k, 1, k);
@@ -2379,6 +2389,7 @@ Ile3D.ZONE_FONDU = 1.1;
 Ile3D.TOUR_CLAVIER = 1.5;
 Ile3D.QUALITES = ['basse', 'moyenne', 'haute'];
 Ile3D.BRUME_DMIN = 16;
+Ile3D.SEMIS_DOS = 52;
 Ile3D.ABSENCE_MS = 100;
 
 Ile3D.SOIR = {

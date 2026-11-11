@@ -989,6 +989,7 @@ float bruitR(vec3 x) {
       if (!s) { s = o.userData.sphereMonde = s0.clone().applyMatrix4(o.matrix); }
       const max = /^mo_sol/.test(o.name) ? p.sol : /^semis /.test(o.name) ? p.semis : /^mo_falaise/.test(o.name) ? (Number.isFinite(p.sol) ? p.sol * 1.5 : Infinity) : p.reste;
       o.visible = !Number.isFinite(max) || Math.hypot(s.center.x - c.x, s.center.z - c.y) - s.radius < max;
+      if (o.visible && p.cam && Number.isFinite(p.brume) && Math.hypot(s.center.x - p.cam.x, s.center.z - p.cam.z) - s.radius > p.brume) o.visible = false;
     }
   }
 
