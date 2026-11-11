@@ -53,7 +53,7 @@ class Hud {
     w.on('zoneProche', d => this.toast(`Attention : ${d.nom}, niveau ${d.niveau[0]}${d.niveau[1] !== d.niveau[0] ? ' à ' + d.niveau[1] : ''}. Plus fort que toi.`));
     w.on('panneau', d => this.toast(d.texte));
     w.on('dialogue', ctx => this.openDialogue(ctx));
-    w.on('fight', () => { this.finCombat = null; this.closePanel(); this.fermerFenetres(); this.setMode('combat'); this.ui.refresh(); this.ui.updateHighlights(); });
+    w.on('fight', () => { this.finCombat = null; this.closePanel(); this.fermerFenetres(); this.setMode('combat'); this.ui.refresh(); this.ui.updateHighlights(); this.rappelerGestes(); });
     w.on('fightEnd', r => this.finDeCombat(r));
     w.on('machine', ctx => this.openWorkshop(ctx));
     w.on('reward', r => this.openReward(r));
@@ -306,6 +306,8 @@ class Hud {
       ${coche('barres', 'Barres de vie', 'au-dessus de chaque combattant ; sinon celui qu\'on vise et celui qui joue')}
       ${coche('agression', 'Monstres agressifs', 'les élites et quelques familles hostiles attaquent à vue, hors des villes')}
       ${coche('finDonjon', 'Fiche de fin de donjon', 'le boss, les succès du donjon et sa stratégie, à la victoire')}
+      <div class="row"><span>Durée du tour</span><select id="opt-duree-tour" aria-label="Durée du tour">${UI.DUREES_TOUR.map(([v, l]) => `<option value="${v}"${UI.choixDureeTour() === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+      <div class="row"><span class="muted">${UI.choixDureeTour() === 'auto' ? `${UI.dureeTour()} s pour jouer ton tour : 30 s au doigt, 20 s à la souris.` : `${UI.dureeTour()} s pour jouer ton tour.`} Le tour des monstres ne change pas.</span></div>
       <div class="row"><span>Bonus des défis</span><select id="opt-bonus-defi" aria-label="Bonus des défis">${[['', 'XP et butin'], ['xp', 'XP seulement (doublé)'], ['butin', 'Butin seulement (doublé)']].map(([v, l]) => `<option value="${v}"${(ch.bonusDefi || '') === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
       <div class="row"><span class="muted">${ch.bonusDefi === 'xp' ? 'Un défi réussi double son bonus, tout en expérience.' : ch.bonusDefi === 'butin' ? 'Un défi réussi double son bonus, tout en chances de butin.' : 'Un défi réussi ajoute son bonus à l\'expérience et aux chances de butin.'}</span></div>`;
     const curseur = (id, cls, label, v, min, max) => `<div class="row vy-reglage ${cls}"><label for="${id}">${label}</label><input type="range" id="${id}" min="${min}" max="${max}" step="5" value="${v}" style="--v:${v};--min:${min};--max:${max}" aria-valuetext="${v} %"><output for="${id}">${v} %</output></div>`;
@@ -407,6 +409,7 @@ class Hud {
       if (el.id === 'opt-confirmer') { try { localStorage.setItem('veylan.confirmerSorts', el.checked ? '1' : '0'); } catch (e) {   } }
       if (/^opt-combat-/.test(el.id)) { UI.regler(el.id.slice(11), el.checked); if (this.ui && this.ui.updateHighlights) this.ui.updateHighlights(); if (el.id === 'opt-combat-agression' && this.world) this.world.agression = el.checked; }
       if (el.id === 'opt-gaucher' && this.jeu) this.jeu.mettreGaucher(el.checked);
+      if (el.id === 'opt-duree-tour') { this.combat.turnSeconds = UI.reglerDureeTour(el.value); this.fen.render('options'); }
       if (el.id === 'opt-bonus-defi') { if (el.value) ch.bonusDefi = el.value; else delete ch.bonusDefi; Save.write(ch); this.fen.render('options'); if (this.ui && this.ui.renderChallenge) this.ui.renderChallenge(); }
       if (el.id === 'opt-qualite-image') {
         UI.reglerQualiteImage(el.value);

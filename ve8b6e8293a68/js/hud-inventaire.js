@@ -350,6 +350,8 @@ Object.assign(Hud.prototype, {
       const k = (DATA.knots || []).find(x => x.id === d.id);
       if (k) L.push(li(esc(k.desc)));
       L.push(li('XP et chances de butin', `+${DATA.rules.knotBonus} %`));
+      const sem = typeof Semaine === 'object' && this.world && this.world.ch ? Semaine.statut(this.world.ch) : null;
+      if (sem && sem.ouverte && sem.noeud.id === d.id) L.push(li('Nœud de la semaine', `+${DATA.rules.knotBonus} % de plus, ${sem.victoires} / ${sem.objectif}`));
     }
     if (d.kind === 'resource') L.push(li('Ressource d\'artisanat', `${Items.recipes().filter(x => x.ingredients.some(i => i.id === d.id)).length} recette(s)`));
     if (!L.length) L.push(li('Aucun effet'));

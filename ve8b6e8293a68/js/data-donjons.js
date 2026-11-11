@@ -105,6 +105,19 @@ DATA.monsters.grand_tholou = M('grand_tholou', { name: 'Le Grand Tholou', region
   triggers: [{ when: 'turnStart', do: [{ act: 'bond', pa: 2, range: 3, feat: 'tholou_panique' }] }],
   desc: 'Boss de la Mine. Donne deux de ses PA au plus gros de ses alliés ; séparé de lui de plus de trois cases, il panique et perd son tour.' });
 
+for (const [id, cle] of Object.entries({
+  grand_grouk: 'Place-toi dans son axe, un rocher entre vous : il charge, s\'y assomme et reste vulnérable un tour.',
+  dorm: 'Trempe-le d\'un sort d\'eau pour qu\'il cesse d\'encaisser, et éloigne-le de son enclume : contre elle, il se reforge.',
+  pilou_chapardeur: 'Va le frapper au contact : il lâche sa lanterne et perd un tour à la chercher. À distance, il esquive tout.',
+  kavou_prisme: 'Relis sa fiche à chacun de ses tours : sa couleur change ses résistances. Frappe l\'élément qui lui fait mal ce tour-là.',
+  fileuse: 'Coupe ses deux fils d\'ancrage le même tour (garde tes PA pour le second) : son cocon s\'ouvre trois tours.',
+  kraska: 'Tue ses Braises vives à côté d\'elle : sa robe de cendre arrête les coups, pas les explosions.',
+  glaise_mere: 'Frappe-la au feu, jamais à l\'eau : l\'eau la soigne, le feu la cuit et lui fait prendre double deux tours.',
+  grand_tholou: 'Éloigne-le de plus de trois cases de son allié : séparé, il panique et perd son tour.',
+  mere_des_brisants: 'Quitte les rangées inondées : la marée en gagne une de plus à chacun de ses tours.',
+  porte_fente: 'Regarde où s\'ouvrent les fentes avant de bouger : elles changent de place à chacun de ses tours.',
+})) if (DATA.monsters[id]) DATA.monsters[id].cle = cle;
+
 DATA.encounters.push(
   { id: 'grenier', region: 'orsane', name: 'Grenier des Glyms (boss)', monsters: ['pilou_chapardeur', 'pilou'] },
   { id: 'voliere_kavous', region: 'orsane', name: 'Volière des Kavous (boss)', monsters: ['kavou_prisme', 'kavou_bleu', 'kavou_roux'] },

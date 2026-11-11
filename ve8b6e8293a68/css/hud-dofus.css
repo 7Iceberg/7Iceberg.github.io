@@ -89,3 +89,11 @@ body.vy-discussion-ouverte #app.mode-combat #log { display: none !important; }
 
 #app.vy-edition #vue-interface { color: var(--vy-cristal, #52d2f4); }
 @media (max-width: 720px), (max-height: 500px) { #vue-interface { display: none; } }
+
+:is(#app, #tooltip) .vy-cle-boss { display: grid; gap: 2px; margin: 6px 0; padding: 6px 9px; border-left: 3px solid var(--e-or, #f2c14e); border-radius: 0 6px 6px 0; background: var(--e-case, rgba(10, 9, 15, 0.55)); font: 500 12px/1.35 var(--vy-font-ui); color: var(--e-texte, #f1ece4); text-align: left; }
+:is(#app, #tooltip) .vy-cle-boss b { font: 800 10px/1.2 var(--vy-font-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--e-or, #f2c14e); }
+:is(#app, #tooltip) .vy-cle-boss--court { margin: 5px 0 0; padding: 4px 7px; font-size: 11px; }
+:is(#app, #tooltip) .vy-cle-boss--court b { display: none; }
+#app .vy-fiche-groupe .vy-cle-boss, #app .vy-inter__groupe .vy-cle-boss { margin: 8px 2px 2px; }
+#app .vy-objectifs__sec--geste .vy-cle-boss { margin: 4px 0 0; max-width: 236px; }
+#app .vy-objectifs__compte i.g { color: var(--e-or, #f2c14e); }

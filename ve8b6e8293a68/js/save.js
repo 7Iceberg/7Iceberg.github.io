@@ -28,7 +28,7 @@ const Save = (() => {
   const seqOf = uid => Number(get(SEQ + uid)) || 0;
 
   const isInt = (v, min, max) => Number.isInteger(v) && v >= (min == null ? -Infinity : min) && v <= (max == null ? Infinity : max);
-  const ALLOWED = new Set(['classId', 'name', 'gender', 'level', 'xp', 'statPoints', 'stats', 'equipment', 'inventory', 'fils', 'hp', 'titles', 'title', 'quests', 'counters', 'achievements', 'achClaimed', 'veille', 'pos', 'relay', 'relays', 'dungeon', 'coffre', 'marche', 'avis', 'dojo', 'trousseau', 'autoStats', 'playTime', 'knots', 'ensembles', 'fight', 'mapTimers', 'flags', 'v', 'uid', 'voie', 'scrolls', 'faction', 'tuto']);
+  const ALLOWED = new Set(['classId', 'name', 'gender', 'level', 'xp', 'statPoints', 'stats', 'equipment', 'inventory', 'fils', 'hp', 'titles', 'title', 'quests', 'counters', 'achievements', 'achClaimed', 'veille', 'semaine', 'pos', 'relay', 'relays', 'dungeon', 'coffre', 'marche', 'avis', 'dojo', 'trousseau', 'autoStats', 'playTime', 'knots', 'ensembles', 'fight', 'mapTimers', 'flags', 'v', 'uid', 'voie', 'scrolls', 'faction', 'tuto']);
   for (const k of ['variantes', 'spellRanks', 'spellPoints', 'autoSpells']) ALLOWED.add(k);
   ALLOWED.add('look');
   ALLOWED.add('origine');
@@ -234,6 +234,12 @@ const Save = (() => {
         o.veille = { first: vl.first, last: vl.last, reserve, days };
         counters.feats.veille = marks;
       }
+    }
+    if (typeof Semaine === 'object') {
+      o.semaine = Semaine.valider(o.semaine, bad);
+      const ne = typeof Veille === 'object' ? Veille.creation(o.uid) : null, ici = Semaine.numero();
+      const tenues = counters.feats.semaines || 0, max = ne == null || ici == null ? 0 : Math.max(0, ici - Math.floor((ne - 1) / 7) + 1);
+      if (tenues && ne != null && ici != null && tenues > max) { bad('semaines du Nœud'); counters.feats.semaines = max; }
     }
     const q = o.quests && typeof o.quests === 'object' ? o.quests : {};
     const quests = { active: {}, done: [] };

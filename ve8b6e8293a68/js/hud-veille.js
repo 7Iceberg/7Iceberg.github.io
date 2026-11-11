@@ -72,7 +72,7 @@ Object.assign(Hud.prototype, {
     const e = s.entree, el = element(e.element);
     return `<div class="vy-veille" style="--el:${el.color}">
       <section class="vy-veille__jour" data-defile="veille-jour" aria-label="Veille du jour">${this.veilleCarte(ch, s)}</section>
-      <section class="vy-veille__suivi" data-defile="veille-suivi" aria-label="Le cycle et les marques">${this.veilleSuivi(ch, s)}</section>
+      <section class="vy-veille__suivi" data-defile="veille-suivi" aria-label="Le cycle et les marques">${this.veilleSemaine(ch)}${this.veilleSuivi(ch, s)}</section>
     </div>`;
   },
 
@@ -109,6 +109,25 @@ Object.assign(Hud.prototype, {
     if (!s.peut) return `<button class="vy-bouton" disabled>Déposer</button><p class="vy-veille__note">${esc(s.raison)}</p>`;
     const quoi = s.rattrapage ? `Rattrape une Veille en réserve (${s.reserve}) : ${gain}.` : `Rapporte ${gain}.`;
     return `<button class="vy-bouton vy-bouton--primaire" data-act="deposer">Déposer</button><p class="vy-veille__note">${quoi}</p>`;
+  },
+
+  veilleSemaine(ch) {
+    if (typeof Semaine !== 'object') return '';
+    const s = Semaine.statut(ch);
+    if (!s.ouverte) return `<div class="vy-veille__bloc vy-veille__semaine"><span class="vy-veille__label">Le Nœud de la semaine</span><small>Il s'ouvre au niveau ${s.niveau}, avec le premier Nœud.</small></div>`;
+    const k = s.noeud, pct = Math.round(100 * s.victoires / s.objectif);
+    const etat = s.prime ? 'Prime touchée cette semaine. Un autre Nœud sera tiré lundi.'
+      : s.noue ? `Noué : chaque victoire compte (+${DATA.rules.knotBonus} % de plus d'XP et de butin).`
+      : s.possede ? 'Dans ton sac : noue-le dans l\'Inventaire, sur un emplacement de Nœud.'
+      : 'Il se fabrique chez le tailleur.';
+    const reste = s.joursRestants == null ? '' : s.joursRestants > 1 ? ` · encore ${s.joursRestants} jours` : ' · dernier jour';
+    return `<div class="vy-veille__bloc vy-veille__semaine${s.prime ? ' fait' : ''}">
+        <span class="vy-veille__label">Le Nœud de la semaine${reste}</span>
+        <b>${esc(k.name)}</b><small>${esc(k.desc)}</small>
+        <div class="vy-veille__semaine-barre" role="progressbar" aria-valuemin="0" aria-valuemax="${s.objectif}" aria-valuenow="${s.victoires}" aria-label="Victoires avec le Nœud de la semaine"><span style="width:${pct}%"></span></div>
+        <small><b>${s.victoires} / ${s.objectif}</b> victoires avec lui noué. ${s.prime ? '' : `Prime : ${s.gain.xp} XP, ${s.gain.fils} Dragmes, ${s.gain.sceaux} Insignes de la Garde.`}</small>
+        <small class="vy-veille__semaine-etat">${esc(etat)}${s.tenues ? ` Semaines tenues : ${s.tenues}.` : ''}</small>
+      </div>`;
   },
 
   veilleSuivi(ch, s) {

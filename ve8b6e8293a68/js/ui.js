@@ -155,6 +155,22 @@ class UI {
     return touch != null ? !!touch : UI.tactile();
   }
 
+  static get DUREES_TOUR() { return [['auto', 'Automatique'], ['20', '20 s'], ['30', '30 s'], ['45', '45 s']]; }
+  static choixDureeTour() {
+    let v = null;
+    try { v = localStorage.getItem('veylan.dureeTour'); } catch (e) {   }
+    return UI.DUREES_TOUR.some(([id]) => id === v) ? v : 'auto';
+  }
+  static dureeTour() {
+    const v = UI.choixDureeTour(), base = DATA.rules.turnSeconds || 20;
+    if (v !== 'auto') return Number(v);
+    return UI.tactile() ? Math.max(base, 30) : base;
+  }
+  static reglerDureeTour(v) {
+    try { if (v === 'auto') localStorage.removeItem('veylan.dureeTour'); else localStorage.setItem('veylan.dureeTour', String(v)); } catch (e) {   }
+    return UI.dureeTour();
+  }
+
   static tactile() { return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches; }
 
   static reglage(nom) {
@@ -628,7 +644,7 @@ class UI {
     const t = this.el.tooltip;
     const res = Object.entries(e.resist).filter(([, v]) => v).map(([k, v]) => `${DATA.elements[k].label} ${v > 0 ? '+' : ''}${v} %`).join(', ');
     const effects = e.effects.map(f => this.describeEffect(f)).join(', ');
-    t.innerHTML = `<b style="color:${e.color}">${Util.esc(e.name)}</b> <span class="muted">niveau ${e.level}</span><br>${e.hp} / ${e.hpMax} PV · ${e.paMax} PA · ${e.pmMax} PM${res ? '<br><span class="muted">' + res + '</span>' : ''}${effects ? '<br>' + effects : ''}${e.def.desc ? '<br><i>' + e.def.desc + '</i>' : ''}`;
+    t.innerHTML = `<b style="color:${e.color}">${Util.esc(e.name)}</b> <span class="muted">niveau ${e.level}</span><br>${e.hp} / ${e.hpMax} PV · ${e.paMax} PA · ${e.pmMax} PM${res ? '<br><span class="muted">' + res + '</span>' : ''}${effects ? '<br>' + effects : ''}${e.def.desc && !e.def.cle ? '<br><i>' + e.def.desc + '</i>' : ''}` + UI.geste(e.def, true);
     t.classList.remove('hidden');
     const r = this.el.stage.getBoundingClientRect();
     t.style.left = Math.max(8, Math.min(window.innerWidth - t.offsetWidth - 8, r.left + r.width / 2 - t.offsetWidth / 2)) + 'px';
@@ -737,6 +753,7 @@ class UI {
       `<span class="vy-objectifs__titre">Objectifs</span><span class="vy-objectifs__compte"></span>` +
       `<svg class="vy-objectifs__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>` +
       `<div class="vy-objectifs__corps"><div class="vy-objectifs__dedans">` +
+      `<section class="vy-objectifs__sec vy-objectifs__sec--geste" hidden><h5>Le geste</h5><div class="vy-objectifs__gestes"></div></section>` +
       `<section class="vy-objectifs__sec vy-objectifs__sec--defis"><h5>Défis</h5></section>` +
       `<section class="vy-objectifs__sec vy-objectifs__sec--succes"><h5>Succès</h5><div class="vy-succes-combat"></div></section>` +
       `</div></div>`;
@@ -755,10 +772,22 @@ class UI {
     const box = this.objectifs();
     if (!box) return;
     const nd = ((this.combat && this.combat.challenges) || []).filter(Boolean).length, ns = (this._succesCombat || []).length;
-    box.classList.toggle('hidden', !nd && !ns);
+    const gestes = this.gestesDuCombat(), ng = gestes.length;
+    box.classList.toggle('hidden', !nd && !ns && !ng);
+    const sg = box.querySelector('.vy-objectifs__sec--geste');
+    sg.hidden = !ng;
+    sg.querySelector('.vy-objectifs__gestes').innerHTML = gestes.map(def => `<p class="vy-cle-boss"><b>${Util.esc(def.name)}</b><span>${Util.esc(def.cle)}</span></p>`).join('');
     box.querySelector('.vy-objectifs__sec--defis').hidden = !nd;
     box.querySelector('.vy-objectifs__sec--succes').hidden = !ns;
-    box.querySelector('.vy-objectifs__compte').innerHTML = [nd ? `<i class="d">${nd} défi${nd > 1 ? 's' : ''}</i>` : '', ns ? `<i class="s">${ns} succès</i>` : ''].join('');
+    box.querySelector('.vy-objectifs__compte').innerHTML = [ng ? `<i class="g">${ng > 1 ? ng + ' gestes' : 'le geste'}</i>` : '', nd ? `<i class="d">${nd} défi${nd > 1 ? 's' : ''}</i>` : '', ns ? `<i class="s">${ns} succès</i>` : ''].join('');
+  }
+
+  gestesDuCombat() {
+    const c = this.combat;
+    if (!c || !Array.isArray(c.entities) || c.phase === 'ended') return [];
+    const vus = new Set(), l = [];
+    for (const e of c.entities) if (e && e.team === 'monster' && e.alive !== false && e.def && e.def.cle && !vus.has(e.def.id)) { vus.add(e.def.id); l.push(e.def); }
+    return l;
   }
 
   succesDuCombat() {
@@ -1031,6 +1060,11 @@ class UI {
     return url;
   }
 
+  static geste(def, court) {
+    if (!def || !def.cle) return '';
+    return `<p class="vy-cle-boss${court ? ' vy-cle-boss--court' : ''}"><b>Le geste</b><span>${Util.esc(def.cle)}</span></p>`;
+  }
+
   renderInspect() {
     const e = this.inspected;
     if (!e) { this.el.inspect.innerHTML = ''; return; }
@@ -1051,6 +1085,7 @@ class UI {
     if (e.immuneElement) tags.push(`immunisé : ${DATA.elements[e.immuneElement].label.toLowerCase()}`);
     this.el.inspect.innerHTML =
       `<h3 style="color:${e.color}">${Util.esc(e.name)}${e.def.title ? ` <small>${Util.esc(e.def.title)}</small>` : ''} <small>niveau ${e.level}</small></h3>` +
+      UI.geste(e.def) +
       `<div class="row"><span>${e.hp} / ${e.hpMax} PV</span><span>${e.paMax} PA · ${e.pmMax} PM</span></div>` +
       `<div class="muted">Initiative ${e.initiative} · ${e.alive ? '' : 'vaincu · '}résistances : ${res}</div>` +
       (tags.length ? `<div class="muted">${tags.join(' · ')}</div>` : '') +

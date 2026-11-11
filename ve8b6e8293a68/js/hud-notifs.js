@@ -72,6 +72,14 @@
       setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, ms);
     },
 
+    rappelerGestes() {
+      const cb = this.combat, ui = this.ui;
+      const gestes = ui && ui.gestesDuCombat ? ui.gestesDuCombat() : [];
+      for (const def of gestes) if (cb && typeof cb.log === 'function') cb.log(`Le geste contre ${def.name} : ${def.cle}`, 'system');
+      if (ui && ui.majObjectifs) ui.majObjectifs();
+      return gestes;
+    },
+
     toast(text, type) {
       const texte = String(text == null ? '' : text);
       if (this.pushJournal) this.pushJournal('evenements', texte);

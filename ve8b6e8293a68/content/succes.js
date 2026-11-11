@@ -96,6 +96,9 @@
       "veille_28": [20,"Compagnons","Veille du jour"],
       "veille_100": [30,"Compagnons","Veille du jour"],
       "veille_365": [30,"Compagnons","Veille du jour"],
+      "semaine_1": [5,"Défis et Nœuds","Nœud de la semaine"],
+      "semaine_4": [10,"Défis et Nœuds","Nœud de la semaine"],
+      "semaine_12": [30,"Défis et Nœuds","Nœud de la semaine"],
     },
     nouveaux: [
       {"id":"combats_1000","name":"Mille de tombés","desc":"Gagner 1000 combats.","cond":{"type":"fights","count":1000},"rewards":{"title":"Vétéran des Cimes","xp":2250,"fils":375},"points":30,"cat":"Général","sous":"Combats"},

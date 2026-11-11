@@ -79,7 +79,8 @@
     effects: [dmg(9, 12)], maxPerTurn: 1, desc: 'Krobb referme sa mâchoire de meule sur ce qui est à portée.' });
   DATA.spells.m_crachat_gravier = S('m_crachat_gravier', { name: 'Crachat de gravier', element: 'terre', pa: 2, range: [2, 5], target: 'enemy',
     effects: [dmg(4, 6)], maxPerTurn: 2, desc: 'Du gravier mâché, craché de loin, deux fois par tour au plus.' });
-  DATA.monsters.krobb = M('krobb', { name: 'Krobb, le Ronge-Amarre', region: 'ervane', level: '13 à 18', boss: true, shape: 'square', color: '#7d7466', noyau: '#f2c14e',
+  DATA.monsters.krobb = M('krobb', { name: 'Krobb, le Ronge-Amarre', region: 'ervane', level: '13 à 18', boss: true,
+    cle: 'Cache-toi derrière un pilier : il ouvre la gueule pour renifler et reste ouvert un tour.', shape: 'square', color: '#7d7466', noyau: '#f2c14e',
     hp: 120, dmgMult: 0.35, pa: 6, pm: 3, initiative: 60, resist: { terre: 20, air: -10 }, spells: ['m_grosse_bouchee', 'm_crachat_gravier'],
     ai: 'melee',
     triggers: [

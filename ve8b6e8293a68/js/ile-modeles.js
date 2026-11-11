@@ -170,6 +170,8 @@ const IleModeles = (() => {
     'b-fougere': { case: [1536, 256, 256] }, 'b-tronc': { case: [1024, 512, 256] }, 'b-pieux': { case: [1536, 512, 256] },
     'b-arbre': { atlas: 3, case: [0, 0, 512] }, 'b-bobine': { atlas: 3, case: [512, 0, 256] }, 'b-cabane': { atlas: 3, case: [768, 0, 256] },
     'b-arbre2': { atlas: 3, case: [0, 512, 512] }, 'b-arbre3': { atlas: 3, case: [512, 512, 512] },
+    't-arbre': { atlas: 1, case: [512, 768, 256] }, 'o-pin': { atlas: 1, case: [768, 768, 256] },
+    'o-cypres': { atlas: 5, case: [512, 768, 256] }, 'o-topiaire': { atlas: 5, case: [768, 768, 256] },
     'b-rocher': { atlas: 3, case: [512, 256, 256] }, 'b-champignons': { atlas: 3, case: [768, 256, 256] },
     'a-arcade': { atlas: 4, case: [0, 0, 256] }, 'a-mur': { atlas: 4, case: [256, 0, 256] }, 'a-borne': { atlas: 4, case: [512, 0, 256] },
     'a-pin': { atlas: 4, case: [768, 0, 256] }, 'a-tente': { atlas: 4, case: [0, 256, 256] }, 'a-feu': { atlas: 4, case: [256, 256, 256] },
@@ -219,11 +221,12 @@ const IleModeles = (() => {
   const volcan = () => !!(ICI && ICI.id === 'kaldum');
   const montagne = (x, z) => !!(ICI && ICI.id === 'orsane' && typeof ICI.zoneA === 'function' && /^orsane_(sentiers|eboulis)$/.test(ICI.zoneA(x, z) || ''));
   const arbreBois = h => (h < 0.4 ? 'b-arbre' : h < 0.7 ? 'b-arbre2' : 'b-arbre3');
+  const dansToiles = (x, z) => !ervane() && zoneIci(x, z) === 'orsane_toiles';
   const GENRES = {
-    feuillu: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansBois(x, z) ? arbreBois(h) : chaud(t) || h < 0.2 ? 'arbre3' : 'arbre'), facteur: 1.05 },
-    haut: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansBois(x, z) ? arbreBois(h) : 'arbre2'), facteur: 1.0 },
-    conifere: { modele: () => (volcan() ? 'k-arbre' : 'arbre2'), facteur: 1.0 },
-    tordu: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansAmarre(x, z) ? 'a-pin' : chaud(t) ? 'arbre3' : 'arbre'), facteur: 0.75 },
+    feuillu: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansBois(x, z) ? (dansToiles(x, z) ? 't-arbre' : arbreBois(h)) : chaud(t) || h < 0.2 ? 'arbre3' : 'arbre'), facteur: 1.05 },
+    haut: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansBois(x, z) ? (dansToiles(x, z) ? 't-arbre' : arbreBois(h)) : 'arbre2'), facteur: 1.0 },
+    conifere: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansToiles(x, z) ? 't-arbre' : montagne(x, z) ? 'o-pin' : 'arbre2'), facteur: 1.0 },
+    tordu: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansAmarre(x, z) ? (dansToiles(x, z) ? 't-arbre' : montagne(x, z) ? 'o-pin' : 'a-pin') : chaud(t) ? 'arbre3' : 'arbre'), facteur: 0.75 },
     borne: { modele: () => 'a-borne', facteur: 1.05 },
     mort: { modele: (t, h) => (volcan() ? (h < 0.5 ? 'k-souche' : 'k-arbre') : h < 0.5 ? 'souche' : 'tronc'), absolu: { souche: 1.0, tronc: 0.9 } },
     rocher: { modele: (t, h, x, z) => (volcan() ? (h < 0.08 ? 'k-cristaux' : 'k-roche') : dansBois(x, z) ? 'b-rocher' : h < 0.12 ? 'roc' : h < 0.26 ? 'cristal' : montagne(x, z) ? 'o-roche' : 'rocher2'), facteur: 1.25, absolu: { roc: 2.6, cristal: 1.3, 'b-rocher': 1.9 } },
@@ -434,7 +437,8 @@ const IleModeles = (() => {
       ['arbuste', 0.01, [0.55, 0.75], ['v-fleurs-lavande']], ['rocher', 0.012, [0.8, 1.3], ['v-rochers']]],
     ervane_amarre: [['arbre', 0.008, [2.8, 3.8], ['jt-rouille']], ['buisson', 0.01, [0.8, 1.2], ['v-buisson']], ['rocher', 0.012, [0.8, 1.3], ['v-rochers']]],
     ervane_bois: [['amanite', 0.025, [0.45, 0.65], ['v-amanites']], ['buisson', 0.006, [0.9, 1.2], ['v-buisson']]],
-    orsane_cimes: [['buisson', 0.005, [0.9, 1.2], ['v-buisson']], ['arbuste', 0.006, [0.55, 0.75], ['v-fleurs-blanc', 'v-fleurs-lavande']]],
+    orsane_cimes: [['buisson', 0.005, [0.9, 1.2], ['v-buisson']], ['arbuste', 0.006, [0.55, 0.75], ['v-fleurs-blanc', 'v-fleurs-lavande']],
+      ['arbre', 0.0015, [2.6, 3.4], ['o-cypres']], ['arbuste', 0.002, [1.0, 1.3], ['o-topiaire']]],
     orsane_clairieres: [['arbre', 0.009, [3.0, 4.4], ['jt-ambre', 'jt-ambre', 'jt-vert']], ['buisson', 0.008, [0.9, 1.4], ['v-buisson']],
       ['arbuste', 0.006, [0.55, 0.8], ['v-fleurs-blanc', 'v-fleurs-blanc', 'v-fleurs-lavande']], ['rocher', 0.003, [0.8, 1.2], ['v-rochers']], ['amanite', 0.002, [0.45, 0.6], ['v-amanites']]],
     orsane_sentiers: [['arbre', 0.004, [2.8, 4.0], ['jt-ambre', 'jt-rouille']], ['buisson', 0.006, [0.8, 1.2], ['o-buisson']], ['rocher', 0.008, [0.8, 1.3], ['o-roche']]],

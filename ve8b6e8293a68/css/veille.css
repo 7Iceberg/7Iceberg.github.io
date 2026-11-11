@@ -121,3 +121,10 @@
   .vy-veille__case { max-height: 34px; }
   .vy-veille__grille { grid-template-columns: 40px repeat(7, minmax(0, 34px)); justify-content: start; }
 }
+
+.vy-veille__semaine { margin-bottom: 10px; }
+.vy-veille__semaine b { font-size: 13px; }
+.vy-veille__semaine-barre { height: 6px; margin: 5px 0 2px; border-radius: 3px; background: rgba(0, 0, 0, 0.35); overflow: hidden; }
+.vy-veille__semaine-barre > span { display: block; height: 100%; border-radius: inherit; background: var(--e-or, #f2c14e); }
+.vy-veille__semaine-etat { color: var(--fen-texte-2, #b9b2c4); }
+.vy-veille__semaine.fait .vy-veille__semaine-barre > span { background: #2fd27a; }

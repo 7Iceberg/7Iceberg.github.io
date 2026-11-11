@@ -130,6 +130,11 @@
   };
 
   C.achievements.push(
+    { id: 'semaine_1', name: 'Le rendez-vous', desc: 'Toucher la prime du Nœud de la semaine : cinq victoires avec lui noué.', cond: { type: 'feat', key: 'semaines', count: 1 }, rewards: { xp: 300, fils: 60 } },
+    { id: 'semaine_4', name: 'Quatre semaines nouées', desc: 'Toucher quatre fois la prime du Nœud de la semaine.', cond: { type: 'feat', key: 'semaines', count: 4 }, rewards: { xp: 1200, fils: 200, title: 'Noueur des semaines' } },
+    { id: 'semaine_12', name: 'Une saison de Nœuds', desc: 'Toucher douze fois la prime du Nœud de la semaine, trois mois de rendez-vous.', cond: { type: 'feat', key: 'semaines', count: 12 }, rewards: { xp: 3000, fils: 500, title: 'Gardien des semaines' } },
+  );
+  C.achievements.push(
     { id: 'veille_7', name: 'Une semaine de Veille', desc: 'Accomplir sept Veilles, autant que de Dragons.', cond: { type: 'feat', key: 'veille', count: 7 }, rewards: { title: 'Main des Relais', cosmetique: 'teinture_mousse' } },
     { id: 'veille_28', name: 'Le cycle des Dragons', desc: 'Accomplir vingt-huit Veilles : un cycle entier, sous les quatre éléments.', cond: { type: 'feat', key: 'veille', count: 28 }, rewards: { title: 'Veilleur des Sept Dragons', cosmetique: 'lueur_aube' } },
     { id: 'veille_100', name: 'Cent Veilles', desc: 'Accomplir cent Veilles pour l\'entretien des Relais.', cond: { type: 'feat', key: 'veille', count: 100 }, rewards: { title: 'Lanterne des Relais' } },

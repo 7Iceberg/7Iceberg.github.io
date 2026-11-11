@@ -16,7 +16,7 @@
   const freshSeed = () => { try { return crypto.getRandomValues(new Uint32Array(1))[0]; } catch (e) { return Math.floor(Math.random() * 4294967296); } };
   const seed = DEV && params.get('seed') ? Number(params.get('seed')) : freshSeed();
   const rng = Util.mulberry32(seed);
-  const combat = new Combat({ rng, turnSeconds: DATA.rules.turnSeconds, aiDelay: DEV && params.has('aidelay') ? Number(params.get('aidelay')) : 350 });
+  const combat = new Combat({ rng, turnSeconds: typeof UI === 'function' && UI.dureeTour ? UI.dureeTour() : DATA.rules.turnSeconds, aiDelay: DEV && params.has('aidelay') ? Number(params.get('aidelay')) : 350 });
   const canvas = document.getElementById('board');
   const useGL = typeof RendererGL === 'function' && RendererGL.supported(params) && await RendererGL.probe();
   const RendererClass = useGL ? RendererGL : Renderer;

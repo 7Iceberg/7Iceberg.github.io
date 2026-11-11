@@ -141,7 +141,7 @@ Object.assign(Hud.prototype, {
     return `${retour}${portrait}
       <header class="vy-best__ftete"><h3>${esc(m.name)}</h3><span class="vy-best__niv">${niv(f.niveau)}</span></header>
       ${badges ? `<div class="vy-best__badges">${badges}</div>` : ''}
-      <p class="vy-best__recit">${esc(m.desc || '')}</p>${base}
+      <p class="vy-best__recit">${esc(m.desc || '')}</p>${typeof UI === 'function' && UI.geste ? UI.geste(m) : ''}${base}
       <dl class="vy-best__stats"><div><dt>Rôle</dt><dd>${esc(f.role)}</dd></div><div><dt>PV</dt><dd>${f.pv}</dd></div><div><dt>PA</dt><dd>${f.pa}</dd></div><div><dt>PM</dt><dd>${f.pm}</dd></div><div><dt>Vaincus</dt><dd>${n}</dd></div></dl>
       <div class="vy-sous"><span>Résistances</span></div><div class="vy-best__resist">${res}</div>
       <div class="vy-sous"><span>Sorts</span></div>${sorts}

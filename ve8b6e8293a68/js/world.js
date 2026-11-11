@@ -453,7 +453,8 @@ class World {
 
   groupXp(group) {
     const base = group.monsters.reduce((s, m) => s + Entity.xpFor(DATA.monsters[m.id], m.level), 0);
-    const knots = this.ch.activeKnots().length * (DATA.rules.knotBonus || 0);
+    const noues = this.ch.activeKnots();
+    const knots = noues.length * (DATA.rules.knotBonus || 0) + (typeof Semaine === 'object' && !this.estDojo(group) ? Semaine.bonus(this.ch, noues) : 0);
     const repos = typeof Repos !== 'undefined' && this.zone && !this.ch.dungeon && !this.estDojo(group) ? Repos.valeur(this.ch, this.zone.id, Date.now()) : 0;
     return this.ch.wisdomXp(Math.round(base * (1 + (knots + repos) / 100)));
   }
@@ -1177,6 +1178,9 @@ class World {
     const knotCount = this.combat.knots ? this.combat.knots.size : 0;
     const parDefi = d.victory ? Challenges.bonus(defis, ch.bonusDefi) : { xp: 0, butin: 0 };
     let bonus = d.victory ? knotCount * DATA.rules.knotBonus : 0;
+    const noeudsNoues = this.combat.knots ? [...this.combat.knots] : [];
+    const semaineOk = d.victory && typeof Semaine === 'object' && !this.combat.epreuveDojo;
+    if (semaineOk) bonus += Semaine.bonus(ch, noeudsNoues);
     if (d.victory && typeof Repos !== 'undefined' && !ch.dungeon && !this.combat.epreuveDojo && !(this.currentGroup && this.estDojo && this.estDojo(this.currentGroup)) && this.zone && this.zone.id) {
       result.repos = Repos.consommer(ch, this.zone.id, Date.now());
       bonus += result.repos;
@@ -1240,6 +1244,17 @@ class World {
         result.xp += prime.xp; result.fils += prime.fils;
         if (prime.sceaux) { const found = result.drops.find(x => x.id === 'sceau_de_la_garde'); if (found) found.count += prime.sceaux; else result.drops.push({ id: 'sceau_de_la_garde', count: prime.sceaux }); }
         ch.dojo = { jour: World.jourDojo() };
+      }
+      if (semaineOk) {
+        const sv = Semaine.victoire(ch, noeudsNoues);
+        if (sv) {
+          result.semaine = { noeud: (Semaine.noeud(ch) || {}).name || '', victoires: sv.victoires, objectif: Semaine.OBJECTIF, prime: sv.prime };
+          if (sv.prime) {
+            result.xp += sv.prime.xp; result.fils += sv.prime.fils;
+            const found = result.drops.find(x => x.id === Avis.SCEAU);
+            if (found) found.count += sv.prime.sceaux; else result.drops.push({ id: Avis.SCEAU, count: sv.prime.sceaux });
+          }
+        }
       }
       result.avis = Avis.victoire(ch, monsters.map(e => e.def.id)).map(a => ({ id: a.id, nom: DATA.monsters[a.monstre].name }));
       const g = ch.gainXp(result.xp);

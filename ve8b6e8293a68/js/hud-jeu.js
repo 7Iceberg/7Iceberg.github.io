@@ -1149,6 +1149,7 @@ class FicheGroupe {
       `</nav></div>` +
       `<div class="vy-inter__panneau">` +
       `<section class="vy-inter__sous-panneau vy-inter__groupe${aire ? ' hidden' : ''}"><h4>Le groupe</h4><ul class="vy-fiche-groupe__liste">${liste}</ul>` +
+      [...new Set(g.monsters.map(m => m.id))].map(id => DATA.monsters[id]).filter(def => def && def.cle).map(def => UI.geste(def).replace('<b>Le geste</b>', `<b>Le geste : ${Util.esc(def.name)}</b>`)).join('') +
       `<button type="button" class="vy-inter__lien" data-act="fiche" title="Le Bestiaire">${Fenetres.ICON.carnet}<span>Voir au Bestiaire</span></button>${this.succesDuGroupe(g)}</section>` +
       `<section class="vy-inter__sous-panneau vy-inter__aire${aire ? '' : ' hidden'}"><h4>L'aire du combat</h4><div class="vy-fiche-groupe__apercu hidden"></div></section>` +
       `</div>`;
