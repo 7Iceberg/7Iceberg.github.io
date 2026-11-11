@@ -169,6 +169,7 @@ const IleModeles = (() => {
     'mu-terrier': { case: [1792, 256, 256] },
     'b-fougere': { case: [1536, 256, 256] }, 'b-tronc': { case: [1024, 512, 256] }, 'b-pieux': { case: [1536, 512, 256] },
     'b-arbre': { atlas: 3, case: [0, 0, 512] }, 'b-bobine': { atlas: 3, case: [512, 0, 256] }, 'b-cabane': { atlas: 3, case: [768, 0, 256] },
+    'b-arbre2': { atlas: 3, case: [0, 512, 512] }, 'b-arbre3': { atlas: 3, case: [512, 512, 512] },
     'b-rocher': { atlas: 3, case: [512, 256, 256] }, 'b-champignons': { atlas: 3, case: [768, 256, 256] },
     'a-arcade': { atlas: 4, case: [0, 0, 256] }, 'a-mur': { atlas: 4, case: [256, 0, 256] }, 'a-borne': { atlas: 4, case: [512, 0, 256] },
     'a-pin': { atlas: 4, case: [768, 0, 256] }, 'a-tente': { atlas: 4, case: [0, 256, 256] }, 'a-feu': { atlas: 4, case: [256, 256, 256] },
@@ -198,7 +199,7 @@ const IleModeles = (() => {
     'k-arbre': { atlas: 9, case: [512, 768, 256] }, 'k-buisson': { atlas: 9, case: [768, 768, 256] },
     'k-cristaux': { atlas: 7, case: [768, 768, 256] }, 'k-fumerolle': { atlas: 10, case: [0, 0, 256] },
   };
-  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [512, 256]];
+  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [512, 256]];
   const SOURCES = [['eau', 160, 148], ['feu', 130, 125], ['terre', 140, 166], ['air', 105, 120], [null, 92, 164]];
   let ICI = null;
   const ici = T => { if (T) ICI = T; return ICI; };
@@ -217,9 +218,10 @@ const IleModeles = (() => {
   const sombre = t => !!t && t[1] < 0.2 && t[0] < 0.1;
   const volcan = () => !!(ICI && ICI.id === 'kaldum');
   const montagne = (x, z) => !!(ICI && ICI.id === 'orsane' && typeof ICI.zoneA === 'function' && /^orsane_(sentiers|eboulis)$/.test(ICI.zoneA(x, z) || ''));
+  const arbreBois = h => (h < 0.4 ? 'b-arbre' : h < 0.7 ? 'b-arbre2' : 'b-arbre3');
   const GENRES = {
-    feuillu: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansBois(x, z) ? 'b-arbre' : chaud(t) || h < 0.2 ? 'arbre3' : 'arbre'), facteur: 1.05 },
-    haut: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansBois(x, z) ? 'b-arbre' : 'arbre2'), facteur: 1.0 },
+    feuillu: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansBois(x, z) ? arbreBois(h) : chaud(t) || h < 0.2 ? 'arbre3' : 'arbre'), facteur: 1.05 },
+    haut: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansBois(x, z) ? arbreBois(h) : 'arbre2'), facteur: 1.0 },
     conifere: { modele: () => (volcan() ? 'k-arbre' : 'arbre2'), facteur: 1.0 },
     tordu: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansAmarre(x, z) ? 'a-pin' : chaud(t) ? 'arbre3' : 'arbre'), facteur: 0.75 },
     borne: { modele: () => 'a-borne', facteur: 1.05 },

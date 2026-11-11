@@ -31,7 +31,7 @@ Object.assign(Hud.prototype, {
     c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.ellipse(W / 2, sol, 22 * S, 5 * S, 0, 0, Math.PI * 2); c.fill();
     if (painter && typeof painter.drawBody === 'function') {
       c.save(); c.translate(W / 2, sol); c.scale(S, S); c.lineJoin = 'round'; c.lineCap = 'round';
-      try { painter.drawBody(c, { x: 0, y: 0 }, { shape: 'player', color: cls.color, glyph: cls.glyph, team: 'player', look: ap.look, auraCos: ap.auraCos, lueur: ap.lueur, gender: ch.gender, facing: 'se' }); } catch (e) {   }
+      try { painter.drawBody(c, { x: 0, y: 0 }, { shape: 'player', color: cls.color, glyph: cls.glyph, team: 'player', look: ap.look, auraCos: ap.auraCos, gender: ch.gender, facing: 'se' }); } catch (e) {   }
       c.restore();
     }
     let url = '';

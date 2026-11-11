@@ -53,8 +53,8 @@ class Hud {
     w.on('zoneProche', d => this.toast(`Attention : ${d.nom}, niveau ${d.niveau[0]}${d.niveau[1] !== d.niveau[0] ? ' à ' + d.niveau[1] : ''}. Plus fort que toi.`));
     w.on('panneau', d => this.toast(d.texte));
     w.on('dialogue', ctx => this.openDialogue(ctx));
-    w.on('fight', () => { this.closePanel(); this.fermerFenetres(); this.setMode('combat'); this.ui.refresh(); this.ui.updateHighlights(); });
-    w.on('fightEnd', r => this.openFightEnd(r));
+    w.on('fight', () => { this.finCombat = null; this.closePanel(); this.fermerFenetres(); this.setMode('combat'); this.ui.refresh(); this.ui.updateHighlights(); });
+    w.on('fightEnd', r => this.finDeCombat(r));
     w.on('machine', ctx => this.openWorkshop(ctx));
     w.on('reward', r => this.openReward(r));
     w.on('achievement', g => this.annoncerSucces(g));
@@ -107,10 +107,39 @@ class Hud {
       const b = document.querySelector(`#menus [data-win="${id}"]`);
       if (b) b.classList.toggle('vy-menu--point', n > 0);
     }
-    const tr = Quests.tracker(ch).slice(0, 3);
+    this.rendreSuivi();
+  }
+
+  rendreSuivi() {
+    const ch = this.world.ch, el = this.el.tracker;
+    if (!ch || !el) return;
+    const tous = Quests.tracker(ch), suivie = this.quetesSuivie ? this.quetesSuivie() : null;
+    const tr = (suivie ? tous.filter(t => t.quest.id === suivie).concat(tous.filter(t => t.quest.id !== suivie)) : tous).slice(0, 3);
     const succes = this.succesSuivis ? this.succesSuivis().map(Achievements.get).filter(Boolean) : [];
-    this.el.tracker.innerHTML = tr.map(t => `<div class="tq${t.quest.main ? ' main' : ''}${t.done ? ' done' : ''}"><b>${esc(t.quest.name)}</b><span>${esc(t.text)}</span></div>`).join('') +
-      succes.map(a => `<div class="tq succes"><b>${esc(a.name)}</b><span>Succès · ${esc(Achievements.progress(ch, a))}</span></div>`).join('');
+    let plie = false;
+    try { plie = localStorage.getItem('veylan.suivi.plie') === '1'; } catch (e) {   }
+    const fleche = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+    const html = (tr.length || succes.length) ? `<button type="button" class="vy-suivi__tete" data-suivi="plier" aria-expanded="${!plie}"><b>Quêtes</b><small>${tous.length} en cours</small>${fleche}</button>` +
+      tr.map(t => `<button type="button" class="tq${t.quest.main ? ' main' : ''}${t.done ? ' done' : ''}" data-quete="${esc(t.quest.id)}" title="Ouvrir dans le livre des quêtes"><b>${esc(t.quest.name)}</b><span>${esc(t.text)}</span></button>`).join('') +
+      succes.map(a => `<button type="button" class="tq succes" data-succes="${esc(a.id)}" title="Ouvrir les succès"><b>${esc(a.name)}</b><span>Succès · ${esc(Achievements.progress(ch, a))}</span></button>`).join('') : '';
+    el.classList.add('vy-suivi');
+    el.classList.toggle('plie', plie);
+    el.hidden = !html;
+    if (el.dataset.html !== html) { el.dataset.html = html; el.innerHTML = html; }
+    if (!this._suiviBranche) {
+      this._suiviBranche = true;
+      el.addEventListener('click', evt => {
+        const b = evt.target.closest('[data-suivi], [data-quete], [data-succes]');
+        if (!b) return;
+        if (b.dataset.suivi === 'plier') {
+          const on = !el.classList.contains('plie');
+          try { localStorage.setItem('veylan.suivi.plie', on ? '1' : '0'); } catch (e) {   }
+          el.classList.toggle('plie', on);
+          b.setAttribute('aria-expanded', String(!on));
+        } else if (b.dataset.quete && this.ouvrirQuete) this.ouvrirQuete(b.dataset.quete);
+        else if (b.dataset.succes && this.fen && !this.fen.isOpen('succes')) this.toggleWin('succes');
+      });
+    }
   }
 
 
@@ -149,8 +178,57 @@ class Hud {
     for (const id of [...this.fen.wins.keys()]) this.fen.close(id, true);
   }
 
+  finDeCombat(r) {
+    const f = this.finCombat = { r, t0: 0 };
+    Promise.resolve().then(() => {
+      const w = this.world;
+      if (this.finCombat !== f) return;
+      if (!w.showCombat || w.state === 'combat') { this.finCombat = null; return; }
+      this.reprendreApresCombat();
+      f.t0 = performance.now();
+      this.attendreRetour(f);
+    });
+  }
+
+  reprendreApresCombat() {
+    this.world.resume();
+    this.setMode(this.world.showCombat ? 'combat' : 'explore');
+    this.ui.hideBanner();
+    this.ui.selectedSpell = null;
+    this.ui.updateHighlights();
+  }
+
+  revenuDuCombat() {
+    const sc = this.renderer;
+    if (sc && (sc.voileEl || sc.voulu)) return false;
+    const ile = sc && sc.en3D ? sc.ile : null;
+    if (ile) {
+      if (!ile.pret) return false;
+      if (ile.arene && (ile.arene.ouverte || ile.arene.etat === 'fermeture')) return false;
+      if (ile.camera && ile.camera.trans) return false;
+    }
+    return true;
+  }
+
+  attendreRetour(f) {
+    if (this.finCombat !== f) return;
+    const w = this.world, t = performance.now() - f.t0;
+    if (w.state === 'combat') { this.finCombat = null; return; }
+    const libre = w.state === 'explore' && this.el.panel.classList.contains('hidden');
+    if (t >= 250 && libre && (t > 30000 || this.revenuDuCombat())) {
+      this.finCombat = null;
+      this.openFightEnd(f.r);
+      return;
+    }
+    setTimeout(() => this.attendreRetour(f), 100);
+  }
+
   closePanel() {
-    if (this.el.panel.classList.contains('hidden')) { if (this.conversation && this.conversation.ouverte) this.conversation.fermer(); return; }
+    if (this.el.panel.classList.contains('hidden')) {
+      if (this.finCombat) { const f = this.finCombat; this.finCombat = null; if (!f.t0 && this.world.showCombat && this.world.state === 'panel') this.reprendreApresCombat(); }
+      if (this.conversation && this.conversation.ouverte) this.conversation.fermer();
+      return;
+    }
     const id = this.el.panel.dataset.open;
     this.el.panel.classList.add('hidden');
     this.el.panel.dataset.open = '';
@@ -159,11 +237,9 @@ class Hud {
     this.setInert(false);
     if (id === 'dialogue') this.world.endDialogue();
     else if (id === 'fightEnd') {
-      this.world.resume();
-      this.setMode(this.world.showCombat ? 'combat' : 'explore');
-      this.ui.hideBanner();
-      this.ui.selectedSpell = null;
-      this.ui.updateHighlights();
+      this.finCombat = null;
+      if (this.world.showCombat && this.world.state === 'panel') this.reprendreApresCombat();
+      else if (this.world.state === 'panel') this.world.closePanel();
     } else if (this.world.state === 'panel') this.world.closePanel();
   }
 

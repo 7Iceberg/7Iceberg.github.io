@@ -77,6 +77,25 @@ Object.assign(Hud.prototype, {
     return on;
   },
 
+  ouvrirQuete(id) {
+    const ch = this.world.ch, q = Quests.get(id);
+    if (!q || !ch) return false;
+    const deja = this.fen && this.fen.isOpen('quetes');
+    if (!deja) this.openQuests();
+    const s = this.quetesEtat;
+    s.onglet = ch.quests.active[id] ? (this.quetesMasquees().has(id) ? 'masquees' : 'cours') : 'finies';
+    s.choisie = id;
+    s.vue = 'fiche';
+    s.filtre = '';
+    const cat = catDe(q), i = s.plies.indexOf(cat);
+    if (i >= 0) s.plies.splice(i, 1);
+    this.fen.render('quetes');
+    this.syncMenus();
+    const ligne = document.querySelector(`.vy-fenetre--quetes [data-act="choisir"][data-id="${CSS.escape(id)}"]`);
+    if (ligne && ligne.scrollIntoView) ligne.scrollIntoView({ block: 'nearest' });
+    return true;
+  },
+
   openQuests() {
     const s = this.quetesEtat = this.quetesEtat || { onglet: 'cours', choisie: null, filtre: '', nivMin: 1, nivMax: NIV_MAX, types: [], plies: [], filtres: true };
     s.vue = 'liste';

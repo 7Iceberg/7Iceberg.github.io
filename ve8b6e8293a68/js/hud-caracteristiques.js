@@ -164,7 +164,7 @@ Object.assign(Hud.prototype, {
     const ch = this.world.ch;
     if (typeof AccueilArt !== 'object') return;
     const ap = ch.lookAffiche ? ch.lookAffiche() : { look: ch.look };
-    const fig = AccueilArt.figure(ch.classId, { look: ap.look, gender: ch.gender, auraCos: ap.auraCos, lueur: ap.lueur });
+    const fig = AccueilArt.figure(ch.classId, { look: ap.look, gender: ch.gender, auraCos: ap.auraCos });
     const cv = body.querySelector('.vy-c3__buste'), pied = body.querySelector('.vy-e14__portrait');
     try { if (cv) AccueilArt.buste(cv, fig); if (pied) AccueilArt.tournant(pied, fig, { part: 0.82, calme: true, redessiner: () => this.caracBuste(body) }); } catch (e) {   }
   },

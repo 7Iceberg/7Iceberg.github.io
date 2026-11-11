@@ -93,7 +93,7 @@ class Renderer {
 
   static heroKey(s) {
     const L = Renderer.heroLook(s);
-    const cos = (s.auraCos ? `${s.auraCos.forme || ''}${s.auraCos.couleur || ''}` : '') + '|' + (s.lueur || '');
+    const cos = (s.auraCos ? `${s.auraCos.forme || ''}${s.auraCos.couleur || ''}` : '');
     return `${L.tete}${L.couleurs.join('')}|${s.gender === 'm' ? 'm' : 'f'}|${Renderer.FACINGS.includes(s.facing) ? s.facing : 'se'}|${cos}`;
   }
 
@@ -2645,7 +2645,7 @@ class Renderer {
     const ch = w.ch, cls = DATA.classes[ch.classId];
     const p = w.player;
     const ap = ch.lookAffiche();
-    out.push({ kind: 'entity', rx: p.rx, ry: p.ry, shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, scale: 1, alpha: 1, team: 'player', facing: p.facing, look: ap.look, auraCos: this.quality === 'basse' ? null : ap.auraCos, lueur: ap.lueur, gender: ch.gender, bob: p.moving ? Math.abs(Math.sin(now / 90)) * 3.5 : 0, label: null, phase: 0, insigne: Factions.insigne(ch) });
+    out.push({ kind: 'entity', rx: p.rx, ry: p.ry, shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, scale: 1, alpha: 1, team: 'player', facing: p.facing, look: ap.look, auraCos: this.quality === 'basse' ? null : ap.auraCos, gender: ch.gender, bob: p.moving ? Math.abs(Math.sin(now / 90)) * 3.5 : 0, label: null, phase: 0, insigne: Factions.insigne(ch) });
     for (const g of w.groups) {
       const def = DATA.monsters[g.monsters[0].id];
       out.push({ kind: 'entity', rx: g.rx, ry: g.ry, shape: def.shape, color: def.color, glyph: null, name: def.name, scale: def.boss || def.recherche ? 1.3 : 0.95, alpha: 1, team: 'monster', figure: (typeof Figures === 'object' ? Figures.de(def.id) : null), facing: 1, bob: Math.abs(Math.sin(now / 500 + g.idx)) * 1.5, badge: g.monsters.length > 1 ? `×${g.monsters.length}` : null, label: `${def.recherche ? 'Recherché : ' : ''}${def.name} niv. ${g.level}`, motif: Renderer.motifOf(g.monsters[0].id), phase: g.idx || 0 });
@@ -3087,7 +3087,7 @@ class Renderer {
   drawHero(c, p, s, color, ink, rim, top) {
     if (Renderer.charte && this.drawHeroCharte) return this.drawHeroCharte(c, p, s, color, ink, rim, top);
     const L = Renderer.heroLook(s);
-    const [skin, , tenue, tenue2, capeC, lantern] = L.couleurs;
+    const [skin, , tenue, tenue2, capeC, details] = L.couleurs;
     const facing = Renderer.FACINGS.includes(s.facing) ? s.facing : 'se';
     const back = facing === 'ne' || facing === 'nw', flip = facing === 'sw' || facing === 'nw';
     const T = s.trait || 1, lw = w => w * T;
@@ -3122,7 +3122,7 @@ class Renderer {
       else { b.lineTo(x + 5.4, Y - 3.2); b.quadraticCurveTo(x + 7.6, Y - 2.8, x + 7.5, Y - 1); b.quadraticCurveTo(x + 7.4, Y + 0.1, x + 5.8, Y + 0.1); }
       b.lineTo(x + 0.6, Y + 0.1); b.quadraticCurveTo(x - 0.4, Y + 0.1, x - 0.4, Y - 0.9); b.closePath();
       c.fillStyle = boot; c.fill(b); c.lineWidth = lw(1.1); c.strokeStyle = ink; c.stroke(b);
-      c.fillStyle = Renderer.mix(boot, '#ffffff', 0.2); c.fillRect(x - 0.4, Y - 6.8, 5.8, 1.3);
+      c.fillStyle = details; c.fillRect(x - 0.4, Y - 6.8, 5.8, 1.3);
       c.fillStyle = 'rgba(255,255,255,0.15)'; c.beginPath(); c.ellipse(x + 1.8, Y - 3.4, 0.8, 1.6, 0, 0, Math.PI * 2); c.fill();
     }
     if (!back) { arm(X - 8, by + 3, X - 11, by + 9.5, X - 10.8, by + 16, sleeve); hand(X - 10.8, by + 16.6); }
@@ -3149,7 +3149,7 @@ class Renderer {
       arm(X + 8, by + 3, X + 11.6, by + 8.5, X + 12.6, by + 13.6, body);
       c.fillStyle = Renderer.mix(body, '#ffffff', 0.25);
       c.beginPath(); c.moveTo(X - 5.2, by + 0.5); c.lineTo(X + 0.6, by + 4.4); c.lineTo(X + 6.2, by + 0.5); c.closePath(); c.fill();
-      c.fillStyle = '#3a2a20'; c.fillRect(X - ww - 0.6, by + 14, 2 * ww + 1.2, 3.3);
+      c.fillStyle = details; c.fillRect(X - ww - 0.6, by + 14, 2 * ww + 1.2, 3.3);
       c.fillStyle = '#e2c690'; c.fillRect(X - 1.2, by + 13.6, 3.6, 4.1);
       c.strokeStyle = '#e2c690'; c.lineWidth = 0.9; c.setLineDash([1.2, 1.1]);
       c.beginPath(); c.moveTo(X + sw - 5.6, by + 0.9); c.lineTo(X + sw - 1.2, by + 4); c.stroke();
@@ -3166,7 +3166,7 @@ class Renderer {
     c.lineWidth = lw(3.6); c.strokeStyle = ink; c.stroke(); c.fillStyle = hg; c.fill();
     if (back) this.heroHair(c, 'dos', L, hx, hy, ink, rim, T);
     else { this.heroFace(c, hx, hy, L, fem); this.heroHair(c, 'avant', L, hx, hy, ink, rim, T); }
-    this.drawProp(c, p, s, top, by, ink, lantern, T, back);
+    this.drawProp(c, p, s, top, by, ink, s.color, T, back);
     if (!back) hand(X + 12.6, by + 14);
     c.restore();
     if (!back) {
@@ -3232,7 +3232,7 @@ class Renderer {
   }
 
   heroHair(c, part, L, x, y, ink, rim, T) {
-    const hair = L.couleurs[1], tenue = L.couleurs[2], capeC = L.couleurs[4], lantern = L.couleurs[5];
+    const hair = L.couleurs[1], tenue = L.couleurs[2], capeC = L.couleurs[4], lantern = '#e0a63a';
     const lw = w => w * T, t = L.tete;
     const light = Renderer.mix(hair, '#ffffff', 0.32), dark = Renderer.mix(hair, '#06050a', 0.42);
     const mass = (k, outline) => {
@@ -3428,15 +3428,14 @@ class Renderer {
     col = col || s.color; T = T || 1;
     const light = Renderer.mix(col, '#ffffff', 0.55);
     const ow = (inner, outer) => inner + (outer - inner) * T;
-    const gm = s.lueur === 'vive' ? 1.7 : s.lueur === 'braise' ? 1.3 : 1;
     const glow = (x, y, r) => {
-      c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.8; c.drawImage(Renderer.dot(col), x - r * gm, y - r * gm, r * 2 * gm, r * 2 * gm);
-      if (s.lueur === 'braise') { c.globalAlpha = 0.55; c.drawImage(Renderer.dot('#ffb070'), x - r * 0.6, y - r * 0.6, r * 1.2, r * 1.2); }
+      c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.8; c.drawImage(Renderer.dot(col), x - r, y - r, r * 2, r * 2);
       c.restore();
     };
+    const acier = '#cfd8e2';
     const gem = (x, y, w, h) => {
       c.beginPath(); c.moveTo(x, y - h); c.lineTo(x + w, y); c.lineTo(x, y + h); c.lineTo(x - w, y); c.closePath();
-      c.lineWidth = 2.2 * T; c.strokeStyle = ink; c.stroke(); c.fillStyle = light; c.fill();
+      c.lineWidth = 2.2 * T; c.strokeStyle = ink; c.stroke(); c.fillStyle = acier; c.fill();
       c.fillStyle = 'rgba(255,255,255,0.8)'; c.beginPath(); c.moveTo(x, y - h); c.lineTo(x - w * 0.6, y - h * 0.1); c.lineTo(x, y); c.closePath(); c.fill();
     };
     const line = (pts, w, color) => { c.lineWidth = w; c.strokeStyle = color; c.beginPath(); pts.forEach((q, i) => (i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]))); c.stroke(); };
@@ -3449,7 +3448,7 @@ class Renderer {
         arc(); c.lineWidth = ow(2.4, 4.6); c.strokeStyle = ink; c.stroke();
         arc(); c.lineWidth = 2.4; c.strokeStyle = '#c9a66b'; c.stroke();
         line([[x - 9, n + 10], [x, n + 17], [x + 9, n + 10]], 0.9, 'rgba(240,240,255,0.85)');
-        glow(x, n, 8); gem(x, n - 1, 2.4, 3.8);
+        gem(x, n - 1, 2.4, 3.8);
         break;
       }
       case 'O': {
@@ -3467,8 +3466,6 @@ class Renderer {
         line([[x0, y0], [x1, y1]], ow(3.2, 5.4), ink); line([[x0, y0], [x1, y1]], 3.2, '#d8dee8');
         line([[x0 + 1, y0 - 3], [x1 - 0.5, y1 + 3]], 1, s.glyph === 'Kr' ? '#ff4a3a' : light);
         line([[x0 - 4, y0 + 1], [x0 + 4.5, y0 - 2]], 3.2, '#c9a66b');
-        if (s.glyph === 'N') { glow(p.x - 11, by + 18, 7); c.fillStyle = ink; c.fillRect(p.x - 14, by + 14, 6, 8); c.fillStyle = light; c.fillRect(p.x - 13, by + 16, 4, 4); }
-        else glow(x0 + len * 0.2, y0 - len * 0.5, 7);
         break;
       }
       case 'S': {
@@ -3487,10 +3484,16 @@ class Renderer {
         c.fillStyle = light; c.fillRect(hx + 2, hy + 5, 5, 5);
         break;
       }
-      default: {
-        const gx = p.x + 12.5, gy = by + 13;
-        glow(gx, gy, 9); gem(gx, gy, 3, 4.5);
+      case 'Ov': {
+        const x = p.x + 13, y = by + 12;
+        line([[x, y - 6], [x, y - 3]], ow(1.2, 2.6), ink);
+        glow(x, y + 3, 8);
+        c.fillStyle = ink; c.fillRect(x - 4, y - 3, 8, 11);
+        c.fillStyle = light; c.fillRect(x - 2.6, y - 1.6, 5.2, 8.2);
+        c.fillStyle = '#b8923a'; c.fillRect(x - 4.5, y - 4, 9, 1.8); c.fillRect(x - 4.5, y + 7.4, 9, 1.6);
+        break;
       }
+      default: break;
     }
   }
 

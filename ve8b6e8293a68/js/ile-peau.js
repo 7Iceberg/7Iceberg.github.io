@@ -43,6 +43,9 @@ const IlePeau = (() => {
       clips: { repos: 'Repos', marche: { nom: 'Marche', vitesse: 0.6 }, sort: { nom: 'Sort', de: 0, a: 1.3 }, coup: { nom: 'Coup', de: 0, a: 0.55 }, mort: { nom: 'Mort', de: 0, a: 1.8 }, victoire: 'Victoire', placement: { nom: 'Apparition', de: 0, a: 1.3 } },
       durees: { placement: 1100, sort: 950, lacher: 0.35, pousse: 90, saut: 140, mort: 1500 } },
   };
+  const AURAS = {
+    braise: { style: 'ruban', couleur: [0.78, 0.06, 0.12], vif: [1, 0.45, 0.5], flamme: [1, 0.42, 0.06], flammeVif: [1, 0.86, 0.35], force: 0.55, rayon: 2.6, hauteur: 1, flammeches: 3 },
+  };
   const MONSTRES = ['filin', 'lampignard', 'glym_aer', 'glym_ignis', 'glym_terra', 'glym_aqua', 'chateigne', 'grillon_ruche', 'scarabee_ruche', 'mante_chene'];
   const TAU_CAP = 0.08, TAU_MARCHE = 0.12, TAU_GESTE = 0.08;
 
@@ -592,6 +595,44 @@ void main() {
   if (i < 0.004) discard;
   gl_FragColor = vec4(mix(uCouleur, vec3(1.0), 0.55), clamp(i * 1.6, 0.0, 0.75));
 }`;
+  const FS_RUBAN_AURA = `uniform float uTemps; uniform float uForce; uniform vec3 uCouleur; uniform vec3 uVif; varying vec2 vUv;
+void main() {
+  // vUv.x : le long du ruban (0 au pied, 1 à la pointe) ; vUv.y : sa largeur.
+  float bord = smoothstep(0.0, 0.3, vUv.y) * smoothstep(1.0, 0.7, vUv.y);
+  float bouts = smoothstep(0.0, 0.12, vUv.x) * smoothstep(1.0, 0.75, vUv.x);
+  float flux = 0.5 + 0.5 * sin(vUv.x * 22.0 - uTemps * 5.0 + sin(vUv.x * 7.0 + uTemps) * 1.5);
+  float fil = pow(1.0 - abs(vUv.y - 0.5) * 2.0, 3.0);
+  // Un voile léger sur toute la largeur, un trait vif au coeur (le fil), qui s'épaissit dans le flux.
+  float i = bord * bouts * (0.18 + 0.32 * flux) * uForce;
+  float trait = fil * bouts * (0.55 + 0.45 * flux) * uForce;
+  if (i + trait < 0.01) discard;
+  vec3 c = mix(uCouleur, uVif, 0.25 * flux + 0.7 * fil);
+  gl_FragColor = vec4(c, clamp(i + 1.3 * trait, 0.0, 0.9));
+}`;
+  const FS_FLAMMECHE = `uniform float uTemps; uniform float uForce; uniform vec3 uCouleur; uniform vec3 uVif; varying vec2 vUv;
+void main() {
+  // Un croissant de feu : épais à la base, effilé à la pointe (vUv.x : 0 la base, 1 la pointe ; vUv.y : 0 le
+  // bas, 1 le haut de la bande) ; le bord du haut lèche (une ondulation qui court).
+  float lec = 0.12 * sin(vUv.x * 18.0 - uTemps * 9.0) + 0.08 * sin(vUv.x * 31.0 + uTemps * 13.0);
+  float haut = 1.0 - (0.15 + 0.75 * vUv.x) + lec * (1.0 - vUv.x);
+  float corps = smoothstep(0.0, 0.08, vUv.y) * (1.0 - smoothstep(haut - 0.12, haut, vUv.y));
+  float bouts = smoothstep(0.0, 0.1, vUv.x) * smoothstep(1.0, 0.85, vUv.x);
+  float i = corps * bouts * uForce;
+  if (i < 0.01) discard;
+  vec3 c = mix(uVif, uCouleur, smoothstep(0.0, 0.8, vUv.y / max(0.05, haut)));
+  gl_FragColor = vec4(c, clamp(i * 1.4, 0.0, 0.9));
+}`;
+  function bande(THREE, n, f, l) {
+    const pos = [], uv = [], idx = [];
+    for (let k = 0; k <= n; k++) {
+      const u = k / n, c = f(u), w = l(u);
+      pos.push(c[0], c[1] - w, c[2], c[0], c[1] + w, c[2]); uv.push(u, 0, u, 1);
+      if (k < n) { const i = k * 2; idx.push(i, i + 1, i + 2, i + 1, i + 3, i + 2); }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx);
+    return geo;
+  }
   function aura(THREE, A, rayon, sol) {
     const uni = () => ({ uTemps: { value: 0 }, uForce: { value: 0 }, uCouleur: { value: new THREE.Color().fromArray(A.couleur || [1, 0.42, 0.08]) } });
     const mat = (fs, normal) => new THREE.ShaderMaterial({ uniforms: uni(), vertexShader: VS_AURA, fragmentShader: fs, transparent: true, depthWrite: false, blending: normal ? THREE.NormalBlending : THREE.AdditiveBlending, side: THREE.DoubleSide });
@@ -602,7 +643,29 @@ void main() {
     const groupe = new THREE.Group(); groupe.name = 'aura';
     halo.frustumCulled = false; halo.renderOrder = 2; groupe.add(halo);
     const out = { groupe, mats: [halo.material], force: A.force == null ? 0.35 : A.force, R, H, sol };
-    if (vent) {
+    if (A.style === 'ruban') {
+      const H = (A.corps || 2 * rayon) * (A.hauteur || 1); out.H = H;
+      const vif = new THREE.Color().fromArray(A.vif || [1, 0.55, 0.6]);
+      const matR = fs => { const m = mat(fs, true); m.uniforms.uVif = { value: vif }; return m; };
+      out.spirales = [];
+      for (const [k, tours, depart, r0, r1] of [[0, 1.35, 0, 0.95, 0.7], [1, 1.1, Math.PI, 0.8, 1.0]]) {
+        const geo = bande(THREE, 140, u => { const a = depart + u * tours * Math.PI * 2, r = R * (r0 + (r1 - r0) * u) * (1 + 0.12 * Math.sin(u * 9 + k)); return [Math.cos(a) * r, sol + H * (0.02 + 1.08 * u), Math.sin(a) * r]; },
+          u => H * (0.03 + 0.04 * Math.sin(Math.PI * Math.min(1, u * 1.2))));
+        const m = new THREE.Mesh(geo, matR(FS_RUBAN_AURA)); m.frustumCulled = false; m.renderOrder = 3;
+        groupe.add(m); out.mats.push(m.material); out.spirales.push({ m, vit: k ? -0.55 : 0.7, depart });
+      }
+      out.flammeches = [];
+      const coul = new THREE.Color().fromArray(A.flamme || [1, 0.45, 0.08]), vifF = new THREE.Color().fromArray(A.flammeVif || [1, 0.85, 0.3]);
+      const N = A.flammeches || 3;
+      for (let k = 0; k < N; k++) {
+        const geo = bande(THREE, 40, u => { const a = u * Math.PI * 0.75, r = R * (1.05 - 0.4 * u); return [Math.cos(a) * r, sol + H * (0.02 + 0.16 * u * u), Math.sin(a) * r]; }, () => H * 0.085);
+        geo.translate(0, H * 0.085, 0);
+        const m2 = new THREE.ShaderMaterial({ uniforms: Object.assign(uni(), { uVif: { value: vifF } }), vertexShader: VS_AURA, fragmentShader: FS_FLAMMECHE, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+        m2.uniforms.uCouleur.value = coul;
+        const m = new THREE.Mesh(geo, m2); m.frustumCulled = false; m.renderOrder = 4;
+        groupe.add(m); out.mats.push(m2); out.flammeches.push({ m, g: k / N });
+      }
+    } else if (vent) {
       const ruban = (tours, haut, r0, r1) => {
         const n = 90, pos = [], uv = [], idx = [];
         for (let k = 0; k <= n; k++) {
@@ -665,6 +728,16 @@ void main() {
       out.bulles = { mesh: bulles, N, graines: Array.from({ length: N }, (_, k) => ((k * 0.61803) % 1)), m: new THREE.Matrix4(), q: new THREE.Quaternion(), v: new THREE.Vector3(), e: new THREE.Vector3() };
     }
     return out;
+  }
+  function poserRubansAura(au, t, f) {
+    const k = Math.max(0, Math.min(1.6, f / (au.force || 0.35)));
+    for (const r of au.spirales) { r.m.rotation.y = r.depart * 0 + t * r.vit; const s = 1 + 0.04 * Math.sin(t * 1.7 + r.depart); r.m.scale.set(s, 1 + 0.03 * Math.sin(t * 1.3 + r.depart), s); }
+    for (const fl of au.flammeches) {
+      const vie = (t * 0.55 + fl.g) % 1, cloche = Math.sin(Math.PI * vie);
+      fl.m.rotation.y = -(fl.g * Math.PI * 2 + t * 1.6);
+      fl.m.scale.set(0.85 + 0.25 * cloche, Math.max(0.05, (0.35 + 0.9 * cloche) * Math.min(1.3, k)), 0.85 + 0.25 * cloche);
+      fl.m.position.y = 0;
+    }
   }
   function poserVent(au, t, f) {
     const k = Math.max(0, Math.min(1.6, f / (au.force || 0.35)));
@@ -754,6 +827,7 @@ void main() {
       if (!(haut > bas) && !this.multi) { const bb = this.geo.boundingBox; v.set(0, bb.min.y, 0).applyMatrix4(ex.mesh.matrixWorld); bas = v.y; v.set(0, bb.max.y, 0).applyMatrix4(ex.mesh.matrixWorld); haut = v.y; }
       this.brut = { bas, haut, hauteur: Math.max(0.01, haut - bas) };
       this.k = P.hauteur / this.brut.hauteur;
+      if (!this.multi) this.aurer(ex);
       this.demiTour = (P.sens ? P.sens : Modele.sens(ex)) < 0 ? Math.PI : 0;
       this.libre = [ex];
       this.exemplaires = [ex];
@@ -904,9 +978,15 @@ void main() {
         mesh.bind(new THREE.Skeleton(os, mats), new THREE.Matrix4());
       } else { mesh = new THREE.Mesh(this.geo, mat); objets[this.noeudMesh].add(mesh); }
       mesh.frustumCulled = false;
-      const ex = { racine, objets, mesh, mat, mats: [mat], pos: new Float32Array(objets.length * 3), rot: new Float32Array(objets.length * 4), sca: new Float32Array(objets.length * 3), cap: null, prec: null, kMarche: 0, kGeste: 0, phase: 0, tMarche: 0, vu: 0, tPrec: null, flash: false, alpha: 1, vitesse: 0, hsh: 0, arme: null };
+      const ex = { aura: null, racine, objets, mesh, mat, mats: [mat], pos: new Float32Array(objets.length * 3), rot: new Float32Array(objets.length * 4), sca: new Float32Array(objets.length * 3), cap: null, prec: null, kMarche: 0, kGeste: 0, phase: 0, tMarche: 0, vu: 0, tPrec: null, flash: false, alpha: 1, vitesse: 0, hsh: 0, arme: null };
       if (this.arme) this.armer(ex);
+      this.aurer(ex);
       return ex;
+    }
+    aurer(ex) {
+      if (ex.aura || !this.P.aura || !this.brut || typeof document !== 'object') return;
+      const au = aura(this.THREE, Object.assign({ corps: this.brut.hauteur }, this.P.aura), 0.16 * this.brut.hauteur, this.brut.bas);
+      ex.racine.add(au.groupe); ex.aura = au;
     }
     armer(ex) {
       const A = this.arme, o = ex.objets.find(x => x.name === A.os);
@@ -1036,6 +1116,7 @@ void main() {
         if (ex.aura.bulles) poserBulles(ex.aura, t, f);
         if (ex.aura.flammes) poserFlammes(ex.aura, t, f);
         if (ex.aura.rubans || ex.aura.feuilles) poserVent(ex.aura, t, f);
+        if (ex.aura.spirales) poserRubansAura(ex.aura, t, f);
       }
       const L = this.noeudLiquide >= 0 ? Math.max(0, Math.min(1.5, ex.sca[this.noeudLiquide * 3] - 1)) : 0;
       const Bo = this.noeudBouillon >= 0 ? Math.max(0, Math.min(3, ex.sca[this.noeudBouillon * 3])) : 1;
@@ -1238,6 +1319,6 @@ void main() {
     return P;
   }
 
-  return { PEAUX, MONSTRES, RENDUS, lire, charger, parc, composer, chargerHeros, porteur, Modele, Parc, get ECHELLE() { return ECHELLE; }, set ECHELLE(v) { ECHELLE = v; } };
+  return { PEAUX, MONSTRES, AURAS, RENDUS, lire, charger, parc, composer, chargerHeros, porteur, Modele, Parc, get ECHELLE() { return ECHELLE; }, set ECHELLE(v) { ECHELLE = v; } };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = IlePeau;

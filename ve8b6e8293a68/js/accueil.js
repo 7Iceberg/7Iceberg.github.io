@@ -126,7 +126,7 @@ class Accueil {
       setTimeout(() => old.remove(), 240);
     }
     this.ecranEl = el;
-    this.teinter(id === 'classe' || id === 'apparence' ? this.couleurClasse() : null);
+    this.teinter(id === 'classe' || id === 'apparence' ? this.couleurClasse() : id === 'personnages' ? this.couleurChoisi() : null);
     if (this.fx) this.fx.sobre = id !== 'accueil';
     this.monter(id);
     const cible = el.querySelector('[data-focus]') || el.querySelector('.entree-retour') || el.querySelector('button');
@@ -166,7 +166,7 @@ class Accueil {
     const t = evt.target;
     if (t.id === 'entree-nom') {
       this.b.name = t.value;
-      this.racine.querySelector('.app-nom__compte').textContent = `${t.value.length}/16`;
+      this.racine.querySelector('.app-nom__compte').textContent = `${t.value.length}/${Character.NOM_MAX}`;
       this.erreur('');
     } else if (t.classList.contains('app-hex__champ')) {
       const v = t.value.replace(/[^0-9a-f]/gi, '').slice(0, 6);
@@ -182,6 +182,7 @@ class Accueil {
   }
 
   couleurClasse() { return this.b && DATA.classes[this.b.classId] ? DATA.classes[this.b.classId].color : null; }
+  couleurChoisi() { const p = Save.list().find(x => x.uid === this.choix); return p && DATA.classes[p.classId] ? DATA.classes[p.classId].color : null; }
 
   figureBrouillon(o) {
     const b = this.b;
@@ -434,6 +435,7 @@ class Accueil {
 
   majSelection() {
     const persos = Save.list(), sel = persos.find(p => p.uid === this.choix);
+    this.teinter(sel && DATA.classes[sel.classId] ? DATA.classes[sel.classId].color : null);
     this.ecranEl.querySelectorAll('.perso-ligne:not(.perso-carte--vide)').forEach(x => { const btn = x.querySelector('[data-uid]'); const on = !!btn && btn.dataset.uid === this.choix; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); });
     const es = this.ecranEl.querySelector('.perso-estrade'), puce = this.ecranEl.querySelector('.perso-pied__puce');
     if (es) { const tmp = document.createElement('div'); tmp.innerHTML = fines(this.estradePerso(sel)); es.replaceWith(tmp.firstElementChild); }
@@ -668,7 +670,7 @@ class Accueil {
     this.ecranVise = 'apparence';
     const b = this.b;
     const tetes = TETES.map((n, i) => `<button class="e-nu app-tete${b.look.tete === i ? ' on' : ''}" data-act="tete" data-i="${i}" role="radio" aria-checked="${b.look.tete === i}" aria-label="Coiffure : ${n}" title="${n}"><canvas class="app-tete__toile" data-i="${i}" aria-hidden="true"></canvas></button>`).join('');
-    const cases = Character.COULEURS.map((k, i) => `<button class="e-nu app-case${this.slot === i ? ' on' : ''}" data-act="case" data-i="${i}" role="radio" aria-checked="${this.slot === i}" style="--k:${b.look.couleurs[i]}"><span class="app-case__teinte"></span><span class="app-case__nom">${COULEURS_NOMS[i]}</span></button>`).join('');
+    const cases = Character.COULEURS.slice(0, Character.COULEURS_CHOISIES).map((k, i) => `<button class="e-nu app-case${this.slot === i ? ' on' : ''}" data-act="case" data-i="${i}" role="radio" aria-checked="${this.slot === i}" style="--k:${b.look.couleurs[i]}"><span class="app-case__teinte"></span><span class="app-case__nom">${COULEURS_NOMS[i]}</span></button>`).join('');
     return `<section class="ecran ecran--apparence" aria-label="Apparence">
       ${this.tete('Crée ton personnage', b.invite ? 'partie d\'invité, sans sauvegarde' : this.libres(), 'Retour')}
       <div class="app-corps">
@@ -707,7 +709,7 @@ class Accueil {
             <button class="vy-bouton" data-act="reinit">Réinitialiser tout</button>
           </div>
           <div class="app-bloc app-nom">
-            <label class="app-nom__champ"><input id="entree-nom" maxlength="16" placeholder="Nom du personnage" autocomplete="off" spellcheck="false" value="${esc(b.name)}" data-entree="creer-perso"><span class="app-nom__compte">${b.name.length}/16</span></label>
+            <label class="app-nom__champ"><input id="entree-nom" maxlength="19" placeholder="Nom du personnage" autocomplete="off" spellcheck="false" value="${esc(b.name)}" data-entree="creer-perso"><span class="app-nom__compte">${b.name.length}/${Character.NOM_MAX}</span></label>
             <button class="vy-bouton" data-act="nom-aleatoire" aria-label="Nom aléatoire" title="Nom aléatoire">${ICONES.de}<span>Nom aléatoire</span></button>
             <button class="vy-bouton vy-bouton--primaire app-creer" data-act="creer-perso">${b.invite ? 'Jouer' : 'Créer'}</button>
             <p class="app-erreur" role="alert"></p>
@@ -843,7 +845,7 @@ class Accueil {
     const R = Math.random, pick = a => a[Math.floor(R() * a.length)];
     const cl = DATA.classes[this.b.classId], H = hexHsv(cl.color).h;
     const pal = DATA.palettes && DATA.palettes[cl.id];
-    if (pal) return { tete: Math.floor(R() * Character.TETES), couleurs: [pick(pal.peau), pick(pal.cheveux), pick(pal.tenue), pick(pal.tenue2), pick(pal.cape), cl.color] };
+    if (pal) return { tete: Math.floor(R() * Character.TETES), couleurs: [pick(pal.peau), pick(pal.cheveux), pick(pal.tenue), pick(pal.tenue2), pick(pal.cape), pick(pal.details || [cl.color])] };
     const peaux = ['#f6dcc4', '#f2d9bf', '#e8c4a0', '#d8a982', '#c68e6a', '#a86f4c', '#8a5536', '#6b3f28'];
     const cheveux = ['#1c1410', '#3a2a20', '#5a3a24', '#7a4a2a', '#b5542c', '#d8b070', '#e8d5a0', '#9a9aa6'];
     const t = H + (R() - 0.5) * 70;
@@ -862,8 +864,10 @@ class Accueil {
   creerPersonnage() {
     const b = this.b;
     const champ = this.ecranEl.querySelector('#entree-nom');
-    const nom = (champ ? champ.value : b.name).replace(/\s+/g, ' ').trim().slice(0, 16);
+    const nom = (champ ? champ.value : b.name).trim();
     if (!nom) { this.erreur('Donne un nom à ton personnage.'); if (champ) champ.focus(); return; }
+    const regles = Character.reglesNom(nom);
+    if (regles.length) { this.erreur(`Ce nom ne va pas : ${regles.join(', ')}.`); if (champ) champ.focus(); return; }
     if (typeof Ile === 'object' && Ile.allumee && !(typeof Ile3D === 'function' && Ile3D.disponible())) {
       this.erreur('Ton appareil ne peut pas afficher Veylan : son navigateur n\'a pas la 3D (WebGL). Essaie un navigateur à jour, ou un autre appareil.');
       return;
@@ -1152,7 +1156,7 @@ Accueil.prototype.actions = {
     const n = Noms.aleatoire();
     this.b.name = n;
     const f = this.ecranEl.querySelector('#entree-nom');
-    if (f) { f.value = n; this.racine.querySelector('.app-nom__compte').textContent = `${n.length}/16`; }
+    if (f) { f.value = n; this.racine.querySelector('.app-nom__compte').textContent = `${n.length}/${Character.NOM_MAX}`; }
     this.erreur('');
   },
   'creer-perso'() { this.creerPersonnage(); },
@@ -1231,7 +1235,7 @@ function recommander(rep) {
 }
 
 const TETES = ['Mèche balayée', 'Queue haute', 'Hérissés', 'Chignon', 'Longs', 'Tresse', 'Capuche', 'Rasé, bandeau d\'or'];
-const COULEURS_NOMS = ['Peau', 'Cheveux', 'Tunique', 'Chausses', 'Cape', 'Lanterne'];
+const COULEURS_NOMS = ['Peau', 'Cheveux', 'Tunique', 'Chausses', 'Cape', 'Détails'];
 
 function epithete(t) {
   const mot = String(t).split(/[\s-]/)[0];

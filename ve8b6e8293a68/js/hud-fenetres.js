@@ -94,7 +94,10 @@ Object.assign(Hud.prototype, {
       const b = evt.target.closest('[data-use]');
       if (b) { if (this.world.state === 'combat') this.toast('Pas pendant un combat.'); else this.world.useItem(b.dataset.use); }
     });
-    document.getElementById('minicarte').addEventListener('click', () => this.toggleWin('carte'));
+    const mini = document.getElementById('minicarte');
+    mini.addEventListener('click', evt => { if (!evt.target.closest('.vy-minicarte__outils')) this.toggleWin('carte'); });
+    mini.addEventListener('keydown', evt => { if (evt.target === mini && (evt.key === 'Enter' || evt.key === ' ')) { evt.preventDefault(); this.toggleWin('carte'); } });
+    this.initMiniOutils();
     this.world.on('update', () => { this.fen.refreshAll(); this.refreshVital(); });
     this.world.on('hp', () => this.refreshVital());
     this.world.on('map', () => { this.refreshVital(); this.drawMinimap(true); });
@@ -283,9 +286,54 @@ Object.assign(Hud.prototype, {
     if (label) label.textContent = w.mapDef ? (w.mapDef.sousZone || w.mapDef.name) + (pos ? ` [${pos[0]},${pos[1]}]` : '') : '';
   },
 
+  initMiniOutils() {
+    const mc = document.getElementById('minicarte');
+    if (!mc || mc.querySelector('.vy-minicarte__outils')) return;
+    let r = null;
+    try { r = JSON.parse(localStorage.getItem('veylan.mini') || 'null'); } catch (e) { r = null; }
+    this.mini = { taille: r && [1, 2, 3].includes(r.taille) ? r.taille : 1, zoom: r && Number.isInteger(r.zoom) && r.zoom >= 0 && r.zoom < Hud.ZOOM_MINI.length ? r.zoom : 2 };
+    const svg = p => `<svg viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
+    mc.insertAdjacentHTML('beforeend', '<div class="vy-minicarte__outils">' +
+      `<button type="button" class="vy-minicarte__outil" data-mini="taille">${svg('<path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/>')}</button>` +
+      `<button type="button" class="vy-minicarte__outil" data-mini="moins" aria-label="Dézoomer la mini-carte" title="Dézoomer">${svg('<path d="M6 12h12"/>')}</button>` +
+      `<button type="button" class="vy-minicarte__outil" data-mini="plus" aria-label="Zoomer la mini-carte" title="Zoomer">${svg('<path d="M6 12h12M12 6v12"/>')}</button></div>`);
+    mc.querySelector('.vy-minicarte__outils').addEventListener('click', evt => {
+      evt.stopPropagation();
+      const b = evt.target.closest('[data-mini]');
+      if (!b) return;
+      if (b.dataset.mini === 'taille') this.mini.taille = this.mini.taille % 3 + 1;
+      else this.mini.zoom = Math.max(0, Math.min(Hud.ZOOM_MINI.length - 1, this.mini.zoom + (b.dataset.mini === 'plus' ? 1 : -1)));
+      this.appliquerMini(true);
+    });
+    mc.addEventListener('wheel', evt => {
+      evt.preventDefault();
+      const z = Math.max(0, Math.min(Hud.ZOOM_MINI.length - 1, this.mini.zoom + (evt.deltaY < 0 ? 1 : -1)));
+      if (z !== this.mini.zoom) { this.mini.zoom = z; this.appliquerMini(true); }
+    }, { passive: false });
+    this.appliquerMini(false);
+  },
+  appliquerMini(garder) {
+    const mc = document.getElementById('minicarte'), m = this.mini;
+    if (!mc || !m) return;
+    mc.classList.toggle('taille-2', m.taille === 2);
+    mc.classList.toggle('taille-3', m.taille === 3);
+    const t = mc.querySelector('[data-mini="taille"]');
+    if (t) { const l = m.taille === 3 ? 'Réduire la mini-carte' : 'Agrandir la mini-carte'; t.setAttribute('aria-label', l); t.title = l; }
+    const p = mc.querySelector('[data-mini="plus"]'), q = mc.querySelector('[data-mini="moins"]');
+    if (p) p.disabled = m.zoom >= Hud.ZOOM_MINI.length - 1;
+    if (q) q.disabled = m.zoom <= 0;
+    if (garder) { try { localStorage.setItem('veylan.mini', JSON.stringify(m)); } catch (e) {   } }
+    if (this.placerBoussole) this.placerBoussole();
+    if (this.editeur && this.majZones) this.majZones();
+    this.drawMinimap(true);
+  },
+
   drawMinimapPlateau(cv, force) {
     const w = this.world, P = w.plateau, p = w.player;
-    const sig = ['plateau', w.mapId, Math.round(p.x * 4), Math.round(p.y * 4), w.groups.length].join('|');
+    const sc = this.renderer, cam = sc && sc.en3D && sc.ile ? sc.ile.camera : null;
+    const az = cam && Number.isFinite(cam.azimut) ? cam.azimut : null, cap = Number.isFinite(p.cap) ? p.cap : null;
+    const zoom = Hud.ZOOM_MINI[this.mini ? this.mini.zoom : 2] || 1;
+    const sig = ['plateau', w.mapId, Math.round(p.x * 4), Math.round(p.y * 4), w.groups.length, cv.clientWidth, zoom, az == null ? '' : Math.round(az * 12), cap == null ? '' : Math.round(cap * 12), this.quetesSuivie ? this.quetesSuivie() : ''].join('|');
     if (!force && sig === this.miniSig) return;
     this.miniSig = sig;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -295,7 +343,7 @@ Object.assign(Hud.prototype, {
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.fillStyle = '#9ba6ba'; c.fillRect(0, 0, W, H);
     if (!this.miniVue || this.miniVue.id !== P.id) this.miniVue = { id: P.id, toile: IlePeinture.vueEnsemble(P.terrain, 2) };
-    const s = W / 56;
+    const s = 3.75 * zoom;
     const iso = (u, v) => ({ x: W / 2 + ((u - p.x) - (v - p.y)) * s / 2, y: H / 2 + ((u - p.x) + (v - p.y)) * s / 4 });
     c.save();
     const o = iso(0, 0);
@@ -310,10 +358,47 @@ Object.assign(Hud.prototype, {
     for (const n of w.npcs) dot(n.x, n.y, '#f7f0de', 2.4);
     for (const g of w.groups) dot(g.rx != null ? g.rx : g.x, g.ry != null ? g.ry : g.y, '#ef7574', 2.6);
     this.monumentsMini(c, W, H, iso);
-    dot(p.x, p.y, '#209fec', 3.4);
+    this.objectifMini(c, W, H, iso);
+    const q = iso(p.x, p.y), ecran = (du, dv) => ({ x: (du - dv) * s / 2, y: (du + dv) * s / 4 });
+    if (az != null) {
+      const L = 26, ouv = 0.6;
+      const a1 = ecran(-Math.sin(az - ouv), -Math.cos(az - ouv)), a2 = ecran(-Math.sin(az + ouv), -Math.cos(az + ouv));
+      const n1 = Math.hypot(a1.x, a1.y) || 1, n2 = Math.hypot(a2.x, a2.y) || 1;
+      const g = c.createRadialGradient(q.x, q.y, 2, q.x, q.y, L);
+      g.addColorStop(0, 'rgba(255,240,200,0.42)'); g.addColorStop(1, 'rgba(255,240,200,0)');
+      c.beginPath(); c.moveTo(q.x, q.y); c.lineTo(q.x + a1.x / n1 * L, q.y + a1.y / n1 * L); c.lineTo(q.x + a2.x / n2 * L, q.y + a2.y / n2 * L); c.closePath();
+      c.fillStyle = g; c.fill();
+    }
+    if (cap != null) {
+      const v = ecran(Math.sin(cap), Math.cos(cap)), n = Math.hypot(v.x, v.y) || 1, ux = v.x / n, uy = v.y / n;
+      c.beginPath(); c.moveTo(q.x + ux * 6.5, q.y + uy * 6.5); c.lineTo(q.x - ux * 4 - uy * 4.2, q.y - uy * 4 + ux * 4.2); c.lineTo(q.x - ux * 1.8, q.y - uy * 1.8); c.lineTo(q.x - ux * 4 + uy * 4.2, q.y - uy * 4 - ux * 4.2); c.closePath();
+      c.fillStyle = '#209fec'; c.fill(); c.lineWidth = 1.4; c.strokeStyle = '#f7f0de'; c.stroke();
+    } else dot(p.x, p.y, '#209fec', 3.4);
     const pos = typeof Atlas === 'object' && Atlas.coordsOf(w.mapId);
     const label = document.getElementById('minicarte-nom');
     if (label) label.textContent = def.name ? def.name + (pos ? ` [${pos[0]},${pos[1]}]` : '') : '';
+  },
+
+  objectifMini(c, W, H, iso) {
+    const ch = this.world.ch;
+    if (!this.objectifQuete || !ch) return;
+    const tous = Quests.tracker(ch).filter(t => !t.done), suivie = this.quetesSuivie ? this.quetesSuivie() : null;
+    const t = (suivie && tous.find(x => x.quest.id === suivie)) || tous[0];
+    const o = t ? this.objectifQuete(t.quest.id) : null;
+    if (!o || !o.point) return;
+    const cx = W / 2, cy = H / 2, m = 9, q = iso(o.point.x, o.point.y);
+    const dedans = q.x > m && q.x < W - m && q.y > m && q.y < H - m;
+    let x = q.x, y = q.y;
+    if (!dedans) {
+      const dx = q.x - cx, dy = q.y - cy, k = Math.min((W / 2 - m) / Math.max(1e-6, Math.abs(dx)), (H / 2 - m) / Math.max(1e-6, Math.abs(dy)));
+      x = cx + dx * k; y = cy + dy * k;
+    }
+    const r = dedans ? 5.5 : 4.5;
+    c.save();
+    c.shadowColor = 'rgba(255, 207, 90, 0.8)'; c.shadowBlur = 6;
+    c.beginPath(); c.moveTo(x, y - r); c.lineTo(x + r, y); c.lineTo(x, y + r); c.lineTo(x - r, y); c.closePath();
+    c.fillStyle = '#ffcf5a'; c.fill(); c.shadowBlur = 0; c.lineWidth = 1.2; c.strokeStyle = '#3a2706'; c.stroke();
+    c.restore();
   },
 
   monumentsMini(c, W, H, iso) {
@@ -433,6 +518,7 @@ Object.assign(Hud.prototype, {
   },
 });
 
+Hud.ZOOM_MINI = [0.5, 0.7, 1, 1.4, 2];
 Hud.OPACITE = 90;
 
 Hud.THEME_DEFAUT = 'nuit';

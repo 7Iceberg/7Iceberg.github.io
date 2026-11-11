@@ -25,7 +25,7 @@ class HudJeu {
       const b = evt.target.closest('[data-act]');
       if (!b) return;
       if (b.dataset.act === 'carte') this.hud.toggleWin('carte');
-      if (b.dataset.act === 'quetes') this.hud.toggleWin('quetes');
+      if (b.dataset.act === 'quetes') { if (b.dataset.id && this.hud.ouvrirQuete && !this.hud.fen.isOpen('quetes')) this.hud.ouvrirQuete(b.dataset.id); else this.hud.toggleWin('quetes'); }
       if (b.dataset.act === 'succes') this.hud.toggleWin('succes');
     });
     this.fiche = new FicheGroupe(this);
@@ -842,7 +842,7 @@ class HudJeu {
     const html = `<button type="button" class="vy-carte-info__carte" data-act="carte" aria-label="${Util.esc(zone)}, ${Util.esc(def.name)} : ouvrir la carte du monde">` +
       `<span class="vy-carte-info__titre"><b>${Util.esc(zone || def.name)}</b>${zone ? ` <span>(${Util.esc(def.name)})</span>` : ''}</span>` +
       `<span class="vy-carte-info__ligne">${zone ? `<span class="vy-carte-info__lieu">${Util.esc(def.name)} · </span>` : ''}${pos ? `${pos[0]},${pos[1]}, ` : ''}${niveau}${heure}</span></button>` +
-      (t ? `<button type="button" class="vy-carte-info__suivi${t.done ? ' fini' : ''}" data-act="quetes" aria-label="Quête suivie : ${Util.esc(t.quest.name)}, ${Util.esc(t.text)}">${HudJeu.ICON.epingle}<span><b>${Util.esc(t.quest.name)}</b><small>${Util.esc(t.text)}</small>` +
+      (t ? `<button type="button" class="vy-carte-info__suivi${t.done ? ' fini' : ''}" data-act="quetes" data-id="${Util.esc(t.quest.id)}" aria-label="Quête suivie : ${Util.esc(t.quest.name)}, ${Util.esc(t.text)}">${HudJeu.ICON.epingle}<span><b>${Util.esc(t.quest.name)}</b><small>${Util.esc(t.text)}</small>` +
         `<i class="vy-carte-info__avance" aria-hidden="true"><i style="width:${Math.round(100 * HudJeu.avancement(this.ch, t))}%"></i></i></span></button>` : '') +
       (this.hud && this.hud.succesSuivis ? this.hud.succesSuivis() : []).map(id => {
         const a = Achievements.get(id), v = Achievements.avancement(this.ch, a) || [0, 1], p = Achievements.progress(this.ch, a);

@@ -52,13 +52,14 @@ Object.assign(Hud.prototype, {
     const donjon = gagne && r.dungeon && r.dungeon.cleared && UI.reglage('finDonjon') ? this.ficheFinDonjon(r.dungeon) : '';
     const meta = `<span class="vy-fdc__meta">${r.duree ? `<span title="Durée">${ICO.temps}${duree(r.duree)}</span>` : ''}${r.tours ? `<span title="Tours">${ICO.tours}${r.tours} tour${r.tours > 1 ? 's' : ''}</span>` : ''}</span>`;
     const onglet = (k, l, on) => `<button type="button" class="vy-onglet${on ? ' on' : ''}" role="tab" aria-selected="${on}" data-act="fdcOnglet" data-page="${k}">${l}</button>`;
-    const premier = donjon ? 'donjon' : 'perso';
+    const premier = donjon ? 'donjon' : 'resume';
+    const ruban = `<div class="vy-fdc__ruban" role="status"><span>${gagne ? ICO.trophee : ICO.defaite}<b class="vy-fdc__issue">${gagne ? 'Victoire' : 'Défaite'}</b></span></div>`;
     const html = `<div class="vy-fdc ${gagne ? 'gagne' : 'perdu'}">
-      <div class="vy-fdc__haut"><nav class="vy-onglets vy-fdc__onglets" role="tablist">${donjon ? onglet('donjon', 'Donjon', true) : ''}${onglet('perso', 'Personnage', !donjon)}${onglet('resume', 'Résumé', false)}${onglet('stats', 'Statistiques', false)}</nav>${meta}</div>
+      <div class="vy-fdc__haut"><nav class="vy-onglets vy-fdc__onglets" role="tablist">${donjon ? onglet('donjon', 'Donjon', true) : ''}${onglet('resume', 'Résumé', premier === 'resume')}${onglet('perso', 'Personnage', false)}${onglet('stats', 'Statistiques', false)}</nav>${meta}</div>
       ${dungeon}
       ${donjon ? `<section class="vy-fdc__page" data-page="donjon">${donjon}</section>` : ''}
-      <section class="vy-fdc__page" data-page="perso"${premier === 'perso' ? '' : ' hidden'}><div class="vy-fdc__ruban" role="status"><span>${gagne ? ICO.trophee : ICO.defaite}<b class="vy-fdc__issue">${gagne ? 'Victoire' : 'Défaite'}</b></span></div>${this.fdcPersonnage(r, moi, adverses, puces)}</section>
-      <section class="vy-fdc__page" data-page="resume" hidden>${this.fdcResume(r, moi, adverses)}</section>
+      <section class="vy-fdc__page" data-page="resume"${premier === 'resume' ? '' : ' hidden'}>${ruban}${this.fdcResume(r, moi, adverses)}</section>
+      <section class="vy-fdc__page" data-page="perso" hidden>${ruban.replace(' role="status"', '')}${this.fdcPersonnage(r, moi, adverses, puces)}</section>
       <section class="vy-fdc__page" data-page="stats" hidden>${this.fdcStats(bilan)}</section>
       <footer class="vy-fdc__pied"><button data-act="cont" class="primary vy-bouton vy-bouton--primaire">Fermer</button></footer>
     </div>`;
@@ -146,7 +147,7 @@ Object.assign(Hud.prototype, {
     const ch = this.world.ch, body = this.el.panelBody;
     if (typeof AccueilArt !== 'object' || !body) return;
     const ap = ch.lookAffiche ? ch.lookAffiche() : { look: ch.look };
-    const fig = AccueilArt.figure(ch.classId, { look: ap.look, gender: ch.gender, auraCos: ap.auraCos, lueur: ap.lueur });
+    const fig = AccueilArt.figure(ch.classId, { look: ap.look, gender: ch.gender, auraCos: ap.auraCos });
     const grand = body.querySelector('.vy-fdc__toile');
     try {
       if (grand && grand.getBoundingClientRect().width > 0) AccueilArt.tournant(grand, fig, { part: 0.66, calme: true, redessiner: () => this.fdcDessiner() });

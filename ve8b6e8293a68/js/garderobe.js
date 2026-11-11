@@ -1,7 +1,8 @@
 const Garderobe = (() => {
   const CLE = 'veylan.garderobe';
-  const TYPES = ['teinture', 'lueur', 'aura', 'blason', 'emote', 'theme'];
-  const TYPES_PORTES = ['teinture', 'lueur', 'aura', 'blason', 'theme'];
+  const TYPES = ['teinture', 'aura', 'blason', 'emote', 'theme'];
+  const TYPES_PORTES = ['teinture', 'aura', 'blason', 'theme'];
+  const ANCIEN = 'lueur';
   const SOURCES = ['succes', 'boss', 'veille', 'quete', 'artisanat', 'collection', 'evenement', 'boutique'];
   const RARETES = ['commun', 'rare', 'epique', 'legendaire'];
   const MAX_LOOKS = 5;
@@ -118,6 +119,7 @@ const Garderobe = (() => {
     if (porte == null) return { porte: out, errors };
     if (typeof porte !== 'object' || Array.isArray(porte)) return { porte: out, errors: ['tenue illisible'] };
     for (const k of Object.keys(porte)) {
+      if (k === ANCIEN) continue;
       if (!TYPES_PORTES.includes(k)) { errors.push(`tenue : champ ${k}`); continue; }
       const id = porte[k];
       if (id == null) continue;
@@ -125,6 +127,8 @@ const Garderobe = (() => {
       if (!c || c.type !== k) { errors.push(`tenue : ${k}`); continue; }
       if (g.possedes.includes(id)) out[k] = id;
     }
+    const vieille = porte[ANCIEN], cv = vieille ? get(vieille) : null;
+    if (cv && cv.type === 'aura' && !out.aura && g.possedes.includes(vieille)) out.aura = vieille;
     return { porte: out, errors };
   }
 
@@ -144,7 +148,12 @@ const Garderobe = (() => {
     return { looks, errors };
   }
 
-  const porteDe = ch => { if (!ch.porte || typeof ch.porte !== 'object') ch.porte = porteDefaut(); for (const t of TYPES_PORTES) if (!(t in ch.porte)) ch.porte[t] = null; return ch.porte; };
+  const porteDe = ch => {
+    if (!ch.porte || typeof ch.porte !== 'object') ch.porte = porteDefaut();
+    if (ANCIEN in ch.porte) { const v = ch.porte[ANCIEN]; if (v && !ch.porte.aura && get(v) && get(v).type === 'aura') ch.porte.aura = v; delete ch.porte[ANCIEN]; }
+    for (const t of TYPES_PORTES) if (!(t in ch.porte)) ch.porte[t] = null;
+    return ch.porte;
+  };
 
   function porter(ch, id, garderobe) {
     const g = garderobe || etat();
@@ -203,12 +212,12 @@ const Garderobe = (() => {
     const couleurs = base.couleurs.slice();
     const porte = essai || (ch && ch.porte) || {};
     const porteOk = t => { const id = porte[t]; const c = id ? get(id) : null; return c && c.type === t && (essai || g.possedes.includes(id)) ? c : null; };
-    const teinture = porteOk('teinture'), lueur = porteOk('lueur'), aura = porteOk('aura'), blason = porteOk('blason'), theme = porteOk('theme');
+    const teinture = porteOk('teinture'), blason = porteOk('blason'), theme = porteOk('theme');
+    const aura = porteOk('aura') || (() => { const id = porte[ANCIEN]; const c = id ? get(id) : null; return c && c.type === 'aura' && (essai || g.possedes.includes(id)) ? c : null; })();
     if (teinture && teinture.data && Array.isArray(teinture.data.couleurs)) {
       for (let i = 0; i < 3 && i < teinture.data.couleurs.length; i++) if (couleurs.length > 2 + i) couleurs[2 + i] = teinture.data.couleurs[i];
     }
-    if (lueur && lueur.data && lueur.data.couleur && couleurs.length > 5) couleurs[5] = lueur.data.couleur;
-    return { look: { tete: base.tete, couleurs }, teinture, lueur, aura, blason, theme };
+    return { look: { tete: base.tete, couleurs }, teinture, aura, blason, theme };
   }
 
   function etatCollections(garderobe) {
@@ -232,7 +241,7 @@ const Garderobe = (() => {
       && (!opts.source || (c.source && c.source.genre === opts.source)));
   }
   const RARETE_LABEL = { commun: 'Commun', rare: 'Rare', epique: 'Épique', legendaire: 'Légendaire' };
-  const TYPE_LABEL = { teinture: 'Teintures', lueur: 'Lueurs', aura: 'Auras', blason: 'Blasons', emote: 'Émotes', theme: 'Thèmes' };
+  const TYPE_LABEL = { teinture: 'Teintures', aura: 'Auras', blason: 'Blasons', emote: 'Émotes', theme: 'Thèmes' };
   const SOURCE_LABEL = { succes: 'Succès', boss: 'Boss', veille: 'Veille du jour', quete: 'Quêtes', artisanat: 'Artisanat', collection: 'Collections', evenement: 'Événements', boutique: 'Boutique' };
 
   return {

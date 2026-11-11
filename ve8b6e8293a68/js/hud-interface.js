@@ -7,6 +7,13 @@
     { id: 'lieu', nom: 'Lieu', sel: '#lieu', onglet: 'lieu' },
     { id: 'menus', nom: 'Menus', sel: '#menus' },
     { id: 'suivi', nom: 'Quêtes suivies', sel: '#tracker' },
+    { id: 'discussion', nom: 'Discussion', sel: '.vy-discussion__bouton', avec: ['.vy-discussion', '.vy-discussion__flottant'] },
+    { id: 'vue', nom: 'Vue', sel: '#vue' },
+    { id: 'recompenses', nom: 'Récompenses', sel: '#recompenses-btn' },
+    { id: 'sorts', nom: 'Barre de combat', sel: '.vy-barre-sorts' },
+    { id: 'frise', nom: 'Ordre de jeu', sel: '.vy-barre-tour' },
+    { id: 'journalCombat', nom: 'Journal du combat', sel: '#log' },
+    { id: 'cible', nom: 'Fiche de la cible', sel: '#inspect' },
   ];
   const ONGLETS = [['vie', 'Vie'], ['raccourcis', 'Objets'], ['carte', 'Carte'], ['lieu', 'Lieu']];
   const defaut = () => ({ blocs: {}, xp: true, alerte: true, boussole: true, grille: true, profils: [null, null, null] });
@@ -44,6 +51,19 @@
       });
       this.placerBoussole();
       this.appliquerInterface();
+      setTimeout(() => {
+        const vue = document.getElementById('vue');
+        if (vue && !document.getElementById('vue-interface')) {
+          const b = document.createElement('button');
+          b.id = 'vue-interface'; b.className = 'vy-camera__bouton';
+          b.setAttribute('aria-label', 'Déplacer l\'interface'); b.title = 'Déplacer l\'interface';
+          b.innerHTML = ICO.deplacer.replace('<svg ', '<svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ');
+          b.addEventListener('click', () => { if (this.editeur) this.fermerEditeur(); else this.ouvrirEditeur(); });
+          vue.appendChild(b);
+        }
+        this.appliquerInterface();
+      }, 0);
+      this.world.on('fight', () => setTimeout(() => this.appliquerInterface(), 0));
     },
 
     lireInterface() {
@@ -75,10 +95,12 @@
         const el = document.querySelector(b.sel);
         if (!el) continue;
         const v = r.blocs[b.id];
-        el.style.translate = v && (v.dx || v.dy) ? `${v.dx}px ${v.dy}px` : '';
-        el.style.scale = v && v.taille !== 100 ? String(v.taille / 100) : '';
-        el.classList.toggle('vy-hud-cache', !!(v && v.cache));
-        if (rentrer && v && (v.dx || v.dy)) this.rentrerBloc(el);
+        for (const x of [el, ...(b.avec || []).map(sel => document.querySelector(sel)).filter(Boolean)]) {
+          x.style.translate = v && (v.dx || v.dy) ? `${v.dx}px ${v.dy}px` : '';
+          x.style.scale = v && v.taille !== 100 ? String(v.taille / 100) : '';
+          x.classList.toggle('vy-hud-cache', !!(v && v.cache));
+        }
+        if (rentrer && v && (v.dx || v.dy)) { this.rentrerBloc(el); for (const sel of b.avec || []) { const x = document.querySelector(sel); if (x) x.style.translate = el.style.translate; } }
       }
       const app = document.getElementById('app');
       app.classList.toggle('vy-sans-alerte', r.alerte === false);
@@ -143,9 +165,8 @@
 
 
     ouvrirEditeur() {
-      if (this.world.state === 'combat') { this.toast('Pas pendant un combat.'); return false; }
-      const bc = document.getElementById('bas-centre');
-      if (!bc || getComputedStyle(bc).display === 'none') { this.toast('L\'interface se règle sur ordinateur.'); return false; }
+      const bc = document.getElementById(this.world.state === 'combat' ? 'menus' : 'bas-centre');
+      if (!bc || getComputedStyle(bc).display === 'none' || window.matchMedia('(max-width: 720px), (max-height: 500px)').matches) { this.toast('L\'interface se règle sur ordinateur.'); return false; }
       if (this.editeur) return true;
       this.fen.closeAll(); this.syncMenus();
       const ov = document.createElement('div');
@@ -294,6 +315,7 @@
           my = Math.max(st.top - r0.top, Math.min(st.bottom - r0.bottom, my));
           b.dx = Math.round(d0[0] + mx / k); b.dy = Math.round(d0[1] + my / k);
           el.style.translate = b.dx || b.dy ? `${b.dx}px ${b.dy}px` : '';
+          for (const sel of def.avec || []) { const x = document.querySelector(sel); if (x) x.style.translate = el.style.translate; }
           this.majZones();
         };
         const lacher = e => {

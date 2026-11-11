@@ -886,6 +886,7 @@ float bruitR(vec3 x) {
     groupe.userData.source = src;
     for (const o of [...groupe.children]) if (/^mo_eau/.test(o.name)) { groupe.remove(o); if (o.geometry) o.geometry.dispose(); }
     for (const o of [...groupe.children]) if (/^mo_falaise/.test(o.name)) { groupe.remove(o); if (o.geometry) o.geometry.dispose(); }
+    for (const o of [...groupe.children]) if (/^mo_agrafe/.test(o.name)) { groupe.remove(o); if (o.geometry) o.geometry.dispose(); }
     const gardes = new Set([ile.meshFalaise, ...(ile.meshDessous || [])].filter(Boolean));
     if (semis && groupe.userData.semisMeshy) { ile.octetsGeo = (ile.octetsGeo || 0) + groupe.userData.semisMeshy.octets; ile.octetsTex = (ile.octetsTex || 0) + semis.octets.tex; }
     {

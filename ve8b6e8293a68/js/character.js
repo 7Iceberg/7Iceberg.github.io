@@ -86,23 +86,35 @@ class Character {
   }
 
   static get TETES() { return 8; }
-  static get COULEURS() { return ['peau', 'cheveux', 'tenue', 'tenue2', 'cape', 'lanterne']; }
+  static get COULEURS() { return ['peau', 'cheveux', 'tenue', 'tenue2', 'cape', 'details']; }
+  static get COULEURS_CHOISIES() { return 6; }
+
+  static get NOM_MIN() { return 3; }
+  static get NOM_MAX() { return 19; }
+  static reglesNom(nom) {
+    const n = typeof nom === 'string' ? nom : '', out = [];
+    if (/\s/.test(n)) out.push('pas d\'espace');
+    if (/[^A-Za-z\s-]/.test(n)) out.push('seulement des lettres sans accent et des tirets');
+    if (/^-|-$/.test(n.trim())) out.push('pas de tiret au début ni à la fin');
+    if (n.length < Character.NOM_MIN || n.length > Character.NOM_MAX) out.push(`de ${Character.NOM_MIN} à ${Character.NOM_MAX} caractères`);
+    return out;
+  }
   static defaultLook(classId) {
     const c = DATA.classes[classId] || DATA.classes[DATA.defaultClass];
     const p = DATA.palettes && DATA.palettes[c.id];
-    if (p) return { tete: 0, couleurs: [p.peau[0], p.cheveux[0], p.tenue[0], p.tenue2[0], p.cape[0], c.color] };
+    if (p) return { tete: 0, couleurs: [p.peau[0], p.cheveux[0], p.tenue[0], p.tenue2[0], p.cape[0], (p.details || [c.color])[0]] };
     return Util.defaultLook(c.color);
   }
 
-  static porteDefaut() { return { teinture: null, lueur: null, aura: null, blason: null, theme: null }; }
+  static porteDefaut() { return { teinture: null, aura: null, blason: null, theme: null }; }
 
   lookAffiche() {
-    if (typeof Garderobe === 'undefined') return { look: this.look, auraCos: null, lueur: null, blason: null };
+    if (typeof Garderobe === 'undefined') return { look: this.look, auraCos: null, blason: null };
     const cle = `${Garderobe.version()}|${JSON.stringify(this.porte)}|${this.look ? this.look.tete + (this.look.couleurs || []).join('') : ''}`;
     const cache = this._lookAffiche;
     if (cache && cache.cle === cle) return cache.valeur;
     const l = Garderobe.lookPorte(this);
-    const valeur = { look: l.look, auraCos: l.aura ? l.aura.data : null, lueur: l.lueur && l.lueur.data ? l.lueur.data.effet || null : null, blason: l.blason ? l.blason.data : null };
+    const valeur = { look: l.look, auraCos: l.aura ? l.aura.data : null, blason: l.blason ? l.blason.data : null };
     Object.defineProperty(this, '_lookAffiche', { value: { cle, valeur }, writable: true, enumerable: false, configurable: true });
     return valeur;
   }
@@ -273,7 +285,7 @@ class Character {
     if (weapon && weapon.spell) { extraSpells.arme = weapon.spell; spells.push('arme'); }
     const ap = this.lookAffiche();
     return {
-      name: this.name, classId: this.classId, level: this.level, shape: 'player', glyph: c.glyph, color: c.color, look: ap.look, auraCos: ap.auraCos, lueur: ap.lueur, gender: this.gender,
+      name: this.name, classId: this.classId, level: this.level, shape: 'player', glyph: c.glyph, color: c.color, look: ap.look, auraCos: ap.auraCos, gender: this.gender,
       hp: d.hpMax, hpCurrent: this.hp, pa: d.pa, pm: d.pm, initiative: Math.round(d.initiative * Math.max(0, Math.min(1, (this.hp == null ? d.hpMax : this.hp) / Math.max(1, d.hpMax)))), resist: d.resist,
       spells, extraSpells, stats: d.stats, dmgFlat: d.dmgFlat, crit: d.crit, title: this.title, tacle: d.tacle, fuite: d.fuite,
       scale: 1,

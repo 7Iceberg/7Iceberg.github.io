@@ -14,7 +14,7 @@ const ICO = {
   recherche: svg('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>'),
   auto: svg('<path d="M20 12a8 8 0 1 1-3-6.2"/><path d="M20 4v5h-5"/>'),
 };
-const ONGLETS = [['teinture', 'Teintures'], ['lueur', 'Lueurs'], ['aura', 'Auras'], ['blason', 'Blasons'], ['emote', 'Émotes'], ['theme', 'Thèmes'], ['collections', 'Collections'], ['looks', 'Looks']];
+const ONGLETS = [['teinture', 'Teintures'], ['aura', 'Auras'], ['blason', 'Blasons'], ['emote', 'Émotes'], ['theme', 'Thèmes'], ['collections', 'Collections'], ['looks', 'Looks']];
 const FILTRES = [['tous', 'Tous'], ['possedes', 'Possédés'], ['aobtenir', 'À obtenir']];
 const FACINGS = ['se', 'sw', 'nw', 'ne'];
 const APPUI_LONG = 480;
@@ -128,7 +128,7 @@ Object.assign(Hud.prototype, {
     const ch = this.world.ch, s = this.gr;
     const porte = Object.assign(Garderobe.porteDefaut(), ch.porte || {}, s.essai);
     const l = Garderobe.lookPorte(ch, null, porte);
-    return { look: l.look, auraCos: l.aura ? l.aura.data : null, lueur: l.lueur && l.lueur.data ? l.lueur.data.effet || null : null, blason: l.blason ? l.blason.data : null };
+    return { look: l.look, auraCos: l.aura ? l.aura.data : null, blason: l.blason ? l.blason.data : null };
   },
 
   grPeindre() {
@@ -159,7 +159,7 @@ Object.assign(Hud.prototype, {
     }
     const ap = this.grApparence();
     c.save(); c.translate(W / 2, sol); c.scale(S, S); c.lineJoin = 'round'; c.lineCap = 'round';
-    try { painter.drawBody(c, { x: 0, y: 0 }, { shape: 'player', color: cls.color, glyph: cls.glyph, team: 'player', look: ap.look, auraCos: ap.auraCos, lueur: ap.lueur, gender: ch.gender, facing: this.gr.facing }); } catch (e) {   }
+    try { painter.drawBody(c, { x: 0, y: 0 }, { shape: 'player', color: cls.color, glyph: cls.glyph, team: 'player', look: ap.look, auraCos: ap.auraCos, gender: ch.gender, facing: this.gr.facing }); } catch (e) {   }
     c.restore();
   },
 
@@ -189,7 +189,7 @@ Object.assign(Hud.prototype, {
     return `<div class="vy-gr">
       <aside class="vy-gr__socle">
         <div class="vy-gr__poupee">
-          <div class="vy-gr__col">${['teinture', 'lueur', 'aura'].map(slot).join('')}</div>
+          <div class="vy-gr__col">${['teinture', 'aura'].map(slot).join('')}</div>
           <div class="vy-gr__scene"><canvas class="vy-gr__cv" aria-label="Ton personnage sur son socle"></canvas>
             <div class="vy-gr__nom">${ap.blason ? `<span class="pb-blason" style="color:${esc(hex(ap.blason.couleur))}" aria-hidden="true">${esc(ap.blason.glyphe || '')}</span>` : ''}${esc(ch.name)}</div>
             <div class="vy-gr__tour"><button class="vy-gr__fleche g" data-act="tourner" data-sens="-1" aria-label="Tourner à gauche" title="Tourner à gauche">${I.tourneG}</button><button class="vy-gr__auto${s.tourne ? ' on' : ''}" data-act="tournerAuto" aria-pressed="${s.tourne}" aria-label="${s.tourne ? 'Arrêter le socle' : 'Faire tourner le socle'}" title="${s.tourne ? 'Arrêter' : 'Tourner'} : le socle tourne de lui-même">${ICO.auto}</button><button class="vy-gr__fleche d" data-act="tourner" data-sens="1" aria-label="Tourner à droite" title="Tourner à droite">${I.tourneD}</button></div></div>
@@ -293,7 +293,7 @@ Object.assign(Hud.prototype, {
     }
     return `<div class="vy-gr__looks" data-defile="garderobe">${lignes.join('')}
       <div class="vy-gr__look-nouveau"><input id="gr-look-nom" type="text" maxlength="24" placeholder="Nom du look" aria-label="Nom du look"><button class="vy-bouton vy-bouton--petit" data-act="lookEnregistrer" ${looks.length >= Garderobe.limiteLooks() ? 'disabled' : ''}>${I.plus} Enregistrer la tenue portée</button></div>
-      <p class="muted vy-note">Un look garde ce que tu portes (teinture, lueur, aura, blason, thème). Le remettre reprend chaque pièce encore dans ta Garde-robe. Cinq au plus.</p>
+      <p class="muted vy-note">Un look garde ce que tu portes (teinture, aura, blason, thème). Le remettre reprend chaque pièce encore dans ta Garde-robe. Cinq au plus.</p>
     </div>`;
   },
 });

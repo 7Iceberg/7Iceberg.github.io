@@ -1,0 +1,91 @@
+
+#app #stage .vy-discussion {
+  top: auto;
+  bottom: calc(62px + var(--sc-bas, 0px));
+  left: calc(10px + var(--sc-gauche, 0px));
+  transform-origin: 0 100%;
+}
+#app.mode-combat #stage .vy-discussion { top: auto; bottom: calc(22px + var(--barre-sorts-h, 110px) * var(--ui-z, 1) + var(--sc-bas, 0px)); }
+body.vy-discussion-ouverte #app.mode-combat #log { display: none !important; }
+@media (orientation: landscape) and (max-height: 500px) {
+  #app #stage .vy-discussion { top: auto; bottom: calc(6px + var(--sc-bas, 0px)); left: calc(6px + var(--sc-gauche, 0px)); height: min(230px, 66%); }
+  #app.mode-combat #stage .vy-discussion { bottom: calc(6px + var(--zs-bas, 0px) + var(--sc-bas, 0px)); }
+}
+@media (max-width: 600px) and (orientation: portrait) {
+  #app #stage .vy-discussion { top: auto; bottom: 118px; left: 6px; }
+}
+
+#app #stage #tracker.vy-suivi {
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid rgba(221, 170, 114, 0.32);
+  background: rgba(11, 17, 30, 0.86);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+#app #stage #tracker.vy-suivi[hidden] { display: none; }
+#app #stage #tracker .vy-suivi__tete {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  padding: 6px 8px 5px 10px; border: 0; border-bottom: 1px solid rgba(221, 170, 114, 0.2);
+  background: linear-gradient(180deg, rgba(221, 170, 114, 0.16), rgba(221, 170, 114, 0.04));
+  color: var(--vy-or-clair, #f3d9a8); cursor: pointer; text-align: left;
+  font: 700 11px/1.2 var(--vy-font-titre, sans-serif); letter-spacing: 0.12em; text-transform: uppercase;
+}
+#app #stage #tracker .vy-suivi__tete b { flex: 1; font: inherit; }
+#app #stage #tracker .vy-suivi__tete small { font: 600 10.5px/1 var(--vy-font-ui, sans-serif); letter-spacing: 0; color: var(--vy-texte-2, #b7a697); }
+#app #stage #tracker .vy-suivi__tete svg { width: 14px; height: 14px; flex: none; transition: transform 0.15s ease; }
+#app #stage #tracker.plie .vy-suivi__tete { border-bottom-color: transparent; }
+#app #stage #tracker.plie .vy-suivi__tete svg { transform: rotate(-90deg); }
+#app #stage #tracker.plie .tq { display: none; }
+#app #stage #tracker .tq {
+  position: relative; display: block; width: 100%;
+  margin: 0; padding: 6px 10px 7px 20px !important;
+  border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+  background: transparent !important; color: inherit; text-align: left; cursor: pointer;
+  font: 500 12px/1.35 var(--vy-font-ui, sans-serif);
+}
+#app #stage #tracker .tq + .tq { border-top: 1px solid rgba(255, 255, 255, 0.07) !important; }
+#app #stage #tracker .tq:hover, #app #stage #tracker .tq:focus-visible { background: rgba(221, 170, 114, 0.09) !important; outline: none; }
+#app #stage #tracker .tq::before {
+  content: ''; position: absolute; left: 8px; top: 11px; width: 6px; height: 6px;
+  transform: rotate(45deg); border-radius: 1px; background: var(--vy-pierre-clair, #8d99ae);
+}
+#app #stage #tracker .tq.main::before { background: var(--vy-or, #dda772); box-shadow: 0 0 6px rgba(221, 170, 114, 0.6); }
+#app #stage #tracker .tq.done::before { background: var(--vy-succes, #80d697); }
+#app #stage #tracker .tq.succes::before { background: var(--vy-cristal, #52d2f4); }
+#app #stage #tracker .tq b { display: block; color: var(--vy-or-clair, #f3d9a8) !important; font: 700 12.5px/1.25 var(--vy-font-titre, sans-serif) !important; letter-spacing: 0.02em; }
+#app #stage #tracker .tq.done b { color: var(--vy-succes, #80d697) !important; }
+#app #stage #tracker .tq.succes b { color: var(--vy-cristal-clair, #a6ecff) !important; }
+#app #stage #tracker .tq span { display: block; margin-top: 1px; color: var(--vy-texte-2, #b7a697); }
+@media (max-height: 480px) and (max-width: 1000px) {
+  #app #stage #tracker .tq span { display: none; }
+  #app #stage #tracker .vy-suivi__tete { padding: 4px 8px 4px 9px; }
+}
+
+#app #minicarte { cursor: pointer; }
+#app #minicarte:focus-visible { outline: 2px solid var(--vy-cristal, #52d2f4); outline-offset: 3px; }
+.vy-minicarte__outil[data-mini="taille"] { display: none; }
+@media (min-width: 721px) and (min-height: 501px) {
+  #app #minicarte.taille-2 { width: 290px; height: 168px; }
+  #app #minicarte.taille-3 { width: 380px; height: 228px; }
+  .vy-minicarte__outil[data-mini="taille"] { display: grid; }
+}
+.vy-minicarte__outil:disabled { opacity: 0.4; cursor: default; }
+.vy-minicarte__outils {
+  position: absolute; left: 6px; top: 6px; z-index: 3;
+  display: flex; gap: 3px; opacity: 0; transition: opacity 0.15s ease;
+}
+#minicarte:hover .vy-minicarte__outils, #minicarte:focus-within .vy-minicarte__outils, .vy-minicarte__outils:focus-within { opacity: 1; }
+.vy-minicarte__outil {
+  width: 24px; height: 24px; padding: 4px; border: 0; border-radius: 6px; cursor: pointer;
+  display: grid; place-items: center;
+  color: var(--vy-or-clair, #f3d9a8); background: rgba(11, 17, 30, 0.88);
+  box-shadow: inset 0 0 0 1px rgba(221, 170, 114, 0.45), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.vy-minicarte__outil:hover { color: #fff; box-shadow: inset 0 0 0 1px var(--vy-or, #dda772), 0 2px 6px rgba(0, 0, 0, 0.4); }
+.vy-minicarte__outil svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+@media (hover: none) { .vy-minicarte__outils { opacity: 1; } .vy-minicarte__outil { width: 22px; height: 22px; } }
+
+#app.vy-edition #vue-interface { color: var(--vy-cristal, #52d2f4); }
+@media (max-width: 720px), (max-height: 500px) { #vue-interface { display: none; } }

@@ -55,12 +55,12 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .entree-teinte {
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background:
-    radial-gradient(ellipse 70% 85% at 24% 48%, color-mix(in srgb, var(--classe) 55%, transparent) 0%, color-mix(in srgb, var(--classe) 16%, transparent) 50%, transparent 78%),
-    linear-gradient(180deg, rgba(6, 10, 18, 0.62) 0%, color-mix(in srgb, var(--classe) 14%, rgba(5, 8, 15, 0.86)) 100%);
+    linear-gradient(115deg, transparent 0 46%, color-mix(in srgb, var(--classe) 30%, transparent) 46.2% 47.4%, transparent 47.6%),
+    radial-gradient(ellipse 85% 95% at 28% 45%, color-mix(in srgb, var(--classe) 86%, #ffffff) 0%, color-mix(in srgb, var(--classe) 68%, #0a1220) 44%, color-mix(in srgb, var(--classe) 34%, #05080f) 100%);
   opacity: 0;
   transition: opacity 500ms ease;
 }
-.entree-teinte.on { opacity: 1; }
+.entree-teinte.on { opacity: 0.94; }
 
 .entree { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; }
 .entree-vue { position: relative; flex: 1; min-height: 0; }

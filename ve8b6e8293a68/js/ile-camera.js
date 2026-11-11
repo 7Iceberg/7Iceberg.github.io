@@ -163,6 +163,22 @@ class CameraIle {
     this.animAz = null;
     this.changed();
   }
+  suivrePente(dt, now) {
+    const R = this.regards[this.regard], T = this.terrain, jv = this.vitJoueur, n = Math.hypot(jv.x, jv.y), P = CameraIle.PENTE;
+    if (this.mode !== 'exploration' || !R || !R.suit || R.fixe || this.trans || this.passageRegard || this.orbite || this.inertie || this.tourPad ||
+        now - this.orbiteVue < P.attente || n < 1 || !T || typeof T.marcheA !== 'function') return;
+    const ux = jv.x / n, uy = jv.y / n, x = this.joueur.x, y = this.joueur.y;
+    const ha = T.marcheA(x - ux * 1.5, y - uy * 1.5), hb = T.marcheA(x + ux * 2.5, y + uy * 2.5);
+    const pente = Number.isFinite(ha) && Number.isFinite(hb) ? Math.abs(hb - ha) / 4 : 0;
+    const cache = (this.elevSol || 0) > 0.05 || Number.isFinite(this.dSol);
+    const force = Math.max(Math.max(0, Math.min(1, (pente - P.seuil) / P.plein)), cache ? P.cache : 0);
+    if (force <= 0) return;
+    const da = CameraIle.arc(Math.atan2(-ux, -uy) - this.azimut);
+    if (Math.abs(da) > P.max * Math.PI / 180) return;
+    const v = Math.max(-P.vitesse, Math.min(P.vitesse, da / P.lissage)) * force;
+    this.azimut = CameraIle.arc(this.azimut + v * Math.min(dt, 0.1));
+    this.animAz = null;
+  }
   elevationSans() { const i = this.inclinaison; this.inclinaison = 0; const e = this.elevation(); this.inclinaison = i; return e; }
   bornerChamp(c) { return Math.max(this.champs[0], Math.min(this.champs[1], c)); }
 
@@ -197,7 +213,8 @@ class CameraIle {
     if (T && typeof T.marcheA === 'function') {
       let h = T.marcheA(cam.position.x, cam.position.z);
       if (!Number.isFinite(h) && typeof T.solBrutA === 'function') h = T.solBrutA(cam.position.x, cam.position.z);
-      if (Number.isFinite(h) && cam.position.y < h + 3) cam.position.y = h + 3;
+      const plancher = this.mode === 'exploration' && this.regards[this.regard] && this.regards[this.regard].suit ? CameraIle.SOL.plancherDos : 3;
+      if (Number.isFinite(h) && cam.position.y < h + plancher) cam.position.y = h + plancher;
       if (Number.isFinite(h)) solCam = cam.position.y - h;
     }
     cam.up.set(0, 1, 0);
@@ -441,16 +458,16 @@ class CameraIle {
     for (let k = 1.2; k <= d0; k += 0.5) {
       const x = e.x + sx * ce * k, y = e.y + sy * ce * k, ligne = hv + se * k, sol = T.solBrutA(x, y);
       if (basse && Number.isFinite(sol) && sol > ligne - 0.4) { libre = k - 0.8; break; }
-      if (this.bloque && this.bloque(x, y) && (!Number.isFinite(sol) || ligne - sol < 6)) {
+      if (this.bloque && this.bloque(x, y) && (!Number.isFinite(sol) || ligne - sol < (basse ? 6 : 3))) {
         if (!plein) debut = k;
         plein++;
-        if (plein >= 3) { libre = debut - 0.8; break; }
+        if (plein >= (basse ? 3 : 4)) { libre = debut - 0.8; break; }
       } else plein = 0;
     }
     libre = Math.max(2.4, libre);
     if (libre >= d0 - 0.01) libre = Infinity;
     const cur = Number.isFinite(this.dLibre) ? this.dLibre : d0, vise = Number.isFinite(libre) ? libre : d0;
-    const tau = vise < cur ? 0.06 : 0.35, nouv = cur + (vise - cur) * (dt > 0 ? 1 - Math.exp(-dt / tau) : 1);
+    const tau = vise < cur ? (basse ? 0.06 : 0.12) : 0.35, nouv = cur + (vise - cur) * (dt > 0 ? 1 - Math.exp(-dt / tau) : 1);
     this.dLibre = !Number.isFinite(libre) && nouv >= d0 - 0.02 ? Infinity : nouv;
   }
   majSol(dt) {
@@ -465,17 +482,19 @@ class CameraIle {
       loin = this.besoinSol(fx, fy, Number.isFinite(hf) ? this.cible.h + (hf - T.solBrutA(this.cible.x, this.cible.y)) : this.cible.h, base, d);
     }
     const k = tau => dt > 0 ? 1 - Math.exp(-dt / tau) : 1;
+    const doux = !!(this.regards[this.regard] && this.regards[this.regard].suit);
     const visB = Math.min(ici.bras, loin.bras, d), d0 = Number.isFinite(this.dSol) ? this.dSol : d;
     let nd = d0 + (visB - d0) * k(visB < d0 ? S.approche : S.recul);
-    nd = Math.min(nd, ici.bras + 0.3);
+    if (nd > ici.bras + 0.3) nd = doux ? nd + (ici.bras + 0.3 - nd) * k(S.urgence) : ici.bras + 0.3;
     this.dSol = !Number.isFinite(Math.min(ici.bras, loin.bras)) && nd >= d - 0.02 ? Infinity : nd;
     const vis = Math.max(ici.el, loin.el) - base, cur = this.elevSol || 0;
     let v = cur + (vis - cur) * k(vis > cur ? S.montee : S.descente);
-    if (v < ici.el - base - S.ecart) v = ici.el - base - S.ecart;
+    if (v < ici.el - base - S.ecart) v = doux ? v + (ici.el - base - S.ecart - v) * k(S.urgence) : ici.el - base - S.ecart;
     this.elevSol = vis <= 0 && v < 1e-4 ? 0 : Math.max(0, v);
   }
   besoinSol(x0, y0, h, base, d) {
-    const T = this.terrain, S = CameraIle.SOL, haut = S.max * Math.PI / 180, max = Math.min(haut, base + S.levee * Math.PI / 180);
+    const T = this.terrain, S = CameraIle.SOL, suit = !!(this.regards[this.regard] && this.regards[this.regard].suit);
+    const haut = (suit ? S.maxDos : S.max) * Math.PI / 180, max = Math.min(haut, base + S.levee * Math.PI / 180);
     const r = { el: base, bras: Infinity };
     if (!(base < max)) return r;
     const sx = Math.sin(this.azimut), sy = Math.cos(this.azimut), l = this.leveA(), hv = h + l, tete = h + Math.max(l, S.tete);
@@ -910,6 +929,7 @@ class CameraIle {
     this.cible.h += (this.joueur.h - this.cible.h) * (1 - Math.exp(-dt * 5));
     this.borner();
     const solAvant = this.elevSol;
+    this.suivrePente(dt, now);
     this.majSol(dt);
     this.placer();
     const fit = Math.hypot(d.x, d.y) < 0.5 && Math.abs(this.champ / this.champDefaut - 1) < 0.02 && Math.abs(CameraIle.arc(this.azimut - this.azimutDefaut)) < 0.01;
@@ -1283,4 +1303,6 @@ CameraIle.CASE_COMBAT = [50, 60];
 CameraIle.SUIVI = { raideur: 7, avance: 0.18, avanceMax: 1.25, lissageMarche: 0.22, arret: 0.12, retour: 3.2, zoom: 0.17 };
 CameraIle.ORBITE = { tour: 0.006, pente: 0.135, min: 6, max: 72, leve: 2.6, lissage: 0.09, elan: [0.6, 4, 0.28] };
 CameraIle.PAD = { tour: 0.62, recul: 0.35, lissage: 0.3, attente: 1000 };
-CameraIle.SOL = { tete: 1.4, marge: [0.4, 3], points: 24, montee: 0.25, descente: 0.7, ecart: 0.035, max: 76, levee: 30, anticipation: 0.6, approche: 0.2, recul: 0.5, brasMin: 6, brasPart: 0.3 };
+CameraIle.SOL = { tete: 1.4, marge: [0.4, 3], points: 24, montee: 0.25, descente: 0.7, ecart: 0.035, max: 76, levee: 30, anticipation: 0.6, approche: 0.2, recul: 0.5, brasMin: 6, brasPart: 0.3,
+  maxDos: 72, urgence: 0.07, plancherDos: 1.8 };
+CameraIle.PENTE = { attente: 2000, seuil: 0.18, plein: 0.25, cache: 0.6, vitesse: 1.6, lissage: 0.45, max: 150 };

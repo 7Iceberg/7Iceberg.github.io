@@ -218,7 +218,7 @@ Object.assign(Hud.prototype, {
     return `<section class="vy-inv__poupee${cos ? ' vy-inv__poupee--cos' : ''}" aria-label="${cos ? 'Cosmétiques portés' : 'Équipement porté'}">
       ${onglets}
       ${cos ? '' : `<div class="vy-inv__col vy-inv__marques">${veyliths}</div>`}
-      <div class="vy-inv__col">${cos ? colCos(['teinture', 'lueur', 'aura']) : col(GAUCHE) + trCase}</div>
+      <div class="vy-inv__col">${cos ? colCos(['teinture', 'aura']) : col(GAUCHE) + trCase}</div>
       <div class="vy-inv__perso" data-depot="poupee">
         <canvas class="vy-inv__cv" role="img" aria-label="${esc(ch.name)}, ${esc(cls.name)}"></canvas>
         <button class="vy-inv__tourne vy-inv__tourne--g" data-act="tourner" data-sens="-1" aria-label="Tourner le personnage vers la gauche" title="Tourner">${I.tourneG}</button>
@@ -226,7 +226,7 @@ Object.assign(Hud.prototype, {
         <div class="vy-inv__nom">${esc(ch.name)}<small>${esc(cls.name)} · niv. ${ch.level}${ch.title ? ` · ${esc(ch.title)}` : ''}</small></div>
       </div>
       <div class="vy-inv__col">${cos ? colCos(['blason', 'theme']) : col(DROITE) + famCase + montCase}</div>
-      ${cos ? `<div class="vy-inv__rangee vy-inv__rangee--cos">${['teinture', 'lueur', 'aura', 'blason', 'theme'].map(t => { const id = Garderobe.porteId(ch, t), c = id && Garderobe.get(id); return `<div class="vy-inv__cos-ligne"><small>${esc((Garderobe.TYPE_LABEL[t] || t).replace(/s$/, ''))}</small><b>${c ? esc(c.nom) : '-'}</b></div>`; }).join('')}<button type="button" class="vy-bouton vy-bouton--petit vy-bouton--primaire" data-act="garderobe">Ouvrir la Garde-robe</button></div>` : `<div class="vy-inv__rangee">
+      ${cos ? `<div class="vy-inv__rangee vy-inv__rangee--cos">${['teinture', 'aura', 'blason', 'theme'].map(t => { const id = Garderobe.porteId(ch, t), c = id && Garderobe.get(id); return `<div class="vy-inv__cos-ligne"><small>${esc((Garderobe.TYPE_LABEL[t] || t).replace(/s$/, ''))}</small><b>${c ? esc(c.nom) : '-'}</b></div>`; }).join('')}<button type="button" class="vy-bouton vy-bouton--petit vy-bouton--primaire" data-act="garderobe">Ouvrir la Garde-robe</button></div>` : `<div class="vy-inv__rangee">
         <div class="vy-inv__groupe"><div class="vy-inv__noeuds" title="Nœuds noués : chacun durcit les combats et ajoute ${DATA.rules.knotBonus} % d'XP et de butin">${noeuds.join('')}</div><small>Nœuds ${actifs.length} / ${DATA.rules.maxKnots}</small></div>
         ${this.invBarreEnsembles(ch)}
       </div>`}
@@ -287,7 +287,7 @@ Object.assign(Hud.prototype, {
     const f = this.inv.facing === -1 ? -1 : 1;
     c.save(); c.translate(W / 2, sol); c.scale(S * f, S); c.lineJoin = 'round'; c.lineCap = 'round';
     const ap = ch.lookAffiche();
-    try { painter.drawBody(c, { x: 0, y: 0 }, { shape: 'player', color: cls.color, glyph: cls.glyph, team: 'player', look: ap.look, auraCos: ap.auraCos, lueur: ap.lueur, gender: ch.gender, facing: f }); } catch (e) {   }
+    try { painter.drawBody(c, { x: 0, y: 0 }, { shape: 'player', color: cls.color, glyph: cls.glyph, team: 'player', look: ap.look, auraCos: ap.auraCos, gender: ch.gender, facing: f }); } catch (e) {   }
     c.restore();
   },
 
@@ -692,7 +692,7 @@ Object.assign(Hud.prototype, {
       <div class="vy-sous"><span>Titre affiché</span></div>${titres}
       <div class="vy-sous"><span>Garde-robe</span><span class="muted">${n} cosmétique${n > 1 ? 's' : ''}</span></div>
       <div class="vy-inv__portes">${porte}</div>
-      <p class="muted vy-note">Teintures, lueurs, auras, blasons, émotes et thèmes se gagnent en jouant et servent à tous tes personnages. Jamais de puissance : seulement de l'allure.</p>
+      <p class="muted vy-note">Teintures, auras, blasons, émotes et thèmes se gagnent en jouant et servent à tous tes personnages. Jamais de puissance : seulement de l'allure.</p>
       <div class="vy-ensembles"><button class="vy-bouton vy-bouton--petit" data-act="garderobe">Ouvrir la Garde-robe</button></div>
       <div class="vy-sous"><span>Thème de l'interface</span></div><div class="vy-themes">${themes}</div>
     </div>`;
