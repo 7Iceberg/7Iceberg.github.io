@@ -986,6 +986,15 @@ void main() { vec4 t = texture2D(carte, vUv); gl_FragColor = vec4(t.rgb * vTeint
     O.centre.set(Math.round((c.x + fx * av) / t) * t, c.h || 0, Math.round((c.y + fz * av) / t) * t);
     L.cle.target.position.copy(O.centre); L.cle.target.updateMatrixWorld();
     L.cle.position.copy(this.dirSoleil).multiplyScalar(120).add(O.centre);
+    const r = this.renderer;
+    if (r && r.shadowMap.enabled) {
+      if (r.shadowMap.autoUpdate) r.shadowMap.autoUpdate = false;
+      const now = performance.now(), s = this.dirSoleil;
+      if (!O.vu || !O.vu.centre.equals(O.centre) || O.vu.soleil.distanceToSquared(s) > 1e-6 || now - O.vu.t > 1000) {
+        r.shadowMap.needsUpdate = true;
+        if (!O.vu) O.vu = { centre: O.centre.clone(), soleil: s.clone(), t: now }; else { O.vu.centre.copy(O.centre); O.vu.soleil.copy(s); O.vu.t = now; }
+      }
+    }
   }
 
   uniformesFondu(THREE) {

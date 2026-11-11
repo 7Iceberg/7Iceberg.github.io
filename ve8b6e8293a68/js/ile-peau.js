@@ -48,6 +48,7 @@ const IlePeau = (() => {
   };
   for (const id of ['glym_aer', 'glym_ignis', 'glym_terra', 'glym_aqua', 'chateigne', 'grillon_ruche', 'scarabee_ruche', 'mante_chene'])
     if (PEAUX[id]) PEAUX[id].carte = PEAUX[id].fichier.replace(/\.glb$/, '-carte.glb');
+  const PEAUX_TEL = 3;
   const MONSTRES = ['filin', 'lampignard', 'glym_aer', 'glym_ignis', 'glym_terra', 'glym_aqua', 'chateigne', 'grillon_ruche', 'scarabee_ruche', 'mante_chene'];
   const TAU_CAP = 0.08, TAU_MARCHE = 0.12, TAU_GESTE = 0.08;
 
@@ -1174,6 +1175,7 @@ void main() {
       this.THREE = THREE; this.modeles = modeles; this.opts = opts || {};
       this.attente = new Set(attente || []); this.charges = new Map(); this.vusDe = new Map();
       this.complets = {}; this.chargesC = new Map(); this.vusC = new Map();
+      this.candidats = []; this.retenus = null;
       this.groupe = new THREE.Group(); this.groupe.name = 'peaux';
       this.etats = new Map();
       this.now = 0; this.n = 0;
@@ -1201,6 +1203,15 @@ void main() {
         .catch(e => { console.warn('Peau complète du monstre ' + id + ' indisponible : ' + e.message); this.chargesC.delete(id); }));
     }
     poser(s) {
+      if (this.opts.telephone && !s.combat) {
+        const c = this.camera.position, d = (s.x - c.x) * (s.x - c.x) + (s.h - c.y) * (s.h - c.y) + (s.y - c.z) * (s.y - c.z), id = s.modeleCle || (s.modele + '@' + Math.round(s.x * 4) + ',' + Math.round(s.y * 4));
+        const P = PEAUX[s.modele], H = (s.scale || 1) * ((P && P.hauteur) || 1);
+        this._sp.center.set(s.x, s.h + H * 0.5, s.y); this._sp.radius = H;
+        if (this._ch.intersectsSphere(this._sp) && (s.alpha == null || s.alpha >= 0.05)) {
+          this.candidats.push([d, id]);
+          if (this.retenus && !this.retenus.has(id)) return false;
+        }
+      }
       let M = this.modeles[s.modele], complet = false;
       if (M && s.combat && PEAUX[s.modele] && PEAUX[s.modele].carte) {
         this.vusC.set(s.modele, this.now);
@@ -1246,6 +1257,7 @@ void main() {
         if (!e.pose) { e.ex.racine.visible = false; }
         if (this.now - e.vu > 5000) { e.M.rendre(e.ex); this.etats.delete(k); }
       }
+      if (this.opts.telephone) { this.candidats.sort((a, b) => a[0] - b[0]); this.retenus = new Set(this.candidats.slice(0, PEAUX_TEL).map(x => x[1])); this.candidats = []; }
       for (const id of this.opts.aLaDemande || []) {
         const M = this.modeles[id];
         if (!M || this.now - (this.vusDe.get(id) || this.now) < (this.opts.telephone ? 10000 : 30000)) continue;
