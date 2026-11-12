@@ -209,7 +209,7 @@ const Save = (() => {
     if (counters.wins > counters.fights) { bad('victoires'); counters.wins = counters.fights; }
     const plafond = counters.filsEarned + (counters.filsRecus || 0);
     if (o.fils + o.coffre.fils > plafond) { bad('Dragmes au-delà des gains'); o.fils = Math.min(o.fils, plafond); o.coffre.fils = Math.max(0, Math.min(o.coffre.fils, plafond - o.fils)); }
-    for (const k of ['kills', 'feats']) if (c[k] && typeof c[k] === 'object') for (const id of Object.keys(c[k])) { if (isInt(c[k][id], 0, 1e9)) counters[k][id] = c[k][id]; else bad(`compteur ${k}.${id}`); }
+    for (const k of ['kills', 'feats', 'recoltes']) if (c[k] && typeof c[k] === 'object') for (const id of Object.keys(c[k])) { if (isInt(c[k][id], 0, 1e9)) counters[k][id] = c[k][id]; else bad(`compteur ${k}.${id}`); }
     for (const k of ['maps', 'dungeons', 'bosses']) if (Array.isArray(c[k])) counters[k] = [...new Set(c[k].filter(x => typeof x === 'string'))];
     counters.maps = counters.maps.filter(id => World.mapDef(id));
     counters.dungeons = counters.dungeons.filter(id => World.dungeonDef(id));

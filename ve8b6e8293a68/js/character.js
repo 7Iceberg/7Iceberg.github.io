@@ -7,7 +7,7 @@ class Character {
       inventory: {}, fils: 0, hp: null, titles: [], title: null,
       coffre: { items: {}, fils: 0 },
       quests: { active: {}, done: [] },
-      counters: { fights: 0, wins: 0, kills: {}, maps: [], crafts: 0, gathers: 0, filsEarned: 0, filsRecus: 0, dungeons: [], dungeonTurns: {}, bosses: [], questsDone: 0, feats: {} },
+      counters: { fights: 0, wins: 0, kills: {}, maps: [], crafts: 0, gathers: 0, recoltes: {}, filsEarned: 0, filsRecus: 0, dungeons: [], dungeonTurns: {}, bosses: [], questsDone: 0, feats: {} },
       achievements: [], pos: null, relay: null, relays: [], dungeon: null, autoStats: true, playTime: 0, knots: [], ensembles: [], voie: null, scrolls: {}, bonbon: null,
       variantes: {},
       look: null, porte: null, ensemblesLook: [],
@@ -73,7 +73,7 @@ class Character {
       stats: { vita: 0, sagesse: 0, force: 0, intel: 0, chance: 0, agi: 0 },
       equipment: Object.fromEntries(Items.EQUIP_SLOTS.map(sl => [sl, null])),
       quests: { active: {}, done: [] },
-      counters: { fights: 0, wins: 0, kills: {}, maps: [], crafts: 0, gathers: 0, filsEarned: 0, filsRecus: 0, dungeons: [], dungeonTurns: {}, bosses: [], questsDone: 0, feats: {} },
+      counters: { fights: 0, wins: 0, kills: {}, maps: [], crafts: 0, gathers: 0, recoltes: {}, filsEarned: 0, filsRecus: 0, dungeons: [], dungeonTurns: {}, bosses: [], questsDone: 0, feats: {} },
     };
   }
 

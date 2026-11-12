@@ -884,6 +884,8 @@ class World {
     const n = 1 + (this.rng() < 0.3 ? 1 : 0);
     this.ch.addItem(node.resource, n);
     this.ch.counters.gathers++;
+    const rc = this.ch.counters.recoltes || (this.ch.counters.recoltes = {});
+    rc[node.resource] = (rc[node.resource] || 0) + n;
     const xpM = M && M.apresRecolte(this.ch, node.resource, n);
     if (xpM && xpM.niveaux) this.toast(`${xpM.metier.nom} : niveau ${xpM.niveau} !`);
     this.emit('gain', { source: 'recolte', items: [{ id: node.resource, count: n }], metier: xpM });

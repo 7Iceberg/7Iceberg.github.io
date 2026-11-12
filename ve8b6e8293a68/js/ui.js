@@ -1153,7 +1153,7 @@ class UI {
 
 UI.PLACEMENT_SECONDES = 30;
 
-UI.REGLAGES = { grille: true, deplacement: true, portee: true, cout: true, barres: true, agression: true, finDonjon: true, journalTours: false };
+UI.REGLAGES = { grille: true, deplacement: true, portee: true, cout: true, barres: true, agression: true, finDonjon: true, journalTours: false, rappels: true };
 
 UI.ICON = {
   non: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>',

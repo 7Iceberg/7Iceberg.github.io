@@ -43,6 +43,7 @@ const Achievements = (() => {
       case 'zone': { const n = zoneMaps(c.zone).length; return n > 0 && zoneSeen(ch, c.zone) >= n; }
       case 'craft': return k.crafts >= c.count;
       case 'gather': return k.gathers >= c.count;
+      case 'recoltes': { const l = recoltesDu(c.metier); return l.length > 0 && l.every(r => ((k.recoltes || {})[r] || 0) >= 1); }
       case 'fils': return k.filsEarned >= c.count;
       case 'set': { const s = Items.getSet(c.set); return !!s && (ch.derived().setCount[c.set] || 0) >= s.pieces.length; }
       case 'bossDefi': return ((k.feats || {})[`bossdefi.${c.monster}.${c.defi}`] || 0) >= 1;
@@ -143,6 +144,7 @@ const Achievements = (() => {
       case 'zone': return pair(zoneSeen(ch, c.zone), zoneMaps(c.zone).length);
       case 'craft': return pair(k.crafts, c.count);
       case 'gather': return pair(k.gathers, c.count);
+      case 'recoltes': { const l = recoltesDu(c.metier); return pair(l.filter(r => ((k.recoltes || {})[r] || 0) >= 1).length, l.length); }
       case 'fils': return pair(k.filsEarned, c.count);
       case 'feat': return pair((k.feats || {})[c.key] || 0, c.count);
       case 'carnet': return pair(carnetCount(ch, c.region), c.count);
@@ -184,8 +186,31 @@ const Achievements = (() => {
     }
   }
 
+  function recoltesDu(metierId) {
+    const C = DATA.content, met = ((C && C.metiers) || []).find(m => m.id === metierId);
+    if (!met) return [];
+    const posees = new Set();
+    for (const z of C.zones || []) for (const m of z.maps || []) for (const n of m.nodes || []) posees.add(n.resource);
+    return (C.resources || []).filter(r => r.node && (met.recolte || []).includes(r.node.kind) && posees.has(r.id)).map(r => r.id);
+  }
+  const TITRES_RECOLTE = { bucheron: 'Ami des Troncs', mineur: 'Fendeur de Roche', paysan: 'Faucheur des Terrasses', alchimiste: 'Cueilleur de Simples', pecheur: 'Lanceur de Lignes' };
+  function tourDesRecoltes() {
+    const C = DATA.content;
+    if (!C || !C.metiers || !C.achievements) return;
+    for (const met of C.metiers.filter(m => m.genre === 'recolte')) {
+      const id = `tour_recoltes_${met.id}`, l = recoltesDu(met.id);
+      if (!l.length || C.achievements.some(a => a.id === id)) continue;
+      C.achievements.push({
+        id, name: `Le Tour des Récoltes : ${met.nom}`, cat: 'Artisanat', sous: 'Récolte', points: 20,
+        desc: `Récolter au moins une fois chaque ressource que le métier de ${met.nom.toLowerCase()} cueille dans le monde (l'avancement dit combien il y en a).`,
+        cond: { type: 'recoltes', metier: met.id }, rewards: { xp: 400, fils: 100, title: TITRES_RECOLTE[met.id] || null },
+      });
+    }
+  }
+
   function integrer() {
     explorerZones();
+    tourDesRecoltes();
     const C = DATA.content, src = S();
     if (!C || !C.achievements || !src) return 0;
     const ids = new Set(C.achievements.map(a => a.id));

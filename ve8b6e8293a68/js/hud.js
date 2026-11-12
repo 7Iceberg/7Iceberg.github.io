@@ -249,6 +249,20 @@ class Hud {
   }
 
 
+  rappelsDuJour() {
+    const w = this.world, ch = w && w.ch;
+    if (!ch || !UI.reglage('rappels')) return [];
+    const l = [];
+    if (typeof Veille === 'object') { const v = Veille.statut(ch); if (v.ouverte && v.jour != null && !v.faite) l.push('la Veille du jour'); }
+    if (w.epreuveDojoDispo && w.epreuveDojoDispo()) l.push('l\'épreuve du Dojo');
+    if (typeof Semaine === 'object') {
+      const s = Semaine.statut(ch);
+      if (s.ouverte && !s.prime && s.noeud) l.push(`le Nœud de la semaine (${s.noeud.name}, ${s.victoires} victoire${s.victoires > 1 ? 's' : ''} sur ${s.objectif})`);
+    }
+    if (l.length) this.chat('systeme', `Aujourd'hui : ${l.join(', ')}.`);
+    return l;
+  }
+
   static nomRegion(zone) {
     const r = zone && zone.region, n = r && typeof DATA === 'object' && DATA.regions ? DATA.regions[r] : '';
     return n ? String(n).split(',')[0].trim() : '';
@@ -313,6 +327,7 @@ class Hud {
       ${coche('agression', 'Monstres agressifs', 'les élites et quelques familles hostiles attaquent à vue, hors des villes')}
       ${coche('finDonjon', 'Fiche de fin de donjon', 'le boss, les succès du donjon et sa stratégie, à la victoire')}
       ${coche('journalTours', 'Journal du combat par tours', 'les actions rangées par tour, un bloc à la couleur de chaque combattant')}
+      ${coche('rappels', 'Rappels du jour', 'à l\'arrivée en jeu, ce qui reste à faire : la Veille, le Dojo, le Nœud de la semaine')}
       <div class="row"><span>Durée du tour</span><select id="opt-duree-tour" aria-label="Durée du tour">${UI.DUREES_TOUR.map(([v, l]) => `<option value="${v}"${UI.choixDureeTour() === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
       <div class="row"><span class="muted">${UI.choixDureeTour() === 'auto' ? `${UI.dureeTour()} s pour jouer ton tour : 30 s au doigt, 20 s à la souris.` : `${UI.dureeTour()} s pour jouer ton tour.`} Le tour des monstres ne change pas.</span></div>
       <div class="row"><span>Bonus des défis</span><select id="opt-bonus-defi" aria-label="Bonus des défis">${[['', 'XP et butin'], ['xp', 'XP seulement (doublé)'], ['butin', 'Butin seulement (doublé)']].map(([v, l]) => `<option value="${v}"${(ch.bonusDefi || '') === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>

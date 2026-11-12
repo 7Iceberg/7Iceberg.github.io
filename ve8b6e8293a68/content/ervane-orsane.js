@@ -118,6 +118,67 @@
     }
   }
 
+  const F = (monstres, tailles) => ({ monstres, tailles: tailles || { 1: 20, 2: 40, 3: 30, 4: 10 } });
+  const KAVOUS4 = { kavou_bleu: 25, kavou_roux: 25, kavou_ocre: 25, kavou_blanc: 25 };
+  const SOUS_ZONES = {
+    orsane_cimes: [
+      { nom: 'la Place du Relais' }, { nom: 'les Terrasses' },
+      { nom: 'la Porte des Clairières' },
+    ],
+    orsane_clairieres: [
+      { nom: 'les Prés', faune: F({ pilou: 100 }, { 1: 30, 2: 45, 3: 20, 4: 5 }) },
+      { nom: 'le Bosquet', faune: F({ tissefil: 100 }, { 1: 25, 2: 45, 3: 25, 4: 5 }) },
+      { nom: 'la Mare aux Grouks', faune: F({ grouk: 100 }) },
+    ],
+    orsane_sentiers: [
+      { nom: 'la Montée', faune: F(KAVOUS4) },
+      { nom: 'la Corniche', faune: F({ veilloche: 100 }) },
+      { nom: 'la Crête', faune: F({ grouk_cornu: 100 }, { 1: 15, 2: 40, 3: 35, 4: 10 }) },
+    ],
+    orsane_toiles: [
+      { nom: 'les Fils Tendus', faune: F({ tissefil: 100 }) },
+      { nom: 'l\'Allée des Lanternes', faune: F({ veilloche: 60, veilloche_tissee: 40 }) },
+      { nom: 'le Nid des Toiles', faune: F({ tissefil_ancien: 45, tissefil: 55 }, { 2: 35, 3: 40, 4: 25 }) },
+    ],
+    orsane_eboulis: [
+      { nom: 'la Pente aux Galets', faune: F({ brimbe: 45, glek: 20, veilloche: 20, veilloche_tissee: 15 }, { 2: 35, 3: 45, 4: 20 }) },
+      { nom: 'le Chaos', faune: F({ grouk: 60, thelk: 20, glek: 20 }, { 2: 30, 3: 45, 4: 25 }) },
+      { nom: 'la Passe de Kaldum', faune: F({ thelk: 60, brimbe: 40 }, { 2: 30, 3: 45, 4: 25 }) },
+    ],
+  };
+  for (const z of C.zones) {
+    const S = SOUS_ZONES[z.id];
+    if (!S) continue;
+    z.sousZones = S.map(s => {
+      const cartes = (z.maps || []).filter(m => m.sousZone === s.nom);
+      const lv = cartes.map(m => m.level).filter(Array.isArray);
+      const o = { nom: s.nom, level: lv.length ? [Math.min(...lv.map(l => l[0])), Math.max(...lv.map(l => l[1]))] : z.level.slice() };
+      if (s.faune) o.faune = { monstres: Object.assign({}, s.faune.monstres), tailles: Object.assign({}, s.faune.tailles) };
+      return o;
+    });
+    const union = {};
+    for (const s of z.sousZones) for (const [id, p] of Object.entries((s.faune && s.faune.monstres) || {})) union[id] = (union[id] || 0) + p;
+    if (Object.keys(union).length) z.faune = { monstres: union, tailles: Object.assign({}, (z.faune && z.faune.tailles) || { 1: 20, 2: 40, 3: 30, 4: 10 }) };
+    for (const m of z.maps || []) {
+      const s = z.sousZones.find(x => x.nom === m.sousZone);
+      const fam = s && s.faune ? Object.keys(s.faune.monstres) : null;
+      if (!fam) { if (m.penche) delete m.penche; continue; }
+      if (m.penche) {
+        const p = {};
+        for (const [id, k] of Object.entries(m.penche)) if (fam.includes(id)) p[id] = k;
+        if (Object.keys(p).length) m.penche = p; else delete m.penche;
+      }
+      let k = 0;
+      for (const g of m.groups || []) {
+        const special = id => { const d = DATA.monsters[id]; return !d || d.boss || d.elite || d.rare || d.summon || d.fixed; };
+        if (g.fixe || g.dojo || g.levels || g.crepuscule || (g.respawn || 0) >= 300 || (g.monsters || []).some(special)) continue;
+        const vit = id => { const m2 = /(\d+)\D+(\d+)/.exec(String(DATA.monsters[id].level || '')); return !m2 || (+m2[1] <= g.level[1] && +m2[2] >= g.level[0]); };
+        const ici = fam.filter(vit).length ? fam.filter(vit) : fam;
+        g.monsters = g.monsters.map(id => (ici.includes(id) ? id : ici[k++ % ici.length]));
+      }
+    }
+  }
+
   const pnj = id => C.npcs.find(n => n.id === id);
   const varek = pnj('varek'), orvak = pnj('orvak'), kelthar = pnj('kelthar');
   if (varek) {
