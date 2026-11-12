@@ -398,7 +398,7 @@ class Ile3D {
     };
     const fb = IleDecor.falaiseBord(T, this.telephone);
     const avecMonde = !!(rendu.monde && IleCharge.monde && IleCharge.monde() === 'glb');
-    this.meshFalaise = parSecteurs(fb.geo, mats.falaise, this.qualite === 'basse' || !avecMonde ? 1 : 24);
+    this.meshFalaise = parSecteurs(fb.geo, mats.falaise, this.qualite === 'basse' || this.telephone || !avecMonde ? 1 : 24);
     const ds = IleDecor.dessous(T, L, fb.suspendus, this.telephone);
     this.meshDessous = [];
     if (ds.roche) this.meshDessous.push(parSecteurs(ds.roche, mats.dessous, 1));
@@ -423,7 +423,7 @@ class Ile3D {
       etape('Le monde modelé');
       await pause();
       let semis = null;
-      this.T.facteurSemis = this.T.largeur > 300 ? (this.telephone ? 0.48 : 0.75) : 1;
+      this.T.facteurSemis = this.T.largeur > 300 ? (this.telephone ? 0.45 : 0.75) : 1;
       if (rendu.modeles && IleCharge.modeles && IleCharge.modeles()) {
         try { await IleCharge.modelesScript(); if (typeof IleModeles === 'object') { semis = await IleModeles.chargerSemis(THREE, this.renderer); semis.poses = IleModeles.poses(semis, this.T, (u, v) => this.hauteur(u, v)); } } catch (e) { console.warn('Ervane : semis Meshy indisponible', e); semis = null; }
       }
@@ -1868,7 +1868,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     cam.update(now, { x: p.rx, y: p.ry, h: hp }, p.moving);
     const c = cam.vise;
     const A = this.arene, tact = this.enArene && this.tactique;
-    if (this.modeles && typeof IleModeles === 'object') IleModeles.animer(this.modeles, this.temps);
+    if (typeof IleModeles === 'object' && IleModeles.animer) IleModeles.animer(this.modeles, this.temps);
     const vol = cam.survolCarte ? cam.survolCarte() : null, K = this.carteIle;
     const lodPret = !!(vol && K && K.avancerLod());
     const survol = !!(vol && lodPret && vol.largeur > K.seuilProche());

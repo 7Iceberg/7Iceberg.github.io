@@ -529,6 +529,7 @@ float eauBruit(vec2 x) { vec2 i = floor(x), g = fract(x); g = g * g * (3.0 - 2.0
     },
   };
 
+  const AURA_LOIN = 26;
   const VS_AURA = `varying vec2 vUv;
 void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
   const FS_HALO = `uniform float uTemps; uniform float uForce; uniform vec3 uCouleur; varying vec2 vUv;
@@ -1115,10 +1116,14 @@ void main() {
         if (geste && geste.type === 'mort') f *= Math.max(0, 1 - gt / 0.7);
         if (geste && geste.type === 'sort') f *= 1 + 1.2 * Math.sin(Math.PI * gt);
         for (const m of ex.aura.mats) { m.uniforms.uTemps.value = t; m.uniforms.uForce.value = f; }
+        const loin = !!ex.aura.loin;
+        if (ex.aura.loinPrec !== loin) { ex.aura.loinPrec = loin; ex.aura.groupe.children.forEach((o, k) => { if (k > 0) o.visible = !loin; }); }
+        if (!loin) {
         if (ex.aura.bulles) poserBulles(ex.aura, t, f);
         if (ex.aura.flammes) poserFlammes(ex.aura, t, f);
         if (ex.aura.rubans || ex.aura.feuilles) poserVent(ex.aura, t, f);
         if (ex.aura.spirales) poserRubansAura(ex.aura, t, f);
+        }
       }
       const L = this.noeudLiquide >= 0 ? Math.max(0, Math.min(1.5, ex.sca[this.noeudLiquide * 3] - 1)) : 0;
       const Bo = this.noeudBouillon >= 0 ? Math.max(0, Math.min(3, ex.sca[this.noeudBouillon * 3])) : 1;
@@ -1239,6 +1244,7 @@ void main() {
       else if (s.vers && Math.hypot(s.vers.u - s.x, s.vers.v - s.y) > 0.05) cap = Math.atan2(s.vers.u - s.x, s.vers.v - s.y);
       else if (ex.cap == null || s.combat) { const c = this.camera.position; cap = Math.atan2(c.x - s.x, c.z - s.y) + (s.combat ? 0 : (typeof s.facing === 'number' ? Math.sign(s.facing) : 1) * 0.3); }
       prec.x = s.x; prec.y = s.y; prec.t = this.now;
+      if (ex.aura) { const c = this.camera.position; ex.aura.loin = !!this.opts.telephone && !s.combat && Math.hypot(c.x - s.x, c.y - s.h, c.z - s.y) > AURA_LOIN; }
       M.poser(ex, s.x, s.h, s.y, cap, this.now, ex.vitesse > 0.15, ex.vitesse, s.geste || null, !!s.flash, s.alpha, s.scale || 1);
       return true;
     }

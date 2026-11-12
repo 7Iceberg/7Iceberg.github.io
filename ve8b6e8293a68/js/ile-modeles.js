@@ -72,7 +72,9 @@ const IleModeles = (() => {
     return { parties, mat, triangles: Math.round(triangles), octets: compte };
   }
 
+  const RELAIS_DESSINES = false;
   function places(T) {
+    if (!RELAIS_DESSINES) return [];
     return ((T && T.relais) || []).map(r => ({ u: r.u, v: r.v, rot: 0, carte: r.carte }));
   }
 
@@ -204,7 +206,16 @@ const IleModeles = (() => {
     'jt-vert': { atlas: 11, case: [0, 0, 512] }, 'jt-ambre': { atlas: 11, case: [512, 0, 512] },
     'jt-rouille': { atlas: 11, case: [0, 512, 512] }, 't-arbre': { atlas: 11, case: [512, 512, 512] },
   });
-  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [512, 256], [1024, 1024]];
+  Object.assign(SEMIS, {
+    'o-meleze': { atlas: 12, case: [0, 0, 512] }, 'e-arbre-roc': { atlas: 12, case: [512, 0, 512] },
+    'o-cairn': { atlas: 12, case: [0, 512, 256] }, 't-cocon': { atlas: 12, case: [256, 512, 256] }, 'o-bac-fleurs': { atlas: 12, case: [512, 512, 256] },
+    'c-haie': { atlas: 12, case: [768, 512, 256] }, 'c-meule': { atlas: 12, case: [0, 768, 256] }, 't-toile': { atlas: 12, case: [256, 768, 256] },
+    'o-fleurs-alt': { atlas: 12, case: [512, 768, 256] }, 'e-bloc': { atlas: 12, case: [768, 768, 256] },
+  });
+  Object.assign(SEMIS, {
+    'c-pommier': { atlas: 13, case: [0, 0, 512] }, 'c-feuillu': { atlas: 13, case: [512, 0, 512] }, 'o-fontaine': { atlas: 13, case: [0, 512, 512] },
+  });
+  const ATLAS = [[2048, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 512], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [1024, 1024], [512, 256], [1024, 1024], [1024, 1024], [1024, 1024]];
   const SOURCES = [['eau', 160, 148], ['feu', 130, 125], ['terre', 140, 166], ['air', 105, 120], [null, 92, 164]];
   let ICI = null;
   const ici = T => { if (T) ICI = T; return ICI; };
@@ -228,7 +239,7 @@ const IleModeles = (() => {
   const GENRES = {
     feuillu: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansBois(x, z) ? (dansToiles(x, z) ? 't-arbre' : arbreBois(h)) : chaud(t) || h < 0.2 ? 'arbre3' : 'arbre'), facteur: 1.05 },
     haut: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansBois(x, z) ? (dansToiles(x, z) ? 't-arbre' : arbreBois(h)) : 'arbre2'), facteur: 1.0 },
-    conifere: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansToiles(x, z) ? 't-arbre' : montagne(x, z) ? 'o-pin' : 'arbre2'), facteur: 1.0 },
+    conifere: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansToiles(x, z) ? 't-arbre' : montagne(x, z) ? (h < 0.5 ? 'o-pin' : 'o-meleze') : 'arbre2'), facteur: 1.0 },
     tordu: { modele: (t, h, x, z) => (volcan() ? 'k-arbre' : dansAmarre(x, z) ? (dansToiles(x, z) ? 't-arbre' : montagne(x, z) ? 'o-pin' : 'a-pin') : chaud(t) ? 'arbre3' : 'arbre'), facteur: 0.75 },
     borne: { modele: () => 'a-borne', facteur: 1.05 },
     mort: { modele: (t, h) => (volcan() ? (h < 0.5 ? 'k-souche' : 'k-arbre') : h < 0.5 ? 'souche' : 'tronc'), absolu: { souche: 1.0, tronc: 0.9 } },
@@ -265,6 +276,7 @@ const IleModeles = (() => {
     ruine: { modele: o => (dansMurets(o.u, o.v) ? 'mu-ruine' : ervane() && dansAmarre(o.u, o.v) ? 'a-mur' : null), taille: o => ({ l: (o.taille || [6, 5])[0], p: (o.taille || [6, 5])[1], h: 4.5 }), angle: o => -(o.rot || 0),
       murs: o => ervane() && dansAmarre(o.u, o.v) },
     four: { modele: (o, T) => (!ervane() && ((T && T.objets) || []).some(x => x.sorte === 'enclume' && Math.hypot(x.u - o.u, x.v - o.v) < 9) ? 'at-forge' : 'mu-four'), taille: () => ({ l: 2.6, p: 2.6, h: 3 }), angle: o => -(o.rot || 0) },
+    fontaine: { modele: 'o-fontaine', taille: () => ({ l: 4.6, p: 4.6, h: 4.2 }), angle: o => -(o.rot || 0) },
     mannequin: { modele: () => (!ervane() ? 'at-mannequin' : null), taille: () => ({ l: 1.4, p: 1.2, h: 2.1 }), angle: o => -(o.rot || 0) },
     terrier: { modele: 'mu-terrier', taille: () => ({ l: 3.6, p: 3.6, h: 9 }), enfonce: () => 0.12, angle: o => -(o.rot || 0) },
     arche_brisee: { modele: o => (dansAmarre(o.u, o.v) ? 'a-arcade' : null), taille: () => ({ l: 4.6, p: 4.6, h: 3.6 }), angle: o => -(o.rot || 0) },
@@ -441,12 +453,16 @@ const IleModeles = (() => {
     ervane_amarre: [['arbre', 0.008, [2.8, 3.8], ['jt-rouille']], ['buisson', 0.01, [0.8, 1.2], ['v-buisson']], ['rocher', 0.012, [0.8, 1.3], ['v-rochers']]],
     ervane_bois: [['amanite', 0.025, [0.45, 0.65], ['v-amanites']], ['buisson', 0.006, [0.9, 1.2], ['v-buisson']]],
     orsane_cimes: [['buisson', 0.005, [0.9, 1.2], ['v-buisson']], ['arbuste', 0.006, [0.55, 0.75], ['v-fleurs-blanc', 'v-fleurs-lavande']],
-      ['arbre', 0.0008, [2.6, 3.4], ['o-cypres']], ['arbuste', 0.0012, [1.0, 1.3], ['o-topiaire']]],
-    orsane_clairieres: [['arbre', 0.009, [3.0, 4.4], ['jt-ambre', 'jt-ambre', 'jt-vert']], ['buisson', 0.008, [0.9, 1.4], ['v-buisson']],
+      ['arbre', 0.0008, [2.6, 3.4], ['o-cypres']], ['arbuste', 0.0012, [1.0, 1.3], ['o-topiaire']], ['arbuste', 0.001, [0.7, 0.9], ['o-bac-fleurs']]],
+    orsane_clairieres: [['arbre', 0.009, [3.0, 4.4], ['c-feuillu', 'c-pommier', 'jt-ambre']], ['buisson', 0.008, [0.9, 1.4], ['v-buisson']],
+      ['buisson', 0.001, [1.0, 1.3], ['c-haie']], ['buisson', 0.0006, [1.5, 2.0], ['c-meule']],
       ['arbuste', 0.006, [0.55, 0.8], ['v-fleurs-blanc', 'v-fleurs-blanc', 'v-fleurs-lavande']], ['rocher', 0.003, [0.8, 1.2], ['v-rochers']], ['amanite', 0.002, [0.45, 0.6], ['v-amanites']]],
-    orsane_sentiers: [['arbre', 0.004, [2.8, 4.0], ['jt-ambre', 'jt-rouille']], ['buisson', 0.006, [0.8, 1.2], ['o-buisson']], ['rocher', 0.008, [0.8, 1.3], ['o-roche']]],
-    orsane_toiles: [['amanite', 0.008, [0.45, 0.65], ['v-amanites']], ['buisson', 0.004, [0.9, 1.2], ['v-buisson']], ['rocher', 0.003, [0.8, 1.1], ['v-rochers']]],
-    orsane_eboulis: [['arbre', 0.002, [2.8, 3.8], ['jt-rouille']], ['buisson', 0.004, [0.7, 1.1], ['o-buisson']], ['rocher', 0.011, [0.8, 1.4], ['o-roche']], ['rocher', 0.0025, [1.8, 2.9], ['o-roche']]],
+    orsane_sentiers: [['arbre', 0.004, [2.8, 4.0], ['jt-ambre', 'jt-rouille']], ['buisson', 0.006, [0.8, 1.2], ['o-buisson']], ['rocher', 0.008, [0.8, 1.3], ['o-roche']],
+      ['rocher', 0.0012, [1.0, 1.5], ['o-cairn']], ['arbuste', 0.0025, [0.45, 0.65], ['o-fleurs-alt']]],
+    orsane_toiles: [['amanite', 0.008, [0.45, 0.65], ['v-amanites']], ['buisson', 0.004, [0.9, 1.2], ['v-buisson']], ['rocher', 0.003, [0.8, 1.1], ['v-rochers']],
+      ['buisson', 0.003, [0.6, 0.9], ['t-cocon']], ['buisson', 0.001, [1.6, 2.2], ['t-toile']]],
+    orsane_eboulis: [['arbre', 0.002, [2.8, 3.8], ['jt-rouille', 'e-arbre-roc']], ['buisson', 0.004, [0.7, 1.1], ['o-buisson']], ['rocher', 0.011, [0.8, 1.4], ['o-roche']], ['rocher', 0.0025, [1.8, 2.9], ['o-roche']],
+      ['rocher', 0.001, [1.8, 2.6], ['e-bloc']]],
     kaldum_ville: [['buisson', 0.003, [0.8, 1.1], ['k-buisson']], ['rocher', 0.002, [0.7, 1.0], ['k-roche']]],
     kaldum_galeries: [['arbre', 0.0015, [2.6, 3.6], ['k-arbre']], ['rocher', 0.012, [0.8, 1.5], ['k-roche']], ['souche', 0.002, [0.6, 0.9], ['k-souche']]],
     kaldum_vapeurs: [['rocher', 0.008, [0.8, 1.3], ['k-roche']], ['buisson', 0.002, [0.8, 1.1], ['k-buisson']], ['fumerolle', 0.0012, [1.1, 1.7], ['k-fumerolle']]],

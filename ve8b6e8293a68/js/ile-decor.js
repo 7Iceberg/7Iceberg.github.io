@@ -1,6 +1,7 @@
 const IleDecor = (() => {
   const M = () => IleTerrain.M;
   const TUILE = 60;
+  const RELAIS_DESSINES = false;
   const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
   const lisse = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 
@@ -475,6 +476,7 @@ const IleDecor = (() => {
           break;
         }
         case 'relais': {
+          if (!RELAIS_DESSINES) break;
           ajouter(o, 'acc', L.cyl(8), matrice(o.u, y - 0.2, o.v, 0, r, 0, 1.3, 0.7, 1.3), { c: C.pierre, bas: 0.8, haut: 1 });
           ajouter(o, 'acc', L.cyl(6), matrice(o.u, y + 0.4, o.v, 0, r, 0, 0.55, 1.4, 0.55), { c: C.pierre, bas: 0.85, haut: 1.05 });
           ajouter(o, 'lueur', L.octa, matrice(o.u, y + 2.6, o.v, 0, 0.4, 0, 0.45, 0.95, 0.45), { c: C.cristal });
@@ -983,7 +985,7 @@ const IleDecor = (() => {
         lanterne(u, v, y, 2.1, seau(u, v), false);
       }
     }
-    for (const r of T.relais) if (!T.objets.some(o => o.sorte === 'metier' && Math.hypot(o.u - r.u, o.v - r.v) < 6) && !T.objets.some(o => o.sorte === 'relais' && Math.hypot(o.u - r.u, o.v - r.v) < 4)) {
+    if (RELAIS_DESSINES) for (const r of T.relais) if (!T.objets.some(o => o.sorte === 'metier' && Math.hypot(o.u - r.u, o.v - r.v) < 6) && !T.objets.some(o => o.sorte === 'relais' && Math.hypot(o.u - r.u, o.v - r.v) < 4)) {
       const y = solPlat(r.u, r.v), s = seau(r.u, r.v);
       piece(s, 'acc', L.cyl(8), matrice(r.u, y - 0.2, r.v, 0, 0, 0, 1.1, 0.6, 1.1), { c: C.pierre });
       piece(s, 'lueur', L.octa, matrice(r.u, y + 2.2, r.v, 0, 0.4, 0, 0.4, 0.85, 0.4), { c: C.cristal });

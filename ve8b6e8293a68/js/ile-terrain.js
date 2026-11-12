@@ -220,6 +220,7 @@ const IleTerrain = (() => {
     enseigne: o => [{ x: 0, y: 0, r: 0.3 }],
     mannequin: o => [{ x: 0, y: 0, r: 0.45 }],
     statue: o => [{ x: 0, y: 0, r: 0.5 }],
+    fontaine: o => [{ x: 0, y: 0, r: 2.3 }],
     enclume: o => [{ x: 0, y: 0, r: 0.55 }],
     foyer: o => [{ rect: true, x: 0, y: 0, l: 1.5, p: 1.1 }, { x: 0.95, y: 0.15, r: 0.35 }],
     alambic: o => [{ x: 0, y: 0, r: 0.6 }, { x: 0.75, y: 0, r: 0.3 }],

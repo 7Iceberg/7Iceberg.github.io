@@ -1104,7 +1104,6 @@ class Renderer {
         if (t === Grid.WATER) this.liquidCells.push({ x, y });
         if ('nsew'.includes(k)) this.exitCells.push({ x, y });
         if (k === 'L') this.lights.push({ x, y, k, h: P.lamp === 'brasero' ? 30 : 45, color: P.lantern, glow: P.glow, r: 1 });
-        if (k === 'Z') this.lights.push({ x, y, k, h: 47, color: '#00c2ff', glow: '#8fe9ff', r: 0.9 });
         if (k === 'D') this.lights.push({ x, y, k, h: 26, color: '#a66cff', glow: '#8fe9ff', r: 0.7 });
       }
       this.mat.push(row);
@@ -1933,7 +1932,7 @@ class Renderer {
       }
       if (k === 'L') { spr = R.lamp; kind = 'lanterne'; foot = 9; }
       if (k === 'D') { spr = R.door; kind = 'porte'; foot = 24; }
-      if (k === 'Z') { spr = R.relay; kind = 'relais'; foot = 12; }
+      if (k === 'Z') continue;
       if (!spr) continue;
       const p = this.cellToScreen(x, y);
       const d = { x, y, depth: x + y - 0.01, spr, kind, foot, fade: 1, isDecor: true, px: p.x, py: p.y };
