@@ -1001,7 +1001,7 @@
   }
 
   C.items.push(
-    { id: 'coque_de_l_eveil', name: 'Coque de l\'Éveil', slot: 'veylith', level: 20, stats: {}, passif: 'veylith_sursaut', quete: 'ervane_descente',
+    { id: 'coque_de_l_eveil', name: 'Coque de l\'Éveil', slot: 'veylith', level: 12, stats: {}, passif: 'veylith_sursaut', quete: 'ervane_descente',
       lie: true, marque: true, source: 'quest', rarity: 'epique', image: 'assets/ui/objets/coque-eveil.png',
       effet: 'Une fois par combat, au début de ton tour sous 20 % de ta vie : rend 20 % de la vie.',
       lore: 'Du calcaire des Mailles, poli au fil d\'or, là où un Grand Dragon a frôlé Ervane à l\'aube. Le peu de Veylor qu\'elle garde ne sert qu\'une fois par combat, au moment où tout lâche.' },

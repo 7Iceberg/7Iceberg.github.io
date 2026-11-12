@@ -9,6 +9,10 @@
 #app .vy-fenetre--inventaire .vy-inv__ens:hover:not(:disabled) { border-color: var(--vy-cristal, #52d2f4); }
 #app .vy-fenetre--inventaire .vy-inv__ens svg { width: 15px; height: 15px; }
 #app .vy-fenetre--inventaire .vy-inv__ens--plus { color: #f2c14e; border-style: dashed; }
+#app .vy-fenetre--inventaire .vy-inv__ens--vider { margin-left: 6px; position: relative; }
+#app .vy-fenetre--inventaire .vy-inv__ens--vider::before { content: ''; position: absolute; left: -5px; top: 15%; bottom: 15%; border-left: 1px solid currentColor; opacity: 0.25; }
+#app .vy-fenetre--inventaire .vy-inv__ens--vider svg { width: 16px; height: 16px; }
+#app .vy-fenetre--inventaire .vy-inv__ens--vider:disabled { opacity: 0.35; cursor: default; }
 #app .vy-fenetre--inventaire .vy-inv__ens:disabled { opacity: 0.35; cursor: default; }
 #app .vy-fenetre--inventaire .vy-inv__mes-ens { padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(242, 193, 78, 0.35); background: rgba(48, 54, 75, 0.7); font: 800 9.5px var(--vy-font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--fen-texte, #eef0f6); cursor: pointer; }
 #app .vy-fenetre--inventaire .vy-inv__mes-ens:hover { border-color: #f2c14e; }
@@ -144,3 +148,4 @@
   #app .vy-fenetre--inventaire .vy-inv__pied { flex-wrap: wrap; row-gap: 4px; }
 }
 
+#app .vy-inv__taux { color: var(--vy-or-clair, #ffe08a); font-weight: 800; white-space: nowrap; }

@@ -94,6 +94,7 @@
 #panel-body .vy-fdc__buste { flex: none; width: 36px; height: 36px; border-radius: 6px; }
 #panel-body .vy-fdc__niv { display: flex; align-items: center; gap: 8px; font: 800 13px var(--vy-font-ui); }
 #panel-body .vy-fdc__niv .vy-fdc__jauge { flex: 1; max-width: 80px; height: 7px; }
+#panel-body .vy-fdc__monte { margin-left: -4px; color: var(--vy-or-clair, #ffe08a); font: 800 12px var(--vy-font-ui); }
 #panel-body .vy-fdc__nb { font: 800 13px var(--vy-font-ui); font-variant-numeric: tabular-nums; white-space: nowrap; }
 #panel-body .vy-fdc__cases { display: flex; flex-wrap: wrap; gap: 4px; }
 #panel-body .vy-fdc__pastilles { display: flex; flex-wrap: wrap; gap: 8px; }

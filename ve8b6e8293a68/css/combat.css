@@ -124,3 +124,11 @@
   -webkit-mask-image: radial-gradient(ellipse 62% 66% at 50% 47%, #000 46%, rgba(0, 0, 0, 0.34) 100%);
   mask-image: radial-gradient(ellipse 62% 66% at 50% 47%, #000 46%, rgba(0, 0, 0, 0.34) 100%);
 }
+
+#log .vy-journal__tour { margin: 0 0 6px; }
+#log .vy-journal__tour > header { font: 800 10.5px var(--vy-font-ui, sans-serif); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; margin: 2px 0 3px; }
+#log .vy-journal__bloc { --c: #8f93a8; margin: 0 0 4px; padding: 2px 0 2px 8px; border-left: 3px solid var(--c); border-radius: 2px; background: color-mix(in srgb, var(--c) 10%, transparent); }
+#log .vy-journal__bloc--allie { box-shadow: inset 2px 0 0 #5ab4f5; }
+#log .vy-journal__bloc--ennemi { box-shadow: inset 2px 0 0 #e0645a; }
+#log .vy-journal__qui { display: block; font: 800 11.5px var(--vy-font-ui, sans-serif); color: var(--c); filter: brightness(1.25); }
+#log .vy-journal__lignes .line { border-bottom: 0; padding: 0; line-height: 1.4; }

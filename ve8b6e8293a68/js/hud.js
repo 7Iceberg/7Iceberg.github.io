@@ -249,6 +249,11 @@ class Hud {
   }
 
 
+  static nomRegion(zone) {
+    const r = zone && zone.region, n = r && typeof DATA === 'object' && DATA.regions ? DATA.regions[r] : '';
+    return n ? String(n).split(',')[0].trim() : '';
+  }
+
   static texteCle(w, d) {
     if (!d || !d.keyItem) return '';
     const e = w && w.etatCle ? w.etatCle(d) : null, nom = esc(Items.get(d.keyItem).name);
@@ -307,6 +312,7 @@ class Hud {
       ${coche('barres', 'Barres de vie', 'au-dessus de chaque combattant ; sinon celui qu\'on vise et celui qui joue')}
       ${coche('agression', 'Monstres agressifs', 'les élites et quelques familles hostiles attaquent à vue, hors des villes')}
       ${coche('finDonjon', 'Fiche de fin de donjon', 'le boss, les succès du donjon et sa stratégie, à la victoire')}
+      ${coche('journalTours', 'Journal du combat par tours', 'les actions rangées par tour, un bloc à la couleur de chaque combattant')}
       <div class="row"><span>Durée du tour</span><select id="opt-duree-tour" aria-label="Durée du tour">${UI.DUREES_TOUR.map(([v, l]) => `<option value="${v}"${UI.choixDureeTour() === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
       <div class="row"><span class="muted">${UI.choixDureeTour() === 'auto' ? `${UI.dureeTour()} s pour jouer ton tour : 30 s au doigt, 20 s à la souris.` : `${UI.dureeTour()} s pour jouer ton tour.`} Le tour des monstres ne change pas.</span></div>
       <div class="row"><span>Bonus des défis</span><select id="opt-bonus-defi" aria-label="Bonus des défis">${[['', 'XP et butin'], ['xp', 'XP seulement (doublé)'], ['butin', 'Butin seulement (doublé)']].map(([v, l]) => `<option value="${v}"${(ch.bonusDefi || '') === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
@@ -640,19 +646,24 @@ class Hud {
   annoncerZone(d) {
     const w = this.world, def = d && d.map ? World.mapDef(d.map) : null;
     if (!def || !this.ui || !this.ui.ruban) return;
+    const zone = d.zone || (World.zoneOf ? World.zoneOf(d.map) : null);
+    const cle = def.sousZone ? `${zone ? zone.id : ''}|${def.sousZone}` : d.map;
     this.zonesVues = this.zonesVues || new Map();
-    const t = w.time || 0, avant = this.zonesVues.get(d.map);
-    if (avant != null && t - avant < 20 && !d.nouveau) return;
-    this.zonesVues.set(d.map, t);
-    const l = def.level, niveau = Array.isArray(l) ? (l[0] === l[1] ? `niveau ${l[0]}` : `niveaux ${l[0]} à ${l[1]}`) : '';
-    const sous = [def.name, niveau].filter(Boolean).join(', ') + (d.nouveau ? ' · Lieu découvert' : '');
+    const t = w.time || 0, avant = this.zonesVues.get(cle);
+    if (!d.nouveau && (cle === this.sousZoneVue || (avant != null && t - avant < 20))) { this.sousZoneVue = cle; return; }
+    this.zonesVues.set(cle, t);
+    this.sousZoneVue = cle;
+    const sz = typeof Groupes === 'object' && Groupes.sousZone ? Groupes.sousZone(zone, def) : null;
+    const l = (sz && sz.level) || def.level, niveau = Array.isArray(l) ? (l[0] === l[1] ? `niveau ${l[0]}` : `niveaux ${l[0]} à ${l[1]}`) : '';
+    const titre = def.sousZone ? def.sousZone.charAt(0).toUpperCase() + def.sousZone.slice(1) : def.name;
+    const sous = [Hud.nomRegion(zone), niveau].filter(Boolean).join(', ') + (d.nouveau ? ` · ${def.sousZone ? def.name.charAt(0).toUpperCase() + def.name.slice(1) + ', lieu' : 'Lieu'} découvert` : '');
     if (this.rubanZone) { clearTimeout(this.rubanZone); this.rubanZone = null; }
     let essais = 0;
     const montrer = () => {
       this.rubanZone = null;
       if (this.renderer && this.renderer.voile) { if (++essais <= 20) this.rubanZone = setTimeout(montrer, 300); return; }
       if (w.showCombat) return;
-      this.ui.ruban(d.zone ? d.zone.name : def.name, { sorte: 'zone', ms: 3200, sous });
+      this.ui.ruban(titre, { sorte: 'zone', ms: 3200, sous });
     };
     montrer();
   }

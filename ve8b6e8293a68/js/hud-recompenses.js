@@ -89,8 +89,17 @@ Object.assign(Hud.prototype, {
       </li>`;
     }).join('');
     const n = list.length;
+    const somme = k => list.reduce((t, a) => t + ((a.rewards && a.rewards[k]) || 0), 0);
+    const xpT = somme('xp'), filsT = somme('fils'), eclatsT = somme('eclats');
+    const objetsT = list.reduce((t, a) => t + ((a.rewards && a.rewards.items) || []).reduce((u, it) => u + (it.count || 1), 0), 0);
+    let niv = ch.level, reste = (ch.xp || 0) + xpT;
+    while (niv < Character.MAX_LEVEL && reste >= Character.xpToNext(niv)) { reste -= Character.xpToNext(niv); niv++; }
+    const cumul = n > 1 && (xpT || filsT || eclatsT || objetsT) ? `<p class="vy-recompenses__cumul"><span>En tout</span>${[
+      xpT ? `<b>${nf(xpT)}</b> XP` : '', filsT ? `<b>${nf(filsT)}</b> Dragmes` : '', eclatsT ? `<b>${nf(eclatsT)}</b> Éclats` : '',
+      objetsT ? `<b>${nf(objetsT)}</b> objet${objetsT > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ')}${niv > ch.level ? ` <em>de quoi passer au niveau ${niv}</em>` : ''}</p>` : '';
     return `<div class="vy-recompenses">
       ${n ? `<ul class="vy-recompenses__liste" data-defile="recompenses">${rows}</ul>` : '<p class="vy-recompenses__vide">Aucune récompense en attente. Chaque succès débloqué dépose ici son XP, ses Dragmes et ses objets.</p>'}
+      ${cumul}
       <footer class="vy-recompenses__pied"><span class="vy-recompenses__reste">${n ? `${n} récompense${n > 1 ? 's' : ''} restante${n > 1 ? 's' : ''}` : 'Tout est remis.'}</span>
         ${combat ? '<span class="muted">Pas pendant un combat.</span>' : ''}
         <button class="vy-bouton vy-bouton--primaire" data-act="toutAccepter" ${n && !combat ? '' : 'disabled'}>Tout accepter</button></footer>

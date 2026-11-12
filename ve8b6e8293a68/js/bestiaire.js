@@ -16,7 +16,11 @@ const Bestiaire = (() => {
   function zones(r) {
     return C().zones.filter(z => z.region === r).slice().sort(parNiveau).map(z => {
       const maps = z.maps || [];
-      const sous = [...new Set(maps.map(m => m.sousZone).filter(Boolean))].map(majuscule);
+      const decl = Array.isArray(z.sousZones) ? z.sousZones : [];
+      const sous = [...new Set(maps.map(m => m.sousZone).filter(Boolean))].map(n => {
+        const d = decl.find(x => x.nom === n), l = d && d.level;
+        return majuscule(n) + (Array.isArray(l) ? ` (${l[0] === l[1] ? l[0] : `${l[0]} à ${l[1]}`})` : '');
+      });
       const faune = z.faune && z.faune.monstres ? Object.entries(z.faune.monstres).filter(([id]) => M(id)).sort((a, b) => b[1] - a[1]) : [];
       const total = faune.reduce((t, [, p]) => t + p, 0) || 1;
       const groupes = maps.flatMap(m => m.groups || []);

@@ -835,6 +835,23 @@ class World {
     return r;
   }
 
+  useItemTout(id) {
+    const d = Items.get(id), ch = this.ch;
+    if (!d || d.kind !== 'consumable' || d.sub !== 'parchemin' || this.state === 'combat') return 0;
+    const niveau = ch.level;
+    let n = 0, refus = null;
+    while (ch.count(id) > 0) {
+      const avant = ch.count(id), r = ch.use(id);
+      if (ch.count(id) >= avant) { refus = r; break; }
+      n++;
+    }
+    if (n) this.toast(`${d.name} ×${n} utilisé${n > 1 ? 's' : ''}${refus ? ` : ${refus}` : '.'}`);
+    else if (refus) this.toast(refus);
+    if (ch.level > niveau) this.emit('levelUp', { level: ch.level, levels: ch.level - niveau });
+    this.emit('update');
+    return n;
+  }
+
   useItem(id) {
     const d = Items.get(id);
     const r = this.ch.use(id);

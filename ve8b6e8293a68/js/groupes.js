@@ -42,8 +42,13 @@ const Groupes = (() => {
 
   const TAILLES_DEFAUT = { 1: 30, 2: 40, 3: 25, 4: 5 };
   const SANS_FAUNE = typeof location === 'object' && !!location && /[?&]faune=0(&|$)/.test(location.search || '');
+  function sousZone(zone, carte) {
+    if (!zone || !Array.isArray(zone.sousZones) || !carte || !carte.sousZone) return null;
+    return zone.sousZones.find(s => s.nom === carte.sousZone) || null;
+  }
   function faune(zone, carte) {
-    const f = !SANS_FAUNE && zone && zone.faune;
+    const sz = sousZone(zone, carte);
+    const f = !SANS_FAUNE && ((sz && sz.faune) || (zone && zone.faune));
     if (!f || !f.monstres) return null;
     const monstres = {};
     for (const [id, p] of Object.entries(f.monstres)) {
@@ -78,5 +83,5 @@ const Groupes = (() => {
     return m ? [+m[1], +m[2]] : [1, 999];
   }
 
-  return { TAILLES, RESPAWN_RARE, TAILLES_DEFAUT, fixe, reserve, tirer, tranche, faune, tirerFaune };
+  return { TAILLES, RESPAWN_RARE, TAILLES_DEFAUT, fixe, reserve, tirer, tranche, faune, tirerFaune, sousZone };
 })();

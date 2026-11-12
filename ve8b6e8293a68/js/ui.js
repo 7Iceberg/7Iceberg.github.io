@@ -25,6 +25,7 @@ class UI {
       this.selectedSpell = null;
       this.inspected = combat.player;
       this.el.log.innerHTML = '';
+      this.journal = null;
       this.lastHp = combat.player ? combat.player.hp : 0;
       this.lastActor = null;
       this.placementEndsAt = 0;
@@ -1098,8 +1099,42 @@ class UI {
     const line = document.createElement('div');
     line.className = 'line ' + kind;
     line.textContent = msg;
+    if (UI.reglage('journalTours') && this.combat) { this.journalParTours(line); return; }
     this.el.log.prepend(line);
     while (this.el.log.children.length > 80) this.el.log.lastChild.remove();
+  }
+
+  journalParTours(line) {
+    const c = this.combat, log = this.el.log, J = this.journal || (this.journal = { tour: null, bloc: null });
+    const e = c.order && c.turnIndex >= 0 ? c.order[c.turnIndex] : null;
+    const tour = c.round || 0;
+    if (!J.tour || J.tour.n !== tour || !J.tour.el.isConnected) {
+      const el = document.createElement('section');
+      el.className = 'vy-journal__tour';
+      el.innerHTML = `<header>${tour ? `Tour ${tour}` : 'Placement'}</header><div class="vy-journal__corps"></div>`;
+      log.prepend(el);
+      J.tour = { n: tour, el, corps: el.lastChild };
+      J.bloc = null;
+    }
+    const qui = e && e.alive !== undefined ? e : null;
+    if (!J.bloc || J.bloc.qui !== qui || !J.bloc.el.isConnected) {
+      const el = document.createElement('div');
+      const equipe = qui ? (qui.team === 'player' ? 'allie' : 'ennemi') : 'neutre';
+      el.className = `vy-journal__bloc vy-journal__bloc--${equipe}`;
+      if (qui && qui.color) el.style.setProperty('--c', qui.color);
+      el.innerHTML = `<b class="vy-journal__qui"></b><div class="vy-journal__lignes"></div>`;
+      el.firstChild.textContent = qui ? qui.name : 'Combat';
+      J.tour.corps.prepend(el);
+      J.bloc = { qui, el, lignes: el.lastChild };
+    }
+    J.bloc.lignes.prepend(line);
+    const toutes = log.querySelectorAll('.line');
+    for (let i = toutes.length - 1; i >= 80; i--) {
+      const l = toutes[i], b = l.closest('.vy-journal__bloc'), t = l.closest('.vy-journal__tour');
+      l.remove();
+      if (b && !b.querySelector('.line')) b.remove();
+      if (t && !t.querySelector('.line')) t.remove();
+    }
   }
 
   banner(text, ms) {
@@ -1118,7 +1153,7 @@ class UI {
 
 UI.PLACEMENT_SECONDES = 30;
 
-UI.REGLAGES = { grille: true, deplacement: true, portee: true, cout: true, barres: true, agression: true, finDonjon: true };
+UI.REGLAGES = { grille: true, deplacement: true, portee: true, cout: true, barres: true, agression: true, finDonjon: true, journalTours: false };
 
 UI.ICON = {
   non: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>',

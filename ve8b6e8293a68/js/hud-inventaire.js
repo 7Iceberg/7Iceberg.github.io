@@ -1,5 +1,10 @@
 (() => {
 const I = Fenetres.ICON;
+const tracer = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const VIDER = {
+  retirer: tracer('<path d="M8 4l-4 3 2 3 2-1v11h8V9l2 1 2-3-4-3h-2a2 2 0 0 1-4 0z"/><path d="M4 21L20 3"/>'),
+  remettre: tracer('<path d="M8 4l-4 3 2 3 2-1v11h8V9l2 1 2-3-4-3h-2a2 2 0 0 1-4 0z"/><path d="M10 14l2 2 3-4"/>'),
+};
 const esc = s => Util.esc(s);
 const svg = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const ICO = {
@@ -124,7 +129,10 @@ Object.assign(Hud.prototype, {
       tourner: d => { const F = [1, -1]; s.facing = F[(F.indexOf(s.facing) + Number(d.sens) + F.length * 2) % F.length]; r(); },
       equiper: d => this.invEquiper(d.id),
       retirer: d => this.invRetirer(d.slot),
+      toutRetirer: () => this.invToutRetirer(),
+      remettre: () => this.invAnnulerEnsemble(),
       utiliser: d => this.invUtiliser(d.id),
+      utiliserTout: d => { if (this.invGarde()) this.world.useItemTout(d.id); },
       nouer: d => this.invNouer(d.id),
       vendre: d => this.invVendre(d.id),
       detruire: d => { if (ch().has(d.id)) { s.feuille = { type: 'detruire', id: d.id, n: 1 }; r(); this.invFocusFeuille(); } },
@@ -238,7 +246,12 @@ Object.assign(Hud.prototype, {
       const nom = esc(this.invNomEnsemble(ch, i));
       return '<button type="button" class="vy-inv__ens" data-act="ensOpen" data-i="' + i + '" title="Comparer ' + nom + '" aria-label="Comparer ' + nom + '">' + (i + 1) + '</button>';
     }).join('');
-    return `<div class="vy-inv__groupe vy-inv__ensembles-barre"><small class="vy-inv__ens-titre">Ensembles</small><div class="vy-inv__ens-ligne">${cases}<button type="button" class="vy-inv__ens vy-inv__ens--plus" data-act="ensSave" ${list.length >= MAX_ENSEMBLES ? 'disabled' : ''} title="Enregistrer la tenue portée" aria-label="Enregistrer la tenue portée">${I.plus}</button></div><button type="button" class="vy-inv__mes-ens" data-act="ensOpen">Mes ensembles (${list.length})</button></div>`;
+    const porte = Items.EQUIP_SLOTS.some(sl => ch.equipment[sl]), combat = this.world.state === 'combat';
+    const retour = this.invRetourEnsemble(ch) && !porte;
+    const vider = retour
+      ? `<button type="button" class="vy-inv__ens vy-inv__ens--vider" data-act="remettre" ${combat ? 'disabled' : ''} title="Remettre la tenue d'avant" aria-label="Remettre la tenue d'avant">${VIDER.remettre}</button>`
+      : `<button type="button" class="vy-inv__ens vy-inv__ens--vider" data-act="toutRetirer" ${!porte || combat ? 'disabled' : ''} title="Tout retirer" aria-label="Tout retirer">${VIDER.retirer}</button>`;
+    return `<div class="vy-inv__groupe vy-inv__ensembles-barre"><small class="vy-inv__ens-titre">Ensembles</small><div class="vy-inv__ens-ligne">${cases}<button type="button" class="vy-inv__ens vy-inv__ens--plus" data-act="ensSave" ${list.length >= MAX_ENSEMBLES ? 'disabled' : ''} title="Enregistrer la tenue portée" aria-label="Enregistrer la tenue portée">${I.plus}</button>${vider}</div><button type="button" class="vy-inv__mes-ens" data-act="ensOpen">Mes ensembles (${list.length})</button></div>`;
   },
 
   ouvrirTrousseau() {
@@ -401,10 +414,19 @@ Object.assign(Hud.prototype, {
     if (d.set) L.push(li('Panoplie', esc(Items.getSet(d.set).name)));
     const rec = Items.recipeFor(d.id);
     if (rec) L.push(li('Fabrication', `atelier : ${esc(rec.workshop)}`));
-    if (d.from && DATA.monsters[d.from]) L.push(li('Tombe sur', esc(DATA.monsters[d.from].name)));
+    const pct = r => `${String(Math.round(r * 10) / 10).replace('.', ',')} %`;
+    const tombe = (liste, note) => {
+      const vus = new Map();
+      for (const [id, r] of liste) if (DATA.monsters[id] && !vus.has(id)) vus.set(id, r);
+      const l = [...vus].sort((x, y) => y[1] - x[1]);
+      if (l.length) L.push(li('Tombe sur', l.slice(0, 3).map(([id, r]) => `${esc(DATA.monsters[id].name)} <span class="vy-inv__taux">${pct(r)}</span>`).join(', ') + (l.length > 3 ? '…' : '') + (note ? ` <small class="muted">${note}</small>` : '')));
+    };
+    const taux = Items.tauxEquipement ? Items.tauxEquipement(d.level) : null;
+    if (d.from && DATA.monsters[d.from] && taux != null) tombe([[d.from, taux]], 'taux fixe');
+    else if (d.from && DATA.monsters[d.from]) L.push(li('Tombe sur', esc(DATA.monsters[d.from].name)));
+    else if (d.set && taux != null && (d.kind === 'equip' || d.kind === 'weapon')) { const st = Items.getSet(d.set); if (st && st.family) tombe(st.family.map(id => [id, taux]), 'taux fixe'); }
     if (d.kind === 'resource') {
-      const mons = [...new Set((d.drops || []).map(x => DATA.monsters[x.monster] && DATA.monsters[x.monster].name).filter(Boolean))];
-      if (mons.length) L.push(li('Tombe sur', esc(mons.slice(0, 3).join(', ')) + (mons.length > 3 ? '…' : '')));
+      tombe((d.drops || []).map(x => [x.monster, x.rate]), 'taux de base, avant la prospection');
       if (d.node) L.push(li('Se récolte', 'sur les cartes'));
     }
     L.push(li('Poids', `${Items.poids(d)} pod${Items.poids(d) > 1 ? 's' : ''}`));
@@ -435,7 +457,11 @@ Object.assign(Hud.prototype, {
       const c = ch.canEquip(d.id);
       B.push(principal('equiper', 'Équiper', `data-id="${d.id}"`, !c.ok));
       if (!c.ok) B.push(`<span class="vy-inv__raison">${esc(c.reason)}</span>`);
-    } else if (d.kind === 'consumable') B.push(principal('utiliser', 'Utiliser', `data-id="${d.id}"`));
+    } else if (d.kind === 'consumable') {
+      B.push(principal('utiliser', 'Utiliser', `data-id="${d.id}"`));
+      const n = ch.count(d.id);
+      if (d.sub === 'parchemin' && n > 1) B.push(`<button class="vy-bouton vy-bouton--petit vy-inv__action" data-act="utiliserTout" data-id="${d.id}"${this.world.state === 'combat' ? ' disabled' : ''}>Tout utiliser (×${n})</button>`);
+    }
     else if (d.kind === 'knot') B.push(principal('nouer', e.noue ? 'Dénouer' : 'Nouer', `data-id="${d.id}"`));
     if (e.de === 'sac') {
       B.push('<span class="vy-inv__espace"></span>');
@@ -754,6 +780,21 @@ Object.assign(Hud.prototype, {
     this.world.emit('update');
     this.fen.render('sac');
     return true;
+  },
+
+  invToutRetirer() {
+    if (!this.invGarde()) return 0;
+    const ch = this.world.ch, avant = { ...ch.equipment };
+    let n = 0;
+    for (const sl of Items.EQUIP_SLOTS) if (ch.equipment[sl] && ch.unequip(sl)) n++;
+    if (!n) return 0;
+    this.inv.ensRetour = { ch, avant, apres: { ...ch.equipment } };
+    this.inv.sel = null;
+    this.chat('systeme', `Tu as retiré tout ton équipement (${n} pièce${n > 1 ? 's' : ''}).`);
+    this.toast(`Équipement retiré : ${n} pièce${n > 1 ? 's' : ''}.`);
+    this.world.emit('update');
+    this.fen.render('sac');
+    return n;
   },
 
   invRetirer(slot) {

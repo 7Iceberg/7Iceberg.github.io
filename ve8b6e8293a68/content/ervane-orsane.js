@@ -5,15 +5,15 @@
   DATA.ile.orsaneApplique = true;
 
   const CARTES = {
-    orsane_cimes_place: [19, 20], orsane_cimes_terrasses: [19, 20], orsane_cimes_ateliers: [19, 20], orsane_cimes_porte: [19, 20],
-    orsane_clairieres_lisiere: [19, 22], orsane_clairieres_pres: [19, 22],
-    orsane_clairieres_ruisseau: [21, 24], orsane_clairieres_bosquet: [21, 24],
-    orsane_clairieres_mare: [23, 26], orsane_clairieres_oree: [23, 26],
-    orsane_sentiers_montee: [21, 24], orsane_sentiers_relais: [21, 24],
-    orsane_sentiers_halte: [23, 26], orsane_sentiers_corniche: [23, 26],
-    orsane_sentiers_pont: [25, 28], orsane_sentiers_crete: [25, 28],
+    orsane_cimes_place: [12, 13], orsane_cimes_terrasses: [12, 13], orsane_cimes_ateliers: [12, 13], orsane_cimes_porte: [12, 13],
+    orsane_clairieres_lisiere: [12, 14], orsane_clairieres_pres: [12, 14],
+    orsane_clairieres_ruisseau: [13, 16], orsane_clairieres_bosquet: [13, 16],
+    orsane_clairieres_mare: [15, 18], orsane_clairieres_oree: [15, 18],
+    orsane_sentiers_montee: [16, 19], orsane_sentiers_relais: [16, 19],
+    orsane_sentiers_halte: [18, 21], orsane_sentiers_corniche: [18, 21],
+    orsane_sentiers_pont: [20, 24], orsane_sentiers_crete: [20, 24],
   };
-  const ZONES = { orsane_cimes: [19, 20], orsane_clairieres: [19, 26], orsane_sentiers: [21, 28] };
+  const ZONES = { orsane_cimes: [12, 13], orsane_clairieres: [12, 18], orsane_sentiers: [16, 24] };
   const ADULTES = { piouk: 'pilou', groukin: 'grouk', filin: 'tissefil', loche: 'veilloche' };
   const adulte = (id, bas) => (id === 'brim' ? (bas >= 19 ? 'brimbe' : 'grouk') : (ADULTES[id] || id));
   const KAVOUS = {
@@ -61,26 +61,26 @@
 
   const grenier = C.dungeons.find(d => d.id === 'grenier_des_pilous');
   if (grenier) {
-    grenier.level = [21, 26];
-    for (const r of grenier.rooms || []) for (const mo of r.monsters || []) { mo.level += 14; mo.id = adulte(mo.id, mo.level); }
+    grenier.level = [14, 18];
+    for (const r of grenier.rooms || []) for (const mo of r.monsters || []) { mo.level += 7; mo.id = adulte(mo.id, mo.level); }
   }
 
-  const NIVEAU = { 1: 19, 3: 19, 5: 19, 7: 21, 9: 23, 11: 23, 13: 23 };
-  const REQUIS = { 19: 19, 21: 19, 23: 21, 25: 23 };
+  const NIVEAU = { 1: 12, 3: 12, 5: 12, 7: 14, 9: 16, 11: 16, 13: 16 };
+  const REQUIS = { 12: 12, 14: 12, 16: 14, 18: 16 };
   const xpDe = (niveau, principale) => Math.round(24 * Math.pow((niveau + 1) / 2, 1.6)) * (principale ? 2 : 1);
   const PREFIXES = ['orsane_', 'porte_', 'ateliers_', 'remue_'];
   const QUETES = {
-    orsane_arrivee: { level: 19, xp: 1910, requis: 19, quetes: ['ervane_descente'] },
-    orsane_lanternes_volees: { level: 19, xp: 1910, requis: 19 },
-    orsane_grenier_des_pilous: { level: 21, xp: 2226, requis: 19 },
-    orsane_reveil_des_grouks: { level: 23, xp: 2558, requis: 21 },
-    orsane_fil_tendu: { level: 25, xp: 2908, requis: 23 },
-    orsane_toupie_de_vali: { level: 19, xp: 955, requis: 19 },
-    orsane_plumes_de_thila: { level: 19, xp: 955, requis: 19 },
-    orsane_ronde_d_orvak: { level: 19, xp: 955, requis: 19 },
-    orsane_semelles_de_korvel: { level: 21, xp: 1113, requis: 19 },
-    orsane_memoire_de_kelthar: { level: 23, xp: 1279, requis: 21 },
-    orsane_manche_de_thorak: { level: 23, xp: 1279, requis: 21 },
+    orsane_arrivee: { level: 12, xp: xpDe(12, true), requis: 12, quetes: ['ervane_descente'] },
+    orsane_lanternes_volees: { level: 12, xp: xpDe(12, true), requis: 12 },
+    orsane_grenier_des_pilous: { level: 14, xp: xpDe(14, true), requis: 12 },
+    orsane_reveil_des_grouks: { level: 16, xp: xpDe(16, true), requis: 14 },
+    orsane_fil_tendu: { level: 18, xp: xpDe(18, true), requis: 16 },
+    orsane_toupie_de_vali: { level: 12, xp: xpDe(12), requis: 12 },
+    orsane_plumes_de_thila: { level: 12, xp: xpDe(12), requis: 12 },
+    orsane_ronde_d_orvak: { level: 12, xp: xpDe(12), requis: 12 },
+    orsane_semelles_de_korvel: { level: 14, xp: xpDe(14), requis: 12 },
+    orsane_memoire_de_kelthar: { level: 16, xp: xpDe(16), requis: 14 },
+    orsane_manche_de_thorak: { level: 16, xp: xpDe(16), requis: 14 },
   };
   const NOMS_ADULTES = [[/\bGlymets\b/g, 'Glyms Ancestraux'], [/\bGlymet\b/g, 'Glym Ancestral'], [/\bGroukins\b/g, 'Grouks'], [/\bGroukin\b/g, 'Grouk'],
     [/\bFilins\b/g, 'Tissefils'], [/\bFilin\b/g, 'Tissefil'], [/\bLoches\b/g, 'Veilloches'], [/\bLoche\b/g, 'Veilloche']];

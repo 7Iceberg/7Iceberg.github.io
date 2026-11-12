@@ -270,6 +270,10 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-recompenses__vide { margin: 6px 0 12px; font-size: 13px; color: var(--fen-texte-2); }
 .vy-recompenses__pied { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 10px -12px 0; padding: 10px 12px; border-top: 1px solid var(--fen-filet); background: rgba(0, 0, 0, 0.18); }
 .vy-recompenses__reste { font-weight: 600; }
+.vy-recompenses__cumul { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 10px 0 0; font-size: 13px; }
+.vy-recompenses__cumul > span { font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; opacity: 0.8; }
+.vy-recompenses__cumul b { font-weight: 800; }
+.vy-recompenses__cumul em { font-style: normal; color: var(--vy-or, #f2c14e); font-weight: 700; }
 
 #recompenses-btn {
   position: absolute; left: 50%; bottom: var(--coffre-bas, 108px); z-index: 3;

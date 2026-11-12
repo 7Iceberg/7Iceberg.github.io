@@ -117,7 +117,7 @@ Object.assign(Hud.prototype, {
     const pct = ch.level >= Character.MAX_LEVEL ? 100 : Math.floor(ch.xpProgress() * 100);
     const ligne = `<div class="vy-fdc__rang moi" role="row">
         <span role="cell" class="vy-fdc__qui"><canvas class="vy-fdc__buste" aria-hidden="true"></canvas><b>${esc(ch.name)}</b></span>
-        <span role="cell" class="vy-fdc__niv">${ch.level}<span class="vy-fdc__jauge"><i style="width:${pct}%"></i></span></span>
+        <span role="cell" class="vy-fdc__niv">${ch.level}${gagne && r.levels ? `<b class="vy-fdc__monte" title="Niveau${r.levels > 1 ? 'x' : ''} gagné${r.levels > 1 ? 's' : ''} dans ce combat">+${r.levels}</b>` : ''}<span class="vy-fdc__jauge"><i style="width:${pct}%"></i></span></span>
         <span role="cell" class="vy-fdc__nb">${gagne ? `${nf(r.gained)} XP` : '-'}</span>
         <span role="cell" class="vy-fdc__nb">${gagne ? `${nf(r.fils)} ${DRAGME}` : '-'}</span>
         <span role="cell" class="vy-fdc__cases">${gagne ? r.drops.map(d => this.fdcCase(d, true)).join('') : ''}</span>

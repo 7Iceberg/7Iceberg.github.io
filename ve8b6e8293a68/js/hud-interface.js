@@ -134,12 +134,13 @@
       const pos = typeof Atlas === 'object' && !String(id).includes('#') ? Atlas.coordsOf(id) : null;
       const zone = (d && d.zone) || w.zone;
       const nom = def.sousZone ? def.sousZone.charAt(0).toUpperCase() + def.sousZone.slice(1) : def.name || '';
+      const nomZone = (typeof Hud === 'function' && Hud.nomRegion && Hud.nomRegion(zone)) || (zone && zone.name) || '';
       el.innerHTML = (pos ? `<span class="vy-lieu__coord" title="Coordonnées de la carte">${ICO.epingle}${pos[0]},${pos[1]}</span>` : '') +
         `<b class="vy-lieu__nom">${esc(nom)}</b>` +
-        (zone && zone.name && zone.name !== nom ? `<small class="vy-lieu__zone">${esc(zone.name)}</small>` : '') +
+        (nomZone && nomZone !== nom ? `<small class="vy-lieu__zone">${esc(nomZone)}</small>` : '') +
         (typeof Heure === 'object' && !String(id).includes('#') ? '<small class="vy-lieu__heure"></small>' : '');
       this.majHeure();
-      el.setAttribute('aria-label', `Lieu : ${nom}${zone && zone.name ? ', ' + zone.name : ''}${pos ? `, [${pos[0]},${pos[1]}]` : ''}`);
+      el.setAttribute('aria-label', `Lieu : ${nom}${nomZone && nomZone !== nom ? ', ' + nomZone : ''}${pos ? `, [${pos[0]},${pos[1]}]` : ''}`);
       if (this.editeur) this.majZones();
     },
     majHeure() {
