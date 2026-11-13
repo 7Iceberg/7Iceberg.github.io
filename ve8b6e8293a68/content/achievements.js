@@ -68,7 +68,7 @@ ACH.push({ id: 'vingt_recoltes', name: 'Cueilleur', desc: 'Récolter vingt fois.
 ACH.push({ id: 'cent_recoltes', name: 'Récolteur', desc: 'Récolter cent fois.', cond: { type: 'gather', count: 100 }, rewards: { xp: 500, fils: 100 } });
 
 ACH.push({ id: 'mille_fils', name: 'Bourse pleine', desc: 'Amasser mille Dragmes.', cond: { type: 'fils', count: 1000 }, rewards: { xp: 200, fils: 50, cosmetique: 'lueur_dragme' } });
-ACH.push({ id: 'dix_mille_fils', name: 'Coffre plein', desc: 'Amasser dix mille Dragmes.', cond: { type: 'fils', count: 10000 }, rewards: { xp: 1000, fils: 200, title: 'Grand Argentier', cosmetique: 'theme_cendrees' } });
+ACH.push({ id: 'dix_mille_fils', name: 'Coffre plein', desc: 'Amasser dix mille Dragmes.', cond: { type: 'fils', count: 10000 }, rewards: { xp: 1000, fils: 200, title: 'Grand Argentier' } });
 
 {
 const SERIE_ECAILLES = ['orsane_questions_de_kelthar', 'orsane_visages_des_cimes', 'orsane_legende_d_ithren', 'orsane_gueule_du_glouton', 'orsane_destination_toiles'];

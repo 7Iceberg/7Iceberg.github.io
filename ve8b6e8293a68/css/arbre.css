@@ -690,7 +690,7 @@ button:focus-visible { outline: 2px solid var(--a); outline-offset: 2px; }
     --ligne: rgba(255, 255, 255, 0.07);
     --ligne2: rgba(255, 255, 255, 0.13);
     --texte: #eef0f6; --doux: rgba(238, 240, 246, 0.72); --muet: rgba(238, 240, 246, 0.48); --tres-muet: rgba(238, 240, 246, 0.28);
-    --a: var(--theme-a, #f2c14e); --a-rgb: var(--theme-a-rgb, 242, 193, 78);
+    --a: var(--theme-a, #ddaa72); --a-rgb: var(--theme-a-rgb, 221, 170, 114);
     --n0: #141826; --n00: #10131e; --n1: #1a1f2e; --n2: #222838; --n3: #2b3245; --n4: #3a4158;
     --n-rgb: 20, 24, 38;
     --encre: #2a1d05; --pale: #fff1c8;

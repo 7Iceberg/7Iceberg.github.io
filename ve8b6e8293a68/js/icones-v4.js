@@ -22,13 +22,16 @@ const IconesV4 = (() => {
   }
   function a(id) { return !!(SUJETS[id] || IconesV3.SUJETS[id]); }
 
+  const versArdoise = (c, t) => { const a = [1, 3, 5].map(j => parseInt(c.slice(j, j + 2), 16)), b = [0x44, 0x45, 0x56]; return '#' + a.map((v, j) => Math.round(v + (b[j] - v) * t).toString(16).padStart(2, '0')).join(''); };
   function icone(s, px, o = {}) {
-    const i = ++n, E = EL[s.el] || EL.neutre, [c1, c2, c3] = E.cadre, [m1, m2, m3] = E.med;
+    const i = ++n, sobre = !!o.sobre, E0 = EL[s.el] || EL.neutre;
+    const E = sobre ? { cadre: E0.cadre.map((c, j) => versArdoise(c, [0.22, 0.3, 0.2][j])), med: E0.med.map((c, j) => versArdoise(c, [0.3, 0.32, 0.15][j])), encre: E0.encre } : E0;
+    const [c1, c2, c3] = E.cadre, [m1, m2, m3] = E.med;
     const p = IconesV3.P[s.el] || IconesV3.P.neutre;
     const rendu = o.rendu || 'couleur', type = s.type || 'degats';
     const forme = IconesV3.FORMES[type] || IconesV3.FORMES.degats;
     const sujet = sujetDe(s.id, p, o.epee);
-    const brille = o.brillance !== false;
+    const brille = o.brillance !== false && !sobre;
     const CX = 100, CY = 95, S = 0.7;
     const TM = `translate(${CX} ${CY}) scale(${S}) translate(-100 -100)`;
     let filtre;
@@ -82,13 +85,13 @@ const IconesV4 = (() => {
         ${filtre}
       </defs>
       <path d="${tuile}" fill="url(#fo${i})"/>
-      <path d="${tuile}" fill="none" stroke="url(#ca${i})" stroke-width="7" filter="url(#gl${i})"/>
+      <path d="${tuile}" fill="none" stroke="url(#ca${i})" stroke-width="7"${sobre ? '' : ` filter="url(#gl${i})"`}/>
       ${brille ? `<path d="${tuile}" fill="none" stroke="url(#ir${i})" stroke-width="5" opacity=".38" style="mix-blend-mode:screen"/>` : ''}
       <path d="${tuile}" transform="translate(100 100) scale(.93) translate(-100 -100)" fill="none" stroke="${c3}" stroke-width="2" opacity=".9"/>
       ${rune(30, 30, 0, c2)}${rune(170, 30, 90, c2)}${rune(170, 170, 180, c2)}${rune(30, 170, 270, c2)}
-      <path d="${forme}" transform="${TM}" fill="${m2}" opacity=".7" filter="url(#hm${i})"/>
+      ${sobre ? '' : `<path d="${forme}" transform="${TM}" fill="${m2}" opacity=".7" filter="url(#hm${i})"/>`}
       <path d="${forme}" transform="${TM}" fill="url(#me${i})"/>
-      <g clip-path="url(#cm${i})">${rayons}</g>
+      ${sobre ? '' : `<g clip-path="url(#cm${i})">${rayons}</g>`}
       <path d="${forme}" transform="${TM}" fill="none" stroke="${c1}" stroke-width="4.4" opacity=".9"/>
       <path d="${forme}" transform="translate(${CX} ${CY}) scale(${S * .92}) translate(-100 -100)" fill="none" stroke="${m3}" stroke-width="2.4" opacity=".55"/>
       <g clip-path="url(#ct${i})"><g filter="url(#su${i})" transform="translate(${CX} ${CY + 2}) scale(.8) translate(-100 -100)">${sujet}</g></g>

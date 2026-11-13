@@ -168,7 +168,7 @@ Object.assign(Hud.prototype, {
     const g = Garderobe.etat();
     const ap = this.grApparence();
     const essais = Object.keys(s.essai).filter(t => s.essai[t] && s.essai[t] !== (ch.porte || {})[t]);
-    const onglets = ONGLETS.map(([id, label]) => {
+    const onglets = ONGLETS.filter(([id]) => id !== 'theme' || Garderobe.defs().some(c => c.type === 'theme')).map(([id, label]) => {
       const n = id === 'collections' || id === 'looks' ? '' : `${Garderobe.filtrer({ type: id, filtre: 'possedes' }, g).length}/${Garderobe.filtrer({ type: id }, g).length}`;
       return `<button class="vy-onglet vy-gr__rail-onglet${s.onglet === id ? ' on' : ''}" data-act="onglet" data-onglet="${id}" role="tab" aria-selected="${s.onglet === id}" title="${label}${n ? ` (${n})` : ''}">${ICO[id]}<span class="vy-visuel">${label}</span>${n ? `<small>${n}</small>` : ''}</button>`;
     }).join('');
@@ -193,7 +193,7 @@ Object.assign(Hud.prototype, {
           <div class="vy-gr__scene"><canvas class="vy-gr__cv" aria-label="Ton personnage sur son socle"></canvas>
             <div class="vy-gr__nom">${ap.blason ? `<span class="pb-blason" style="color:${esc(hex(ap.blason.couleur))}" aria-hidden="true">${esc(ap.blason.glyphe || '')}</span>` : ''}${esc(ch.name)}</div>
             <div class="vy-gr__tour"><button class="vy-gr__fleche g" data-act="tourner" data-sens="-1" aria-label="Tourner à gauche" title="Tourner à gauche">${I.tourneG}</button><button class="vy-gr__auto${s.tourne ? ' on' : ''}" data-act="tournerAuto" aria-pressed="${s.tourne}" aria-label="${s.tourne ? 'Arrêter le socle' : 'Faire tourner le socle'}" title="${s.tourne ? 'Arrêter' : 'Tourner'} : le socle tourne de lui-même">${ICO.auto}</button><button class="vy-gr__fleche d" data-act="tourner" data-sens="1" aria-label="Tourner à droite" title="Tourner à droite">${I.tourneD}</button></div></div>
-          <div class="vy-gr__col">${['blason', 'theme'].map(slot).join('')}<button type="button" class="vy-case vy-gr__slot vy-case--emplacement${s.onglet === 'emote' ? ' on' : ''}" data-act="onglet" data-onglet="emote" title="Émotes" aria-label="Émotes"><span class="vy-case__icone">${ICO.emote}</span></button></div>
+          <div class="vy-gr__col">${['blason', 'theme'].filter(t => t !== 'theme' || Garderobe.defs().some(c => c.type === 'theme')).map(slot).join('')}<button type="button" class="vy-case vy-gr__slot vy-case--emplacement${s.onglet === 'emote' ? ' on' : ''}" data-act="onglet" data-onglet="emote" title="Émotes" aria-label="Émotes"><span class="vy-case__icone">${ICO.emote}</span></button></div>
         </div>
         ${essais.length ? `<div class="vy-gr__essai"><span>Essai : <b>${essais.map(t => esc((Garderobe.get(s.essai[t]) || {}).nom || '')).join(', ')}</b></span><button class="vy-bouton vy-bouton--petit vy-bouton--fantome" data-act="toutAnnuler">Annuler</button></div>` : ''}
         ${this.grFiche(choix, g)}

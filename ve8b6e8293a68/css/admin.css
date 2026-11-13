@@ -1,4 +1,4 @@
-.vy-admin { --a-fond: #1c2030; --a-panneau: #252a3b; --a-tete: #30364b; --a-case: #141826; --a-case-2: #1a1f2e; --a-or: #f2c14e; --a-cristal: #52d2f4;
+.vy-admin { --a-fond: #1c2030; --a-panneau: #252a3b; --a-tete: #30364b; --a-case: #141826; --a-case-2: #1a1f2e; --a-or: #ddaa72; --a-cristal: #52d2f4;
   --a-ligne: rgba(255, 255, 255, 0.07); --a-ligne-2: rgba(255, 255, 255, 0.13); --a-texte: #eef0f6; --a-texte-2: #a3a9bd;
   position: absolute; inset: 0; z-index: 70; display: grid; place-items: center; padding: 12px; background: rgba(6, 8, 14, 0.55); font-family: var(--vy-font-ui); color: var(--a-texte); }
 .vy-admin__boite { width: min(1120px, 100%); height: min(720px, 100%); display: grid; grid-template-columns: 210px minmax(0, 1fr); overflow: hidden; border-radius: 10px; background: var(--a-fond); border: 1px solid var(--a-ligne-2); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); animation: vy-admin-entre 0.18s ease-out; }
@@ -11,7 +11,7 @@
 .vy-admin__nav { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0; border-radius: 6px; background: none; color: var(--a-texte-2); font: 600 12.5px var(--vy-font-ui); text-align: left; cursor: pointer; }
 .vy-admin__nav svg { width: 18px; height: 18px; flex: none; }
 .vy-admin__nav:hover:not(:disabled) { color: var(--a-texte); background: rgba(255, 255, 255, 0.04); }
-.vy-admin__nav.on { color: var(--a-or); background: rgba(242, 193, 78, 0.1); box-shadow: inset 3px 0 0 var(--a-or); }
+.vy-admin__nav.on { color: var(--a-or); background: rgba(221, 170, 114, 0.1); box-shadow: inset 3px 0 0 var(--a-or); }
 .vy-admin__nav:disabled { opacity: 0.35; cursor: not-allowed; }
 .vy-admin__moi { display: flex; align-items: center; gap: 9px; padding: 12px 14px; border-top: 1px solid var(--a-ligne); }
 .vy-admin__moi i { width: 10px; height: 10px; flex: none; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); }
@@ -119,8 +119,8 @@ button.vy-admin__ligne:hover { border-color: rgba(82, 210, 244, 0.4); }
 .vy-admin__exemples button { height: 24px; padding: 0 8px; border-radius: 5px; border: 1px solid var(--a-ligne-2); background: var(--a-case-2); color: var(--a-texte-2); font: 11px ui-monospace, Menlo, monospace; cursor: pointer; }
 .vy-admin__exemples button:hover { color: var(--a-texte); border-color: rgba(82, 210, 244, 0.45); }
 .vy-admin-annonce { position: absolute; z-index: 65; left: 50%; top: 18%; transform: translateX(-50%); display: grid; gap: 4px; max-width: min(640px, 90vw); padding: 14px 26px; text-align: center; border-radius: 10px;
-  background: rgba(28, 32, 48, 0.95); border: 1px solid rgba(242, 193, 78, 0.5); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55); animation: vy-admin-entre 0.25s ease-out; transition: opacity 0.5s; pointer-events: none; }
-.vy-admin-annonce small { font: 800 10px var(--vy-font-ui); letter-spacing: 0.2em; text-transform: uppercase; color: #f2c14e; }
+  background: rgba(28, 32, 48, 0.95); border: 1px solid rgba(221, 170, 114, 0.5); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55); animation: vy-admin-entre 0.25s ease-out; transition: opacity 0.5s; pointer-events: none; }
+.vy-admin-annonce small { font: 800 10px var(--vy-font-ui); letter-spacing: 0.2em; text-transform: uppercase; color: #ddaa72; }
 .vy-admin-annonce b { font: 700 18px/1.3 var(--vy-font-titre); color: #fff; }
 .vy-admin-annonce.part { opacity: 0; }
 @media (max-width: 760px), (max-height: 480px) {

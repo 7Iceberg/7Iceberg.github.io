@@ -1,29 +1,32 @@
 #app.vy-eter {
-  --e-titre: #57535a;       
-  --e-onglets: #3c3a48;     
-  --e-panneau: #444556;     
-  --e-fond: #393a4d;        
-  --e-pied: #313041;        
-  --e-case: #29293a;        
+  --e-titre: #4c4854;       
+  --e-onglets: #2d2e43;     
+  --e-panneau: #353c53;     
+  --e-fond: #2a324a;        
+  --e-pied: #22263d;        
+  --e-case: #1c2136;        
   --e-ligne: rgba(255, 255, 255, 0.07);
   --e-ligne-2: rgba(255, 255, 255, 0.12);
-  --e-bouton: #5c5b6f;      
-  --e-bulle: #2c2c46;       
+  --e-bouton: #4b506d;      
+  --e-bulle: #1c2345;       
   --e-texte: #f1eff5;
   --e-texte-2: #b6b3c4;
   --e-discret: #87849a;
-  --e-or: #f2c14e;
-  --e-or-fonce: #c9962c;
+  --e-or: #ddaa72;
+  --e-or-fonce: #a67349;
+  --e-fond-rgb: 42, 50, 74; --e-onglets-rgb: 45, 46, 67; --e-panneau-rgb: 53, 60, 83; --e-case-rgb: 28, 33, 54; --e-pied-rgb: 34, 38, 61;
 }
 
-#app.vy-da.vy-eter:is(:not([data-ui-theme]), [data-ui-theme="nuit"]) {
-  --da-fond: #393a4d; --da-panneau: #444556; --da-tete: #57535a; --da-case: #29293a; --da-case-2: #313041;
-  --da-ligne: rgba(255, 255, 255, 0.07); --da-ligne-2: rgba(255, 255, 255, 0.12);
-  --da-texte: #f1eff5; --da-texte-2: #b6b3c4; --da-discret: #87849a;
+#app.vy-da.vy-eter:not([data-ui-theme="duality"]) {
+  --da-fond: var(--e-fond); --da-panneau: var(--e-panneau); --da-tete: var(--e-titre); --da-case: var(--e-case); --da-case-2: var(--e-pied);
+  --da-ligne: var(--e-ligne); --da-ligne-2: var(--e-ligne-2);
+  --da-texte: var(--e-texte); --da-texte-2: var(--e-texte-2); --da-discret: var(--e-discret);
   --da-ombre: 0 18px 40px rgba(0, 0, 0, 0.55);
-  --v-fen-rgb: 57, 58, 77; --v-pan-rgb: 60, 58, 72; --v-carte-rgb: 68, 69, 86; --v-champ-rgb: 41, 41, 58;
+  --v-fen-rgb: var(--e-fond-rgb); --v-pan-rgb: var(--e-onglets-rgb); --v-carte-rgb: var(--e-panneau-rgb); --v-champ-rgb: var(--e-case-rgb);
+  --v-texte: var(--e-texte); --v-texte-2: var(--e-texte-2); --v-discret: var(--e-discret);
   --v-degrade: var(--e-or);
-  --fen-fond: #393a4d; --fen-fond-2: #29293a; --fen-tete: #57535a;
+  --fen-fond: var(--e-fond); --fen-fond-2: var(--e-case); --fen-tete: var(--e-titre);
+  --fen-texte: var(--e-texte); --fen-texte-2: var(--e-texte-2); --fen-filet: var(--e-ligne-2);
 }
 
 #app.vy-eter :is(#fenetres, #panel) { --vy-font-titre: var(--vy-font-ui); }
@@ -141,7 +144,7 @@
 #app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__onglets .vy-onglet.on { background: var(--e-or) !important; color: #241a06 !important; }
 #app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__onglets .vy-onglet small { background: var(--e-pied) !important; }
 #app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__carte { background: var(--e-fond) !important; border: 1px solid rgba(0, 0, 0, 0.3) !important; border-radius: 6px !important; box-shadow: none !important; }
-#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__carte:hover { border-color: rgba(242, 193, 78, 0.5) !important; }
+#app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__carte:hover { border-color: rgba(221, 170, 114, 0.5) !important; }
 #app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__carte.est-choisie, #app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__carte.est-porte { border-color: var(--e-or) !important; }
 #app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__carte-texte b { font-weight: 600; color: var(--e-texte); }
 #app.vy-eter #fenetres .vy-fenetre--garderobe .vy-gr__looks-tete small { letter-spacing: 0.18em; }
@@ -166,7 +169,7 @@
 #app.vy-eter #panel-body .vy-fdc.perdu .vy-fdc__ruban::before, #app.vy-eter #panel-body .vy-fdc.perdu .vy-fdc__ruban::after { background: #8f3a36; }
 #app.vy-eter #panel-body .vy-fdc.perdu .vy-fdc__ruban > span { background: #c9524b; box-shadow: 0 2px 0 #8f3a36; color: #fff; }
 #app.vy-eter #panel-body .vy-fdc__chiffre, #app.vy-eter #panel-body .vy-fdc__carte, #app.vy-eter #panel-body .vy-fdc__stat, #app.vy-eter #panel-body .vy-fdc__pastille { background: var(--e-panneau); border-color: rgba(0, 0, 0, 0.25); border-radius: 5px; }
-#app.vy-eter #panel-body .vy-fdc__rang.moi { background: var(--e-panneau); border-color: rgba(242, 193, 78, 0.35); border-radius: 5px; }
+#app.vy-eter #panel-body .vy-fdc__rang.moi { background: var(--e-panneau); border-color: rgba(221, 170, 114, 0.35); border-radius: 5px; }
 #app.vy-eter #panel-body .vy-fdc__bloc > header { margin: 0 -2px 8px; padding: 6px 10px; border-radius: 4px; background: var(--e-onglets); }
 #app.vy-eter #panel-body .vy-fdc__jauge, #app.vy-eter #panel-body .vy-fdc__barre-fond { background: var(--e-case); box-shadow: none; }
 #app.vy-eter #panel-body .vy-fdc__jauge i { background: var(--e-or); box-shadow: none; }
@@ -193,14 +196,14 @@
 }
 
 #app.vy-eter > :not(#title) { --vy-font-titre: var(--vy-font-ui); --v-degrade-oblique: var(--e-or); }
-#app.vy-eter:is(:not([data-ui-theme]), [data-ui-theme="nuit"]) {
-  --e-hud: rgba(57, 58, 77, 0.96);     
-  --e-hud-2: rgba(49, 48, 65, 0.94);   
+#app.vy-eter:not([data-ui-theme="duality"]) {
+  --e-hud: rgba(var(--e-fond-rgb), 0.96);     
+  --e-hud-2: rgba(var(--e-pied-rgb), 0.94);   
 }
-#app.vy-eter:is(:not([data-ui-theme]), [data-ui-theme="nuit"]) :is(.vy-menus, .vy-carte-info, .vy-barre-sorts__boite, .vy-discussion, .vy-discussion__bouton, .vy-camera > *, .vy-barre-tour, .vy-barre-tour__corps, #inspect, #log, .vy-inter__col, .vy-inter__panneau > section, .vy-repliques.vy-inter-pnj, .vy-cible__col, .vy-objectifs, .vy-boussole-quete, .toast) { background: var(--e-hud) !important; border-color: rgba(0, 0, 0, 0.5) !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 8px 20px rgba(0, 0, 0, 0.45) !important; }
-#app.vy-eter:is(:not([data-ui-theme]), [data-ui-theme="nuit"]) :is(.vy-discussion__flottant .vy-chat, #tracker .tq) { background: var(--e-hud-2) !important; }
+#app.vy-eter:not([data-ui-theme="duality"]) :is(.vy-menus, .vy-carte-info, .vy-barre-sorts__boite, .vy-discussion, .vy-discussion__bouton, .vy-camera > *, .vy-barre-tour, .vy-barre-tour__corps, #inspect, #log, .vy-inter__col, .vy-inter__panneau > section, .vy-repliques.vy-inter-pnj, .vy-cible__col, .vy-objectifs, .vy-boussole-quete, .toast) { background: var(--e-hud) !important; border-color: rgba(0, 0, 0, 0.5) !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 8px 20px rgba(0, 0, 0, 0.45) !important; }
+#app.vy-eter:not([data-ui-theme="duality"]) :is(.vy-discussion__flottant .vy-chat, #tracker .tq) { background: var(--e-hud-2) !important; }
 @media (min-width: 761px) and (min-height: 481px) {
-  #app.vy-eter:is(:not([data-ui-theme]), [data-ui-theme="nuit"]) #bas-centre { background: var(--e-hud) !important; border-color: rgba(0, 0, 0, 0.5) !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 10px 24px rgba(0, 0, 0, 0.45) !important; }
+  #app.vy-eter:not([data-ui-theme="duality"]) #bas-centre { background: var(--e-hud) !important; border-color: rgba(0, 0, 0, 0.5) !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 10px 24px rgba(0, 0, 0, 0.45) !important; }
   #app.vy-eter #vital[data-niveau]::before { background: var(--e-or) !important; border-color: var(--e-or-fonce) !important; }
 }
 #app.vy-eter .vy-menu { background: var(--e-case) !important; border-color: transparent !important; }
@@ -213,10 +216,10 @@
 #app.vy-eter :is(.vy-inter__ligne--primaire, .vy-cible__ligne.primaire, .vy-inter-pnj .vy-replique--primaire) { background: var(--e-or) !important; box-shadow: 0 2px 0 var(--e-or-fonce) !important; }
 #app.vy-eter :is(.vy-inter__ligne:hover, .vy-cible__ligne:hover:not(:disabled), .vy-inter-pnj .vy-replique:hover, .vy-inter__ligne.on, .vy-cible__ligne.ouvert):not(.vy-inter__ligne--primaire, .primaire, .vy-replique--primaire) { background: var(--e-bouton) !important; border-color: transparent !important; }
 #app.vy-eter :is(.vy-inter__ligne, .vy-cible__ligne, .vy-inter-pnj .vy-replique):not(.vy-inter__ligne--primaire, .primaire, .vy-replique--primaire, :hover, .on, .ouvert) { background: var(--e-panneau) !important; }
-#app.vy-eter .toast--succes { border-color: rgba(242, 193, 78, 0.5) !important; }
+#app.vy-eter .toast--succes { border-color: rgba(221, 170, 114, 0.5) !important; }
 #app.vy-eter .toast__texte b { font-weight: 800; letter-spacing: 0.04em; }
 #app.vy-eter .vy-combattant.actuel { box-shadow: 0 0 0 2px var(--e-or) !important; }
-#app.vy-eter:is(:not([data-ui-theme]), [data-ui-theme="nuit"]) .vy-lieu { background-color: var(--e-hud) !important; border-color: rgba(0, 0, 0, 0.5) !important; border-radius: 8px !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 8px 20px rgba(0, 0, 0, 0.45) !important; }
+#app.vy-eter:not([data-ui-theme="duality"]) .vy-lieu { background-color: var(--e-hud) !important; border-color: rgba(0, 0, 0, 0.5) !important; border-radius: 8px !important; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 8px 20px rgba(0, 0, 0, 0.45) !important; }
 #app.vy-eter .vy-lieu__nom { font: 800 14px/1.1 var(--vy-font-ui) !important; letter-spacing: 0.06em !important; background: none !important; -webkit-text-fill-color: var(--e-texte) !important; color: var(--e-texte) !important; }
 #app.vy-eter .vy-lieu__coord { background: var(--e-or) !important; color: #241a06 !important; }
 #app.vy-eter .vy-menu__bulle { background: var(--e-bulle) !important; border-color: rgba(0, 0, 0, 0.5) !important; }

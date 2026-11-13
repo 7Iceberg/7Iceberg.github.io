@@ -7,7 +7,7 @@
 #app .vy-fenetre--caracs .vy-c3__qui > small { display: flex; align-items: center; gap: 7px; font: 700 10.5px var(--vy-font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--fen-texte-2, #aab2c8); }
 #app .vy-fenetre--caracs .vy-c3__qui > small b { color: var(--fen-texte, #eef0f6); font-size: 12px; }
 #app .vy-fenetre--caracs .vy-c3__qui > small i { width: 1px; height: 11px; background: rgba(255, 255, 255, 0.25); }
-#app .vy-fenetre--caracs .vy-c3__qui > em { font-style: normal; font-size: 11.5px; color: var(--vy-texte-or, #f2c14e); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#app .vy-fenetre--caracs .vy-c3__qui > em { font-style: normal; font-size: 11.5px; color: var(--vy-texte-or, #ddaa72); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #app .vy-fenetre--caracs .vy-c3__xp { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 2px 6px; margin-top: 3px; font-size: 10.5px; color: var(--fen-texte-2, #aab2c8); }
 #app .vy-fenetre--caracs .vy-c3__xp > span { font: 700 9px var(--vy-font-ui); letter-spacing: 0.1em; text-transform: uppercase; }
 #app .vy-fenetre--caracs .vy-c3__xp > small { text-align: right; font-variant-numeric: tabular-nums; }
@@ -18,7 +18,7 @@
 #app .vy-fenetre--caracs .vy-caracs__onglets .vy-onglet { flex: none; width: 32px; height: 30px; min-height: 0; padding: 6px; display: grid; place-items: center; border: 0; border-radius: 6px; background: none; box-shadow: none; color: var(--fen-texte-2, #aab2c8); }
 #app .vy-fenetre--caracs .vy-caracs__onglets .vy-onglet svg { width: 17px; height: 17px; }
 #app .vy-fenetre--caracs .vy-caracs__onglets .vy-onglet:hover { color: var(--fen-texte, #eef0f6); background: rgba(255, 255, 255, 0.06); }
-#app .vy-fenetre--caracs .vy-caracs__onglets .vy-onglet.on { color: #2a1a03; background: linear-gradient(180deg, #ffd977, #f2c14e 55%, #d99a2b); }
+#app .vy-fenetre--caracs .vy-caracs__onglets .vy-onglet.on { color: #2a1a03; background: linear-gradient(180deg, #ffd977, #ddaa72 55%, #d99a2b); }
 #app .vy-fenetre--caracs .vy-caracs__onglets .vy-onglet::after { display: none; }
 
 #app .vy-fenetre--caracs .vy-c3__cadre { flex: 1; min-height: 0; display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 0; margin-top: 8px; border-radius: 8px; overflow: hidden; border: 1px solid var(--c3-ligne); background: rgba(10, 13, 22, 0.35); }
@@ -31,7 +31,7 @@
 #app .vy-fenetre--caracs .vy-c3__gemme.pv > b { font-size: 16px; color: #ff8a80; }
 #app .vy-fenetre--caracs .vy-c3__nom { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 #app .vy-fenetre--caracs .vy-c3__gemme + .vy-c3__gemme { border-top: 1px solid rgba(255, 255, 255, 0.05); }
-#app .vy-fenetre--caracs .vy-caracs__plus { position: absolute; top: 3px; right: 6px; width: 22px; height: 22px; padding: 4px; display: grid; place-items: center; border: 0; border-radius: 50%; background: linear-gradient(180deg, #ffd977, #f2c14e 55%, #d99a2b); color: #2a1a03; box-shadow: 0 0 0 1.5px rgba(40, 24, 2, 0.6), 0 2px 6px rgba(0, 0, 0, 0.45); }
+#app .vy-fenetre--caracs .vy-caracs__plus { position: absolute; top: 3px; right: 6px; width: 22px; height: 22px; padding: 4px; display: grid; place-items: center; border: 0; border-radius: 50%; background: linear-gradient(180deg, #ffd977, #ddaa72 55%, #d99a2b); color: #2a1a03; box-shadow: 0 0 0 1.5px rgba(40, 24, 2, 0.6), 0 2px 6px rgba(0, 0, 0, 0.45); }
 #app .vy-fenetre--caracs .vy-caracs__plus svg { width: 100%; height: 100%; display: block; }
 #app .vy-fenetre--caracs .vy-caracs__plus:not(:disabled):hover { box-shadow: 0 0 0 2px var(--vy-cristal, #52d2f4), 0 0 12px rgba(82, 210, 244, 0.6); }
 #app .vy-fenetre--caracs .vy-caracs__plus:disabled { opacity: 0; pointer-events: none; }
@@ -48,7 +48,7 @@
 #app .vy-fenetre--caracs .vy-c3__ligne > b.zero { color: var(--fen-texte-2, #aab2c8); opacity: 0.7; font-weight: 600; }
 #app .vy-fenetre--caracs .vy-c3__sep { position: relative; height: 14px; }
 #app .vy-fenetre--caracs .vy-c3__sep::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: linear-gradient(90deg, transparent, rgba(221, 170, 114, 0.35) 20%, rgba(221, 170, 114, 0.35) 80%, transparent); }
-#app .vy-fenetre--caracs .vy-c3__sep i { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; transform: translate(-50%, -50%) rotate(45deg); background: #f2c14e; box-shadow: 0 0 0 2px rgba(16, 19, 30, 0.9); }
+#app .vy-fenetre--caracs .vy-c3__sep i { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; transform: translate(-50%, -50%) rotate(45deg); background: #ddaa72; box-shadow: 0 0 0 2px rgba(16, 19, 30, 0.9); }
 #app .vy-fenetre--caracs .vy-c3__elts { width: 100%; border-collapse: collapse; font: 600 12.5px var(--vy-font-ui); font-variant-numeric: tabular-nums; }
 #app .vy-fenetre--caracs .vy-c3__elts thead th { padding: 2px 6px 5px; text-align: right; font: 800 10px var(--vy-font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--fen-texte-2, #aab2c8); }
 #app .vy-fenetre--caracs .vy-c3__elts tbody th { padding: 4px 2px; text-align: left; font-weight: 600; white-space: nowrap; color: var(--fen-texte, #eef0f6); }
@@ -65,7 +65,7 @@
 #app .vy-fenetre--caracs .vy-c3__repartir { letter-spacing: 0.1em; text-transform: uppercase; }
 #app .vy-fenetre--caracs .vy-c3__restants { display: flex; align-items: center; gap: 8px; font: 700 11px var(--vy-font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--fen-texte-2, #aab2c8); }
 #app .vy-fenetre--caracs .vy-c3__restants .vy-points { min-width: 38px; padding: 4px 8px; border-radius: 6px; text-align: center; font: 800 14px var(--vy-font-ui); color: var(--fen-texte-2, #aab2c8); background: rgba(10, 13, 22, 0.7); box-shadow: inset 0 0 0 1px var(--c3-ligne); }
-#app .vy-fenetre--caracs .vy-c3__restants .vy-points.on { color: #f2c14e; box-shadow: inset 0 0 0 1px rgba(242, 193, 78, 0.5); }
+#app .vy-fenetre--caracs .vy-c3__restants .vy-points.on { color: #ddaa72; box-shadow: inset 0 0 0 1px rgba(221, 170, 114, 0.5); }
 #app .vy-fenetre--caracs .vy-c3__aide { display: grid; place-items: center; color: var(--fen-texte-2, #aab2c8); cursor: help; }
 #app .vy-fenetre--caracs .vy-c3__aide svg { width: 17px; height: 17px; }
 #app .vy-fenetre--caracs .vy-c3__pied-bas { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }

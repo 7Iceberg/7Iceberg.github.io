@@ -1,6 +1,6 @@
 .vy-fenetre--metiers { --m-panneau: var(--e-panneau, #444556); --m-fond: var(--e-fond, #393a4d); --m-case: var(--e-case, #29293a);
   --m-onglets: var(--e-onglets, #3c3a48); --m-pied: var(--e-pied, #313041); --m-texte: var(--e-texte, #f1eff5); --m-texte-2: var(--e-texte-2, #b6b3c4);
-  --m-discret: var(--e-discret, #87849a); --m-or: var(--e-or, #f2c14e); --m-rouge: #d9424f; }
+  --m-discret: var(--e-discret, #87849a); --m-or: var(--e-or, #ddaa72); --m-rouge: #d9424f; }
 .vy-fenetre--metiers .vy-fenetre__corps { padding: 0 !important; overflow: hidden; }
 .vy-met { display: grid; grid-template-columns: 380px 1fr; height: min(640px, calc(100vh - 160px)); color: var(--m-texte); }
 

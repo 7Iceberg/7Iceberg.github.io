@@ -759,7 +759,7 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .perso-panneau__tete > span { min-width: 0; display: grid; gap: 3px; }
 .perso-panneau__tete small { font: 800 10px var(--vy-font-ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--vy-texte-2); }
 .perso-panneau__tete b { display: flex; align-items: center; gap: 7px; font: 700 17px/1.1 var(--vy-font-titre); letter-spacing: 0.04em; color: var(--vy-ivoire); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.perso-panneau__tete b svg { flex: none; width: 17px; height: 17px; color: #f2c14e; }
+.perso-panneau__tete b svg { flex: none; width: 17px; height: 17px; color: #ddaa72; }
 .perso-panneau__monde { flex: none; display: grid; justify-items: center; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(221, 170, 114, 0.3); background: rgba(20, 24, 38, 0.6); font: 800 10.5px var(--vy-font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--vy-texte-2); opacity: 0.8; cursor: default; }
 .perso-panneau__monde small { font: 600 9.5px var(--vy-font-ui); letter-spacing: 0.04em; text-transform: none; color: var(--vy-or-clair); }
 .perso-table { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 4px 10px 10px; }
@@ -772,8 +772,8 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .perso-ligne__nom b { font: 700 16px/1.15 var(--vy-font-titre); letter-spacing: 0.04em; color: var(--vy-ivoire); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .perso-ligne__nom small { font: 500 11px/1.2 var(--vy-font-ui); color: var(--vy-texte-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .perso-ligne__classe { min-width: 0; font: 600 13px/1.2 var(--vy-font-ui); color: color-mix(in srgb, var(--c) 70%, #fff); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.perso-ligne__niveau { font: 800 17px var(--vy-font-ui); color: #f2c14e; text-align: center; font-variant-numeric: tabular-nums; }
-.perso-ligne.on { border-color: #f2c14e; background: linear-gradient(90deg, rgba(242, 193, 78, 0.17), rgba(242, 193, 78, 0.03) 70%), #141826; box-shadow: 0 0 0 1px rgba(242, 193, 78, 0.3), 0 0 20px rgba(242, 193, 78, 0.2); }
+.perso-ligne__niveau { font: 800 17px var(--vy-font-ui); color: #ddaa72; text-align: center; font-variant-numeric: tabular-nums; }
+.perso-ligne.on { border-color: #ddaa72; background: linear-gradient(90deg, rgba(221, 170, 114, 0.17), rgba(221, 170, 114, 0.03) 70%), #141826; box-shadow: 0 0 0 1px rgba(221, 170, 114, 0.3), 0 0 20px rgba(221, 170, 114, 0.2); }
 .perso-ligne.on .perso-carte__nom { color: var(--vy-texte-or); }
 .perso-carte__alerte { color: var(--vy-attention); }
 .perso-carte__suppr { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); z-index: 1; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: #e6c3b8; border: 1px solid rgba(239, 117, 116, 0.35); opacity: 0.45; transition: opacity var(--vy-duree-courte), border-color var(--vy-duree-courte), color var(--vy-duree-courte); }
@@ -805,12 +805,12 @@ html.entree-ouverte, html.entree-ouverte body { overflow: hidden; overscroll-beh
 .perso-plaque::after { content: ''; position: absolute; left: 50%; bottom: -7px; width: 12px; height: 12px; transform: translateX(-50%) rotate(45deg); background: #161a29; border: solid rgba(221, 170, 114, 0.5); border-width: 0 1px 1px 0; }
 .perso-plaque__embleme { position: absolute; top: -24px; left: 50%; transform: translateX(-50%); width: 46px; height: 46px; }
 .perso-plaque__nom { margin: 0; max-width: 100%; font: 700 23px/1.1 var(--vy-font-titre); letter-spacing: 0.05em; color: var(--vy-ivoire); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.perso-plaque__titre { font-style: normal; font-size: 12px; color: #f2c14e; }
-.perso-plaque__niv { display: flex; align-items: baseline; gap: 8px; font: 800 12.5px var(--vy-font-ui); letter-spacing: 0.12em; text-transform: uppercase; color: #f2c14e; }
+.perso-plaque__titre { font-style: normal; font-size: 12px; color: #ddaa72; }
+.perso-plaque__niv { display: flex; align-items: baseline; gap: 8px; font: 800 12.5px var(--vy-font-ui); letter-spacing: 0.12em; text-transform: uppercase; color: #ddaa72; }
 .perso-plaque__niv small { font: 700 11px var(--vy-font-ui); letter-spacing: 0.12em; color: color-mix(in srgb, var(--c) 70%, #fff); }
 .perso-estrade__pied { position: absolute; left: 50%; top: var(--roche, 82%); transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 100%; }
 .perso-classe { min-height: 34px; font-size: 13px; }
-.perso-jouer { min-width: 230px; font-size: 20px; letter-spacing: 0.16em; text-transform: uppercase; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 28px rgba(242, 193, 78, 0.35); }
+.perso-jouer { min-width: 230px; font-size: 20px; letter-spacing: 0.16em; text-transform: uppercase; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 28px rgba(221, 170, 114, 0.35); }
 .perso-estrade__lieu { max-width: 100%; padding: 3px 11px; border-radius: 999px; font: 600 12px var(--vy-font-ui); color: var(--vy-texte-2); background: rgba(10, 14, 22, 0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .perso-estrade--vide { display: grid; place-items: center; }
 .perso-estrade--vide p { margin: 0; padding: 14px 18px; border-radius: 10px; font: 600 14px var(--vy-font-ui); color: var(--vy-texte-2); background: rgba(10, 14, 22, 0.6); }

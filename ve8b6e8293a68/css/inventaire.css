@@ -1,6 +1,6 @@
 #app .vy-fenetre--inventaire .vy-inv__poupee { background: radial-gradient(60% 55% at 50% 48%, rgba(82, 210, 244, 0.1), transparent 72%), linear-gradient(180deg, rgba(48, 54, 75, 0.45), rgba(10, 13, 22, 0.55)); }
-#app .vy-fenetre--inventaire .vy-inv__tourne { bottom: 46px; width: 30px; height: 30px; padding: 5px; border: 0; background: none; color: #f2c14e; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.7)); }
-#app .vy-fenetre--inventaire .vy-inv__tourne:hover { color: #ffe08a; background: rgba(242, 193, 78, 0.12); }
+#app .vy-fenetre--inventaire .vy-inv__tourne { bottom: 46px; width: 30px; height: 30px; padding: 5px; border: 0; background: none; color: #ddaa72; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.7)); }
+#app .vy-fenetre--inventaire .vy-inv__tourne:hover { color: #ffe08a; background: rgba(221, 170, 114, 0.12); }
 #app .vy-fenetre--inventaire .vy-inv__tourne--g { left: 8%; }
 #app .vy-fenetre--inventaire .vy-inv__tourne--d { right: 8%; }
 #app .vy-fenetre--inventaire .vy-inv__ensembles-barre { justify-items: end; }
@@ -8,21 +8,21 @@
 #app .vy-fenetre--inventaire .vy-inv__ens { width: 30px; height: 30px; padding: 0; display: grid; place-items: center; border-radius: 6px; border: 1px solid var(--fen-filet, rgba(255, 255, 255, 0.12)); background: rgba(10, 13, 22, 0.6); font: 800 12px var(--vy-font-ui); color: var(--fen-texte, #eef0f6); cursor: pointer; }
 #app .vy-fenetre--inventaire .vy-inv__ens:hover:not(:disabled) { border-color: var(--vy-cristal, #52d2f4); }
 #app .vy-fenetre--inventaire .vy-inv__ens svg { width: 15px; height: 15px; }
-#app .vy-fenetre--inventaire .vy-inv__ens--plus { color: #f2c14e; border-style: dashed; }
+#app .vy-fenetre--inventaire .vy-inv__ens--plus { color: #ddaa72; border-style: dashed; }
 #app .vy-fenetre--inventaire .vy-inv__ens--vider { margin-left: 6px; position: relative; }
 #app .vy-fenetre--inventaire .vy-inv__ens--vider::before { content: ''; position: absolute; left: -5px; top: 15%; bottom: 15%; border-left: 1px solid currentColor; opacity: 0.25; }
 #app .vy-fenetre--inventaire .vy-inv__ens--vider svg { width: 16px; height: 16px; }
 #app .vy-fenetre--inventaire .vy-inv__ens--vider:disabled { opacity: 0.35; cursor: default; }
 #app .vy-fenetre--inventaire .vy-inv__ens:disabled { opacity: 0.35; cursor: default; }
-#app .vy-fenetre--inventaire .vy-inv__mes-ens { padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(242, 193, 78, 0.35); background: rgba(48, 54, 75, 0.7); font: 800 9.5px var(--vy-font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--fen-texte, #eef0f6); cursor: pointer; }
-#app .vy-fenetre--inventaire .vy-inv__mes-ens:hover { border-color: #f2c14e; }
+#app .vy-fenetre--inventaire .vy-inv__mes-ens { padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(221, 170, 114, 0.35); background: rgba(48, 54, 75, 0.7); font: 800 9.5px var(--vy-font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--fen-texte, #eef0f6); cursor: pointer; }
+#app .vy-fenetre--inventaire .vy-inv__mes-ens:hover { border-color: #ddaa72; }
 
 .vy-ens {
   --ens-carte: var(--e-panneau, var(--fen-fond, #393a4d));
   --ens-case: var(--e-case, var(--fen-fond-2, #29293a));
   --ens-pied: var(--e-pied, var(--fen-fond-2, #313041));
   --ens-filet: var(--fen-filet, #646478);
-  --ens-or: var(--e-or, #f2c14e);
+  --ens-or: var(--e-or, #ddaa72);
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -143,7 +143,7 @@
   #app .vy-fenetre--inventaire .vy-inv__sac-cadre { flex-direction: row; gap: 10px; }
   #app .vy-fenetre--inventaire .vy-inv__onglets { flex: none; flex-direction: column; gap: 5px; padding-right: 8px; border-right: 1px solid var(--fen-filet, rgba(255, 255, 255, 0.1)); }
   #app .vy-fenetre--inventaire .vy-inv__onglet { flex: none; width: 38px; height: 38px; }
-  #app .vy-fenetre--inventaire .vy-inv__onglet.on { box-shadow: inset 2px 0 0 var(--fen-actif, #52d2f4); color: #2a1a03; background: linear-gradient(180deg, #ffd977, #f2c14e 55%, #d99a2b); border-color: #f2c14e; }
+  #app .vy-fenetre--inventaire .vy-inv__onglet.on { box-shadow: inset 2px 0 0 var(--fen-actif, #52d2f4); color: #2a1a03; background: linear-gradient(180deg, #ffd977, #ddaa72 55%, #d99a2b); border-color: #ddaa72; }
   #app .vy-fenetre--inventaire .vy-inv__sep { flex: 1 1 0; min-height: 4px; }
   #app .vy-fenetre--inventaire .vy-inv__pied { flex-wrap: wrap; row-gap: 4px; }
 }

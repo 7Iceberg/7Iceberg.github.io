@@ -975,7 +975,7 @@ class Accueil {
     const seg = [['webgl', 'Éclairé (WebGL)'], ['canvas', 'Léger (Canvas)']]
       .map(([v, l]) => `<button class="e-nu reglages__seg-btn${pref === v ? ' on' : ''}" data-act="rendu" data-rendu="${v}" aria-pressed="${pref === v}"${v === 'webgl' && !gl ? ' disabled title="WebGL indisponible sur cet appareil"' : ''}>${l}</button>`).join('');
     const corps = `<div class="reglages">
-      <section class="reglages__bloc"><h3 class="reglages__titre">Thème de l'interface</h3><div class="vy-themes">${themes}</div></section>
+      ${(typeof Hud === 'function' && Hud.THEMES || []).length > 1 ? `<section class="reglages__bloc"><h3 class="reglages__titre">Thème de l'interface</h3><div class="vy-themes">${themes}</div></section>` : ''}
       <section class="reglages__bloc"><h3 class="reglages__titre">Rendu</h3>
         <div class="reglages__seg" role="group" aria-label="Rendu">${seg}</div>
         <p class="reglages__note">En ce moment : ${this.rendu === 'webgl' ? 'éclairé (WebGL)' : 'léger (Canvas)'}${force ? ', imposé par l\'adresse (?render=canvas)' : ''}. Un changement prend effet au prochain lancement.</p>

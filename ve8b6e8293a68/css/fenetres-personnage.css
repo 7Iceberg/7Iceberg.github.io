@@ -273,7 +273,7 @@ input.vy-pas__valeur:focus-visible { outline: 2px solid var(--fen-actif); outlin
 .vy-recompenses__cumul { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 10px 0 0; font-size: 13px; }
 .vy-recompenses__cumul > span { font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; opacity: 0.8; }
 .vy-recompenses__cumul b { font-weight: 800; }
-.vy-recompenses__cumul em { font-style: normal; color: var(--vy-or, #f2c14e); font-weight: 700; }
+.vy-recompenses__cumul em { font-style: normal; color: var(--vy-or, #ddaa72); font-weight: 700; }
 
 #recompenses-btn {
   position: absolute; left: 50%; bottom: var(--coffre-bas, 108px); z-index: 3;

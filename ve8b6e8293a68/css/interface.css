@@ -130,7 +130,7 @@
 .vy-editeur__guide.on { display: block; }
 .vy-editeur__profils { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin: 6px 0 8px; }
 .vy-editeur__profil { display: grid; gap: 2px; padding: 6px; border-radius: 7px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); text-align: center; }
-.vy-editeur__profil.plein { border-color: rgba(242, 193, 78, 0.45); }
+.vy-editeur__profil.plein { border-color: rgba(221, 170, 114, 0.45); }
 .vy-editeur__profil b { font-size: 11px; }
 .vy-editeur__profil small { font-size: 9px; color: rgba(243, 240, 248, 0.55); }
 .vy-editeur__profil span { display: flex; gap: 3px; justify-content: center; margin-top: 3px; }

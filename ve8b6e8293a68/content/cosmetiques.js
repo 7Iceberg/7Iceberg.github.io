@@ -56,12 +56,6 @@
       description: 'Un poing levé vers le ciel, pour les dragons qui regardent. Le niveau 10.', data: { emote: 'defi', label: 'Défier' } },
   );
 
-  L.push(
-    { id: 'theme_cendrees', nom: 'Thème : les Cendrées', type: 'theme', rarete: 'rare', source: { genre: 'succes', id: 'dix_mille_fils' }, collection: 'sept_dragons',
-      description: 'Noir et pourpre, l\'interface aux couleurs de ce qui dort sous la cendre.', data: { theme: ['cendrees', 'Les Cendrées', '#15101c', '#bf95ff'] } },
-    { id: 'theme_aube_doree', nom: 'Thème : l\'Aube dorée', type: 'theme', rarete: 'epique', source: { genre: 'collection', id: 'cimes' }, collection: null,
-      description: 'Blanc et or : l\'interface de l\'Aube. La collection des Cimes, complète.', data: { theme: ['aube', 'Aube dorée', '#f3ead8', '#9a6a1f'] } },
-  );
 
   L.push(
     { id: 'lueur_score_100', nom: 'Lueur de calcaire', type: 'aura', rarete: 'commun', source: { genre: 'succes', id: 'score_100' }, collection: null,
@@ -123,18 +117,14 @@
       description: 'Le V de Veylan, frappé dans l\'or à côté du nom.', data: { glyphe: 'V', couleur: '#ddaa72' } },
     { id: 'b_blason_cristal', nom: 'Blason du cristal', type: 'blason', rarete: 'rare', source: { genre: 'boutique', id: 'b_blason_cristal' }, collection: null,
       description: 'Un losange de cristal saphir à côté du nom.', data: { glyphe: '◆', couleur: '#52d2f4' } },
-    { id: 'b_theme_saphir', nom: 'Thème : Saphir', type: 'theme', rarete: 'epique', source: { genre: 'boutique', id: 'b_theme_saphir' }, collection: null,
-      description: 'L\'interface en nuit profonde et cristal.', data: { theme: ['saphir', 'Saphir', '#0b1730', '#52d2f4'] } },
-    { id: 'b_theme_amethyste', nom: 'Thème : Améthyste', type: 'theme', rarete: 'epique', source: { genre: 'boutique', id: 'b_theme_amethyste' }, collection: null,
-      description: 'L\'interface en violet de voile et lavande.', data: { theme: ['amethyste', 'Améthyste', '#140f24', '#ab7cf2'] } },
   );
 
   K.push(
     { id: 'premiers_pas', nom: 'Les premiers pas', description: 'Ce que les premières semaines d\'un Veilleur rapportent.',
       cosmetiques: ['teinture_lin_bleu', 'teinture_mousse', 'lueur_dragme', 'aura_braises', 'emote_danse'], recompense: 'blason_premiers_pas' },
     { id: 'cimes', nom: 'Les Cimes', description: 'Les bêtes et les belles choses d\'Orsane.',
-      cosmetiques: ['teinture_aube', 'lueur_cendre', 'lueur_mer', 'aura_brume', 'blason_grouk'], recompense: 'theme_aube_doree' },
+      cosmetiques: ['teinture_aube', 'lueur_cendre', 'lueur_mer', 'aura_brume', 'blason_grouk'], recompense: null },
     { id: 'sept_dragons', nom: 'Les Sept Dragons', description: 'Pour qui a tenu la route jusqu\'aux forges, et au-delà.',
-      cosmetiques: ['teinture_safran', 'teinture_braise', 'teinture_cendree', 'lueur_aube', 'aura_lucioles', 'emote_defi', 'theme_cendrees'], recompense: 'blason_dragon' },
+      cosmetiques: ['teinture_safran', 'teinture_braise', 'teinture_cendree', 'lueur_aube', 'aura_lucioles', 'emote_defi'], recompense: 'blason_dragon' },
   );
 })();

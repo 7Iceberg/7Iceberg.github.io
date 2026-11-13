@@ -343,7 +343,7 @@ class Hud {
       <div class="row"><label class="vy-coche"><input type="checkbox" id="opt-son" ${Son.actif() ? 'checked' : ''}> Son</label><span class="muted">${Son.pret() ? 'la musique du lieu et les bruitages' : 'se lance au premier toucher'}</span></div>
       ${curseur('opt-musique', 'vy-musique', 'Musique', Son.reglages.musique, 0, 100)}
       ${curseur('opt-bruitages', 'vy-bruitages', 'Bruitages', Son.reglages.bruitages, 0, 100)}`;
-    const SECTIONS = [['jeu', 'Jeu'], ['combat', 'Combat'], ['interface', 'Interface'], ['themes', 'Thèmes'], ['son', 'Son'], ['notifications', 'Notifications'], ['accessibilite', 'Accessibilité'], ['raccourcis', 'Raccourcis'], ['sauvegarde', 'Sauvegarde'], ['personnages', 'Personnages']];
+    const SECTIONS = [['jeu', 'Jeu'], ['combat', 'Combat'], ['interface', 'Interface'], ...(Hud.themesDisponibles().length > 1 ? [['themes', 'Thèmes']] : []), ['son', 'Son'], ['notifications', 'Notifications'], ['accessibilite', 'Accessibilité'], ['raccourcis', 'Raccourcis'], ['sauvegarde', 'Sauvegarde'], ['personnages', 'Personnages']];
     const ouvre = id => `<section class="vy-opt__sec" id="opt-sec-${id}" data-sec="${id}">`;
     const loupe = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>';
     const touches = `<h4>Raccourcis clavier</h4><div class="vy-opt__touches">${Hud.MENUS.filter(m => m[2]).map(m => `<div class="vy-opt__touche"><kbd>${m[2]}</kbd><span>${m[1]}</span></div>`).join('')}<div class="vy-opt__touche"><kbd>Échap</kbd><span>Fermer la fenêtre du dessus</span></div><div class="vy-opt__touche"><kbd>1</kbd>…<kbd>0</kbd><span>Sorts de la première rangée</span></div><div class="vy-opt__touche"><kbd>Maj</kbd>+<kbd>1</kbd>…<span>Sorts de la seconde rangée</span></div></div>`;
@@ -351,7 +351,7 @@ class Hud {
     const html = () => `<div class="vy-opt"><nav class="vy-opt__nav" aria-label="Sections des options"><label class="vy-recherche vy-opt__cherche">${loupe}<input id="opt-cherche" type="search" placeholder="Chercher un réglage" value="${esc(this.optCherche || '')}" aria-label="Chercher un réglage"></label>${SECTIONS.map(([id, l]) => `<button type="button" data-act="optAller" data-sec="${id}">${l}</button>`).join('')}</nav><div class="vy-opt__corps" data-defile="options">${ouvre('jeu')}${tuto()}${jeu()}</section>${ouvre('combat')}${combat()}</section>${ouvre('interface')}<h4>Bloc vital</h4><div class="vy-styles-vital" role="group" aria-label="Style du bloc vital">${vitaux()}</div>
       <div class="row"><span class="muted">Déplacer, cacher et régler les blocs du HUD</span><button data-act="editeur">Personnaliser l'interface</button></div>
       <div class="row"><span class="muted">Fenêtres déplacées trop loin ?</span><button data-act="replacer">Replacer les fenêtres</button></div>
-      </section>${ouvre('themes')}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div></section>${ouvre('son')}${son()}</section>
+      </section>${Hud.themesDisponibles().length > 1 ? `${ouvre('themes')}<h4>Thème de l'interface</h4><div class="vy-themes">${themes}</div></section>` : ''}${ouvre('son')}${son()}</section>
       ${this.optionsNotifs ? `${ouvre('notifications')}${this.optionsNotifs()}</section>` : ''}
       ${ouvre('accessibilite')}<h4>Accessibilité</h4>${opacite()}</section>
       ${ouvre('raccourcis')}${touches}</section>${ouvre('sauvegarde')}

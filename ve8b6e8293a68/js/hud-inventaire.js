@@ -713,15 +713,15 @@ Object.assign(Hud.prototype, {
       : '<p class="muted vy-note">Les succès donnent des titres.</p>';
     const actuel = document.getElementById('app').dataset.uiTheme;
     const themes = Hud.themesDisponibles().map(([id, label, fond, accent]) => `<button class="vy-theme${actuel === id ? ' on' : ''}" data-act="theme" data-theme="${id}" aria-pressed="${actuel === id}"><span class="vy-theme__apercu" style="--f:${fond};--a:${accent}"></span>${label}</button>`).join('');
-    const porte = typeof Garderobe !== 'undefined' ? Garderobe.TYPES_PORTES.map(t => { const c = Garderobe.get(ch.porte && ch.porte[t]); return `<span class="vy-inv__porte"><small>${Garderobe.TYPE_LABEL[t]}</small>${c ? esc(c.nom) : '<span class="muted">aucune</span>'}</span>`; }).join('') : '';
+    const porte = typeof Garderobe !== 'undefined' ? Garderobe.TYPES_PORTES.filter(t => t !== 'theme' || Garderobe.defs().some(c => c.type === 'theme')).map(t => { const c = Garderobe.get(ch.porte && ch.porte[t]); return `<span class="vy-inv__porte"><small>${Garderobe.TYPE_LABEL[t]}</small>${c ? esc(c.nom) : '<span class="muted">aucune</span>'}</span>`; }).join('') : '';
     const n = typeof Garderobe !== 'undefined' ? Garderobe.possedes().length : 0;
     return `<div class="vy-inv__vue" data-defile="apparence">
       <div class="vy-sous"><span>Titre affiché</span></div>${titres}
       <div class="vy-sous"><span>Garde-robe</span><span class="muted">${n} cosmétique${n > 1 ? 's' : ''}</span></div>
       <div class="vy-inv__portes">${porte}</div>
-      <p class="muted vy-note">Teintures, auras, blasons, émotes et thèmes se gagnent en jouant et servent à tous tes personnages. Jamais de puissance : seulement de l'allure.</p>
+      <p class="muted vy-note">Teintures, auras, blasons et émotes se gagnent en jouant et servent à tous tes personnages. Jamais de puissance : seulement de l'allure.</p>
       <div class="vy-ensembles"><button class="vy-bouton vy-bouton--petit" data-act="garderobe">Ouvrir la Garde-robe</button></div>
-      <div class="vy-sous"><span>Thème de l'interface</span></div><div class="vy-themes">${themes}</div>
+      ${Hud.themesDisponibles().length > 1 ? `<div class="vy-sous"><span>Thème de l'interface</span></div><div class="vy-themes">${themes}</div>` : ''}
     </div>`;
   },
 

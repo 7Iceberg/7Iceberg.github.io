@@ -248,6 +248,7 @@ const SortIcones = (() => {
   }
 
   const V4 = (() => { try { return new URLSearchParams(location.search).get('icones') !== 'v3'; } catch (e) { return true; } })();
+  const SOBRE = (() => { try { return new URLSearchParams(location.search).get('icones') === 'sobre'; } catch (e) { return false; } })();
   const v4 = id => V4 && typeof IconesV4 === 'object' && IconesV4.a(id);
   function typeV4(id, s) {
     const t = (s.effects || []).map(e => e.type);
@@ -271,7 +272,7 @@ const SortIcones = (() => {
       px = Math.round(px || 64);
       const el = s.element || 'neutre', rang = s.rank || 0, key = `v4|${id}|${el}|${rang}|${px}`;
       if (!cache.has(key)) {
-        const svg = IconesV4.icone({ id, el: IconesV3.P[el] ? el : 'neutre', type: typeV4(id, s) }, px, { rang, variante: variante(id) });
+        const svg = IconesV4.icone({ id, el: IconesV3.P[el] ? el : 'neutre', type: typeV4(id, s) }, px, { rang, variante: variante(id), sobre: SOBRE });
         cache.set(key, 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
       }
       return cache.get(key);

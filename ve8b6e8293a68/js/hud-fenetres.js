@@ -443,7 +443,7 @@ Object.assign(Hud.prototype, {
     try {
       let t = localStorage.getItem('veylan.theme');
       if (!localStorage.getItem('veylan.theme.charte')) { localStorage.setItem('veylan.theme.charte', '1'); if (!t || t === 'duality') t = Hud.THEME_DEFAUT; }
-      return t || Hud.THEME_DEFAUT;
+      return t && Hud.themesDisponibles().some(x => x[0] === t) ? t : Hud.THEME_DEFAUT;
     } catch (e) { return Hud.THEME_DEFAUT; }
   },
   themeDuPersonnage() {
@@ -462,12 +462,10 @@ Object.assign(Hud.prototype, {
   },
   applyTheme(t) {
     const app = document.getElementById('app');
+    if (!Hud.themesDisponibles().some(x => x[0] === t)) t = Hud.THEME_DEFAUT;
     app.dataset.uiTheme = t;
     const def = (Hud.themesDisponibles ? Hud.themesDisponibles() : Hud.THEMES || []).find(x => x[0] === t);
     if (def) { app.style.setProperty('--theme-fond', def[2]); app.style.setProperty('--theme-accent', def[3]); }
-    if (t === 'duality' && document.fonts && document.fonts.load) {
-      for (const f of ['400 12px Poppins', '500 12px Poppins', '600 12px Poppins', '700 12px Poppins', '600 12px Rajdhani', '700 12px Rajdhani', '500 12px "JetBrains Mono"', '700 12px "JetBrains Mono"']) document.fonts.load(f).catch(() => {});
-    }
     try { localStorage.setItem('veylan.theme', t); } catch (e) {   }
   },
 
@@ -522,7 +520,7 @@ Hud.ZOOM_MINI = [0.5, 0.7, 1, 1.4, 2];
 Hud.OPACITE = 90;
 
 Hud.THEME_DEFAUT = 'nuit';
-Hud.THEMES = [['nuit', 'Veylan', '#19233c', '#ddaa72'], ['royal', 'Bleu des Cimes', '#13264a', '#7fb4ff'], ['braise', 'Braise de Kaldum', '#2a1714', '#ef7574'], ['cimes', 'Vert des Cimes', '#15261c', '#80d697'], ['ardoise', 'Ardoise claire', '#d9d2c3', '#a67349'], ['duality', 'Duality', '#121019', '#ff8a3d']];
+Hud.THEMES = [['nuit', 'Veylan', '#2a324a', '#ddaa72']];
 Hud.MENUS = MENUS;
 Hud.themesDisponibles = () => Hud.THEMES.concat(typeof Garderobe !== 'undefined' ? Garderobe.themes() : []);
 Hud.STAT = STAT;
