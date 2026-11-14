@@ -266,8 +266,8 @@ class Scene {
     ];
   }
 
-  static fondVoile() { return 'medaille'; }
-  static fondAnime() { return typeof VoileMedaille === 'object' ? VoileMedaille : null; }
+  static fondVoile() { return 'nuit'; }
+  static fondAnime() { return null; }
 
   montrerVoile(titre, etape, liste) {
     if (!this.stage) return;
@@ -287,7 +287,6 @@ class Scene {
     el.classList.toggle('sans-barre', !liste);
     const fond = Scene.fondVoile(), anime = Scene.fondAnime();
     this.fondAnime = anime;
-    el.classList.toggle('medaille', true);
     el.innerHTML = `<div class="scene-voile__fond" data-fond="${fond}"${anime ? ' data-anime' : ''} aria-hidden="true">${anime ? anime.html() : ''}</div>` +
       '<div class="scene-voile__fil" aria-hidden="true"></div>' +
       `<p class="scene-voile__titre">${Util.esc(titre)}</p>` +

@@ -170,7 +170,8 @@ class Ile3D {
     etape('Le héros modelé');
     try {
       if (this.qualite !== 'basse') await IleCharge.peauScript();
-      if (this.qualite !== 'basse' && typeof IlePeau === 'object' && IlePeau.PEAUX[classe]) this.heros = await IlePeau.chargerHeros(THREE, classe);
+      const ch = this.world && this.world.ch, P = this.qualite !== 'basse' && typeof IlePeau === 'object' ? IlePeau.PEAUX[classe] : null;
+      if (P && (!P.genres || classeHeros !== 'auto' || P.genres.includes(ch && ch.gender === 'm' ? 'm' : 'f'))) this.heros = await IlePeau.chargerHeros(THREE, classe, { telephone: this.telephone, perso: ch });
       else {
         await IleCharge.herosScript();
         if (typeof IleHeros === 'object' && IleHeros.FICHIERS[classe]) this.heros = await IleHeros.charger(THREE, null, classe);

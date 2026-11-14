@@ -121,7 +121,7 @@ const SCEAUX_DATA = (() => {
         dm: { nom: 'Incendie', icone: 'target', effet: { dmg_feu: 10, crit: 2 } },
         d5: { nom: 'Étincelles', icone: 'star', effet: { dmgCrit: 5 } },
         d6: { nom: 'Combustion', icone: 'flame', effet: { dmg_feu: 6 } },
-        dk: { nom: 'Embrasement', icone: 'flame', effet: { dmg_feu: 10 }, passif: 'Tes coups critiques de feu laissent une brûlure : 5 % des dégâts du coup à chaque tour, deux tours.' },
+        dk: { nom: 'Embrasement', icone: 'flame', effet: { dmg_feu: 10 }, passif: 'Tes coups critiques de feu laissent une brûlure : 10 % des dégâts du coup à chaque tour, deux tours.' },
       },
     },
     eau: {
@@ -167,7 +167,7 @@ const SCEAUX_DATA = (() => {
         gm: { nom: 'Vent Porteur', icone: 'compass', effet: { fuite: 8, init: 100 } },
         g5: { nom: 'Zéphyr', icone: 'leaf', effet: { init: 60 } },
         g6: { nom: 'Feu Follet', icone: 'moon', effet: { esquivePM: 5 } },
-        gk: { nom: 'Libre comme l\'Air', icone: 'bird', effet: { fuite: 10 }, passif: 'Au premier tour de chaque combat, tu as 1 PM de plus.' },
+        gk: { nom: 'Libre comme l\'Air', icone: 'bird', effet: { fuite: 10 }, passif: 'Aux deux premiers tours de chaque combat, tu as 1 PM de plus.' },
         d1: { nom: 'Rafale', icone: 'sword', effet: { dmg_air: 6 } },
         d2: { nom: 'Serre', icone: 'hand', effet: { tacle: 4 } },
         d3: { nom: 'Éclair', icone: 'zap', effet: { crit: 2 } },

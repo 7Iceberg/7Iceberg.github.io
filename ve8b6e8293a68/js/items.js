@@ -116,7 +116,7 @@ const Items = (() => {
       const stats = i.stats ? Object.assign({}, i.stats) : statsFromParts(resteApres(budgetPoids(i.level, i.slot) * 0.9, i.extra), i.poids || partsDe(i.profile));
       if (i.extra) Object.assign(stats, i.extra);
       const def = { id: i.id, name: i.name, kind: 'equip', slot: i.slot, level: i.level, set: null, lore: i.lore || '', stats, source: i.source || 'craft', from: i.from || null, image: i.image || null };
-      for (const k of ['lie', 'marque', 'passif', 'quete', 'rarity', 'effet']) if (i[k] != null) def[k] = i[k];
+      for (const k of ['lie', 'marque', 'passif', 'quete', 'succes', 'queteAvant', 'rarity', 'effet']) if (i[k] != null) def[k] = i[k];
       defs.set(i.id, def);
     }
     for (const w of C.weapons || []) {

@@ -26,7 +26,7 @@ DATA.kit('fennal', [
       desc: 'Le Molh sort de terre devant le Meneur et lui laisse un peu de sa pierre : un bouclier de 40 pour deux tours. Une relance de plus que l\'appel ordinaire ; 3 de jauge.' }],
   [{ reprend: 'rappel_sacrificiel', element: 'feu', desc: 'Le dernier appel : la bête se sacrifie dans une gerbe de braise et brûle tous les ennemis autour d\'elle, et le Meneur prend sa force (+25 % de dégâts ce tour et le suivant).' },
     { id: 'dernier_reflux', icone: ['vague', 'patte'], name: 'Dernier Reflux', element: 'eau', pa: 3, range: [0, 6], target: 'summon', effects: [{ type: 'sacrifice', min: 14, max: 18, radius: 1 }], selfEffects: [shield(22, 1)], cooldown: 2,
-      desc: 'La bête rend son souffle à la mer : une vague éclate autour d\'elle et frappe les ennemis à son contact, et l\'écume qui reste couvre le Meneur d\'un bouclier de 30.' }],
+      desc: 'La bête rend son souffle à la mer : une vague éclate autour d\'elle et frappe les ennemis à son contact, et l\'écume qui reste couvre le Meneur d\'un bouclier de 22.' }],
   [{ id: 'coup_de_sifflet', icone: ['sifflet', 'patte'], name: 'Coup de Sifflet', element: 'neutre', pa: 2, range: [0, 0], los: false, target: 'self', effects: [{ type: 'ordreMeute', pct: 50 }], cooldown: 2,
       desc: 'Un coup de sifflet, et toute la meute frappe tout de suite : chaque bête mord l\'ennemi le plus faible à sa portée, sans bouger, pour moitié de ses dégâts.' },
     { id: 'fouet_de_meneur', icone: ['noeud', 'fleche'], name: 'Fouet du Meneur', element: 'neutre', pa: 2, range: [1, 5], target: 'any', effects: [push(2), Object.assign(pm(2, 1), { onAlly: true })], maxPerTurn: 2,

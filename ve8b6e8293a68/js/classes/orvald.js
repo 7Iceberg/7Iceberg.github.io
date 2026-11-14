@@ -59,7 +59,7 @@ DATA.kit('orvald', [
       desc: 'L\'automate lance ses engrenages et charge comme une foreuse : +15 % de dégâts par PM dépensé à marcher ce tour.' },
     { id: 'course_de_galerie', icone: ['ruee', 'eclair'], name: 'Course de Galerie', element: 'air', pa: 4, range: [1, 2], effects: [dmg(13, 16)], parPmDepense: 15, maxPerTurn: 1,
       desc: 'Il court dans le courant d\'air des galeries et frappe à deux cases : +15 % de dégâts par PM dépensé à marcher ce tour.' }],
-  [{ id: 'pesee_d_or', icone: ['etincelles', 'x2'], name: 'Pesée d\'Or', element: 'terre', pa: 4, range: [1, 5], effects: [dmg(26, 31)], reserveSpend: 20, cooldown: 1,
+  [{ id: 'pesee_d_or', icone: ['etincelles', 'x2'], name: 'Pesée d\'Or', element: 'terre', pa: 4, range: [1, 5], effects: [dmg(23, 27)], reserveSpend: 20, cooldown: 1,
       desc: 'Le poids de l\'or trouvé, jeté sur la cible : +20 % de dégâts par Trouvaille dépensée.' },
     { id: 'pesee_de_nacre', icone: ['sablier', 'cible'], name: 'Pesée de Nacre', element: 'eau', pa: 4, range: [1, 5], effects: [dmg(20, 23)], reserveSpend: 20, cooldown: 1,
       desc: 'L\'Orvald pèse ses perles et ses nacres et les jette d\'un coup : +20 % de dégâts par Trouvaille dépensée.' }],

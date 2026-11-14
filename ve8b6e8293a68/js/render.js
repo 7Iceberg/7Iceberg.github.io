@@ -1,4 +1,6 @@
 class Renderer {
+  static get CUIR_CEINTURE() { return '#1c1a22'; }
+  static get ARMES() { return ['L', 'O', 'Kr', 'N', 'S']; }
   constructor(canvas, combat, world, opts) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
@@ -3148,8 +3150,8 @@ class Renderer {
       arm(X + 8, by + 3, X + 11.6, by + 8.5, X + 12.6, by + 13.6, body);
       c.fillStyle = Renderer.mix(body, '#ffffff', 0.25);
       c.beginPath(); c.moveTo(X - 5.2, by + 0.5); c.lineTo(X + 0.6, by + 4.4); c.lineTo(X + 6.2, by + 0.5); c.closePath(); c.fill();
-      c.fillStyle = details; c.fillRect(X - ww - 0.6, by + 14, 2 * ww + 1.2, 3.3);
-      c.fillStyle = '#e2c690'; c.fillRect(X - 1.2, by + 13.6, 3.6, 4.1);
+      c.fillStyle = Renderer.CUIR_CEINTURE; c.fillRect(X - ww - 0.6, by + 14, 2 * ww + 1.2, 3.3);
+      this.boucleInsigne(c, X + 0.6, by + 15.6, 1.9, s);
       c.strokeStyle = '#e2c690'; c.lineWidth = 0.9; c.setLineDash([1.2, 1.1]);
       c.beginPath(); c.moveTo(X + sw - 5.6, by + 0.9); c.lineTo(X + sw - 1.2, by + 4); c.stroke();
       c.setLineDash([]);
@@ -3423,7 +3425,21 @@ class Renderer {
     c.restore();
   }
 
+  boucleInsigne(c, x, y, r, s) {
+    const id = s && (s.classId || (s.cls && s.cls.id) || Renderer.classeDuGlyphe(s.glyph));
+    const lum = (typeof DATA === 'object' && DATA.insignes && DATA.insignes[id]) || '#9aa4b4';
+    c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2);
+    c.fillStyle = '#7d828c'; c.fill(); c.lineWidth = 0.6; c.strokeStyle = '#2a2c34'; c.stroke();
+    c.fillStyle = lum; c.beginPath(); c.arc(x, y, r * 0.45, 0, Math.PI * 2); c.fill();
+  }
+  static classeDuGlyphe(g) {
+    if (typeof DATA !== 'object' || !DATA.classes) return null;
+    const c = Object.values(DATA.classes).find(x => x.glyph === g);
+    return c ? c.id : null;
+  }
+
   drawProp(c, p, s, top, by, ink, col, T, back) {
+    if (!s.arme && Renderer.ARMES.includes(s.glyph)) return;
     col = col || s.color; T = T || 1;
     const light = Renderer.mix(col, '#ffffff', 0.55);
     const ow = (inner, outer) => inner + (outer - inner) * T;

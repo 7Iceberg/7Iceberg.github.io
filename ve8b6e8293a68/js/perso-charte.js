@@ -105,8 +105,8 @@
       arm(X + 8.6, by + 3, X + 12.6, by + 8.5, X + 13.6, by + 13.6, body);
       c.fillStyle = mix(body, '#ffffff', 0.25);
       c.beginPath(); c.moveTo(X - 5.4, by + 0.5); c.lineTo(X + 0.6, by + 4.6); c.lineTo(X + 6.4, by + 0.5); c.closePath(); c.fill();
-      c.fillStyle = '#3a2a20'; c.fillRect(X - ww - 0.6, by + 12.6, 2 * ww + 1.2, 3.4);
-      c.fillStyle = '#e2c690'; c.fillRect(X - 1.4, by + 12.2, 4, 4.2);
+      c.fillStyle = Renderer.CUIR_CEINTURE; c.fillRect(X - ww - 0.6, by + 12.6, 2 * ww + 1.2, 3.4);
+      this.boucleInsigne(c, X + 0.6, by + 14.3, 2, s);
     }
     if (sig.corps) sig.corps(c, o);
     c.fillStyle = mix(skin, '#6a3424', 0.3); c.fillRect(hx - 2.6, hy + 7, 5.2, 5);

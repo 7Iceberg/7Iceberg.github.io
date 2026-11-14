@@ -4,7 +4,6 @@ const IlePeau = (() => {
       clips: { repos: 'Idle', marche: { nom: 'Slow_Orc_Walk', vitesse: 0.42 }, sort: { nom: 'Attack', de: 0.25, a: 1.45 }, coup: { nom: 'Hit_Reaction', de: 0.02, a: 0.62 } },
       durees: { placement: 0, sort: 780, lacher: 0.55, pousse: 90, saut: 140 } },
     nerith: { fichier: 'assets/peaux/nerith.glb', hauteur: 2.0, ombre: 0.9,
-      arme: { fichier: 'assets/peaux/nerith-ancre.glb', os: 'RightHand', position: [0, 0.32, 0], rotation: [1, 0, 0, 0], echelle: 0.75 },
       clips: { repos: 'Idle', marche: { nom: 'Sneaky_Walk', vitesse: 0.5 }, course: { nom: 'RunFast', vitesse: 3.2 }, sort: { nom: 'Weapon_Combo', de: 0.05, a: 1.05 }, coup: { nom: 'Hit_Reaction', de: 0.02, a: 0.62 }, victoire: 'victory' },
       durees: { placement: 0, sort: 620, lacher: 0.5, pousse: 90, saut: 140 } },
     lampignard: { fichier: 'assets/peaux/lampignard.glb', hauteur: 2.3, ombre: 1.0,
@@ -42,6 +41,23 @@ const IlePeau = (() => {
       aura: { couleur: [0.45, 0.9, 0.6], force: 0.25, rayon: 1.0, hauteur: 0.3, couronne: false },
       clips: { repos: 'Repos', marche: { nom: 'Marche', vitesse: 0.6 }, sort: { nom: 'Sort', de: 0, a: 1.3 }, coup: { nom: 'Coup', de: 0, a: 0.55 }, mort: { nom: 'Mort', de: 0, a: 1.8 }, victoire: 'Victoire', placement: { nom: 'Apparition', de: 0, a: 1.3 } },
       durees: { placement: 1100, sort: 950, lacher: 0.35, pousse: 90, saut: 140, mort: 1500 } },
+    fennal: { fichier: 'assets/peaux/fennal_f.glb', hauteur: 2.0, ombre: 0.9, genres: ['f'],
+      clips: { repos: 'repos', marche: { nom: 'marche', vitesse: 0.5 }, course: { nom: 'course', vitesse: 3.2 }, sort: { nom: 'appel', de: 0.2, a: 2.0 } },
+      durees: { placement: 0, sort: 1000, lacher: 0.5, pousse: 90, saut: 140 },
+      compose: {
+        clarte: 1.3,
+        defaut: { coiffure: 1, bois: 0, visage: 2, marque: -1, iris: 'dessin', cheveux: '#fdedcd' },
+        visages: ['Douce', 'Rêveuse', 'Calme', 'Espiègle', 'Fière', 'Farouche'].map((nom, k) => ({ nom, image: `assets/peaux/fennal_f-visage-${k + 1}.png`, yeux: `assets/peaux/fennal_f-yeux-${k + 1}.png` })),
+        marques: ['Griffure de bête', 'Balafre au sourcil', 'Liane', 'Spirale', 'Points de pacte', 'Traits de cuivre'].map((nom, k) => ({ nom, image: `assets/peaux/fennal_f-marque-${k + 1}.png` })),
+        pieces: {
+          tete: { lissable: true, fichier: 'assets/peaux/fennal_f-tete.glb', k: 0.195, pos: [0, 1.515, 0.03], rot: [0, 0, 0], teinte: [0.91, 0.917, 1], coupe: 1.405,
+            cadre: { cx: 0, cz: 0.03, r: 0.105, cy: 1.519, l: 0.322, h: 0.184 } },
+          coiffures: [{ nom: 'Court ébouriffé', fichier: 'assets/peaux/fennal_f-court.glb', base: '#f6d9bb', k: 0.2, pos: [0, 1.6, 0.02], rot: [0, 0, 0] },
+            { nom: 'Longue tresse', fichier: 'assets/peaux/fennal_f-tresse.glb', base: '#fee4c9', k: 0.235, pos: [0, 1.492, 0.018], rot: [0, 0, 0] }],
+          bois: [{ genre: 'bois', nom: 'Branches à bourgeons', fichier: 'assets/peaux/fennal-bois-1.glb', couleurs: [1.281, -0.423, 0.058, -0.137, 1.042, 0.082, -0.263, 0.578, 0.486],
+            k: 0.1973, pos: [-0.203, 1.78, 0.03], rot: [0, 0, -15], miroir: true }],
+        },
+      } },
   };
   const AURAS = {
     braise: { style: 'ruban', couleur: [0.78, 0.06, 0.12], vif: [1, 0.45, 0.5], flamme: [1, 0.42, 0.06], flammeVif: [1, 0.86, 0.35], force: 0.55, rayon: 2.6, hauteur: 1, flammeches: 3 },
@@ -1144,6 +1160,7 @@ void main() {
           if ((t0 || a < 1) !== m.transparent) m.needsUpdate = true;
           m.transparent = t0 || a < 1; m.opacity = o0 * a;
         }
+        if (ex.contours) for (const c of ex.contours) c.visible = a > 0.98;
       }
     }
     liberer() {
@@ -1306,11 +1323,25 @@ void main() {
 
   let ECHELLE = 1;
   try { const q = parseFloat(new URLSearchParams(location.search).get('heros_echelle')); if (Number.isFinite(q) && q > 0.3 && q < 3) ECHELLE = q; } catch (e) {   }
-  async function chargerHeros(THREE, classe) {
+  async function chargerHeros(THREE, classe, opts) {
+    if (opts && opts.telephone != null) TEXTURE_MAX = opts.telephone ? 768 : 2048;
     const M = await charger(THREE, classe);
     const ex = M.prendre();
     ex.racine.visible = false;
     const h = { classe, M, ex, racine: ex.racine, appels: M.arme ? 2 : 1, triangles: M.triangles, os: new Map(ex.objets.filter(o => o.isBone).map(o => [o.name, o])), octets: M.octets, peau: true };
+    const C = (PEAUX[classe] || {}).compose;
+    if (C) {
+      try {
+        if (typeof IlePeauPieces !== 'object') await IleCharge.script('js/ile-peau-pieces.js');
+        const tel = !!(opts && opts.telephone);
+        const compo = IlePeauPieces.creer(THREE, M, ex, C, { textureMax: tel ? 512 : 1024, adresse, lire, rendu: tel ? { contour: false } : null });
+        await compo.composer(IlePeauPieces.choix(C, opts && opts.perso));
+        const liberer = M.liberer.bind(M);
+        M.liberer = () => { compo.liberer(); liberer(); };
+        M.octets += compo.octets;
+        Object.assign(h, { compo, triangles: compo.triangles, appels: compo.appels, octets: M.octets });
+      } catch (e) { M.liberer(); throw e; }
+    }
     h.porteur = (THREE2, parent) => porteur(THREE2 || THREE, h, parent);
     console.log(`Héros à peau : ${classe}, ${h.appels} appels, ${h.triangles} triangles, ${h.os.size} os`);
     return h;
@@ -1344,6 +1375,6 @@ void main() {
     return P;
   }
 
-  return { PEAUX, MONSTRES, AURAS, RENDUS, lire, charger, parc, composer, chargerHeros, porteur, Modele, Parc, get ECHELLE() { return ECHELLE; }, set ECHELLE(v) { ECHELLE = v; } };
+  return { PEAUX, MONSTRES, AURAS, RENDUS, lire, adresse, charger, parc, composer, chargerHeros, porteur, Modele, Parc, get ECHELLE() { return ECHELLE; }, set ECHELLE(v) { ECHELLE = v; } };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = IlePeau;

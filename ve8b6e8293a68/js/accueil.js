@@ -703,7 +703,9 @@ class Accueil {
     this.ecranVise = 'apparence';
     const b = this.b;
     const tetes = TETES.map((n, i) => `<button class="e-nu app-tete${b.look.tete === i ? ' on' : ''}" data-act="tete" data-i="${i}" role="radio" aria-checked="${b.look.tete === i}" aria-label="Coiffure : ${n}" title="${n}"><canvas class="app-tete__toile" data-i="${i}" aria-hidden="true"></canvas></button>`).join('');
-    const cases = Character.COULEURS.slice(0, Character.COULEURS_CHOISIES).map((k, i) => `<button class="e-nu app-case${this.slot === i ? ' on' : ''}" data-act="case" data-i="${i}" role="radio" aria-checked="${this.slot === i}" style="--k:${b.look.couleurs[i]}"><span class="app-case__teinte"></span><span class="app-case__nom">${COULEURS_NOMS[i]}</span></button>`).join('');
+    const zones = Character.zonesCouleurs(b.classId);
+    if (zones[this.slot] == null) this.slot = 0;
+    const cases = Character.COULEURS.slice(0, Character.COULEURS_CHOISIES).map((k, i) => zones[i] == null ? '' : `<button class="e-nu app-case${this.slot === i ? ' on' : ''}" data-act="case" data-i="${i}" role="radio" aria-checked="${this.slot === i}" style="--k:${b.look.couleurs[i]}"><span class="app-case__teinte"></span><span class="app-case__nom">${esc(zones[i])}</span></button>`).join('');
     return `<section class="ecran ecran--apparence" aria-label="Apparence">
       ${this.reprise ? this.tete('Change de classe', `${esc(this.reprise.name)}, niveau ${this.reprise.level}`, 'Retour') : this.tete('Crée ton personnage', b.invite ? 'partie d\'invité, sans sauvegarde' : this.libres(), 'Retour')}
       <div class="app-corps">
@@ -732,7 +734,7 @@ class Accueil {
             </div>
           </div>
           <div class="app-bloc app-ligne">
-            <div class="app-recents app-gamme" aria-label="Couleurs de la classe">${this.gammeHtml()}</div>
+            <div class="app-recents app-gamme" aria-label="Couleur de base">${this.gammeHtml()}</div>
             <div class="app-recents" aria-label="Couleurs récentes">${this.recentsHtml()}</div>
             <label class="app-hex"><span>#</span><input class="app-hex__champ" maxlength="6" spellcheck="false" autocomplete="off" aria-label="Couleur en hexadécimal" value="${b.look.couleurs[this.slot].slice(1)}"></label>
           </div>
@@ -781,11 +783,9 @@ class Accueil {
     return '<span class="app-titre">Récentes</span>' + (r.length ? r.map(c => `<button class="e-nu app-recent" data-act="recent" data-c="${c}" style="--k:${c}" aria-label="Couleur ${c}" title="${c}"></button>`).join('') : '<span class="app-recents__vide">aucune</span>');
   }
   gammeHtml() {
-    const p = DATA.palettes && DATA.palettes[this.b.classId];
-    const cle = Character.COULEURS[this.slot];
-    const l = p && p[cle];
-    if (!l) return '';
-    return '<span class="app-titre">De la classe</span>' + l.map(c => `<button class="e-nu app-recent" data-act="recent" data-c="${c}" style="--k:${c}" aria-label="Couleur ${c}" title="${c}"></button>`).join('');
+    const c = apparenceDeClasse(this.b.classId, this.b.gender).couleurs[this.slot];
+    if (!c) return '';
+    return `<span class="app-titre">De base</span><button class="e-nu app-recent" data-act="recent" data-c="${c}" style="--k:${c}" aria-label="Couleur de base ${c}" title="${c}"></button>`;
   }
   majGamme() { const box = this.ecranEl && this.ecranEl.querySelector('.app-gamme'); if (box) box.innerHTML = this.gammeHtml(); }
   retenirCouleur(c) {
@@ -885,9 +885,19 @@ class Accueil {
 
   paletteAleatoire() {
     const R = Math.random, pick = a => a[Math.floor(R() * a.length)];
-    const cl = DATA.classes[this.b.classId], H = hexHsv(cl.color).h;
+    const cl = DATA.classes[this.b.classId];
     const pal = DATA.palettes && DATA.palettes[cl.id];
-    if (pal) return { tete: Math.floor(R() * Character.TETES), couleurs: [pick(pal.peau), pick(pal.cheveux), pick(pal.tenue), pick(pal.tenue2), pick(pal.cape), pick(pal.details || [cl.color])] };
+    if (pal) {
+      const base = apparenceDeClasse(cl.id, this.b.gender).couleurs, zones = Character.zonesCouleurs(cl.id);
+      const t = R() * 360;
+      const libres = [pick(pal.peau), pick(pal.cheveux),
+        hsvHex(t, 0.35 + R() * 0.4, 0.3 + R() * 0.5),
+        hsvHex(t + (R() < 0.5 ? -40 : 40), 0.2 + R() * 0.3, 0.15 + R() * 0.3),
+        hsvHex(t + 180 + (R() - 0.5) * 60, 0.35 + R() * 0.35, 0.25 + R() * 0.45),
+        hsvHex(t + 150 + R() * 60, 0.4 + R() * 0.4, 0.45 + R() * 0.45)];
+      return { tete: Math.floor(R() * Character.TETES), couleurs: libres.map((c, i) => (zones[i] == null ? base[i] : c)) };
+    }
+    const H = hexHsv(cl.color).h;
     const peaux = ['#f6dcc4', '#f2d9bf', '#e8c4a0', '#d8a982', '#c68e6a', '#a86f4c', '#8a5536', '#6b3f28'];
     const cheveux = ['#1c1410', '#3a2a20', '#5a3a24', '#7a4a2a', '#b5542c', '#d8b070', '#e8d5a0', '#9a9aa6'];
     const t = H + (R() - 0.5) * 70;
@@ -1279,7 +1289,6 @@ function recommander(rep) {
 }
 
 const TETES = ['Mèche balayée', 'Queue haute', 'Hérissés', 'Chignon', 'Longs', 'Tresse', 'Capuche', 'Rasé, bandeau d\'or'];
-const COULEURS_NOMS = ['Peau', 'Cheveux', 'Tunique', 'Chausses', 'Cape', 'Détails'];
 
 function epithete(t) {
   const mot = String(t).split(/[\s-]/)[0];

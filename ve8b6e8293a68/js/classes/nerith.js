@@ -18,7 +18,7 @@ DATA.kit('nerith', [
     { id: 'pli_partage', icone: ['invisible', 'plus'], name: 'Pli Partagé', element: 'neutre', pa: 2, range: [0, 3], target: 'ally', affectsCaster: true, effects: [Object.assign(state('invisible', 1), { lingering: true })], cooldown: 3,
       desc: 'La Nerith ouvre le pli de Pénombre pour un autre : l\'allié visé, ou elle-même, disparaît jusqu\'à la fin de son prochain tour.' }],
   [{ reprend: 'piege_penombre', element: 'terre', los: false, desc: 'Un piège de pierre sombre, invisible pour l\'ennemi : il blesse et retire 1 PA. Chaque piège déclenché nourrit le Pli de la Nerith.',
-      effects: [{ type: 'trap', name: 'Piège de Pénombre', effects: [dmg(10, 13), pa(-1, 1)] }] },
+      effects: [{ type: 'trap', name: 'Piège de Pénombre', effects: [dmg(8, 11), pa(-1, 1)] }] },
     { id: 'piege_ardent', icone: ['piege', 'lune'], name: 'Piège Ardent', element: 'feu', pa: 2, range: [1, 3], los: false, target: 'free', effects: [{ type: 'trap', name: 'Piège Ardent', zone: cross1, effects: [dmg(5, 8), dot('feu', 1, 2)] }], maxPerTurn: 2,
       desc: 'Une braise enfouie sous un peu de pénombre : quand un ennemi y met le pied, elle éclate en croix ; chaque ennemi de la croix est brûlé, puis brûle encore deux tours.' }],
   [{ id: 'hantise', icone: ['silhouette', 'fleche'], name: 'Hantise', element: 'neutre', pa: 2, range: [2, 7], line: true, los: false, target: 'any', effects: [{ type: 'hantise' }], cooldown: 2,

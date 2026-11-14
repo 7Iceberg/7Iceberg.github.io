@@ -695,7 +695,7 @@
         progress: ['La Pointe de la Nacelle est à l\'extrême sud-ouest, au bout du sentier qui passe le Champ des Bornes.'],
         done: ['Tiens-toi au bord, ne regarde pas en bas. Enfin si, regarde : c\'est Orsane.', 'Quand tu veux redescendre ou remonter, tu me le dis. La Nacelle ne refuse personne que l\'Aube a éveillé.'],
       },
-      rewards: { xp: 0, fils: 20, items: [{ id: 'coque_de_l_eveil', count: 1 }] } },
+      rewards: { xp: 0, fils: 20 } },
   );
 
   C.quests.push(

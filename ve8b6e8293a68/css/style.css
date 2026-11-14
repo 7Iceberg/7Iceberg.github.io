@@ -109,12 +109,8 @@ html, body {
 }
 .scene-voile__fond {
   position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: radial-gradient(ellipse 70% 60% at 50% 46%, rgba(10, 9, 16, 0.35) 0%, rgba(10, 9, 16, 0.86) 100%),
-    linear-gradient(180deg, rgba(10, 9, 16, 0.55) 0%, rgba(10, 9, 16, 0.25) 40%, rgba(10, 9, 16, 0.92) 100%),
-    url("../assets/ui/medaille.webp") 50% 45% / cover no-repeat;
-  animation: scene-voile-fond 24s ease-in-out infinite alternate;
+  background: radial-gradient(ellipse 80% 70% at 50% 42%, #19233c 0%, #0f1728 46%, #080e1a 100%);
 }
-@keyframes scene-voile-fond { from { transform: scale(1); } to { transform: scale(1.08); } }
 .scene-voile-boite > :not(.scene-voile__fond) { position: relative; }
 .scene-voile__fil { width: min(220px, 60%); height: 2px; border-radius: 1px; background: linear-gradient(90deg, rgba(255, 138, 61, 0) 0%, #ffb37a 50%, rgba(255, 61, 127, 0) 100%); background-size: 200% 100%; animation: scene-voile-fil 1.6s ease-in-out infinite; }
 @keyframes scene-voile-fil { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }

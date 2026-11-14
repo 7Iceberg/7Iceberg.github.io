@@ -772,6 +772,12 @@ class World {
         dons.push({ id: d.id, count: 1, quete: q });
       }
     }
+    for (const d of Items.all ? Items.all() : []) {
+      if (!d || !d.lie || !d.succes || possede(d.id) || !(ch.achClaimed || []).includes(d.succes)) continue;
+      const a = Achievements.get(d.succes);
+      ch.addItem(d.id, 1);
+      dons.push({ id: d.id, count: 1, quete: { name: a ? a.name : d.succes } });
+    }
     if (dons.length) {
       this.emit('gain', { source: 'quete', items: dons.map(x => ({ id: x.id, count: 1 })) });
       for (const x of dons) this.toast(`${Items.get(x.id).name} : la récompense de « ${x.quete.name} », arrivée depuis. Elle est dans ton sac.`);

@@ -441,7 +441,7 @@ class Combat {
     e.telefragThisTurn = false;
     e.aubaineTour = false;
     if (e.alive) this.veylithsDebutTour(e);
-    if (e.turnsPlayed === 1 && e.aPassif('air_gk')) { e.pm += 1; this.log(`${e.name} est libre comme l'air : +1 PM.`); }
+    if (e.turnsPlayed <= 2 && e.aPassif('air_gk')) { e.pm += 1; this.log(`${e.name} est libre comme l'air : +1 PM.`); }
     if (this.gibierDe(e)) { e.pm += 1; this.log(`${e.name} sent le gibier : +1 PM.`, e.team); }
     e.turnStartPos = { x: e.x, y: e.y };
     if (e.alive) this.applyGlyphs(e);
@@ -1923,7 +1923,7 @@ class Combat {
     const avantRes = base * Math.max(0, mult) - (source && t.reduc ? t.reduc : 0) - (source && this.lastCrit && t.resCrit ? t.resCrit : 0);
     const out = this.scaleByResist(t, element, Math.max(0, avantRes));
     if (source && this.lastCrit) {
-      if (element === 'feu' && out > 0 && source.aPassif('feu_dk')) t.addEffect({ type: 'dot', element: 'feu', value: Math.max(1, Math.round(out * 0.05)), turns: 2 }, false);
+      if (element === 'feu' && out > 0 && source.aPassif('feu_dk')) t.addEffect({ type: 'dot', element: 'feu', value: Math.max(1, Math.round(out * 0.1)), turns: 2 }, false);
       if (source === this.actor && !source.aubaineTour && source.aPassif('eau_dk')) { source.aubaineTour = true; source.pm += 1; this.log(`${source.name} saisit l'aubaine : +1 PM.`); }
     }
     return out;

@@ -100,7 +100,13 @@ const Achievements = (() => {
     const got = { achievement: a, xp: 0, levels: 0, fils: r.fils || 0, items: [] };
     if (r.xp) { const g = ch.gainXp(r.xp); got.xp = g.gained; got.levels = g.levels; }
     if (r.fils) { ch.fils += r.fils; ch.counters.filsEarned += r.fils; }
-    for (const it of r.items || []) if (Items.get(it.id)) { ch.addItem(it.id, it.count || 1); got.items.push({ id: it.id, count: it.count || 1 }); }
+    const possede = id => ch.has(id) || Object.values(ch.equipment || {}).includes(id) || !!(ch.coffre && ch.coffre.items && ch.coffre.items[id]);
+    for (const it of r.items || []) {
+      const d = Items.get(it.id);
+      if (!d || (d.lie && possede(it.id))) continue;
+      const n = d.lie ? 1 : (it.count || 1);
+      ch.addItem(it.id, n); got.items.push({ id: it.id, count: n });
+    }
     got.cosmetiques = r.cosmetique && typeof Garderobe !== 'undefined' ? [].concat(r.cosmetique).flatMap(cid => Garderobe.donner(cid, 'succes:' + a.id)) : [];
     got.eclats = r.eclats && typeof Boutique === 'object' ? r.eclats : 0;
     got.fidelite = got.eclats ? Boutique.crediter(r.eclats, 'succès : ' + a.name) : [];

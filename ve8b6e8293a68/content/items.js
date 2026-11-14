@@ -1001,16 +1001,16 @@
   }
 
   C.items.push(
-    { id: 'coque_de_l_eveil', name: 'Coque de l\'Éveil', slot: 'veylith', level: 12, stats: {}, passif: 'veylith_sursaut', quete: 'ervane_descente',
-      lie: true, marque: true, source: 'quest', rarity: 'epique', image: 'assets/ui/objets/coque-eveil.png',
+    { id: 'coque_de_l_eveil', name: 'Coque de l\'Éveil', slot: 'veylith', level: 20, stats: {}, passif: 'veylith_sursaut', succes: 'de_l_eveil_aux_cimes', queteAvant: 'ervane_descente',
+      lie: true, marque: true, source: 'succes', rarity: 'epique', image: 'assets/ui/objets/coque-eveil.png',
       effet: 'Une fois par combat, au début de ton tour sous 20 % de ta vie : rend 20 % de la vie.',
       lore: 'Du calcaire des Mailles, poli au fil d\'or, là où un Grand Dragon a frôlé Ervane à l\'aube. Le peu de Veylor qu\'elle garde ne sert qu\'une fois par combat, au moment où tout lâche.' },
-    { id: 'coque_des_cimes', name: 'Coque des Cimes', slot: 'veylith', level: 40, stats: { sagesse: 40 }, passif: 'veylith_parade', quete: 'orsane_la_passe_au_crepuscule',
-      lie: true, marque: true, source: 'quest', rarity: 'epique', image: 'assets/ui/objets/coque-cimes.png',
+    { id: 'coque_des_cimes', name: 'Coque des Cimes', slot: 'veylith', level: 40, stats: { sagesse: 40 }, passif: 'veylith_parade', succes: 'ligne_orsane', queteAvant: 'orsane_la_passe_au_crepuscule',
+      lie: true, marque: true, source: 'succes', rarity: 'epique', image: 'assets/ui/objets/coque-cimes.png',
       effet: 'Un retrait de PA ou de PM subi donne +25 Esquive de ce genre jusqu\'à la fin de ton prochain tour (pas les deux à la fois).',
       lore: 'Taillée dans la pierre bleue de la Cité et cerclée d\'argent sur le col où un Grand Dragon s\'est posé. Ce qu\'elle retient n\'aime pas qu\'on lui prenne son élan.' },
-    { id: 'coque_des_forges', name: 'Coque des Forges', slot: 'veylith', level: 60, stats: {}, passif: 'veylith_souffle', quete: 'kaldum_la_forge_morte',
-      lie: true, marque: true, source: 'quest', rarity: 'epique', image: 'assets/ui/objets/coque-forges.png',
+    { id: 'coque_des_forges', name: 'Coque des Forges', slot: 'veylith', level: 60, stats: {}, passif: 'veylith_souffle', succes: 'ligne_kaldum', queteAvant: 'kaldum_la_forge_morte',
+      lie: true, marque: true, source: 'succes', rarity: 'epique', image: 'assets/ui/objets/coque-forges.png',
       effet: 'Tous les trois tours, au début de ton tour : rend 10 % de la vie.',
       lore: 'Du basalte de Kaldum serré dans des bandes de bronze, forgé là où un Grand Dragon a soufflé sur la Fonderie. Elle respire comme un soufflet : tous les trois tours, un peu de chaleur revient.' },
   );

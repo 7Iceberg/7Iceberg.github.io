@@ -31,7 +31,7 @@ DATA.kit('thalor', [
       desc: 'Le Thalor jette ce qu\'il tient sur une case libre : à l\'arrivée, les ennemis à deux cases sont blessés et attirés d\'une case vers le point de chute.' },
     { id: 'jet_de_crete', icone: ['jet', 'fleche'], name: 'Jet de Crête', element: 'air', pa: 3, range: [1, 1], effects: [dmg(13, 16), push(3)], maxPerTurn: 2,
       desc: 'Le Thalor soulève la cible et la jette dans le vent des crêtes : elle vole à trois cases (quatre s\'il est ancré), et un mur sur sa route lui fait payer le reste.' }],
-  [{ reprend: 'etreinte', effects: [dmg(20, 25), pa(-1, 1)], maxPerTurn: 2 },
+  [{ reprend: 'etreinte', effects: [dmg(18, 22), pa(-1, 1)], maxPerTurn: 2 },
     { id: 'serre_du_glacier', icone: ['griffe', 'goutte'], name: 'Serre du Glacier', element: 'eau', pa: 4, range: [1, 1], effects: [dmg(18, 22), pa(-1, 1)], lifestealIfState: { state: 'assise', pct: 40 }, maxPerTurn: 2,
       desc: 'Les bras du Thalor se referment comme un glacier sur la roche : la cible perd 1 PA. Ancré, il reprend 40 % des dégâts en PV.' }],
   ['transposition',

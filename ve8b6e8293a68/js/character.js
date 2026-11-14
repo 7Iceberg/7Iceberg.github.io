@@ -88,6 +88,10 @@ class Character {
   static get TETES() { return 8; }
   static get COULEURS() { return ['peau', 'cheveux', 'tenue', 'tenue2', 'cape', 'details']; }
   static get COULEURS_CHOISIES() { return 6; }
+  static zonesCouleurs(classId) {
+    const z = DATA.zonesCouleurs && DATA.zonesCouleurs[classId];
+    return z ? z.slice() : ['Peau', 'Cheveux', 'Tunique', 'Chausses', 'Cape', 'Détails'];
+  }
 
   static get NOM_MIN() { return 3; }
   static get NOM_MAX() { return 19; }
@@ -129,7 +133,9 @@ class Character {
     if (!Number.isInteger(tete) || tete < 0 || tete >= Character.TETES) { errors.push('apparence : tête'); tete = 0; }
     const list = Array.isArray(look.couleurs) ? look.couleurs : null;
     if (!list || list.length !== def.couleurs.length) errors.push('apparence : couleurs');
+    const zones = Character.zonesCouleurs(classId);
     const couleurs = def.couleurs.map((d, i) => {
+      if (zones[i] === null) return d;
       const c = list ? list[i] : null;
       if (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c)) return c.toLowerCase();
       if (list && i < list.length) errors.push(`apparence : couleur ${Character.COULEURS[i]}`);
