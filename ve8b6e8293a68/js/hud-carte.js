@@ -85,6 +85,12 @@ Object.assign(Hud.prototype, {
         if (!this.carteIleActive() && !this.carte3d) this.drawCarte();
         this.fen.render('carte');
       },
+      afaire: () => {
+        c.afaire = !c.afaire;
+        if (this.carte3d) this.carte3d.majReperes(true);
+        if (!this.carteIleActive() && !this.carte3d) this.drawCarte();
+        this.fen.render('carte');
+      },
       cats: () => { c.catsOuvertes = !c.catsOuvertes; this.fen.render('carte'); },
       volet: () => { c.ficheFermee = !c.ficheFermee; this.fen.render('carte'); },
       vue3d: () => {
@@ -231,7 +237,8 @@ Object.assign(Hud.prototype, {
         <img src="${CartePeinture.url(kind)}" alt="" width="22" height="22"><span>${esc(k.nom)}</span><b>${n[k.id] || 0}</b>
         <i class="vy-carte__oeil" aria-hidden="true">${off ? '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 9 6 9 6a17 17 0 0 1-2.6 3.2M6.3 7.6C4.2 9.2 3 12 3 12s4 6 9 6a9 9 0 0 0 3.7-.8"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M3 12s4-6 9-6 9 6 9 6-4 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.6"/></svg>'}</i></button></li>`;
     }).join('');
-    return `<button type="button" class="vy-carte__cats-tete" data-act="cats" aria-expanded="${!!c.catsOuvertes}"><span>Catégories</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><ul class="vy-carte__cats-liste">${lignes}</ul>`;
+    const afaire = `<button type="button" class="vy-carte__afaire" data-act="afaire" aria-pressed="${!!c.afaire}" title="Ne montrer que ce qui reste à faire : les quêtes, les relais pas encore enregistrés, les donjons pas encore finis, l'épreuve du Dojo et les avis du jour"><span>Pas encore fait</span><i class="vy-carte__bascule" aria-hidden="true"><i></i></i></button>`;
+    return `<button type="button" class="vy-carte__cats-tete" data-act="cats" aria-expanded="${!!c.catsOuvertes}"><span>Catégories</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><ul class="vy-carte__cats-liste">${lignes}</ul>${afaire}`;
   },
 
   compteCategories() {
@@ -239,9 +246,22 @@ Object.assign(Hud.prototype, {
     if (!I2) return out;
     let items = [];
     try { items = this.carteIleActive() ? this.donneesIle(true) : this.reperesMonde(this.donneesCarte(), true); } catch (e) { items = []; }
-    for (const it of items) { const k = I2.categorie(it.kind); if (k) out[k.id] = (out[k.id] || 0) + 1; }
+    for (const it of items) { if (this.dejaFait(it)) continue; const k = I2.categorie(it.kind); if (k) out[k.id] = (out[k.id] || 0) + 1; }
     return out;
   },
+  dejaFait(it) {
+    const c = this.carte, w = this.world, ch = w && w.ch;
+    if (!c || !c.afaire || !it || !ch) return false;
+    switch (it.kind) {
+      case 'offre': case 'rendre': case 'quete': return false;
+      case 'relais': return (ch.relays || []).includes(it.map);
+      case 'donjon': return !it.donjon || (ch.counters.dungeons || []).includes(it.donjon.id);
+      case 'dojo': return !(w.epreuveDojoDispo && w.epreuveDojoDispo());
+      case 'avis': return !(typeof Avis === 'object' && Avis.liste().some(a => Avis.statut(ch, a.id) !== 'rendu'));
+      default: return true;
+    }
+  },
+  cachee(it) { return this.masquee(it.kind) || this.dejaFait(it); },
   masquee(kind) {
     const c = this.carte, I2 = typeof CarteIcones === 'object' ? CarteIcones : null;
     if (!c || !c.masques || !c.masques.size || !I2) return false;
@@ -689,7 +709,7 @@ Object.assign(Hud.prototype, {
 
 
   reperesMonde(D, tout) {
-    if (!tout && this.carte && this.carte.masques && this.carte.masques.size) return this.reperesMonde(D, true).filter(it => !this.masquee(it.kind));
+    if (!tout && this.carte && ((this.carte.masques && this.carte.masques.size) || this.carte.afaire)) return this.reperesMonde(D, true).filter(it => !this.cachee(it));
     const items = [];
     for (const [id] of D.A.coords) {
       const def = D.ix.map.get(id).def, vu = D.seen.has(id);
@@ -1393,7 +1413,7 @@ Object.assign(Hud.prototype, {
 
 
   donneesIle(tout) {
-    if (!tout && this.carte && this.carte.masques && this.carte.masques.size) return this.donneesIle(true).filter(it => !this.masquee(it.kind));
+    if (!tout && this.carte && ((this.carte.masques && this.carte.masques.size) || this.carte.afaire)) return this.donneesIle(true).filter(it => !this.cachee(it));
     const w = this.world, ch = w.ch, P = w.plateau, out = [];
     if (!P) return out;
     const vu = new Set(ch.counters.maps);
