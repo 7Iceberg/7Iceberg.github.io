@@ -706,8 +706,14 @@ class Accueil {
     this.ecranVise = 'apparence';
     const b = this.b;
     const hp = herosPieces(b.classId, b.gender);
-    if (!hp && CLASSES_PIECES.includes(b.classId) && typeof IleCharge === 'object' && IleCharge.webgl && IleCharge.webgl() && !this.peauEnCours) {
-      this.peauEnCours = IleCharge.peauScript().then(() => { if (this.ecran === 'apparence' && herosPieces(this.b.classId, this.b.gender)) this.afficher('apparence', 0); }).catch(() => {   });
+    if (!hp && CLASSES_PIECES.includes(b.classId) && location.protocol !== 'file:' && typeof IleCharge === 'object' && IleCharge.webgl && IleCharge.webgl() && !this.peauEnCours) {
+      this.peauEnCours = IleCharge.peauScript().then(() => {
+        if (this.ecran !== 'apparence' || !herosPieces(this.b.classId, this.b.gender)) return;
+        const actif = document.activeElement && this.ecranEl && this.ecranEl.contains(document.activeElement) ? document.activeElement.id : '';
+        this.afficher('apparence', 0);
+        const f = actif && this.ecranEl.querySelector('#' + actif);
+        if (f) { f.focus({ preventScroll: true }); if (f.setSelectionRange && typeof f.value === 'string') f.setSelectionRange(f.value.length, f.value.length); }
+      }).catch(() => {   });
     }
     const tetes = TETES.map((n, i) => `<button class="e-nu app-tete${b.look.tete === i ? ' on' : ''}" data-act="tete" data-i="${i}" role="radio" aria-checked="${b.look.tete === i}" aria-label="Coiffure : ${n}" title="${n}"><canvas class="app-tete__toile" data-i="${i}" aria-hidden="true"></canvas></button>`).join('');
     const zones = Character.zonesCouleurs(b.classId);
@@ -784,6 +790,7 @@ class Accueil {
   }
   ongletsPieces(hp) {
     const C = hp.C, P = C.pieces || {}, o = this.ongletApp = this.ongletApp || 'visage', ch = this.choixPieces(hp);
+    const noms = C.noms || {}, sansCoiffure = !!(C.defaut && C.defaut.coiffure < 0);
     const img = (t, k) => `assets/figures/pieces/${hp.id}/${t}-${k}.jpg`;
     const cases = (t, L, cols) => `<div class="app-pieces" role="radiogroup" style="--cols:${cols}">${L.map(([k, nom]) => `<button class="e-nu app-piece${ch[t] === k ? ' on' : ''}" data-act="piece" data-t="${t}" data-i="${k}" role="radio" aria-checked="${ch[t] === k}"><span class="app-piece__vignette"><img src="${img(t, k)}" alt="" loading="lazy" onerror="this.remove()"></span><span class="app-piece__nom">${esc(nom)}</span></button>`).join('')}</div>`;
     const YEUX = { dessin: ['Dessinés', '#8f8f99'], ambre: ['Ambre', '#c98a2b'], noisette: ['Noisette', '#8a5a2b'], vert: ['Vert', '#5f8f4a'], bleu: ['Bleu', '#4f7fb8'], gris: ['Gris', '#8f9aa6'] };
@@ -791,10 +798,10 @@ class Accueil {
       visage: cases('visage', (C.visages || []).map((v, k) => [k, v.nom]).filter(([k]) => C.visages[k].image), 6)
         + `<span class="app-titre app-titre--sous">Yeux</span><div class="app-yeux" role="radiogroup" aria-label="Yeux">${Character.IRIS.map(i => `<button class="e-nu app-oeil${ch.iris === i ? ' on' : ''}" data-act="iris" data-i="${i}" role="radio" aria-checked="${ch.iris === i}"><span class="app-oeil__pastille" style="background:${YEUX[i][1]}"></span><span class="app-piece__nom">${YEUX[i][0]}</span></button>`).join('')}</div>`,
       marque: cases('marque', [[-1, 'Aucune']].concat((C.marques || []).map((m, k) => [k, m.nom])), 7),
-      coiffure: cases('coiffure', (P.coiffures || []).map((c, k) => [k, c.nom]), 6),
-      bois: cases('bois', [[-1, 'Aucun']].concat((P.bois || []).map((d, k) => [k, d.nom])), 7),
+      coiffure: cases('coiffure', (sansCoiffure ? [[-1, 'Aucune']] : []).concat((P.coiffures || []).map((c, k) => [k, c.nom])), sansCoiffure ? 7 : 6),
+      bois: cases('bois', (C.boisToujours ? [] : [[-1, 'Aucun']]).concat((P.bois || []).map((d, k) => [k, d.nom])), 7),
     };
-    const ONG = [['visage', 'Visage'], ['marque', 'Marque'], ['coiffure', 'Coiffure'], ['bois', 'Bois'], ['couleurs', 'Couleurs']];
+    const ONG = [['visage', 'Visage'], ['marque', 'Marque'], ['coiffure', noms.coiffure || 'Coiffure'], ['bois', noms.bois || 'Bois'], ['couleurs', 'Couleurs']];
     return `<div class="app-onglets" role="tablist">${ONG.map(([id, n]) => `<button class="e-nu app-onglet${o === id ? ' on' : ''}" data-act="onglet-app" data-o="${id}" role="tab" aria-selected="${o === id}">${n}</button>`).join('')}</div>
       ${Object.entries(panneaux).map(([id, h]) => `<div class="app-bloc app-panneau-pieces" data-panneau="${id}" ${o === id ? '' : 'hidden'}>${h}</div>`).join('')}`;
   }
@@ -1255,7 +1262,7 @@ Accueil.prototype.actions = {
     this.b.look = this.paletteAleatoire(); this.b.lookTouche = true;
     const hp = herosPieces(this.b.classId, this.b.gender);
     if (hp) { const R = n => Math.floor(Math.random() * n), C = hp.C, P = C.pieces || {}, vis = (C.visages || []).map((v, k) => k).filter(k => C.visages[k].image);
-      this.b.pieces = { visage: vis[R(vis.length)], marque: R((C.marques || []).length + 1) - 1, coiffure: R((P.coiffures || []).length), bois: R((P.bois || []).length + 1) - 1, iris: Character.IRIS[R(Character.IRIS.length)] };
+      this.b.pieces = { visage: vis[R(vis.length)], marque: R((C.marques || []).length + 1) - 1, coiffure: C.defaut && C.defaut.coiffure < 0 ? R((P.coiffures || []).length + 1) - 1 : R((P.coiffures || []).length), bois: C.boisToujours ? R((P.bois || []).length) : R((P.bois || []).length + 1) - 1, iris: Character.IRIS[R(Character.IRIS.length)] };
       this.rafraichirPieces(); }
     this.majApparence();
   },
@@ -1362,7 +1369,7 @@ function recommander(rep) {
   return best || DATA.defaultClass;
 }
 
-const CLASSES_PIECES = ['fennal'];
+const CLASSES_PIECES = ['fennal', 'nerith', 'thalor'];
 function herosPieces(classId, gender) {
   if (typeof IlePeau !== 'object' || !IlePeau.PEAUX) return null;
   const P = IlePeau.PEAUX[classId]; if (!P || !P.compose) return null;

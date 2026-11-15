@@ -117,7 +117,8 @@ const IlePeauPieces = (() => {
       if (!on) { g.setIndex(D.indexComplet); return 0; }
       if (!D.indexSansTete) {
         const w = this.poidsTete(), P = g.attributes.position, I = D.indexComplet.array, garde = [];
-        const dans = i => w(i) > 0.5 && P.getY(i) > K.y && !(K.nuque && P.getY(i) < K.nuque.y && P.getZ(i) < K.nuque.z);
+        const dv = [].concat(K.devant || []), devant = i => dv.some(d => P.getZ(i) > d.z && Math.abs(P.getX(i)) < d.x && P.getY(i) > d.y0 && P.getY(i) < d.y1);
+        const dans = i => (w(i) > 0.5 && P.getY(i) > K.y && !(K.nuque && P.getY(i) < K.nuque.y && P.getZ(i) < K.nuque.z)) || devant(i);
         for (let t = 0; t < I.length; t += 3) if (!(dans(I[t]) && dans(I[t + 1]) && dans(I[t + 2]))) garde.push(I[t], I[t + 1], I[t + 2]);
         D.indexSansTete = new this.THREE.BufferAttribute(new Uint32Array(garde), 1);
       }
@@ -268,7 +269,7 @@ const IlePeauPieces = (() => {
 
     oter(m) {
       if (!m) return;
-      for (const x of [].concat(m)) { if (x.parent) x.parent.remove(x); x.traverse(o => { if (o.material) o.material.dispose(); }); if (x.geometry) x.geometry.dispose(); if (x.userData.geoVisage) x.userData.geoVisage.dispose(); if (x.skeleton) x.skeleton.dispose(); }
+      for (const x of [].concat(m)) { if (x.userData.jumelle) this.oter(x.userData.jumelle); if (x.parent) x.parent.remove(x); x.traverse(o => { if (o.material) o.material.dispose(); }); if (x.geometry) x.geometry.dispose(); if (x.userData.geoVisage) x.userData.geoVisage.dispose(); if (x.skeleton) x.skeleton.dispose(); }
     }
 
     visageSurCorps(V, mat) {
@@ -334,14 +335,19 @@ const IlePeauPieces = (() => {
       const C = this.C, P = C.pieces, E = this.pieces;
       const ch = this.choix = Object.assign({ tete: P && P.tete ? 'piece' : 'corps', coiffure: -1, bois: -1, visage: -1, marque: -1, iris: 'dessin', cheveux: null }, choix);
       this.oterVisage();
-      this.oter(E.tete); this.oter(E.coiffure); this.oter(E.bois); this.oter(E.objets); E.tete = E.coiffure = E.bois = E.objets = null;
+      this.oter(E.tete); this.oter(E.coiffure); this.oter(E.bois); this.oter(E.objets); this.oter(E.fixes); E.tete = E.coiffure = E.bois = E.objets = E.fixes = null;
       if (this.corps && this.corps.geoVisage) { this.corps.geoVisage.dispose(); this.corps.geoVisage = null; }
       const enPiece = !!(P && P.tete) && ch.tete === 'piece';
       this.rendreCorps();
       this.cacherTete(enPiece);
       if (enPiece) E.tete = await this.poserPiece(P.tete);
-      if (P && ch.coiffure >= 0 && P.coiffures && P.coiffures[ch.coiffure]) E.coiffure = await this.poserPiece(P.coiffures[ch.coiffure]);
+      if (P && ch.coiffure >= 0 && P.coiffures && P.coiffures[ch.coiffure]) {
+        const d = P.coiffures[ch.coiffure];
+        E.coiffure = await this.poserPiece(d);
+        if (d.miroir) { const j = await this.poserPiece(d, true); j.material.dispose(); j.material = E.coiffure.material; E.coiffure.userData.jumelle = j; }
+      }
       if (P && ch.bois >= 0 && P.bois && P.bois[ch.bois]) { const d = P.bois[ch.bois]; E.bois = d.miroir ? [await this.poserPiece(d), await this.poserPiece(d, true)] : await this.poserPiece(d); }
+      if (P && P.fixes) { E.fixes = []; for (const d of P.fixes) E.fixes.push(await this.poserPiece(d)); }
       if (P && P.objets) { E.objets = []; for (const d of P.objets) { const m = await this.poserPiece(d); m.visible = false; E.objets.push(m); } }
       this.teindre(ch.cheveux);
       await this.poserVisage(ch.visage, ch.marque, ch.iris);
@@ -363,15 +369,17 @@ const IlePeauPieces = (() => {
     couleurs() {
       const R = this.rendu, K = this.clarteK, k = K * (R.actif && R.ombre ? APLAT : 1), D = this.corps, E = this.pieces;
       if (D) { D.mat0.color.copy(D.c0).multiplyScalar(K); if (D.toon) D.toon.color.copy(D.c0).multiplyScalar(K * APLAT); }
-      for (const m of [].concat(E.tete || [], E.bois || [])) { const t = m.userData.d.teinte || [1, 1, 1]; m.material.color.setRGB(t[0] * k, t[1] * k, t[2] * k); }
+      const kp = k * (this.C.clartePieces || K) / K;
+      for (const m of [].concat(E.tete || [], E.bois || [], E.fixes || [])) { const t = m.userData.d.teinte || [1, 1, 1], q = m === E.tete ? k : kp; m.material.color.setRGB(t[0] * q, t[1] * q, t[2] * q); }
       if (E.coiffure) { const kc = k * (this.C.clarteCheveux || K) / K, t = E.coiffure.userData.teinte; if (t) E.coiffure.material.color.copy(t).multiplyScalar(kc); else E.coiffure.material.color.setScalar(kc); }
       if (this.visage) this.visage.material.color.setScalar(k);
     }
     bilan() {
       const ex = this.ex, E = this.pieces, D = this.corps, mats = [ex.mesh.material], contours = [];
       let tri = ex.mesh.geometry.index.count / 3, appels = 1;
-      for (const m of [].concat(E.tete || [], E.coiffure || [], E.bois || [])) {
+      for (const m of [].concat(E.tete || [], E.coiffure || [], E.bois || [], E.fixes || [])) {
         mats.push(m.material); tri += m.geometry.index.count / 3; appels++;
+        if (m.userData.jumelle) { tri += m.geometry.index.count / 3; appels++; }
         for (const c of m.children) if (c.name === 'contour') { contours.push(c); tri += c.geometry.index.count / 3; appels++; }
       }
       if (D && D.contour) { contours.push(D.contour); tri += D.contour.geometry.index.count / 3; appels++; }
@@ -384,7 +392,7 @@ const IlePeauPieces = (() => {
     liberer() {
       const E = this.pieces, D = this.corps, ex = this.ex;
       this.oterVisage();
-      this.oter(E.tete); this.oter(E.coiffure); this.oter(E.bois); this.oter(E.objets); E.tete = E.coiffure = E.bois = E.objets = null;
+      this.oter(E.tete); this.oter(E.coiffure); this.oter(E.bois); this.oter(E.objets); this.oter(E.fixes); E.tete = E.coiffure = E.bois = E.objets = E.fixes = null;
       for (const p of this.lues.values()) p.then(l => { l.geo.dispose(); l.tex.dispose(); if (l.img && l.img.close) l.img.close(); }).catch(() => {});
       for (const t of this.corrigees.values()) t.dispose();
       this.lues.clear(); this.corrigees.clear(); this.images.clear();
@@ -416,7 +424,7 @@ const IlePeauPieces = (() => {
         if (Number.isInteger(pc.visage) && C.visages && C.visages[pc.visage] && C.visages[pc.visage].image) ch.visage = pc.visage;
         if (Number.isInteger(pc.marque) && (pc.marque === -1 || (C.marques && C.marques[pc.marque]))) ch.marque = pc.marque;
         if (Number.isInteger(pc.coiffure) && (pc.coiffure === -1 || (P.coiffures && P.coiffures[pc.coiffure]))) ch.coiffure = pc.coiffure;
-        if (Number.isInteger(pc.bois) && (pc.bois === -1 || (P.bois && P.bois[pc.bois]))) ch.bois = pc.bois;
+        if (Number.isInteger(pc.bois) && ((pc.bois === -1 && !C.boisToujours) || (P.bois && P.bois[pc.bois]))) ch.bois = pc.bois;
         if (typeof pc.iris === 'string' && pc.iris in IRIS) ch.iris = pc.iris;
       }
     } catch (e) {   }
