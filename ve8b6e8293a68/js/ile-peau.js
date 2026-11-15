@@ -129,7 +129,7 @@ const IlePeau = (() => {
     braise: { style: 'ruban', couleur: [0.78, 0.06, 0.12], vif: [1, 0.45, 0.5], flamme: [1, 0.42, 0.06], flammeVif: [1, 0.86, 0.35], force: 0.55, rayon: 2.6, hauteur: 1, flammeches: 3 },
   };
   for (const id of ['glym_aer', 'glym_ignis', 'glym_terra', 'glym_aqua', 'chateigne', 'grillon_ruche', 'scarabee_ruche', 'mante_chene'])
-    if (PEAUX[id]) PEAUX[id].carte = PEAUX[id].fichier.replace(/\.glb$/, '-carte.glb');
+    if (PEAUX[id]) { PEAUX[id].carte = PEAUX[id].fichier.replace(/\.glb$/, '-carte.glb'); PEAUX[id].carteTel = PEAUX[id].fichier.replace(/\.glb$/, '-carte-tel.glb'); }
   const MONSTRES = ['filin', 'lampignard', 'glym_aer', 'glym_ignis', 'glym_terra', 'glym_aqua', 'chateigne', 'grillon_ruche', 'scarabee_ruche', 'mante_chene'];
   const TAU_CAP = 0.08, TAU_MARCHE = 0.12, TAU_GESTE = 0.08;
 
@@ -783,7 +783,7 @@ void main() {
       const couronne = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.82, R * 0.9, H, 48, 1, true), mat(FS_COURONNE));
       couronne.position.y = sol + H / 2; couronne.frustumCulled = false; couronne.renderOrder = 2;
       groupe.add(couronne); out.mats.push(couronne.material);
-    } else if (!eau) {
+    } else if (!eau && A.flammes > 0) {
       const N = A.flammes;
       const prof = [];
       for (let k = 0; k <= 10; k++) { const y = k / 10; prof.push(new THREE.Vector2(Math.max(0.001, 0.42 * Math.sin(Math.PI * Math.pow(y, 0.6)) * Math.pow(1 - y, 0.45)), y)); }
@@ -801,7 +801,7 @@ void main() {
       flammes.frustumCulled = false; flammes.renderOrder = 3;
       groupe.add(flammes);
       out.flammes = { mesh: flammes, N, mat: mf, graines: Array.from({ length: N }, (_, k) => ((k * 0.61803) % 1)), m: new THREE.Matrix4(), q: new THREE.Quaternion(), v: new THREE.Vector3(), e: new THREE.Vector3(), r: new THREE.Euler() };
-    } else {
+    } else if (eau) {
       const N = A.bulles || 14;
       const c = A.couleur || [0.15, 0.68, 1];
       const mb = new THREE.MeshPhongMaterial({ color: new THREE.Color(c[0] * 0.6, c[1] * 0.75, c[2]), emissive: new THREE.Color(c[0] * 0.2, c[1] * 0.35, c[2] * 0.55), specular: new THREE.Color(0.9, 0.97, 1), shininess: 90, transparent: true, opacity: 0.42, depthWrite: false });
@@ -1259,7 +1259,7 @@ void main() {
   async function charger(THREE, nom, carte) {
     const P = Object.assign({ nom }, PEAUX[nom]);
     const compte = { octets: 0 };
-    const glb = await lire(carte && P.carte ? P.carte : P.fichier);
+    const glb = await lire(carte === 'tel' && P.carteTel ? P.carteTel : carte && P.carte ? P.carte : P.fichier);
     const M = new Modele(THREE, glb, P, compte);
     if (P.arme) {
       try {
@@ -1292,7 +1292,7 @@ void main() {
     emprise(s) { const P = this.reglages(s.modele); return P ? (s.scale || 1) * P.ombre * 1.6 : 1; }
     appeler(id) {
       if (this.charges.has(id)) return;
-      this.charges.set(id, charger(this.THREE, id, true).then(M => { if (this.attente.has(id)) { this.modeles[id] = M; this.attente.delete(id); } else M.liberer(); this.charges.delete(id); })
+      this.charges.set(id, charger(this.THREE, id, this.opts.telephone ? 'tel' : true).then(M => { if (this.attente.has(id)) { this.modeles[id] = M; this.attente.delete(id); } else M.liberer(); this.charges.delete(id); })
         .catch(e => { console.warn('Peau du monstre ' + id + ' indisponible : ' + e.message); this.attente.delete(id); this.charges.delete(id); }));
     }
     debut(now, camera) {
@@ -1382,7 +1382,7 @@ void main() {
     const aLaDemande = ids.filter(id => PEAUX[id] && PEAUX[id].gabarit === 'libre');
     for (const id of ids) {
       if (aLaDemande.includes(id)) continue;
-      try { modeles[id] = await charger(THREE, id, true); } catch (e) { console.warn('Peau du monstre ' + id + ' indisponible : ' + e.message); }
+      try { modeles[id] = await charger(THREE, id, opts && opts.telephone ? 'tel' : true); } catch (e) { console.warn('Peau du monstre ' + id + ' indisponible : ' + e.message); }
     }
     return Object.keys(modeles).length || aLaDemande.length ? new Parc(THREE, modeles, Object.assign({}, opts, { aLaDemande }), aLaDemande) : null;
   }

@@ -431,7 +431,7 @@ Object.assign(Hud.prototype, {
     }
     L.push(li('Poids', `${Items.poids(d)} pod${Items.poids(d) > 1 ? 's' : ''}`));
     const chM = this.world && this.world.ch, joursM = d.marque && chM && chM.joursDeLien ? chM.joursDeLien(d.id) : 0;
-    const revente = d.marque ? (joursM > 0 ? `liée à toi encore ${joursM} jour${joursM > 1 ? 's' : ''} ; ensuite elle se vend à l'hôtel des ventes et s'échange` : chM && chM.marqueLibre && chM.marqueLibre(d.id) ? 'libre : elle se vend à l\'hôtel des ventes et s\'échange, jamais chez un marchand' : 'liée six mois à qui la gagne ; ensuite elle se vend à l\'hôtel des ventes et s\'échange')
+    const revente = d.marque ? (joursM > 0 ? `lié à toi encore ${joursM} jour${joursM > 1 ? 's' : ''} ; ensuite il se vend à l'hôtel des ventes et s'échange` : chM && chM.marqueLibre && chM.marqueLibre(d.id) ? 'libre : il se vend à l\'hôtel des ventes et s\'échange, jamais chez un marchand' : 'lié six mois à qui le gagne ; ensuite il se vend à l\'hôtel des ventes et s\'échange')
       : d.lie ? 'lié au personnage : ni vendu ni échangé' : `${Items.sellPrice(d)} Dragmes, chez un marchand`;
     L.push(li('Revente', revente));
     return `<ul class="vy-inv__liste">${L.join('')}</ul>`;

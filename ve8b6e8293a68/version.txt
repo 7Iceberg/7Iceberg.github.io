@@ -1,2 +1,2 @@
-Veylan, version du jeu : 5b0995dd8d817ee47472966060891b605285e246 (main), déploiement du 15/11/2026 à 16h15 UTC
-Version des fichiers : 20261115161524
+Veylan, version du jeu : f6f7a16806ee5bba3204671ff6db94e0a6f9165d (main), déploiement du 15/11/2026 à 17h40 UTC
+Version des fichiers : 20261115174044

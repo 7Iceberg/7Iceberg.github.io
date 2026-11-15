@@ -299,7 +299,7 @@ const Save = (() => {
       if (o.marques && typeof o.marques === 'object') for (const [id, m] of Object.entries(o.marques)) {
         const d = Items.get(id);
         if (d && d.marque && m && typeof m === 'object' && isInt(m.jour, 0, 1000000)) marques[id] = m.achat === true ? { jour: m.jour, achat: true } : { jour: m.jour };
-        else bad(`marque ${id}`);
+        else bad(`veylith ${id}`);
       }
       for (const lieu of [o.inventory, o.coffre.items, Object.fromEntries(Object.values(o.equipment).filter(Boolean).map(id => [id, 1]))]) for (const id of Object.keys(lieu)) {
         const d = Items.get(id);

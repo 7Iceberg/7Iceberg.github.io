@@ -276,8 +276,9 @@ const IleGlb = (() => {
   }
 
   const hache = (x, z, k) => { const v = Math.sin(x * 12.9898 + z * 78.233 + k * 37.719) * 43758.5453; return v - Math.floor(v); };
+  let tuileSemis = 60;
   function cuire(fusionS, M, e, a, k, enf, kx = 1, ky = 1) {
-    const ca = Math.cos(a), sa = Math.sin(a), cle = tuileDe(e[12], e[14]) + '|' + (M.atlas || 0);
+    const ca = Math.cos(a), sa = Math.sin(a), cle = Math.floor(e[12] / tuileSemis) + ':' + Math.floor(e[14] / tuileSemis) + '|' + (M.atlas || 0);
     let f = fusionS.get(cle);
     if (!f) { f = { pos: [], nrm: [], uv: [], idx: [], n: 0, bornes: [], atlas: M.atlas || 0 }; fusionS.set(cle, f); }
     const P = M.pos, N = M.nrm, U = M.uv, d = f.n;
@@ -810,6 +811,7 @@ float bruitR(vec3 x) {
     groupe.name = 'mo_monde';
     const cache = new Map();
     const fusion = new Map(), fusionS = new Map();
+    tuileSemis = opts && opts.tuileSemis > 0 ? opts.tuileSemis : TUILE;
     const ronds = opts && opts.semis && opts.arbres ? preparerRonds(opts.arbres) : null;
     let appels = 0, triangles = 0, caches = 0;
     for (const [mi, matsTous] of instances(THREE, G)) {
@@ -882,7 +884,7 @@ float bruitR(vec3 x) {
     const glb = await lire(src);
     const semis = opts && opts.semis;
     const T = ile.T, cacher = T && typeof T.closA === 'function' ? (u, v) => T.closA(u, v) : null;
-    const groupe = construire(THREE, glb, { semis, arbres: opts && opts.arbres, cacher, facteurSemis: T && T.facteurSemis > 0 ? T.facteurSemis : 1, teinte: ile.nuit && typeof ile.nuit.teinteGlb === 'function' ? (u, v, nom, t) => ile.nuit.teinteGlb(u, v, nom, t) : null });
+    const groupe = construire(THREE, glb, { semis, arbres: opts && opts.arbres, cacher, tuileSemis: ile.telephone ? TUILE / 3 : TUILE / 1.5, facteurSemis: T && T.facteurSemis > 0 ? T.facteurSemis : 1, teinte: ile.nuit && typeof ile.nuit.teinteGlb === 'function' ? (u, v, nom, t) => ile.nuit.teinteGlb(u, v, nom, t) : null });
     groupe.userData.source = src;
     for (const o of [...groupe.children]) if (/^mo_eau/.test(o.name)) { groupe.remove(o); if (o.geometry) o.geometry.dispose(); }
     for (const o of [...groupe.children]) if (/^mo_falaise/.test(o.name)) { groupe.remove(o); if (o.geometry) o.geometry.dispose(); }
