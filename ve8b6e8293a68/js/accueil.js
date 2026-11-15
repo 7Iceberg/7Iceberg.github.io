@@ -233,9 +233,10 @@ class Accueil {
     if (!ch || !b) return;
     const p = ch.peutBoirePotionClasse();
     if (!p.ok) { this.erreur(p.reason); return; }
+    const bue = ch.potionClasseBuvable();
     const r = ch.changerDeClasse(b.classId, { gender: b.gender, look: this.persoBrouillon().look });
     if (!r.ok) { this.erreur(r.reason); return; }
-    ch.removeItem(Character.POTION_CLASSE, 1);
+    ch.removeItem(bue.id, 1);
     if (!Save.write(ch)) { this.erreur('Impossible d\'enregistrer : le navigateur refuse le stockage.'); return; }
     this.reprise = null;
     this.demarrer(ch);
@@ -442,7 +443,7 @@ class Accueil {
       </div>
       <div class="perso-estrade__pied">
         <button class="vy-bouton vy-bouton--primaire vy-bouton--grand perso-jouer" data-act="jouer" data-focus>Jouer</button>
-        ${sel.potionClasse ? `<button class="vy-bouton perso-classe" data-act="changer-classe" data-uid="${sel.uid}" title="La Potion de changement de classe attend dans son sac">Changer de classe</button>` : ''}
+        ${sel.potionClasse ? `<button class="vy-bouton perso-classe" data-act="changer-classe" data-uid="${sel.uid}" title="De quoi changer de classe attend dans son sac">Changer de classe</button>` : ''}
         ${lieu ? `<small class="perso-estrade__lieu">${esc(lieu.name)}${zone ? ` · ${esc(zone.name)}` : ''}</small>` : ''}
       </div>
     </div>`;

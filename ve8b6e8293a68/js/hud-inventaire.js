@@ -430,7 +430,10 @@ Object.assign(Hud.prototype, {
       if (d.node) L.push(li('Se récolte', 'sur les cartes'));
     }
     L.push(li('Poids', `${Items.poids(d)} pod${Items.poids(d) > 1 ? 's' : ''}`));
-    L.push(li('Revente', d.lie ? 'lié au personnage : ni vendu ni échangé' : `${Items.sellPrice(d)} Dragmes, chez un marchand`));
+    const chM = this.world && this.world.ch, joursM = d.marque && chM && chM.joursDeLien ? chM.joursDeLien(d.id) : 0;
+    const revente = d.marque ? (joursM > 0 ? `liée à toi encore ${joursM} jour${joursM > 1 ? 's' : ''} ; ensuite elle se vend à l'hôtel des ventes et s'échange` : chM && chM.marqueLibre && chM.marqueLibre(d.id) ? 'libre : elle se vend à l\'hôtel des ventes et s\'échange, jamais chez un marchand' : 'liée six mois à qui la gagne ; ensuite elle se vend à l\'hôtel des ventes et s\'échange')
+      : d.lie ? 'lié au personnage : ni vendu ni échangé' : `${Items.sellPrice(d)} Dragmes, chez un marchand`;
+    L.push(li('Revente', revente));
     return `<ul class="vy-inv__liste">${L.join('')}</ul>`;
   },
 

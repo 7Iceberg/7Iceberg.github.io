@@ -595,7 +595,7 @@ class Hud {
       const lignes = Avis.ECHANGES.map(e => {
         const d = Items.get(e.id);
         if (!d) return '';
-        const info = d.sub === 'parchemin' ? `+${d.value} ${esc((Items.STAT_LABEL && Items.STAT_LABEL[d.stat]) || d.stat)} pour toujours` : d.heal ? `rend ${d.heal >= 999 ? 'tous les' : d.heal} PV` : esc(d.lore || '');
+        const info = e.sous ? esc(e.sous) : d.sub === 'parchemin' ? `+${d.value} ${esc((Items.STAT_LABEL && Items.STAT_LABEL[d.stat]) || d.stat)} pour toujours` : d.heal ? `rend ${d.heal >= 999 ? 'tous les' : d.heal} PV` : esc(d.lore || '');
         return Hud.svcLigne(d, { sous: info, gestes: `<button class="vy-bouton vy-bouton--petit vy-bouton--primaire" data-act="techanger" data-id="${e.id}" ${n >= e.sceaux ? '' : 'disabled'}>${e.sceaux} Insigne${e.sceaux > 1 ? 's' : ''}</button>` });
       }).join('');
       return `<div class="vy-svc__barre"><span class="vy-svc__note">On gagne les Insignes aux avis de recherche, à la tour de la Garde sur la Place.</span><span class="vy-svc__bourse" title="Tes Insignes de la Garde">${ins ? Hud.picto(ins) : ''}<b>${n}</b><small>Insigne${n > 1 ? 's' : ''}</small></span></div><p class="vy-svc__note">Tu as ${n} Insigne${n > 1 ? 's' : ''} de la Garde.</p><div class="vy-svc__liste">${lignes}</div>`;
@@ -695,8 +695,8 @@ class Hud {
     if (this.fen) for (const id of ['carac', 'sorts', 'sac', 'bestiaire']) if (this.fen.isOpen(id)) this.fen.render(id);
   }
 
-  openPotionClasse() {
-    const ch = this.world.ch;
+  openPotionClasse(d) {
+    const ch = this.world.ch, nom = d && d.def && d.def.name ? d.def.name : 'Potion de changement de classe';
     if (ch.invite) { this.toast('Une partie d\'invité ne se garde pas : crée ton personnage pour changer de classe.'); return; }
     this.actions.potionClasseOk = () => {
       if (!Save.write(ch)) { this.toast('Impossible d\'enregistrer : le navigateur refuse le stockage.'); return; }
@@ -705,7 +705,7 @@ class Hud {
       location.reload();
     };
     this.actions.potionClasseNon = () => this.closePanel();
-    this.openPanel('classe', 'Potion de changement de classe', `<p>Tu passes à l'écran des personnages pour choisir ta nouvelle classe, ton genre, ta coiffure et tes couleurs. La potion n'est bue qu'une fois le choix validé.</p>
+    this.openPanel('classe', nom, `<p>Tu passes à l'écran des personnages pour choisir ta nouvelle classe, ton genre, ta coiffure et tes couleurs. ${d && d.id === Character.PHILTRE_CLASSE ? 'Le philtre n\'est bu' : 'La potion n\'est bue'} qu'une fois le choix validé.</p>
       <ul class="vy-classe-regles"><li><b>Tu gardes</b> ton niveau et ton XP, ton sac et ton équipement, tes Dragmes, tes métiers, tes quêtes faites, tes succès, tes titres et tes parchemins appris.</li>
       <li><b>Te sont rendus</b> tes points de caractéristiques et tes Sceaux (replacés seuls si la répartition automatique est cochée) et tes variantes de sorts. Une quête de classe en cours est abandonnée : celle de ta nouvelle classe se prend au Temple des Voies.</li></ul>
       <div class="row"><button data-act="potionClasseOk" class="vy-bouton vy-bouton--primaire">Choisir ma nouvelle classe</button><button data-act="potionClasseNon" class="vy-bouton">Plus tard</button></div>`);

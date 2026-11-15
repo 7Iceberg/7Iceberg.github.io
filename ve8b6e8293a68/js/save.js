@@ -37,6 +37,7 @@ const Save = (() => {
   ALLOWED.add('monture');
   ALLOWED.add('profil');
   ALLOWED.add('sceaux');
+  ALLOWED.add('marques');
   ALLOWED.add('placements');
   ALLOWED.add('bonusDefi');
   ALLOWED.add('repos');
@@ -294,7 +295,18 @@ const Save = (() => {
     {
       let vus = new Set();
       const lie = id => { const d = Items.get(id); return d && d.lie && (d.quete || d.succes) ? d : null; };
-      const merite = d => d.succes ? (achs.includes(d.succes) || (!!d.queteAvant && quests.done.includes(d.queteAvant))) : quests.done.includes(d.quete);
+      const marques = {}, jourJ = Math.floor(Date.now() / 86400000);
+      if (o.marques && typeof o.marques === 'object') for (const [id, m] of Object.entries(o.marques)) {
+        const d = Items.get(id);
+        if (d && d.marque && m && typeof m === 'object' && isInt(m.jour, 0, 1000000)) marques[id] = m.achat === true ? { jour: m.jour, achat: true } : { jour: m.jour };
+        else bad(`marque ${id}`);
+      }
+      for (const lieu of [o.inventory, o.coffre.items, Object.fromEntries(Object.values(o.equipment).filter(Boolean).map(id => [id, 1]))]) for (const id of Object.keys(lieu)) {
+        const d = Items.get(id);
+        if (d && d.marque && !marques[id]) marques[id] = { jour: jourJ };
+      }
+      o.marques = marques;
+      const merite = d => (marques[d.id] && marques[d.id].achat === true) || (d.succes ? (achs.includes(d.succes) || (!!d.queteAvant && quests.done.includes(d.queteAvant))) : quests.done.includes(d.quete));
       for (const sl of Object.keys(o.equipment)) {
         const d = lie(o.equipment[sl]);
         if (!d) continue;
@@ -307,6 +319,7 @@ const Save = (() => {
         if (lieu[id] > 1) { bad(`objet lié ${id}`); lieu[id] = 1; }
         vus.add(id);
       }
+      for (const id of Object.keys(marques)) { const d = Items.get(id); if (d && (d.quete || d.succes) && !merite(d)) delete marques[id]; }
     }
     const earned = new Set(achs.map(id => (Achievements.get(id).rewards || {}).title).filter(Boolean));
     for (const t of Factions.titles(o.faction)) earned.add(t);
@@ -484,8 +497,10 @@ const Save = (() => {
       const v = o ? validate(o.character) : null;
       if (!v || !v.data) continue;
       const d = v.data;
-      const pc = typeof Character === 'function' && Character.POTION_CLASSE, pd = pc && Items.get(pc);
-      const potionClasse = !!(pd && d.inventory && d.inventory[pc] > 0 && !(pd.niveauMax && d.level > pd.niveauMax));
+      const potionClasse = typeof Character === 'function' && [Character.POTION_CLASSE, Character.PHILTRE_CLASSE].some(pc => {
+        const pd = pc && Items.get(pc);
+        return !!(pd && d.inventory && d.inventory[pc] > 0 && !(pd.niveauMax && d.level > pd.niveauMax));
+      });
       out.push({ uid, name: d.name, classId: d.classId, level: d.level, gender: d.gender, voie: d.voie, look: d.look, at: Number(o.t) || 0, tampered: forged(o) || v.errors.length > 0 || !!d.flags.tampered, potionClasse });
     }
     return out;

@@ -516,6 +516,8 @@
       lore: 'Un fil blanc dans une fiole. On la boit, on tire, on se retrouve au Relais.' },
     { id: 'potion_changement_classe', name: 'Potion de changement de classe', kind: 'potion', level: 1, heal: 0, effect: 'classe', niveauMax: 19, lie: true, price: 1,
       lore: 'Un liquide sans couleur qui prend celle de la Voie qu\'on regarde en la buvant. Elle ne sert plus après le niveau 19.' },
+    { id: 'philtre_des_voies', name: 'Philtre des Voies', kind: 'potion', level: 20, heal: 0, effect: 'classe', lie: true, price: 1,
+      lore: 'Neuf gouttes, une par statue du Temple. Qui le boit regarde une autre Voie et la prend, à tout niveau.' },
     { id: 'potion_de_veille', name: 'Potion de Veille', kind: 'potion', level: 29, heal: 999, price: 60,
       lore: 'Lueur de Veilloche et herbe de veille. Elle rend tous les PV et un peu de courage.' },
   );

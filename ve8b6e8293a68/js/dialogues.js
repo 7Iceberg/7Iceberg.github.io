@@ -467,7 +467,7 @@ class Conversation {
     const w = this.hud.world;
     if (!w.prendrePotionClasse()) { this.retour(); return; }
     this.ctx = w.dialogueContext(this.ctx.npc);
-    this.page = { kind: 'classe-recue', lines: ['Avant le niveau 20, ça ne coûte rien. Après, ta Voie est la tienne.'], i: 0, note: 'Reçu : Potion de changement de classe. Bois-la depuis ton sac : le choix se fait à l\'écran des personnages.' };
+    this.page = { kind: 'classe-recue', lines: ['Avant le niveau 20, ça ne coûte rien. Après, le Temple des Voies garde un philtre pour qui a servi la Garde.'], i: 0, note: 'Reçu : Potion de changement de classe. Bois-la depuis ton sac : le choix se fait à l\'écran des personnages.' };
     this.montrerPage();
   }
 

@@ -65,6 +65,7 @@ const Avis = (() => {
     { id: 'parchemin_terra', sceaux: 3 }, { id: 'parchemin_ignis', sceaux: 3 },
     { id: 'parchemin_aqua', sceaux: 3 }, { id: 'parchemin_aer', sceaux: 3 },
     { id: 'potion_de_veille', sceaux: 2 }, { id: 'potion_de_relais', sceaux: 1 },
+    { id: 'philtre_des_voies', sceaux: 20, sous: 'change de classe à tout niveau ; tu gardes ton niveau, ton sac et tes quêtes' },
   ];
   function echanger(ch, id) {
     const e = ECHANGES.find(x => x.id === id);

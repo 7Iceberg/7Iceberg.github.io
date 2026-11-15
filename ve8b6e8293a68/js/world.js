@@ -769,13 +769,13 @@ class World {
       const q = Quests.get(qid);
       for (const it of (q && q.rewards && q.rewards.items) || []) {
         const d = Items.get(it.id);
-        if (!d || !d.lie || d.quete !== qid || possede(d.id)) continue;
+        if (!d || !d.lie || d.quete !== qid || possede(d.id) || (ch.marques && ch.marques[d.id])) continue;
         ch.addItem(d.id, 1);
         dons.push({ id: d.id, count: 1, quete: q });
       }
     }
     for (const d of Items.all ? Items.all() : []) {
-      if (!d || !d.lie || !d.succes || possede(d.id) || !(ch.achClaimed || []).includes(d.succes)) continue;
+      if (!d || !d.lie || !d.succes || possede(d.id) || (ch.marques && ch.marques[d.id]) || !(ch.achClaimed || []).includes(d.succes)) continue;
       const a = Achievements.get(d.succes);
       ch.addItem(d.id, 1);
       dons.push({ id: d.id, count: 1, quete: { name: a ? a.name : d.succes } });

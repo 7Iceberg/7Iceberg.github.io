@@ -38,6 +38,7 @@ class Character {
     this.ensemblesLook = typeof Garderobe !== 'undefined' ? Garderobe.nettoyerLooks(this.ensemblesLook).looks : (Array.isArray(this.ensemblesLook) ? this.ensemblesLook.slice(0, 5) : []);
     const main = this.classDef.mainStat;
     this.scrolls = Object.assign({ vita: 0, sagesse: 0, force: 0, intel: 0, chance: 0, agi: 0 }, this.scrolls || {});
+    if (!this.marques || typeof this.marques !== 'object') this.marques = {};
     if (base && !(this.v >= 3)) { this.resetStats(); if (this.autoStats) this.autoAllocate(); }
     else if (base && !(this.v >= 2) && this.autoStats && this.stats[main] === 4 && this.stats.vita > 12) {
       const spent = Object.keys(this.stats).reduce((n, k) => n + (k === 'vita' ? Math.floor(this.stats[k] / 3) : this.stats[k]), 0);
@@ -401,10 +402,18 @@ class Character {
   }
 
   static get POTION_CLASSE() { return 'potion_changement_classe'; }
+  static get PHILTRE_CLASSE() { return 'philtre_des_voies'; }
+  potionClasseBuvable() {
+    for (const id of [Character.POTION_CLASSE, Character.PHILTRE_CLASSE]) {
+      const d = Items.get(id);
+      if (d && d.effect === 'classe' && this.has(id) && !(d.niveauMax && this.level > d.niveauMax)) return d;
+    }
+    return null;
+  }
   peutBoirePotionClasse(d) {
-    d = d || Items.get(Character.POTION_CLASSE);
-    if (!d || !this.has(d.id)) return { ok: false, reason: 'Il te faut une Potion de changement de classe.' };
-    if (d.niveauMax && this.level > d.niveauMax) return { ok: false, reason: `Cette potion ne sert plus après le niveau ${d.niveauMax}.` };
+    d = d || this.potionClasseBuvable() || [Character.PHILTRE_CLASSE, Character.POTION_CLASSE].map(id => Items.get(id)).find(x => x && this.has(x.id)) || Items.get(Character.POTION_CLASSE);
+    if (!d || !this.has(d.id)) return { ok: false, reason: 'Il te faut une Potion de changement de classe, ou un Philtre des Voies après le niveau 19.' };
+    if (d.niveauMax && this.level > d.niveauMax) return { ok: false, reason: `Cette potion ne sert plus après le niveau ${d.niveauMax} : le Temple des Voies échange un Philtre des Voies.` };
     if (this.dungeon) return { ok: false, reason: 'Pas au milieu d\'un donjon.' };
     return { ok: true };
   }
@@ -571,7 +580,30 @@ class Character {
   surcharge() { return this.pods() > this.derived().podsMax; }
   count(id) { return this.inventory[id] || 0; }
   has(id, n) { return this.count(id) >= (n || 1); }
-  addItem(id, n) { this.inventory[id] = this.count(id) + (n || 1); return this.inventory[id]; }
+  addItem(id, n) {
+    this.inventory[id] = this.count(id) + (n || 1);
+    const d = typeof Items === 'object' && Items.get ? Items.get(id) : null;
+    if (d && d.marque) { const M = this.marques || (this.marques = {}); if (!M[id]) M[id] = { jour: Character.jourCourant() }; }
+    return this.inventory[id];
+  }
+
+  static get LIEN_MARQUE_JOURS() { return 183; }
+  static jourCourant(t) { return Math.floor((t == null ? Date.now() : t) / 86400000); }
+  marqueLieeJusqua(id) {
+    const m = this.marques && this.marques[id];
+    return m && !m.achat && Number.isInteger(m.jour) ? m.jour + Character.LIEN_MARQUE_JOURS : null;
+  }
+  marqueLibre(id, jour) {
+    const d = typeof Items === 'object' ? Items.get(id) : null, m = this.marques && this.marques[id];
+    if (!d || !d.marque || !m) return false;
+    if (m.achat) return true;
+    return (jour == null ? Character.jourCourant() : jour) >= m.jour + Character.LIEN_MARQUE_JOURS;
+  }
+  joursDeLien(id, jour) {
+    const j = this.marqueLieeJusqua(id);
+    return j == null ? 0 : Math.max(0, j - (jour == null ? Character.jourCourant() : jour));
+  }
+  possedeMarque(id) { return this.has(id) || Object.values(this.equipment || {}).includes(id) || !!(this.coffre && this.coffre.items && this.coffre.items[id]); }
   removeItem(id, n) {
     n = n || 1;
     if (this.count(id) < n) return false;
