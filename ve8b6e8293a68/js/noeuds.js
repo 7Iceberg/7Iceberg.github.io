@@ -25,13 +25,21 @@ for (const k of DATA.knots) {
 }
 
 const regions = { orsane: 'Orsane', kaldum: 'Kaldum' };
-for (const r in regions) {
+const de = r => (/^[AEIOUÉ]/.test(regions[r]) ? 'd\'' : 'de ') + regions[r];
+function carnet(r) {
   const n = Object.values(DATA.monsters).filter(m => m.region === r && !m.summon).length;
-  DATA.content.achievements.push(
-    { id: `carnet_${r}_tiers`, name: `Carnet : ${regions[r]}, premières pages`, desc: `Inscrire ${Math.ceil(n / 3)} bêtes de ${regions[r]} au Carnet.`, cond: { type: 'carnet', region: r, count: Math.ceil(n / 3) }, rewards: { xp: 300, fils: 60 } },
-    { id: `carnet_${r}_complet`, name: `Carnet : ${regions[r]} complet`, desc: `Inscrire les ${n} bêtes de ${regions[r]} au Carnet, boss et rares compris.`, cond: { type: 'carnet', region: r, count: n }, rewards: { xp: 3000, fils: 500, title: `Mémoire de ${regions[r]}` } },
-  );
+  return [
+    { id: `carnet_${r}_tiers`, name: `Carnet : ${regions[r]}, premières pages`, desc: `Inscrire ${Math.ceil(n / 3)} bêtes ${de(r)} au Carnet.`, cond: { type: 'carnet', region: r, count: Math.ceil(n / 3) }, rewards: { xp: 300, fils: 60 } },
+    { id: `carnet_${r}_complet`, name: `Carnet : ${regions[r]} complet`, desc: `Inscrire les ${n} bêtes ${de(r)} au Carnet, boss et rares compris.`, cond: { type: 'carnet', region: r, count: n }, rewards: { xp: 3000, fils: 500, title: `Mémoire de ${regions[r]}` } },
+  ];
 }
+for (const r in regions) DATA.content.achievements.push(...carnet(r));
+DATA.recompterCarnet = () => {
+  for (const r in regions) for (const a of carnet(r)) {
+    const x = DATA.content.achievements.find(y => y.id === a.id);
+    if (x) { x.desc = a.desc; x.cond = a.cond; }
+  }
+};
 DATA.content.achievements.push(
   { id: 'noeud_premier', name: 'Premier nœud', desc: 'Gagner un combat avec au moins un Nœud noué.', cond: { type: 'feat', key: 'noeuds_1', count: 1 }, rewards: { xp: 200, fils: 40 } },
   { id: 'noeud_quatre', name: 'Quatre nœuds', desc: 'Gagner un combat avec quatre Nœuds noués.', cond: { type: 'feat', key: 'noeuds_4', count: 1 }, rewards: { xp: 1500, fils: 300, title: 'Nœud gordien' } },

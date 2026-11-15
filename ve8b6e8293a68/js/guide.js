@@ -115,6 +115,12 @@ class Guide {
     this.rappel.className = 'vy-rappel hidden';
     this.rappel.addEventListener('click', () => this.recevoir('suite', { rappel: true }));
     stage.appendChild(this.rappel);
+    this.quitterBtn = document.createElement('button');
+    this.quitterBtn.type = 'button';
+    this.quitterBtn.className = 'vy-quitter-tuto hidden';
+    this.quitterBtn.innerHTML = '<span>Quitter le tutoriel</span>';
+    this.quitterBtn.addEventListener('click', () => this.demanderQuitter());
+    stage.appendChild(this.quitterBtn);
     this.geste = document.createElement('div');
     this.geste.className = 'vy-geste hidden';
     this.geste.setAttribute('aria-hidden', 'true');
@@ -157,6 +163,11 @@ class Guide {
     this.boite.el.remove();
     this.rappel.remove();
     this.geste.remove();
+    this.quitterBtn.remove();
+    if (this.confirmation) this.confirmation.remove();
+    if (this.cine) this.finOuverture(true);
+    this.verrous = null;
+    Guide.majVerrous(null);
     if (this.renderer) this.renderer.guideCue = null;
     if (Guide.actif === this) Guide.actif = null;
   }
@@ -187,6 +198,7 @@ class Guide {
     const neuf = !ch.quests.done.length && !Object.keys(ch.quests.active).length && ch.counters.maps.length <= 1;
     if (this.mode === 'guide' && this.index === 0 && dep && this.world.mapId === dep.map && neuf) this.world.placeAt(dep.u != null ? dep.u : dep.x, dep.v != null ? dep.v : dep.y);
     this.descente({ mapId: this.world.mapId, def: this.world.mapDef });
+    if (ch._ouverture) { if (this.mode === 'guide' && this.index === 0 && this.data.ouverture) this.cineAttente = true; else delete ch._ouverture; }
     const st = this.etape();
     if (st && st.bloc === 'combat' && !this.enCombat()) {
       const back = this.indexDe(st.retour);
@@ -250,6 +262,9 @@ class Guide {
       if (this.applicable(st)) break;
       this.index = this.index + 1;
     }
+    const st0 = this.etape();
+    if (st0 && st0.donne) this.donner(st0);
+    this.plusLoin = Math.max(this.plusLoin || 0, this.index);
     this.instantane = { points: this.ch.statPoints };
     this.analyse = null;
     this.trace = null;
@@ -268,6 +283,149 @@ class Guide {
     this.finCombatTuto();
     this.sauver();
     this.toutCacher();
+    Guide.majVerrous(this);
+  }
+
+
+  donner(st) {
+    const ch = this.ch, recu = [];
+    if (typeof Items !== 'object') return recu;
+    for (const it of [].concat((st && st.donne) || [])) {
+      const d = it && Items.get(it.id);
+      if (!d) continue;
+      const possede = ch.has(it.id) || Object.values(ch.equipment || {}).includes(it.id) || !!(ch.coffre && ch.coffre.items && ch.coffre.items[it.id]);
+      if (possede) continue;
+      ch.addItem(it.id, it.count || 1);
+      recu.push(d.name);
+    }
+    if (recu.length) {
+      this.world.emit('update');
+      if (this.hud.chat) this.hud.chat('gain', 'Reçu : ' + recu.join(', ') + '.');
+      this.sauver();
+    }
+    return recu;
+  }
+
+  quitterVisible() {
+    const t = this.ch && this.ch.tuto;
+    return !!(this.data && this.data.quitter && this.started && this.mode === 'guide' && t && !t.done && this.index > 0 && !this.cine && !this.cineAttente && this.world.state !== 'dialogue');
+  }
+
+  majQuitter() { this.quitterBtn.classList.toggle('hidden', !this.quitterVisible()); }
+
+  demanderQuitter() {
+    if (this.confirmation) return;
+    const el = this.confirmation = document.createElement('div');
+    el.className = 'vy-quitter-conf';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-labelledby', 'vy-quitter-titre');
+    el.innerHTML = '<div class="vy-quitter-conf__boite vy-eter">' +
+      '<h2 id="vy-quitter-titre" class="vy-quitter-conf__titre">Quitter le tutoriel ?</h2>' +
+      '<p class="vy-quitter-conf__texte">Le guide ne te montrera plus rien, et tu ne pourras pas revenir en arrière. Ce qu\'il t\'aurait donné est remis tout de suite, et tous les menus s\'ouvrent. Tes quêtes continuent.</p>' +
+      '<div class="vy-quitter-conf__pied"><button type="button" class="vy-bouton" data-act="rester">Continuer le tutoriel</button>' +
+      '<button type="button" class="vy-bouton vy-bouton--primaire" data-act="quitter">Quitter le tutoriel</button></div></div>';
+    const fermer = () => { el.remove(); this.confirmation = null; window.removeEventListener('keydown', cle, true); };
+    const cle = e => { if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); fermer(); } };
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-act]');
+      if (e.target === el || (b && b.dataset.act === 'rester')) fermer();
+      else if (b && b.dataset.act === 'quitter') { fermer(); this.quitter(); }
+    });
+    window.addEventListener('keydown', cle, true);
+    document.getElementById('stage').appendChild(el);
+    el.querySelector('[data-act="rester"]').focus();
+  }
+
+  quitter() {
+    for (const st of this.etapes.slice(this.index)) if (st && st.donne) this.donner(st);
+    this.passer();
+    this.majQuitter();
+    if (this.hud.toast) this.hud.toast('Tutoriel quitté. Les rappels courts se rallument dans les Options.');
+  }
+
+  verrou(id) {
+    const I = this.data && this.data.interfaces, t = this.ch && this.ch.tuto;
+    if (!I || !this.started || this.mode !== 'guide' || !t || t.done) return false;
+    const cle = id === 'perso' ? 'sac' : id;
+    if (!Object.prototype.hasOwnProperty.call(I, cle)) return false;
+    const i = this.indexDe(I[cle]);
+    return i >= 0 && Math.max(this.index, this.plusLoin || 0) < i;
+  }
+
+  static refuse(hud, id) {
+    const g = Guide.actif;
+    if (!g || !g.verrou(id)) return false;
+    if (hud && hud.toast) hud.toast((g.data && g.data.refus) || 'Pas encore : le guide te le montrera.');
+    return true;
+  }
+
+  static majVerrous(g) {
+    if (typeof document === 'undefined') return;
+    const I = (g && g.data && g.data.interfaces) || {};
+    const ferme = id => !!(g && g.verrou(id));
+    document.querySelectorAll('[data-win]').forEach(b => {
+      const on = ferme(b.dataset.win);
+      if (on === b.classList.contains('vy-verrou-tuto')) return;
+      b.classList.toggle('vy-verrou-tuto', on);
+      if (on) b.setAttribute('aria-disabled', 'true'); else if (!b.dataset.bientot) b.removeAttribute('aria-disabled');
+    });
+    for (const [sel, id] of [['#minicarte', 'carte'], ['#recompenses-btn', 'recompenses']]) {
+      const el = document.querySelector(sel);
+      if (el) el.classList.toggle('vy-verrou-tuto', ferme(id));
+    }
+    return I;
+  }
+
+  ouverture() {
+    const pages = (this.data && this.data.ouverture) || [];
+    if (!pages.length || typeof document === 'undefined') return false;
+    const el = document.createElement('div');
+    el.className = 'vy-cine';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-label', 'Ouverture');
+    el.innerHTML = '<div class="vy-cine__bande vy-cine__bande--haut"></div>' +
+      '<div class="vy-cine__bande vy-cine__bande--bas"><p class="vy-cine__texte" aria-live="polite"></p>' +
+      '<div class="vy-cine__pied"><span class="vy-cine__points" aria-hidden="true"></span>' +
+      '<button type="button" class="vy-cine__passer">Passer</button></div></div>';
+    document.getElementById('stage').appendChild(el);
+    document.body.classList.add('vy-cine-on');
+    const cle = e => {
+      if (!this.cine) return;
+      if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); this.finOuverture(); }
+      else if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') { e.preventDefault(); e.stopImmediatePropagation(); this.pageOuverture(1); }
+    };
+    window.addEventListener('keydown', cle, true);
+    el.addEventListener('click', e => { if (e.target.closest('.vy-cine__passer')) this.finOuverture(); else this.pageOuverture(1); });
+    this.cine = { el, i: -1, pages, cle, t: 0 };
+    this.toutCacher();
+    this.majQuitter();
+    this.pageOuverture(1);
+    return true;
+  }
+
+  pageOuverture(pas) {
+    const c = this.cine;
+    if (!c) return;
+    c.i += pas;
+    if (c.i >= c.pages.length) { this.finOuverture(); return; }
+    c.el.querySelector('.vy-cine__texte').textContent = c.pages[c.i];
+    c.el.querySelector('.vy-cine__points').innerHTML = c.pages.map((_, k) => `<i class="${k === c.i ? 'on' : ''}"></i>`).join('');
+    const p = c.el.querySelector('.vy-cine__texte');
+    p.classList.remove('vy-cine__texte--entre'); void p.offsetWidth; p.classList.add('vy-cine__texte--entre');
+    clearTimeout(c.t);
+    c.t = setTimeout(() => this.pageOuverture(1), 7000);
+  }
+
+  finOuverture(silence) {
+    const c = this.cine;
+    if (!c) return;
+    clearTimeout(c.t);
+    window.removeEventListener('keydown', c.cle, true);
+    c.el.remove();
+    document.body.classList.remove('vy-cine-on');
+    this.cine = null;
+    if (!silence) { delete this.ch._ouverture; this.afficher(); this.majQuitter(); }
   }
 
   passer() {
@@ -391,6 +549,13 @@ class Guide {
 
   tic() {
     if (!this.started) return;
+    Guide.majVerrous(this);
+    if (this.cineAttente) {
+      const R = this.renderer;
+      if (R && (R.voile || R.voileEl)) { this.toutCacher(); return; }
+      this.cineAttente = false;
+      this.ouverture();
+    }
     if (this.mode === 'off') { this.toutCacher(); return; }
     const st = this.etape();
     if (!st) return;
@@ -444,6 +609,14 @@ class Guide {
       case 'peutFrapper': return !!(this.tourJoueur() && this.sortFrappe()) === !!v;
       case 'pmRestants': return !!(this.enCombat() && cb.phase === 'battle' && cb.player && cb.player.pm > 0 && cb.aliveMonsters().length) === !!v;
       case 'sortElement': return typeof v === 'string' ? this.elementsDeClasse().includes(v) : !!this.analyseElement(this.ficheGroupe()) === !!v;
+      case 'porte': {
+        const porte = id => Object.values(ch.equipment || {}).includes(id);
+        if (v && v.tout) return v.tout.every(porte);
+        if (v && v.manque) return v.manque.some(id => !porte(id) && ch.has(id) && ch.canEquip(id).ok);
+        return false;
+      }
+      case 'possede': return ch.has(v);
+      case 'recompense': return (typeof Achievements === 'object' && Achievements.pending ? Achievements.pending(ch).length > 0 : false) === !!v;
       default: return false;
     }
   }
@@ -527,6 +700,8 @@ class Guide {
 
   afficher(tic) {
     const st = this.etape();
+    this.majQuitter();
+    if (this.cine || this.cineAttente) { this.toutCacher(); return; }
     if (!st || this.mode === 'off') { this.toutCacher(); return; }
     if (st.attendre && !this.dejaVu) {
       const ok = st.attendre.on ? false : this.cond(st.attendre);
@@ -561,7 +736,7 @@ class Guide {
     } else {
       this.rappel.classList.add('hidden');
       const humeur = st.humeur || 'neutre';
-      this.boite.montrer({ npc: def, texte: this.texte(st), suite, humeur, painter: this.renderer.painter || this.renderer, passer: true });
+      this.boite.montrer({ npc: def, texte: this.texte(st), suite, humeur, painter: this.renderer.painter || this.renderer, passer: !this.data.quitter });
     }
     this.reperer(st);
     this.placerBoite();
@@ -637,7 +812,7 @@ class Guide {
           break;
         }
         case 'objet': {
-          const ids = Object.keys(this.ch.inventory).filter(id => { const d = Items.get(id); return d && (c.quel === 'arme' ? d.kind === 'weapon' : d.kind === 'equip' || d.kind === 'weapon') && this.ch.canEquip(id).ok; });
+          const ids = Object.keys(this.ch.inventory).filter(id => { const d = Items.get(id); return d && (!c.ids || c.ids.includes(id)) && (c.quel === 'arme' ? d.kind === 'weapon' : d.kind === 'equip' || d.kind === 'weapon') && this.ch.canEquip(id).ok; });
           if (ids.length) { sel = ids.map(id => `.vy-fenetre[data-id="sac"] [data-id="${id}"]`); main = true; }
           break;
         }

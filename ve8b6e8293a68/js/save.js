@@ -129,6 +129,10 @@ const Save = (() => {
       if (isInt(o.statPoints, 0)) o.statPoints += 5 * (L2 - L);
     }
     if (!isInt(o.level, 1, Character.MAX_LEVEL)) { bad('niveau'); o.level = Math.max(1, Math.min(Character.MAX_LEVEL, Math.floor(Number(o.level)) || 1)); }
+    if (isInt(o.xp, 0) && o.level < Character.MAX_LEVEL && o.xp >= Character.xpToNext(o.level) && o.xp <= Character.xpGardeeMax(o.level) && isInt(o.statPoints, 0)) {
+      o.xp -= Character.xpToNext(o.level); o.level++; o.statPoints += 5;
+    }
+    if (isInt(o.xp, 0) && o.level >= Character.MAX_LEVEL) o.xp = Math.min(o.xp, Character.xpGardeeMax(o.level));
     if (!isInt(o.xp, 0) || (o.level < Character.MAX_LEVEL && o.xp >= Character.xpToNext(o.level))) { bad('expérience'); o.xp = 0; }
     const stats = { vita: 0, sagesse: 0, force: 0, intel: 0, chance: 0, agi: 0 };
     let statsOk = o.stats && typeof o.stats === 'object';

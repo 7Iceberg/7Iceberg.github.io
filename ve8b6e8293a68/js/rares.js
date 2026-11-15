@@ -3,18 +3,26 @@ const Rares = (() => {
   const REGIONS = new Set(['orsane', 'kaldum']);
   const idDe = id => id + '_argent';
 
-  function preparer() {
-    if (typeof DATA !== 'object' || !DATA.monsters || !DATA.content || !DATA.content.zones) return [];
-    const M = DATA.monsters, bases = new Set(), faits = [];
+  function bases() {
+    const G = typeof Groupes === 'object' ? Groupes : null, b = new Set();
     for (const z of DATA.content.zones) if (REGIONS.has(z.region)) for (const m of z.maps || []) for (const t of m.groups || []) {
-      if (typeof Groupes === 'object' && Groupes.fixe(t)) continue;
-      for (const id of t.monsters || []) bases.add(id);
+      if (G && G.fixe(t)) continue;
+      const f = G && G.faune ? G.faune(z, m) : null;
+      for (const id of f ? Object.keys(f.monstres) : t.monsters || []) b.add(id);
     }
-    for (const id of bases) {
+    return b;
+  }
+
+  function preparer() {
+    preparer.retirees = [];
+    if (typeof DATA !== 'object' || !DATA.monsters || !DATA.content || !DATA.content.zones) return [];
+    const M = DATA.monsters, B = bases(), faits = [];
+    for (const [rid, d] of Object.entries(M)) if (d && d.argent && !B.has(d.base)) { delete M[rid]; preparer.retirees.push(rid); }
+    for (const id of B) {
       const d = M[id], rid = idDe(id);
       if (!d || d.boss || d.elite || d.rare || d.summon || M[rid]) continue;
       M[rid] = Object.assign({}, d, {
-        id: rid, name: d.name + ' d\'argent', rare: true, base: id,
+        id: rid, name: d.name + ' d\'argent', rare: true, argent: true, base: id,
         hp: Math.round(d.hp * 1.6), dmgMult: Math.round((d.dmgMult || 1) * 1.15 * 100) / 100, color: '#cfd6e2',
         desc: `Rare. ${d.desc || ''}`.trim(),
       });
@@ -53,6 +61,6 @@ const Rares = (() => {
     return r;
   }
 
-  return { CHANCE, DELAI, JEU, idDe, preparer, placer, vaincue, nettoyer, auRepos };
+  return { CHANCE, DELAI, JEU, idDe, bases, preparer, placer, vaincue, nettoyer, auRepos };
 })();
 Rares.preparer();

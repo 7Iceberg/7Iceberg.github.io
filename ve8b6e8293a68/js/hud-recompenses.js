@@ -18,7 +18,7 @@ Object.assign(Hud.prototype, {
       b.innerHTML = `${COFFRE}<span class="recompenses-btn__nombre"></span>`;
       (document.getElementById('explore-hud') || document.getElementById('stage')).appendChild(b);
     }
-    b.onclick = () => this.toggleRecompenses();
+    b.onclick = () => { if (typeof Guide === 'function' && Guide.refuse && !this.fen.isOpen('recompenses') && Guide.refuse(this, 'recompenses')) return; this.toggleRecompenses(); };
     this.coffre = b;
     const w = this.world;
     const nouveau = list => {
@@ -63,7 +63,7 @@ Object.assign(Hud.prototype, {
       accepter: d => this.accepterRecompense(d.id),
       toutAccepter: () => this.accepterTout(),
     };
-    this.simpleWin('recompenses', 'Récompenses en attente', () => this.renderRecompenses(), actions, { width: 540, icon: COFFRE, cls: 'vy-fenetre--recompenses' });
+    this.simpleWin('recompenses', 'Récompenses en attente', () => this.renderRecompenses(), actions, { width: 540, icon: COFFRE, cls: 'vy-fenetre--recompenses', annonce: 'recompenses' });
   },
 
   renderRecompenses() {

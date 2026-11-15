@@ -177,6 +177,7 @@ Object.assign(Hud.prototype, {
 
   toggleWin(id) {
     if (this.fen.isOpen(ALIAS[id] || id)) this.fen.close(ALIAS[id] || id);
+    else if (typeof Guide === 'function' && Guide.refuse && Guide.refuse(this, id)) return;
     else ({ aventure: () => this.openAventure(), carac: () => this.openCaracs(), sorts: () => this.openSorts(), perso: () => this.openPerso(), sac: () => this.openSac(), quetes: () => this.openQuests(), faction: () => this.openFaction(), guilde: () => this.openGuilde(), succes: () => this.openAchievements(), boutique: () => this.openBoutique(), carnet: () => this.openCarnet(), encyclopedie: () => this.openEncyclopedie(), garderobe: () => this.openGarderobe(), familiers: () => this.openFamiliers(), montures: () => this.openMontures(), metiers: () => this.openMetiersPerso(), carte: () => this.openMap(), journal: () => this.openJournal(), options: () => this.openMenu(), profil: () => this.openProfil() }[id] || (() => {}))();
     this.syncMenus();
   },

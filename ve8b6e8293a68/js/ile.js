@@ -64,6 +64,14 @@ const Ile = (() => {
     return disponible;
   }
 
+  function raresAJour() {
+    if (typeof Rares !== 'object' || !Rares.preparer) return;
+    const faites = Rares.preparer(), retirees = Rares.preparer.retirees || [];
+    if (!faites.length && !retirees.length) return;
+    if (typeof DATA === 'object' && DATA.recompterCarnet) DATA.recompterCarnet();
+    if (typeof Achievements === 'object' && Achievements.integrer) Achievements.integrer();
+  }
+
   function appliquer() {
     const M = (typeof DATA === 'object' && DATA.modules) || {};
     let fait = false;
@@ -71,6 +79,7 @@ const Ile = (() => {
     disponible = disponible || appliques.has('ervane');
     if (fait && typeof Chantier === 'object' && Chantier.appliquerNoeuds) Chantier.appliquerNoeuds();
     if (fait && typeof World === 'function' && World.reindexer) World.reindexer();
+    if (fait) raresAJour();
     if (fait && typeof Achievements === 'object' && Achievements.integrer) Achievements.integrer();
     return fait;
   }
@@ -88,6 +97,7 @@ const Ile = (() => {
     M.ervaneOrsane();
     appliques.add('ervaneOrsane');
     if (typeof World === 'function' && World.reindexer) World.reindexer();
+    raresAJour();
     return true;
   }
   const actif = () => appliques.has('ervane');
@@ -130,6 +140,7 @@ const Ile = (() => {
       M.kaldumAires(); appliques.add('kaldumAires');
     }
     if (typeof World === 'function' && World.reindexer) World.reindexer();
+    raresAJour();
     return true;
   }
   function appliquerOrsane3DPour(uidOuPerso) {

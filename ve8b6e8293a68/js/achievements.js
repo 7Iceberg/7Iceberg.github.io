@@ -19,9 +19,11 @@ const Achievements = (() => {
   const pourPerso = (ch, a) => !a ? false : ch.origine === 'ervane' || (ch.achievements || []).includes(a.id) || !ileSeule(a);
   const relaisPour = ch => ((DATA.content && DATA.content.zones) || []).filter(z => ch.origine === 'ervane' || z.region !== 'ervane').flatMap(z => (z.maps || []).filter(m => m.relay).map(m => m.id));
   const cosmetiquesAGagner = () => (typeof Garderobe === 'object' ? Garderobe.defs() : []).filter(c => !c.source || c.source.genre !== 'evenement');
-  const JAMAIS_CROISES = ['piouk', 'groukin'];
+  const JAMAIS_CROISES = ['piouk', 'groukin', 'loche', 'brim'];
+  const jamaisCroise = (ch, id) => !!ch && ch.origine === 'ervane' && JAMAIS_CROISES.includes(id);
   const carnetCount = (ch, region) => { const k = ch.counters.kills || {}; return Object.keys(k).filter(id => DATA.monsters[id] && DATA.monsters[id].region === region && !DATA.monsters[id].summon).length
     + (region === 'orsane' && ch.origine === 'ervane' ? JAMAIS_CROISES.filter(id => DATA.monsters[id] && DATA.monsters[id].region === 'orsane' && !k[id]).length : 0); };
+  const membreVaincu = (ch, c, m) => { const k = ch.counters; return jamaisCroise(ch, m) || (c.defi ? ((k.feats || {})['killdefi.' + m] || 0) >= 1 : (k.kills[m] || 0) >= 1); };
   const zoneMaps = id => { const z = ((DATA.content && DATA.content.zones) || []).find(x => x.id === id); return z ? z.maps.map(m => m.id) : []; };
   const zoneSeen = (ch, id) => zoneMaps(id).filter(m => ch.counters.maps.includes(m)).length;
 
@@ -48,7 +50,7 @@ const Achievements = (() => {
       case 'set': { const s = Items.getSet(c.set); return !!s && (ch.derived().setCount[c.set] || 0) >= s.pieces.length; }
       case 'bossDefi': return ((k.feats || {})[`bossdefi.${c.monster}.${c.defi}`] || 0) >= 1;
       case 'noeudsBoss': return ((k.feats || {})[`noeudsboss.${c.monster}`] || 0) >= c.count;
-      case 'famille': { const l = presents(c.monstres); return l.length > 0 && l.every(m => c.defi ? ((k.feats || {})['killdefi.' + m] || 0) >= 1 : (k.kills[m] || 0) >= 1); }
+      case 'famille': { const l = presents(c.monstres); return l.length > 0 && l.every(m => membreVaincu(ch, c, m)); }
       case 'argentes': { const l = presents(c.monstres); return l.length > 0 && l.every(m => (k.kills[m] || 0) >= 1); }
       case 'defisDistincts': return defisVus(ch) >= c.count;
       case 'meta': { const l = enfants(ch, c); return l.length > 0 && l.every(a => (ch.achievements || []).includes(a.id)); }
@@ -156,7 +158,7 @@ const Achievements = (() => {
       case 'carnet': return pair(carnetCount(ch, c.region), c.count);
       case 'dungeonTurns': { const b = (k.dungeonTurns || {})[c.dungeon]; return ch.achievements.includes(a.id) ? 'fait' : b ? `meilleur : ${b} tours` : 'à faire'; }
       case 'noeudsBoss': return pair((k.feats || {})[`noeudsboss.${c.monster}`] || 0, c.count);
-      case 'famille': { const l = presents(c.monstres); return pair(l.filter(m => c.defi ? ((k.feats || {})['killdefi.' + m] || 0) >= 1 : (k.kills[m] || 0) >= 1).length, l.length); }
+      case 'famille': { const l = presents(c.monstres); return pair(l.filter(m => membreVaincu(ch, c, m)).length, l.length); }
       case 'argentes': { const l = presents(c.monstres); return pair(l.filter(m => (k.kills[m] || 0) >= 1).length, l.length); }
       case 'defisDistincts': return pair(defisVus(ch), c.count);
       case 'meta': { const l = enfants(ch, c); return pair(l.filter(x => ch.achievements.includes(x.id)).length, l.length); }
@@ -299,7 +301,7 @@ const Achievements = (() => {
     return out.sort((x, y) => x.rang - y.rang);
   }
 
-  return { defs, get, met, check, pending, claim, hasReward, category, sousCategorie, progress, avancement, points, score, total, ileSeule, pourPerso, integrer, proches };
+  return { defs, get, met, check, pending, claim, hasReward, category, sousCategorie, progress, avancement, points, score, total, ileSeule, pourPerso, integrer, proches, JAMAIS_CROISES };
 })();
 
 Achievements.integrer();

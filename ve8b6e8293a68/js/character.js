@@ -151,7 +151,16 @@ class Character {
   setVoie() { return false; }
   spellFor() { return null; }
 
-  static xpToNext(level) { return Math.round(10 * Math.pow(level / 2, 2.4)); }
+  static xpToNext(level) {
+    const base = L => 10 * Math.pow(L / 2, 2.4);
+    if (level < 60) return Math.round(base(level));
+    const puissance = L => base(60) * Math.pow(L / 60, 3.3);
+    if (level <= 181) return Math.round(puissance(level));
+    if (level <= 198) return Math.round(puissance(181) * (1 + 0.3 * (level - 181)));
+    if (level === 199) return 8 * Character.xpToNext(198);
+    return Character.xpToNext(198);
+  }
+  static xpGardeeMax(level) { return Character.xpToNext(level); }
   static get PODS_BASE() { return 1000; }
   static get PODS_TERRA() { return 5; }
   static get PLAFOND() { return Object.assign({ pa: 12, pm: 6, po: 6 }, (typeof DATA === 'object' && DATA.rules && DATA.rules.plafonds) || {}); }
@@ -316,6 +325,7 @@ class Character {
       this.statPoints += 5;
       levels++;
     }
+    if (this.level >= Character.MAX_LEVEL) this.xp = Math.min(this.xp, Character.xpGardeeMax(this.level));
     if (levels) {
       if (this.autoStats) this.autoAllocate();
       this.hp = this.derived().hpMax;

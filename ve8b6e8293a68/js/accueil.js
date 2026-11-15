@@ -183,7 +183,7 @@ class Accueil {
   nouveauBrouillon(invite) {
     this.reprise = null;
     const id = DATA.defaultClass;
-    this.b = { classId: id, gender: 'f', look: apparenceDeClasse(id, 'f'), lookTouche: false, name: '', tuto: 'court', recommandee: null, invite: !!invite, facing: 'se' };
+    this.b = { classId: id, gender: 'f', look: apparenceDeClasse(id, 'f'), lookTouche: false, name: '', tuto: 'guide', recommandee: null, invite: !!invite, facing: 'se' };
     this.slot = 0;
   }
 
@@ -925,6 +925,7 @@ class Accueil {
       return;
     }
     const ch = Character.create(b.classId, nom, b.gender, null, { look: b.look, tuto: b.tuto });
+    ch._ouverture = true;
     if (typeof Ile === 'object' && Ile.allumee) {
       if (!Ile.fairenaitre(ch)) { this.erreur('L\'île d\'Ervane n\'a pas pu se charger. Recharge la page pour réessayer.'); return; }
       Ile.appliquerOrsane();
@@ -1161,7 +1162,7 @@ Accueil.prototype.actions = {
     this.suite('deja');
     this.ouvrirQuiz();
   },
-  'deja-connait'() { this.b.tuto = 'court'; this.suite('deja'); },
+  'deja-connait'() { this.b.tuto = 'guide'; this.suite('deja'); },
   classe(b) { this.choisirClasse(b.dataset.id); },
   'classe-verrou'(b) { const c = DATA.futureClasses[b.dataset.id] || DATA.classes[b.dataset.id]; this.toast(`${c.name}, ${epithete(c.title).toLowerCase()} : arrive avec la saison ${c.season}.`); },
   genre(b) {
