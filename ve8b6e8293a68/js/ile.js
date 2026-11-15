@@ -68,7 +68,6 @@ const Ile = (() => {
     if (typeof Rares !== 'object' || !Rares.preparer) return;
     const faites = Rares.preparer(), retirees = Rares.preparer.retirees || [];
     if (!faites.length && !retirees.length) return;
-    if (typeof DATA === 'object' && DATA.recompterCarnet) DATA.recompterCarnet();
     if (typeof Achievements === 'object' && Achievements.integrer) Achievements.integrer();
   }
 

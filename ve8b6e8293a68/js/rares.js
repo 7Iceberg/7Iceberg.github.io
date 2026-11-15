@@ -13,6 +13,9 @@ const Rares = (() => {
     return b;
   }
 
+  const apres = [];
+  const surChangement = f => { if (typeof f === 'function') apres.push(f); };
+
   function preparer() {
     preparer.retirees = [];
     if (typeof DATA !== 'object' || !DATA.monsters || !DATA.content || !DATA.content.zones) return [];
@@ -28,6 +31,7 @@ const Rares = (() => {
       });
       faits.push(rid);
     }
+    if (faits.length || preparer.retirees.length) for (const f of apres) f();
     return faits;
   }
 
@@ -61,6 +65,6 @@ const Rares = (() => {
     return r;
   }
 
-  return { CHANCE, DELAI, JEU, idDe, bases, preparer, placer, vaincue, nettoyer, auRepos };
+  return { CHANCE, DELAI, JEU, idDe, bases, preparer, surChangement, placer, vaincue, nettoyer, auRepos };
 })();
 Rares.preparer();

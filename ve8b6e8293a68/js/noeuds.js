@@ -34,12 +34,12 @@ function carnet(r) {
   ];
 }
 for (const r in regions) DATA.content.achievements.push(...carnet(r));
-DATA.recompterCarnet = () => {
+if (typeof Rares === 'object' && Rares.surChangement) Rares.surChangement(() => {
   for (const r in regions) for (const a of carnet(r)) {
     const x = DATA.content.achievements.find(y => y.id === a.id);
     if (x) { x.desc = a.desc; x.cond = a.cond; }
   }
-};
+});
 DATA.content.achievements.push(
   { id: 'noeud_premier', name: 'Premier nœud', desc: 'Gagner un combat avec au moins un Nœud noué.', cond: { type: 'feat', key: 'noeuds_1', count: 1 }, rewards: { xp: 200, fils: 40 } },
   { id: 'noeud_quatre', name: 'Quatre nœuds', desc: 'Gagner un combat avec quatre Nœuds noués.', cond: { type: 'feat', key: 'noeuds_4', count: 1 }, rewards: { xp: 1500, fils: 300, title: 'Nœud gordien' } },
