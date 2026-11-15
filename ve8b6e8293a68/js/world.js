@@ -335,6 +335,8 @@ class World {
     this.setPath(Grid.pathTo(reach, target), action);
   }
 
+  gesteDuHeros(type) { this.gesteHeros = type ? { type, debut: typeof performance !== 'undefined' ? performance.now() : Date.now() } : null; }
+
   walkTo(cell, action) {
     if (this.plateau) return this.plateau.allerA(cell.x, cell.y, action);
     const reach = this.reach();
@@ -894,6 +896,7 @@ class World {
     rc[node.resource] = (rc[node.resource] || 0) + n;
     const xpM = M && M.apresRecolte(this.ch, node.resource, n);
     if (xpM && xpM.niveaux) this.toast(`${xpM.metier.nom} : niveau ${xpM.niveau} !`);
+    this.gesteDuHeros('recolte');
     this.emit('gain', { source: 'recolte', items: [{ id: node.resource, count: n }], metier: xpM });
     for (let i = 0; i < n; i++) this.afterEvents(Quests.onEvent(this.ch, { type: 'gather', resource: node.resource }));
     this.afterEvents(Quests.onEvent(this.ch, { type: 'inventory' }));
@@ -1372,6 +1375,7 @@ class World {
     result.achievements = this.checkAchievements(true);
     this.lastResult = result;
     this.state = 'panel';
+    this.gesteDuHeros(d.victory ? 'victoire' : null);
     this.emit('fightEnd', result);
     if (d.victory) this.emit('gain', { source: 'combat', xp: result.gained, fils: result.fils, items: result.drops.map(x => ({ id: x.id, count: x.count })) });
     if (result.levels) this.emit('levelUp', { level: ch.level, levels: result.levels });

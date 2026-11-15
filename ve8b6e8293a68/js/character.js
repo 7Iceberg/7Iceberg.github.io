@@ -128,7 +128,7 @@ class Character {
     if (look == null) return { look: def, errors: [] };
     if (typeof look !== 'object' || Array.isArray(look)) return { look: def, errors: ['apparence illisible'] };
     const errors = [];
-    for (const k of Object.keys(look)) if (k !== 'tete' && k !== 'couleurs') errors.push(`apparence : champ ${k}`);
+    for (const k of Object.keys(look)) if (k !== 'tete' && k !== 'couleurs' && k !== 'pieces') errors.push(`apparence : champ ${k}`);
     let tete = look.tete;
     if (!Number.isInteger(tete) || tete < 0 || tete >= Character.TETES) { errors.push('apparence : tête'); tete = 0; }
     const list = Array.isArray(look.couleurs) ? look.couleurs : null;
@@ -141,8 +141,23 @@ class Character {
       if (list && i < list.length) errors.push(`apparence : couleur ${Character.COULEURS[i]}`);
       return d;
     });
-    return { look: { tete, couleurs }, errors };
+    const out = { tete, couleurs };
+    if (look.pieces != null) {
+      const p = look.pieces, P = {};
+      if (typeof p !== 'object' || Array.isArray(p)) errors.push('apparence : pièces');
+      else {
+        for (const k of Object.keys(p)) {
+          const v = p[k];
+          if (['visage', 'marque', 'coiffure', 'bois'].includes(k) && Number.isInteger(v) && v >= (k === 'visage' ? 0 : -1) && v < 24) P[k] = v;
+          else if (k === 'iris' && Character.IRIS.includes(v)) P[k] = v;
+          else errors.push(`apparence : pièce ${k}`);
+        }
+        if (Object.keys(P).length) out.pieces = P;
+      }
+    }
+    return { look: out, errors };
   }
+  static get IRIS() { return ['dessin', 'ambre', 'noisette', 'vert', 'bleu', 'gris']; }
 
   static get VOIES() { return ['terre', 'feu', 'eau', 'air']; }
   static get STAT_OF() { return { terre: 'force', feu: 'intel', eau: 'chance', air: 'agi' }; }

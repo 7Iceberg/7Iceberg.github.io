@@ -170,8 +170,10 @@ class Ile3D {
     etape('Le héros modelé');
     try {
       if (this.qualite !== 'basse') await IleCharge.peauScript();
-      const ch = this.world && this.world.ch, P = this.qualite !== 'basse' && typeof IlePeau === 'object' ? IlePeau.PEAUX[classe] : null;
-      if (P && (!P.genres || classeHeros !== 'auto' || P.genres.includes(ch && ch.gender === 'm' ? 'm' : 'f'))) this.heros = await IlePeau.chargerHeros(THREE, classe, { telephone: this.telephone, perso: ch });
+      const ch = this.world && this.world.ch, genre = ch && ch.gender === 'm' ? 'm' : 'f';
+      const P0 = this.qualite !== 'basse' && typeof IlePeau === 'object' ? IlePeau.PEAUX[classe] : null;
+      const idPeau = P0 && P0.parGenre && P0.parGenre[genre] && IlePeau.PEAUX[P0.parGenre[genre]] ? P0.parGenre[genre] : classe, P = P0 ? IlePeau.PEAUX[idPeau] : null;
+      if (P && (!P.genres || classeHeros !== 'auto' || P.genres.includes(genre))) this.heros = await IlePeau.chargerHeros(THREE, idPeau, { telephone: this.telephone, perso: ch });
       else {
         await IleCharge.herosScript();
         if (typeof IleHeros === 'object' && IleHeros.FICHIERS[classe]) this.heros = await IleHeros.charger(THREE, null, classe);
@@ -2009,6 +2011,7 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     if (ici && !A.ouverte) {
       if (this.carteOuverte) this.fermerCarte(true, 'combat');
       const aire = A.ouvrir(cb.map);
+      if (w.gesteHeros) w.gesteHeros = null;
       this.mats.uSol.aireO.value.set(aire.x0, aire.y0);
       cam.entrerCombat(aire, !!this.salle);
     } else if (!ici && A.ouverte) {
@@ -2134,7 +2137,12 @@ void main() { float a = texture2D(carte, vUv).a * vA;
     const ap = ch.lookAffiche();
     const veilleur = { kind: 'entity', shape: 'player', color: cls.color, glyph: cls.glyph, name: ch.name, team: 'player', facing: p.facing, look: ap.look, auraCos: this.qualite === 'basse' ? null : ap.auraCos, gender: ch.gender, scale: 1, x: px, y: py, h: H(px, py), normale: N(px, py), bob: p.moving ? Math.abs(Math.sin(now / 70)) * 3 : Math.sin(now / 900) * 0.8, joueur: true };
     veilleur.cle = fig.cleFigure(veilleur); veilleur.peindre = fig.peindreFigure(veilleur);
-    if (fig.heros) { veilleur.heros = true; veilleur.bouge = !!p.moving; }
+    if (fig.heros) {
+      veilleur.heros = true; veilleur.bouge = !!p.moving;
+      if (p.moving && w.gesteHeros) w.gesteHeros = null;
+      if (w.state === 'dialogue') veilleur.gesteLibre = this._parler || (this._parler = { type: 'parler', debut: now });
+      else { this._parler = null; veilleur.gesteLibre = w.gesteHeros || null; }
+    }
     out.push(veilleur);
     if (typeof Compagnons !== 'undefined') Compagnons.figures3D(w, out, veilleur, now, { pos, H, N, fig });
     for (const g of w.groups) {

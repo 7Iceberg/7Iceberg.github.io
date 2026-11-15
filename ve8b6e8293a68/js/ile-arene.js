@@ -467,11 +467,12 @@ void main() {
       for (const e of cb.entities) {
         let mort = null;
         if (!e.alive) {
-          const Dm = this.vus.has(e.id) && e.team === 'monster' && fig.modeles && fig.modeles.prend(e.def.id) ? fig.modeles.durees(e.def.id) : null;
+          const heros = !!(fig.heros && e === cb.player && fig.heros.durees);
+          const Dm = heros ? fig.heros.durees() : this.vus.has(e.id) && e.team === 'monster' && fig.modeles && fig.modeles.prend(e.def.id) ? fig.modeles.durees(e.def.id) : null;
           if (!Dm || !(Dm.mort > 0)) continue;
           if (!this.morts.has(e.id)) this.morts.set(e.id, now);
           mort = (now - this.morts.get(e.id)) / Dm.mort;
-          if (mort >= 1) continue;
+          if (mort >= 1) { if (!heros) continue; mort = 1; }
         } else if (!cb.canSee(cb.player, e)) continue;
         else { this.vus.add(e.id); this.morts.delete(e.id); }
         const appui = e.porteur || e;
@@ -508,6 +509,7 @@ void main() {
         } else if (fig.heros && e === cb.player) {
           s.heros = true;
           this.gesteHeros(s, e, now, cb);
+          if (mort != null) { s.geste = { type: 'mort', t: mort }; s.gesteLibre = null; s.combat = null; s.cible = null; s.flash = false; }
         }
         s.cle = fig.cleFigure(s); s.peindre = fig.peindreFigure(s);
         out.push(s);
@@ -525,9 +527,6 @@ void main() {
       if (now < (e.flashUntil || 0)) s.geste = { type: 'coup', t: 1 - (e.flashUntil - now) / 250 };
     }
     gesteHeros(s, e, now, cb) {
-      const g = e.geste;
-      if (g && g.debut != null && now < g.debut + g.duree) { s.geste = { type: g.type, t: (now - g.debut) / g.duree }; if (g.vers) s.vers = g.vers; return; }
-      if (now < (e.flashUntil || 0)) s.geste = { type: 'coup', t: 1 - (e.flashUntil - now) / 250 };
       let proche = null, d = Infinity;
       for (const o of cb.entities) {
         if (!o.alive || o.team !== 'monster') continue;
@@ -535,6 +534,26 @@ void main() {
         if (q < d) { d = q; proche = o; }
       }
       if (proche) s.vers = this.versMonde(proche.rx, proche.ry);
+      const F = this.ile.figures, D = F && F.heros && F.heros.durees ? F.heros.durees() : null;
+      if (D && D.placement > 0) {
+        let a = this.entrees.get(e.id);
+        if (a == null) { a = now; this.entrees.set(e.id, a); }
+        if (now < a + D.placement) { s.geste = { type: 'placement', t: (now - a) / D.placement }; return; }
+      }
+      const g = e.geste;
+      if (g && g.debut != null && now < g.debut + g.duree) { s.geste = { type: g.type, t: (now - g.debut) / g.duree, sorte: g.sorte }; if (g.vers) s.vers = g.vers; return; }
+      if (now < (e.flashUntil || 0)) { s.geste = { type: 'coup', t: 1 - (e.flashUntil - now) / 250 }; return; }
+      const w = this.ile.world;
+      if (w && w.gesteHeros) s.gesteLibre = w.gesteHeros;
+    }
+    static sorteDuSort(entity, spell, centre, cb) {
+      if (!entity || !spell) return null;
+      if ((spell.effects || []).some(f => f.type === 'summon' || f.type === 'sacrifice') || spell.target === 'self' || spell.target === 'summon') return 'soutien';
+      if (!centre) return 'distance';
+      const d = Math.abs(centre.x - entity.rx) + Math.abs(centre.y - entity.ry);
+      if (d < 0.5) return 'soutien';
+      if (cb && cb.entities && cb.entities.some(o => o.alive && o !== entity && o.team === entity.team && Math.abs(o.rx - centre.x) < 0.5 && Math.abs(o.ry - centre.y) < 0.5)) return 'soutien';
+      return d <= 1.5 ? 'contact' : 'distance';
     }
     gestesDe(e) {
       const F = this.ile.figures;
@@ -586,8 +605,9 @@ void main() {
       const fx = FX_SORTS[spell.fx] || null;
       const couleur = fx ? fx.couleur : DATA.elements[spell.element] ? DATA.elements[spell.element].color : '#ffffff';
       const zone = cells || [];
-      const D = this.gestesDe(entity), lacher = D ? D.sort * D.lacher : 0;
       const centre = zone.length ? { x: zone.reduce((s, c) => s + c.x, 0) / zone.length, y: zone.reduce((s, c) => s + c.y, 0) / zone.length } : null;
+      const D = this.gestesDe(entity), sorte = D && D.sorts ? Arene.sorteDuSort(entity, spell, centre, this.ile.combat) : null, Ds = sorte ? D.sorts[sorte] : null;
+      const dureeSort = D ? (Ds && Ds.duree) || D.sort : 0, lacher = D ? dureeSort * (Ds && Ds.lacher != null ? Ds.lacher : D.lacher) : 0;
       const lancer = () => {
         if (!entity || !zone.length || this.etat !== 'ouverte') return;
         const de = this.versMonde(entity.rx, entity.ry), hde = this.ile.hauteur(de.u, de.v) + 0.95 * (entity.boss ? 1.3 : 1);
@@ -608,7 +628,7 @@ void main() {
           tick: now => {
             if (debut == null) {
               debut = now;
-              if (D && entity) entity.geste = { type: 'sort', debut: now, duree: D.sort, vers: centre ? this.versMonde(centre.x, centre.y) : null };
+              if (D && entity) entity.geste = { type: 'sort', sorte, debut: now, duree: dureeSort, vers: centre ? this.versMonde(centre.x, centre.y) : null };
             }
             if (!lance && now - debut >= lacher) { lance = true; lancer(); }
             if (!eclate && now - debut >= lacher + 180) { eclate = true; eclat(); }

@@ -908,6 +908,7 @@ class HudJeu {
 
   emote(id) {
     this.basculerEmotes(false);
+    if (this.world && this.world.gesteDuHeros) this.world.gesteDuHeros('emote_' + id);
     if (!this.bulleEmote) {
       this.bulleEmote = document.createElement('div');
       this.bulleEmote.className = 'vy-emote-bulle hidden';

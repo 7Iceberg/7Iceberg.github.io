@@ -1,4 +1,18 @@
 const IlePeau = (() => {
+  const BOIS_FENNAL = [
+    { genre: 'bois', nom: 'Branches à bourgeons', fichier: 'assets/peaux/fennal-bois-1.glb', couleurs: [1.39, 0.356, 0.031, -0.753, 2.51, 0.332, -0.638, 1.377, 0.875],
+      k: 0.9102, pos: [-0.9924, 0.1499], rot: [0, 0, 33], miroir: true },
+    { genre: 'bois', nom: 'Bois noueux', fichier: 'assets/peaux/fennal-bois-2.glb', couleurs: [1.093, -0.531, 0.601, -0.627, 0.81, 1.208, -0.52, 0.386, 1.233],
+      k: 0.511, pos: [0.66, 0.0935], rot: [0, 0, -22], miroir: true },
+    { genre: 'bois', nom: 'Ramure de cerf', fichier: 'assets/peaux/fennal-bois-3.glb', couleurs: [1.193, -0.133, -0.154, -0.056, 0.886, 0.195, -0.15, 0.584, 0.405],
+      k: 0.8261, pos: [-0.7223, 0.3208], rot: [0, 0, 3.2], miroir: true },
+    { genre: 'bois', nom: 'Dagues', fichier: 'assets/peaux/fennal-bois-4.glb', couleurs: [1.392, -0.33, -0.39, -0.284, 1.044, 0.215, -0.471, 0.71, 0.595],
+      k: 0.7134, pos: [0.5449, 0.2608], rot: [0, 0, 2], miroir: true },
+    { genre: 'bois', nom: 'Palmes', fichier: 'assets/peaux/fennal-bois-5.glb', couleurs: [1.594, -0.321, -0.454, 0.303, 1.138, -0.483, 0.068, 0.653, 0.109],
+      k: 0.632, pos: [-0.8135, 0.2814], rot: [0, 180, 7], miroir: true },
+    { genre: 'bois', nom: 'Rameaux fins', fichier: 'assets/peaux/fennal-bois-6.glb', couleurs: [0.704, 0.224, 0.532, -0.396, 1.253, 0.554, -0.43, 0.776, 0.769],
+      k: 0.8634, pos: [0.8011, 0.3483], rot: [0, 0, -25.5], miroir: true }];
+  const boisFennal = (tete, sommet, z) => BOIS_FENNAL.map(d => Object.assign({}, d, { k: +(d.k * tete).toFixed(4), pos: [+(d.pos[0] * tete).toFixed(4), +(sommet + d.pos[1] * tete).toFixed(4), z] }));
   const PEAUX = {
     filin: { fichier: 'assets/peaux/filin.glb', hauteur: 1.25, ombre: 0.75, teinte: '#e6e6e6',
       clips: { repos: 'Idle', marche: { nom: 'Slow_Orc_Walk', vitesse: 0.42 }, sort: { nom: 'Attack', de: 0.25, a: 1.45 }, coup: { nom: 'Hit_Reaction', de: 0.02, a: 0.62 } },
@@ -41,24 +55,76 @@ const IlePeau = (() => {
       aura: { couleur: [0.45, 0.9, 0.6], force: 0.25, rayon: 1.0, hauteur: 0.3, couronne: false },
       clips: { repos: 'Repos', marche: { nom: 'Marche', vitesse: 0.6 }, sort: { nom: 'Sort', de: 0, a: 1.3 }, coup: { nom: 'Coup', de: 0, a: 0.55 }, mort: { nom: 'Mort', de: 0, a: 1.8 }, victoire: 'Victoire', placement: { nom: 'Apparition', de: 0, a: 1.3 } },
       durees: { placement: 1100, sort: 950, lacher: 0.35, pousse: 90, saut: 140, mort: 1500 } },
-    fennal: { fichier: 'assets/peaux/fennal_f.glb', hauteur: 2.0, ombre: 0.9, genres: ['f'],
-      clips: { repos: 'repos', marche: { nom: 'marche', vitesse: 0.5 }, course: { nom: 'course', vitesse: 3.2 }, sort: { nom: 'appel', de: 0.2, a: 2.0 } },
-      durees: { placement: 0, sort: 1000, lacher: 0.5, pousse: 90, saut: 140 },
+    fennal: { fichier: 'assets/peaux/fennal_f.glb', hauteur: 2.0, ombre: 0.9,
+      clips: { repos: 'repos', marche: { nom: 'marche', vitesse: 0.5 }, course: { nom: 'course', vitesse: 3.2 },
+        garde: { nom: 'entree', de: 3.3, a: 3.98, vitesse: 0.3, poids: 0.82 },
+        sort: { nom: 'appel', de: 0.2, a: 2.0 }, sort_soutien: { nom: 'corne', de: 2.4, a: 4.8 }, sort_contact: { nom: 'griffe', de: 0.1, a: 1.4 }, sort_distance: { nom: 'lancer', de: 1.4, a: 3.9 },
+        placement: { nom: 'entree', de: 0.4, a: 3.6 }, coup: { nom: 'coup', de: 0.05, a: 0.9 }, mort: { nom: 'mort', de: 0, a: 2.2 }, victoire: { nom: 'victoire', de: 0.2, a: 5.0 },
+        parler: { nom: 'parler', de: 0, a: 5.15, boucle: true }, recolte: { nom: 'recolte', de: 0.8, a: 5.2, vitesse: 1.6 },
+        emote_salut: { nom: 'salut', de: 0, a: 4.1 }, emote_joie: { nom: 'joie', de: 0.3, a: 5.5 }, emote_merci: { nom: 'merci', de: 1.5, a: 6.3, vitesse: 1.4 }, emote_doute: { nom: 'doute', de: 0, a: 2.0 },
+        emote_repos: { nom: 'assise', de: 0, a: 2.5, boucle: true }, emote_danse: { nom: 'danse', de: 0, a: 7.0, boucle: true }, emote_defi: { nom: 'defi', de: 0, a: 4.2 } },
+      durees: { placement: 1600, sort: 1000, lacher: 0.5, pousse: 90, saut: 140, mort: 1800,
+        sorts: { contact: { duree: 800, lacher: 0.45 }, distance: { duree: 1100, lacher: 0.6 }, soutien: { duree: 1600, lacher: 0.5 } } },
       compose: {
         clarte: 1.3,
+        cheveuxDuPerso: true,
+        cou: { y: 1.4144, nuque: { y: 1.496, z: -0.0395 } },
         defaut: { coiffure: 1, bois: 0, visage: 2, marque: -1, iris: 'dessin', cheveux: '#fdedcd' },
         visages: ['Douce', 'Rêveuse', 'Calme', 'Espiègle', 'Fière', 'Farouche'].map((nom, k) => ({ nom, image: `assets/peaux/fennal_f-visage-${k + 1}.png`, yeux: `assets/peaux/fennal_f-yeux-${k + 1}.png` })),
         marques: ['Griffure de bête', 'Balafre au sourcil', 'Liane', 'Spirale', 'Points de pacte', 'Traits de cuivre'].map((nom, k) => ({ nom, image: `assets/peaux/fennal_f-marque-${k + 1}.png` })),
         pieces: {
-          tete: { lissable: true, fichier: 'assets/peaux/fennal_f-tete.glb', k: 0.195, pos: [0, 1.515, 0.03], rot: [0, 0, 0], teinte: [0.91, 0.917, 1], coupe: 1.405,
-            cadre: { cx: 0, cz: 0.03, r: 0.105, cy: 1.519, l: 0.322, h: 0.184 } },
-          coiffures: [{ nom: 'Court ébouriffé', fichier: 'assets/peaux/fennal_f-court.glb', base: '#f6d9bb', k: 0.2, pos: [0, 1.6, 0.02], rot: [0, 0, 0] },
-            { nom: 'Longue tresse', fichier: 'assets/peaux/fennal_f-tresse.glb', base: '#fee4c9', k: 0.235, pos: [0, 1.492, 0.018], rot: [0, 0, 0] }],
-          bois: [{ genre: 'bois', nom: 'Branches à bourgeons', fichier: 'assets/peaux/fennal-bois-1.glb', couleurs: [1.281, -0.423, 0.058, -0.137, 1.042, 0.082, -0.263, 0.578, 0.486],
-            k: 0.1973, pos: [-0.203, 1.78, 0.03], rot: [0, 0, -15], miroir: true }],
+          tete: { lissable: true, fichier: 'assets/peaux/fennal_f-tete.glb', lisse: { tours: 16, force: 0.6, regonfle: 0.62, x: [0.0714, 0.1], y: [1.4195, 1.4419, 1.6337, 1.6745], z: [0.0523, 0.0931], nez: { y: 1.496, garde: 0.6, rx: 0.0204, ry: 0.0286 } },  k: 0.1989, pos: [0.0, 1.5113, 0.037], rot: [0, 0, 0], teinte: [1.128, 1.078, 1.077], coupe: 1.3991,
+            cadre: { cx: 0, cz: 0.037, r: 0.1071, cy: 1.5154, l: 0.3284, h: 0.1877 } },
+          coiffures: [{ nom: 'Court ébouriffé', fichier: 'assets/peaux/fennal_f-court.glb', base: '#f6d9bb', k: 0.204, pos: [0.0, 1.598, 0.0268], rot: [0, 0, 0] },
+            { nom: 'Longue tresse', fichier: 'assets/peaux/fennal_f-tresse.glb', base: '#fee4c9', k: 0.2397, pos: [0.0, 1.4878, 0.0248], rot: [0, 0, 0],
+              chaine: { points: [[0.102, 1.4246, 0.037], [0.0928, 1.3889, 0.0707], [0.0918, 1.3583, 0.1003], [0.0816, 1.3277, 0.1278], [0.0796, 1.2971, 0.139], [0.0775, 1.2634, 0.1502]], rayon: 0.045, epaisseur: 0.03,
+                spheres: [{ os: 'Spine02', centre: [0, 1.33, 0.005], r: 0.105 }, { os: 'Spine01', centre: [0, 1.2, 0.01], r: 0.11 }, { os: 'neck', centre: [0, 1.44, 0], r: 0.055 }] } },
+            { nom: 'Carré', fichier: 'assets/peaux/fennal_f-carre.glb', base: '#f5d0b2', k: 0.2061, pos: [0.0031, 1.5524, 0.0378], rot: [0, 0, 0] },
+            { nom: 'Chignon bas', fichier: 'assets/peaux/fennal_f-chignon-bas.glb', base: '#f7d6af', k: 0.2643, pos: [-0.0003, 1.4987, 0.0331], rot: [0, 0, 0] },
+            { nom: 'Chignon haut', fichier: 'assets/peaux/fennal_f-chignon-haut.glb', base: '#fcdfc5', k: 0.4748, pos: [-0.0004, 1.392, 0.0346], rot: [0, 0, 0] },
+            { nom: 'Côté rasé', fichier: 'assets/peaux/fennal_f-cote-rase.glb', base: '#f5dabc', couleurs: [0.33, 0.649, 0.121, 0.294, 0.577, 0.108, 0.253, 0.498, 0.093], k: 0.4501, pos: [-0.0012, 1.3978, 0.035], rot: [0, 0, 0] },
+            { nom: 'Deux tresses', fichier: 'assets/peaux/fennal_f-deux-tresses.glb', base: '#fddfc3', k: 0.382, pos: [-0.0033, 1.3627, 0.0346], rot: [0, 0, 0] },
+            { nom: 'Longs', fichier: 'assets/peaux/fennal_f-longs.glb', base: '#f9ebc7', k: 0.3744, pos: [-0.003, 1.4456, 0.0312], rot: [0, 0, 0] },
+            { nom: 'Queue basse', fichier: 'assets/peaux/fennal_f-queue-basse.glb', base: '#ffeecd', k: 0.4021, pos: [-0.0003, 1.3595, 0.0348], rot: [0, 0, 0] },
+            { nom: 'Tresses fines', fichier: 'assets/peaux/fennal_f-tresses-fines.glb', base: '#f2c0b8', couleurs: [0.352, 0.693, 0.129, 0.279, 0.55, 0.102, 0.268, 0.527, 0.098], k: 0.4796, pos: [0.0001, 1.3049, 0.0271], rot: [0, 0, 0] },
+            { nom: 'Deux chignons', fichier: 'assets/peaux/fennal_f-deux-chignons.glb', base: '#efd5b9', k: 0.1823, pos: [-0.0002, 1.6036, 0.0457], rot: [0, 0, 0] },
+            { nom: 'Courte et lisse', fichier: 'assets/peaux/fennal_f-courte-lisse.glb', base: '#ecceb0', k: 0.2377, pos: [-0.0006, 1.4902, 0.0369], rot: [0, 0, 0] },
+          ],
+          bois: boisFennal(0.2157, 1.7, 0.037),
+          objets: [{ nom: "Corne d'appel", fichier: 'assets/peaux/fennal-corne.glb', os: 'RightHand', geste: 'sort', sorte: 'soutien', k: 0.1579, pos: [-0.3988, 0.8273, -0.0131], rot: [34.4, 36.3, 9.5] }],
         },
       } },
   };
+  PEAUX.fennal_m = { fichier: 'assets/peaux/fennal_m.glb', hauteur: 2.0, ombre: 0.9,
+    clips: Object.assign({}, PEAUX.fennal.clips, { sort_soutien: { nom: 'corne', de: 0.9, a: 4.2 } }), durees: PEAUX.fennal.durees,
+    compose: {
+      clarte: 1.3, cheveuxDuPerso: true,
+      defaut: { coiffure: 0, bois: 1, visage: 1, marque: -1, iris: 'dessin', cheveux: '#fdedcd' },
+      cou: { y: 1.406, nuque: { y: 1.49, z: -0.0496 } },
+      visages: ['Doux', 'Amical', 'Espiègle', 'Fier', 'Rude', 'Farouche'].map((nom, k) => ({ nom, image: `assets/peaux/fennal_m-visage-${k + 1}.png`, yeux: `assets/peaux/fennal_m-yeux-${k + 1}.png` })),
+      marques: ['Morsure', 'Balafre du nez', "Cernes de l'arbre", 'Épines', 'Larmes de fauve', 'Chevrons'].map((nom, k) => ({ nom, image: `assets/peaux/fennal_m-marque-${k + 1}.png` })),
+      pieces: {
+        tete: { lissable: true, fichier: 'assets/peaux/fennal_m-tete.glb', k: 0.1843, pos: [0.0, 1.525, -0.0122], rot: [0, 0, 0], teinte: [0.545, 0.529, 0.72], coupe: 1.3902,
+          cadre: { cx: 0, cz: -0.0122, r: 0.1155, cy: 1.523, l: 0.4099, h: 0.2166 },
+          lisse: { tours: 16, force: 0.6, regonfle: 0.62, x: [0.0777, 0.1092], y: [1.4113, 1.4344, 1.6318, 1.6738], z: [0.0029, 0.0449], nez: { y: 1.5026, garde: 0.6, rx: 0.021, ry: 0.0294 } } },
+        coiffures: [{ nom: 'Mi-longs', fichier: 'assets/peaux/fennal_m-mi-longs.glb', base: '#f9d8b2', k: 0.2205, pos: [0.0, 1.5267, -0.0391], rot: [0, 0, 0] },
+          { nom: 'Boucles', fichier: 'assets/peaux/fennal_m-boucles.glb', base: '#fee2c2', k: 0.173, pos: [0.0001, 1.6009, -0.0128], rot: [0, 0, 0] },
+          { nom: 'Chignon haut', fichier: 'assets/peaux/fennal_m-chignon-haut.glb', base: '#e9d4be', k: 0.2467, pos: [0.0001, 1.6055, -0.0234], rot: [0, 0, 0] },
+          { nom: 'Côtés rasés', fichier: 'assets/peaux/fennal_m-cotes-rases.glb', base: '#f5dcbf', k: 0.18, pos: [-0.0027, 1.6035, -0.0126], rot: [0, 0, 0] },
+          { nom: 'Crête', fichier: 'assets/peaux/fennal_m-crete.glb', base: '#f7d7b8', k: 0.223, pos: [0.0001, 1.6266, -0.0119], rot: [0, 0, 0] },
+          { nom: 'Demi-chignon', fichier: 'assets/peaux/fennal_m-demi-chignon.glb', base: '#f8e0c2', k: 0.4155, pos: [-0.0009, 1.4139, -0.0183], rot: [0, 0, 0] },
+          { nom: 'Hérissés', fichier: 'assets/peaux/fennal_m-herisses.glb', base: '#e8d1b8', couleurs: [0.327, 0.642, 0.12, 0.294, 0.579, 0.108, 0.259, 0.509, 0.095], k: 0.2415, pos: [0.0002, 1.5534, -0.0149], rot: [0, 0, 0] },
+          { nom: 'Longue tresse', fichier: 'assets/peaux/fennal_m-longue-tresse.glb', base: '#ffdfc7', k: 0.3524, pos: [0.0016, 1.4103, -0.0137], rot: [0, 0, 0] },
+          { nom: 'Ondulés', fichier: 'assets/peaux/fennal_m-ondules.glb', base: '#ffe8cc', k: 0.2238, pos: [-0.0001, 1.5174, -0.0139], rot: [0, 0, 0] },
+          { nom: 'Ras', fichier: 'assets/peaux/fennal_m-ras.glb', base: '#fce6b7', couleurs: [0.327, 0.642, 0.12, 0.298, 0.586, 0.109, 0.237, 0.467, 0.087], k: 0.1703, pos: [-0.0001, 1.5609, -0.0128], rot: [0, 0, 0] },
+          { nom: 'Tresses tirées', fichier: 'assets/peaux/fennal_m-tresses-tirees.glb', base: '#ffedca', k: 0.357, pos: [0.0001, 1.4026, -0.0128], rot: [0, 0, 0] },
+          { nom: 'Queue à la nuque', fichier: 'assets/peaux/fennal_m-queue-nuque.glb', base: '#fad9c4', k: 0.2033, pos: [-0.0017, 1.5803, -0.0128], rot: [0, 0, 0] },
+        ],
+        bois: boisFennal(0.2347, 1.7, -0.0122),
+        objets: [{ nom: "Corne d'appel", fichier: 'assets/peaux/fennal-corne.glb', os: 'RightHand', geste: 'sort', sorte: 'soutien', k: 0.1579, pos: [-0.3244, 0.8021, -0.0017], rot: [63, 29.2, 17.2] }],
+      },
+    } };
+  PEAUX.fennal.parGenre = { m: 'fennal_m' };
   const AURAS = {
     braise: { style: 'ruban', couleur: [0.78, 0.06, 0.12], vif: [1, 0.45, 0.5], flamme: [1, 0.42, 0.06], flammeVif: [1, 0.86, 0.35], force: 0.55, rayon: 2.6, hauteur: 1, flammeches: 3 },
   };
@@ -817,6 +883,11 @@ void main() {
       this.articulations = articulations;
       this.animes = new Set(articulations);
       for (const c of Object.values(this.clips)) for (const pz of c.pistes) this.animes.add(pz.noeud);
+      this.suivis = [];
+      if (P.suivre) {
+        const idx = nom => G.nodes.findIndex(n => n.name === nom);
+        for (const [os, cible] of Object.entries(P.suivre)) { const a = idx(os), b = idx(cible); if (a >= 0 && b >= 0) { this.suivis.push([a, b]); this.animes.delete(a); } }
+      }
       this.repos = G.nodes.map(n => ({ p: n.translation ? n.translation.slice() : [0, 0, 0], q: n.rotation ? n.rotation.slice() : [0, 0, 0, 1], s: n.scale ? n.scale.slice() : [1, 1, 1] }));
       const maillages = G.nodes.map((n, i) => (n.mesh != null ? i : -1)).filter(i => i >= 0);
       if (!maillages.length) throw new Error('peau sans maillage');
@@ -994,6 +1065,7 @@ void main() {
         mesh = new THREE.SkinnedMesh(this.geo, mat);
         objets[this.noeudMesh].add(mesh);
         racine.updateMatrixWorld(true);
+        for (const [a, b] of this.suivis) objets[b].attach(objets[a]);
         mesh.bind(new THREE.Skeleton(os, mats), new THREE.Matrix4());
       } else { mesh = new THREE.Mesh(this.geo, mat); objets[this.noeudMesh].add(mesh); }
       mesh.frustumCulled = false;
@@ -1083,6 +1155,12 @@ void main() {
       }
     }
     clip(role) { const c = this.P.clips[role]; const nom = c && (typeof c === 'string' ? c : c.nom); return nom ? this.clips[nom] || null : null; }
+    defGeste(geste) {
+      const P = this.P.clips, t = geste && geste.type;
+      if (!t || t === 'repos' || t === 'marche' || t === 'course' || t === 'garde' || t === 'saut' || t === 'pousse') return null;
+      const c = (t === 'sort' && geste.sorte && P['sort_' + geste.sorte]) || P[t];
+      return c && typeof c === 'object' && c.nom && this.clips[c.nom] ? c : null;
+    }
 
     poser(ex, x, y, z, cap, now, bouge, vitesse, geste, flash, alpha, k) {
       const r = ex.racine, t = now / 1000;
@@ -1103,6 +1181,8 @@ void main() {
       const vise = marche ? 1 : 0;
       ex.kMarche += (vise - ex.kMarche) * (dt > 0 ? 1 - Math.exp(-dt / TAU_MARCHE) : 1);
       const cRepos = this.clip('repos');
+      const cGarde = P.garde ? this.clip('garde') : null;
+      if (cGarde) ex.kGarde = (ex.kGarde || 0) + ((ex.enCombat ? 1 : 0) - (ex.kGarde || 0)) * (dt > 0 ? 1 - Math.exp(-dt / 0.25) : 1);
       const cPas = P.marche ? this.clips[P.marche.nom] || null : null, cCourse = P.course ? this.clips[P.course.nom] || null : null;
       const u = Math.max(0, Math.min(1, ((vitesse || 0) - 1.8) / 1.2));
       const wCourse = cCourse ? (cPas ? u * u * (3 - 2 * u) : 1) : 0;
@@ -1114,14 +1194,17 @@ void main() {
       const kM = Math.min(1, ex.kMarche), avecPas = !!cPas && wCourse < 0.999;
       this.reposer(ex);
       if (cRepos) this.meler(ex, cRepos, t + ex.hsh, 1, true);
+      if (cGarde && ex.kGarde > 0.01) { const G = P.garde, w = typeof G === 'object' && G.a != null ? G.a - (G.de || 0) : 0;
+        const tg = w > 0 ? (G.de || 0) + w * (1 - Math.abs(((((t + ex.hsh) * (G.vitesse || 1)) / w) % 2) - 1)) : t + ex.hsh;
+        this.meler(ex, cGarde, tg, Math.min(typeof G === 'object' && G.poids || 1, ex.kGarde), !(w > 0)); }
       if (avecPas) this.meler(ex, cPas, ex.tMarche, kM, true);
       if (cCourse && wCourse > 0.001) this.meler(ex, cCourse, ex.tCourse || 0, avecPas ? wCourse : kM, true);
-      const g = geste && (geste.type === 'sort' || geste.type === 'coup' || geste.type === 'mort' || (geste.type === 'placement' && this.P.clips.placement)) ? geste : null;
+      const cG = geste ? this.defGeste(geste) : null, g = cG || (geste && (geste.type === 'sort' || geste.type === 'coup' || geste.type === 'mort')) ? geste : null;
       if (g && g.type === 'placement' && ex.gestePrec !== 'placement') ex.kGeste = 1;
-      ex.gestePrec = g ? g.type : null;
-      const cG = g ? this.P.clips[g.type] : null, clipG = cG ? this.clips[cG.nom] : null;
+      ex.gestePrec = g ? g.type : null; ex.gesteSorte = g ? g.sorte || null : null;
+      const clipG = cG ? this.clips[cG.nom] : null;
       ex.kGeste += ((clipG ? 1 : 0) - ex.kGeste) * (dt > 0 ? 1 - Math.exp(-dt / TAU_GESTE) : 1);
-      if (clipG) { ex.gesteT = cG.de + Math.max(0, Math.min(1, g.t || 0)) * (cG.a - cG.de); ex.clipG = clipG; }
+      if (clipG) { const d = cG.a - cG.de; ex.gesteT = cG.de + (g.temps != null ? (g.temps * (cG.vitesse || 1)) % Math.max(0.01, d) : Math.max(0, Math.min(1, g.t || 0)) * d); ex.clipG = clipG; }
       if (ex.clipG && ex.kGeste > 0.01) this.meler(ex, ex.clipG, ex.gesteT || 0, Math.min(1, ex.kGeste), false);
       this.appliquer(ex);
       if (geste && (geste.type === 'saut' || geste.type === 'pousse')) r.position.y += Math.sin(Math.max(0, Math.min(1, geste.t || 0)) * Math.PI) * (geste.type === 'saut' ? 0.1 : 0.04);
@@ -1162,6 +1245,7 @@ void main() {
         }
         if (ex.contours) for (const c of ex.contours) c.visible = a > 0.98;
       }
+      if (ex.apresPose) ex.apresPose(t);
     }
     liberer() {
       for (const ex of this.exemplaires) { for (const m of ex.mats) if (m.dispose) m.dispose(); if (ex.aura) ex.aura.groupe.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); const p = ex.racine.parent; if (p) p.remove(ex.racine); }
@@ -1334,11 +1418,12 @@ void main() {
       try {
         if (typeof IlePeauPieces !== 'object') await IleCharge.script('js/ile-peau-pieces.js');
         const tel = !!(opts && opts.telephone);
-        const compo = IlePeauPieces.creer(THREE, M, ex, C, { textureMax: tel ? 512 : 1024, adresse, lire, rendu: tel ? { contour: false } : null });
+        const compo = IlePeauPieces.creer(THREE, M, ex, C, { textureMax: tel ? 512 : 1024, adresse, lire });
         await compo.composer(IlePeauPieces.choix(C, opts && opts.perso));
         const liberer = M.liberer.bind(M);
         M.liberer = () => { compo.liberer(); liberer(); };
         M.octets += compo.octets;
+        ex.apresPose = t => { compo.simuler(t); compo.gestes(ex.gestePrec, ex.gesteSorte); };
         Object.assign(h, { compo, triangles: compo.triangles, appels: compo.appels, octets: M.octets });
       } catch (e) { M.liberer(); throw e; }
     }
@@ -1364,7 +1449,15 @@ void main() {
       if (alpha < 0.3) { ex.racine.visible = false; return true; }
       const F = P.force;
       const bouge = s.bouge != null ? !!s.bouge : deplace;
-      M.poser(ex, s.x, s.h, s.y, F && F.cap != null ? F.cap : P.cap, P.now, bouge, bouge ? Math.max(ex.vitesse, 1.5) : ex.vitesse, F || s.geste || null, !!s.flash, alpha, (s.scale || 1) * ECHELLE);
+      ex.enCombat = !!s.combat;
+      let geste = F || s.geste || null;
+      const L = !geste && !bouge ? s.gesteLibre : null, cL = L && M.P.clips[L.type];
+      if (cL && typeof cL === 'object' && M.clips[cL.nom]) {
+        const d = Math.max(0.05, (cL.a - cL.de) / (cL.vitesse || 1)), tl = (P.now - L.debut) / 1000;
+        if (cL.boucle) geste = { type: L.type, temps: Math.max(0, tl) };
+        else if (tl >= 0 && tl < d) geste = { type: L.type, t: tl / d };
+      }
+      M.poser(ex, s.x, s.h, s.y, F && F.cap != null ? F.cap : P.cap, P.now, bouge, bouge ? Math.max(ex.vitesse, 1.5) : ex.vitesse, geste, !!s.flash, alpha, (s.scale || 1) * ECHELLE);
       return true;
     };
     P.emprise = s => (s.scale || 1) * ECHELLE * h.M.P.ombre * 1.6;

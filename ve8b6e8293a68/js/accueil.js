@@ -116,6 +116,7 @@ class Accueil {
   afficher(id, sens) {
     if (this.reprise && id !== 'classe' && id !== 'apparence') { this.reprise = null; this.parcours = null; }
     const old = this.vue.querySelector('.ecran:not(.ecran--sortie)');
+    if (this.ecran === 'apparence' || id !== 'apparence') this.fermer3D();
     this.ecran = id;
     this.anime = null;
     clearInterval(this.minuteur);
@@ -232,7 +233,7 @@ class Accueil {
     if (!ch || !b) return;
     const p = ch.peutBoirePotionClasse();
     if (!p.ok) { this.erreur(p.reason); return; }
-    const r = ch.changerDeClasse(b.classId, { gender: b.gender, look: b.look });
+    const r = ch.changerDeClasse(b.classId, { gender: b.gender, look: this.persoBrouillon().look });
     if (!r.ok) { this.erreur(r.reason); return; }
     ch.removeItem(Character.POTION_CLASSE, 1);
     if (!Save.write(ch)) { this.erreur('Impossible d\'enregistrer : le navigateur refuse le stockage.'); return; }
@@ -690,18 +691,23 @@ class Accueil {
   dessinerTournant(t) {
     const cv = this.ecranEl && this.ecranEl.querySelector('.tournant__toile');
     if (!cv || !this.b) return;
-    AccueilArt.tournant(cv, this.figureBrouillon(), { t: t == null ? performance.now() : t, calme: this.calme, part: this.ecran === 'apparence' ? 0.64 : 0.6 });
+    AccueilArt.tournant(cv, this.figureBrouillon(), { t: t == null ? performance.now() : t, calme: this.calme, part: this.ecran === 'apparence' ? 0.64 : 0.6, sansFigure: this.ecran === 'apparence' && this.app3d });
   }
 
   tourner(sens) {
     const F = ['se', 'sw', 'nw', 'ne'];
     this.b.facing = F[(F.indexOf(this.b.facing) + (sens > 0 ? 1 : 3)) % 4];
+    if (this.v3d) this.v3d.azimut = AZIMUT[this.b.facing];
     this.dessinerTournant();
   }
 
   ecran_apparence() {
     this.ecranVise = 'apparence';
     const b = this.b;
+    const hp = herosPieces(b.classId, b.gender);
+    if (!hp && CLASSES_PIECES.includes(b.classId) && typeof IleCharge === 'object' && IleCharge.webgl && IleCharge.webgl() && !this.peauEnCours) {
+      this.peauEnCours = IleCharge.peauScript().then(() => { if (this.ecran === 'apparence' && herosPieces(this.b.classId, this.b.gender)) this.afficher('apparence', 0); }).catch(() => {   });
+    }
     const tetes = TETES.map((n, i) => `<button class="e-nu app-tete${b.look.tete === i ? ' on' : ''}" data-act="tete" data-i="${i}" role="radio" aria-checked="${b.look.tete === i}" aria-label="Coiffure : ${n}" title="${n}"><canvas class="app-tete__toile" data-i="${i}" aria-hidden="true"></canvas></button>`).join('');
     const zones = Character.zonesCouleurs(b.classId);
     if (zones[this.slot] == null) this.slot = 0;
@@ -719,11 +725,11 @@ class Accueil {
           <p class="app-legende"><b>${esc(DATA.classes[b.classId].name)}</b> · ${esc(epithete(DATA.classes[b.classId].title))}</p>
         </div>
         <div class="app-panneau">
-          <div class="app-bloc">
+          ${hp ? this.ongletsPieces(hp) : `<div class="app-bloc">
             <span class="app-titre">Coiffure</span>
             <div class="app-tetes" role="radiogroup" aria-label="Coiffure">${tetes}</div>
-          </div>
-          <div class="app-bloc app-couleurs">
+          </div>`}
+          <div class="app-bloc app-couleurs" ${hp && this.ongletApp !== 'couleurs' ? 'hidden' : ''}>
             <div class="app-colonne">
               <span class="app-titre">Couleurs</span>
               <div class="app-cases" role="radiogroup" aria-label="Couleur à modifier">${cases}</div>
@@ -733,7 +739,7 @@ class Accueil {
               <div class="app-lum"><canvas class="app-lum__toile" aria-label="Luminosité"></canvas><span class="app-lum__curseur"></span></div>
             </div>
           </div>
-          <div class="app-bloc app-ligne">
+          <div class="app-bloc app-ligne" ${hp && this.ongletApp !== 'couleurs' ? 'hidden' : ''}>
             <div class="app-recents app-gamme" aria-label="Couleur de base">${this.gammeHtml()}</div>
             <div class="app-recents" aria-label="Couleurs récentes">${this.recentsHtml()}</div>
             <label class="app-hex"><span>#</span><input class="app-hex__champ" maxlength="6" spellcheck="false" autocomplete="off" aria-label="Couleur en hexadécimal" value="${b.look.couleurs[this.slot].slice(1)}"></label>
@@ -767,7 +773,47 @@ class Accueil {
     this.dessinerTetes();
     this.monterTournant();
     this.monterSelecteur();
+    this.monter3D();
   }
+
+  persoBrouillon() { const b = this.b; return { classId: b.classId, look: Object.assign({}, b.look, b.pieces ? { pieces: b.pieces } : {}) }; }
+  choixPieces(hp) {
+    const ch = typeof IlePeauPieces === 'object' ? IlePeauPieces.choix(hp.C, this.persoBrouillon(), '') : Object.assign({}, hp.C.defaut);
+    return ch;
+  }
+  ongletsPieces(hp) {
+    const C = hp.C, P = C.pieces || {}, o = this.ongletApp = this.ongletApp || 'visage', ch = this.choixPieces(hp);
+    const img = (t, k) => `assets/figures/pieces/${hp.id}/${t}-${k}.jpg`;
+    const cases = (t, L, cols) => `<div class="app-pieces" role="radiogroup" style="--cols:${cols}">${L.map(([k, nom]) => `<button class="e-nu app-piece${ch[t] === k ? ' on' : ''}" data-act="piece" data-t="${t}" data-i="${k}" role="radio" aria-checked="${ch[t] === k}"><span class="app-piece__vignette"><img src="${img(t, k)}" alt="" loading="lazy" onerror="this.remove()"></span><span class="app-piece__nom">${esc(nom)}</span></button>`).join('')}</div>`;
+    const YEUX = { dessin: ['Dessinés', '#8f8f99'], ambre: ['Ambre', '#c98a2b'], noisette: ['Noisette', '#8a5a2b'], vert: ['Vert', '#5f8f4a'], bleu: ['Bleu', '#4f7fb8'], gris: ['Gris', '#8f9aa6'] };
+    const panneaux = {
+      visage: cases('visage', (C.visages || []).map((v, k) => [k, v.nom]).filter(([k]) => C.visages[k].image), 6)
+        + `<span class="app-titre app-titre--sous">Yeux</span><div class="app-yeux" role="radiogroup" aria-label="Yeux">${Character.IRIS.map(i => `<button class="e-nu app-oeil${ch.iris === i ? ' on' : ''}" data-act="iris" data-i="${i}" role="radio" aria-checked="${ch.iris === i}"><span class="app-oeil__pastille" style="background:${YEUX[i][1]}"></span><span class="app-piece__nom">${YEUX[i][0]}</span></button>`).join('')}</div>`,
+      marque: cases('marque', [[-1, 'Aucune']].concat((C.marques || []).map((m, k) => [k, m.nom])), 7),
+      coiffure: cases('coiffure', (P.coiffures || []).map((c, k) => [k, c.nom]), 6),
+      bois: cases('bois', [[-1, 'Aucun']].concat((P.bois || []).map((d, k) => [k, d.nom])), 7),
+    };
+    const ONG = [['visage', 'Visage'], ['marque', 'Marque'], ['coiffure', 'Coiffure'], ['bois', 'Bois'], ['couleurs', 'Couleurs']];
+    return `<div class="app-onglets" role="tablist">${ONG.map(([id, n]) => `<button class="e-nu app-onglet${o === id ? ' on' : ''}" data-act="onglet-app" data-o="${id}" role="tab" aria-selected="${o === id}">${n}</button>`).join('')}</div>
+      ${Object.entries(panneaux).map(([id, h]) => `<div class="app-bloc app-panneau-pieces" data-panneau="${id}" ${o === id ? '' : 'hidden'}>${h}</div>`).join('')}`;
+  }
+  monter3D() {
+    this.fermer3D();
+    const hp = herosPieces(this.b.classId, this.b.gender), t = this.ecranEl && this.ecranEl.querySelector('.tournant--grand');
+    if (!hp || !t || typeof Visionneuse3D !== 'function') return;
+    const el = document.createElement('div'); el.className = 'app-3d'; t.appendChild(el);
+    const v = this.v3d = new Visionneuse3D(el, hp.id, { heros: this.persoBrouillon(), sansSocle: true, fixe: true, cible: 0.52 });
+    v.distance = 0.78; v.haut = 6; v.azimut = AZIMUT[this.b.facing] || 20;
+    v.pret.then(() => { if (this.v3d === v) { this.app3d = true; this.dessinerTournant(); } }).catch(e => { console.warn('héros en 3D :', e); if (this.v3d === v) this.fermer3D(); });
+  }
+  rafraichirPieces() {
+    const hp = herosPieces(this.b.classId, this.b.gender), el = this.ecranEl; if (!hp || !el) return;
+    const ch = this.choixPieces(hp);
+    el.querySelectorAll('.app-piece').forEach(x => { const on = ch[x.dataset.t] === Number(x.dataset.i); x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
+    el.querySelectorAll('.app-oeil').forEach(x => { const on = ch.iris === x.dataset.i; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
+  }
+  fermer3D() { if (this.v3d) { try { this.v3d.detruire(); } catch (e) {   } this.v3d = null; } this.app3d = false; const el = this.ecranEl && this.ecranEl.querySelector('.app-3d'); if (el) el.remove(); }
+  recomposer3D() { const hp = herosPieces(this.b.classId, this.b.gender); if (this.v3d && hp) this.v3d.pret.then(() => this.v3d && this.v3d.recomposer(this.choixPieces(hp))).catch(() => {   }); }
 
   dessinerTetes() {
     const b = this.b;
@@ -881,6 +927,7 @@ class Accueil {
     this.dessinerSelecteur();
     this.dessinerTetes();
     this.dessinerTournant();
+    this.recomposer3D();
   }
 
   paletteAleatoire() {
@@ -924,7 +971,7 @@ class Accueil {
       this.erreur('Ton appareil ne peut pas afficher Veylan : son navigateur n\'a pas la 3D (WebGL). Essaie un navigateur à jour, ou un autre appareil.');
       return;
     }
-    const ch = Character.create(b.classId, nom, b.gender, null, { look: b.look, tuto: b.tuto });
+    const ch = Character.create(b.classId, nom, b.gender, null, { look: this.persoBrouillon().look, tuto: b.tuto });
     ch._ouverture = true;
     if (typeof Ile === 'object' && Ile.allumee) {
       if (!Ile.fairenaitre(ch)) { this.erreur('L\'île d\'Ervane n\'a pas pu se charger. Recharge la page pour réessayer.'); return; }
@@ -1203,8 +1250,15 @@ Accueil.prototype.actions = {
     this.majGamme();
   },
   recent(b) { this.poserCouleur(b.dataset.c, false); },
-  aleatoire() { this.b.look = this.paletteAleatoire(); this.b.lookTouche = true; this.majApparence(); },
-  reinit() { this.b.look = apparenceDeClasse(this.b.classId, this.b.gender); this.b.lookTouche = false; this.b.facing = 'se'; this.majApparence(); },
+  aleatoire() {
+    this.b.look = this.paletteAleatoire(); this.b.lookTouche = true;
+    const hp = herosPieces(this.b.classId, this.b.gender);
+    if (hp) { const R = n => Math.floor(Math.random() * n), C = hp.C, P = C.pieces || {}, vis = (C.visages || []).map((v, k) => k).filter(k => C.visages[k].image);
+      this.b.pieces = { visage: vis[R(vis.length)], marque: R((C.marques || []).length + 1) - 1, coiffure: R((P.coiffures || []).length), bois: R((P.bois || []).length + 1) - 1, iris: Character.IRIS[R(Character.IRIS.length)] };
+      this.rafraichirPieces(); }
+    this.majApparence();
+  },
+  reinit() { this.b.look = apparenceDeClasse(this.b.classId, this.b.gender); this.b.lookTouche = false; this.b.facing = 'se'; this.b.pieces = null; if (this.v3d) this.v3d.azimut = AZIMUT.se; this.rafraichirPieces(); this.majApparence(); },
   'nom-aleatoire'() {
     const n = Noms.aleatoire();
     this.b.name = n;
@@ -1213,6 +1267,24 @@ Accueil.prototype.actions = {
     this.erreur('');
   },
   'creer-perso'() { this.creerPersonnage(); },
+  'onglet-app'(b) {
+    const o = this.ongletApp = b.dataset.o, el = this.ecranEl;
+    el.querySelectorAll('.app-onglet').forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); });
+    el.querySelectorAll('.app-panneau-pieces').forEach(x => { x.hidden = x.dataset.panneau !== o; });
+    el.querySelectorAll('.app-couleurs, .app-ligne').forEach(x => { x.hidden = o !== 'couleurs'; });
+    if (o === 'couleurs') this.dessinerSelecteur();
+  },
+  piece(b) {
+    const t = b.dataset.t, i = Number(b.dataset.i);
+    this.b.pieces = Object.assign({}, this.b.pieces || {}, { [t]: i });
+    this.ecranEl.querySelectorAll(`.app-piece[data-t="${t}"]`).forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
+    this.recomposer3D();
+  },
+  iris(b) {
+    this.b.pieces = Object.assign({}, this.b.pieces || {}, { iris: b.dataset.i });
+    this.ecranEl.querySelectorAll('.app-oeil').forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
+    this.recomposer3D();
+  },
   'classe-ok'() { this.validerChangementClasse(); },
   'changer-classe'(b) { this.commencerChangementClasse(b.dataset.uid || this.choix); },
 };
@@ -1289,6 +1361,14 @@ function recommander(rep) {
   return best || DATA.defaultClass;
 }
 
+const CLASSES_PIECES = ['fennal'];
+function herosPieces(classId, gender) {
+  if (typeof IlePeau !== 'object' || !IlePeau.PEAUX) return null;
+  const P = IlePeau.PEAUX[classId]; if (!P || !P.compose) return null;
+  const id = (gender === 'm' && P.parGenre && P.parGenre.m) || classId, Q = IlePeau.PEAUX[id];
+  return Q && Q.compose ? { id, C: Q.compose } : null;
+}
+const AZIMUT = { se: 20, sw: -70, nw: -160, ne: 110 };
 const TETES = ['Mèche balayée', 'Queue haute', 'Hérissés', 'Chignon', 'Longs', 'Tresse', 'Capuche', 'Rasé, bandeau d\'or'];
 
 function epithete(t) {

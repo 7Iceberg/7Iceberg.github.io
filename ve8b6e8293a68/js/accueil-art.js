@@ -169,9 +169,9 @@ const AccueilArt = (() => {
     const souffle = o.t != null && !o.calme ? Math.sin(o.t / 700) : 0;
     lueur(c, cx, cy - 24 * k, 36 * k, s.color, 0.16 + 0.05 * souffle);
     c.save(); c.translate(cx, cy); c.scale(1, 1 + 0.012 * souffle); c.translate(-cx, -cy);
-    const img = vueTour(s, o.redessiner);
+    const img = o.sansFigure ? null : vueTour(s, o.redessiner);
     if (img) dessinerVue(c, img, s.facing, cx, cy + 2 * k, 80 * k);
-    else veilleur(c, cx, cy, k, s);
+    else if (!o.sansFigure) veilleur(c, cx, cy, k, s);
     c.restore();
     return { k, cx, cy };
   }

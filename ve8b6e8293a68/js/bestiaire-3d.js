@@ -29,11 +29,19 @@ class Visionneuse3D {
     socle.rotation.x = -Math.PI / 2;
     const anneau = new THREE.Mesh(new THREE.RingGeometry(0.97, 1.0, 96), new THREE.MeshBasicMaterial({ color: 0xddaa72, transparent: true, opacity: 0.75, side: THREE.DoubleSide }));
     anneau.rotation.x = -Math.PI / 2; anneau.position.y = 0.002;
-    this.socle = new THREE.Group(); this.socle.add(socle, anneau); scene.add(this.socle);
+    this.socle = new THREE.Group(); this.socle.add(socle, anneau); if (!this.o.sansSocle) scene.add(this.socle);
     this.camera = new THREE.PerspectiveCamera(30, 1, 0.05, 100);
-    const M = this.M = await IlePeau.charger(THREE, this.id);
-    if (!this.vivant) { M.liberer(); return; }
-    this.ex = M.prendre(); scene.add(this.ex.racine);
+    let M;
+    if (this.o.heros) {
+      const h = await IlePeau.chargerHeros(THREE, this.id, { perso: this.o.heros });
+      M = this.M = h.M; this.compo = h.compo || null;
+      if (!this.vivant) { M.liberer(); return; }
+      this.ex = h.ex; this.ex.racine.visible = true; scene.add(this.ex.racine);
+    } else {
+      M = this.M = await IlePeau.charger(THREE, this.id);
+      if (!this.vivant) { M.liberer(); return; }
+      this.ex = M.prendre(); scene.add(this.ex.racine);
+    }
     const H = M.P.hauteur || 1.5;
     this.socle.scale.setScalar(Math.max(0.6, (M.P.ombre || 0.6) * 1.35 * Math.max(1, H / 1.6)));
     this.roles = ['placement', 'repos', 'marche', 'sort', 'coup', 'victoire', 'mort'].filter(r => M.P.clips[r] && (r !== 'victoire' || M.clips[(M.P.clips.victoire.nom || M.P.clips.victoire)]));
@@ -72,6 +80,9 @@ class Visionneuse3D {
     for (const [t, f] of this.ecoute) el.addEventListener(t, f, t === 'wheel' ? { passive: false } : undefined);
   }
 
+  recomposer(choix) { return this.compo ? this.compo.composer(choix) : Promise.resolve(); }
+  teindre(hex) { if (this.compo) this.compo.teindre(hex); }
+
   jouer(role) { if (this.roles.includes(role)) { this.role = role; this.debut = performance.now(); } }
 
   image(now) {
@@ -88,7 +99,7 @@ class Visionneuse3D {
       M.poser(ex, 0, 0, 0, 0, now, false, 0, null, false, 1, 1);
       M.reposer(ex); M.meler(ex, M.clip('repos'), t / 1000, 1, true); M.meler(ex, M.clip('victoire'), t / 1000, 1, true); M.appliquer(ex);
     } else M.poser(ex, 0, 0, 0, 0, this.debut + t, bouge, vitesse, geste, false, 1, 1);
-    const cible = H * 0.48, d = H * 3.1 * this.distance, a = this.azimut * Math.PI / 180, e = this.haut * Math.PI / 180;
+    const cible = H * (this.o.cible || 0.48), d = H * 3.1 * this.distance, a = this.azimut * Math.PI / 180, e = this.haut * Math.PI / 180;
     this.camera.position.set(Math.sin(a) * Math.cos(e) * d, cible + Math.sin(e) * d, Math.cos(a) * Math.cos(e) * d);
     this.camera.lookAt(0, cible, 0);
     this.rendu.render(this.scene, this.camera);
